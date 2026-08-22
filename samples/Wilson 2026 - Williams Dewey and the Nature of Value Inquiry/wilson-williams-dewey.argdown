@@ -1,0 +1,186 @@
+// James Wilson, "Williams, Dewey, and the Nature of Value Inquiry", Philosophy 101 (2026),
+// pp. 511-538. Twenty-eight pages, 10,381 words, eight sections the author numbers himself.
+//
+// THE THIRD TEST OF `extraction-prompt.md`, and the one that strains it. The Carroll states no
+// conclusion; the Horton states everything. This paper does something the prompt's list of
+// forms has no entry for.
+//
+// FOUR CONTENTIONS, NOT ONE, and that is not a defect of the reconstruction. The author
+// describes the paper's form as closer to music than to "I will assert that P": themes are
+// introduced, modulate, interweave, and resolve as the conclusion arrives. It is a paper to be
+// experienced in time, and not one whose content can be summed up in a single proposition.
+// Forcing a single apex would mean inventing a super-claim the paper does not make -- an
+// imputation at the very top, which is what the Carroll map had to do and this paper does not
+// need. The four are connected, not four separate trees, and the conclusion (Sec. 8) states
+// them in this order.
+//
+// THE INTERWEAVING IS WHAT THE MAP SHOWS BEST. Four claims recur across sections and carry
+// several outgoing edges each -- `sense-making-is-local`, `ethical-freedom`, `middle-range`,
+// `meta-problem`. In the prose they are themes returned to; in the map they are single nodes
+// feeding four or five places, which is the one thing a map does better than a reading. What it
+// does WORSE is the temporal experience the author is after: an argument map is atemporal by
+// construction. For this paper the Order view is not a supplement to the map, it is the half
+// that carries the form.
+//
+// THE BOLDEST STEP is Sec. 5's: a sustained mismatch between philosophy's ambition and its
+// progressiveness is evidence FOR Williams's side of a debate that looked question-begging.
+// Recorded with the objection a realist would make, which is not in the paper.
+
+===
+title: Wilson 2026 — Williams, Dewey, and the Nature of Value Inquiry
+reconstruction:
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/wilson-2026-williams-dewey-nature-of-value-inquiry.md"
+    reviewed: "2026-08-20"
+===
+
+# Where the paper arrives {isGroup: true}
+
+[no-overall-answer]: There is no 'overall answer to the question whether philosophy belongs with the humanities or the sciences... the philosophical methods that it is most fruitful to adopt depend on the research question to be addressed'. #core
+    {fidelity: "quotation", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"it is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences\"", pinpoint: "p. 513", note: "The claim splices two sentences of the original, and the elision is marked rather than smoothed: the source reads '...or the sciences. Rather, the philosophical methods...'. Running them together unmarked would present as one continuous sentence something the author wrote as two."}
+    + [humanities-sciences-blurred]
+    + [problems-not-disciplines]
+
+[reduce-ambition]: Philosophers working in value inquiry should be more modest: the generality and precision of their claims should be brought into line with their ability to test them. #core
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"more honest about philosophy's limits and more modest in what they expect it to do\"", pinpoint: "p. 514"}
+    + [ambition-outruns-progressiveness]
+    + [middle-range]
+
+[deadlock-broken]: The debate between Williams and his moral realist critics is not deadlocked after all. #core
+    {fidelity: "quotation", source: "\"the debate between Williams and moral realists is not deadlocked after all\"", pinpoint: "p. 526"}
+    + [disagreement-is-evidence]
+    - [realist-reply]: A realist may answer that sustained disagreement shows only that the questions are hard, not that the domain lacks the structure general theory would need — so the mismatch is evidence about philosophers, not about ethics. #dispute
+        {fidelity: "interpretation", warrant: "coherence", section: "5. The Meta-problem", note: "Not in the paper. Recorded because this is the step a realist would resist, and the map should show where the weight is being taken rather than only where the author places it."}
+
+[dewey-nimbler]: Dewey is the nimbler thinker about what philosophy might become, because of his explicit emphasis on a unified, flexible and transdisciplinary approach. #core
+    {fidelity: "quotation", section: "8. Conclusion", source: "\"it is Dewey who is the nimbler thinker about what philosophy might become\"", pinpoint: "p. 537"}
+    + [williams-late-work-pragmatist]
+    + [dewey-on-art]
+    - [absolute-conception-residue]: Two elements of Williams's outlook remain in tension even with a Deweyan pragmatism — the absolute conception of reality, and his insistence on a fundamental difference between scientific and ethical inquiry. #scope
+        {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 534", note: "The author's own qualification, and he argues the residue should go rather than that it defeats the rapprochement."}
+
+# What Williams says, and what has changed since {isGroup: true}
+
+// THE POSITION THE PAPER ANSWERS. Added after the first version of this map turned out to have
+// nothing at all from its first three pages -- noticed because `no-overall-answer`, on p.3, was
+// the leftmost node in the by-position view. A map that starts where the author's own claims
+// start leaves out what they are claims ABOUT.
+
+[williams-antiscientism]: Williams is sharply critical of scientistic approaches to philosophy, which assimilate philosophy to a model of science exemplified by physics or chemistry, and in place of scientism offers a vision of philosophy as a humanistic discipline. #background
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"In place of scientism, he offers a vision of philosophy as a humanistic discipline\"", pinpoint: "p. 511"}
+    +> [question-begging-worry]
+    + [humanistic-is-sense-making]: Humanistic inquiry focuses on forms of sense-making, and on articulating in human terms the meaning of texts, institutions, norms, events and artefacts. #background
+        {fidelity: "quotation", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"Humanistic inquiry focuses on forms of sense-making\"", pinpoint: "p. 511"}
+        +> [sense-making-is-local]
+    + [two-objections]: Williams presents two objections to scientism: that philosophical writing needs to be reflective in a way that engages the reader's sense of what is important, and that philosophy is about sense-making, which is interpretive, historically situated and local. #background
+        {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"philosophical writing needs to be reflective\"", pinpoint: "p. 512", note: "The second objection is the one the paper takes up and the first is left aside -- worth marking, because a reader of the map would otherwise assume both were in play."}
+    - [not-anti-science]: Williams does not disparage either the aims or methods of science; his goal is limited to showing why questions of human self-understanding are not best answered by scientific means. #scope
+        {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"Williams does not disparage either the aims or methods of science\"", pinpoint: "p. 512", note: "Recorded so the map does not present Williams as an opponent of science, which he is not."}
+
+[changed-landscape]: The intellectual landscape has changed since Williams wrote: an apparently inexorable decline in the prestige of the humanities relative to the sciences, and a narrowing of the questions taken to be best answered by humanistic means. #background
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"an apparently inexorable decline in the prestige of the humanities in relation to the sciences\"", pinpoint: "p. 512", note: "The paper's stated starting point: it responds to Williams from the mid-2020s rather than the late 1990s, and the change is what makes the disciplinary question live again."}
+    +> [humanities-sciences-blurred]
+
+# Against the disciplinary framing {isGroup: true}
+
+[humanities-sciences-blurred]: The distinction between the humanities and the sciences is harder to draw than Williams's paper suggests: humanistic sense-making now routinely includes methods once thought distinctively scientific.
+    {fidelity: "paraphrase", section: "2. The Humanities and the Sciences", pinpoint: "pp. 515-516"}
+    + [cross-classification]: Whether a field is humanistic is fixed by its subject matter and whether it is scientific by its methods, so the two may cross-classify — as Williams said of analytic and continental philosophy, dividing cars into front-wheel drive and Japanese.
+        {fidelity: "paraphrase", section: "2. The Humanities and the Sciences", pinpoint: "p. 517", note: "The author turns Williams's own joke against a distinction Williams relies on."}
+
+[problems-not-disciplines]: Research methods should be responsive to research problems, and where philosophical problems are interdisciplinary or transdisciplinary, so should philosophical methods.
+    {fidelity: "quotation", section: "8. Conclusion", source: "\"research methods should be responsive to research problems\"", pinpoint: "p. 536"}
+    + [problematisation]: The world does not contain research problems ready to be discovered; much of the skill of early-stage research is problematisation, and how a problem is conceived decides what counts as relevant.
+        {fidelity: "paraphrase", section: "3. Disciplines and Research Problems", source: "\"The world does not contain research problems ready to be discovered\"", pinpoint: "p. 519", note: "Dewey enters here, twenty pages before he is named as the destination."}
+    + [philosophy-is-various]: Good work in the philosophy of physics may look nothing like good work in the philosophy of literature, and many areas of philosophy are practised by scholars trained and based in the first-order discipline.
+        {fidelity: "paraphrase", section: "3. Disciplines and Research Problems", pinpoint: "pp. 520-521"}
+    + [friendly-amendment]: This is less an objection to how Williams does philosophy than a friendly amendment to how he talks about doing it: his own later work is informed by history and by law.
+        {fidelity: "paraphrase", section: "3. Disciplines and Research Problems", source: "\"less an objection to how Williams does philosophy, than a friendly amendment to how he talks about doing philosophy\"", pinpoint: "p. 521"}
+
+# Williams's position, and the worry about it {isGroup: true}
+
+[sense-making-is-local]: Ethical thinking is a form of sense-making, and sense-making is interpretive, historically situated and local — systematically underdetermined by factual accuracy and sound deliberation. #core
+    {fidelity: "paraphrase", section: "4. Ethics, Sense-making and Vindicatory Explanations", pinpoint: "pp. 522-524", note: "The paper's most-used claim: it feeds the case against scientism, the account of thought experiments, and the reading of Dewey."}
+    + [no-vindicatory-explanation]: The history of ethical theorising is not notably vindicatory, and Williams argues there are principled reasons why final convergence will not and cannot come.
+        {fidelity: "paraphrase", section: "4. Ethics, Sense-making and Vindicatory Explanations", pinpoint: "pp. 521-523"}
+    + [ethical-freedom]: We are substantively free to set our own ends, because the only genuinely universal requirements of rationality significantly underdetermine how one should live. #core
+        {fidelity: "paraphrase", section: "4. Ethics, Sense-making and Vindicatory Explanations", source: "\"we are substantively free to set our own ends\"", pinpoint: "p. 524", note: "Fricker's formulation, which the paper adopts as the key to Williams. Returns in Secs. 6 and 7."}
+
+[question-begging-worry]: Williams's view of ethics and his humanistic conception of philosophy support each other, and his opponents' views likewise — so the argument can look question-begging, and the critic can simply contrapose it. #dispute
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", pinpoint: "pp. 513, 525", note: "Raised by the author against his own sympathies, and answered only in Sec. 5. One of the paper's long-range structures: the tension is held open across twelve pages."}
+    +> [realist-reply]
+    - [disagreement-is-evidence]
+
+# The meta-problem {isGroup: true}
+
+[meta-problem]: The meta-problem — how should we combine or reconcile different modes of disciplinary inquiry — is at the heart of all interdisciplinary and transdisciplinary inquiry, and must be faced within disciplines too where rival research programmes have no agreed criteria between them. #core
+    {fidelity: "paraphrase", source: "\"how should we combine or reconcile different modes of disciplinary inquiry\"", pinpoint: "p. 525"}
+
+[ambition-outruns-progressiveness]: Philosophical research programmes tend to be ambitious without being progressive. #core
+    {fidelity: "quotation", source: "\"philosophical research programmes tend to be ambitious without being progressive\"", pinpoint: "p. 526"}
+    + [meta-problem]
+    + [philosophy-is-an-outlier]: No other discipline suffers such a mismatch between its practitioners' confidence that there are correct and highly general answers, and the power of its methods to resolve their disagreements.
+        {fidelity: "paraphrase", source: "\"no other discipline suffers such a mismatch between the level of confidence of its competent practitioners\"", pinpoint: "p. 513"}
+        + [anthropology-and-chemistry]: In anthropology low progressiveness is matched by low generality; chemistry's more ambitious claims are buttressed by an ability to test them. Philosophy matches neither.
+            {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "pp. 527-528", note: "SPLICED: the anthropology sentence and the chemistry sentence sit about 320 characters apart in the source, and this claim joins them. The author judges the join to capture his meaning well; it is recorded because a reader of the map would otherwise take it for one continuous passage."}
+        + [parfit-case]: Some prominent philosophers claim their principles hold in all possible worlds at all times while acknowledging that others find them unintelligible.
+            {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "p. 527", note: "Parfit is quoted against himself in a footnote: 'we can't even disagree'."}
+        + [weak-progress]: Philosophical discussion rarely yields decisive reasons to prefer one theory, and progress consists in refining the theories we began with and understanding their price.
+            {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "p. 527"}
+
+[disagreement-is-evidence]: To the extent that disagreements about the ontology and epistemology of ethical values are deep-seated and apparently intractable, this is evidence in favour of Williams's view rather than his realist opponents'. #core
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"this is evidence in favour of Williams's view rather than his moral realist opponents\"", pinpoint: "p. 513"}
+    + [ambition-outruns-progressiveness]
+    + [sense-making-is-local]
+
+# Middle-range theory {isGroup: true}
+
+[middle-range]: Value inquiry should aim at theories of the middle range — deliberately limited in range and applicability — rather than at grand theory. #core
+    {fidelity: "paraphrase", source: "\"theories of the middle-range, which are deliberately limited in their range and applicability\"", pinpoint: "p. 529", note: "Merton's term, imported from sociology. Feeds Sec. 6 as well as the conclusion."}
+    + [ambition-outruns-progressiveness]
+    + [tennis-racket]: A middle-range theory is like a tennis racket: we want the sweet spot as large as possible and the thing feasible to wield, and do not count it deficient for failing on a cannonball or a grain of couscous.
+        {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "p. 529"}
+    + [middle-range-more-rigorous]: Straining for more precision and generality than the evidence allows makes reasoning less rigorous, not more, so middle-range theories are often the more rigorous ones.
+        {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "pp. 529-530"}
+    - [counterexample-culture]: Philosophers tend to look down on middle-range theory because they assume a theory fails if any counterexample can be produced, however counterfactual. #dispute
+        {fidelity: "paraphrase", section: "5. The Meta-problem", pinpoint: "p. 530", note: "The author's diagnosis of the resistance, and he treats the demand itself as the thing creating the mismatch."}
+
+# Thought experiments {isGroup: true}
+
+[fecundity-not-homogeneity]: If we are persuaded that we have ethical freedom, we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case. #core
+    {fidelity: "quotation", section: "6. Thought Experiments, Science and Fiction", source: "\"it is fecundity of response, rather than homogeneity, that is the sign of a good case\"", pinpoint: "p. 533"}
+    + [ethical-freedom]
+    + [beholders-share]: Every fiction leaves the interpreter latitude to complete the work — the Beholder's Share — and thought experiments are short fictions the reader must make sense of.
+        {fidelity: "paraphrase", section: "6. Thought Experiments, Science and Fiction", source: "\"the Beholder's Share\"", pinpoint: "p. 533"}
+        + [sense-making-is-local]
+    + [cases-as-science-supports-modesty]: Taking the analogy with science seriously tells against ambition rather than for it: experiments on human subjects face deep problems of external validity and typically yield middle-range theory.
+        {fidelity: "paraphrase", section: "6. Thought Experiments, Science and Fiction", pinpoint: "pp. 532-533"}
+        + [middle-range]
+    - [blunt-question-unhelpful]: Asking whether thought experiments are science or humanistic inquiry is the same blunt categorical question the paper has already refused. #scope
+        {fidelity: "paraphrase", section: "6. Thought Experiments, Science and Fiction", pinpoint: "p. 532", note: "Sec. 1's move about disciplines, applied at the level of a single method. The recurrence is the point."}
+        + [no-overall-answer]
+
+# Dewey {isGroup: true}
+
+[williams-late-work-pragmatist]: There is a good case for taking Williams's late work to be a contribution to the pragmatist tradition, notwithstanding his protests to the contrary.
+    {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", source: "\"there is a good case for taking Williams's late work to be a contribution to the pragmatist tradition\"", pinpoint: "p. 534"}
+    + [rorty-not-pragmatism]: Williams took Rorty's position to define pragmatism, and so may not have been aware that the tradition includes objectivists such as Peirce, Ramsey and Dewey; his anti-pragmatist arguments have force against the subjectivists and none against the objectivists.
+        {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 534"}
+
+[dewey-on-art]: Dewey argues that the insight the arts give into how to live differs from what science or philosophical argument can offer, and can challenge philosophical method rather than merely extend it.
+    {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "pp. 533-534"}
+    + [ethical-freedom]
+    + [williams-hints-only]: Williams's own use of the arts is mostly critical — undercutting the pretensions of ethical theory — and he gives little more than scattered hints about the positive role they might play.
+        {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 533"}
+    + [no-asymmetric-critique]: On a transdisciplinary epistemology there is no reason to think philosophy has an asymmetric ability to criticise other forms of inquiry while being immune from their critique.
+        {fidelity: "quotation", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 534"}
+        + [meta-problem]
+
+[epistemic-iteration]: On the Deweyan picture inquiry is iterative: whether a domain can or should aspire to eliminate our local ways of apprehending things is settled within inquiry, not before it.
+    {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 535"}
+    +> [dewey-nimbler]
+    +> [absolute-conception-residue]

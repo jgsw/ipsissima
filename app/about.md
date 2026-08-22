@@ -1,0 +1,79 @@
+<!--
+  about.md — the About window.
+
+  Same arrangement as help.md, one rule: `##` starts a TAB, in this order. Raw HTML is allowed,
+  and the ids below are filled in at runtime — `aboutver`, `aboutbuilt`, `abouthost`,
+  `aboutauthor`, `aboutlicence`, `aboutdeps`, `aboutdebug`. Deleting one does not break anything;
+  the thing it was showing simply stops appearing.
+
+  Keep it about this level of detail. Zettlr's About is the model and is more verbose than
+  Ipsissima has debts to repay — but Argdown's credit is not the place to economise.
+-->
+
+## Ipsissima
+
+**Ipsissima** reads an argument reconstruction beside the text it is a reading of: the argument as
+a map, the passage each claim was drawn from, and the marks a reader writes in the margin.
+
+*ipsissima verba* — the very words themselves. Scholars of the Gospels set it against *ipsissima
+vox*, the authentic voice: did he say *these words*, or is this a faithful report of what he
+meant? That is the distinction the program keeps, on every claim.
+
+<dl id="aboutmeta">
+  <dt>Version</dt><dd id="aboutver">—</dd>
+  <dt>Author</dt><dd id="aboutauthor">—</dd>
+  <dt>Licence</dt><dd id="aboutlicence">—</dd>
+</dl>
+
+It runs entirely on your own machine. Nothing is uploaded, and it makes no network requests of any
+kind — not for updates, not for fonts, not for analytics. You can disconnect from the internet and
+it behaves identically.
+
+## Argdown
+
+Ipsissima is a reader and editor for **Argdown**, and would not exist without it.
+
+Argdown is the argumentation markup language created by **Christian Voigt**. The notation, the
+parser, and the model of what an argument reconstruction *is* are all his. Ipsissima bundles the
+official parser and uses it unmodified, so a file that parses here parses everywhere Argdown does,
+and a reconstruction written here is not locked to this program.
+
+The notation is set in **ArgVu**, the Argdown project's own typeface, designed by **Peter Stahmer**
+and funded by the **KIT Debatelab**. It is what draws `<+` and `<-` as single arrows rather than as
+two characters that happen to sit together.
+
+Argdown is at **argdown.org** and is MIT licensed; ArgVu is under the Bitstream Vera Fonts
+licence. **Ipsissima is an independent program, not endorsed by or affiliated with the Argdown
+project.**
+
+## Built on
+
+Every one of these is bundled into the program and runs locally. The versions are read from the
+build itself rather than written by hand, so this list cannot claim what it does not carry.
+
+<dl id="aboutdeps"></dl>
+
+All MIT licensed.
+
+The desktop application additionally uses **Tauri** (MIT / Apache-2.0), which supplies the window
+and the file access. On macOS and Linux the page is drawn by the system WebView rather than by a
+bundled browser, which is why the application is a few megabytes rather than a few hundred.
+
+## Licence
+
+Ipsissima is free software, licensed under the **GNU General Public License, version 3**.
+
+You may use it for anything, study how it works, change it, and share it — including changed
+versions. The one condition is that a version you pass on carries the same freedoms: it must be
+distributed under the GPL, with its source available.
+
+The full text ships with the source as `LICENSE`, and is at **gnu.org/licenses/gpl-3.0**.
+
+This program is distributed in the hope that it will be useful, but **without any warranty**;
+without even the implied warranty of merchantability or fitness for a particular purpose.
+
+## Debug
+
+Worth quoting if something goes wrong.
+
+<dl id="aboutdebug"></dl>

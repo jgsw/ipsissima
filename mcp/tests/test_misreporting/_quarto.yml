@@ -1,0 +1,7 @@
+project:
+  type: book
+
+book:
+  title: "A fabricated treatise, for testing the quotation checks"
+  chapters:
+    - "source/treatise.md"

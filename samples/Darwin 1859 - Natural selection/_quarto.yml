@@ -1,0 +1,13 @@
+project:
+  type: book
+
+book:
+  title: "Darwin — Natural selection (Origin, p. 168)"
+  author: "Charles Darwin"
+  chapters:
+    - "source/darwin-1859-natural-selection.md"
+
+# One "chapter", and it is a two-paragraph passage — so the reading order is as trivial as it
+# gets. The file still has to exist: the provenance tooling reads it to learn which files are
+# part of the text, and without it every claim drops out of the exposition-order view into the
+# no-position lane. The path must match the `chapter:` metadata in the .argdown exactly.

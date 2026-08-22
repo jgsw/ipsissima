@@ -1,0 +1,53 @@
+// A FIXTURE, not a reconstruction. The source it cites is invented prose written for this file.
+//
+// It plants the four structures Tom Stern calls "misreporting" -- Stern, T. (2016) '"Some Third
+// Thing": Nietzsche's Words and the Principle of Charity', Journal of Nietzsche Studies 47(2),
+// 287-302, at 295-96 -- plus a clean control and an over-long elision. Stern's own illustrations
+// are fictional (his n. 28); so is this treatise.
+//
+// WHY IT EXISTS. Three of Stern's four cases QUOTE ACCURATELY. The verbatim checker verifies
+// the currency without detecting the debasement, and would return `exact` on all three. The
+// expected verdicts below were written before the code that produces them.
+//
+//   [hedged-knowledge]  exact + a corrective continuation the quotation stops short of
+//   [all-drives]        exact + a dropped leading quantifier AND a contrastive continuation
+//   [will-to-power]     exact + a gloss term that appears nowhere in the cited file
+//   [present-age]       near   -- words replaced inside the span; already caught, kept as proof
+//   [clean-control]     exact, SILENT. If anything fires here the checks are too noisy.
+//   [far-elision]       exact + the two halves sit ~300 characters and four headings apart
+
+===
+title: Misreporting fixture
+reconstruction:
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/treatise.md"
+    reviewed: "2026-08-19"
+===
+
+# What is claimed {isGroup: true}
+
+[thesis]: The treatise holds that knowledge is unreliable and the drives are various. #core
+    {section: "On knowledge", fidelity: "compression"}
+    + [hedged-knowledge]: Knowledge might be false.
+        {section: "On knowledge", fidelity: "quotation", source: "\"our knowledge might be false\""}
+    + [all-drives]: Drives press towards mastery, accumulation and display.
+        {section: "On drives", fidelity: "quotation", source: "\"drives press towards mastery, accumulation and display\""}
+    + [clean-control]: Every reader who has followed the argument this far will grant the conclusion without further persuasion.
+        {section: "On method", fidelity: "quotation", source: "\"Every reader who has followed the argument this far will grant the conclusion without further persuasion\""}
+    + [present-age]: In the present age, human beings carry a mixed inheritance.
+        {section: "On the age", fidelity: "quotation", source: "\"In the present age, human beings carry the inheritance of many origins\""}
+
+[thesis-two]: The treatise is committed to a doctrine of power. #core
+    {section: "On strength", fidelity: "interpretation", warrant: "coherence", note: "Nothing in the treatise names a doctrine; reading it as one is what makes the strength passage and the drives passage answer to each other."}
+    + [bridge]: What a thing expresses itself as is what that thing is.
+        {section: "On strength", fidelity: "imputation", warrant: "enthymeme", note: "The step from how strength expresses itself to what strength IS. The treatise never states it and the reading needs it."}
+        + [will-to-power]: The will to power expresses itself as command and as overflow.
+            {section: "On strength", fidelity: "quotation", source: "\"as command, as overflow\""}
+        + [far-elision]: Our knowledge might be false, and human beings carry a mixed inheritance.
+            {section: "On knowledge", fidelity: "quotation", source: "\"Our knowledge might be false ... human beings carry the inheritance of many origins\""}
+    + [leap]: A treatise's scattered remarks express a single doctrine.
+        {section: "On method", fidelity: "imputation"}

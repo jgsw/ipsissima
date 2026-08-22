@@ -1,0 +1,17 @@
+{
+  "name": "ipsissima-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The desktop shell for Ipsissima. The application itself is the single HTML file that build_argdown_viewer.mjs produces; this wraps it in a window that the OS can hand files to.",
+  "scripts": {
+    "frontend": "node build_desktop.mjs",
+    "dev": "npm run frontend && tauri dev",
+    "build": "npm run frontend && tauri build",
+    "tauri": "tauri",
+    "install-app": "node install.mjs",
+    "status": "node install.mjs --status"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

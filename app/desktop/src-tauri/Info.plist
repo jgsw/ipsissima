@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Merged into the generated bundle by Tauri.
+
+  WHY THIS EXISTS. `bundle.fileAssociations` in tauri.conf.json emits CFBundleDocumentTypes with
+  a list of extensions, and that is enough for Ipsissima to APPEAR in Finder's "Open With". It is
+  not enough for macOS to make it the DEFAULT for a brand-new extension: without a declared type,
+  `.argdown` gets an anonymous dynamic UTI, and a dynamic UTI is not something LaunchServices
+  will bind a default handler to. The symptom is precise and baffling — `open -a Ipsissima
+  file.argdown` works perfectly, and double-clicking the same file does nothing at all.
+
+  So the type is declared, once, properly: an exported UTI that conforms to public.plain-text
+  (which it is — a bundle is still a readable text file) and to public.data.
+-->
+<plist version="1.0">
+<dict>
+  <key>UTExportedTypeDeclarations</key>
+  <array>
+    <dict>
+      <key>UTTypeIdentifier</key>
+      <string>org.ipsissima.argdown</string>
+      <key>UTTypeDescription</key>
+      <string>Argdown reconstruction</string>
+      <key>UTTypeConformsTo</key>
+      <array>
+        <string>public.plain-text</string>
+        <string>public.data</string>
+      </array>
+      <key>UTTypeTagSpecification</key>
+      <dict>
+        <key>public.filename-extension</key>
+        <array>
+          <string>argdown</string>
+          <string>ad</string>
+        </array>
+        <key>public.mime-type</key>
+        <array>
+          <string>text/x-argdown</string>
+        </array>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>

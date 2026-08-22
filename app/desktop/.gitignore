@@ -1,0 +1,10 @@
+# Generated: the frontend is built from the template, never edited here.
+dist/
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+# The 1024px master is kept; the platform set is regenerated with `npx tauri icon`.
+src-tauri/icons/*.png
+src-tauri/icons/*.ico
+src-tauri/icons/*.icns
+!src-tauri/icons/source.png

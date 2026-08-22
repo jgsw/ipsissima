@@ -1,0 +1,25 @@
+# Makes @argdown/pandoc-filter emit INTERACTIVE web-components instead of a
+# static SVG image. Referenced from the `metadata-files:` list of the three
+# HTML-family Zettlr export profiles (HTML, Reveal.js, UCL Reveal.js).
+#
+# WHY A SEPARATE FILE, and not a `metadata:` block inside each profile:
+# the filter accepts a setting only when pandoc hands it as MetaInlines --
+#
+#     if (value.t === "MetaInlines" && typeof value.c[0].c === "string")
+#
+# A defaults file's own `metadata:` block yields **MetaString**, which the
+# filter silently ignores, so the setting appears to be applied and the
+# export comes out as a static image anyway. A `metadata-files:` entry is
+# parsed as a YAML metadata block and yields MetaInlines, which works.
+# Verified 16 Aug 2026: `metadata:` -> 0 web-components; this file -> 3.
+#
+# Settings the filter reads (defaults in brackets):
+#   mode     inline [default] | web-component | file
+#   format   svg [default] | png | jpg | webp   -- used by inline/file mode
+#   caption  ["" default]    -- default caption for every block
+#
+# Per-block attributes still win over this file, so a single block can opt
+# back out with  ```{.argdown-map mode="inline"}
+
+argdown:
+  mode: web-component

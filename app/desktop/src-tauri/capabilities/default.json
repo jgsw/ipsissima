@@ -1,0 +1,44 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "What the Ipsissima window is allowed to ask the host for. Deliberately short: the app reads and writes text files the reader themselves chose, and does nothing else \u2014 no network, no shell, no process spawning.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-dir",
+    "fs:allow-watch",
+    "fs:allow-unwatch",
+    "fs:allow-exists",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        },
+        {
+          "path": "/Volumes/**"
+        }
+      ],
+      "deny": [
+        {
+          "path": "$HOME/.ssh/**"
+        },
+        {
+          "path": "$HOME/.aws/**"
+        },
+        {
+          "path": "$HOME/.gnupg/**"
+        },
+        {
+          "path": "$HOME/Library/Keychains/**"
+        }
+      ]
+    }
+  ]
+}

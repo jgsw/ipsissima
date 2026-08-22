@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Build output. The two HTML files ARE the product, but they are generated: build them with
+# `node app/rebuild_viewers.mjs`, and attach them to a release rather than committing them.
+/Ipsissima.html
+/Ipsissima Reader.html
+app/desktop/dist/
+app/desktop/src-tauri/target/
+app/desktop/src-tauri/gen/
+samples/**/*(map).html
+
+# The platform icon set is regenerated from icons/source.png with `npx tauri icon`.
+app/desktop/src-tauri/icons/*.png
+app/desktop/src-tauri/icons/*.ico
+app/desktop/src-tauri/icons/*.icns
+!app/desktop/src-tauri/icons/source.png
+
+.DS_Store
