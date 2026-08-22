@@ -2970,7 +2970,7 @@ function createLiveMap(container, graph, options) {
     // The heavier stroke of a far-reaching edge carries to its chevrons, so emphasis stays one
     // property of one line rather than two things that can disagree.
     holder.setAttribute("class", "alm-dir" + (info && info.far === true ? " is-far" : "") +
-                        (info && info.debt === false ? " is-prepared" : ""));
+                        (info && info.debt === true ? " is-anticipated" : ""));
     for (const f of at) {
       const a = path.getPointAtLength(len * f);
       const b = path.getPointAtLength(Math.min(len, len * f + 1));
@@ -3598,13 +3598,6 @@ function injectStyle() {
    relation the moment the arrangement changed. It is carried by weight now — a reach that runs
    against the text is drawn a shade heavier — and the arrangement is named in the top bar, so
    nothing has to be inferred from the stroke. */
-/* THE TWO DIRECTIONS, told apart by weight of ink. NO BACKTICKS IN THIS BLOCK -- it lives inside
-   a template literal and one ends the string.
-   is-anticipated is a claim asserted before its support arrives: the reader is carrying a
-   promise, and it is drawn at full strength. is-prepared is support already given, which costs
-   the reader nothing to accept, and is drawn pale. Both keep the colour that says whether they
-   support or attack; only the value changes, which is what lets a reader see the direction of a
-   whole region at a glance. */
 /* THE BAND SPARKLINE. One ink colour and no green or red anywhere near it: those two mean
    support and attack a few centimetres away on the same screen, and the side of the axis is
    already carrying the whole distinction here.
@@ -3621,9 +3614,26 @@ function injectStyle() {
 .alm-spark-axis{stroke:var(--alm-spark,#5a6474);stroke-opacity:.16;stroke-width:.75;
   stroke-dasharray:2 3}
 
-.alm-e.is-anticipated{stroke-opacity:1}
-.alm-e.is-prepared{stroke-opacity:.42}
-.alm-dir.is-prepared path{stroke-opacity:.42}
+/* THE TWO DIRECTIONS, told apart by weight of ink. NO BACKTICKS IN THIS BLOCK -- it lives inside
+   a template literal and one ends the string.
+
+   FULL INK MEANS ALREADY JUSTIFIED. is-prepared is a claim whose reasons were given before it
+   was made: nothing is owed, and it is drawn solid. is-anticipated is a claim asserted ahead of
+   its justification, drawn pale, because at the point a reader meets it that is exactly what it
+   is -- provisional, accepted on a promise.
+
+   IT WAS THE OTHER WAY ROUND, on the reasoning that an unpaid promise is the thing worth
+   noticing and so should catch the eye. Followed through, that is perverse: a paper which earns
+   every claim before making it -- the best case -- would render almost entirely washed out.
+
+   And ink weight already means groundedness here. A quotation gets a solid border; an
+   imputation, a premise the argument needs and the author never states, gets a dot-dashed one.
+   Pale for an unpaid justification joins that grammar instead of starting a second one.
+
+   Both keep the colour that says whether they support or attack; only the value changes. */
+.alm-e.is-prepared{stroke-opacity:1}
+.alm-e.is-anticipated{stroke-opacity:.45}
+.alm-dir.is-anticipated path{stroke-opacity:.45}
 .alm-bar .alm-note{opacity:.7;font-variant-numeric:tabular-nums}
 .alm-g{cursor:pointer;transition:transform var(--alm-dur,350ms) cubic-bezier(.4,0,.2,1),
   opacity 220ms ease}

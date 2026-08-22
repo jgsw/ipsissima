@@ -64,10 +64,14 @@ again — those are panes, and any combination of them can be open at once.
 still means what it means above — the arrangement never changes what a line <em>is</em> — but the
 weight of the ink says when its support arrives:</p>
 
-- **Full strength** — the claim is made *before* its support arrives. The reader is carrying a
-  promise: asserted here, argued for later.
-- **Pale** — the support was already given. Nothing is owed; the text has built up to this.
+- **Solid** — the reasons were already given by the time the claim was made. Nothing is owed.
+- **Pale** — the claim is asserted *before* its justification arrives. At the point you meet it,
+  it is provisional: you are being asked to carry a promise.
 - **Heavier** — the relation reaches a long way across the text, whichever direction it runs.
+
+Weight of ink means the same thing here as it does on a claim's border: how firmly established
+this is. A quotation is drawn solid and an imputation dot-dashed, and a justification still owed
+is drawn pale for the same reason.
 
 Only relations that reach further than about a twelfth of the reconstruction are marked this way.
 Most support sits a line or two from what it supports, and that is not a finding about the text,
