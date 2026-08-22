@@ -29,3 +29,29 @@ To see it:
 ```bash
 cd app && node test_fold_invariants.mjs
 ```
+
+## Opening a section can reveal more than one level of it (Reasons view)
+
+Found 22 Aug 2026, running the fold invariants against a private corpus rather
+than the public samples. It does **not** reproduce on anything in `samples/`,
+so the repro below needs a corpus of your own:
+
+```
+IPSISSIMA_CORPUS=<your reconstructions> node app/test_fold_invariants.mjs --steps 40 --seed 7
+
+horton-aggregation-risk-reductio [by argument]: 40 nodes, 6 sections
+   FAIL  opening a section reveals one level of it, not several
+         3 claim(s) from below the section's entry level are showing for no reason
+         (5 of its 8 claims are up)
+         after: as the viewer opens -> toggleGroup(s2)
+```
+
+Distinct from the Carroll issue above: different view (**by argument**, not by
+position), different invariant, and it is a fold-state bug rather than an
+edge-drawing one. The section opens to its entry level, but three claims from
+deeper in the same section come up with it — so the reader sees a level they
+did not ask for. Harmless to the argument, untidy on screen.
+
+Not yet diagnosed. The `[by position]` run over the same file passes every
+check, which points at the section-grouping path rather than at the fold
+bookkeeping the two views share.
