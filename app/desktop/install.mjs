@@ -63,12 +63,25 @@ if (statusOnly) {
   process.exit(0);
 }
 
+/** PATH with a Rust toolchain on it, wherever this machine keeps one.
+ *
+ *  Homebrew's `rustup` is KEG-ONLY: it installs to /opt/homebrew/opt/rustup/bin and is
+ *  deliberately not linked, so `cargo` is missing from a plain shell and `tauri build` fails
+ *  with "program not found" on a machine that has Rust perfectly well installed. Both the usual
+ *  locations are added when they exist, and nothing is assumed about which one a reader has. */
+function cargoPath() {
+  const extra = [path.join(os.homedir(), ".cargo", "bin"),
+                 "/opt/homebrew/opt/rustup/bin",
+                 "/usr/local/opt/rustup/bin"].filter(p => fs.existsSync(p));
+  return [...extra, process.env.PATH].join(path.delimiter);
+}
+
 // 1. Build. The frontend is staged first, because the whole application is that page.
 console.error("building…");
 execFileSync("node", [path.join(HERE, "build_desktop.mjs")], { stdio: ["ignore", "ignore", "inherit"] });
 execFileSync(path.join(HERE, "node_modules", ".bin", "tauri"), ["build", "--bundles", "app"],
              { cwd: HERE, stdio: ["ignore", "ignore", "inherit"],
-               env: { ...process.env, PATH: "/opt/homebrew/opt/rustup/bin:" + process.env.PATH } });
+               env: { ...process.env, PATH: cargoPath() } });
 if (!fs.existsSync(BUILT)) throw new Error("the build produced no .app at " + BUILT);
 
 // The scratch image Tauri leaves behind after bundling a .dmg registers too, and outlives the
