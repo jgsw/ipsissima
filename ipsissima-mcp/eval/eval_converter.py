@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compare PDF-to-text converters on the sample papers, against a real labelled test set.
 
-    python3 mcp/eval/eval_converter.py" [--marker-mode fast|balanced]
+    python3 ipsissima-mcp/eval/eval_converter.py [--marker-mode fast|balanced]
 
 WHERE THE GROUND TRUTH COMES FROM, AND WHY IT IS UNUSUALLY GOOD. Every reconstruction folder's
 `convert_source.py` carries a `repairs=` list: each entry is a place where the PDF's own text

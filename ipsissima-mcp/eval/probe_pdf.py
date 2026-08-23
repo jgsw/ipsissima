@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Report what a PDF's text layer is like, BEFORE converting it.
 
-    python3 mcp/eval/probe_pdf.py" FILE.pdf [FILE.pdf ...]
+    python3 ipsissima-mcp/eval/probe_pdf.py FILE.pdf [FILE.pdf ...]
 
 WHY THIS AND NOT A BIGGER FIXTURE SET. The converter comparison needed hand-labelled repairs and
 those are expensive -- eight of them, each read off a page image. What a wider corpus is actually

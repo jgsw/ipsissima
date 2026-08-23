@@ -41,7 +41,7 @@ so a file that passes here passes for the author.
 
 **Converting an article is mechanical and must not be re-invented per paper.** It was, twice, and
 writing the second converter cost more than the reconstruction it existed to serve. The machinery
-lives in `mcp/src/ipsissima_mcp/pdf_to_source.py`; a paper's own
+lives in `ipsissima-mcp/src/ipsissima_mcp/pdf_to_source.py`; a paper's own
 `convert_source.py` is a config block and a docstring saying what liberties THIS paper needed.
 The Gettier one went from 384 lines to 82 that way, and reproduces its source byte for byte.
 
@@ -61,7 +61,7 @@ rule survives both papers, so it prints the levels and asks), and it never inven
 skeleton and a README stub, converts, and prints the report:
 
 ```bash
-python3 "mcp/src/ipsissima_mcp/new_reconstruction.py" \
+python3 "ipsissima-mcp/src/ipsissima_mcp/new_reconstruction.py" \
     "/path/to/paper.pdf" "Author YEAR - Short title" \
     [--start "1. Introduction"] [--end "References"]
 ```
@@ -766,7 +766,7 @@ test, and that section exists so the next one is not.
 
 Scripts: `check_argdown.py` (run this, not the bare CLI), `argdown_provenance.py` (quotation
 checking and text positions), `rationale_to_argdown.py`. The converter and the renderer live in
-`mcp/src/ipsissima_mcp/`.
+`ipsissima-mcp/src/ipsissima_mcp/`.
 
 **This file is loaded on every Argdown task; the six above are not.** Keep it to what must be
 obeyed before anything else can be got right — the traps, the rules, the reconstruction procedure —

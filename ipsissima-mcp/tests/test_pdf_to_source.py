@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the page-geometry detection in pdf_to_source.py.
 
-    python3 mcp/tests/test_pdf_to_source.py
+    python3 ipsissima-mcp/tests/test_pdf_to_source.py
 
 Both cases below were real bugs, and both were the same KIND of bug: a confident wrong answer
 with nothing to signal it. The column test read min and max across the page's midline, so two

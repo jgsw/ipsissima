@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Score an Argdown reconstruction against a hand-built REFERENCE one.
 
-    python3 mcp/eval/eval_reconstruction.py" CAND.argdown \
+    python3 ipsissima-mcp/eval/eval_reconstruction.py CAND.argdown \
         --reference REF.argdown --source-root DIR [--json]
 
 THERE IS NO GOLD STANDARD HERE, AND THE WORD IS BANNED FROM THIS FILE. Reconstruction is

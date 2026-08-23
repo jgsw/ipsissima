@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Probe every PDF in the Zotero library and write a TSV of the verdicts.
 
-    python3 mcp/eval/probe_library.py" [--out FILE] [--root DIR]
+    python3 ipsissima-mcp/eval/probe_library.py [--out FILE] [--root DIR]
 
 READ-ONLY. Nothing is ever written into the Zotero storage tree; results go to --out.
 
