@@ -49,6 +49,18 @@ when it finds one.
 The desktop application additionally needs Rust. `npm run build` in `app/desktop` says so, with
 the fix, if it is missing.
 
+## Looking at a built map
+
+`build_argdown_viewer.mjs` writes a self-contained page you can open directly. If your browser is
+awkward about `file://` URLs — Safari especially — serve the directory instead:
+
+```bash
+python3 -m http.server 8765
+```
+
+and open `http://localhost:8765/samples/<paper>/<paper> (map).html`. Nothing in the page needs a
+server; this is only to get around the browser's own local-file rules.
+
 ## House conventions, which are unusual and deliberate
 
 **Comments say why, not what.** Nearly every non-obvious block in this codebase carries a note

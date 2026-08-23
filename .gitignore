@@ -21,3 +21,9 @@ app/desktop/src-tauri/icons/*.icns
 !app/desktop/src-tauri/icons/source.png
 
 .DS_Store
+
+# Editor and assistant scratch. `.claude/` in particular is per-person tooling, not project
+# configuration — someone else's launch config is not a thing to inherit.
+.claude/
+.vscode/
+.idea/
