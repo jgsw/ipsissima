@@ -19,6 +19,7 @@
  * wants the filter chips to switch on — real Argdown tags in exports, the `kind:` metadata in
  * the structure map. Argdown's IMap nodes carry no tags, so this has to come from the adapter.
  */
+/** @param {any} global */
 (function (global) {
 "use strict";
 
@@ -984,7 +985,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
         const l = laneById.get(x.to) || "";
         return l === lane || l.indexOf(lane + "|") === 0;
       });
-      gr.spark = EXP.sparkPaths(mine, rk.n);
+      /** @type {any} */ (gr).spark = EXP.sparkPaths(mine, rk.n);
       const v = EXP.verdict(mine, rk.n);
       if (v.centre != null) gr.title = (gr.title || gr.label) + "\n" + v.text;
     }
@@ -2146,7 +2147,7 @@ function createLiveMap(container, graph, options) {
   if (cleaned.problems.length && typeof console !== "undefined" && console.warn)
     console.warn("argdown-live-map: the graph needed repair before it could be drawn:\n  - " +
                  cleaned.problems.join("\n  - "));
-  const dagre = opt.dagre || global.dagre;
+  const dagre = opt.dagre || /** @type {any} */ (global).dagre;
   if (!dagre) throw new Error("argdown-live-map: dagre not found (load vendor/dagre.min.js first)");
 
   let state = {
@@ -3150,14 +3151,14 @@ function createLiveMap(container, graph, options) {
     // `input`, not `change`: the map should follow the thumb as it is dragged, which is the whole
     // reason a ladder is worth making draggable.
     bar.addEventListener("input", ev => {
-      const r = ev.target.closest("input.alm-range"); if (!r) return;
+      const r = /** @type {any} */ (ev.target).closest("input.alm-range"); if (!r) return;
       const rungs = r.parentNode._rungs || [];
       const cur = rungs[+r.value]; if (!cur) return;
       if (cur.key === "chapters") return apply({ type: "byChapter" });
       return apply({ type: "depth", value: cur.key === "all" ? null : +cur.key });
     });
     bar.addEventListener("click", ev => {
-      const b = ev.target.closest("button"); if (!b) return;
+      const b = /** @type {any} */ (ev.target).closest("button"); if (!b) return;
       const act = b.dataset.act;
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
@@ -3182,7 +3183,7 @@ function createLiveMap(container, graph, options) {
   }
 
   function syncToolbar(vis, info) {
-    const depthBox = toolbar.querySelector('[data-role="depth"]');
+    const depthBox = /** @type {any} */ (toolbar.querySelector('[data-role="depth"]'));
     if (depthBox) {
       // Rebuilt when the axis changes, because the first rung MEANS something different in each
       // view and saying "main claim" over eight of them is just wrong. In the argument view the
@@ -3214,13 +3215,13 @@ function createLiveMap(container, graph, options) {
           '<input type="range" class="alm-range" min="0" max="' + (rungs.length - 1) +
           '" step="1" value="0" aria-label="how much of the argument is showing">' +
           '<span class="alm-rung"></span>';
-        depthBox._rungs = rungs;
-        depthBox.dataset.mode = mode;
+        /** @type {any} */ (depthBox)._rungs = rungs;
+        /** @type {any} */ (depthBox).dataset.mode = mode;
       }
       // Say what the current rung shows, so the reader can judge a move before making it.
       const byChapterNow = expo && state.collapsedLanes.size > 0;
       const rungs = depthBox._rungs || [];
-      const range = depthBox.querySelector("input.alm-range");
+      const range = /** @type {any} */ (depthBox.querySelector("input.alm-range"));
       const readout = depthBox.querySelector(".alm-rung");
       if (range && readout && rungs.length) {
         const want = byChapterNow ? "chapters"
@@ -3243,7 +3244,7 @@ function createLiveMap(container, graph, options) {
       }
     }
 
-    const sectionBox = toolbar.querySelector('[data-role="sections"]');
+    const sectionBox = /** @type {any} */ (toolbar.querySelector('[data-role="sections"]'));
     if (sectionBox) {
       // WHICH sections: the ones the view on screen actually draws. In the argument view those
       // are the Argdown file's own headings; in the by-position view they are the manuscript's,
@@ -3270,7 +3271,8 @@ function createLiveMap(container, graph, options) {
                                : groups.some(id => state.collapsedGroups.has(id));
         sectionBox.querySelector('[data-open="0"]').classList.toggle("on", anyFolded);
         sectionBox.querySelector('[data-open="1"]').classList.toggle("on", !anyFolded);
-        sectionBox.querySelector('[data-open="0"]').dataset.count = String(groups.length);
+        /** @type {any} */ (sectionBox.querySelector('[data-open="0"]')).dataset.count =
+          String(groups.length);
       }
     }
 
@@ -3289,8 +3291,9 @@ function createLiveMap(container, graph, options) {
 
     // Both halves are lit or unlit together, like `sections`: a radio pair says which of the two
     // is in force, and a single button that is merely "off" says nothing about what is.
-    toolbar.querySelectorAll('[data-act="text"]').forEach(b =>
-      b.classList.toggle("on", (b.dataset.full === "1") === !!allText));
+    toolbar.querySelectorAll('[data-act="text"]').forEach(
+      /** @param {any} b */ b =>
+        b.classList.toggle("on", (b.dataset.full === "1") === !!allText));
   }
 
   /** How many blocks the by-chapter rung puts on screen — the number on its button. */
@@ -3782,13 +3785,12 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, membersOfGr
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
               seatInDocumentOrder, straightenDetours, clearOfBadge, offsetPastBadge,
-              arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, boxesOf,
-              segmentHitsBox, bowOf,
+              arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,
               directionFractions,
               circleCrossing,
               BADGE_R, BADGE_CLEAR, BADGE_SIDE };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
-global.ArgdownLiveMap = API;
+/** @type {any} */ (global).ArgdownLiveMap = API;
 
 })(typeof globalThis !== "undefined" ? globalThis : this);

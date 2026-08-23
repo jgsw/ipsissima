@@ -31,6 +31,7 @@
  * Classic script, no build step: sets window.ArgdownExposition and exports for Node, so the
  * renderer, the page and the tests share one implementation.
  */
+/** @param {any} global */
 (function (global) {
 "use strict";
 
@@ -283,6 +284,6 @@ var API = { ranks: ranks, reaches: reaches, profile: profile, verdict: verdict,
             significant: significant, extent: extent, binCount: binCount, amplify: amplify,
             isDebt: isDebt };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
-global.ArgdownExposition = API;
+/** @type {any} */ (global).ArgdownExposition = API;
 
 })(typeof globalThis !== "undefined" ? globalThis : this);

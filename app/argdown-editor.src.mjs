@@ -277,7 +277,8 @@ export function create(parent, opts) {
         // lands where you pressed and you can carry on typing there.
         EditorView.domEventHandlers({
           mousedown(e, view) {
-            const el = e.target && e.target.closest && e.target.closest(".cm-ad-ref");
+            const t = /** @type {any} */ (e.target);
+            const el = t && t.closest && t.closest(".cm-ad-ref");
             if (!el || !o.onClaimClick) return false;
             const name = el.textContent.replace(/^[[<]|[\]>]$/g, "");
             o.onClaimClick(name);
@@ -293,7 +294,7 @@ export function create(parent, opts) {
         lintGutter(),
         // Slow on purpose: re-linting runs the real parser, and doing that on every keystroke
         // would fight the live preview for the same idle time.
-        linter(lintSource, { delay: 400 }),
+        linter(/** @type {any} */ (lintSource), { delay: 400 }),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         EditorView.lineWrapping,
         EditorView.updateListener.of(u => { if (u.docChanged && o.onChange) o.onChange(view.state.doc.toString()); })
@@ -381,4 +382,5 @@ export function create(parent, opts) {
   };
 }
 
-if (typeof window !== "undefined") window.ArgdownEditor = { create, traps };
+if (typeof window !== "undefined")
+  /** @type {any} */ (window).ArgdownEditor = { create, traps };

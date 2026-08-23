@@ -30,6 +30,7 @@
  * Classic script, no build step, inert in a browser: sets window.ArgdownHost and exports for
  * Node so the desktop build can test it headlessly.
  */
+/** @param {any} global */
 (function (global) {
 "use strict";
 
@@ -195,6 +196,6 @@ var API = {
   SKIP_DIRS: SKIP_DIRS
 };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
-global.ArgdownHost = API;
+/** @type {any} */ (global).ArgdownHost = API;
 
 })(typeof globalThis !== "undefined" ? globalThis : this);

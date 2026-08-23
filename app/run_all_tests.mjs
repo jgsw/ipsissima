@@ -26,7 +26,14 @@ const PYTESTS = path.join(MCP, "tests");
 const VENV = path.resolve(HERE, "..", ".venv", "bin", "python3");
 const PY = fs.existsSync(VENV) ? VENV : "python3";
 
+const TSC = path.join(HERE, "node_modules", ".bin", "tsc");
+
+/** @type {[string, string, string[]][]} */
 const SUITES = [
+  // FIRST, because it is two seconds and it reads every shipped file. `checkJs` over the
+  // existing JavaScript, no build step and no emit — see app/tsconfig.json for why it is not a
+  // rewrite. It found two names exported twice from the renderer on its first run.
+  ["types (tsc --noEmit over the JS)", TSC, ["-p", HERE]],
   ["fold logic (fixtures)",      "node", [path.join(BUILD, "test_argdown_live_map.js")]],
   ["edge direction (arrowheads)", "node", [path.join(BUILD, "test_edge_direction.js")]],
   ["re-seat vs edge routes",     "node", [path.join(BUILD, "test_reseat_edges.js")]],

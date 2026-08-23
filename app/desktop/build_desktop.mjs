@@ -67,7 +67,8 @@ const need = [
   ["the parser", /data-part="PARSER"/],
   ["the page template, for exporting a copy", /data-part="SHELL"/]
 ];
-const missing = need.filter(([, re]) => !re.test(html)).map(([what]) => what);
+const missing = need.filter(([, re]) => !(/** @type {RegExp} */ (re)).test(html))
+                    .map(([what]) => what);
 if (missing.length) {
   console.error(`  the staged page is missing: ${missing.join(", ")}`);
   console.error("  the desktop shell would open and then fail at the first file operation.");

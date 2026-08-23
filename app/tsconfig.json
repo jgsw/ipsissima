@@ -1,0 +1,32 @@
+{
+  /* Typechecking WITHOUT a build step, and that is the whole point.
+   *
+   * Ipsissima ships as one self-contained HTML file with the renderer inlined into it, so there
+   * is no bundler between the source and what people double-click — and adding TypeScript as a
+   * compile step would put one there. `checkJs` gives most of what a rewrite would: every file
+   * is read by the type checker, inference does the work, and JSDoc adds a type where inference
+   * cannot. `noEmit` means nothing this produces ever reaches a user.
+   *
+   * `strict` is off deliberately. Turned on, the DOM narrowing alone (`Element` where the code
+   * knows it has an `HTMLElement`) buries the findings that matter under hundreds that do not.
+   * It found a real one at this setting on the first run: two names exported twice from the
+   * renderer's public surface.
+   *
+   * Run it with `npm run typecheck`, or `node run_all_tests.mjs`, which includes it.
+   */
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["globals.d.ts", "src/argdown-*.js", "*.mjs", "desktop/*.mjs"],
+  "exclude": ["node_modules", "desktop/node_modules", "src/test_*", "test_*.mjs"]
+}

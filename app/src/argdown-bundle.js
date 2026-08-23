@@ -34,6 +34,7 @@
  * Classic script, no build step: sets window.ArgdownBundle and exports for Node, so the page
  * and the builder share one implementation of the format.
  */
+/** @param {any} global */
 (function (global) {
 "use strict";
 
@@ -144,6 +145,6 @@ function detach(text) {
 
 var API = { attach: attach, detach: detach, strip: strip, isBundle: isBundle, VERSION: VERSION };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
-global.ArgdownBundle = API;
+/** @type {any} */ (global).ArgdownBundle = API;
 
 })(typeof globalThis !== "undefined" ? globalThis : this);

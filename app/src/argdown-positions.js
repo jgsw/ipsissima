@@ -23,6 +23,7 @@
  * Classic script, no build step: sets window.ArgdownPositions and exports for Node, so the
  * in-browser hosts and the viewer build can share one implementation.
  */
+/** @param {any} global */
 (function (global) {
 "use strict";
 
@@ -313,6 +314,6 @@ var API = { positions: positions, readingOrder: readingOrder, headingIndex: head
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
-global.ArgdownPositions = API;
+/** @type {any} */ (global).ArgdownPositions = API;
 
 })(typeof globalThis !== "undefined" ? globalThis : this);
