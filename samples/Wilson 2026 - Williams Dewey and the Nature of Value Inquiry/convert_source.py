@@ -28,9 +28,14 @@ from ingest import plain_text                                    # noqa: E402
 from pdf_to_source import dehyphenate                            # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-PDF = Path("/Users/jameswilson/Zotero/storage/V6S9E36C/"
-           "Wilson - 2026 - Williams, Dewey, and the Nature of Value Inquiry.pdf")
 OUT = HERE / "source" / "wilson-2026-williams-dewey-nature-of-value-inquiry.md"
+
+# THE PDF IS NOT IN THIS REPOSITORY. It is the published article, and the publisher's typesetting
+# is theirs; the converted Markdown in `source/` is what ships, by the author's own permission.
+# This script is the record of how it was made, and takes the PDF as an argument:
+#
+#     python3 convert_source.py path/to/paper.pdf
+PDF = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else None
 
 # Repeated on every page, and not the article.
 FURNITURE = (re.compile(r"^James Wilson$"),
@@ -66,6 +71,9 @@ source: "Philosophy (2026)"
 
 
 def main():
+    if PDF is None or not PDF.exists():
+        sys.exit("Give it the published PDF:\n"
+                 "    python3 convert_source.py path/to/paper.pdf")
     text = plain_text(str(PDF))
     # REJOIN WORDS BROKEN ACROSS PRINTED LINES. The blocks reflow preserves the typesetter's
     # line breaks as spaces, so `human- ities`, `ambi- tion` and `confi- dence` survive into the

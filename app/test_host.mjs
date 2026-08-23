@@ -2,9 +2,9 @@
  *
  * WHY THIS IS WORTH TESTING HEADLESSLY. Everything `argdown-host.js` does happens at the moment
  * a reader opens a folder, and the failures are the quiet kind: a chapter skipped because a
- * filter was wrong, a path joined with the wrong separator so nothing is found, a walk that
- * follows `Old versions/` and offers four stale copies of the same essay. None of that throws.
- * You would notice it as "the Manuscript view is empty", days later, and blame the reconstruction.
+ * filter was wrong, a path joined with the wrong separator so nothing is found, a build folder
+ * walked and offering a package's README as a chapter. None of that throws. You would notice it
+ * as "the Manuscript view is empty", days later, and blame the reconstruction.
  *
  * So the Tauri API is faked — it is a handful of async functions over a plain object — and the
  * walk runs against a fixture tree built here. What this does NOT test is whether Tauri's own
@@ -28,8 +28,8 @@ const check = (name, got, want) => {
 };
 
 /* A fixture that contains every shape the walk has to get right: a nested source folder, a
- * project file, the workspace's own `Old versions/` convention, a dotfile, a build folder, and
- * a file type that is none of Ipsissima's business. */
+ * project file, a folder named the way one author files old drafts, a dotfile, a build folder,
+ * and a file type that is none of Ipsissima's business. */
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "ipsissima-host-"));
 const write = (rel, text) => {
   const abs = path.join(root, rel);
@@ -41,8 +41,10 @@ write("_quarto.yml", 'chapters:\n  - "source/paper.md"\n');
 write("source/paper.md", "# Paper\n\nBody.\n");
 write("source/notes.qmd", "# Notes\n");
 write("source/paper (clean).pdf", "%PDF-1.4 not text");
-write("Old versions/paper.argdown", "[A]: the SUPERSEDED one.\n");
-write("Old versions/source/paper.md", "stale\n");
+// NOT SKIPPED, and it used to be. `Old versions` was one author's filing convention baked into
+// the walker, which for anybody else is an ordinary folder that would vanish without a word.
+write("Old versions/paper.argdown", "[A]: an older one.\n");
+write("Old versions/source/paper.md", "an older chapter\n");
 write("node_modules/pkg/index.md", "not the manuscript\n");
 write(".hidden/secret.md", "no\n");
 
@@ -85,22 +87,26 @@ console.log("walking a real folder");
 const listed = await HOST.readDirDeep(root);
 const rels = listed.files.map((f) => f.rel).sort();
 check("every readable file is found, with its path relative to the folder", rels,
-      ["_quarto.yml", "paper.argdown",
+      ["Old versions/paper.argdown", "Old versions/source/paper.md",
+       "_quarto.yml", "paper.argdown",
        "source/notes.qmd", "source/paper (clean).pdf", "source/paper.md"]);
-check("  `Old versions/` is never walked",
-      rels.some((r) => r.indexOf("Old versions") === 0), false);
-check("  nor is node_modules", rels.some((r) => r.indexOf("node_modules") === 0), false);
+check("  an ordinary folder is walked, whatever it is called",
+      rels.some((r) => r.indexOf("Old versions") === 0), true);
+check("  but node_modules is not", rels.some((r) => r.indexOf("node_modules") === 0), false);
 check("  nor are dotfolders", rels.some((r) => r.indexOf(".hidden") === 0), false);
 check("  it did not truncate", listed.truncated, false);
 check("  and the absolute path is right",
       fs.readFileSync(listed.files.find((f) => f.rel === "source/paper.md").abs, "utf8"),
       "# Paper\n\nBody.\n");
 
-// `Old versions/` is skipped by name, and that is the one entry in SKIP_DIRS that is this
-// workspace's own convention rather than a general one — worth asserting so a tidy-up cannot
-// quietly drop it and reintroduce four stale copies of every chapter.
-check("SKIP_DIRS still covers the workspace's own convention",
-      HOST.SKIP_DIRS.indexOf("Old versions") >= 0, true);
+// NOTHING BUT MACHINERY IN THE SKIP LIST. It once carried three folder names from the workspace
+// this grew inside, which for anybody else are ordinary names — a reader keeping chapters in
+// `Submission/` would have found them missing from the Manuscript view with nothing said. The
+// check is that no such name comes back: a skip list may only hold things that are never
+// anyone's manuscript.
+check("nothing in SKIP_DIRS is somebody's filing convention",
+      HOST.SKIP_DIRS.filter((d) => !/^(node_modules|\.git|__pycache__|\.venv|\.argument-history)$/
+        .test(d)), []);
 
 console.log("the cap is real");
 for (let i = 0; i < 60; i++) write(`bulk/f${i}.md`, "x");

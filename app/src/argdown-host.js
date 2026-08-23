@@ -76,12 +76,19 @@ function pickSavePath(suggested) {
 function readText(abs) { return T.fs.readTextFile(abs); }
 function writeText(abs, text) { return T.fs.writeTextFile(abs, text); }
 
-/* Folders that are never a manuscript, skipped before they are walked. `Old versions` is this
- * workspace's own convention and holds superseded drafts of the very files being read: walking
- * it would offer the reader four stale copies of their chapter and no way to tell which is
- * which. The rest are the usual machinery. */
-var SKIP_DIRS = ["node_modules", ".git", "Old versions", "__pycache__", ".argument-history",
-                 "Background Readings", "Submission"];
+/* Folders that are never a manuscript, skipped before they are walked.
+ *
+ * MACHINERY ONLY, and the reason is a lesson about defaults. This list used to carry three
+ * folder names from the workspace Ipsissima grew inside -- `Old versions`, `Background
+ * Readings`, `Submission` -- because in THAT workspace they held superseded drafts and other
+ * people's papers. For anybody else they are ordinary folder names, and a reader who keeps
+ * their chapters in `Submission/` would have found them silently missing from the Manuscript
+ * view with nothing said. A skip list may only contain things that are never anyone's
+ * manuscript; one person's filing convention is not that.
+ *
+ * A reader who does want their own folders skipped has the honest way already: open the folder
+ * the reconstruction cites, rather than the one above it. */
+var SKIP_DIRS = ["node_modules", ".git", "__pycache__", ".venv", ".argument-history"];
 
 /** Every file under `dir`, as { rel, abs }, depth-first and in directory order.
  *

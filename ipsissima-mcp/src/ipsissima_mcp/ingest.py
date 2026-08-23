@@ -100,6 +100,43 @@ def tidy_headings(md):
     return "\n".join(out), n
 
 
+# Publisher access stamps, printed down the margin of every page of a PDF served to a logged-in
+# reader. They are not the article, and they carry the DOWNLOADER'S IDENTITY:
+#
+#     Downloaded from academic.oup.com/mind/article/104/416/691/… by University College London
+#     user on 20 August 2026
+#
+# This matters more than tidiness. A reconstruction is made to be SHARED -- that is most of the
+# point of a single self-contained file -- and the manuscript travels inside it. Leaving the
+# stamp in means every reader of every map learns which institution's subscription the paper came
+# through, and on some publishers' stamps, which person's account. Nobody chooses that; they
+# simply do not know the line is there. It is also a line of text that is not the author's, sitting
+# in a file whose whole purpose is to say whose words are whose.
+ACCESS_STAMPS = (
+    re.compile(r"(?im)^\s*downloaded\s+from\s+\S+\s+by\s+.{0,120}?\s+on\s+\d{1,2}\s+\w+\s+\d{4}\s*$"),
+    re.compile(r"(?im)^\s*downloaded\s+(?:from|by)\s.{0,160}$"),
+    re.compile(r"(?im)^\s*this\s+content\s+downloaded\s+from\s+[\d.]+\s+on\s.{0,80}$"),
+    re.compile(r"(?im)^\s*(?:brought\s+to\s+you\s+by|authenticated|download\s+date)\s*\|?\s.{0,120}$"),
+    re.compile(r"(?im)^\s*all\s+use\s+subject\s+to\s+https?://\S+\s*$"),
+)
+
+
+def strip_access_stamps(md):
+    """Blank the publisher's access stamps. Returns (text, [what was removed]).
+
+    BLANKED, NOT DELETED, and that is the whole care of it. Every claim's position in the
+    manuscript is a LINE NUMBER, so removing a line slides everything below it up and points a
+    reconstruction's provenance at the wrong paragraph. The line stays; its contents go.
+    """
+    lines = md.splitlines()
+    removed = []
+    for i, line in enumerate(lines):
+        if any(p.match(line) for p in ACCESS_STAMPS):
+            removed.append(line.strip())
+            lines[i] = ""
+    return "\n".join(lines), removed
+
+
 def tracked_changes(path):
     """Insertions and deletions in a .docx, which pandoc would silently accept."""
     try:
@@ -261,6 +298,14 @@ def ingest_one(path, allow_ocr=True):
     md, fixed = tidy_headings(md)
     if fixed:
         notes.append(f"{fixed} heading(s) unwrapped from emphasis")
+    md, stamps = strip_access_stamps(md)
+    if stamps:
+        # COUNTED HERE, QUOTED NOWHERE. `notes` is written into the converted file's own header,
+        # and the first version put the stamp text there -- which reintroduced the institution's
+        # name into the file the whole operation exists to get it out of. The count is what the
+        # header needs; the caller gets the lines themselves and can print them to a terminal.
+        notes.append(f"! {len(stamps)} publisher access stamp(s) removed -- lines naming the "
+                     f"downloading institution, which are not the author's text")
     return md, notes
 
 
@@ -282,7 +327,9 @@ def header(src, notes):
     lines = ["<!-- CONVERTED TEXT - NOT THE PUBLISHED DOCUMENT.",
              f"     Made by ingest.py from {os.path.basename(src)}.",
              "     No heading was inserted; any `#` below is the document's own, or was",
-             "     detected from its typography. No wording is altered.",
+             "     detected from its typography. None of the author's wording is altered;",
+             "     the publisher's access stamps, where there were any, are blanked and the",
+             "     lines they sat on are kept so nothing below them moves.",
              "     Back matter is kept here and trimmed only when text is sent to a model."]
     for n in notes:
         lines.append(f"     {n}")

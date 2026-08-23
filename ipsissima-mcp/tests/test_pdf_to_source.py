@@ -343,5 +343,35 @@ check("a torn conversion is reported", heading_gaps(["1. Intro", "3. End"]), [2]
 check("subsection numbers are not top-level", heading_gaps(["1. Intro", "1.1. Sub", "2. Next"]), [])
 check("one heading cannot show a gap", heading_gaps(["3. Only"]), [])
 
+# ---- the publisher's access stamps --------------------------------------------------- #
+# NOT A TIDINESS FEATURE. These lines carry the DOWNLOADER'S IDENTITY, and a reconstruction is
+# built to be shared with the manuscript inside it — so leaving one in tells every reader of
+# every map which institution's subscription the paper came through. The check that matters most
+# is the last one: blanking must not DELETE the line, because a claim's position in the
+# manuscript is found by line and everything below a deleted line moves up.
+print("publisher access stamps")
+from ingest import strip_access_stamps                                       # noqa: E402
+
+STAMPED = "\n".join([
+    "The Tortoise said to Achilles that he would not accept it.",
+    "Downloaded from academic.oup.com/mind/article/104/416/691/1 by "
+    "University College London user on 20 August 2026",
+    "This content downloaded from 144.82.114.32 on Wed, 20 Aug 2026 09:12:44 UTC",
+    "All use subject to https://about.jstor.org/terms",
+    "Downloaded by [A University] at 03:12 20 August 2026",
+    "Brought to you by | Some Other University",
+    "And so the argument went on for ever.",
+])
+out, removed = strip_access_stamps(STAMPED)
+check("every stamp is found", len(removed), 5)
+check("  and no line is lost", len(out.splitlines()), len(STAMPED.splitlines()))
+check("  the article's own first line is untouched",
+      out.splitlines()[0], "The Tortoise said to Achilles that he would not accept it.")
+check("  and its last", out.splitlines()[-1], "And so the argument went on for ever.")
+check("  no institution name survives",
+      [l for l in out.splitlines() if "Universit" in l], [])
+check("prose that merely mentions downloading is left alone",
+      strip_access_stamps("The data were downloaded from a public archive by the authors.")[1], [])
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

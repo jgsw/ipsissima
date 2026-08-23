@@ -135,6 +135,36 @@ console.log("\nthe file going unreadable is not an edit");
   check("and changes nothing", scope.AD_ON_DISK, A);
 }
 
+/* ---- the wiring, which the logic above cannot see -------------------------------------- *
+ *
+ * The checks above prove the DECISION is right. They cannot prove the code is reached. Three
+ * things connect it to the program, each of which fails silently if it is dropped: the strip's
+ * elements have to exist in the markup (a `$("…")` on a missing id throws at load and takes the
+ * whole page with it, and this page IS the product); the watcher has to be started where a file
+ * is opened; and the save path has to record what it wrote. */
+console.log("\nthe wiring");
+{
+  for (const id of ["adextern", "adexternmsg", "adexternkeep", "adexternload", "adexternclose"])
+    check(`#${id} exists in the markup`, tpl.includes(`id="${id}"`), true);
+
+  const loadDir = sourceOf("hostLoadDir");
+  check("opening a folder starts the .argdown watcher",
+        /hostWatchArgdown\(\)/.test(loadDir), true);
+  check("and the manuscript watcher too, still",
+        /hostWatchManuscript\(\)/.test(loadDir), true);
+
+  const save = sourceOf("saveArgdown");
+  check("saving records what it wrote, so the watcher can tell it from an edit",
+        /AD_ON_DISK\s*=\s*text/.test(save), true);
+  check("and re-points the watcher, in case Save As moved the file",
+        /hostWatchArgdown\(\)/.test(save), true);
+
+  // The strip is only ever raised by the handler; if the buttons are not bound it can never be
+  // put away, which strands the reader with a message and no way to answer it.
+  for (const id of ["adexternkeep", "adexternload", "adexternclose"])
+    check(`#${id} has a handler`, new RegExp(`\\$\\("${id}"\\)\\.onclick`).test(tpl), true);
+}
+
 console.log();
 if (fails) { console.log(`${fails} check(s) failed\n`); process.exit(1); }
 console.log("all passed\n");

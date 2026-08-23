@@ -3,7 +3,8 @@
      No heading was inserted; any `#` below is the document's own, or was
      detected from its typography. No wording is altered.
      Back matter is kept here and trimmed only when text is sent to a model.
-     text layer clean (1443 words); no OCR attempted -->
+     text layer clean (1443 words); no OCR attempted
+     ! 3 publisher access stamp(s) removed -- lines naming the downloading institution, which are not the author's text -->
 
 <!-- p.1 begins here -->
 
@@ -41,7 +42,7 @@ ACHILLES had overtaken the Tortoise, and had seated himself comfortably on its h
 
 Mind, Vol. 104 .416. October 1995 © Oxford University Press 1995
 
-Downloaded from academic.oup.com/mind/article/104/416/691/1096551 by University College London user on 20 August 2026
+
 
 <!-- p.2 begins here -->
 
@@ -81,7 +82,7 @@ mightn't I?"
 
 " Do II" said the Tortoise innocently. " Let's make that quite clear. I accept A and B and C and D. Suppose I still refused to accept Z ?"
 
-Downloaded from academic.oup.com/mind/article/104/416/691/1096551 by University College London user on 20 August 2026
+
 
 <!-- p.3 begins here -->
 
@@ -94,5 +95,3 @@ What the Tortoise Said to Achilles 693
 " I see," said Achilles ; and there was a touch of sadness in his tone. Here the narrator, having pressing business at the Bank, was obliged to leave the happy pair, and did not again pass the spot until some months afterwards. When he did so, Achilles was still seated on the back of the much-enduring Tortoise, and was writing in his note-book, which appeared to be nearly full. The Tortoise was saying " Have you got that last step written down 'I Unless I've lost count, that makes a thousand and one. There are several millions more to come. And would you mind, as a personal favour, considering what a lot of instruction this colloquy of ours will provide for the Logicians of the Nineteenth Century—would you mind adopting a pun that my cousin the Mock-Turtle will then make, and allowing yourself to be re-named Taught- Us 1"
 
 " As you please !" replied the weary warrior, in the hollow tones of despair, as he buried his face in his hands. " Provided that you, for your part, will adopt a pun the Mock-Turtle never made, and allow yourself to be re-named A Kill-Ease !"
-
-Downloaded from academic.oup.com/mind/article/104/416/691/1096551 by University College London user on 20 August 2026

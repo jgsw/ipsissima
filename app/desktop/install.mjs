@@ -21,6 +21,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
+import { cargoPath } from "./rust-path.mjs";
 import { execFileSync } from "child_process";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -61,19 +62,6 @@ if (statusOnly) {
   const all = report("registered");
   if (all.length > 1) console.log("\nMore than one. Run `node install.mjs` to collapse them to one.");
   process.exit(0);
-}
-
-/** PATH with a Rust toolchain on it, wherever this machine keeps one.
- *
- *  Homebrew's `rustup` is KEG-ONLY: it installs to /opt/homebrew/opt/rustup/bin and is
- *  deliberately not linked, so `cargo` is missing from a plain shell and `tauri build` fails
- *  with "program not found" on a machine that has Rust perfectly well installed. Both the usual
- *  locations are added when they exist, and nothing is assumed about which one a reader has. */
-function cargoPath() {
-  const extra = [path.join(os.homedir(), ".cargo", "bin"),
-                 "/opt/homebrew/opt/rustup/bin",
-                 "/usr/local/opt/rustup/bin"].filter(p => fs.existsSync(p));
-  return [...extra, process.env.PATH].join(path.delimiter);
 }
 
 // 1. Build. The frontend is staged first, because the whole application is that page.
