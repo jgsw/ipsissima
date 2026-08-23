@@ -472,17 +472,32 @@ function corpusFiles() {
   return out;
 }
 
-/* THE REAL MAPS. Two published samples: the long multi-section one and a short one, which is
- * the range these invariants are hardest on. Point IPSISSIMA_CORPUS at a folder of your own
- * reconstructions and every .argdown under it is checked too — the suite is deliberately
- * stronger on a machine that has more to check. */
-const FILES = [
-  ["Wilson", path.join(HERE, "..", "samples",
-     "Wilson 2026 - Williams Dewey and the Nature of Value Inquiry", "wilson-williams-dewey.argdown")],
-  ["Carroll", path.join(HERE, "..", "samples",
-     "Carroll 1895 - What the Tortoise said to Achilles", "carroll-tortoise-achilles.argdown")],
-  ...corpusFiles()
-];
+/** Every published sample, found rather than listed.
+ *
+ *  IT USED TO NAME TWO. That was right when there were two, and wrong the moment a third
+ *  arrived: a corpus you have to remember to extend is one that quietly stops growing, and
+ *  these invariants are the checks most sensitive to WHICH map they are run on — the second
+ *  known bug in KNOWN-ISSUES.md does not reproduce on any of the samples at all and was found
+ *  only against a private corpus. So adding a sample now strengthens this suite by itself.
+ */
+function sampleFiles() {
+  const root = path.join(HERE, "..", "samples");
+  if (!fs.existsSync(root)) return [];
+  const out = [];
+  for (const dir of fs.readdirSync(root, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    for (const f of fs.readdirSync(path.join(root, dir.name))) {
+      if (f.endsWith(".argdown"))
+        // The folder is named "Author YEAR - Title"; the author is enough to tell them apart.
+        out.push([dir.name.split(" ")[0], path.join(root, dir.name, f)]);
+    }
+  }
+  return out.sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+/* Point IPSISSIMA_CORPUS at a folder of your own reconstructions and every .argdown under it is
+ * checked as well — the suite is deliberately stronger on a machine that has more to check. */
+const FILES = [...sampleFiles(), ...corpusFiles()];
 
 let failed = 0;
 for (const [name, file] of FILES) {

@@ -32,6 +32,7 @@ openly licensed instead.
 |---|---|---|
 | **Carroll**, "What the Tortoise Said to Achilles" (1895) | 20 claims, 3 pages | public domain |
 | **Darwin**, natural selection (*Origin*, p. 168) | 22 claims, 2 paragraphs | public domain |
+| **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 48 claims, 9 pages | CC-BY 4.0 |
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 37 claims, 28 pages | Creative Commons, by the author of Ipsissima |
 
 Read **Carroll** and **Darwin** side by side if you want one thing from this folder. They are the
@@ -43,9 +44,19 @@ clearest statement here of the distinction that decides how a reconstruction is 
   without variation has nothing to preserve. So they sit in premise-conclusion structures, and
   drawing them as siblings would claim something false about the argument.
 
+**Tooming & Jakapi** is the one with the cleanest *shape*: a linked three-premise challenge, and
+then seven ways out enumerated and closed one by one. It is the best thing here to read if you
+want to see what "elimination of alternatives" looks like drawn, and the only sample whose source
+is a modern two-column journal PDF — so it is also what the converter's column and heading
+detection is tested against.
+
 **Wilson** is the long one: four contentions rather than a single thesis, themes that recur and
 modulate. It is what the layout and folding behaviour is hardest on, and what the exposition
 sparkline has most to say about.
+
+Every one of these is run by the test suite. `app/test_fold_invariants.mjs` walks this folder
+rather than naming files, so **adding a sample strengthens the suite by itself** — which is the
+point of the "Wanted" section below.
 
 ## Wanted
 
@@ -64,8 +75,15 @@ a README naming the licence, and nothing that could not be redistributed.
   source/
     <paper>.md          the text the reconstruction cites
   <paper>.argdown       the reconstruction
-  README.md             what the argument does, and what this folder is here to show
+  README.md             what the argument does, what this folder is here to show, and —
+                        where the text is not public domain — the licence, in full, with the
+                        attribution the licence requires
 ```
+
+**Attribution goes in the source file too, not only the README.** Ipsissima can save a
+reconstruction and its manuscript as a single file and send it to someone; at that point the
+`.md` is the only thing carrying the licence, and a README left behind on disk is not
+attribution.
 
 Built viewers (`<paper> (map).html`) are not committed — they are generated, half a megabyte
 each, and go stale the moment the renderer changes. Build one with:
