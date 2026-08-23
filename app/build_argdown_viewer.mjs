@@ -404,7 +404,7 @@ function attachPositions(graph, root, argdownPath, attached) {
   if (argdownPath && root) {   // a bundle has no folder for the checker to read
     try {
       const py = spawnSync("python3", [
-        path.join(HERE, "..", "mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+        path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
         argdownPath, "--source-root", root, "--derive-fidelity"], { encoding: "utf8" });
       const derived = JSON.parse((py.stdout || "{}").trim() || "{}");
       let changed = 0;

@@ -60,7 +60,7 @@ a README naming the licence, and nothing that could not be redistributed.
 ```
 <paper>/
   convert_source.py     a Config block and a note saying what liberties THIS paper needed;
-                        the machinery is shared, in mcp/
+                        the machinery is shared, in ipsissima-mcp/
   source/
     <paper>.md          the text the reconstruction cites
   <paper>.argdown       the reconstruction

@@ -23,7 +23,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] /
-                       "mcp" / "src" / "ipsissima_mcp"))
+                       "ipsissima-mcp" / "src" / "ipsissima_mcp"))
 from ingest import plain_text                                    # noqa: E402
 from pdf_to_source import dehyphenate                            # noqa: E402
 

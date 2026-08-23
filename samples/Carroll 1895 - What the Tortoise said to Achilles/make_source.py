@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-BUILD = HERE.parents[1] / "mcp" / "src" / "ipsissima_mcp"
+BUILD = HERE.parents[1] / "ipsissima-mcp" / "src" / "ipsissima_mcp"
 PDF = Path("/Users/jameswilson/Zotero/storage/HK8L96QV/"
            "CARROLL - 1995 - WHAT THE TORTOISE SAID TO ACHILLES.pdf")
 WANTED = HERE / "source" / "carroll-1895-what-the-tortoise-said-to-achilles.md"

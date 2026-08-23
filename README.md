@@ -20,7 +20,7 @@ you can double-click, email, or put on a web page, and to a **desktop applicatio
 Windows and Linux that adds what a web page cannot do: open a `.argdown` by double-clicking it,
 save back in place on any platform, and reload the manuscript when it changes on disk.
 
-**`mcp/` — Ipsissima-MCP.** The other half of the work: turning a document into something a
+**`ipsissima-mcp/` — Ipsissima-MCP.** The other half of the work: turning a document into something a
 reconstruction can cite. It ingests a PDF, EPUB or HTML article — or a list of them — and produces
 the structured Markdown a reconstruction points at, along with the tools that check a finished
 reconstruction against its sources. Today it is a Python package with a command line; an MCP

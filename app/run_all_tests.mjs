@@ -13,7 +13,7 @@ import { fileURLToPath } from "url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BUILD = path.resolve(HERE, "src");
-const MCP = path.resolve(HERE, "..", "mcp");
+const MCP = path.resolve(HERE, "..", "ipsissima-mcp");
 const PYSRC = path.join(MCP, "src", "ipsissima_mcp");
 const PYTESTS = path.join(MCP, "tests");
 

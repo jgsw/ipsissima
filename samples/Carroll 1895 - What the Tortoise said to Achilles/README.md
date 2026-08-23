@@ -52,7 +52,7 @@ one of the five sample maps where it fires.
 ## Rebuilding
 
 ```bash
-python3 "../../mcp/src/ipsissima_mcp/ingest.py" \
+python3 "../../ipsissima-mcp/src/ipsissima_mcp/ingest.py" \
     "<the PDF>" --out .
 python3 ../../.claude/skills/argdown/check_argdown.py carroll-tortoise-achilles.argdown --source-root .
 node "../../app/build_argdown_viewer.mjs" \

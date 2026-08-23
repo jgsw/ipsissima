@@ -28,7 +28,7 @@ import { toGraph, RUN } from "./argdown-graph.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BUILD = path.resolve(HERE, "src");
-const SKILL = path.resolve(HERE, "..", "mcp", "src", "ipsissima_mcp");
+const SKILL = path.resolve(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp");
 const require = createRequire(import.meta.url);
 const P = require(path.join(BUILD, "argdown-positions.js"));
 
