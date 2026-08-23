@@ -19,11 +19,22 @@ Connectivity is measured on the DOT export, NOT the JSON. The JSON `relations`
 array omits edges implied by a premise-conclusion structure, so an orphan check
 run against the JSON reports every premise of every argument as an orphan.
 
+TWO READERS, TWO OUTPUTS. The prose report is written for a person reading it
+once. A check-and-fix loop is a different reader -- it has the map in context
+already and needs to know which line to change -- so `--only-problems` and
+`--format json` drop the census and print the faults, each with its location and,
+where the checker can work one out, the correction itself. Measured on the Darwin
+sample: 687 words and 10.5s becomes 221 words and 2.4s.
+
 Usage:
     python3 check_argdown.py FILE.argdown [--cli PATH_TO_ARGDOWN]
+    python3 check_argdown.py FILE.argdown --source-root DIR --format json
 """
 
 import argparse
+import contextlib
+import copy
+import io
 import json
 import os
 import re
@@ -41,6 +52,31 @@ MODES = ["all", "with-title", "with-relations", "with-more-than-one-relation",
          "top-level", "not-used-in-argument"]
 
 DEFAULT_CLI = ("app/node_modules/.bin/argdown")
+
+# ---------------------------------------------------------------- findings ---- #
+# WHY THIS EXISTS AT ALL. The prose report is written for a person reading it once. The
+# check-and-fix loop is a different reader: a model that has just written a map, has the whole
+# thing in context already, and needs to know WHICH LINE to change. Handing it 700 words of
+# census every round is how a fix loop comes to cost more than the reconstruction did -- and,
+# worse, a report that opens with what is right invites rewriting what is wrong from scratch.
+#
+# So every fault the run detects is also recorded here, structured, with the location and -- as
+# often as the checker can manage it -- the correction itself. `--format json` prints these and
+# nothing else. The prose is unchanged for the human who wants it.
+#
+# `severity` is the existing convention of this file made explicit: `!` was always a fault and
+# `?` always a thing to look at.
+FINDINGS = []
+
+# Value sets a fix has to choose from, collected once rather than restated on every finding that
+# needs them. Printed at the foot of the short report and carried in the JSON envelope.
+VOCABULARY = {}
+
+
+def finding(check, severity, message, **where):
+    """Record a fault. `where` carries whatever locates it: line, title, chapter, fix."""
+    FINDINGS.append(dict(check=check, severity=severity, message=message,
+                         **{k: v for k, v in where.items() if v is not None}))
 
 
 def find_cli(explicit):
@@ -85,19 +121,46 @@ def parse_dot(dot):
     return nodes, kinds, edges, clusters
 
 
+# The CLI colours its errors for a terminal. A caller reading the JSON is not a terminal, and
+# the escape sequences are both noise and a decoding hazard downstream.
+ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
 def unescape_dot(s):
     return re.sub(r"&#x([0-9A-Fa-f]+);", lambda m: chr(int(m.group(1), 16)), s)
 
 
+_JSON_CACHE = {}
+
+
 def export_json(cli, path):
-    """The Argdown JSON export, or None. Both provenance sections need it."""
-    with tempfile.TemporaryDirectory() as td:
-        r = run(cli, "json", path, "--outputDir", td)
-        files = [f for f in os.listdir(td) if f.endswith(".json")] if r.returncode == 0 else []
-        if not files:
-            return None
-        with open(os.path.join(td, files[0]), encoding="utf-8") as fh:
-            return json.load(fh)
+    """The Argdown JSON export, or None. Both provenance sections need it.
+
+    MEMOISED, because five sections of one run each asked for it and each spawned a fresh Node
+    process to get an identical answer. Measured on the Darwin map: 12 CLI spawns accounted for
+    5.66s of a 6.7s run, and three of them were this function. The key carries the file's mtime
+    so a caller that edits between calls -- `--fix` does -- still sees its own writes.
+    """
+    try:
+        stamp = os.stat(path).st_mtime_ns
+    except OSError:
+        stamp = None
+    key = (cli, path, stamp)
+    if key not in _JSON_CACHE:
+        with tempfile.TemporaryDirectory() as td:
+            r = run(cli, "json", path, "--outputDir", td)
+            files = ([f for f in os.listdir(td) if f.endswith(".json")]
+                     if r.returncode == 0 else [])
+            if not files:
+                _JSON_CACHE[key] = None
+                return None
+            with open(os.path.join(td, files[0]), encoding="utf-8") as fh:
+                _JSON_CACHE[key] = json.load(fh)
+    # A COPY EVERY TIME, because callers mutate what they get: `apply_defaults` writes the
+    # frontmatter's defaults onto every statement in place. Before memoising, each caller held
+    # its own freshly-parsed document and could not see another's edits; handing out the cached
+    # object would quietly make the second caller's view depend on what the first one did.
+    return copy.deepcopy(_JSON_CACHE[key])
 
 
 def coverage_report(cli, path, source_root=None):
@@ -138,12 +201,19 @@ def coverage_report(cli, path, source_root=None):
           + (f", {have_sec - len(pinned)} narrowed by a section"
              if have_sec > len(pinned) else ""))
     if not have_ch:
+        finding("provenance-coverage", "!",
+                "no claim cites a chapter, so the map cannot be placed in any text: the "
+                "exposition-order view and the Order tab will both be unavailable",
+                fix='add a `defaults:` block to the frontmatter with chapter: "source/<file>.md"')
         print("      ! no claim can be placed in a text. The exposition-order view and the")
         print("        Order tab will both be unavailable. Add {chapter: \"...\", "
               "section: \"...\"}")
         print("        as you reconstruct -- retro-fitting it means re-reading the source.")
     elif have_ch < n:
         missing = [t for t, r in merged.items() if not r["data"].get("chapter")]
+        for t in missing:
+            finding("provenance-coverage", "!",
+                    "claim cites no chapter and will sit in the no-position lane", title=t)
         print(f"      ! {len(missing)} claims carry no chapter and will sit in the "
               f"no-position lane:")
         for t in missing[:8]:
@@ -340,6 +410,15 @@ def fidelity_report(cli, path):
         print(f"      ! {n} departure{'' if n == 1 else 's'} from the text "
               f"give{'s' if n == 1 else ''} no `warrant` -- the one-line")
         print("        reason the reading leaves what the text actually says:")
+        # ONE LINE EACH, and the vocabulary hoisted out of them. Nine claims missing a warrant
+        # is the common case, and repeating the seven permitted values nine times is most of
+        # what the caller would be charged for reading the answer.
+        VOCABULARY["warrant"] = sorted(prov.WARRANTS)
+        for u in unwarranted:
+            finding("warrant", "!",
+                    f"marked `{u['fidelity']}` -- a departure from the text -- but gives no "
+                    f"`warrant` for it",
+                    title=u["title"], fidelity=u["fidelity"], fix="add a `warrant:`")
         for u in unwarranted[:10]:
             tail = "" if u["note"] else "   (no note either)"
             print(f"           {u['fidelity']:<14} {u['title'][:40]:42}{tail}".rstrip())
@@ -456,6 +535,15 @@ def provenance_report(cli, path, source_root, fix=None):
     for q in quotes:
         if q["status"] == "exact":
             continue
+        # THE FIX FIRST, WHERE THERE IS ONE. A quotation found verbatim in another chapter is
+        # not a misquotation at all -- it is a stale path -- and saying so turns a round of
+        # "re-read the source and re-quote" into a one-word edit.
+        finding("quotation", "!",
+                f"quotation does not verify against the source ({q['status']})",
+                title=q["title"], quote=q["quote"], chapter=q.get("chapter"),
+                detail=q.get("detail"),
+                fix=(f'chapter: "{q["moved_to"]}"' if q.get("moved_to") else None),
+                found_in=q.get("moved_to"), found_line=q.get("moved_line"))
         print(f"      ! [{q['status']}] {q['title']}")
         print(f"           \u201c{q['quote'][:74]}\u201d")
         print(f"           cites {q['chapter']}")
@@ -655,7 +743,13 @@ def provenance_report(cli, path, source_root, fix=None):
                   f"stated {g['stated']}/{g['total']}, first used {g['first_used']}")
 
 
-def main():
+def _parse_args():
+    """Read the command line, and serve `--derive-fidelity` if that is all that was wanted.
+
+    Returns (args, cli, path), or (None, None, None) when the run is already finished --
+    `--derive-fidelity` is a service for the viewer build, not a report, and answers on stdout
+    in its own format.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("file")
     ap.add_argument("--cli")
@@ -676,7 +770,26 @@ def main():
                     help="the manuscript folder. Enables the provenance checks: verifies every "
                          "quotation against the source it cites, and reports how far each "
                          "claim's support sits from the claim in the text.")
+    # ---- the two modes the check-and-fix loop runs in --------------------- #
+    ap.add_argument("--format", dest="fmt", choices=("text", "json"), default="text",
+                    help="`json` prints the FAULTS ONLY, structured, with a location and a "
+                         "suggested fix on each -- for a caller that is going to edit the file "
+                         "rather than read a report. Implies --only-problems.")
+    ap.add_argument("--only-problems", action="store_true",
+                    help="drop the census sections (apex, sections, tags, selection modes, "
+                         "debt, contribution) and print just what is wrong. These are what a "
+                         "second, third and fourth pass over one file pay for repeatedly.")
+    ap.add_argument("--selection-modes", dest="modes", action="store_true", default=None,
+                    help="count the nodes surviving each statement-selection mode. Six more "
+                         "CLI runs, about 2.8s, and nothing in it can fail -- so it is on for "
+                         "a plain run and off whenever the output is being consumed.")
+    ap.add_argument("--no-selection-modes", dest="modes", action="store_false")
     a = ap.parse_args()
+    if a.fmt == "json":
+        a.only_problems = True
+    if a.modes is None:
+        a.modes = not a.only_problems
+    a.quiet = a.only_problems or a.fmt == "json"
     cli = find_cli(a.cli)
     path = os.path.abspath(a.file)
 
@@ -688,13 +801,13 @@ def main():
     if a.derive_fidelity:
         if not a.source_root:
             print("{}")
-            return
+            return None, None, None
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import argdown_provenance as prov
         doc = export_json(cli, path)
         if not doc:
             print("{}")
-            return
+            return None, None, None
         prov.apply_defaults(doc, prov.read_frontmatter(path))
         root = os.path.abspath(os.path.expanduser(a.source_root))
         got = prov.derived_quotation(doc, root)
@@ -711,16 +824,30 @@ def main():
             elif verbatim is False:
                 out[title] = "paraphrase"
         print(json.dumps(out))
-        return
+        return None, None, None
 
+    return a, cli, path
+
+def _report(cli, path, a):
+    """The report itself. Returns a process exit code.
+
+    SPLIT OUT OF `main` so the whole thing can be run with its prose sent nowhere. `--format
+    json` and `--only-problems` still need every check to RUN -- that is where the faults are
+    detected -- and only the census prose is unwanted, so redirecting is both simpler and
+    safer than threading a `quiet` flag through fifty print sites and getting one wrong.
+    """
     print(f"== {os.path.basename(path)}")
 
     # ---- 1. parse -------------------------------------------------------- #
     r = run(cli, "map", path, "--format", "dot", "--stdout")
     if r.returncode != 0:
+        # THE PARSER'S OWN WORDS, not a summary of them. It names the line, and a caller about
+        # to edit the file needs that far more than it needs our gloss on it.
+        finding("parse", "!", "the file does not parse",
+                detail=ANSI.sub("", (r.stderr or r.stdout)).strip()[:1200])
         print("\nFAILED TO PARSE\n")
         print(r.stderr or r.stdout)
-        sys.exit(1)
+        return 1
     dot = r.stdout
     nodes, kinds, edges, clusters = parse_dot(dot)
     print(f"   parses OK -- {len(nodes)} nodes "
@@ -739,6 +866,10 @@ def main():
     if isolated:
         print(f"\n   DISCONNECTED ({len(isolated)}) -- attach or delete each:")
         for t in isolated:
+            finding("disconnected", "!",
+                    "claim is wired to nothing: it neither supports nor is supported",
+                    title=t[:160],
+                    fix="attach it with +/- to the claim it bears on, or delete it")
             print(f"      ! {t[:96]}")
     else:
         print("\n   DISCONNECTED: none")
@@ -753,6 +884,11 @@ def main():
     if hits:
         print(f"\n   SYMBOL SHORTCODES ({len(hits)}) -- Argdown rewrites these silently:")
         for lineno, code, sym, snippet in hits:
+            finding("symbol-shortcode", "!",
+                    f"`{code}` is rewritten to `{sym}` by the parser, which breaks every "
+                    f"selectedSections and folded= reference to this heading",
+                    line=lineno, text=snippet,
+                    fix=f"remove or space out the `{code}` so it is not read as a shortcode")
             print(f"      ! line {lineno}: {code} -> {sym}   {snippet}")
     else:
         print("   SYMBOL SHORTCODES: none")
@@ -769,6 +905,10 @@ def main():
         print("      inference line SILENTLY eats the next statement as a rule name.")
         print("      If these were meant as inference lines, write ----- instead.")
         for i, l in lone:
+            finding("lone-dashes", "?",
+                    "a bare `--` opens an EXPANDED inference and silently eats the next "
+                    "statement as its rule name; a deliberate pair is fine",
+                    line=i, fix="if this was meant as an inference line, write ----- instead")
             print(f"      ? line {i}")
     else:
         print("   LONE `--`: none")
@@ -780,15 +920,19 @@ def main():
 
     # ---- 4. selection modes ---------------------------------------------- #
     has_selection = re.search(r"^selection:", text, re.M) is not None
-    print("\n   SELECTION MODES (node counts):")
-    if has_selection:
-        print("      ! the frontmatter has a `selection:` block, which OVERRIDES")
-        print("        --statement-selection; the counts below will all be equal.")
-    for m in MODES:
-        rr = run(cli, "map", path, "--format", "dot", "--stdout",
-                 "--statement-selection", m)
-        n = len(re.findall(r"^\s*n\d+ \[", rr.stdout, re.M)) if rr.returncode == 0 else -1
-        print(f"      {m:<30} {n}")
+    # SIX MORE PROCESS SPAWNS, ~2.8s of a ~4s run, and a census rather than a check: nothing in
+    # it can come back wrong. So it is skipped whenever the output is being consumed rather than
+    # read -- which is every round of a fix loop.
+    if a.modes:
+        print("\n   SELECTION MODES (node counts):")
+        if has_selection:
+            print("      ! the frontmatter has a `selection:` block, which OVERRIDES")
+            print("        --statement-selection; the counts below will all be equal.")
+        for m in MODES:
+            rr = run(cli, "map", path, "--format", "dot", "--stdout",
+                     "--statement-selection", m)
+            n = len(re.findall(r"^\s*n\d+ \[", rr.stdout, re.M)) if rr.returncode == 0 else -1
+            print(f"      {m:<30} {n}")
 
     # ---- 5. tag census ---------------------------------------------------- #
     tags = Counter(re.findall(r"(?<!\S)#([A-Za-z][\w-]*)", text))
@@ -841,6 +985,47 @@ def main():
             print("      (fewer relations than the map has edges is EXPECTED: the JSON")
             print("       omits edges implied by a premise-conclusion structure.)")
 
+
+def main():
+    a, cli, path = _parse_args()
+    if a is None:
+        return
+
+    # ---- the report, with its prose sent nowhere when nobody asked for prose ---- #
+    sink = io.StringIO() if a.quiet else None
+    try:
+        if sink is not None:
+            with contextlib.redirect_stdout(sink):
+                code = _report(cli, path, a)
+        else:
+            code = _report(cli, path, a)
+    except Exception:
+        # A CRASH MUST NOT SWALLOW THE REPORT. Anything already written explains how far the
+        # run got, and in json mode it is the only trace there is.
+        if sink is not None:
+            sys.stdout.write(sink.getvalue())
+        raise
+
+    if a.fmt == "json":
+        print(json.dumps({"file": os.path.basename(path),
+                          "ok": not any(f["severity"] == "!" for f in FINDINGS),
+                          "findings": FINDINGS,
+                          **({"vocabulary": VOCABULARY} if VOCABULARY else {})},
+                         indent=2, ensure_ascii=False))
+    elif a.quiet:
+        print(f"== {os.path.basename(path)}")
+        if not FINDINGS:
+            print("   nothing to fix.")
+        for f in FINDINGS:
+            where = f.get("title") or (f"line {f['line']}" if f.get("line") else "")
+            print(f"   {f['severity']} [{f['check']}] {where}".rstrip())
+            print(f"       {f['message']}")
+            if f.get("fix"):
+                print(f"       fix: {f['fix']}")
+        for name, values in sorted(VOCABULARY.items()):
+            print(f"   {name} must be one of: {', '.join(values)}")
+    if code:
+        sys.exit(code)
 
 if __name__ == "__main__":
     main()
