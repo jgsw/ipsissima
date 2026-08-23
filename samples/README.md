@@ -32,6 +32,7 @@ openly licensed instead.
 |---|---|---|
 | **Carroll**, "What the Tortoise Said to Achilles" (1895) | 20 claims, 3 pages | public domain |
 | **Darwin**, natural selection (*Origin*, p. 168) | 22 claims, 2 paragraphs | public domain |
+| **Prescott-Couch**, "The Philosopher as Reverse-Engineer" (2024) | 36 claims, 17 pages | CC-BY 4.0 |
 | **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 48 claims, 9 pages | CC-BY 4.0 |
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 37 claims, 28 pages | Creative Commons, by the author of Ipsissima |
 
@@ -49,6 +50,11 @@ then seven ways out enumerated and closed one by one. It is the best thing here 
 want to see what "elimination of alternatives" looks like drawn, and the only sample whose source
 is a modern two-column journal PDF — so it is also what the converter's column and heading
 detection is tested against.
+
+**Prescott-Couch** is the one built from **two sources at once** — the publisher's HTML for the
+structure, the PDF for the page numbers, because each has exactly what the other lacks. It is
+also the only sample whose argument is a *critical notice*, so its map has two apexes: the view
+being examined, and the critic's own conclusion.
 
 **Wilson** is the long one: four contentions rather than a single thesis, themes that recur and
 modulate. It is what the layout and folding behaviour is hardest on, and what the exposition

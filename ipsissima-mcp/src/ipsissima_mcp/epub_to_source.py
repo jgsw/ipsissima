@@ -108,6 +108,19 @@ BARE_ANCHOR = re.compile(r"\[\]\{#[^}]*\}")
 FENCE = re.compile(r"^:{3,}.*$", re.M)
 #: A pandoc footnote reference: `^[1](21_notes.xhtml#id_507)^`, sometimes with an anchor inside.
 FOOTREF = re.compile(r"\^\[(?:\[\]\{#[^}]*\})?([0-9]{1,3})\]\([^)]*\)\^")
+#: The same thing as a publisher's saved page writes it: `[^6^](javascript:void(0))`. The link
+#: goes nowhere -- the page opened the note with script -- so what survives conversion is a
+#: reference to a destination that does not exist, sitting in the middle of a sentence.
+#: `javascript:void(0)` HAS A BRACKET IN IT, which is the whole difficulty: a naive `[^)]*`
+#: stops at the inner one and leaves the outer `)` stranded in the prose -- `[^1])`. The href is
+#: matched as a balanced pair or as a plain run without brackets, never as a guess.
+_JSHREF = r"\(javascript:(?:[^()]*\([^()]*\))*[^()]*\)"
+FOOTREF_JS = re.compile(r"\[\^([0-9]{1,3})\^?\]" + _JSHREF)
+#: Any other dead in-page link: `[*The Practical Origins of Ideas*](javascript:void(0))`. The
+#: TEXT is the author's and must survive; the link is an artefact of the page's own scripting.
+#: Left in, both defeat quotation matching -- a claim quoting across one of these can never be
+#: verified against the source, and the Manuscript view shows the reader a URL that does nothing.
+DEAD_LINK = re.compile(r"\[([^\]]*)\]" + _JSHREF)
 
 
 def _pandoc_markdown(xhtml_bytes, cwd):
@@ -157,6 +170,8 @@ def _tidy(md):
         lifted.append(line)
     md = "\n".join(lifted)
     md = FOOTREF.sub(lambda m: f"[^{m.group(1)}]", md)
+    md = FOOTREF_JS.sub(lambda m: f"[^{m.group(1)}]", md)
+    md = DEAD_LINK.sub(lambda m: m.group(1), md)
     # A bold line carrying a heading class IS a heading -- publishers mark chapter titles this way
     # constantly, and one that arrives as body text takes its whole section with it.
     # THE FENCES GO FIRST. pandoc opens a `<section>` as `:::::: {.section .chapter}`, and with

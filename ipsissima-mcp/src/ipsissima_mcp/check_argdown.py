@@ -258,6 +258,24 @@ def quotation_context_report(prov, doc, source_root, quotes):
     print("      Verbatim is not the same as faithful: what a span was cut away from cannot be")
     print("      checked by matching it. These are facts about the cut, not verdicts.")
     for c in sorted(flagged, key=lambda c: c["title"]):
+        # STERN'S CASES, IN THE MACHINE-READABLE FORM TOO. These are the findings this project
+        # most wants a reader to act on -- a quotation can be verbatim and still misreport --
+        # and reporting them only in the prose meant `--format json` came back `ok` on a map
+        # carrying four of them.
+        bits = []
+        if c["dropped"]:
+            bits.append(f'a leading "{c["dropped"]}" sits just outside the quotation')
+        if c["continues"]:
+            bits.append(f'the sentence continues against it: "{c["continues"][:90]}"')
+        if c["gap"]:
+            bits.append(f"the elision bridges {c['gap']} characters of source")
+        if c["absent_terms"]:
+            bits.append("marked `quotation`, but these words of the claim are not in the cited "
+                        "file: " + ", ".join(c["absent_terms"][:5]))
+        finding("quotation-context", "!", "; ".join(bits), title=c["title"],
+                sentence=c["sentence"][:200],
+                fix=("widen the quotation to take in what it was cut away from, or mark the "
+                     "claim `paraphrase` and say in a `note:` what was left out"))
         print(f"      ! [{c['title']}]")
         if c["dropped"]:
             print(f"           a leading \u201c{c['dropped']}\u201d sits just OUTSIDE the "
@@ -625,6 +643,12 @@ def provenance_report(cli, path, source_root, fix=None):
               f"source.")
         print("        The `source:` field may hold a real quotation; the claim itself is a")
         print("        summary, and a solid border tells a reader otherwise. Mark `paraphrase`:")
+        for t in over:
+            finding("fidelity", "!",
+                    "marked `quotation`, but the claim's own text is not in the source -- the "
+                    "`source:` field may hold a real quotation while the claim itself is a "
+                    "summary, and the map draws a solid border that tells a reader otherwise",
+                    title=t, fix="mark it `paraphrase` or `compression`")
         for t in over[:10]:
             print(f"           {t[:64]}")
         if len(over) > 10:
@@ -707,6 +731,12 @@ def provenance_report(cli, path, source_root, fix=None):
               f"it is usually")
         print(f"        material whose place is not settled yet. Largest first, by how much "
               f"rests on them:")
+        for t in inert:
+            finding("inert", "?",
+                    "reaches no contention by any route -- it neither supports one nor objects "
+                    "to one, so nothing in the argument depends on it",
+                    title=t,
+                    fix="attach it to what it bears on, or delete it")
         for t in inert[:12]:
             p = pos.get(t)
             where = (f"{os.path.basename(p['chapter'])[:34]} line {p['line']}"
