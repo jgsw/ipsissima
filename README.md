@@ -101,7 +101,9 @@ actually does.
 
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
 
-**One known failure.** `test_fold_invariants` reports three claims in the Carroll sample drawn with
-no visible connection, in the exposition arrangement, under some fold states. It is a real defect
-in the renderer, it predates this repository, and it is left failing rather than quietly weakened.
-See `KNOWN-ISSUES.md`.
+**One known failure.** `test_fold_invariants` reports claims drawn with no visible connection, in
+the exposition arrangement, under some fold states — three in the Carroll sample and one in
+Prescott-Couch. It is a real defect in the renderer, it predates this repository, and it is left
+failing rather than quietly weakened. `KNOWN-ISSUES.md` has the diagnosis, a one-click
+reproducer, and an account of a fix that was tried and reverted because it traded this fault for
+a worse one.
