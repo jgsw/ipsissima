@@ -15,6 +15,7 @@ toolchain treats as unacceptable, because there is nothing for a reader to notic
     that took 8,407 words down to 5,864, and what went was the footnotes — which in philosophy
     carry argument, are referred to from the body, and are exactly what a claim may need to cite.
 """
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -97,6 +98,50 @@ with tempfile.TemporaryDirectory() as td:
     md, rep = html_to_source.convert(str(thin))
     check("a paywall notice is refused, not half-converted", md, None)
     check("  and says why", "landing page" in rep.get("why", ""), True)
+
+print("\nthe PDF's page numbers on the snapshot's text")
+# THE COMBINATION THE ZOTERO STORY RESTS ON: structure from the publisher's HTML, pagination
+# from the PDF, because each has exactly what the other lacks. Tested without a PDF by driving
+# the placement directly — building a real PDF here would test pymupdf, not this.
+import paginate                                                          # noqa: E402
+
+PAGES = [
+    (369, "suggested that rather than asking what knowledge is we should ask what the "
+          "concept does for us".split()),
+    (370, "different ways by thinkers such as hume nietzsche and fricker most recently".split()),
+    (999, "these words appear nowhere in the article at all not one of them".split()),
+]
+BODY = "\n".join([
+    "# A Paper",
+    "",
+    "Craig suggested that rather than asking what knowledge is we should ask what the concept "
+    "does for us and why we have it.",
+    "",
+    "The idea has been taken up in different ways by thinkers such as Hume, Nietzsche and "
+    "Fricker most recently.",
+    "",
+])
+_real = paginate.page_openings
+paginate.page_openings = lambda _pdf: (PAGES, dict(printed_numbers=3, offset=368, outliers=[],
+                                                   sheets=4))
+try:
+    out, rep = paginate.paginate(BODY, "unused.pdf")
+finally:
+    paginate.page_openings = _real
+
+check("a page whose opening is found gets a marker", 369 in rep["placed"], True)
+check("  and so does the next", 370 in rep["placed"], True)
+check("a page that cannot be found is REFUSED, not guessed", rep["placed"].count(999), 0)
+check("  and named, so the gap can be checked", rep["missed"], [999])
+check("the marker is the one the viewer already reads",
+      any(l.strip() == "<!-- p.369 begins here -->" for l in out.splitlines()), True)
+check("no line of the text is lost",
+      [l for l in out.splitlines() if l.strip() and not l.startswith("<!-- p.")],
+      [l for l in BODY.splitlines() if l.strip()])
+check("markers are in page order down the file",
+      [int(re.search(r"p\.(\d+)", l).group(1)) for l in out.splitlines() if l.startswith("<!-- p.")],
+      sorted(int(re.search(r"p\.(\d+)", l).group(1))
+             for l in out.splitlines() if l.startswith("<!-- p."))) 
 
 print()
 if fails:

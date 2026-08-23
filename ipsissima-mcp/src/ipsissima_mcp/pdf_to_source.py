@@ -347,10 +347,30 @@ def printed_numbers(sheets):
     for i, (lines, height, _w) in enumerate(sheets):
         for l in lines:
             t = l["text"].strip()
-            if re.fullmatch(r"\d{1,4}", t) and (l["y0"] < height * 0.14
-                                                or l["y0"] > height * 0.88):
+            if not (l["y0"] < height * 0.14 or l["y0"] > height * 0.88):
+                continue
+            if re.fullmatch(r"\d{1,4}", t):
                 found[i] = int(t)
                 break
+            # A NUMBER INSIDE THE RUNNING HEAD, which is how a great many journals set it:
+            # `book symposium  |  369` on a recto, `370  |  book symposium` on a verso. Requiring
+            # a line of nothing but digits missed every page of an Analysis article -- seventeen
+            # sheets, no numbers, and the pagination silently unavailable.
+            #
+            # Only at the very start or the very end of the line, and only where what remains is
+            # short: that is a running head. `Table 3 shows that 47 of the` is not, and neither
+            # is a section number sitting in a heading further down the page, which the band
+            # check has already excluded.
+            m = re.fullmatch(r"(\d{1,4})\s*[|·•—–-]?\s*(.{0,48}?)|(.{0,48}?)\s*[|·•—–-]?\s*(\d{1,4})",
+                             t)
+            if m and any(m.groups()):
+                num = m.group(1) or m.group(4)
+                rest = (m.group(2) if m.group(1) else m.group(3)) or ""
+                # A bare year, or a lone number already handled above, is not what this is for;
+                # and a "running head" with digits in it is a table row.
+                if num and not re.search(r"\d", rest):
+                    found[i] = int(num)
+                    break
     return found
 
 

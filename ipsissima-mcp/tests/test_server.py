@@ -136,7 +136,8 @@ def test_server(d):
     async def body(s):
         tools = {t.name for t in (await s.list_tools()).tools}
         for name in ("plan_job", "extract_text", "assess_pdf", "page_images",
-                     "repair_source", "check_reconstruction", "split_manuscript"):
+                     "repair_source", "add_page_numbers", "check_reconstruction",
+                     "split_manuscript"):
             check_true(f"tool `{name}` is offered", name in tools)
 
         prompts = {p.name for p in (await s.list_prompts()).prompts}

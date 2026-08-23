@@ -157,7 +157,10 @@ Everything above works with no Zotero installed. If you do have it, the server n
 
 - build maps from items in your library, found by DOI, item key or title;
 - use an item's **HTML snapshot** for the text and its **PDF for the page numbers** — the best
-  combination there is, and the reason a snapshot is worth keeping;
+  combination there is, and the reason a snapshot is worth keeping. Each has exactly what the
+  other lacks: a web page has no pages, and a PDF has no idea what a heading is. The page number
+  is *read off each sheet*, not counted from one, because a paper whose front matter says it
+  starts at 511 can print 514 on its first sheet;
 - find snapshots you had forgotten were there, which read far better than the PDF beside them.
 
 Nothing is ever written into your Zotero storage.
@@ -173,6 +176,7 @@ Nothing is ever written into your Zotero storage.
 | `assess_pdf` | how hard is this PDF, and does a machine-readable version exist? |
 | `page_images` | crops of damaged passages, for the cases a converter cannot do |
 | `repair_source` | apply corrections read off those crops |
+| `add_page_numbers` | the PDF's pagination onto text taken from the snapshot |
 | `check_reconstruction` | validity, provenance and fidelity — faults with fixes, not a report |
 | `split_manuscript` | a one-file book into chapters plus a project file |
 | `zotero_lookup` | only when a library is present |

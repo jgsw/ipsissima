@@ -446,6 +446,51 @@ def repair_source(path: str, repairs: list[dict[str, Any]], dry_run: bool = Fals
 
 @server.tool(
     structured_output=True,
+    title="Add the PDF's page numbers",
+    description=(
+        "Put a PDF's page numbers onto text extracted from a better source. THE COMBINATION "
+        "WORTH ASKING FOR when an article exists twice — the publisher's HTML snapshot has the "
+        "structure (headings are headings because the document says so), and the PDF has the "
+        "page numbers, which are what a reader cites.\n\n"
+        "Inserts `<!-- p.N begins here -->` markers, which is what makes Ipsissima's Manuscript "
+        "view show page numbers. The number is READ off each sheet, not counted from one: a "
+        "paper starting at p. 511 by its own front matter can print 514 on its first sheet, and "
+        "counting then puts every quotation three pages out.\n\n"
+        "A page whose opening words cannot be found in the text gets no marker and is named in "
+        "the report. That is deliberate — a marker placed by hope would pin a quotation to a "
+        "page it is not on."),
+)
+def add_page_numbers(markdown_path: str, pdf_path: str,
+                     dry_run: bool = False) -> dict[str, Any]:
+    """
+    Args:
+        markdown_path: the extracted Markdown to add markers to.
+        pdf_path: the PDF of the same article, for its pagination.
+        dry_run: report what would be placed and write nothing.
+    """
+    from ipsissima_mcp import paginate as pg
+    md_p, pdf_p = Path(markdown_path).expanduser(), Path(pdf_path).expanduser()
+    for f in (md_p, pdf_p):
+        if not f.exists():
+            return dict(ok=False, error=f"no such file: {f}")
+    out, rep = pg.paginate(md_p.read_text(encoding="utf-8"), str(pdf_p))
+    if not dry_run and rep["placed"]:
+        md_p.write_text(out, encoding="utf-8")
+    return dict(ok=True, dry_run=dry_run,
+                pages_marked=len(rep["placed"]),
+                first_page=rep["placed"][0] if rep["placed"] else None,
+                last_page=rep["placed"][-1] if rep["placed"] else None,
+                unplaced=rep["missed"], numbering_offset=rep["offset"],
+                sheets=rep["sheets"], numbers_read=rep["printed_numbers"],
+                disagreeing_sheets=rep["outliers"],
+                wrote=str(md_p) if rep["placed"] and not dry_run else None,
+                note=("markers land at the paragraph boundary nearest each page break: the "
+                      "structured text has no page concept, so that is the finest resolution "
+                      "there is"))
+
+
+@server.tool(
+    structured_output=True,
     title="Check a reconstruction",
     description=(
         "Validate an .argdown file and check it against the text it cites. Returns FAULTS ONLY, "

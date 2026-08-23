@@ -38,6 +38,7 @@ ipsissima-mcp = "ipsissima_mcp.server:main"
 ipsissima-ingest = "ipsissima_mcp.ingest:main"
 ipsissima-check = "ipsissima_mcp.check_argdown:main"
 ipsissima-split = "ipsissima_mcp.split_manuscript:main"
+ipsissima-paginate = "ipsissima_mcp.paginate:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
