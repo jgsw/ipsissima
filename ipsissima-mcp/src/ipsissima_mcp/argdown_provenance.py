@@ -127,14 +127,39 @@ def find_quote(quote, source_text):
     if spans:
         return ("exact", line_of[spans[0][0]], None)
 
-    # Not found. Is something close to it present? Slide a window the length of the longest
-    # part and keep the best match, so drift is reported as drift rather than fabrication.
+    # Not found. Is something close to it present? Compare a window the length of the longest
+    # part against the source, so drift is reported as drift rather than fabrication.
+    #
+    # ANCHORED, NOT SLID. This used to step through the file by a QUARTER of the probe's length,
+    # for speed, and that made the answer depend on where the passage happened to fall: adding one
+    # line to a source file's front matter shifts every offset, and a claim could go from `near`
+    # to `absent` -- from `quotation` to `paraphrase` in the report, and in the file under
+    # `--fix` -- because of a line nobody thought was part of the text. Found by adding a licence
+    # note to a sample and watching a fidelity marker change.
+    #
+    # So the windows are chosen by CONTENT instead. Take the probe's most distinctive words, look
+    # up where they occur, and compare a window around each. That is alignment-independent, and on
+    # a real source it is also far less work than the slide was.
     probe = max(parts, key=len)
+    lo_norm, lo_probe = norm.lower(), probe.lower()
+    words = sorted({w for w in re.findall(r"[a-z]{5,}", lo_probe)}, key=len, reverse=True)[:6]
+    starts = set()
+    for w in words:
+        at = lo_norm.find(w)
+        while at >= 0 and len(starts) < 400:
+            # Centre the window on the word rather than starting at it: the anchor can be
+            # anywhere in the quotation, and a window starting at it would miss everything before.
+            starts.add(max(0, at - len(probe) // 2))
+            at = lo_norm.find(w, at + 1)
+    if not starts:
+        # No distinctive word to anchor on -- a very short or unusual probe. Fall back to a
+        # sweep, and a fine one: correctness matters more here than the milliseconds.
+        step = max(1, len(probe) // 8)
+        starts = set(range(0, max(1, len(norm) - len(probe)), step))
     best, best_at = 0.0, None
-    step = max(1, len(probe) // 4)
-    for i in range(0, max(1, len(norm) - len(probe)), step):
-        window = norm[i:i + len(probe)]
-        r = difflib.SequenceMatcher(None, probe.lower(), window.lower()).ratio()
+    for i in sorted(starts):
+        window = lo_norm[i:i + len(probe)]
+        r = difflib.SequenceMatcher(None, lo_probe, window).ratio()
         if r > best:
             best, best_at = r, i
     if best >= 0.75 and best_at is not None:

@@ -174,5 +174,41 @@ check("  a NEAR match elsewhere is not reported as a move",
 check("  and an absent quotation stays absent",
       prov.locate_elsewhere("a sentence in no file at all", _d, "source/one.md", _order), None)
 
+# ---------------------------------------------------------------------------------------- #
+# A CLAIM THAT ELIDES A PARENTHESIS IS STILL THE AUTHOR'S WORDS.
+#
+# Taken from the Wilson sample, which is where the fault showed. The claim is the source's
+# sentence with `, like Williams,` and a 90-character parenthetical dropped — a near quotation by
+# any reading. `find_quote` used to step through the source by a QUARTER of the probe's length,
+# so the best window it ever compared was misaligned by up to a fifth of the sentence; this one
+# scored 74.9% against the 75% threshold and came back `absent`. The map then reported the claim
+# as "marked quotation but not in the source", and `--fix` would have rewritten a correct marker.
+#
+# Two things were wrong with that, and the second is worse. It was WRONG — the words are plainly
+# there. And it was UNSTABLE: because the score depended on alignment, adding a line to the file's
+# front matter changed the verdict. A licence note at the top of a source file could rewrite a
+# fidelity marker two hundred lines below it.
+print("\nnear quotations, and alignment")
+_SENT = ("If, like Williams, we are persuaded that we have ethical freedom (and that hence that "
+         "the point of ethics is not convergence on a set of unchanging moral facts), we may "
+         "come to think that it is fecundity of response, rather than homogeneity, that is the "
+         "sign of a good case.")
+_CLAIM = ("If we are persuaded that we have ethical freedom, we may come to think that it is "
+          "fecundity of response, rather than homogeneity, that is the sign of a good case.")
+_FILL = "Some quite unremarkable discussion of other matters entirely. " * 30
+_body = "---\ntitle: \"A paper\"\n---\n\n" + _FILL + "\n\n" + _SENT + "\n\n" + _FILL
+
+check("a claim that elides a parenthesis is found in the source",
+      prov.find_quote(_CLAIM, _body)[0], "near")
+# Lines added above it stand in for a licence note, or any other front-matter edit.
+check("  and stays found however many lines precede it",
+      sorted({prov.find_quote(_CLAIM, ("a note about the licence\n" * n) + _body)[0]
+              for n in range(0, 14)}), ["near"])
+# A sentence that is genuinely not there must still come back absent: the point is accuracy, not
+# leniency, and a search that finds everything is worth nothing.
+check("  while a claim that is NOT in the source is still absent",
+      prov.find_quote("The author holds that moral facts are fixed by convention alone and "
+                      "that no amount of reflection could revise them.", _body)[0], "absent")
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

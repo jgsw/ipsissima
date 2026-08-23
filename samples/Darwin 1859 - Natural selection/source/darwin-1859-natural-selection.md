@@ -2,7 +2,15 @@
 title: "Natural selection (passage)"
 author: "Charles Darwin"
 source: "The Origin of Species, Penguin edition, p. 168 (pinpoint as supplied by the author)"
+rights: "public domain"
 ---
+
+<!-- Charles Darwin, On the Origin of Species (1859), p. 168. PUBLIC DOMAIN: Darwin died in 1882.
+     Transcribed from the text rather than from anyone's typesetting of it.
+
+     THE NOTE TRAVELS WITH THE TEXT. Ipsissima can save a reconstruction and its manuscript as one
+     file and send it to somebody, at which point this file is the only thing saying where the
+     words came from. A README left behind on disk is not attribution. -->
 
 <!-- TRANSCRIBED PASSAGE - NOT A CONVERTED SCAN, AND NOT CHECKED AGAINST THE VOLUME.
      Made by make_source.py from the passage as supplied by the author, who transcribed it

@@ -1,3 +1,11 @@
+<!-- Lewis Carroll, "What the Tortoise Said to Achilles", Mind 4.14 (1895), pp. 278-280.
+     PUBLIC DOMAIN: Carroll died in 1898. The words below carry no publisher's rights; the SCAN
+     they were read from is Oxford University Press's and is not distributed with them.
+
+     THE NOTE TRAVELS WITH THE TEXT. Ipsissima can save a reconstruction and its manuscript as one
+     file and send it to somebody, at which point this file is the only thing saying where the
+     words came from. A README left behind on disk is not attribution. -->
+
 <!-- CONVERTED TEXT - NOT THE PUBLISHED DOCUMENT.
      Made by ingest.py from CARROLL - 1995 - WHAT THE TORTOISE SAID TO ACHILLES.pdf.
      No heading was inserted; any `#` below is the document's own, or was

@@ -1,5 +1,13 @@
 # Carroll, "What the Tortoise Said to Achilles" (1895)
 
+> Carroll, L. (1895) 'What the Tortoise Said to Achilles', *Mind*, 4(14), pp. 278-280.
+>
+> **Public domain.** Carroll died in 1898; the 1895 article is long out of copyright, and the
+> converted text in `source/` carries no publisher's rights. **The PDF it was made from is a
+> different matter** and is not in this repository: the scan and typesetting of the 1995 *Mind*
+> reprint are Oxford University Press's, whatever the age of the words in it. That distinction
+> is why `make_source.py` takes a path rather than shipping the file.
+
 *Mind* 4.14 (1895), reprinted *Mind* 104.416 (October 1995), pp. 691–693. Three pages, 1,443
 words, entirely dialogue. Open **`carroll-tortoise-achilles (map).html`**.
 

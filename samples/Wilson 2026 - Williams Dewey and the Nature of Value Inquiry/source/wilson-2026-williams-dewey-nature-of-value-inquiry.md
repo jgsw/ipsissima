@@ -2,7 +2,16 @@
 title: "Williams, Dewey, and the Nature of Value Inquiry"
 author: "James Wilson"
 source: "Philosophy (2026)"
+rights: "open access; included by the author, who is also the author of Ipsissima"
 ---
+
+<!-- James Wilson, "Williams, Dewey, and the Nature of Value Inquiry", Philosophy 101 (2026).
+     Open access, and included here by its author — who is also the author of Ipsissima. The
+     publisher's typesetting is theirs and is not distributed with these words.
+
+     THE NOTE TRAVELS WITH THE TEXT. Ipsissima can save a reconstruction and its manuscript as one
+     file and send it to somebody, at which point this file is the only thing saying where the
+     words came from. A README left behind on disk is not attribution. -->
 
 <!-- CONVERTED TEXT - NOT THE PUBLISHED ARTICLE.
      Made by this folder's convert_source.py from the author's own PDF.

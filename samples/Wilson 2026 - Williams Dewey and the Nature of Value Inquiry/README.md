@@ -1,5 +1,14 @@
 # Wilson, "Williams, Dewey, and the Nature of Value Inquiry" (2026)
 
+> Wilson, J. (2026) 'Williams, Dewey, and the Nature of Value Inquiry', *Philosophy*, 101.
+>
+> **By the author, who is also the author of Ipsissima**, and included here with his permission —
+> which is the whole reason a 28-page paper can be in this folder at all. The article is open
+> access; the converted text in `source/` is redistributable on that footing.
+>
+> The PDF is not in this repository: the publisher's typesetting is theirs, and the licence
+> covers the article rather than their setting of it. `convert_source.py` takes a path.
+
 *Philosophy* 101 (2026), pp. 511–538. Twenty-eight pages, 10,381 words, eight numbered sections.
 Open **`wilson-williams-dewey (map).html`**.
 

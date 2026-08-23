@@ -1,5 +1,12 @@
 # Darwin, natural selection (*Origin of Species*, Penguin edn., p. 168)
 
+> Darwin, C. (1859) *On the Origin of Species*, 1st edn, London: John Murray, p. 168.
+>
+> **Public domain.** Darwin died in 1882 and the first edition is out of copyright everywhere.
+> The passage in `source/` is transcribed from the text, not from anyone's typesetting of it, so
+> nothing here is under a publisher's rights. The reconstruction is this project's, under the
+> repository's own licence.
+
 Open **`darwin-natural-selection (map).html`**.
 
 A passage of about 260 words, supplied by the author with their own two elisions. 22 claims, 3
@@ -106,7 +113,9 @@ python3 make_source.py
 then, from the repo root:
 
 ```bash
-node app/build_argdown_viewer.mjs" "Argdown samples/Darwin 1859 - Natural selection/darwin-natural-selection.argdown" --source-root "Argdown samples/Darwin 1859 - Natural selection"
+node app/build_argdown_viewer.mjs \
+  "samples/Darwin 1859 - Natural selection/darwin-natural-selection.argdown" \
+  --source-root "samples/Darwin 1859 - Natural selection"
 ```
 
 ## Sources
