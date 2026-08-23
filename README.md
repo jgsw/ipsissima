@@ -20,11 +20,13 @@ you can double-click, email, or put on a web page, and to a **desktop applicatio
 Windows and Linux that adds what a web page cannot do: open a `.argdown` by double-clicking it,
 save back in place on any platform, and reload the manuscript when it changes on disk.
 
-**`ipsissima-mcp/` — Ipsissima-MCP.** The other half of the work: turning a document into something a
-reconstruction can cite. It ingests a PDF, EPUB or HTML article — or a list of them — and produces
-the structured Markdown a reconstruction points at, along with the tools that check a finished
-reconstruction against its sources. Today it is a Python package with a command line; an MCP
-server over the same tools is the next step, and the name is there in advance.
+**`ipsissima-mcp/` — Ipsissima-MCP.** The other half of the work: turning a document into
+something a reconstruction can cite. An **MCP server**, so you can ask the assistant you are
+already talking to for an argument map and it does the rest — getting a PDF, EPUB, `.docx` or
+HTML article into structured Markdown with its paragraphs and page numbers intact, and then
+checking the finished reconstruction against its sources word for word. It does not reconstruct
+arguments itself; that judgement belongs to the model, and the instructions for it are served as
+a prompt read off disk. The command line is still there for a one-off.
 
 **`samples/`** — worked reconstructions of real arguments, with the texts they were drawn from.
 

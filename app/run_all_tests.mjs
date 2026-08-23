@@ -37,6 +37,7 @@ const SUITES = [
   ["annotated export (docx/md)", "node", [path.join(HERE, "test_export.mjs")]],
   ["the one-file bundle",        "node", [path.join(HERE, "test_bundle.mjs")]],
   ["the desktop host adapter",   "node", [path.join(HERE, "test_host.mjs")]],
+  ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
   ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],

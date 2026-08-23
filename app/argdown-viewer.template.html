@@ -313,6 +313,15 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
   font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
   max-height:60%;overflow:auto}
 #err.show{display:block}
+/* The external-edit strip. Sits under the pane's own header, in the pane the news is about, and
+   is the panel colour rather than a warning colour: an edit made in another editor is normal,
+   and usually the reader's own doing. */
+#adextern{display:flex;align-items:center;gap:.5rem;padding:.35rem .6rem;
+  border-bottom:1px solid var(--line);background:var(--panel);
+  font-size:11.5px;color:var(--fg-dim)}
+#adextern[hidden]{display:none}
+#adextern .grow{flex:1 1 auto}
+#adextern button{white-space:nowrap}
 footer{flex:0 0 auto;padding:.3rem .9rem;border-top:1px solid var(--line);
   background:var(--panel);color:var(--fg-dim);font-size:11px;
   display:flex;gap:1rem;flex-wrap:wrap}
@@ -606,6 +615,18 @@ body.fs #fsexit{display:inline-flex}
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8v8.6"/><path d="M6.6 8.2 10 11.6l3.4-3.4"/><path d="M3.5 13.2v2.3a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-2.3"/></svg><span>Save</span></button>
         <button class="plain x" data-close="argdown" title="Close">&times;</button>
       </header>
+      <!-- SOMEBODY ELSE CHANGED THIS FILE. A strip rather than a dialog: the event arrives when
+           the operating system says so, which may be mid-sentence, and a modal that steals the
+           keyboard at that moment is worse than the news it carries. With no unsaved edits the
+           file is simply reloaded and this says so; with unsaved edits it asks, and the button
+           that loses work says that it loses work. -->
+      <div id="adextern" hidden>
+        <span id="adexternmsg"></span>
+        <span class="grow"></span>
+        <button class="plain tiny" id="adexternkeep" hidden>Keep my changes</button>
+        <button class="plain tiny" id="adexternload" hidden>Reload — loses your changes</button>
+        <button class="plain x" id="adexternclose" title="Dismiss">&times;</button>
+      </div>
       <div id="adhost"><pre id="src"></pre></div>
     </section>
     <div class="vsplit" id="vsplit1" hidden title="Drag to resize"></div>
@@ -2512,6 +2533,12 @@ async function saveArgdown(){
       }
       await HOST.writeText(target, text);
       HOST_PATH = target;
+      // BEFORE THE WATCHER FIRES. The write we just made will come back as a change event; this
+      // is what stops it being announced to the reader as somebody else's edit.
+      AD_ON_DISK = text;
+      AD_PENDING = null;
+      adExternHide();
+      hostWatchArgdown();          // a Save As moves which file we are watching
       DIRTY = false; markState();
       $("adstate").textContent = "saved";
       setTimeout(markState, 1800);
@@ -3142,7 +3169,10 @@ async function hostLoadDir(dir, prefer){
     showErr("That folder is very large, so only the first few thousand files were read. If a " +
             "chapter is missing from the Manuscript view, open the folder the reconstruction " +
             "actually cites rather than the one above it.");
+  AD_PENDING = null;
+  adExternHide();
   hostWatchManuscript();
+  hostWatchArgdown();
   markState();
 }
 
@@ -3188,6 +3218,106 @@ async function hostReloadChapter(rel){
   $("msnote").textContent = "reloaded from disk";
   setTimeout(function(){ if ($("msnote").textContent === "reloaded from disk") $("msnote").textContent = ""; }, 2400);
 }
+
+/* ---- the .argdown, changed by somebody else ------------------------------------------ #
+ *
+ * THE MANUSCRIPT AND THE RECONSTRUCTION ARE NOT THE SAME CASE, and the difference is what
+ * decides the behaviour. The manuscript is read-only here, so reloading it underneath the
+ * reader can lose nothing and is done silently. The .argdown is the file the editor HOLDS: a
+ * reload can throw away work, so it is announced, and where there is work to lose the reader
+ * chooses.
+ *
+ * THE FAILURE THIS EXISTS TO AVOID is not the external edit — it is our own save. A file
+ * watcher fires on every write including the ones we made, so a naive version announces "edited
+ * externally" every time the reader presses Save. `AD_ON_DISK` is what Ipsissima last knows the
+ * file to contain, set on load and on save, and comparing against it is what tells somebody
+ * else's edit from our own.
+ */
+var AD_ON_DISK = null;      // what we last knew the file on disk to contain
+var UNWATCH_AD = null;
+
+function adExtern(msg, choose){
+  var box = $("adextern");
+  $("adexternmsg").textContent = msg;
+  $("adexternkeep").hidden = !choose;
+  $("adexternload").hidden = !choose;
+  box.hidden = false;
+}
+function adExternHide(){ $("adextern").hidden = true; }
+
+/** Put the file on disk into the editor, without treating it as an edit of the reader's.
+ *
+ *  `setText` sends the CHANGED SPAN rather than the whole document, so the reader's selection
+ *  stays put and one press of undo takes the reload back off — which is the right escape hatch
+ *  for a reload that turns out not to have been wanted.
+ */
+function adAdoptFromDisk(text){
+  AD_ON_DISK = text;
+  if (ED) ED.setText(text); else SOURCE = text;
+  SOURCE = text;
+  DIRTY = false;                       // setText goes through onChange, which sets it
+  markState();
+  var graph = null;
+  try { graph = window.__ARGDOWN_PARSE__ ? window.__ARGDOWN_PARSE__(text) : null; }
+  catch (e) { $("adstate").textContent = "will not parse"; return; }
+  if (graph) { LAST_GOOD = text; MAP_SIG = null; redrawFrom(graph); }
+}
+
+async function hostArgdownChanged(){
+  if (!HOST || !HOST_PATH) return;
+  var text;
+  try { text = await HOST.readText(HOST_PATH); } catch (e) { return; }
+  if (AD_ON_DISK === null) { AD_ON_DISK = text; return; }
+  if (text === AD_ON_DISK) return;                       // our own save, or a touch with no edit
+  var name = HOST.basename(HOST_PATH);
+  if (!DIRTY) {
+    adAdoptFromDisk(text);
+    adExtern(name + " edited externally — reloaded from disk", false);
+    return;
+  }
+  // UNSAVED EDITS ON BOTH SIDES. Nothing is decided here: the two versions are both somebody's
+  // work, and the program is not entitled to pick. The disk text is held until the reader says.
+  AD_PENDING = text;
+  adExtern(name + " edited externally, and you have unsaved changes", true);
+}
+
+/** Watch the open .argdown, having first read it so there is something to compare against.
+ *
+ *  THE BASELINE IS READ FROM DISK rather than taken from the editor, and the difference is not
+ *  pedantry: a BUNDLE carries the manuscript inside the file, so what the editor holds is a
+ *  proper part of what the file contains. Taking the editor's text as the baseline would make
+ *  every bundle report itself as edited by somebody else the moment it was touched.
+ */
+function hostWatchArgdown(){
+  if (UNWATCH_AD) { UNWATCH_AD(); UNWATCH_AD = null; }
+  if (!HOST || !HOST_PATH) return;
+  HOST.readText(HOST_PATH).then(function(text){ AD_ON_DISK = text; },
+                               function(){ AD_ON_DISK = null; });
+  HOST.watch([HOST_PATH], hostArgdownChanged).then(function(stop){ UNWATCH_AD = stop; });
+}
+var AD_PENDING = null;
+
+/* THE READER'S TWO ANSWERS. "Keep my changes" does not resolve the disagreement, it postpones
+ * it: the disk version is recorded as seen so the strip stops nagging about THIS change, and
+ * the next Save writes over it — which is what keeping your changes means. A further edit by
+ * somebody else raises the question again. */
+$("adexternkeep").onclick = function(){
+  if (AD_PENDING !== null) AD_ON_DISK = AD_PENDING;
+  AD_PENDING = null;
+  adExternHide();
+};
+$("adexternload").onclick = function(){
+  if (AD_PENDING === null) { adExternHide(); return; }
+  var text = AD_PENDING;
+  AD_PENDING = null;
+  adAdoptFromDisk(text);
+  adExternHide();
+};
+$("adexternclose").onclick = function(){
+  // Dismissing is NOT an answer. The strip goes away and nothing is decided, so the pending
+  // version is still there to reload from and Save still overwrites.
+  adExternHide();
+};
 
 function hostWatchManuscript(){
   if (UNWATCH) { UNWATCH(); UNWATCH = null; }
