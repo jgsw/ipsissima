@@ -113,8 +113,19 @@ def cut_back_matter(soup):
     return 0
 
 
-def convert(path, keep_back_matter=False):
-    """A saved article page as markdown. Returns (markdown, report)."""
+def convert(path, cut_back_matter_too=False):
+    """A saved article page as markdown. Returns (markdown, report).
+
+    BACK MATTER IS KEPT, which is the same rule `ingest.py` follows and for the same reason:
+    cutting it from the FILE is the one operation here that loses text, and a converter that
+    loses text quietly is the thing this toolchain refuses. It is trimmed for a PROMPT instead,
+    where the saving is real and nothing is destroyed.
+
+    This route used to cut it, and the difference was not academic. On an *Analysis* paper the
+    default took the file from 8,407 words to 5,864 -- and what went was the FOOTNOTES, which in
+    philosophy carry argument, are referred to from the body, and are exactly what a claim may
+    need to cite. The article read complete either way; nothing said that a third of it had gone.
+    """
     raw = Path(path).read_bytes()
     soup = BeautifulSoup(raw, "lxml")
     title = None
@@ -129,7 +140,7 @@ def convert(path, keep_back_matter=False):
         return None, {"why": f"no element on this page holds enough article text "
                              f"(best was {score} characters) -- the snapshot is probably a "
                              f"landing page or a paywall notice, not the article"}
-    cut = 0 if keep_back_matter else cut_back_matter(body)
+    cut = cut_back_matter(body) if cut_back_matter_too else 0
     md = _tidy(_pandoc_markdown(str(body).encode("utf-8"), None))
     if title and not md.lstrip().startswith("#"):
         md = f"# {title}\n\n{md}"
@@ -141,14 +152,19 @@ def main():
     ap = argparse.ArgumentParser(description="Convert a saved article page to markdown.")
     ap.add_argument("html")
     ap.add_argument("--out")
-    ap.add_argument("--keep-back-matter", action="store_true")
+    ap.add_argument("--cut-back-matter", action="store_true",
+                    help="drop references, footnotes and declarations from the FILE. Off by "
+                         "default: in philosophy the footnotes carry argument, and a claim may "
+                         "need to cite one. Trim for the prompt instead.")
     a = ap.parse_args()
-    md, rep = convert(a.html, a.keep_back_matter)
+    md, rep = convert(a.html, a.cut_back_matter)
     if md is None:
         print("  " + rep["why"])
         return 1
     print(f"  {rep['title'] or '(untitled)'}")
-    print(f"  {rep['words']:,} words; {rep['back_matter_elements_cut']} back-matter element(s) cut")
+    print(f"  {rep['words']:,} words"
+          + (f"; {rep['back_matter_elements_cut']} back-matter element(s) cut"
+             if rep["back_matter_elements_cut"] else "; back matter kept"))
     if a.out:
         Path(a.out).write_text(md, encoding="utf-8")
         print(f"  wrote {a.out}")

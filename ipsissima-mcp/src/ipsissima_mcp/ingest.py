@@ -171,7 +171,15 @@ def plain_text(path):
     cannot be retro-fitted without redoing the reconstruction.
     """
     import pymupdf
-    from pdf_to_source import join_spans
+    # TWO WAYS IN, and this file is used both. As `python3 ingest.py` the package directory is
+    # on sys.path and a bare import is the only one that works; as `python3 -m
+    # ipsissima_mcp.ingest` -- which this module's own docstring gives as the first usage -- it
+    # is not, and the bare import raises ModuleNotFoundError from inside a PDF conversion. The
+    # MCP server hid this for a while by putting the directory on sys.path itself.
+    try:
+        from .pdf_to_source import join_spans
+    except ImportError:
+        from pdf_to_source import join_spans
     out = []
     with pymupdf.open(path) as doc:
         for i, page in enumerate(doc, 1):

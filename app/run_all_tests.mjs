@@ -40,6 +40,7 @@ const SUITES = [
   ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
   ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
+  ["the publisher's own structure", PY, [path.join(PYTESTS, "test_structured_source.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],

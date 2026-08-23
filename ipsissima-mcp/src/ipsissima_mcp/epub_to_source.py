@@ -71,8 +71,16 @@ HEAD_CLASS = re.compile(
 
 
 def _heading_level(cls):
-    """The heading level a class name implies, or 0 for ordinary body text."""
-    for token in re.split(r"[\s_-]+", str(cls)):
+    """The heading level a class name implies, or 0 for ordinary body text.
+
+    SPLIT ON WHITESPACE ONLY. This split on hyphens and underscores as well, and so read
+    `chapter-para` as the token `chapter` and called it a heading -- along with `section-body`,
+    `title-page` and every other compound whose FIRST HALF happens to name a heading. That is
+    most of a publisher's body-text vocabulary. A hyphen is part of a class name, not a
+    separator between two of them; separate classes are separated by spaces, which is what HTML
+    and pandoc both do.
+    """
+    for token in str(cls).split():
         m = HEAD_CLASS.match(token)
         if not m:
             continue
@@ -165,7 +173,15 @@ def _tidy(md):
         # An image is not a heading, whatever class the publisher hung on its paragraph.
         if re.fullmatch(r"(!\[[^\]]*\]\([^)]*\)\s*)+", text):
             return m.group(0)
-        lvl = _heading_level(m.group(2)) or 2
+        # ONLY A CLASS THAT NAMES A HEADING MAKES A HEADING. This read `or 2`, so a class the
+        # list did NOT recognise -- which is to say, an ordinary body class -- became a level-two
+        # heading. On an EPUB that is nearly harmless, because pandoc emits few classed
+        # paragraphs; on a publisher's saved HTML page every paragraph carries one, and an entire
+        # Analysis article came out as fourteen headings, nine of which were whole paragraphs.
+        # Nothing reported it: the file was well-formed markdown, of the wrong document.
+        lvl = _heading_level(m.group(2))
+        if not lvl:
+            return m.group(0)
         return "#" * lvl + " " + text
     md = CLASS_HEAD.sub(head, md)
     # pandoc hangs the source's id and classes off the end of a heading -- `{#anchor .h3}`. An
