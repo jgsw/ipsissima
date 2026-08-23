@@ -386,5 +386,5 @@ flags every premise of every argument as an orphan.
 Use `check_argdown.py`, which reads the DOT:
 
 ```bash
-python3 .claude/skills/argdown/check_argdown.py "<f>.argdown"
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<f>.argdown"
 ```

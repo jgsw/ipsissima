@@ -28,12 +28,12 @@ editor. Both are written by `rebuild_viewers.mjs`.
 
 ## Argdown
 
-`@argdown/cli` 2.0.0 is installed at `Behind the scenes (Claude)/argdown-tools/`
+`@argdown/cli` 2.0.0 is installed at `app/`
 (Node v25, npm 11 — both were already present). It is the **same parser** the VS Code extension
 and argdown.org use, so it is ground truth for validity.
 
 ```bash
-CLI="Behind the scenes (Claude)/argdown-tools/node_modules/.bin/argdown"
+CLI="app/node_modules/.bin/argdown"
 "$CLI" map  "<f>.argdown" --format dot > /dev/null    # validate; non-zero exit = syntax error
 "$CLI" json "<f>.argdown" --outputDir "$PWD/json"      # statements / relations / tags / sections
 "$CLI" map  "<f>.argdown" --format svg --outputDir "$PWD/svg"
@@ -44,7 +44,7 @@ The flag is **`--outputDir`**. `--outDir` is accepted silently, ignored, and the
 the working directory instead.
 
 **Claude: never hand over a .argdown file without running the validator.** The `argdown` skill
-(`.claude/skills/argdown/`) carries the syntax and the failure modes; `reference.md` beside it is
+(`ipsissima-mcp/docs/`) carries the syntax and the failure modes; `reference.md` beside it is
 a full reference in which every rule was tested against the CLI rather than inferred.
 
 Why a skill and not a generator: the failure was Claude's knowledge of the syntax, not missing
@@ -54,22 +54,22 @@ only bespoke code is `argument_tool.py`, which addresses co-editing safety, not 
 
 ### Viewing a single `.argdown` file
 
-Two self-contained viewers, both built from `argdown-tools/argdown-viewer.template.html` and both
+Two self-contained viewers, both built from `app/argdown-viewer.template.html` and both
 using the real Argdown parser (never the structure browser's subset parser, which silently drops
 `<arguments>`, premise-conclusion structures and undercuts).
 
 ```bash
-cd "Behind the scenes (Claude)/argdown-tools"
+cd app
 node build_argdown_viewer.mjs "<file>.argdown"   # -> "<file> (map).html", ~200KB, emailable
 node build_argdown_viewer.mjs --standalone       # -> "Ipsissima Reader.html" at the workspace root
 ```
 
 The per-file build bakes the graph in and must be rebuilt when its source changes; the standalone
-bundles `@argdown/core` (via esbuild, a devDependency of `argdown-tools`) so any file can be
+bundles `@argdown/core` (via esbuild, a devDependency of `app`) so any file can be
 dropped on it and it never goes stale. Verified: the bundled browser parser returns graphs
 byte-identical to the Node parser.
 
-The Argdown-to-graph adapter lives once, in `argdown-tools/argdown-graph.mjs`, shared by both
+The Argdown-to-graph adapter lives once, in `app/argdown-graph.mjs`, shared by both
 viewers and by `argdown-live-filter.mjs`. Keep it free of Node imports — esbuild follows even a
 dynamic `import("@argdown/node")` and the browser build then fails on `fs`/`path`/`util`.
 
@@ -144,7 +144,7 @@ the opposite of the argument arrangement, where a short edge needs no explaining
 
 ### The help text is Markdown, and the typeface is ArgVu
 
-**`argdown-tools/help.md` is the whole of "How to use".** Edit that file, not the template. It is
+**`app/help.md` is the whole of "How to use".** Edit that file, not the template. It is
 rendered at startup by a second markdown-it instance — `__MARKDOWN_TRUSTED__`, with `html: true` —
 and cut into topics on its `##` headings, from which the contents list is generated. The
 distinction from `__MARKDOWN__` is a security boundary, not a convenience: that one draws the
@@ -154,7 +154,7 @@ Four ids in help.md are filled in at runtime and must survive any rewrite: `relk
 `helpstats`, and the `about*` fields. That is also why the panel is built at startup rather than
 when it is first opened — `statsLine` writes into one of them on every render.
 
-**ArgVu** (`argdown-tools/vendor/ArgVu/`) is the Argdown project's own typeface, by Peter Stahmer,
+**ArgVu** (`app/vendor/ArgVu/`) is the Argdown project's own typeface, by Peter Stahmer,
 funded by the KIT Debatelab: DejaVu Sans Mono with ligatures for the relation symbols, so `<+`,
 `<-`, `<_`, `+>`, `->`, `_>` and `><` draw as single marks and `-----`/`===` as continuous rules.
 189 KB as WOFF2, embedded as a data URI so the single file keeps working offline and from
@@ -167,7 +167,7 @@ for self-export keeps the `__ARGVU_WOFF2__` placeholder — otherwise every buil
 the font, 252 KB of duplication. `exportPage` refills it by reading the typeface back out of the
 running page's own stylesheet.
 
-### The desktop app — `argdown-tools/desktop/`
+### The desktop app — `app/desktop/`
 
 Built 22 Aug 2026, after the WebKit measurement below said it was possible. Tauri v2: a **4.0 MB
 `.app`, 2.2 MB `.dmg`**, against Electron's 96–150 MB for the same 1.9 MB page. Rust 1.98 via
@@ -202,7 +202,7 @@ the build put the duplicate back. `node install.mjs --status` says what is regis
 
 The other half of the same problem is answered in the app: **About** (in How to use) reports the
 version, the build time, and whether it is running as the application or in a browser. Version
-lives in `argdown-tools/VERSION` and `build_desktop.mjs` copies it into `tauri.conf.json`, so the
+lives in `app/VERSION` and `build_desktop.mjs` copies it into `tauri.conf.json`, so the
 page and the bundle cannot disagree.
 
 It is unsigned, so a copy sent to anyone else needs right-click → Open the first time; the
@@ -295,8 +295,8 @@ Three filters, in this order on the HTML-family profiles:
 
 | Filter | Claims | Where |
 |---|---|---|
-| `argdown-live-filter.mjs` | `.argdown-live` | `argdown-tools/` |
-| `@argdown/pandoc-filter` (official) | `.argdown-map` | `argdown-tools/node_modules/` |
+| `argdown-live-filter.mjs` | `.argdown-live` | `app/` |
+| `@argdown/pandoc-filter` (official) | `.argdown-map` | `app/node_modules/` |
 | `argdown.lua` | both, as static images | Zettlr's `lua-filter/` (print profiles only) |
 
 The live filter must run **first**; it leaves `.argdown-map` to the official one. Word and PDF use
@@ -326,7 +326,7 @@ if (value.t === "MetaInlines" && typeof value.c[0].c === "string")
 A defaults file's own `metadata:` block is delivered as **`MetaString`** and silently ignored: no
 warning, exit code 0, and a static picture. The setting therefore lives in its own file,
 
-`Behind the scenes (Claude)/argdown-tools/argdown-pandoc-metadata.yaml`
+`app/argdown-pandoc-metadata.yaml`
 
 referenced from `metadata-files:` in each of the three HTML profiles, because a metadata *file* is
 parsed as a YAML metadata block and yields `MetaInlines`. Measured: `metadata:` → 0
@@ -334,8 +334,9 @@ web-components, `metadata-files:` → 3.
 
 Verified 16 Aug 2026, all six profiles built and the three HTML ones opened in a real browser: the
 element upgrades, has a shadow root, carries **Source ⇄ Map**, fullscreen and click-to-zoom
-controls, and works inside reveal.js under both the plain and UCL themes. Profile backups before
-each change are in `Behind the scenes (Claude)/Zettlr profile backups 2026-08-16/`.
+controls, and works inside reveal.js under both the stock theme and a heavily customised one.
+Back up your Zettlr profiles before editing them; a broken profile fails at export time, which is
+the worst moment to find out.
 
 The map SVG sits in the component's **light DOM** (`div[slot="map"]`), so page JavaScript can
 address `argdown-map .node` / `.edge` / `.cluster` directly. That is the opening for adding

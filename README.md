@@ -82,11 +82,20 @@ is written for the download page and says exactly what a reader will see and wha
 Ipsissima is free software under the **GNU General Public License v3** — see `LICENSE`.
 
 It is a reader and editor for **Argdown**, and would not exist without it. The notation, the
-parser and the model of what a reconstruction *is* are **Christian Voigt's**; Ipsissima bundles the
-official parser and uses it unmodified, so a file that parses here parses everywhere Argdown does.
-The notation is set in **ArgVu**, the Argdown project's own typeface, by **Peter Stahmer**, funded
-by the **KIT Debatelab**. Ipsissima is an independent program and is not endorsed by or affiliated
-with the Argdown project.
+parser and the model of what a reconstruction *is* are **Christian Voigt's**; Ipsissima bundles
+the official parser and uses it unmodified, so a file that parses here parses everywhere Argdown
+does. The notation is set in **ArgVu**, the Argdown project's own typeface, by **Peter Stahmer**,
+funded by the **KIT Debatelab**. Ipsissima is an independent program and is not endorsed by or
+affiliated with the Argdown project.
+
+Its checks owe a particular debt to **Tom Stern's** "'Some Third Thing': Nietzsche's Words and
+the Principle of Charity" (*The Journal of Nietzsche Studies*, 2016), which is why this program
+does not stop at verifying that a quotation is verbatim: three of Stern's four illustrations of
+misreporting quote *accurately*. It began inside a copy of **Simon Goldstein's Deep Drafter**,
+though it shares no code with it.
+
+**`CREDITS.md` has the full account**, including why each of those matters to what the program
+actually does.
 
 ## Status
 

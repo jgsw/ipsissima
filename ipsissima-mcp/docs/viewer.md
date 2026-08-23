@@ -139,7 +139,7 @@ as a size rather than a promise.
 ## Showing a map to the author
 
 The author reads maps in a browser, not a terminal. Two self-contained viewers, both built from
-one template (`argdown-tools/argdown-viewer.template.html`) and both using the **real** parser:
+one template (`app/argdown-viewer.template.html`) and both using the **real** parser:
 
 ```bash
 cd app
@@ -220,7 +220,7 @@ undercuts. On a file with a Master Argument that is a confidently-drawn, materia
 is the right tool for the book's `_argument.argdown`, whose shape it was written for.
 
 The adapter from Argdown's output to the renderer's graph lives once, in
-`argdown-tools/argdown-graph.mjs`, and is shared by the pandoc filter and both viewers so a file
+`app/argdown-graph.mjs`, and is shared by the pandoc filter and both viewers so a file
 draws identically whichever route it took. Keep it free of Node imports — esbuild follows even a
 dynamic `import("@argdown/node")` and the browser build then fails on `fs`/`path`/`util`.
 

@@ -355,7 +355,7 @@ from ingest import strip_access_stamps                                       # n
 STAMPED = "\n".join([
     "The Tortoise said to Achilles that he would not accept it.",
     "Downloaded from academic.oup.com/mind/article/104/416/691/1 by "
-    "University College London user on 20 August 2026",
+    "A University Library user on 20 August 2026",
     "This content downloaded from 144.82.114.32 on Wed, 20 Aug 2026 09:12:44 UTC",
     "All use subject to https://about.jstor.org/terms",
     "Downloaded by [A University] at 03:12 20 August 2026",

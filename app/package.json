@@ -1,15 +1,15 @@
 {
-  "name": "argdown-tools",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "name": "ipsissima",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ipsissima — read an argument reconstruction beside the text it is a reading of. Builds the self-contained viewer and editor.",
+  "license": "GPL-3.0-or-later",
+  "author": "James Wilson",
   "type": "commonjs",
+  "scripts": {
+    "build": "node rebuild_viewers.mjs",
+    "test": "node run_all_tests.mjs"
+  },
   "dependencies": {
     "@argdown/cli": "^2.0.0",
     "@argdown/pandoc-filter": "^2.0.1",

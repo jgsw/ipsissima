@@ -46,6 +46,24 @@ Argdown is at **argdown.org** and is MIT licensed; ArgVu is under the Bitstream 
 licence. **Ipsissima is an independent program, not endorsed by or affiliated with the Argdown
 project.**
 
+## Whose words
+
+Ipsissima marks every claim for how far it stands from its source, and *checks* the ones that can
+be checked: a claim marked **quotation** is verified character by character against the text it
+cites.
+
+That is worth having and establishes less than it looks like — which the program knows because of
+one article. **Tom Stern**, '"Some Third Thing": Nietzsche's Words and the Principle of Charity'
+(*The Journal of Nietzsche Studies* 47.2, 2016, pp. 287–302), sets out four illustrations of
+**misreporting**: using an author's own words to make it seem he is saying something he certainly
+is not. **Three of the four quote accurately.** A hedged claim quoted with the author's own
+correction left just outside the quotation marks; a partial claim quoted in support of a universal
+one; a passage quoted as evidence for a term it never uses. Every one would pass a verbatim check.
+
+So the checker also reports what each verbatim quotation was cut away *from* — a dropped
+qualifier, a continuation that corrects it, an oversized elision — and the fidelity vocabulary
+here follows Stern's dimensions of charity rather than an invention of this program's.
+
 ## Built on
 
 Every one of these is bundled into the program and runs locally. The versions are read from the
@@ -58,6 +76,10 @@ All MIT licensed.
 The desktop application additionally uses **Tauri** (MIT / Apache-2.0), which supplies the window
 and the file access. On macOS and Linux the page is drawn by the system WebView rather than by a
 bundled browser, which is why the application is a few megabytes rather than a few hundred.
+
+Ipsissima began inside a copy of **Simon Goldstein's Deep Drafter** (MIT) before it became clear
+it was a different project. It shares no code with it. `CREDITS.md` in the source has the full
+account of every debt above.
 
 ## Licence
 

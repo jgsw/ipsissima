@@ -16,7 +16,7 @@ delivered with 83 tree-breaking blank lines and was rejected by the first line o
 extension's validation.
 
 ```bash
-python3 .claude/skills/argdown/check_argdown.py "<file>.argdown"
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<file>.argdown"
 ```
 
 That wraps the CLI and adds the checks that catch the mistakes parsing does not: disconnected
@@ -169,7 +169,7 @@ claim is drawn as the plain default, so only deliberate marking shows.
 quotation marks and give the claim a `chapter`, then:
 
 ```bash
-python3 .claude/skills/argdown/check_argdown.py "<file>.argdown" --source-root "<manuscript dir>"
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<file>.argdown" --source-root "<manuscript dir>"
 ```
 
 reads each cited source and reports every quotation that is not there — `exact`, `near` (drift,

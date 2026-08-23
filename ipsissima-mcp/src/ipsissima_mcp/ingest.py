@@ -103,7 +103,7 @@ def tidy_headings(md):
 # Publisher access stamps, printed down the margin of every page of a PDF served to a logged-in
 # reader. They are not the article, and they carry the DOWNLOADER'S IDENTITY:
 #
-#     Downloaded from academic.oup.com/mind/article/104/416/691/… by University College London
+#     Downloaded from academic.oup.com/mind/article/104/416/691/… by Your University
 #     user on 20 August 2026
 #
 # This matters more than tidiness. A reconstruction is made to be SHARED -- that is most of the

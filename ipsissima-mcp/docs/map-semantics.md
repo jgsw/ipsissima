@@ -223,7 +223,7 @@ than a picture. VERIFIED in a real browser, 16 Aug 2026, against all three HTML 
 | Built-in controls | **Source ⇄ Map** toggle, fullscreen, click-to-enable zoom/pan |
 | Map SVG location | **light DOM**, in `<div slot="map">` |
 | Source location | light DOM, `<div slot="source">`, syntax-highlighted |
-| Inside reveal.js | works — survives reveal's scaling transform, plain and UCL themes |
+| Inside reveal.js | works — survives reveal's scaling transform, stock and customised themes |
 
 **The map SVG being in the light DOM is the thing that matters.** Page-level JavaScript can reach
 `argdown-map .node`, `.edge` and `.cluster` with an ordinary `querySelectorAll` — no shadow-root

@@ -1,6 +1,6 @@
 # Makes @argdown/pandoc-filter emit INTERACTIVE web-components instead of a
 # static SVG image. Referenced from the `metadata-files:` list of the three
-# HTML-family Zettlr export profiles (HTML, Reveal.js, UCL Reveal.js).
+# HTML-family Zettlr export profiles (HTML, Reveal.js, and any themed Reveal.js).
 #
 # WHY A SEPARATE FILE, and not a `metadata:` block inside each profile:
 # the filter accepts a setting only when pandoc hands it as MetaInlines --

@@ -288,7 +288,7 @@ Metadata values are passed through verbatim, so quotes, brackets and underscores
 ## 7. Before you call it done
 
 ```bash
-python3 .claude/skills/argdown/check_argdown.py "<file>.argdown" --source-root "<source dir>"
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<file>.argdown" --source-root "<source dir>"
 ```
 
 Read the output and fix what it finds. In particular:

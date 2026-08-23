@@ -9,7 +9,7 @@ imperative script — `Create`, `CreateChild`, `SetText`, `CreateAnnotation`, th
 can be ignored. Convert with:
 
 ```bash
-python3 .claude/skills/argdown/rationale_to_argdown.py "map.rtnl" -o "map.argdown"
+python3 ipsissima-mcp/src/ipsissima_mcp/rationale_to_argdown.py "map.rtnl" -o "map.argdown"
 ```
 
 The four translation decisions it encodes, each of which matters:
@@ -58,7 +58,7 @@ Three filters are wired up, chosen per output type:
 
 | Profile | Filters | Result |
 |---|---|---|
-| HTML · Reveal.js · UCL Reveal.js | `argdown-live-filter.mjs`, then `@argdown/pandoc-filter` | re-flowing map · web-component |
+| HTML · Reveal.js · themed Reveal.js | `argdown-live-filter.mjs`, then `@argdown/pandoc-filter` | re-flowing map · web-component |
 | XeLaTeX PDF · Word · Word (No Notes) | `argdown.lua` (in Zettlr's `lua-filter/`) | static images for both classes |
 
 The live filter must come **first**: it claims `.argdown-live` and leaves `.argdown-map` to the
@@ -71,7 +71,7 @@ successful and is still a flat picture. The setting therefore lives in a separat
 referenced from `metadata-files:`:
 
 ```yaml
-# argdown-tools/argdown-pandoc-metadata.yaml
+# app/argdown-pandoc-metadata.yaml
 argdown:
   mode: web-component
 ```
