@@ -108,7 +108,13 @@ an honest account of the one problem the project has not solved.
 
 ## Status
 
+[![tests](https://github.com/jgsw/ipsissima/actions/workflows/tests.yml/badge.svg)](https://github.com/jgsw/ipsissima/actions/workflows/tests.yml)
+
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
+
+**Green does not mean everything passes**, and the badge is worth reading carefully: the workflow
+allows exactly the one failure documented below, and turns red on any other. That is deliberate —
+the alternative is either a permanently red badge nobody looks at, or a weakened invariant.
 
 **One known failure.** `test_fold_invariants` reports claims drawn with no visible connection, in
 the exposition arrangement, under some fold states — three in the Carroll sample and one in

@@ -49,7 +49,7 @@ jobs:
         working-directory: app/desktop
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # WebKitGTK is the Linux webview, and 4.1 is the one Tauri v2 links against — 4.0 is v1's
       # and produces a link error that reads as a missing package rather than a wrong version.
@@ -61,7 +61,7 @@ jobs:
             libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf \
             build-essential curl wget file libxdo-dev libssl-dev
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
@@ -82,6 +82,10 @@ jobs:
           npm ci
           npm run frontend
 
+      # LEFT AT v0 DELIBERATELY. tauri-action reached v1 in 2026 and this workflow runs only on a
+      # tag, so nothing here would exercise a major bump before a real release did. Worth doing —
+      # on a throwaway tag, watching all three platforms, rather than on the first one that
+      # matters.
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
