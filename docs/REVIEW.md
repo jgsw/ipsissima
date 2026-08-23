@@ -110,18 +110,24 @@ enable it teaches; an absent one cannot.** The Exposition button already does ex
 (disabled rather than absent when the claims cannot be placed), which suggests the principle is
 accepted and unevenly applied.
 
+### [fixed] Keyboard access to the map
+
+Claims and fold badges are now focusable (`tabindex`, `role="button"`, an `aria-label` read from
+the claim's own text), operable by **Enter** and **Space**, with **Shift-Enter** for "show me the
+passage this came from" — the keyboard equivalent of shift-click — and the context-menu key for
+the menu right-click offers. Verified in a browser: Tab reaches the map, Enter folds, Shift-Enter
+loads the manuscript.
+
+The focus ring is an `outline`, deliberately, and not a change to the box's stroke: **the stroke
+already carries fidelity**, so thickening or dashing it would say something false about whose
+words the claim is in.
+
 ### [open] Undo on the map has no visible affordance
 
 Comments are written on the map, where nothing has focus, and undo is reachable from the menu
 and the keyboard but is not on screen. The desktop menu routes `Cmd-Z` to CodeMirror's history
 deliberately and correctly; the browser build has no menu at all. This is the gap I would close
 first.
-
-### [open] Keyboard access to the map itself
-
-The panes, the dialogs and the editor are all reachable. The map's nodes are SVG and are not in
-the tab order, so folding, selecting a claim and jumping to its passage are mouse-only. For a
-tool whose subject is careful reading, that is a real exclusion rather than a nicety.
 
 ### Visual coherence
 
@@ -251,8 +257,8 @@ attribution, not leakage. The only identifying material removed was what nobody 
 
 ## What I would do before making it public
 
-1. **Close the undo affordance gap** on the map, and put the map's nodes in the tab order. These
-   are the two usability findings that exclude people rather than inconvenience them.
+1. **Close the undo affordance gap** on the map. The keyboard-access half of this is done; undo
+   is still reachable only from the menu and the keyboard, and the browser build has no menu.
 2. **Add an EPUB sample and a book sample.** Two whole modules currently ship untested against
    anything real.
 3. **Decide about the fold bug in public.** It is diagnosed, reproducible in one click, and

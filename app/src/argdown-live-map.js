@@ -2605,11 +2605,28 @@ function createLiveMap(container, graph, options) {
                              "font-size": 10 });
       t.textContent = hidden ? "+" + n.hidden : "−";
       badge.append(el("circle", { cx: s.width / 2, cy, r: 9 }), t);
-      const what = n.kind === "group" ? "claims in this group" : "reasons for and against this";
+      const one = n.hidden === 1;
+      const what = n.kind === "group" ? (one ? "claim in this group" : "claims in this group")
+                                      : (one ? "reason for or against this"
+                                             : "reasons for and against this");
       const tip = el("title");
-      tip.textContent = hidden ? `Show ${n.hidden} ${what}` : `Hide the ${what}`;
+      tip.textContent = hidden ? `Show ${n.hidden} ${what}`
+                               : `Hide the ${n.kind === "group" ? "claims in this group"
+                                                                : "reasons for and against this"}`;
       badge.appendChild(tip);
       badge.classList.add(hidden ? "is-closed" : "is-open");
+      // A BUTTON THAT ONLY A MOUSE CAN PRESS IS NOT A BUTTON. The badge is the fold control, and
+      // it was reachable by pointer alone -- which put the whole of folding out of reach of
+      // anyone working by keyboard, in a program whose subject is careful reading.
+      badge.setAttribute("tabindex", "0");
+      badge.setAttribute("role", "button");
+      badge.setAttribute("aria-expanded", hidden ? "false" : "true");
+      badge.setAttribute("aria-label", tip.textContent);
+      badge.addEventListener("keydown", ev => {
+        if (ev.key !== "Enter" && ev.key !== " ") return;
+        ev.preventDefault();
+        badge.dispatchEvent(new MouseEvent("click", { bubbles: false }));
+      });
       badge.addEventListener("click", ev => {
         setLit(marksFor(n));
         ev.stopPropagation();
@@ -2629,6 +2646,32 @@ function createLiveMap(container, graph, options) {
     // extend-the-selection gesture, so using it as a shortcut painted the whole map blue on the
     // way to doing the useful thing. Cancelling the mousedown stops the selection before it
     // starts; the click still arrives.
+    // EVERY GESTURE ON A CLAIM HAD A KEY EXCEPT BY POINTER. Selecting a claim, and asking which
+    // passage it came from, were shift-click and right-click and nothing else -- so the two
+    // things this program is FOR were mouse-only. The claim is a button now, with its label read
+    // from the claim's own text, and the same two actions on Enter and Shift-Enter.
+    box.setAttribute("tabindex", "0");
+    box.setAttribute("role", "button");
+    box.setAttribute("aria-label", String(n.label || n.id));
+    box.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        setLit(marksFor(n));
+        // Shift-Enter matches shift-click: go to the passage rather than merely select.
+        if (ev.shiftKey && opt.onLocate) return opt.onLocate(n);
+        if (opt.onSelect) opt.onSelect(n);
+        return;
+      }
+      // The context-menu key, and its keyboard equivalent, offer the same choices right-click
+      // does. Positioned on the claim itself, since there is no pointer to put it under.
+      if ((ev.key === "ContextMenu" || (ev.key === "F10" && ev.shiftKey)) && opt.onMenu) {
+        ev.preventDefault();
+        setLit(marksFor(n));
+        const r = box.getBoundingClientRect();
+        opt.onMenu(n, { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2,
+                        preventDefault() {}, stopPropagation() {} });
+      }
+    });
     box.addEventListener("mousedown", ev => { if (ev.shiftKey) ev.preventDefault(); });
     // ANY DELIBERATE TOUCH OF A CLAIM MAKES IT THE CURRENT ONE. Marking only on "open" was the
     // first thought and reads as arbitrary: closing a claim, or asking where it came from, is
@@ -3666,6 +3709,13 @@ function injectStyle() {
 .alm-layer-under{pointer-events:none}
 /* Lit from outside: the reader clicked the passage this claim was drawn from. A ring rather
    than a fill, so the fidelity border and the kind colour both still read. */
+/* THE FOCUS RING MUST NOT TOUCH THE BORDER, and that is not a matter of taste. The box's stroke
+   already carries FIDELITY -- solid for a quotation, dashed for an interpretation, dot-dashed
+   for an imputation -- so a focus style that thickens or dashes it says something false about
+   whose words the claim is in. An outline sits outside the shape and encodes nothing else. */
+.alm-n:focus,.alm-toggle:focus{outline:none}
+.alm-n:focus-visible,.alm-toggle:focus-visible{
+  outline:2.5px solid var(--alm-accent,#3a7bd5);outline-offset:3px;border-radius:3px}
 .alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5);stroke-width:2.4}
 .alm-n.is-lit{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 .alm-glabel{fill:var(--alm-fg-dim,#6b6b6b);pointer-events:none}
