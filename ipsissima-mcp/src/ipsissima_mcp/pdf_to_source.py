@@ -43,7 +43,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import fitz
+import pymupdf
 
 # A numbered section heading: "3", "3.1" or "3.1.2", then a capitalised phrase with no sentence
 # punctuation in it. Specific enough that ordinary prose does not match -- a body line would have
@@ -878,7 +878,7 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
 
 def convert(cfg):
     cfg.raw = cfg.raw or cfg.out.parent / ".raw-extraction.txt"
-    doc = fitz.open(cfg.pdf)
+    doc = pymupdf.open(cfg.pdf)
     cfg.out.parent.mkdir(parents=True, exist_ok=True)
     cfg.raw.write_text("\n\n".join(f"===== sheet {i} =====\n" + doc[i].get_text()
                                    for i in range(doc.page_count)), encoding="utf-8")

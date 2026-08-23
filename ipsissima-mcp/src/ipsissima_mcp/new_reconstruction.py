@@ -36,8 +36,12 @@ from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
-SAMPLES = ROOT / "Argdown samples"
+# `ipsissima-mcp/src/ipsissima_mcp` -> the repository root. The default parent folder was
+# `Argdown samples` under the workspace this grew inside; here the folder is `samples/`, and a
+# default pointing at a directory that does not exist writes the scaffold somewhere nobody
+# looks.
+ROOT = HERE.parents[2]
+SAMPLES = ROOT / "samples"
 
 CONVERTER = '''#!/usr/bin/env python3
 """Convert the {title} PDF to the markdown the reconstruction cites.

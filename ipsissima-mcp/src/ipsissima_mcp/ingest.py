@@ -133,10 +133,10 @@ def plain_text(path):
     line, so this decides how precisely any claim in this source can ever be placed, and it
     cannot be retro-fitted without redoing the reconstruction.
     """
-    import fitz
+    import pymupdf
     from pdf_to_source import join_spans
     out = []
-    with fitz.open(path) as doc:
+    with pymupdf.open(path) as doc:
         for i, page in enumerate(doc, 1):
             out.append(f"<!-- p.{i} begins here -->")
             # READ AS `dict` AND GROUPED BY BLOCK, which gives the same paragraphs `blocks` gives

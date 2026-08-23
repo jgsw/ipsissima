@@ -32,7 +32,7 @@ import re
 import statistics
 import sys
 
-import fitz
+import pymupdf
 
 # REUSE THE TESTED COLUMN DETECTOR, do not write a second one. A hand-rolled occupancy sweep here
 # read the two-column Tooming as one and the single-column Williams as two -- and `detect_columns`
@@ -44,7 +44,7 @@ from pdf_to_source import detect_columns, sheet_lines            # noqa: E402
 
 
 def probe(path):
-    doc = fitz.open(path)
+    doc = pymupdf.open(path)
     pages, chars, widths, sheets = len(doc), [], [], []
     page_width = doc[0].rect.width if len(doc) else 0
     for page in doc:
