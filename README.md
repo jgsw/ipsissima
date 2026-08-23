@@ -97,6 +97,15 @@ though it shares no code with it.
 **`CREDITS.md` has the full account**, including why each of those matters to what the program
 actually does.
 
+## Reading the code
+
+`docs/NOTES.md` is the record of decisions that were expensive to reach, several of which exist
+because something failed silently. `docs/REVIEW.md` is an outside reading of the whole project
+written just before release — what was found, what was fixed, and what is still open, including
+an honest account of the one problem the project has not solved.
+
+`CONTRIBUTING.md` says which contributions are most useful, and the answer is not code.
+
 ## Status
 
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.

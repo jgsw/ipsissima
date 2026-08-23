@@ -1,8 +1,5 @@
 # Ipsissima — build the desktop app for macOS, Windows and Linux, and attach it to a release.
 #
-# THIS FILE IS NOT ACTIVE WHERE IT SITS. It belongs at `.github/workflows/release.yml` in the
-# public Ipsissima repository, and lives here so that it is written and reviewed before the
-# extraction rather than improvised during it. Nothing in this workspace runs it.
 #
 # WHY IT MATTERS THAT THIS EXISTS EARLY. Three platforms cannot be built on one machine, and
 # retrofitting CI onto a project that has only ever been built by hand on a Mac is how Windows
@@ -42,6 +39,15 @@ jobs:
             rust-targets: ""
 
     runs-on: ${{ matrix.platform }}
+
+    # EVERY `run` HAPPENS IN app/desktop, which is what the `../` paths below assume. This file
+    # was written while it lived at `app/desktop/ci/release.yml` and every relative path in it
+    # is relative to THAT. Moved to .github/workflows/ without this, `npm ci --prefix ../` walks
+    # out of the repository and the build fails on a path that does not exist.
+    defaults:
+      run:
+        working-directory: app/desktop
+
     steps:
       - uses: actions/checkout@v4
 
@@ -87,7 +93,9 @@ jobs:
           # APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          projectPath: .
+          # `defaults.run.working-directory` governs `run` steps only, never an action, so this
+          # is where the desktop project has to be named.
+          projectPath: app/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Ipsissima ${{ github.ref_name }}"
           releaseBody: |

@@ -1,0 +1,65 @@
+# Ipsissima — the whole suite, on every push and pull request.
+#
+# ONE COMMAND, because that is the promise `run_all_tests.mjs` makes: twenty suites, each
+# printing its own detail, and a non-zero exit if any fails. Running them separately here would
+# be a second definition of "the tests" that drifts from the first.
+#
+# THE SUITE IS EXPECTED TO FAIL until the issue in KNOWN-ISSUES.md is fixed — a claim can be
+# drawn with no visible connection in the Exposition view under some fold states, and the
+# invariant that catches it is left failing rather than quietly weakened. `continue-on-error`
+# would hide that; instead the job runs the suite twice, once to show every result and once
+# with the known failure allowed, so a NEW failure turns the build red and the old one does not.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pandoc
+        run: sudo apt-get update && sudo apt-get install -y pandoc
+
+      - name: Install
+        run: |
+          npm --prefix app ci || npm --prefix app install
+          python3 -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install -e ipsissima-mcp
+
+      - name: Everything
+        id: suite
+        continue-on-error: true
+        run: node app/run_all_tests.mjs | tee /tmp/suite.txt
+
+      - name: Only the known failure?
+        # KNOWN-ISSUES.md names one failing suite. Anything else red fails the build.
+        run: |
+          failed=$(grep -E '^  FAIL' /tmp/suite.txt | sed 's/^  FAIL  //' | sort)
+          expected='fold invariants (state space)'
+          if [ -z "$failed" ]; then
+            echo "Everything passed — the known failure is fixed."
+            echo "Update KNOWN-ISSUES.md and this workflow's expected list."
+            exit 0
+          fi
+          if [ "$failed" = "$expected" ]; then
+            echo "Only the documented failure is red. See KNOWN-ISSUES.md."
+            exit 0
+          fi
+          echo "Unexpected failure(s):"
+          echo "$failed"
+          exit 1

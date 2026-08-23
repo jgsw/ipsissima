@@ -35,8 +35,9 @@ desktop/
   build_desktop.mjs        builds the page and stages it into dist/, then checks
                            the staged file actually contains the host adapter
   dist/                    generated; never edited
-  ci/release.yml           the GitHub Actions workflow, ready to move to
-                           .github/workflows/ when Ipsissima is extracted
+  tauri.mjs                the Tauri CLI with a PATH that has Rust on it — Homebrew's
+                           rustup is keg-only, so `cargo` is not on a plain PATH
+  rust-path.mjs            where that PATH comes from; shared with install.mjs
   src-tauri/
     tauri.conf.json        window, bundle targets, and the .argdown file association
     capabilities/          what the window may ask the host for — fs and dialog, nothing else
