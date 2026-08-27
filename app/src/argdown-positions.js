@@ -69,6 +69,29 @@ function sectionSpan(headings, section, totalLines) {
   return null;
 }
 
+/** Which heading level divides this text into bands — the shallowest level with MORE THAN ONE
+ *  heading at it, or 0 when nothing divides it.
+ *
+ *  WHY NOT SIMPLY LEVEL 1, which is what this used to be. The two converters disagree:
+ *  `pdf_to_source.py` writes a paper's sections as `#`, and `html_to_source.py` writes the
+ *  article title as `#` and its sections as `##`, because that is what the publisher's own
+ *  markup says. So a source converted from a PDF banded correctly and the same paper converted
+ *  from the publisher's HTML fell into a single band — the exposition view of a four-section
+ *  paper showing one section, with nothing to say why.
+ *
+ *  MORE THAN ONE, because a single heading is not a division. An HTML-derived source has exactly
+ *  one `#` — the title — and banding on it puts the whole paper in one band, which is the same
+ *  failure wearing a different number.
+ */
+function bandLevel(headings) {
+  var count = {};
+  for (var i = 0; i < headings.length; i++)
+    count[headings[i].level] = (count[headings[i].level] || 0) + 1;
+  var levels = Object.keys(count).map(Number).sort(function (a, b) { return a - b; });
+  for (var j = 0; j < levels.length; j++) if (count[levels[j]] > 1) return levels[j];
+  return 0;
+}
+
 /** The heading a line falls under — the last heading at or above it. Null before the first one.
  *
  *  WHY THIS IS DERIVED AND NOT READ. The band a claim sits in, in the exposition view, is a FACT
@@ -84,10 +107,12 @@ function sectionSpan(headings, section, totalLines) {
  *  that scopes the paragraph search — rather than something the view depends on.
  */
 function sectionOfLine(headings, line) {
+  var lvl = bandLevel(headings);
+  if (!lvl) return null;
   var found = null;
   for (var i = 0; i < headings.length; i++) {
     if (headings[i].line > line) break;
-    found = headings[i];
+    if (headings[i].level === lvl) found = headings[i];
   }
   return found ? found.text : null;
 }
@@ -340,6 +365,7 @@ function wordCounts(sources) {
 var API = { positions: positions, readingOrder: readingOrder, headingIndex: headingIndex,
             wordCounts: wordCounts,
             sectionSpan: sectionSpan, locateParagraph: locateParagraph,
+            bandLevel: bandLevel, sectionOfLine: sectionOfLine,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA };
 if (typeof module !== "undefined" && module.exports) module.exports = API;

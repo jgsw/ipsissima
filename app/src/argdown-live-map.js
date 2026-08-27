@@ -3511,6 +3511,10 @@ function createLiveMap(container, graph, options) {
     if ("groupFolded"     in patch) state.groupFolded     = new Map(patch.groupFolded);
     if ("collapsedLanes"  in patch) state.collapsedLanes  = new Set(patch.collapsedLanes);
     if ("facets"          in patch) state.facets          = patch.facets ? new Set(patch.facets) : null;
+    // SPINE. `setState` copies an explicit list rather than merging the patch, so a key missing
+    // from it is dropped in silence — which is what happened when the control was first wired:
+    // the button changed nothing and said nothing.
+    if ("spine"           in patch) state.spine           = patch.spine;
     if ("allText"         in patch) { allText = !!patch.allText; textOpen.clear(); measureCache.clear(); }
     // Switching axis moves every node at once. Re-frame rather than leave the reader looking
     // at whatever happens to be under the old camera position.

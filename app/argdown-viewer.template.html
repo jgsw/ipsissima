@@ -3017,9 +3017,16 @@ function locateInPage(graph, byPath){
     projectText = "chapters:\n" + cited.map(function(c){ return '  - "' + c + '"'; }).join("\n") + "\n";
   }
   var located = P.positions(graph.nodes, sources, projectText);
+  // WHICH LEVEL DIVIDES THE TEXT, asked of the file rather than assumed. This filtered to level
+  // 1, which is right for a source converted from a PDF and wrong for one converted from a
+  // publisher's HTML, where `#` is the article title and `##` are its sections. `bandLevel`
+  // takes the shallowest level with more than one heading at it.
   var headsFor = {};
-  for (ch in sources) if (sources[ch])
-    headsFor[ch] = P.headingIndex(sources[ch]).filter(function(h){ return h.level === 1; });
+  for (ch in sources) if (sources[ch]) {
+    var all = P.headingIndex(sources[ch]);
+    var lvl = P.bandLevel(all);
+    headsFor[ch] = lvl ? all.filter(function(h){ return h.level === lvl; }) : [];
+  }
   var placed = 0;
   for (i = 0; i < graph.nodes.length; i++) {
     var n = graph.nodes[i], pos = located.byId[n.id];

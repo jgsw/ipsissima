@@ -104,6 +104,17 @@ check("the spine keeps the contention and what holds things up",
       titles(spine), ["C", "Mid"]);
 check("  and drops the leaves", titles(spine).includes("Leaf"), false);
 
+console.log("\nthe control is wired to the filter");
+// THE MEASURE AND THE FILTER WERE BOTH RIGHT AND THE BUTTON DID NOTHING. `setState` copies an
+// explicit list of keys rather than merging the patch, so `setState({spine: 1})` was dropped in
+// silence — and every test above still passed, because they all call `filterGraph` directly.
+// A UI control needs its wiring held as well as its behaviour.
+const src2 = fs.readFileSync(path.join(HERE, "src", "argdown-live-map.js"), "utf8");
+check("the toolbar offers a spine control", /data-act="spine"/.test(src2), true);
+check("  clicking it calls setState", /act === "spine"[\s\S]{0,80}setState\(\{ spine/.test(src2), true);
+check("  and setState keeps the key", /"spine"\s*in patch/.test(src2), true);
+check("  and filterGraph reads it", /spine:\s*state\.spine == null/.test(src2), true);
+
 console.log("\non the published samples");
 // The point of the measure is that it discriminates. A filter that keeps everything, or almost
 // nothing, would be no use — and `#core` did the first on one sample and nearly the second on

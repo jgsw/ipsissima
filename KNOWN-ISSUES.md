@@ -1,11 +1,22 @@
 # Known issues
 
-## A second contention can be drawn unattached (Reasons view, one fold state)
+**Two open defects. The suite finds the first and not the second.** `run_all_tests.mjs` reports
+one failing suite — the first defect below — and CI allows exactly that one. The second is
+reachable at other seeds and the committed run does not reach it, so a green line for everything
+else means "no regression against what the renderer did yesterday", not "the invariants hold".
 
-Found 27 Aug 2026, by adding a sixth sample — which is what a corpus is for.
+Searching seeds in CI would make the badge red for a second defect nobody is about to fix, which
+teaches a reader to ignore it. The arrangement is a gate that allows one named failure, plus this
+page — and this page has to be read.
+
+---
+
+## 1. A second contention drawn unattached (Reasons view)
+
+Found by the committed run, so CI is red on it.
 
 ```bash
-node app/test_fold_invariants.mjs --steps 0
+node app/test_fold_invariants.mjs --steps 1500
 ```
 
 ```
@@ -15,27 +26,47 @@ Akhlaghi [by argument]: 93 nodes, 8 sections
          after: as the viewer opens -> toggleGroup(s2)
 ```
 
-**What is different about this one.** The two fold defects fixed earlier were both in the
-by-position view, and both were fixed by drawing a **through-edge** to the nearest visible claim
-rather than importing the missing ones. This is the first in the **by-argument** view, and it is
-the first to involve a **second contention**.
+One action from the opening state. The claim is the paper's **second thesis**; it has exactly two
+relations in the file — it is the conclusion of one premise-conclusion structure and is attacked
+by one claim — and both sit in the section being opened. Opening that section leaves it on screen
+with neither.
 
-The claim is the paper's second thesis. It has exactly two relations in the file — it is the
-conclusion of one premise-conclusion structure, and it is attacked by one claim — and both of
-those sit in the section being opened. Opening that section leaves it on screen with neither.
+This is the first of these in the **by-argument** view; the two fixed in August were both
+by-position. Step 5b's through-edge should have fired and does not, and why is the question.
 
-**Not diagnosed.** A hand reproduction of `toggleGroup(s2)` from an empty state does not
-reproduce it: the claim keeps both edges. So the failing state is the one the harness reaches
-from "as the viewer opens", which is not the empty state, and the difference is where the bug
-lives. Step 5b's through-edge should still have fired; why it does not is the question.
+**It matters more since 27 Aug 2026**, when the instructions were changed to say that a paper may
+argue for more than one thing. Second contentions will now be commoner, and this is the defect
+that greets them.
 
-**Why it is left failing.** Making the suite green by holding the sample out would be gaming: the
-map is a legitimate reconstruction of a real paper, it checks clean, and it is exactly the kind of
-file a reader will open. The invariant is the one most worth having.
+## 2. A claim can vanish when you expand another (both views, deep fold states)
+
+**Not found by the committed seed.** Other seeds reach it:
+
+```bash
+node app/test_fold_invariants.mjs --steps 1500 --seed 1
+```
+
+```
+Carroll [by argument]: 20 nodes, 5 sections
+   FAIL  expanding a claim hides nothing that was on screen (no depth limit)
+         expanding n19 hid 5: n10, n13, n11
+         after: … -> collapseAll -> toggleGroup(s2) -> toggleNode(n19)
+```
+
+Opening a claim should only ever add. In a deep enough fold state — the reproducers all pass
+through `collapseAll` followed by opening a section and then a node — expanding one claim can take
+others off the screen. Nothing is lost from the file and pressing the control again brings them
+back, but a map that removes claims when you ask it for more is telling you something false while
+you are reading it.
+
+**Not diagnosed.** It is about the fold *bookkeeping* rather than about which claims get drawn:
+the state after `collapseAll` is not the union of the individual collapses, and expanding out of
+it takes a different path back.
 
 ---
 
 ## Fixed 23 Aug 2026
+
 
 
 Kept here because both were load-bearing entries for a while and the reasoning is worth having.
