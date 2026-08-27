@@ -54,7 +54,7 @@
         {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"and I think this cannot be disputed\"", reviewed: "2026-08-18"}
 
 [struggle-for-life]: At some age, season or year there is a severe struggle for life.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"at some age, season or year, a severe struggle for life\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"at some age, season or year, a severe struggle for life\"", reviewed: "2026-08-18"}
     + [geometrical-increase]: Each species has high geometrical powers of increase.
         {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"owing to the high geometrical powers of increase of each species\"", reviewed: "2026-08-18"}
     + [struggle-cannot-be-disputed]: This certainly cannot be disputed.
@@ -71,11 +71,11 @@
     - [undisputed-is-not-argued]
 
 [complexity-of-relations]: The relations of all organic beings to each other and to their conditions of existence are of infinite complexity.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"the infinite complexity of the relations of all organic beings to each other and to their conditions of existence\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"the infinite complexity of the relations of all organic beings to each other and to their conditions of existence\"", reviewed: "2026-08-18"}
     +> [diversity-is-advantageous]
 
 [diversity-is-advantageous]: That complexity causes an infinite diversity in structure, constitution, and habits to be advantageous to organic beings.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"causing an infinite diversity in structure, constitution, and habits, to be advantageous to them\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"causing an infinite diversity in structure, constitution, and habits, to be advantageous to them\"", reviewed: "2026-08-18"}
 
 [variation-useful-to-man]: So many variations have occurred useful to man.
     {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"in the same way as so many variations have occurred useful to man\"", reviewed: "2026-08-18"}
@@ -121,7 +121,7 @@
 (5) [principle-of-preservation]
 
 [thus-characterised-are-preserved]: Individuals thus characterised will assuredly have the best chance of being preserved in the struggle for life.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"individuals thus characterised will have the best chance of being preserved in the struggle for life\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"individuals thus characterised will have the best chance of being preserved in the struggle for life\"", reviewed: "2026-08-18"}
 
 [strong-inheritance]: From the strong principle of inheritance they will tend to produce offspring similarly characterised.
     {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"from the strong principle of inheritance they will tend to produce offspring similarly characterised\"", reviewed: "2026-08-18"}
@@ -135,7 +135,7 @@
     +> [natural-selection-named]
 
 [natural-selection-named]: This principle of preservation, Darwin has called, for the sake of brevity, Natural Selection.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"This principle of preservation, I have called, for the sake of brevity, Natural Selection\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"This principle of preservation, I have called, for the sake of brevity, Natural Selection\"", reviewed: "2026-08-18"}
 
 # Divergence of character {isGroup: true}
 
@@ -154,7 +154,7 @@
     {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"during the incessant struggle of all species to increase in numbers\"", reviewed: "2026-08-18"}
 
 [more-diversified-fare-better]: During the modification of the descendants of any one species, the more diversified those descendants become, the better will be their chance of succeeding in the battle of life.
-    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "quotation", source: "\"the more diversified these descendants become, the better will be their chance of succeeding in the battle of life\"", reviewed: "2026-08-18"}
+    {chapter: "source/darwin-1859-natural-selection.md", fidelity: "paraphrase", source: "\"the more diversified these descendants become, the better will be their chance of succeeding in the battle of life\"", reviewed: "2026-08-18"}
 
 <The Divergence Argument>
     // An objection to the STEP, not to a premise: the premises can all hold while the

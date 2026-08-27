@@ -41,7 +41,7 @@ defaults:
 # Where the paper arrives {isGroup: true}
 
 [no-overall-answer]: There is no 'overall answer to the question whether philosophy belongs with the humanities or the sciences... the philosophical methods that it is most fruitful to adopt depend on the research question to be addressed'.
-    {fidelity: "quotation", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"it is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences\"", pinpoint: "p. 513", note: "The claim splices two sentences of the original, and the elision is marked rather than smoothed: the source reads '...or the sciences. Rather, the philosophical methods...'. Running them together unmarked would present as one continuous sentence something the author wrote as two."}
+    {fidelity: "paraphrase", section: "1. Philosophy, Disciplines and Interdisciplinarity", source: "\"it is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences\"", pinpoint: "p. 513", note: "The claim splices two sentences of the original, and the elision is marked rather than smoothed: the source reads '...or the sciences. Rather, the philosophical methods...'. Running them together unmarked would present as one continuous sentence something the author wrote as two."}
     + [humanities-sciences-blurred]
     + [problems-not-disciplines]
 
@@ -51,13 +51,13 @@ defaults:
     + [middle-range]
 
 [deadlock-broken]: The debate between Williams and his moral realist critics is not deadlocked after all.
-    {fidelity: "quotation", source: "\"the debate between Williams and moral realists is not deadlocked after all\"", pinpoint: "p. 526"}
+    {fidelity: "paraphrase", source: "\"the debate between Williams and moral realists is not deadlocked after all\"", pinpoint: "p. 526"}
     + [disagreement-is-evidence]
     - [realist-reply]: A realist may answer that sustained disagreement shows only that the questions are hard, not that the domain lacks the structure general theory would need — so the mismatch is evidence about philosophers, not about ethics. #contested
         {fidelity: "interpretation", warrant: "coherence", section: "5. The Meta-problem", note: "Not in the paper. Recorded because this is the step a realist would resist, and the map should show where the weight is being taken rather than only where the author places it."}
 
 [dewey-nimbler]: Dewey is the nimbler thinker about what philosophy might become, because of his explicit emphasis on a unified, flexible and transdisciplinary approach.
-    {fidelity: "quotation", section: "8. Conclusion", source: "\"it is Dewey who is the nimbler thinker about what philosophy might become\"", pinpoint: "p. 537"}
+    {fidelity: "paraphrase", section: "8. Conclusion", source: "\"it is Dewey who is the nimbler thinker about what philosophy might become\"", pinpoint: "p. 537"}
     + [williams-late-work-pragmatist]
     + [dewey-on-art]
     - [absolute-conception-residue]: Two elements of Williams's outlook remain in tension even with a Deweyan pragmatism — the absolute conception of reality, and his insistence on a fundamental difference between scientific and ethical inquiry. #conceded
@@ -93,7 +93,7 @@ defaults:
         {fidelity: "paraphrase", section: "2. The Humanities and the Sciences", pinpoint: "p. 517", note: "The author turns Williams's own joke against a distinction Williams relies on."}
 
 [problems-not-disciplines]: Research methods should be responsive to research problems, and where philosophical problems are interdisciplinary or transdisciplinary, so should philosophical methods.
-    {fidelity: "quotation", section: "8. Conclusion", source: "\"research methods should be responsive to research problems\"", pinpoint: "p. 536"}
+    {fidelity: "paraphrase", section: "8. Conclusion", source: "\"research methods should be responsive to research problems\"", pinpoint: "p. 536"}
     + [problematisation]: The world does not contain research problems ready to be discovered; much of the skill of early-stage research is problematisation, and how a problem is conceived decides what counts as relevant.
         {fidelity: "paraphrase", section: "3. Disciplines and Research Problems", source: "\"The world does not contain research problems ready to be discovered\"", pinpoint: "p. 519", note: "Dewey enters here, twenty pages before he is named as the destination."}
     + [philosophy-is-various]: Good work in the philosophy of physics may look nothing like good work in the philosophy of literature, and many areas of philosophy are practised by scholars trained and based in the first-order discipline.
@@ -152,7 +152,7 @@ defaults:
 # Thought experiments {isGroup: true}
 
 [fecundity-not-homogeneity]: If we are persuaded that we have ethical freedom, we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case.
-    {fidelity: "quotation", section: "6. Thought Experiments, Science and Fiction", source: "\"it is fecundity of response, rather than homogeneity, that is the sign of a good case\"", pinpoint: "p. 533"}
+    {fidelity: "paraphrase", section: "6. Thought Experiments, Science and Fiction", source: "\"it is fecundity of response, rather than homogeneity, that is the sign of a good case\"", pinpoint: "p. 533"}
     + [ethical-freedom]
     + [beholders-share]: Every fiction leaves the interpreter latitude to complete the work — the Beholder's Share — and thought experiments are short fictions the reader must make sense of.
         {fidelity: "paraphrase", section: "6. Thought Experiments, Science and Fiction", source: "\"the Beholder's Share\"", pinpoint: "p. 533"}
@@ -177,7 +177,7 @@ defaults:
     + [williams-hints-only]: Williams's own use of the arts is mostly critical — undercutting the pretensions of ethical theory — and he gives little more than scattered hints about the positive role they might play.
         {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 533"}
     + [no-asymmetric-critique]: On a transdisciplinary epistemology there is no reason to think philosophy has an asymmetric ability to criticise other forms of inquiry while being immune from their critique.
-        {fidelity: "quotation", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 534"}
+        {fidelity: "paraphrase", section: "7. Ethical Inquiry, Ethical Freedom, and the Arts", pinpoint: "p. 534"}
         + [meta-problem]
 
 [epistemic-iteration]: On the Deweyan picture inquiry is iterative: whether a domain can or should aspire to eliminate our local ways of apprehending things is settled within inquiry, not before it.

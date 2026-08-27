@@ -51,6 +51,21 @@ A long text has a **main conclusion** and **intermediate conclusions** — claim
 concluded from what precedes and used as reasons for what follows. Find the main one first, then
 work down. Working forwards through the sections instead produces a map of the table of contents.
 
+**A paper may have more than one main conclusion, and forcing it to have one is a misreport.**
+Two tests distinguish a second conclusion from an intermediate one:
+
+- an intermediate conclusion is *used* — something later in the paper rests on it;
+- a second main conclusion is **argued for separately and rests on nothing further**.
+
+Where a paper argues both a thesis and, say, that a whole area has been neglected, those are two
+conclusions with their own support, and the reconstruction should carry both. Joining them into
+one conjunction claims the author asserted a single thing they never stated; picking one and
+demoting the other silently drops half the paper's work.
+
+What is *not* a second conclusion: a restatement in different words (that is one claim, and
+Argdown's equivalence classes are what express it), or a claim that simply has nothing attached
+because its relations were never drawn.
+
 ### Step 2. Work backwards, and use the Assertibility Question
 
 For the conclusion, ask: **what immediate reasons does the text give for accepting this?** Then

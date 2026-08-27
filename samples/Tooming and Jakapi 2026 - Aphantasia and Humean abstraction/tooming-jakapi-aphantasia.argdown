@@ -89,11 +89,11 @@ defaults:
 # What Hume's abstraction requires {isGroup: true}
 
 [abstraction-needs-projective-imagination]: Humean abstraction requires projective imagination — invoking a determinate mental image and using it to call to mind other images of the same category.
-    {fidelity: "quotation", source: "\"The psychological mechanism responsible for abstraction is a kind of projective imagination that involves invoking some determinate mental image and using it to call to mind other mental images that belong under the same category\""}
+    {fidelity: "paraphrase", source: "\"The psychological mechanism responsible for abstraction is a kind of projective imagination that involves invoking some determinate mental image and using it to call to mind other mental images that belong under the same category\""}
     + [ideas-are-individual]: Abstract ideas are in themselves individual, however they may become general in their representation. #reported
-        {fidelity: "quotation", source: "\"Abstract ideas are therefore in themselves individual, however they may become general in their representation\"", pinpoint: "T 1.1.7.6"}
+        {fidelity: "paraphrase", source: "\"Abstract ideas are therefore in themselves individual, however they may become general in their representation\"", pinpoint: "T 1.1.7.6"}
     + [custom-conjures-ideas]: Hearing a general term revives the idea of one of these objects and makes the imagination conceive it with all its particular circumstances. #reported
-        {fidelity: "quotation", source: "\"the hearing of that name revives the idea of one of these objects, and makes the imagination conceive it with all its particular circumstances and proportions\"", pinpoint: "T 1.1.7.7"}
+        {fidelity: "paraphrase", source: "\"the hearing of that name revives the idea of one of these objects, and makes the imagination conceive it with all its particular circumstances and proportions\"", pinpoint: "T 1.1.7.7"}
     + [readiness-not-survey]: The other individual ideas that an idea represents are not present to the mind but only in power; the mind keeps itself in a readiness to survey any of them. #reported
         {fidelity: "paraphrase", source: "\"are not really and in fact present to the mind, but only in power; nor do we draw them all out distinctly in the imagination, but keep ourselves in a readiness to survey any of them\"", pinpoint: "T 1.1.7.7"}
     + [projection-is-not-mere-possession]: Using imagination this way is different from merely having mental imagery, and more specific than controlled manipulation of images in general.
@@ -101,9 +101,9 @@ defaults:
     + [ideas-are-mental-imagery]
 
 [ideas-are-mental-imagery]: Hume's individual ideas can be identified with mental imagery in the contemporary sense.
-    {fidelity: "quotation", source: "\"there are still sufficient phenomenological and representational similarities between mental images and Hume's individual ideas to conclude that the two are identical\""}
+    {fidelity: "paraphrase", source: "\"there are still sufficient phenomenological and representational similarities between mental images and Hume's individual ideas to conclude that the two are identical\""}
     + [identification-or-hopeless]: If the contemporary category of mental imagery cannot be identified with Hume's notion, his account of abstraction is immediately hopeless from the contemporary perspective.
-        {fidelity: "quotation", source: "\"If it turned out that the contemporary category of mental imagery cannot be identified with Hume's notion, this would render his account of abstraction immediately hopeless from the contemporary perspective\"", note: "The paper's own dilemma, and the reason the identification cannot simply be waived: either it holds and the challenge bites, or it fails and Hume is worse off."}
+        {fidelity: "paraphrase", source: "\"If it turned out that the contemporary category of mental imagery cannot be identified with Hume's notion, this would render his account of abstraction immediately hopeless from the contemporary perspective\"", note: "The paper's own dilemma, and the reason the identification cannot simply be waived: either it holds and the challenge bites, or it fails and Hume is worse off."}
     - [imagery-is-neuroscientific-category]: Mental imagery is a neuroscientific category defined by neurocognitive processes, whereas Hume's individual ideas are understood in phenomenal and representational terms. #contested
         {fidelity: "paraphrase", section: "2.1 Individual ideas and imagination", note: "An objection the authors raise against themselves and answer."}
         - [property-cluster-reply]: On a homeostatic property cluster view, the phenomenological and representational features of mental imagery matter for understanding it as a kind even if its causal basis is neurophysiological.
@@ -116,7 +116,7 @@ defaults:
     + [severe-aphantasia-is-established]: Severe aphantasics report an inability to form mental imagery, scoring at the minimum on the VVIQ, and lifelong severe aphantasia is estimated at around 1% of the population.
         {fidelity: "compression", section: "3 Challenge from aphantasia"}
     + [projective-failure-evidence]: EEG evidence indicates aphantasics exhibit reduced frontal delta power, which is crucial for the filtering that projective imagination requires.
-        {fidelity: "quotation", source: "\"aphantasics exhibit reduced frontal delta power that is crucial for filtering out irrelevant information\""}
+        {fidelity: "paraphrase", source: "\"aphantasics exhibit reduced frontal delta power that is crucial for filtering out irrelevant information\""}
         - [one-study-insufficient]: Citing one study is insufficient to prove that aphantasics are incapable of projective imagination. #conceded
             {fidelity: "quotation", source: "\"We acknowledge that citing one study is insufficient to prove that aphantasics are incapable of projective imagination\"", note: "The authors' own concession, in the body. They call it an invitation to empirical researchers rather than a result."}
 
@@ -129,11 +129,11 @@ defaults:
     - [resp-involuntary-imagery]: Severe aphantasics have intact involuntary imagery, so they could abstract using that. #contested
         {fidelity: "paraphrase", section: "4 Possible responses"}
         - [hume-imagination-is-controlled]: In Hume, imagination is under at least some control of the agent, so it is not entirely involuntary.
-            {fidelity: "quotation", source: "\"in Hume, imagination is under at least some control of the agent\""}
+            {fidelity: "paraphrase", source: "\"in Hume, imagination is under at least some control of the agent\""}
     - [resp-memory]: Severe aphantasics could perform Humean abstraction using memory instead of imagination. #contested
         {fidelity: "paraphrase", section: "4 Possible responses"}
         - [memory-is-order-bound]: In Hume, memory preserves the previously experienced order and position of past experiences, and it is the lack of such constraints that makes imagination the suitable candidate to play the abstractive role.
-            {fidelity: "quotation", source: "\"memory preserves the previously experienced order and position of past experiences\""}
+            {fidelity: "paraphrase", source: "\"memory preserves the previously experienced order and position of past experiences\""}
     - [resp-other-modalities]: Aphantasics could abstract using mental imagery from non-visual sensory modalities. #contested
         {fidelity: "paraphrase", section: "4 Possible responses"}
         - [multisensory-aphantasia]: Aphantasia is not limited to visual imagery impairment; one cluster of aphantasics shows low imagery across all sensory modalities and relies on verbal strategies.
@@ -142,7 +142,7 @@ defaults:
         {fidelity: "paraphrase", section: "4.1 Unconscious imagery in aphantasia?"}
         // CONVERGENT, and the authors say so: "Either way, the explanatory challenge ... still stands."
         - [some-have-no-imagery-at-all]: Aphantasics showed priming effects in neither the explicit nor the implicit task, suggesting the absence of both conscious and unconscious imagery.
-            {fidelity: "quotation", source: "\"aphantasics exhibited priming effects neither in the explicit nor in the implicit task, suggesting the absence of both conscious and unconscious imagery\""}
+            {fidelity: "paraphrase", source: "\"aphantasics exhibited priming effects neither in the explicit nor in the implicit task, suggesting the absence of both conscious and unconscious imagery\""}
             + [cross-decoding-fails]: Aphantasics' early visual cortex representations during imagery could not be cross-decoded with their perceptual representations, which suggests they do not have intact quasi-perceptual representations.
                 {fidelity: "paraphrase", source: "\"The failure of cross-decoding thus suggests that aphantasics do not have intact quasi-perceptual representations\""}
         - [possession-is-not-projective-use]: The challenge rests not on aphantasics lacking images altogether but on their being unable to imagine by using imagery in the sense abstraction requires.
@@ -160,7 +160,7 @@ defaults:
         - [humes-thinking-is-imagistic]: Hume's account of thinking is essentially imagistic, so the ideational component is necessary for forming abstract ideas however large the role of words.
             {fidelity: "paraphrase", section: "4.3 Abstraction by using words as proxies"}
         - [words-without-ideas-is-nonsense]: For Hume, using words without any associated ideas would be equivalent to thinking and speaking nonsense.
-            {fidelity: "quotation", source: "\"using words without any associated ideas would be equivalent to thinking and speaking nonsense\""}
+            {fidelity: "paraphrase", source: "\"using words without any associated ideas would be equivalent to thinking and speaking nonsense\""}
     - [resp-mere-exception]: Hume could treat severe aphantasia as an interesting exception, since a theory that fails to explain every case may still make sense of most.  #contested
         {fidelity: "paraphrase", section: "4.4 Aphantasia as mere exception"}
         - <The Copy Principle Argument>
@@ -174,9 +174,9 @@ defaults:
     {fidelity: "interpretation", warrant: "enthymeme", note: "The authors argue this in continuous prose across three paragraphs of 4.4. Numbering it is the reconstruction's."}
 
 (1) [copy-principle]: All our simple ideas in their first appearance are derived from simple impressions, which are correspondent to them and which they exactly represent. #reported
-    {fidelity: "quotation", source: "\"our simple ideas in their first appearance are deriv'd from simple impressions, which are correspondent to them, and which they exactly represent\"", pinpoint: "T 1.1.7"}
+    {fidelity: "paraphrase", source: "\"our simple ideas in their first appearance are deriv'd from simple impressions, which are correspondent to them, and which they exactly represent\"", pinpoint: "T 1.1.7"}
 (2) [copy-principle-is-universal]: Because the Copy Principle is a universal thesis, there is no theoretical space for Hume to allow mental operations that do not operate with individual ideas.
-    {fidelity: "quotation", source: "\"Because the Copy Principle is supposed to be a universal thesis, it is unclear what theoretical space there is for Hume to allow for mental operations that do not operate with individual ideas\""}
+    {fidelity: "paraphrase", source: "\"Because the Copy Principle is supposed to be a universal thesis, it is unclear what theoretical space there is for Hume to allow for mental operations that do not operate with individual ideas\""}
 (3) [exception-needs-non-imagistic-abstraction]: Treating aphantasia as an exception requires an abstractive process that does not presuppose imagistic operation with individual ideas.
     {fidelity: "paraphrase", section: "4.4 Aphantasia as mere exception"}
 -----

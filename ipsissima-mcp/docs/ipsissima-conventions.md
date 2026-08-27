@@ -227,7 +227,9 @@ ipsissima-check FILE.argdown --source-root DIR --format json
 It reports, and each of these is worth acting on:
 
 - **quotations that do not verify.** An absent quotation is a fabrication, not a typo.
-- **the apex** — the claims supporting nothing. This should be your contention and little else.
+- **the apex** — the claims supporting nothing. These should be the paper's conclusions and
+  nothing else. More than one is fine where the paper argues more than one thing; a long apex
+  list usually means framing material that was never attached.
 - **disconnected claims**, wired to nothing.
 - **unwarranted departures** — an `interpretation` or `imputation` with no `warrant`.
 - **quotation context** — what each verbatim span was cut away *from*. A quotation can be exact

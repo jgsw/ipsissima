@@ -68,15 +68,28 @@ Use the **whole language**, not the part of it you are sure of:
 check_reconstruction(argdown_path, source_root, format="json")
 ```
 
-Apply the fixes it reports and run it again until it comes back `ok`. **Fix the claim it names —
-do not rewrite the map.** A failing quotation is one claim to re-quote, not a reason to start
-again.
+Without the MCP server, the same thing on the command line:
+
+```bash
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown --source-root DIR --format json
+```
+
+Apply what it reports and run it again. **Fix the claim it names — do not rewrite the map.** A
+failing quotation is one claim to re-quote, not a reason to start again.
+
+**Stop when the `!` findings are gone**, not when the report is empty. `!` is a fault; `?` is
+something to look at, and some of those are judgements you are entitled to make differently —
+a claim whose text is the author's words but which declares `paraphrase` is reported, and is
+sometimes exactly right. `--format json` gives `"ok": true` when nothing is a fault.
 
 ---
 
 ## What a finished reconstruction has
 
-1. The paper's own conclusion at the apex, and little else there.
+1. **The paper's own conclusions at the apex, and nothing else there.** A paper may argue for
+   more than one thing, and where it does the map should say so — two theses drawn as two apex
+   claims is a report of the paper, whereas forcing them into one is a claim the paper does not
+   make. What does not belong at the apex is loose framing material that was never attached.
 2. Every claim placed in the text — a `chapter`, and a verified `source` quotation wherever the
    words allow.
 3. Every claim marked for fidelity, and every departure carrying a `warrant`.

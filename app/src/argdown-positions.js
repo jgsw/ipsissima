@@ -69,6 +69,29 @@ function sectionSpan(headings, section, totalLines) {
   return null;
 }
 
+/** The heading a line falls under — the last heading at or above it. Null before the first one.
+ *
+ *  WHY THIS IS DERIVED AND NOT READ. The band a claim sits in, in the exposition view, is a FACT
+ *  ABOUT WHERE ITS LINE IS, and until now it was taken from the `section:` the reconstructor
+ *  happened to write. The house rule says to write `section:` only when a claim has no
+ *  quotation — because a verified quotation already pins the exact line — and that rule is right
+ *  about LOCATING a claim and wrong about BANDING it. A map that quoted 80 of its 82 claims
+ *  therefore declared no sections at all, and every claim fell into one undifferentiated band:
+ *  the exposition view of a four-section paper showed one section.
+ *
+ *  Deriving it fixes that for every claim that can be placed at all, needs no metadata, and
+ *  cannot disagree with the text. `section:` goes back to being what it is useful as — a hint
+ *  that scopes the paragraph search — rather than something the view depends on.
+ */
+function sectionOfLine(headings, line) {
+  var found = null;
+  for (var i = 0; i < headings.length; i++) {
+    if (headings[i].line > line) break;
+    found = headings[i];
+  }
+  return found ? found.text : null;
+}
+
 /** The line of the paragraph in lines[lo-1..hi-1] that best matches the claim.
  *  Ties go to the earliest, so a claim restated later is placed where it is first made. */
 function locateParagraph(claimText, lines, lo, hi) {
@@ -258,6 +281,12 @@ function positions(nodes, sources, quarto) {
       var wide = locateParagraph(n.detail, all, 1, all.length);
       if (wide.line) { place.line = wide.line; place.precision = "paragraph"; }
     }
+    // The band, derived from wherever the line landed. The claim's own `section:` is preferred
+    // when it has one — the author said which section it belongs to, and that beats a guess from
+    // a line that may have been matched loosely.
+    place.section = n.section
+      || (place.line != null ? sectionOfLine(headsOf(n.chapter), place.line) : null)
+      || null;
     byId[n.id] = place;
   }
   return { byId: byId, order: order };

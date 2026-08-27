@@ -568,6 +568,37 @@ def spliced_claims(doc, source_root):
     return out
 
 
+#: Punctuation that a claim may lose or gain without ceasing to be the author's words. A
+#: quotation lifted out of a list drops a trailing comma; one made to stand alone gains a full
+#: stop. Neither changes a word.
+_PUNCT = re.compile(r"[^\w\s]+")
+
+
+def _is_verbatim(claim, body):
+    """Is this claim the source's WORDS — allowing punctuation to differ, but nothing else?
+
+    THE RULE THIS REPLACES accepted anything scoring 0.75 similarity over a window, which is a
+    quarter of the characters free. Measured: a claim that dropped a leading "Perhaps, then,"
+    from a canvassed view came back `quotation`, and so did one that put "answers" where the
+    author wrote "views". The first is Stern's opening example of misreporting — a hedge left
+    just outside the quotation — and `--fix` would then rewrite an honest `paraphrase` marker to
+    `quotation` and save it, after which the map draws a solid border saying these are the
+    author's words. The check built to catch misreporting was manufacturing it.
+
+    So: fold punctuation and case away, then require the claim to appear as a CONTIGUOUS RUN of
+    the source. Trimming at the ends stays verbatim, which is what makes a quoted clause able to
+    stand alone as a claim; substituting or dropping a word inside does not, because that is
+    where meaning changes.
+
+    What a dropped leading hedge costs is NOT lost by this. It stays a quotation — the words are
+    the author's — and the quotation-context report is what says the hedge was cut away, which is
+    the check that exists for exactly that and reads the sentence around the span.
+    """
+    a = _PUNCT.sub(" ", normalise(claim)[0].lower())
+    b = _PUNCT.sub(" ", normalise(body)[0].lower())
+    return " ".join(a.split()) in " ".join(b.split())
+
+
 def derived_quotation(doc, source_root):
     """Which claims ARE the source's words, computed rather than declared.
 
@@ -614,7 +645,7 @@ def derived_quotation(doc, source_root):
         #
         # The 38 ABSENT are the real thing: a summary in the reconstructor's own words wearing a
         # solid border, which tells a reader of the map that they are looking at the author's.
-        out[title] = None if body is None else find_quote(text, body)[0] in ("exact", "near")
+        out[title] = None if body is None else _is_verbatim(text, body)
     return out
 
 
