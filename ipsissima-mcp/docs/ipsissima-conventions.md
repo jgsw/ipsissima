@@ -16,7 +16,7 @@ map did.
 
 ```argdown
 [The state may override freedom]: The law may restrict personal freedom to protect people
-from themselves. #core
+from themselves.
     {fidelity: "quotation", pinpoint: "p. 14",
      source: "\"the law may restrict personal freedom to protect people from themselves\""}
 ```
@@ -155,19 +155,52 @@ markers.
 
 ## 5. Tags
 
-Tag as you write. Retrofitting means re-reading, and without tags there is no reliable overview.
+**Tags say whose claim it is.** They do not say how important it is — the map works that out.
 
-| tag | for |
+A reconstruction mixes claims from several hands: the author's own, views the author sets out in
+order to argue against, things the author concedes, and objections that are nobody's but the
+reconstructor's. Prose carries that distinction easily ("Queloz argues…", "even granting that…",
+"one might object…"). A map loses it, and a reader then cannot tell a position the author holds
+from one they are attacking.
+
+| tag | the claim is |
 |---|---|
-| `#core` | the spine of the argument — the claims a reader must have. Arguments too |
-| `#background` | scene-setting the argument needs but does not turn on |
-| `#dispute` | an objection that is **not the author's** — a critic's, or the reconstruction's |
-| `#scope` | a limit the author sets themselves |
+| *(untagged)* | **the author's own, asserted.** The common case, and it costs nothing |
+| `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
+| `#conceded` | **something the author grants tells against them** — Govier's *counterconsideration*, and the scope limits an author sets on their own thesis |
+| `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
 
-`#dispute` and `#scope` do real work: they are how a reader tells the author's concessions from
-other people's objections, which is a distinction the prose usually makes and a map usually loses.
+Each answers a question the structure cannot: nothing about the shape of a graph reveals that a
+claim is Hume's rather than the paper's.
 
----
+### Why there is no `#core`
+
+There was, and it did not work. It was a reader's estimate of which claims the argument rests on,
+applied by hand — and across the published samples it marked 27% of the claims in one map and 65%
+in another, so the chip meant something different in every file. Nothing could check it against
+the argument it described.
+
+The map now computes it. The **spine** control draws only claims that hold something up: remove
+one and part of the argument loses its route to a contention. That is a different measure from the
+*how much* ladder, which reveals the map outward from the contention by distance — a claim five
+steps out that holds up twenty others is spine and the ladder shows it last; a claim beside the
+contention that holds up nothing is a remark and the ladder shows it first.
+
+`#background` went with it. It turned out to mean two unrelated things: in three of the five
+samples it was marking **someone else's view** — Hume's, Williams's, Queloz's — which is now
+`#reported`; in the other two it was marking the author's own asides, which need no tag at all.
+
+### When to add a tag of your own
+
+A new tag earns its place when it names something that
+
+1. the structure **cannot compute** — not importance, not centrality, not depth;
+2. **recurs** across the map, so a chip is a filter rather than a label; and
+3. a reader would actually **want to filter on**.
+
+Field- or text-specific tags are legitimate on that test. A book symposium reconstructing one
+author against another may want that author named. What does not earn its place is a second word
+for something the map already knows.
 
 ## 6. House style for claims
 
@@ -180,7 +213,7 @@ other people's objections, which is a distinction the prose usually makes and a 
 - **Record objections as objections**, not as smoothed-over qualifications. A reconstruction with
   no attacks is usually a misreading.
 - **Do not invent claims.** If the source raises a point and drops it, record the dropping as a
-  `#scope` claim rather than silently completing the thought.
+  `#conceded` claim rather than silently completing the thought.
 - **Group with headings** — `# Part {isGroup: true}` — which add structure without adding nodes.
 
 ---

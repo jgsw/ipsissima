@@ -389,7 +389,7 @@ def quotation_context(doc, source_root, quote_results):
         absent = []
         if (rec.get("data") or {}).get("fidelity") == "quotation":
             have = {_stem(w) for w in re.findall(r"[a-z]{4,}", norm.lower())}
-            # STRIP TAGS FIRST. `#core`, `#background`, `#scope` and `#dispute` live in the
+            # STRIP TAGS FIRST. `#reported`, `#conceded` and `#contested` live in the
             # statement text, and reading them as the claim's own words made this fire on
             # nearly every quotation-fidelity claim in all three sample reconstructions --
             # reporting `core` as a term Gettier never uses. The check is for Stern's third

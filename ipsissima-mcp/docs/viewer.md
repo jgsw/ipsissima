@@ -169,7 +169,7 @@ run, so an omission shows up immediately rather than at build time.
   produced byte-identical graphs to the Node parser on both test files.
 
 Both open folded to the section skeleton when a map exceeds 25 nodes, and carry the live map's
-built-in depth control and tag-facet chips — which is the payoff for tagging `#core` as you write.
+built-in depth control, the spine filter and the tag chips.
 
 **Direction survives the badge, and survives length.** An arrow that cannot be seen is not an
 arrow, and two things were hiding them. dagre lays the map out bottom-to-top, so a support edge

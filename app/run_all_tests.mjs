@@ -48,6 +48,7 @@ const SUITES = [
   ["the desktop host adapter",   "node", [path.join(HERE, "test_host.mjs")]],
   ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
+  ["what holds the argument up", "node", [path.join(HERE, "test_spine.mjs")]],
   ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
   ["the publisher's own structure", PY, [path.join(PYTESTS, "test_structured_source.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],

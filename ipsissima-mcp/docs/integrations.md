@@ -21,9 +21,9 @@ The four translation decisions it encodes, each of which matters:
 | `CompoundObjection` on an **Inference** | an undercut `_` | Rationale's way of objecting to the step rather than a premise |
 | `Note` annotation | `note:` metadata | **a note is not a reason** — attaching it with `+` would add support the source does not contain |
 
-It also tags claims at Rationale depth ≤ 2 as `#core`, which gives the converted file a fold-up
-view it would not otherwise have, and stamps every node with its `rationale_id` so any claim can
-be traced back to the source.
+It stamps every node with its `rationale_id`, so any claim can be traced back to the source. It
+used to tag shallow claims `#core` for a fold-up view; it no longer does, because Ipsissima
+computes the spine from what each claim holds up rather than from how near the top it sits.
 
 **A converted map is a transcription, not a reading.** Diff it against a reconstruction built from
 the finished prose: where they disagree, the usual cause is that the author revised the argument's

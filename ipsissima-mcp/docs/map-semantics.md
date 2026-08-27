@@ -73,8 +73,10 @@ selection:
 ===
 ```
 
-Tag the load-bearing claims `#core` **as you write them**, and tag the arguments too
-(`<Master Argument>: gloss #core`) — an untagged argument disappears from a tag view and its
+Tags now say **whose claim it is**, not how central — `#reported`, `#conceded`, `#contested`, and
+untagged for the author's own. The load-bearing claims are computed, not tagged: see the spine
+control, and `ipsissima-conventions.md` §5. Tag the arguments as well as the statements where a
+tag applies — an untagged argument disappears from a tag view and its
 premises are left floating.
 
 `selectedSections` is the other reliable narrowing: `["III.D. The Master Argument"]` took the same
@@ -135,16 +137,16 @@ while giving the reader the book's structure.
 ## Tags and colour
 
 ```argdown
-[a]: A claim. #core
+[a]: A claim. #reported
 [b]: A surveyed position. #survey
 ```
 
-VERIFIED: tags drive automatic node colour — in the test, `#core` → orange, `#contra` → purple,
+VERIFIED: tags drive automatic node colour — in the test, `#reported` → orange, `#contra` → purple,
 untagged → green. Tags are also a preselection filter (`selectedTags`).
 
 **Prefer tags to metadata for anything that should be visible.** Renderers colour and filter by
 tag; they ignore arbitrary metadata keys. Keep metadata for provenance (`chapter`, `section`,
-`source`, `reviewed`) and use tags for kind (`#survey`, `#opponent`, `#core`).
+`source`, `reviewed`) and use tags for whose claim it is (`#reported`, `#conceded`, `#contested`).
 
 To keep tags out of the printed label:
 
@@ -179,7 +181,7 @@ objection bites.
 
 ## Recipes
 
-**Overview for a slide** — the `#core` spine, full text on each node. Frontmatter:
+**Overview for a slide** — the spine, full text on each node. Frontmatter:
 
 ```argdown
 ===

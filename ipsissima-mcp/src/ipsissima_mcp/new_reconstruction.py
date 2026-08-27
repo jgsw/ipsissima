@@ -160,15 +160,17 @@ defaults:
 // `chapter` and `reviewed` come from the defaults above; put them on a claim only to override.
 // Every claim still needs `section` OR a `source:` quotation, or it cannot be placed in the text.
 //
-// Objections tagged #dispute are not the author's. Say so, and say whether they are sourced.
+// Tags say WHOSE claim it is: #reported (a view the author sets out but does not hold),
+// #conceded (the author grants it tells against them), #contested (an objection that is
+// not the author's). The author's own asserted claims are untagged.
 
 {sections}
 
 // A DOCUMENT OF ONLY COMMENTS DOES NOT PARSE -- "Expecting {{linebreak}}{{linebreak}} (Empty
 // Line) but found ''", reported at 1:1 wherever the real problem is. So the skeleton carries one
 // placeholder, which is also the right place to start: find the conclusion first, then the form.
-[the contention]: TODO -- what is this paper trying to get you to accept? Replace this, then
-build the argument underneath it. #core
+[The contention]: TODO -- what is this paper trying to get you to accept? Replace this, then
+build the argument underneath it.
 '''
 
 README = '''# {title}

@@ -58,6 +58,56 @@ function groupChain(ix, nodeId) {
   return chain;
 }
 
+/* ------------------------------------------------------------------ load */
+
+/** How much of the argument collapses without each claim. id -> number of OTHER claims that
+ *  lose every route to a contention when this one is removed.
+ *
+ *  WHY THIS RATHER THAN A HAND-APPLIED `#core` TAG. The tag was the reader's estimate of the
+ *  same thing, and it did not survive contact: across the published samples it marked 27% of the
+ *  claims in one map and 65% in another, so a chip labelled `core` meant something different in
+ *  every file. It also could not be checked against the argument it was describing.
+ *
+ *  WHY NOT DISTANCE FROM THE CONTENTION, which the "how much" ladder already uses. They measure
+ *  different things and both are worth having. Distance says how far out a claim sits; load says
+ *  how much rests on it. A claim five steps out that holds up twenty others is the spine of the
+ *  argument and the ladder reveals it last; a claim one step from the contention that holds up
+ *  nothing is a remark, and the ladder reveals it first.
+ *
+ *  A contention scores high, and should: removing it strands everything that reached only
+ *  through it. Transitive by construction — "collapses" means the whole subtree that loses its
+ *  footing, not the immediate neighbours.
+ */
+function loadOf(ix) {
+  const contentions = ix.nodes.filter(n => (ix.outCount.get(n.id) || 0) === 0).map(n => n.id);
+  // Which claims can reach a contention at all, with `skip` taken out of the graph. Walked DOWN
+  // from the contentions through `childrenOf`, which is the reverse of the direction a reason
+  // points — reaching a contention and being reachable from one are the same relation read
+  // backwards, and the adjacency for the second is already built.
+  const reachable = skip => {
+    const seen = new Set();
+    const q = [];
+    for (const c of contentions) if (c !== skip) { seen.add(c); q.push(c); }
+    while (q.length) {
+      const x = q.shift();
+      for (const c of (ix.childrenOf.get(x) || [])) {
+        if (c === skip || seen.has(c)) continue;
+        seen.add(c); q.push(c);
+      }
+    }
+    return seen;
+  };
+  const base = reachable(null);
+  const load = new Map();
+  for (const n of ix.nodes) {
+    const without = reachable(n.id);
+    let lost = 0;
+    for (const id of base) if (id !== n.id && !without.has(id)) lost++;
+    load.set(n.id, lost);
+  }
+  return load;
+}
+
 /* ------------------------------------------------------------------ input hygiene */
 
 /** Make a graph safe to lay out, and say what was wrong with it.
@@ -248,7 +298,10 @@ function filterGraph(graph, state) {
     // Whether we are drawing the by-position view. It changes what depth is measured FROM; see
     // the section seeds below.
     byText:          !!state.byText,
-    facets:          state.facets || null
+    facets:          state.facets || null,
+    // SPINE. When set, only claims holding up at least this many others are drawn — plus the
+    // contentions, which are what "holding up" is measured towards. See `loadOf`.
+    spine:           state.spine == null ? null : state.spine
   };
 
   // EACH VIEW FOLDS BY ITS OWN DIVISIONS. The Argdown file's headings and the manuscript's
@@ -262,8 +315,14 @@ function filterGraph(graph, state) {
   if (S.byText) { S.collapsedGroups = new Set(); S.groupFolded = new Map(); }
 
   // 1. Facet filter first — it changes what counts as a root.
+  //    The spine filter rides with it, for the same reason: both answer "which claims", not
+  //    "how much", so both have to be settled before anything asks what the roots are.
   const facetOk = n => !S.facets || !n.facet || S.facets.has(n.facet);
-  const passes  = new Set(ix.nodes.filter(facetOk).map(n => n.id));
+  const load    = S.spine == null ? null : loadOf(ix);
+  const spineOk = n => S.spine == null
+    || (load.get(n.id) || 0) >= S.spine
+    || (ix.outCount.get(n.id) || 0) === 0;      // a contention is always spine
+  const passes  = new Set(ix.nodes.filter(n => facetOk(n) && spineOk(n)).map(n => n.id));
   const kids    = id => (ix.childrenOf.get(id) || []).filter(c => passes.has(c));
 
   // Which sections enclose each node, so "is this reason inside the section I folded" is a
@@ -3216,6 +3275,16 @@ function createLiveMap(container, graph, options) {
         '<button data-act="text" data-full="1" title="Every claim in full">full</button>' +
         '</span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +
+      // SPINE sits with "kinds" rather than with "how much", because it answers WHICH claims
+      // rather than how many levels of them — a claim deep in the argument can be spine and a
+      // claim beside the contention need not be.
+      '<span class="alm-grp alm-seg" data-role="spine">' +
+        '<b title="Show every claim, or only those the argument rests on">spine</b>' +
+        '<button data-act="spine" data-on="0" title="Every claim">all</button>' +
+        '<button data-act="spine" data-on="1" ' +
+        'title="Only claims that hold something up: remove one and part of the argument ' +
+        'loses its route to a contention">load-bearing</button>' +
+      '</span>' +
       (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "");
     // `input`, not `change`: the map should follow the thumb as it is dragged, which is the whole
     // reason a ladder is worth making draggable.
@@ -3230,6 +3299,7 @@ function createLiveMap(container, graph, options) {
       const b = /** @type {any} */ (ev.target).closest("button"); if (!b) return;
       const act = b.dataset.act;
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
+      if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
                                                                           : "collapseAll" });
       if (b.dataset.depth != null) {
@@ -3363,6 +3433,21 @@ function createLiveMap(container, graph, options) {
     toolbar.querySelectorAll('[data-act="text"]').forEach(
       /** @param {any} b */ b =>
         b.classList.toggle("on", (b.dataset.full === "1") === !!allText));
+    // The same radio-pair rule for spine, and the count of what it would leave rides on the
+    // button so the reader can see what a click costs before making it.
+    const spineOn = state.spine != null;
+    toolbar.querySelectorAll('[data-act="spine"]').forEach(
+      /** @param {any} b */ b => b.classList.toggle("on", (b.dataset.on === "1") === spineOn));
+    const spineBtn = /** @type {any} */ (toolbar.querySelector('[data-act="spine"][data-on="1"]'));
+    if (spineBtn) {
+      try {
+        const load = loadOf(index(graph));
+        let n = 0;
+        for (const nd of (graph.nodes || []))
+          if ((load.get(nd.id) || 0) >= 1) n++;
+        spineBtn.textContent = "load-bearing " + n;
+      } catch (e) { /* a graph too odd to measure keeps the plain label */ }
+    }
   }
 
   /** How many blocks the by-chapter rung puts on screen — the number on its button. */
@@ -3860,7 +3945,8 @@ function frameFor(w, h, cw, ch, minScale, apex) {
 }
 
 
-const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, membersOfGroup, reduceFold,
+const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
+              membersOfGroup, reduceFold,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
               seatInDocumentOrder, straightenDetours, clearOfBadge, offsetPastBadge,

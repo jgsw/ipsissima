@@ -296,7 +296,7 @@ def convert(nodes, roots, title=None, subtitle=None, core_depth=2):
     out.append("// An objection Rationale attached to an INFERENCE (rather than to a claim)")
     out.append("// becomes an Argdown undercut, written `_`.")
     out.append("//")
-    out.append(f"// Claims at Rationale depth <= {core_depth} are tagged #core, which gives the")
+    out.append(f"// Depth <= {core_depth} used to be tagged #core. It no longer is: the spine is")
     out.append("// fold-up view:  selection: {selectedTags: [\"core\"]}")
     out.append("//")
     out.append("// A Rationale compound reason is a LINKED argument: its premises work")
@@ -333,7 +333,10 @@ def convert(nodes, roots, title=None, subtitle=None, core_depth=2):
         n = nodes[nid]
         lines = []
         d = depth.get(nid, 99)
-        tag = " #core" if d <= core_depth else ""
+        # NO LONGER TAGGED. Ipsissima computes the spine from what each claim holds up, which a
+        # Rationale depth only approximates — and tags now say whose claim it is, not how
+        # central. `--core-depth` is kept so old command lines do not break, and does nothing.
+        tag = ""
         lines.append(f"[{ids[nid]}]: {body_of(n['text'])}{tag}")
         meta = [f'rationale_id: "{nid}"', f"depth: {d}"]
         # A Rationale Note is an authorial annotation, NOT a reason. Attaching it
@@ -394,7 +397,8 @@ def main():
     ap.add_argument("--title")
     ap.add_argument("--subtitle")
     ap.add_argument("--core-depth", type=int, default=2,
-                    help="tag claims at this Rationale depth or shallower #core "
+                    help="ACCEPTED AND IGNORED. Claims used to be tagged #core at this depth; "
+                         "the spine is computed now. "
                          "(default 2); drives the fold-up overview view")
     a = ap.parse_args()
 

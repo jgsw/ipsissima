@@ -40,7 +40,7 @@
 // genre.
 //
 // A NOTE ON WHOSE VIEW IS WHOSE. Queloz's positions are reported, not endorsed, and are tagged
-// #queloz so the map can be read as "what is being objected to" against "the objection".
+// #reported so the map can be read as "what is being objected to" against "the objection".
 // Untagged claims in the objection groups are Prescott-Couch's own.
 //
 // FIDELITY.
@@ -67,13 +67,13 @@ defaults:
 
 # The verdict {isGroup: true}
 
-[limits-not-uselessness]: Pragmatic Genealogy is worth using for certain goals, but each of the three things claimed for it — that it can replace Socratic questioning, that it is required for answering the Pragmatic Question, and that it reconciles naturalism with humanism — is too strong. #core
+[limits-not-uselessness]: Pragmatic Genealogy is worth using for certain goals, but each of the three things claimed for it — that it can replace Socratic questioning, that it is required for answering the Pragmatic Question, and that it reconciles naturalism with humanism — is too strong.
     {fidelity: "compression", section: "5. Conclusion", source: "\"I have raised some objections to different aspects of Queloz's discussion, but these objections, even if sound, do not show the method is useless. They only show that it has certain limits.\"", note: "The paper's own summary is two sentences; joining them into one contention, and naming the three limits it is a verdict on, is the reconstruction's. Doing so is what makes the three sections siblings rather than a sequence."}
     + [socratic-cannot-be-replaced]
     + [genealogy-not-required]
     + [humanism-not-reconciled]
 
-[weltanschauung-constrains]: The limits matter because they point at the outlook behind Pragmatic Genealogy, which forces a choice between the role of the apologist and the role of the engineer — and a Williams-esque sensibility need not accept that choice. #core
+[weltanschauung-constrains]: The limits matter because they point at the outlook behind Pragmatic Genealogy, which forces a choice between the role of the apologist and the role of the engineer — and a Williams-esque sensibility need not accept that choice.
     {fidelity: "paraphrase", section: "5. Conclusion", source: "\"For it forces us to choose between the role of the apologist and the role of the engineer.\"", note: "A SECOND CONTENTION, not a restatement of the first. The paper's last paragraph moves from what the method cannot do to what its governing picture costs, and that move is the piece a section-by-section reading loses."}
     + [limits-not-uselessness]
     + [engineering-is-not-the-only-response]
@@ -83,15 +83,15 @@ defaults:
 
 # What is being objected to {isGroup: true}
 
-[pragmatic-question]: Instead of orienting inquiry around the Socratic Question — what is X? — we should orient it around the Pragmatic Question: what is the point or purpose of our possessing the concept X? #queloz #background
+[pragmatic-question]: Instead of orienting inquiry around the Socratic Question — what is X? — we should orient it around the Pragmatic Question: what is the point or purpose of our possessing the concept X? #reported
     {fidelity: "paraphrase", section: "The Philosopher as Reverse-Engineer", note: "The paper's own statement of the view, in its opening. Emphasis in the original is dropped, which is why this is a paraphrase rather than a quotation."}
 
-[genealogies-are-models]: A 'genealogy' in Queloz's sense is not an actual historical explanation but an idealised state-of-nature model that aims to illuminate the function of a conceptual practice. #queloz #background
+[genealogies-are-models]: A 'genealogy' in Queloz's sense is not an actual historical explanation but an idealised state-of-nature model that aims to illuminate the function of a conceptual practice. #reported
     {fidelity: "paraphrase", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?", note: "Stated twice, once in the introduction and once at the head of §3. Both objections in §3 are objections to THIS, which is why it is wired to them rather than left as scene-setting."}
     +> <Genealogy Is Not Required>
     +> <The Atomism Limit>
 
-[craig-on-knowledge]: Craig's paradigm case reverse-engineers the function of the concept of knowledge — identifying good informants — from a state-of-nature story about a community that depends on others for information. #queloz #background
+[craig-on-knowledge]: Craig's paradigm case reverse-engineers the function of the concept of knowledge — identifying good informants — from a state-of-nature story about a community that depends on others for information. #reported
     {fidelity: "compression", section: "The Philosopher as Reverse-Engineer", note: "Six sentences of exposition reduced to one. The atomism objection works by contrast with it: Craig's story shows what a concept does ON ITS OWN, which is exactly the class of answer the objection says is not the only one."}
     +> <The Atomism Limit>
 
@@ -101,21 +101,21 @@ defaults:
 // asks the Pragmatic Question at all, and the paper endorses none of the three. They are wired
 // to the contention nowhere; they support [pragmatic-question] as what makes it intelligible.
 
-[motive-metaphysical]: One motivation is metaphysical: anti-realism about a domain, which leaves us needing something else for the discourse to do if we wish to conserve it. #queloz #background
+[motive-metaphysical]: One motivation is metaphysical: anti-realism about a domain, which leaves us needing something else for the discourse to do if we wish to conserve it. #reported
     {fidelity: "compression", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?"}
     +> [pragmatic-question]
 
-[motive-axiological]: A second is axiological: that what is ultimately valuable is practical, so anything like knowledge can matter only derivatively. #queloz #background
+[motive-axiological]: A second is axiological: that what is ultimately valuable is practical, so anything like knowledge can matter only derivatively. #reported
     {fidelity: "compression", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?"}
     +> [pragmatic-question]
 
-[motive-methodological]: A third is methodological: we can get insight into how we should change our practices by seeing where they came from and what holds them in place. #queloz #background
+[motive-methodological]: A third is methodological: we can get insight into how we should change our practices by seeing where they came from and what holds them in place. #reported
     {fidelity: "quotation", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?", source: "\"we can get insight into how we should change our practices by seeing where they came from and what holds them in place\""}
     +> [pragmatic-question]
 
 # Objection I: the two questions cannot be prised apart {isGroup: true}
 
-[socratic-cannot-be-replaced]: Socratic questioning cannot be replaced by Pragmatic questioning; functional considerations deserve a modest place among others, not exclusive weight. #core
+[socratic-cannot-be-replaced]: Socratic questioning cannot be replaced by Pragmatic questioning; functional considerations deserve a modest place among others, not exclusive weight.
     {fidelity: "paraphrase", section: "2. Can we replace the Socratic Question with the Pragmatic Question?", source: "\"It is better to take the more modest approach of considering functional claims within the context of other complementary and competing considerations, in the way that typical Socratic exchange unfolds.\""}
     + <Socratic Questioning Already Includes It>
     + <The Levels Argument>
@@ -154,7 +154,7 @@ defaults:
 
 # Objection II: the tool is not required, and cannot do some of the work {isGroup: true}
 
-[genealogy-not-required]: State-of-nature genealogies are neither necessary for the functional claims they are recommended for, nor able to capture a whole class of practical roles concepts have. #core
+[genealogy-not-required]: State-of-nature genealogies are neither necessary for the functional claims they are recommended for, nor able to capture a whole class of practical roles concepts have.
     {fidelity: "compression", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?"}
     + <Genealogy Is Not Required>
     + <The Atomism Limit>
@@ -173,7 +173,7 @@ defaults:
 (3) The genealogical apparatus is not required for the claims it is recommended for.
     {fidelity: "paraphrase"}
 
-[queloz-says-called-for]: Queloz does not hold the apparatus necessary, only that it is 'called for' in letting one explain and understand more. #queloz #scope
+[queloz-says-called-for]: Queloz does not hold the apparatus necessary, only that it is 'called for' in letting one explain and understand more. #reported #conceded
     {fidelity: "paraphrase", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?", source: "\"called for\"", note: "The author records this himself, from correspondence, and concedes it complicates the dialectic — leaving his own claim 'as a hypothesis'. Recorded as a scope limit on the objection rather than as a counter-argument, because that is how the paper treats it."}
     -> <Genealogy Is Not Required>
 
@@ -193,7 +193,7 @@ defaults:
 
 # Objection III: the humanism is not earned {isGroup: true}
 
-[humanism-not-reconciled]: Neither self-effacement, nor Williams's theory of intrinsic value, nor the later account of blame reconciles Pragmatic Genealogy with a humanistic sensibility. #core
+[humanism-not-reconciled]: Neither self-effacement, nor Williams's theory of intrinsic value, nor the later account of blame reconciles Pragmatic Genealogy with a humanistic sensibility.
     {fidelity: "compression", section: "4. Can sophisticated Pragmatic Genealogies reconcile naturalism and humanism?"}
     + [self-effacement-misses-the-worry]
     + <Intrinsic Value by Alchemy>
@@ -209,7 +209,7 @@ defaults:
 // the conditions are not sufficient; the ad-hocness charge is what makes resting the method's
 // humanistic credentials on them 'risky'.
 
-(1) [williams-conditions]: Queloz appeals to Williams's view that sense-making plus practical necessity are sufficient for something to have intrinsic value. #queloz
+(1) [williams-conditions]: Queloz appeals to Williams's view that sense-making plus practical necessity are sufficient for something to have intrinsic value. #reported
     {fidelity: "compression", note: "The two conditions are block-quoted in the source as (SM) and (PN); this compresses them, and the map does not need their wording to carry the objection."}
 (2) [jesus-counterexample]: A community's coherent and socially indispensable valuing of prayer to Jesus Christ would satisfy both conditions without prayer thereby having intrinsic value.
     {fidelity: "paraphrase", source: "\"Does praying to Jesus Christ, therefore, have\"", note: "The quotation stops where the source's emphasis begins. The rhetorical question is the author's, and the answer he gives is 'It does not seem so'."}
@@ -231,11 +231,11 @@ defaults:
 
 # What the map shows and the paper does not {isGroup: true}
 
-[atomism-and-constitution-converge]: The atomism limit of §3 and the neglect of constitutive relations in §4 are the same objection arriving twice: a method that examines concepts one at a time cannot see relations that hold between them. #dispute
+[atomism-and-constitution-converge]: The atomism limit of §3 and the neglect of constitutive relations in §4 are the same objection arriving twice: a method that examines concepts one at a time cannot see relations that hold between them. #contested
     {fidelity: "imputation", warrant: "coherence", note: "THE RECONSTRUCTION'S, NOT THE AUTHOR'S. The two arguments sit in different sections, are addressed to different claims, and the paper never connects them. Drawn side by side they share a premise — and if they do, the paper's strongest objection is a structural one made twice rather than two separate limits."}
     +> [genealogy-not-required]
     +> [humanism-not-reconciled]
 
-[objections-are-not-exhaustive]: That these three limits are the only ones, or the most important ones, is never argued; the paper offers them as the objections it happens to have. #dispute
+[objections-are-not-exhaustive]: That these three limits are the only ones, or the most important ones, is never argued; the paper offers them as the objections it happens to have. #contested
     {fidelity: "imputation", warrant: "convention", note: "A book symposium is not obliged to be exhaustive, which is why this is recorded as a limit on what the verdict can claim rather than as a fault. It matters because [limits-not-uselessness] reads as a considered verdict on the method, and what supports it is three particular objections."}
     -> [limits-not-uselessness]

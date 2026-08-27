@@ -419,7 +419,7 @@ heading can quietly fail to appear.
 ## 8. Tags
 
 ```argdown
-[A claim]: The text. #core
+[A claim]: The text. #reported
 
 [Another claim]: The text. #(a tag with spaces)
 ```
