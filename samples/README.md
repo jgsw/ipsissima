@@ -33,6 +33,7 @@ openly licensed instead.
 | **Carroll**, "What the Tortoise Said to Achilles" (1895) | 20 claims, 3 pages | public domain |
 | **Darwin**, natural selection (*Origin*, p. 168) | 22 claims, 2 paragraphs | public domain |
 | **Prescott-Couch**, "The Philosopher as Reverse-Engineer" (2024) | 36 claims, 17 pages | CC-BY 4.0 |
+| **Akhlaghi**, "Transformative experience and the right to revelatory autonomy" (2023) | 82 claims, 10 pages | CC-BY 4.0 |
 | **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 48 claims, 9 pages | CC-BY 4.0 |
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 37 claims, 28 pages | Creative Commons, by the author of Ipsissima |
 
@@ -44,6 +45,13 @@ clearest statement here of the distinction that decides how a reconstruction is 
 - Darwin's premises work **only together**. Variation without struggle preserves nothing; struggle
   without variation has nothing to preserve. So they sit in premise-conclusion structures, and
   drawing them as siblings would claim something false about the argument.
+
+**Akhlaghi** is the only map here that uses the whole language — undercuts, contradictions and
+explicit relation direction. It was the test arm in a controlled comparison of two sets of
+instructions, and its counterpart, built under the older ones, is kept in
+`ipsissima-mcp/eval/baseline-instructions/` so the difference can be read rather than taken on
+trust. It is also the largest map in the corpus at 93 nodes, and the one that found the fold
+defect now in `KNOWN-ISSUES.md`.
 
 **Tooming & Jakapi** is the one with the cleanest *shape*: a linked three-premise challenge, and
 then seven ways out enumerated and closed one by one. It is the best thing here to read if you

@@ -441,6 +441,12 @@ WARRANTS = {
 }
 
 POLICY_VALUES = {
+    # NOT a dimension of charity like the rest, but it lives in the same block and is
+    # load-bearing: it is what tells `--fix` that nobody has judgement invested in this file's
+    # markers yet. Absent from this table it was reported as unknown vocabulary on every run of
+    # every generated file — a warning that could not be cleared, on a line the conventions
+    # document tells you to write. Both arms of the instruction comparison hit it.
+    "generated": ("true", "false", "True", "False", True, False),
     "aim":      ("fit", "appropriation"),
     "unit":     ("meaning", "commitment"),
     "mode":     ("coherence", "truth", "soundness", "agreement", "interest"),
@@ -525,6 +531,12 @@ def spliced_claims(doc, source_root):
             continue
         if "..." in text or "\u2026" in text:
             continue                      # the join IS marked; that is what we want
+        # A `note:` IS the mark, because this check's own report asks for one. It said "record it
+        # in the claim's `note:`, or mark the elision in the text" and then accepted only the
+        # second, so a reader who did as they were told saw the identical complaint on the next
+        # run and had no way to tell a fixed splice from an unfixed one.
+        if (rec.get("data") or {}).get("note"):
+            continue
         if chapter not in cache:
             try:
                 with open(os.path.join(source_root, chapter), encoding="utf-8",

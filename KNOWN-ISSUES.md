@@ -1,40 +1,42 @@
 # Known issues
 
-## A claim can vanish when you expand another one (both views, deep fold states)
+## A second contention can be drawn unattached (Reasons view, one fold state)
 
-**The one open defect.** `app/test_fold_invariants.mjs` finds it on the published samples:
+Found 27 Aug 2026, by adding a sixth sample — which is what a corpus is for.
 
 ```bash
-node app/test_fold_invariants.mjs --steps 1500 --seed 1
+node app/test_fold_invariants.mjs --steps 0
 ```
 
 ```
-Carroll [by argument]: 20 nodes, 5 sections
-   FAIL  expanding a claim hides nothing that was on screen (no depth limit)
-         expanding n19 hid 5: n10, n13, n11
-         after: … -> collapseAll -> toggleGroup(s2) -> toggleNode(n19)
+Akhlaghi [by argument]: 93 nodes, 8 sections
+   FAIL  no drawn claim is left with nothing attached to it
+         1 claim(s): An urgent unexplored ethical challenge
+         after: as the viewer opens -> toggleGroup(s2)
 ```
 
-**What it means for a reader.** Opening a claim should only ever add. In a deep enough fold
-state — the reproducers all pass through `collapseAll` followed by opening a section and then a
-node — expanding one claim can take others off the screen. Nothing is lost from the file, and
-pressing the same control again brings them back, but a map that removes claims when you ask it
-for more is telling you something false about the argument while you are reading it.
+**What is different about this one.** The two fold defects fixed earlier were both in the
+by-position view, and both were fixed by drawing a **through-edge** to the nearest visible claim
+rather than importing the missing ones. This is the first in the **by-argument** view, and it is
+the first to involve a **second contention**.
 
-**THE SUITE'S DEFAULT SEED DOES NOT FIND THIS, and that is worth saying plainly.** The committed
-run is `--steps 1500 --seed 20260817`, which is green. Seeds 1 and 7 fail at the same step count.
-So the green tick is a regression gate — it holds the renderer to what it does today — and not a
-proof that these invariants hold. Searching seeds in CI would turn the build permanently red for
-one defect, which teaches a reader to ignore it; the honest arrangement is a fast gate plus this
-entry.
+The claim is the paper's second thesis. It has exactly two relations in the file — it is the
+conclusion of one premise-conclusion structure, and it is attacked by one claim — and both of
+those sit in the section being opened. Opening that section leaves it on screen with neither.
 
-**Not diagnosed.** Distinct from the two below in that it is about the fold *bookkeeping* rather
-than about which claims get drawn: the state after `collapseAll` is not simply the union of the
-individual collapses, and expanding out of it takes a different path back.
+**Not diagnosed.** A hand reproduction of `toggleGroup(s2)` from an empty state does not
+reproduce it: the claim keeps both edges. So the failing state is the one the harness reaches
+from "as the viewer opens", which is not the empty state, and the difference is where the bug
+lives. Step 5b's through-edge should still have fired; why it does not is the question.
+
+**Why it is left failing.** Making the suite green by holding the sample out would be gaming: the
+map is a legitimate reconstruction of a real paper, it checks clean, and it is exactly the kind of
+file a reader will open. The invariant is the one most worth having.
 
 ---
 
 ## Fixed 23 Aug 2026
+
 
 Kept here because both were load-bearing entries for a while and the reasoning is worth having.
 

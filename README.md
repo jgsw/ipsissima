@@ -112,16 +112,9 @@ an honest account of the one problem the project has not solved.
 
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
 
-**Green does not mean everything passes**, and the badge is worth reading carefully. The suite
-runs a fixed seed, which makes it a regression gate — it holds the renderer to what it does
-today — rather than a proof that its invariants hold. One defect is open, and other seeds find
-it at the same step count:
+**Green does not mean everything passes.** The workflow allows exactly the one failure documented
+in `KNOWN-ISSUES.md` and turns red on any other — a second contention drawn unattached in one fold
+state, found on 27 Aug 2026 by adding a sixth sample, which is what a corpus is for.
 
-```bash
-node app/test_fold_invariants.mjs --steps 1500 --seed 1
-```
-
-`KNOWN-ISSUES.md` says what it is, and why CI is not set to hunt for it.
-
-Two fold defects that stood here for a month were fixed on 23 Aug 2026 — and the second turned
-out to be the first one's fix, which is why both accounts are kept.
+Two earlier fold defects were fixed on 23 Aug 2026, and the second turned out to be the first
+one's fix. Both accounts are kept.

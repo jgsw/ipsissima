@@ -965,7 +965,14 @@ def _report(cli, path, a):
             print(f"      {m:<30} {n}")
 
     # ---- 5. tag census ---------------------------------------------------- #
-    tags = Counter(re.findall(r"(?<!\S)#([A-Za-z][\w-]*)", text))
+    # COMMENTS FIRST. The parser strips them, so a `#tag` written inside one is not a tag —
+    # but this census read the raw file and counted it, so an explanatory comment mentioning
+    # three tags reported three tags that do not exist. Found when a reconstruction had to
+    # rewrite its own header comment to stop the census inventing them.
+    uncommented = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    uncommented = re.sub(r"^\s*//.*$", "", uncommented, flags=re.M)
+    uncommented = re.sub(r"<!--.*?-->", " ", uncommented, flags=re.S)
+    tags = Counter(re.findall(r"(?<!\S)#([A-Za-z][\w-]*)", uncommented))
     if tags:
         print("\n   TAGS (drive the overview view via selection.selectedTags):")
         for t, c in tags.most_common():

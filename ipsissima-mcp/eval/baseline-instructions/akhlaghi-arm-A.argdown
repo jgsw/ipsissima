@@ -1,0 +1,628 @@
+===
+title: Akhlaghi 2023 — Transformative experience and the right to revelatory autonomy
+reconstruction:
+    generated: true
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/akhlaghi-2023-revelatory-autonomy.md"
+    reviewed: "2026-08-27"
+===
+
+/*
+ TOP-LEVEL SHAPE: elimination of alternatives feeding an inference to the best explanation.
+ Four candidate answers to The Question are put up (no conditions; negative valence; best
+ interests; expected utility); each is killed by the same epistemic barrier; the failures are
+ turned into three adequacy conditions; and the right to revelatory autonomy is offered as the
+ one answer that meets them and explains two further data. Nothing here follows the order of
+ the text: the adequacy conditions are printed after the refutations but are the joint that
+ holds the whole paper together, and the grounding of the right is printed as a reply to an
+ objection.
+
+ THE ARGUMENTS INSIDE IT, and what each one is:
+
+   <Valence Refutation>       — the view demands knowledge the epistemic barrier withholds.
+   <Clear Cases>              — refutation by counterexample (the would-be killer, the
+                                would-be self-mutilator) of the "no conditions" answer.
+   <Unknowability Reductio>   — reductio: assume best-interests or expected-utility, add a
+                                minimal condition on permissible action, derive that we may
+                                NEVER permissibly intervene; but we may; so both are false.
+   <Arbitrariness Objection>  — a dilemma about whose interests count, present or future.
+   <Diagnosis>                — the common cause: all three fail BECAUSE the choices are
+                                transformative.
+   <Self-Making Ground>       — grounding argument: self-authorship is the value, and (an
+                                imputed bridge) a value of that kind grounds a right.
+   <Meets the Adequacy Conditions> — the three constraints, checked one by one.
+   <Outweighing Explains the Clear Cases> — the pro tanto duty applied to the two hard cases.
+   <Degrees of Self-Making>   — why a cheeseburger and a degree are not on a par.
+   <Two Kinds of Autonomy>    — a distinction drawn to defeat the rational-persuasion objection.
+   <Conditional Answer>       — right plus correlative duty give the "only if"; a further
+                                suggestion gives the "if".
+   <Best Answer>              — the inference to the best explanation that the map hangs from.
+
+ FIDELITY POLICY used here, because the line has to be drawn somewhere and a reader should
+ know where: `quotation` is used when the claim's text differs from a contiguous span of the
+ source only in capitalisation, emphasis markers, or a dropped leading connective that carries
+ no hedge and no attribution. Everything else is `paraphrase`, INCLUDING claims made entirely
+ of the author's own words where what the claim drops is a hedge ("Perhaps, then...", "it
+ seems plausible that...") or the framing that marks a view as canvassed rather than held.
+ Those cases carry a `note:` saying what was dropped. The checker's own tolerance is wider
+ than this, so it will report roughly thirty claims as under-marked; that is deliberate.
+
+ TAGS (written here without their hashes, so as not to inflate the tag census): "core" is the
+ spine — the twelve arguments, the four rival answers' verdicts, the three adequacy
+ conditions, the right, the duty and the answer — so that selectedTags ["core"] is an overview
+ rather than the whole file. "detail" is the supporting material each argument runs on: cases,
+ examples, sub-premises. "dispute" marks a position the author does not hold, "background" the
+ definitions, "scope" a limit the author sets himself.
+*/
+
+# The question {isGroup: true}
+
+[the-question]: Under what conditions, if any, is it morally permissible to interfere to try to prevent another from making a transformative choice? #core
+    {fidelity: "quotation", pinpoint: "p. 4",
+     source: "\"Under what conditions, if any, is it morally permissible to interfere to try to prevent another from making a transformative choice?\""}
+
+[epistemically-transformative]: An experience is epistemically transformative just in case it provides some knowledge or understanding that one can possess only if one undergoes that experience. #background
+    {fidelity: "paraphrase", pinpoint: "p. 3",
+     source: "\"it provides some knowledge or understanding that one can possess only if one undergoes that experience\""}
+
+[personally-transformative]: An experience is personally transformative just when it changes the core preferences, values and desires of whoever undergoes it. #background
+    {fidelity: "paraphrase", pinpoint: "p. 3",
+     source: "\"it changes the core preferences, values and desires of whoever undergoes it\""}
+
+[transformative-experience]: A transformative experience is one that is both epistemically and personally transformative. #background
+    {fidelity: "quotation", pinpoint: "p. 3",
+     source: "\"is one that is both epistemically and personally transformative\""}
+
+[interpersonal-questions-unexplored]: Focus upon first-personal transformative decision-making has left unexplored the ethical questions about how we may treat others who face transformative choices. #background
+    {fidelity: "paraphrase", pinpoint: "p. 4",
+     source: "\"They present an urgent ethical challenge that focusing upon first-personal transformative decision-making has left unexplored.\""}
+
+[interference-any-form]: Interference covers coercion, manipulation, rational persuasion and force alike. #scope
+    {fidelity: "paraphrase", pinpoint: "p. 5",
+     source: "\"In what follows, 'interference' refers to any of these.\"",
+     note: "The preceding sentence lists the four: 'Charlie might coerce, manipulate, rationally persuade or force Adam not to become a parent.'"}
+
+[scope-voluntary-only]: The paper concerns only voluntary transformative experiences; involuntary and nonvoluntary ones are set aside. #scope
+    {fidelity: "compression", pinpoint: "n. 1",
+     source: "\"I am concerned only with the voluntary\"",
+     note: "The author's own restriction, not an objection: 'The others raise different ethical questions I hope to pursue elsewhere.' Recorded as an attack only because that is the edge Argdown has for a limit on a claim's scope."}
+
+[the-question]
+    + [interpersonal-questions-unexplored]
+
+[transformative-experience]
+    + [epistemically-transformative]
+    + [personally-transformative]
+
+# The epistemic barrier {isGroup: true}
+
+[epistemic-barrier]: There is an epistemic barrier between the time before and the time after a transformative choice. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"Owing to the epistemic barrier between the time before and after a transformative choice\""}
+
+[epistemic-barrier]
+    + [epistemically-transformative]
+    + [transformative-experience]
+
+# Four answers that fail {isGroup: true}
+
+[no-conditions-view]: There are no conditions under which we may permissibly interfere in another's transformative choice. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"Should we thus conclude that we may *never* permissibly interfere in a transformative choice\"",
+     note: "Raised by the author as the answer the epistemic barrier seems to force, and immediately rejected: 'This is too quick.'"}
+
+[valence-view]: We may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 5",
+     source: "\"Perhaps, then, we may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience.\"",
+     note: "The author's 'Perhaps, then' marks this as a candidate entertained, not a view held."}
+
+[best-interests-view]: It is permissible to interfere with another's transformative choice just when it is in the best interests of that person for you to do so. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"it is permissible to interfere with another's transformative choice just when it is in the *best interests* of that person for you to do so\"",
+     note: "Left as paraphrase although the words are the author's: the claim drops the 'A second view, then:' that marks this as a view canvassed rather than held."}
+
+[expected-utility-view]: We may permissibly intervene in another's transformative choice just when the choice will not maximize the chooser's expected utility, and not otherwise. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"we may permissibly intervene just when the choice will not maximize expected utility and not otherwise\""}
+
+[exhaustive-rivals]: These four are the only prima facie plausible answers to The Question. #core
+    {fidelity: "imputation", warrant: "enthymeme",
+     note: "The author says he considers 'three prima facie plausible answers' plus the 'no conditions' answer, and never claims the list is complete. An elimination of alternatives needs the completeness claim, and this is the weakest joint in the paper."}
+
+# Against the no-conditions answer {isGroup: true}
+
+[would-be-killer]: Someone might wish to have the transformative experience of going on a killing spree. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"suppose someone wished to have the transformative experience of going on a killing spree\"",
+     note: "The sentence continues 'or to cut off their body from their waist down'; that second disjunct is not dropped but recorded separately as its own case."}
+
+[would-be-self-mutilator]: Someone might wish to have the transformative experience of cutting off their body from the waist down. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"or to cut off their body from their waist down\""}
+
+[clearly-permitted-to-prevent]: Regardless of not knowing what these experiences will be like for them, we clearly are permitted to prevent them from making these choices. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"Regardless of not knowing what this will be like for them, we clearly *are* permitted to prevent them from making *these* choices.\""}
+
+[we-can-sometimes-intervene]: We can sometimes permissibly intervene in another's transformative choice. #core
+    {fidelity: "compression", pinpoint: "pp. 6-7",
+     source: "\"Since we can, these views are false\"",
+     note: "Compressed from the two counterexample cases on p. 6 and the 'Since we can' of p. 7, which are two pages apart; the claim is the fixed point both passages rely on."}
+
+<Clear Cases>: Refutation by counterexample: two choices we are plainly permitted to prevent, despite knowing nothing about what they would be like for the chooser. #core
+    {fidelity: "interpretation", warrant: "coherence",
+     note: "The author presents the two cases as a rhetorical aside ('This is too quick'); numbering them as a refutation is the reconstructor's assembly."}
+
+(1) [would-be-killer]
+(2) [would-be-self-mutilator]
+(3) [clearly-permitted-to-prevent]
+-----
+(4) [we-can-sometimes-intervene]
+
+[no-conditions-view]
+    - [we-can-sometimes-intervene]
+
+# Against the valence answer {isGroup: true}
+
+[valence-unknown-until-after]: In paradigmatic cases of transformative experiences we do not know, and have no good reason to believe, whether they will be positive or negative until after they have happened. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 5",
+     source: "\"there are paradigmatic cases of transformative experiences where we *do not know* or we have *no good reason to believe* that they will be positive or negative until *after* they have happened\""}
+
+[third-party-no-better]: A third party who has undergone the same type of experience is not thereby in a position to know what it would be like for this person. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"there is no reason to think that what it is like\"",
+     note: "Full sentence: 'there is no reason to think that what it is like for Charlie to hold his child is the same as what it would be like for Adam to hold his child' — quoted short because the source italicises four phrases inside it."}
+
+[barnes-difference]: The experiences leading up to a transformative experience, and the differences between its two subjects, make it unlikely that it will be transformative in the same way for both. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 6",
+     source: "\"Given the variation in the experiences that lead up to transformative experiences, and the differences in subjects, this point generalizes\"",
+     note: "Akhlaghi is quoting Barnes 2015: 175 here."}
+
+[valence-unknowable]: We cannot know the value of such experiences for individuals in many paradigmatic cases. #detail
+    {fidelity: "quotation", pinpoint: "p. 6",
+     source: "\"we cannot know the value of such experiences for individuals in many paradigmatic cases\""}
+
+[permissibility-needs-possessable-grounds]: Permissible interference cannot generally depend upon knowledge, or reasons for belief, that one cannot possess before the choice is made. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 5",
+     source: "\"makes it implausible to think that permissible interference generally depends upon knowledge, or reasons for belief, that one *cannot possess* before that choice is made\""}
+
+[valence-view-fails]: The valence answer fails. #core
+    {fidelity: "compression", pinpoint: "pp. 5-6"}
+
+[ambivalent-cases]: The valence answer is also troubled by ambivalent transformative experiences, where it is unclear whether the experience was relevantly positive or negative. #detail
+    {fidelity: "paraphrase", pinpoint: "n. 3",
+     source: "\"where it is unclear whether the experience was relevantly positive or negative\""}
+
+<Valence Refutation>: The valence answer demands exactly the knowledge the epistemic barrier withholds. #core
+    {fidelity: "interpretation", warrant: "coherence",
+     note: "The author runs the barrier point and the Barnes generalisation as consecutive paragraphs without numbering them; the two-step structure is the reconstructor's."}
+
+(1) [valence-unknown-until-after]
+(2) [third-party-no-better]
+-----
+(3) [valence-unknowable]
+(4) [permissibility-needs-possessable-grounds]
+-----
+(5) [valence-view-fails]
+
+[valence-unknown-until-after]
+    + [epistemic-barrier]
+
+[third-party-no-better]
+    + [barnes-difference]
+
+[valence-view]
+    - [valence-view-fails]
+    - [ambivalent-cases]
+
+# Against the best-interests and expected-utility answers {isGroup: true}
+
+[interests-knowable-only-after]: We can only know what the interests of the future self are, and whether one's present interests will be fulfilled, after a transformative choice has been made. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"we can only know *what* the interests of the future selves are and *whether* one's present interests will be fulfilled *after* a transformative choice has been made\""}
+
+[utilities-knowable-only-after]: Since the utilities of a transformative experience partly depend upon what it would be like for the chooser, and she can only know that after undergoing it, we cannot know what its expected utility is. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"since she can only know this *after* going, how could we know *what* the expected utility of her going to university is?\""}
+
+[depend-on-unpossessable-knowledge]: Both answers make the permissibility of interference depend upon knowledge or reasons for belief we cannot possess at the time of choosing. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"by making the permissibility of interference dependent upon knowledge or reasons for belief we cannot possess at the time of choosing\""}
+
+[cannot-know-when-permitted]: Both answers entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"both views entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice\""}
+
+[minimal-condition]: There is a minimal condition on acting permissibly that one has good reason to believe the conditions that make one's action permissible are met. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"there is a minimal condition on acting permissibly that one has good reason to believe the conditions that make your action permissible are met\"",
+     note: "Footnote 5 records what happens if this condition is rejected: the two views then have to say we can permissibly interfere but can never know when."}
+
+[never-permissibly-intervene]: Both answers entail that we can never permissibly intervene in a transformative choice. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"they also entail that we can *never* permissibly intervene in a transformative choice\""}
+
+[both-views-false]: The best-interests and expected-utility answers are false. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"Since we can, these views are false\""}
+
+<Unknowability Reductio>: Reductio: grant either answer, add the minimal condition on permissible action, and it follows that we may never permissibly intervene — which we may. #core
+    {fidelity: "interpretation", warrant: "coherence",
+     note: "The author labels these 'two serious problems' in prose; the reductio shape, and the placing of the minimal condition as the second premise, are the reconstructor's."}
+
+(1) [epistemic-barrier]
+(2) [interests-knowable-only-after]
+(3) [utilities-knowable-only-after]
+-----
+(4) [depend-on-unpossessable-knowledge]
+(5) [minimal-condition]
+-----
+(6) [never-permissibly-intervene]
+(7) [we-can-sometimes-intervene]
+-----
+(8) [both-views-false]
+
+[cannot-know-when-permitted]
+    + [depend-on-unpossessable-knowledge]
+
+[interests-may-differ]: The interests of the present person and those of the future person may differ. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"Such interests may differ, and it seems arbitrary to privilege one over the other\""}
+
+[arbitrary-to-privilege]: It seems arbitrary to privilege the present person's interests over the future person's, or the reverse. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"Such interests may differ, and it seems arbitrary to privilege one over the other\""}
+
+[whose-interests-open]: Both answers leave it an open question whose interests, or whose expected utilities, morally matter for the permissibility of intervening. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"interests would morally matter for the permissibility of intervening in a transformative choice\""}
+
+<Arbitrariness Objection>: A dilemma about the addressee: neither the present nor the future person's interests can be privileged without arbitrariness. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [interests-may-differ]
+(2) [arbitrary-to-privilege]
+-----
+(3) [whose-interests-open]
+
+[best-interests-view]
+    - [both-views-false]
+    - [cannot-know-when-permitted]
+    - [whose-interests-open]
+
+[expected-utility-view]
+    - [both-views-false]
+    - [cannot-know-when-permitted]
+    - [whose-interests-open]
+
+# The diagnosis and the adequacy conditions {isGroup: true}
+
+[three-views-fail]: The three prima facie plausible answers fail precisely because they concern transformative choices and experiences. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"Answering The Question, I suggest, requires recognizing that the above views face their objections *precisely because* they concern transformative experiences.\""}
+
+<Diagnosis>: The three failures have one cause: each answer makes permissibility turn on something the epistemic barrier puts out of reach. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [valence-view-fails]
+(2) [both-views-false]
+(3) [epistemic-barrier]
+-----
+(4) [three-views-fail]
+
+[adequacy-valence]: The permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience. #core
+    {fidelity: "quotation", pinpoint: "p. 7",
+     source: "\"the permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience\""}
+
+[adequacy-whose-obligation]: An answer should avoid leaving it an open question to whom some relevant moral obligation is owed between a present or future person. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"it should avoid leaving it an open question to whom some relevant moral obligation is owed between a present or future person\""}
+
+[adequacy-future-knowledge]: An answer should not depend upon knowing the unknowable interests of, or the consequences of the choice on, some future person. #core
+    {fidelity: "paraphrase", pinpoint: "p. 7",
+     source: "\"it should not depend upon knowing the unknowable interests of, or the consequences of the choice on, some future person\""}
+
+[adequacy-valence]
+    + [valence-view-fails]
+
+[adequacy-whose-obligation]
+    + [whose-interests-open]
+
+[adequacy-future-knowledge]
+    + [both-views-false]
+
+# The right to revelatory autonomy {isGroup: true}
+
+[right-to-revelatory-autonomy]: The moral right to autonomously decide to discover how one's life will go and who one will become by making a transformative choice. #core
+    {fidelity: "quotation", pinpoint: "p. 8",
+     source: "\"The moral right to autonomously decide to discover how one's life will go and who one will become by making a transformative choice.\""}
+
+[revelatory-non-interference]: The moral duty not to interfere in the autonomous self-making of others, through their choosing to undergo transformative experiences to discover who they will become. #core
+    {fidelity: "quotation", pinpoint: "pp. 8-9",
+     source: "\"The moral duty not to interfere in the autonomous self-making of others, through their choosing to undergo transformative experiences to discover who they will become.\""}
+
+[not-mere-autonomy]: The right to revelatory autonomy is not just a right to autonomy but a right to make specific autonomous choices, confronted at a given time, to have revealed to us who we will become. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 8",
+     source: "\"it is a right to make *specific* autonomous choices that we are confronted with *at a given time* to have revealed to us, through making a transformative choice, who we will become\""}
+
+[future-self-right-is-separate]: Insofar as a future version of someone has such a right, that right concerns only the transformative choices they may face in the future. #detail
+    {fidelity: "quotation", pinpoint: "p. 8",
+     source: "\"Insofar as a future version of someone has such a right, that right concerns only the transformative choices *they* may face in the future\""}
+
+[self-authorship]: Autonomously making transformative choices when facing them, deciding for ourselves to learn who we will become, gives us a degree of self-authorship. #detail
+    {fidelity: "quotation", pinpoint: "p. 8",
+     source: "\"autonomously making transformative choices when facing them, deciding for ourselves to learn who we will become, gives us a degree of *self-authorship*\""}
+
+[self-authorship-crucial]: Some degree of self-authorship in this sense is crucial for us and others to see ourselves as ourselves. #detail
+    {fidelity: "quotation", pinpoint: "p. 8",
+     source: "\"some degree of self-authorship in this sense is crucial for us and others to see ourselves as\"",
+     note: "Quoted short: the source italicises the first syllable of 'ourselves' at exactly this point."}
+
+[value-of-self-making]: There is moral value in autonomous self-making. #core
+    {fidelity: "compression", pinpoint: "p. 8",
+     source: "\"The answer, I suggest, is the moral value of *autonomous self-making*.\""}
+
+[value-grounds-right]: A moral value of this kind grounds a moral right to what realizes it. #core
+    {fidelity: "imputation", warrant: "enthymeme",
+     note: "The author writes that the value of autonomous self-making 'grounds the right to revelatory autonomy' but never states the principle taking him from a value to a right. The step from the value to the right is invalid without it."}
+
+[nothing-valuable-in-mere-choosing]: There is nothing specifically morally valuable about being allowed to make a free choice in general. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 8",
+     source: "\"Perhaps there is nothing specifically morally valuable about being allowed to make a free choice in general\"",
+     note: "Put by the author as an objection, with O'Neill 2003: 3 cited for the doubt that 'mere, sheer independence or choosing is morally important'."}
+
+[not-choice-as-such]: What is morally valuable is not making a choice as such but autonomously making choices to learn what our core preferences and values will become. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 8",
+     source: "\"but, rather, that of autonomously making choices to learn what our core preferences and values will become\""}
+
+<Self-Making Ground>: A grounding argument: self-authorship is what the right protects, and a value of that kind is what generates a right. #core
+    {fidelity: "interpretation", warrant: "enthymeme",
+     note: "The author's own summary is 'It is the value of autonomously self-making that grounds the right to revelatory autonomy.' The bridge premise is supplied here."}
+
+(1) [self-authorship]
+(2) [self-authorship-crucial]
+-----
+(3) [value-of-self-making]
+(4) [value-grounds-right]
+-----
+(5) [right-to-revelatory-autonomy]
+
+[right-to-revelatory-autonomy]
+    - [nothing-valuable-in-mere-choosing]
+
+[nothing-valuable-in-mere-choosing]
+    - [not-choice-as-such]
+
+[not-choice-as-such]
+    + [value-of-self-making]
+
+[revelatory-non-interference]
+    + [right-to-revelatory-autonomy]
+
+# The conditional answer {isGroup: true}
+
+[only-if-outweighed]: It is permissible to interfere in the transformative choices of others only if their right to revelatory autonomy is outweighed. #core
+    {fidelity: "quotation", pinpoint: "p. 9",
+     source: "\"it is permissible to interfere in the transformative choices of others *only if* their right to revelatory autonomy is outweighed\""}
+
+[outweighed-then-permissible]: If someone's right to revelatory autonomy is outweighed and our duty of non-interference no longer binds us, then it is permissible to interfere to try to prevent them from making that transformative choice. #core
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"then it is permissible to interfere to try to prevent another from making some transformative choice\"",
+     note: "The author marks this as a further suggestion, not something derived from the right and the duty: 'I suggest further that...'."}
+
+[conditional-answer]: Interference in another's transformative choice is permissible when, and only when, that person's right to revelatory autonomy is outweighed. #core
+    {fidelity: "compression", pinpoint: "p. 9",
+     note: "A join, and worth marking: the 'only if' half and the 'if' half are stated in successive sentences and the author never conjoins them himself, so the biconditional is the reconstruction's. The second half is also offered with less confidence than the first -- 'I suggest further that' -- and the phrasing of the whole reaches back to The Question on p. 4."}
+
+[necessary-condition-on-all-interference]: The right to revelatory autonomy places a necessary condition on every form of interference alike. #core
+    {fidelity: "paraphrase", pinpoint: "p. 5",
+     source: "\"the distinctive moral right we possess concerning transformative choices places a necessary condition on all such interference\""}
+
+<Conditional Answer>: The right and its correlative duty give the necessary condition; a further suggestion of the author's gives the sufficient one. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [right-to-revelatory-autonomy]
+(2) [revelatory-non-interference]
+-----
+(3) [only-if-outweighed]
+(4) [outweighed-then-permissible]
+-----
+(5) [conditional-answer]
+
+[necessary-condition-on-all-interference]
+    + [interference-any-form]
+
+[conditional-answer]
+    + [necessary-condition-on-all-interference]
+    - [no-conditions-view]
+    - [valence-view]
+    - [best-interests-view]
+    - [expected-utility-view]
+
+# What the answer meets and explains {isGroup: true}
+
+[meets-valence]: The grounds of permissibly interfering need not depend upon the valence of the transformative experience. #detail
+    {fidelity: "quotation", pinpoint: "p. 9",
+     source: "\"the grounds of permissibly interfering need not depend upon the *valence* of the transformative experience\""}
+
+[meets-whose-obligation]: The right to revelatory autonomy is a right of the present person, so the answer does not leave open to whom the relevant duty is owed. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"the right to revelatory autonomy is a right of the *present* person and does not concern the interests or expected utility of some decision for a future person who does not face this choice\""}
+
+[meets-future-knowledge]: We need not know anything about future interests or consequences to answer The Question. #detail
+    {fidelity: "quotation", pinpoint: "p. 9",
+     source: "\"We thus also need not know anything about future interests or consequences to answer The Question\""}
+
+[answer-survives]: The conditional answer meets every adequacy condition on which the rival answers foundered. #core
+    {fidelity: "compression", pinpoint: "p. 9"}
+
+<Meets the Adequacy Conditions>: The three constraints generated by the failures, checked against the new answer one at a time. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [adequacy-valence]
+(2) [meets-valence]
+(3) [adequacy-whose-obligation]
+(4) [meets-whose-obligation]
+(5) [adequacy-future-knowledge]
+(6) [meets-future-knowledge]
+-----
+(7) [answer-survives]
+
+[meets-whose-obligation]
+    + [not-mere-autonomy]
+    + [future-self-right-is-separate]
+
+[duty-is-pro-tanto]: The duty of revelatory non-interference is pro tanto: it can be outweighed by competing moral considerations. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"it can be outweighed by competing moral considerations\"",
+     note: "Full sentence: 'Our corresponding duty of non-interference then is pro tanto (Ross 1930, 1939); it can be outweighed by competing moral considerations.'"}
+
+[killer-right-outweighed]: The would-be killer's right to revelatory autonomy is plausibly outweighed by the wrongness of killing others solely to discover who one would become by doing so. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"their right to revelatory autonomy is plausibly outweighed by the wrongness of the killing of others done solely to discover who one would become by doing so\""}
+
+[mutilator-right-outweighed]: The moral reasons to protect one's friends from gratuitous harm plausibly outweigh the would-be self-mutilator's right to discover who they would become. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"the strength of the moral reasons to protect one's friends from gratuitous harm plausibly outweighs their right to autonomously discover what it would be like to irreversibly harm themselves\""}
+
+[explains-permitted-cases]: The view explains how and why there are cases in which it is morally permissible to interfere in another's transformative choice, despite the epistemic barrier. #core
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"my answer explains *how and why* there are cases where it is morally permissible to interfere in another's transformative choice, despite the epistemic barrier surrounding transformative experiences\""}
+
+[rivals-cannot-explain]: By making permissibility depend upon knowledge we cannot possess prior to the making of a transformative choice, the other answers cannot explain this. #core
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"By making the permissibility of interference depend upon knowledge we cannot possess prior to the making of a transformative choice, the other views considered cannot explain this\""}
+
+<Outweighing Explains the Clear Cases>: The pro tanto duty applied to the two cases that defeated the no-conditions answer. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [duty-is-pro-tanto]
+(2) [killer-right-outweighed]
+(3) [mutilator-right-outweighed]
+-----
+(4) [explains-permitted-cases]
+
+[varying-difficulty]: Some cases of interference in transformative choices are easier to justify than others. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"it seems plausible that some cases of interference in transformative choices are easier to justify than others\"",
+     note: "Left as paraphrase although the words are the author's: the claim drops the author's hedge, 'it seems plausible that'."}
+
+[cheeseburger-vs-university]: What must obtain for interference in someone's choice to eat a cheeseburger for the first time to be permissible is much less demanding than for interference in their choosing to go to university. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 9",
+     source: "\"what must obtain for it to be permissible to interfere in someone's choice to eat a cheeseburger for the first time seems much less demanding than interference in their choosing to go to university\""}
+
+[core-affecting-choices-more-valuable]: The transformative choices that are most likely to affect one's core preferences, identity and values are the more morally valuable ones. #detail
+    {fidelity: "paraphrase", pinpoint: "pp. 9-10",
+     source: "\"Those that are most likely to affect your *core* preferences, identity and values\""}
+
+[explains-varying-difficulty]: The view explains why interference in some transformative choices is harder to justify than others. #core
+    {fidelity: "compression", pinpoint: "pp. 9-10",
+     source: "\"As going to university is more likely to affect these than eating a cheeseburger for the first time, the strength of the moral reasons for interference must be much greater for the former than for the latter\""}
+
+[other-factors]: The view also allows that the nature of the interference engaged in, and whether it was solicited, can play a part in what makes some cases harder to justify than others. #scope
+    {fidelity: "paraphrase", pinpoint: "n. 8",
+     source: "\"the nature of the interference engaged in, and whether the interference was solicited, can play a part in what makes some cases of interference harder to justify than others\""}
+
+<Degrees of Self-Making>: If the right is grounded in self-making, its weight tracks how far a choice reaches into the core of a self. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [varying-difficulty]
+(2) [value-of-self-making]
+(3) [core-affecting-choices-more-valuable]
+-----
+(4) [explains-varying-difficulty]
+
+[varying-difficulty]
+    + [cheeseburger-vs-university]
+
+[explains-varying-difficulty]
+    + [other-factors]
+
+# The rational-persuasion objection {isGroup: true}
+
+[rational-persuasion-cannot-violate]: Rational persuasion cannot violate an agent's right to revelatory autonomy, since it offers reasons, evidence and arguments and aims to promote rational decision-making. #dispute
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"respects an agent's right to make autonomous decisions of any kind, since it involves offering reasons, evidence and arguments, and aims to promote (or at least not undermine) rational decision-making\"",
+     note: "The worry has bite because 'rational persuasion is the form of interference most likely to be pursued in the cases used to motivate this paper'."}
+
+[autonomy-simpliciter]: Respecting autonomy simpliciter is respecting someone's ability to be a competent, capable reasoner. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"respecting someone's ability to be a competent, capable reasoner\""}
+
+[revelatory-autonomy-is-distinct]: Respecting revelatory autonomy is respecting a person's right to make a specific decision, at a given time, to learn who they will become through a self-making, transformative choice. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"their right to make a specific decision, at a given time, to learn who they will become through a self-making, transformative choice\""}
+
+[persuasion-respects-only-the-first]: Rational persuasion respects an agent's ability to be a competent, capable reasoner, but does not entail respecting their autonomous self-authorship. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"Rational persuasion does respect an agent's ability to be a competent, capable reasoner.\"",
+     note: "The second half is the next sentence: 'But it does not entail respecting an agent's autonomous self-authorship.' A footnote marker separates them, so they cannot be quoted as one span."}
+
+[tsai-timing]: One can offer a rational argument against a choice at a time or in a way that prevents an agent from exercising epistemic autonomy, for example too early or too forcefully in their deliberative process. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"offering it, for example, too early or too forcefully in an agent's deliberative process\"",
+     note: "Akhlaghi credits Tsai 2014 for the point."}
+
+[feigned-privilege]: One can offer apparent reasons, arguments or evidence as if one were in an epistemically privileged position with respect to what the choice would be like for the agent. #detail
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"trying to offer apparent reasons, arguments or evidence as if one is in an epistemically privileged position with respect to what some choice would be like for an agent\""}
+
+[feigned-privilege-disrespects]: That would constitute a distinctive disrespect of an agent's autonomous self-making whilst respecting their capacity for autonomous reflection. #detail
+    {fidelity: "quotation", pinpoint: "p. 10",
+     source: "\"That would constitute a distinctive disrespect of an agent's autonomous self-making whilst respecting their capacity for autonomous reflection\""}
+
+[persuasion-can-violate]: Even rational persuasion can disrespect an agent's right to revelatory autonomy. #core
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"Even rational persuasion, then, can disrespect an agent's right to revelatory autonomy\""}
+
+<Two Kinds of Autonomy>: A distinction between respecting a reasoner and respecting a self-maker, drawn so that rational persuasion can fall on the wrong side of it. #core
+    {fidelity: "interpretation", warrant: "coherence"}
+
+(1) [autonomy-simpliciter]
+(2) [revelatory-autonomy-is-distinct]
+(3) [persuasion-respects-only-the-first]
+-----
+(4) [persuasion-can-violate]
+
+[persuasion-respects-only-the-first]
+    + [tsai-timing]
+    + [feigned-privilege-disrespects]
+
+[feigned-privilege-disrespects]
+    + [feigned-privilege]
+
+[necessary-condition-on-all-interference]
+    - [rational-persuasion-cannot-violate]
+
+[rational-persuasion-cannot-violate]
+    - [persuasion-can-violate]
+
+# The inference the paper rests on {isGroup: true}
+
+[scope-strength-unsettled]: A complete answer requires ascertaining precisely how strong the right to revelatory autonomy is and what competing considerations can outweigh it, which the paper leaves for another time. #scope
+    {fidelity: "paraphrase", pinpoint: "p. 10",
+     source: "\"A complete answer to our question requires ascertaining precisely how strong the right to revelatory autonomy is and what competing considerations can outweigh it\"",
+     note: "The author's own admission of incompleteness — 'These are questions for another time' — not an objection from elsewhere. Recorded as an attack because that is the only edge Argdown has for a limit on a claim."}
+
+<Best Answer>: Inference to the best explanation: the rivals are exhausted and all fail; this answer meets the conditions their failure generates and explains two things they cannot. #core
+    {fidelity: "interpretation", warrant: "coherence",
+     note: "The paper never labels its top-level move. This assembles the elimination in section 3, the adequacy conditions, and the two explanatory advantages into the single inference they jointly make."}
+
+(1) [the-question]
+(2) [exhaustive-rivals]
+(3) [we-can-sometimes-intervene]
+(4) [three-views-fail]
+(5) [answer-survives]
+(6) [explains-permitted-cases]
+(7) [rivals-cannot-explain]
+(8) [explains-varying-difficulty]
+-----
+(9) [conditional-answer]
+
+[conditional-answer]
+    - [scope-voluntary-only]
+    - [scope-strength-unsettled]
