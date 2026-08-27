@@ -125,9 +125,31 @@ from some claims to another*. If you can say "because", you have an argument.
 
 ## 4. Relations
 
-### The symbols, and which way they point
+### Parent and child
 
-A relation is written on its own line, **indented under** the thing it relates to.
+A relation is written on its own line, **indented under** the thing it relates to. That gives
+every relation two ends, and the rest of this section needs names for them:
+
+```argdown
+[The contention]: The claim being argued for.
+    <+ [A reason]: A reason for it.
+```
+
+- The **parent** is what the relation line is indented *under* — `[The contention]`. It is the
+  nearest line above that is indented *less*.
+- The **child** is what the relation line itself names — `[A reason]`.
+
+Indentation is the only thing that decides this. In a nested list each line's parent is the
+nearest line above it at a shallower indent, so the same claim is a child of the line above and a
+parent to the lines below:
+
+```argdown
+[The contention]: The claim being argued for.
+    <+ [A reason]: A reason for it.              // child of the contention …
+        <- [An objection]: Why that reason fails. // … and parent of this
+```
+
+### The symbols, and which way they point
 
 | write | meaning | direction |
 |---|---|---|
@@ -205,7 +227,7 @@ one place:
 ```argdown
 [Epidemic Influence Hypothesis]
     -> [Rough Examination Hypothesis]
-    -> [Cadavric Substance Hypothesis]
+    -> [Cadaveric Substance Hypothesis]
 ```
 
 ---
@@ -324,16 +346,49 @@ YAML between two lines of `===`, at the top of the file:
 ```argdown
 ===
 title: The document's title
-model:
-    mode: strict
+author: Who wrote it
 ===
 
 [A claim]: Statements come after the front matter.
     <+ [A reason]: With a blank line between the two.
 ```
 
-`mode: strict` changes what relations between two statements *mean*: `+` becomes **entails**, `-`
-becomes **contrary**, `><` stays contradiction. Leave it alone unless you want logical relations.
+### Interpretation mode — leave it alone
+
+Argdown reads relations in one of two modes. **The default is `loose`, and it is almost always
+what you want.** You do not need to declare it.
+
+In **loose** mode a relation between two statements is *argumentative*: `<+` means this reason
+speaks for that claim. In **strict** mode it is *logical*: `<+` asserts that one statement
+**entails** the other, and `<-` that they are **contrary** — claims about logical form, not about
+what a text argues.
+
+Strict mode touches **only relations between two statements**. Anything involving an argument is
+unchanged, and `><` means contradiction in both modes:
+
+| relation | loose (default) | strict |
+|---|---|---|
+| statement `<+` statement | support | **entails** |
+| statement `<-` statement | attack | **contrary** |
+| statement `><` statement | contradictory | contradictory |
+| statement `<+` `<-` argument | support / attack | unchanged |
+| argument `<_` argument | undercut | unchanged |
+
+Turn it on only if you are reconstructing formal logical relations and mean the stronger claim:
+
+```argdown
+===
+model:
+    mode: strict
+===
+
+[All ravens are black]: Every raven is black.
+    -> [A white raven]: There is a white raven.
+```
+
+**Reconstructing a text? Stay in loose.** Saying that a paper's premises *entail* its conclusion
+is a claim about validity that the paper itself usually does not make, and the reconstruction
+should not make it on the author's behalf.
 
 ---
 
@@ -464,7 +519,7 @@ The map draws what is connected. A file with no relations at all produces an emp
 
 ---
 
-## 12. Before you call a file finished
+## 12. Before you call a file finished, ensure that:
 
 1. It parses.
 2. Every title you referenced is spelled exactly as it was defined — check the list of statements
