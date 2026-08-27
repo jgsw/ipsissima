@@ -16,8 +16,8 @@
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
          drawSelection, rectangularSelection, Decoration, ViewPlugin } from "@codemirror/view";
 import { EditorState, Compartment } from "@codemirror/state";
-import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo }
-  from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo,
+         undoDepth, redoDepth } from "@codemirror/commands";
 import { search, searchKeymap, highlightSelectionMatches, openSearchPanel } from "@codemirror/search";
 import { StreamLanguage, HighlightStyle, syntaxHighlighting, bracketMatching,
          foldService, foldGutter, codeFolding, foldEffect, unfoldAll, foldedRanges }
@@ -250,6 +250,10 @@ function allMetaRanges(state) {
 export function create(parent, opts) {
   const o = opts || {};
   const numbers = new Compartment();
+  // The history lives in a compartment SO IT CAN BE THROWN AWAY. Reconfiguring the compartment
+  // rebuilds the field from nothing, which is the documented way to give CodeMirror a fresh
+  // past. See `loadText`.
+  const past = new Compartment();
   const lintSource = view => {
     const text = view.state.doc.toString();
     const found = traps(text).concat(o.lint ? (o.lint(text) || []) : []);
@@ -267,7 +271,7 @@ export function create(parent, opts) {
       doc: o.doc || "",
       extensions: [
         numbers.of(o.lineNumbers === false ? [] : [lineNumbers(), highlightActiveLineGutter()]),
-        history(), drawSelection(), rectangularSelection(), bracketMatching(),
+        past.of(history()), drawSelection(), rectangularSelection(), bracketMatching(),
         highlightActiveLine(), highlightSelectionMatches(),
         search({ top: true }),
         argdownMode, syntaxHighlighting(argdownHighlight),
@@ -333,6 +337,32 @@ export function create(parent, opts) {
         scrollIntoView: false
       });
     },
+    /** A DIFFERENT FILE, not an edit of this one — replace the document and forget the past.
+     *
+     *  `setText` is right for every edit that comes from elsewhere in the program, because those
+     *  ARE edits of the open file and should be undoable. Opening another reconstruction is not,
+     *  and routing it through `setText` left the old file's history in place: holding Ctrl-Z
+     *  after opening a second map walked back through the swap and rebuilt the FIRST map's text
+     *  inside the second one's editor, one keystroke at a time. The file on disk was untouched,
+     *  which made it look like a display fault rather than an edit — and one more press of Save
+     *  would have written it.
+     *
+     *  Reconfiguring the compartment is what drops the history; the document is replaced whole,
+     *  because there is no relationship between the two texts worth preserving a diff over.
+     */
+    loadText(next) {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: next },
+        selection: { anchor: 0 },
+        scrollIntoView: true
+      });
+      view.dispatch({ effects: past.reconfigure([]) });
+      view.dispatch({ effects: past.reconfigure(history()) });
+    },
+    /** How much there is to undo, so a caller can offer the control only when it does something.
+     *  A button that is always there and usually inert teaches nothing about what it undoes. */
+    undoDepth: () => undoDepth(view.state),
+    redoDepth: () => redoDepth(view.state),
     /** Undo and redo, callable from outside the editor.
      *
      *  `historyKeymap` only fires when the editor has FOCUS, and the edits most in need of undo —

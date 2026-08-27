@@ -316,12 +316,17 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 /* The external-edit strip. Sits under the pane's own header, in the pane the news is about, and
    is the panel colour rather than a warning colour: an edit made in another editor is normal,
    and usually the reader's own doing. */
-#adextern{display:flex;align-items:center;gap:.5rem;padding:.35rem .6rem;
+#adextern{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .5rem;padding:.35rem .6rem;
   border-bottom:1px solid var(--line);background:var(--panel);
   font-size:11.5px;color:var(--fg-dim)}
 #adextern[hidden]{display:none}
-#adextern .grow{flex:1 1 auto}
-#adextern button{white-space:nowrap}
+/* WRAPS RATHER THAN SQUEEZES. The buttons will not break a line, so in a narrow Argdown pane a
+   single-row strip gave them two thirds of the width and left the message a column four words
+   wide, with the filename broken across lines. This is the one banner whose whole job is to be
+   read before a button is pressed, so it takes a row of its own the moment it needs one. */
+#adexternmsg{flex:1 1 15rem;min-width:0}
+#adextern .grow{flex:1 1 0;min-width:0}
+#adextern button{white-space:nowrap;flex:0 0 auto}
 footer{flex:0 0 auto;padding:.3rem .9rem;border-top:1px solid var(--line);
   background:var(--panel);color:var(--fg-dim);font-size:11px;
   display:flex;gap:1rem;flex-wrap:wrap}
@@ -507,6 +512,16 @@ body.fs #fsexit{display:inline-flex}
   <span class="spacer"></span>
   <!-- One click for the whole state. The panes stay independent switches underneath; this is a
        shortcut to the handful of combinations that correspond to actual jobs. -->
+  <!-- UNDO WHERE THE EDITING HAPPENS. A comment written on the map is an edit to the file, made
+       with nothing focused, in a build that may have no menu bar at all — the browser one does
+       not. Keyboard and menu both reach `ED.undo`, and neither is discoverable: nothing on
+       screen said the map's edits were undoable. Shown only when there is something to undo,
+       because a control that is always present and usually inert teaches nothing about what it
+       would take back. -->
+  <button class="plain icon" id="undobtn" hidden title="Undo (Cmd/Ctrl-Z)">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 7H12.5a4 4 0 0 1 0 8H8"/><path d="M9.5 4 6.5 7l3 3"/></svg><span>Undo</span></button>
+  <button class="plain icon" id="redobtn" hidden title="Redo (Cmd/Ctrl-Shift-Z)">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 7H7.5a4 4 0 0 0 0 8H12"/><path d="M10.5 4l3 3-3 3"/></svg><span>Redo</span></button>
   <button class="plain icon" id="laybtn" title="Set the panes for a particular job">
     <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M12 3.5v13"/></svg><span>Layout</span></button>
   <button class="plain icon" id="openbtn" hidden title="Open another reconstruction — a file, or a folder">
@@ -1730,6 +1745,10 @@ function splitWidth(x, box, swapped, viewport){
 })();
 
 $("fitbtn").onclick = function(){ if (LIVE) LIVE.fit(); };
+// ONE HANDLER, THREE DOORBELLS. The menu item, the keyboard and these buttons all run this —
+// the menu's `undo` entry routes here too, so there is one implementation of what undo means.
+$("undobtn").onclick = function(){ if (ED) { ED.undo(); markState(); } };
+$("redobtn").onclick = function(){ if (ED) { ED.redo(); markState(); } };
 /* FULL SCREEN IS THE BROWSER'S PROBLEM, NOT THE APP'S. In a tab it does real work: it hides the
  * browser's own chrome, which is a third of the vertical space on a laptop. In the app the window
  * is already the reader's to size, and macOS, Windows and GNOME all provide full screen
@@ -1955,6 +1974,8 @@ function msClaimsAt(line){
  * time is a picture of a file that no longer exists.
  */
 var ED = null, LAST_GOOD = null, previewTimer = null, DIRTY = false;
+// How many claims the last version that parsed had. See `schedulePreview`.
+var LAST_GOOD_N = 0;
 
 function showArgdown(text){
   if (window.ArgdownEditor && typeof window.__ARGDOWN_PARSE__ === "function") {
@@ -1972,7 +1993,11 @@ function showArgdown(text){
       // Published for the same reason `__ARGDOWN_PARSE__` is: a page that embeds this needs a
       // way in, and so does anything driving it to check that an edit really reaches the map.
       window.__ARGDOWN_EDITOR__ = ED;
-    } else ED.setText(text);
+    } else {
+      // A DIFFERENT FILE, so the previous one's history goes with it — see `loadText`. Using
+      // `setText` here left the old map undoable inside the new one.
+      ED.loadText(text);
+    }
     DIRTY = false; markState();
     return;
   }
@@ -2052,6 +2077,11 @@ function markState(){
     : "This file was not opened with write access, so Save will offer a download. Use " +
       "‘choose a folder’ from the open panel to edit in place.";
   $("adsave").classList.toggle("on", DIRTY);
+  // The history is the editor's, whichever surface the edit was made from.
+  var canUndo = !!(ED && ED.undoDepth && ED.undoDepth() > 0);
+  var canRedo = !!(ED && ED.redoDepth && ED.redoDepth() > 0);
+  $("undobtn").hidden = !canUndo;
+  $("redobtn").hidden = !canRedo;
 }
 
 /** LIVE PREVIEW, ON A PAUSE. Measured before it was built: a full cycle from text to laid-out
@@ -2069,7 +2099,26 @@ function schedulePreview(){
     var text = ED ? ED.getText() : SOURCE, graph;
     try { graph = window.__ARGDOWN_PARSE__(text); }
     catch (e) { $("adstate").textContent = DIRTY ? "edited · will not parse" : "will not parse"; return; }
+    // A SYNTAX ERROR DOES NOT ALWAYS THROW, and the promise above was being kept only for the
+    // ones that do. A metadata block or the front matter is YAML, and a YAML error inside one --
+    // a stray character after the closing brace is enough -- is caught by the parser, logged,
+    // and turned into an EMPTY DOCUMENT. Nothing is thrown, `parserErrors` stays at zero, and
+    // the reader watches a 23-claim map vanish mid-keystroke with the header still saying
+    // "edited". Which is the failure this whole function exists to prevent.
+    //
+    // So emptiness is treated as the error it almost always is. A file that really has no claims
+    // is a file nobody is editing yet, and it reaches here only from a load, where LAST_GOOD_N
+    // is 0 and this does not fire.
+    var n = (graph && graph.nodes ? graph.nodes.length : 0);
+    if (!n && LAST_GOOD_N > 0 && /\S/.test(text)) {
+      $("adstate").textContent = DIRTY ? "edited · will not parse" : "will not parse";
+      $("adstate").title = "Something in the file stops it parsing — often a stray character " +
+                           "in a {…} metadata block or the front matter, which are YAML. The " +
+                           "map below is the last version that did parse.";
+      return;
+    }
     LAST_GOOD = text;
+    LAST_GOOD_N = n;
     markState();
     redrawFrom(graph);
   }, 300);
@@ -2109,6 +2158,10 @@ var MAP_SIG = null;
 
 /** Draw a new graph into the existing map, keeping the reader exactly where they were. */
 function redrawFrom(graph){
+  // The baseline for the empty-graph guard in `schedulePreview`, set wherever a map is drawn —
+  // there are several ways in (a load, a drop, a reload from disk) and they must all leave it
+  // right, or the first edit after one of them would blank the map unguarded.
+  LAST_GOOD_N = (graph && graph.nodes ? graph.nodes.length : 0);
   if (MS && window.ArgdownPositions) locateInPage(graph, msSources());
   var sig = mapSignature(graph);
   CURRENT_GRAPH = graph;
@@ -3260,7 +3313,8 @@ function adAdoptFromDisk(text){
   var graph = null;
   try { graph = window.__ARGDOWN_PARSE__ ? window.__ARGDOWN_PARSE__(text) : null; }
   catch (e) { $("adstate").textContent = "will not parse"; return; }
-  if (graph) { LAST_GOOD = text; MAP_SIG = null; redrawFrom(graph); }
+  if (graph) { LAST_GOOD = text; LAST_GOOD_N = (graph.nodes || []).length;
+               MAP_SIG = null; redrawFrom(graph); }
 }
 
 async function hostArgdownChanged(){

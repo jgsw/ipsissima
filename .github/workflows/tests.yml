@@ -46,20 +46,17 @@ jobs:
         continue-on-error: true
         run: node app/run_all_tests.mjs | tee /tmp/suite.txt
 
-      - name: Only the known failure?
-        # KNOWN-ISSUES.md names one failing suite. Anything else red fails the build.
+      - name: Every suite green
+        # There is no longer a documented failure to allow. The one open defect
+        # (KNOWN-ISSUES.md) is a seed the committed run does not use, so it does not surface
+        # here — deliberately, and the README says so rather than leaving a reader to assume
+        # a green tick proves more than it does.
         run: |
           failed=$(grep -E '^  FAIL' /tmp/suite.txt | sed 's/^  FAIL  //' | sort)
-          expected='fold invariants (state space)'
           if [ -z "$failed" ]; then
-            echo "Everything passed — the known failure is fixed."
-            echo "Update KNOWN-ISSUES.md and this workflow's expected list."
+            echo "All suites green."
             exit 0
           fi
-          if [ "$failed" = "$expected" ]; then
-            echo "Only the documented failure is red. See KNOWN-ISSUES.md."
-            exit 0
-          fi
-          echo "Unexpected failure(s):"
+          echo "Failing suite(s):"
           echo "$failed"
           exit 1

@@ -64,6 +64,44 @@ if (statusOnly) {
   process.exit(0);
 }
 
+// 0. A RUNNING COPY MUST GO FIRST, and this is not tidiness.
+//
+//    The app is single-instance, because file associations do not respect one — on Windows every
+//    double-click spawns a fresh process, and without the plugin three reconstructions would give
+//    three copies of Ipsissima. The cost is that `open -a Ipsissima file.argdown` against an
+//    already-running copy hands the file to THAT copy and exits. So after installing a new build
+//    over an old one, opening a file goes to the old binary still resident in memory: the reader
+//    tests their change, sees the previous behaviour, and concludes the build did nothing.
+//
+//    Measured here, and it cost twenty minutes: a copy that had been running for 21 hours
+//    answered a launch meant for a build two minutes old.
+if (!statusOnly) {
+  let running = "";
+  try { running = execFileSync("/usr/bin/pgrep", ["-x", "ipsissima"], { encoding: "utf8" }).trim(); }
+  catch { /* pgrep exits 1 when nothing matches, which is the ordinary case */ }
+  if (running) {
+    console.error("Ipsissima is running. Quitting it, so the new build is what opens next.");
+    // Ask politely first — an unsaved reconstruction is the reader's work, and `quit` gives the
+    // window the chance to object. Only then insist.
+    try {
+      execFileSync("/usr/bin/osascript",
+                   ["-e", 'tell application id "org.ipsissima.desktop" to quit'],
+                   { stdio: "ignore" });
+    } catch { /* not scriptable, or already gone */ }
+    const deadline = Date.now() + 8000;
+    while (Date.now() < deadline) {
+      try { execFileSync("/usr/bin/pgrep", ["-x", "ipsissima"], { stdio: "ignore" }); }
+      catch { running = ""; break; }
+      execFileSync("/bin/sleep", ["0.25"]);
+    }
+    if (running) {
+      console.error("It did not quit — it may be asking about unsaved changes. Answer that " +
+                    "window, then run this again.");
+      process.exit(1);
+    }
+  }
+}
+
 // 1. Build. The frontend is staged first, because the whole application is that page.
 console.error("building…");
 execFileSync("node", [path.join(HERE, "build_desktop.mjs")], { stdio: ["ignore", "ignore", "inherit"] });

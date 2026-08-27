@@ -1,116 +1,73 @@
 # Known issues
 
-## A claim can be drawn with no visible connection (Exposition, some fold states)
+## A claim can vanish when you expand another one (both views, deep fold states)
 
-`app/test_fold_invariants.mjs` fails on two of the five samples:
-
-```
-Carroll [by position]: 20 nodes, 9 bands
-   FAIL  no drawn claim is left with nothing attached to it
-         3 claim(s) drawn with no connection on screen, though they have one in the file:
-         euclid-z, achilles-concedes-the-gap, tortoise-may-fail-to-see-it
-
-Prescott-Couch [by position]: 37 nodes, 9 bands
-   FAIL  no drawn claim is left with nothing attached to it
-         1 claim(s): constitutive-relations-neglected
-         after: as the viewer opens -> toggleNode(n0)
-```
-
-**What it means for a reader.** In the Exposition arrangement, under some combinations of folded
-sections, a claim can appear on the map with nothing joining it to anything — while the file says
-it does have a relation. A box floating unattached invites the reading "this claim stands alone",
-which is exactly the false claim about an argument that a reconstruction must never make.
-
-**Why it is left failing.** Making the suite green by relaxing the invariant would hide a real
-defect, and this is the invariant most worth having.
-
-### The mechanism, diagnosed 23 Aug 2026
-
-The Prescott-Couch case is a **one-click reproducer**, which the Carroll case never was, and it
-makes the cause legible.
-
-In the by-position view every band of the text is given a **head** — the claim that band is
-arguing for — and that head is seeded into the visible set so that no band of the text can drop
-out of the view whose subject *is* the text. (`filterGraph`, step 2a-bis in
-[argdown-live-map.js](app/src/argdown-live-map.js).) The seeding happens **before** the walk and
-takes no account of folds.
-
-So:
-
-- `constitutive-relations-neglected` (`n25`) is its band's head, and is drawn.
-- Its only relation in the file is `n25 → n3` (`humanism-not-reconciled`).
-- Collapsing `n0` (`limits-not-uselessness`) stops the walk before `n3`, so `n3` is not drawn.
-- `n25` is therefore on screen with nothing attached.
-
-There is already a rescue for the *other* way this happens — a claim held back by an opened
-section's marks is let through so its neighbour reconnects (step 2c, "NOTHING FLOATS"). It does
-not fire here, and correctly so: `n3` is not fold-suppressed, it was simply never reached.
-
-### What was tried, and why it is not in the tree
-
-**Extending the rescue to seeded claims** — for a claim on screen only because it was seeded, let
-through the one hidden neighbour that reconnects it. This fixes Prescott-Couch outright and takes
-Carroll from three adrift claims to one.
-
-It was reverted, because it breaks a different invariant on Darwin:
-
-```
-   FAIL  expanding a claim hides nothing that was on screen (no depth limit)
-         expanding n2 hid 1: n1
-```
-
-The rescue is greedy and is recomputed on every render, so a claim that exists on screen *only*
-because it was rescued vanishes as soon as the rescue stops being needed — which is what
-expanding a node does. That is the failure the code comment beside the existing rescue already
-predicts: *"a claim rescued in one state but not the next VANISHES — a spare claim on screen
-costs a little clutter; a claim disappearing costs trust."* Trading a floating box for a
-disappearing claim is not a fix.
-
-### Where a real fix probably lies
-
-Two constraints have to hold together, and each has an invariant of its own:
-
-1. every band of the text shows something (unless the reader folded that band);
-2. every drawn claim has a drawn connection;
-
-and a third rules out the easy escapes: nothing may vanish when the reader *expands* something.
-
-That points away from post-hoc rescue and towards either **choosing band heads with the fold
-state in view** — seed a band only when the walk leaves it empty, and prefer a head the walk can
-reach — or **drawing an explicit "through" edge** to the nearest visible ancestor, so the reader
-can see that the connection exists and is folded away. The second is more honest and is the
-larger change: edges are currently only built between visible nodes.
-
-To see it:
+**The one open defect.** `app/test_fold_invariants.mjs` finds it on the published samples:
 
 ```bash
-node app/test_fold_invariants.mjs --steps 0
+node app/test_fold_invariants.mjs --steps 1500 --seed 1
 ```
 
-`--steps 0` runs the exhaustive single-action pass only, which is enough for both cases.
-
-## Opening a section can reveal more than one level of it (Reasons view)
-
-Found 22 Aug 2026, running the fold invariants against a private corpus rather
-than the public samples. It does **not** reproduce on anything in `samples/`,
-so the repro below needs a corpus of your own:
-
 ```
-IPSISSIMA_CORPUS=<your reconstructions> node app/test_fold_invariants.mjs --steps 40 --seed 7
-
-horton-aggregation-risk-reductio [by argument]: 40 nodes, 6 sections
-   FAIL  opening a section reveals one level of it, not several
-         3 claim(s) from below the section's entry level are showing for no reason
-         (5 of its 8 claims are up)
-         after: as the viewer opens -> toggleGroup(s2)
+Carroll [by argument]: 20 nodes, 5 sections
+   FAIL  expanding a claim hides nothing that was on screen (no depth limit)
+         expanding n19 hid 5: n10, n13, n11
+         after: … -> collapseAll -> toggleGroup(s2) -> toggleNode(n19)
 ```
 
-Distinct from the issue above: different view (**by argument**, not by
-position), different invariant, and it is a fold-state bug rather than an
-edge-drawing one. The section opens to its entry level, but three claims from
-deeper in the same section come up with it — so the reader sees a level they
-did not ask for. Harmless to the argument, untidy on screen.
+**What it means for a reader.** Opening a claim should only ever add. In a deep enough fold
+state — the reproducers all pass through `collapseAll` followed by opening a section and then a
+node — expanding one claim can take others off the screen. Nothing is lost from the file, and
+pressing the same control again brings them back, but a map that removes claims when you ask it
+for more is telling you something false about the argument while you are reading it.
 
-Not yet diagnosed. The `[by position]` run over the same file passes every
-check, which points at the section-grouping path rather than at the fold
-bookkeeping the two views share.
+**THE SUITE'S DEFAULT SEED DOES NOT FIND THIS, and that is worth saying plainly.** The committed
+run is `--steps 1500 --seed 20260817`, which is green. Seeds 1 and 7 fail at the same step count.
+So the green tick is a regression gate — it holds the renderer to what it does today — and not a
+proof that these invariants hold. Searching seeds in CI would turn the build permanently red for
+one defect, which teaches a reader to ignore it; the honest arrangement is a fast gate plus this
+entry.
+
+**Not diagnosed.** Distinct from the two below in that it is about the fold *bookkeeping* rather
+than about which claims get drawn: the state after `collapseAll` is not simply the union of the
+individual collapses, and expanding out of it takes a different path back.
+
+---
+
+## Fixed 23 Aug 2026
+
+Kept here because both were load-bearing entries for a while and the reasoning is worth having.
+
+### A claim drawn with no visible connection (Exposition) — fixed
+
+In the by-position view, every band of the text is given a **head** — the claim that band argues
+for — seeded into the visible set so that no band of the text can drop out of the view whose
+subject *is* the text. The seeding happened before the walk and took no account of folds, so
+collapsing the claim a band argued *towards* left its head on screen attached to nothing. A box
+adrift reads as a claim that stands alone, which is exactly the false claim about an argument a
+reconstruction must never make.
+
+**The fix draws the connection instead of importing the claims.** Adding the missing claims back
+was tried first and reverted: it worked, and it broke something worse, because a claim on screen
+only because it was rescued vanishes as soon as the rescue stops being needed — so *expanding*
+could hide one. Instead the map now draws a **through-edge**: one faint, finely broken line from
+the adrift claim to the nearest claim that is drawn, along the relations the file actually has,
+passing through whatever is folded away in between.
+
+That satisfies both rules at once and cannot violate the third, because a set of nodes that never
+grows can never shrink. It is also the more honest picture — the reader sees that the connection
+exists and that something is folded out of the middle of it, rather than seeing a claim that
+appears to stand alone. It keeps the relation's colour, which is true, and loses its solidity,
+which is not.
+
+### Opening a section revealing more than one level of it (Reasons) — fixed
+
+This turned out to be the *first* bug's old fix causing the second. A rescue in the filter let
+held-back claims through whenever something would otherwise be drawn unattached; those claims
+came from below the section's entry level, so opening a section appeared to unfurl several levels
+of it at once.
+
+Replacing the rescue with through-edges removed the mechanism and the symptom together. Measured
+over 1,200 random fold states on seven reconstructions, including four not in this repository:
+invariant violations fell from **23 to 10**, and this class went to **zero**. The renderer lost
+41 lines.

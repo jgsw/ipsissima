@@ -112,13 +112,16 @@ an honest account of the one problem the project has not solved.
 
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
 
-**Green does not mean everything passes**, and the badge is worth reading carefully: the workflow
-allows exactly the one failure documented below, and turns red on any other. That is deliberate —
-the alternative is either a permanently red badge nobody looks at, or a weakened invariant.
+**Green does not mean everything passes**, and the badge is worth reading carefully. The suite
+runs a fixed seed, which makes it a regression gate — it holds the renderer to what it does
+today — rather than a proof that its invariants hold. One defect is open, and other seeds find
+it at the same step count:
 
-**One known failure.** `test_fold_invariants` reports claims drawn with no visible connection, in
-the exposition arrangement, under some fold states — three in the Carroll sample and one in
-Prescott-Couch. It is a real defect in the renderer, it predates this repository, and it is left
-failing rather than quietly weakened. `KNOWN-ISSUES.md` has the diagnosis, a one-click
-reproducer, and an account of a fix that was tried and reverted because it traded this fault for
-a worse one.
+```bash
+node app/test_fold_invariants.mjs --steps 1500 --seed 1
+```
+
+`KNOWN-ISSUES.md` says what it is, and why CI is not set to hunt for it.
+
+Two fold defects that stood here for a month were fixed on 23 Aug 2026 — and the second turned
+out to be the first one's fix, which is why both accounts are kept.

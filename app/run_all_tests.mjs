@@ -43,6 +43,7 @@ const SUITES = [
   ["source pane cleanup",        "node", [path.join(HERE, "test_source_pane.mjs")]],
   ["annotated export (docx/md)", "node", [path.join(HERE, "test_export.mjs")]],
   ["the one-file bundle",        "node", [path.join(HERE, "test_bundle.mjs")]],
+  ["how the parser fails",       "node", [path.join(HERE, "test_parse_failure.mjs")]],
   ["the desktop host adapter",   "node", [path.join(HERE, "test_host.mjs")]],
   ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],

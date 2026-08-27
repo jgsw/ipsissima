@@ -361,7 +361,6 @@ function filterGraph(graph, state) {
   //     the fold deleted them from the map. Hiding a section must hide the section, not
   //     everything the section happens to stand in front of.
   const visible = new Set();
-  const foldSuppressed = new Set();   // walked through, not drawn — see the rescue below
   const dist    = new Map(seeds.map(id => [id, 0]));
   const walked  = new Set();   // id|fold keys already processed
   const queue   = seeds.map(id => ({ id, fold: null }));
@@ -370,7 +369,6 @@ function filterGraph(graph, state) {
     const key = id + "|" + (fold || "");
     if (walked.has(key) || (fold && visible.has(id))) continue;
     walked.add(key);
-    if (fold) foldSuppressed.add(id);     // reached, but held back by an open section's marks
     if (!fold) {
       if (visible.has(id)) continue;
       visible.add(id);
@@ -395,25 +393,20 @@ function filterGraph(graph, state) {
     }
   }
 
-  // 2c. NOTHING FLOATS.
+  // 2c. NOTHING FLOATS — and the claims are no longer smuggled in to achieve it.
   //
-  //  A folded section is walked THROUGH rather than into, so that whatever hangs off it still
-  //  appears — without that, hiding one section deleted every claim standing behind it. But a
-  //  claim OUTSIDE the section whose only neighbour is one of the held-back ones then gets drawn
-  //  with nothing attached: a box adrift, which reads as a claim that stands alone in the
-  //  argument when its neighbours are merely folded away. Reported from the map on Horton, where
-  //  opening three sections in a row left four claims at the bottom joined to nothing; it
-  //  predates the linked-premise bars, and the walk has always been able to do it.
+  //  There used to be a rescue here: when a folded section left a claim drawn with nothing
+  //  attached, the one held-back neighbour that would reconnect it was let through. It worked,
+  //  and it cost more than it was worth. The rescue is greedy and recomputed on every render, so
+  //  the set it picks shifts as the reader folds things — and a claim on screen only because it
+  //  was rescued VANISHES when the rescue stops being needed. Its own comment predicted this.
   //
-  //  Two fixes were tried and rejected. Leaving them adrift is the bug. Dropping them broke
-  //  something worse — opening a section made unrelated claims elsewhere disappear, because
-  //  the fold that stranded them was a side effect of the opening.
-  //
-  //  So instead the one held-back claim that would reconnect it is let through. That adds the
-  //  minimum needed and never takes anything away, which is why it can satisfy both rules at
-  //  once: nothing floats, and opening a section still hides nothing outside it. Claims held
-  //  back by the DEPTH limit are not rescued — a reader who asked for two levels asked for the
-  //  edges to stop.
+  //  Step 5b does the same job by drawing the connection instead of importing the claims, which
+  //  cannot have that failure mode: a set of nodes that never grows can never shrink. Measured
+  //  over 1,200 random fold states on seven reconstructions, removing this cut invariant
+  //  violations from 23 to 10 and eliminated one whole class of them — a section opening to
+  //  reveal several of its levels at once, which was the second bug in KNOWN-ISSUES.md and which
+  //  turned out to be this rescue's doing all along.
   // Which block a claim will be DRAWN as, if any. Needed here as well as in step 4, because
   // "is this claim attached" has to be asked of the picture that will actually be drawn: two
   // claims inside one collapsed section are joined by an edge that becomes a self-edge and is
@@ -422,43 +415,6 @@ function filterGraph(graph, state) {
     const chain = groupChain(ix, id).filter(g => S.collapsedGroups.has(g));
     return chain.length ? "group:" + chain[chain.length - 1] : id;
   };
-  if (foldSuppressed.size) {
-    // Adjacency once, not an edge scan per claim per pass: on the book that would be 371 claims
-    // against 394 edges on every one of up to forty passes, on every render.
-    const adj = new Map();
-    for (const e of ix.edges) {
-      if (e.from === e.to) continue;
-      if (!adj.has(e.from)) adj.set(e.from, []);
-      if (!adj.has(e.to)) adj.set(e.to, []);
-      adj.get(e.from).push(e.to);
-      adj.get(e.to).push(e.from);
-    }
-    // Each pass lets through at least one claim, so the walk terminates; the bound is the
-    // number of claims held back, and the guard is only there so a future change cannot spin.
-    const letThrough = [];
-    for (let pass = 0; pass < ix.nodes.length + 1; pass++) {
-      let rescued = 0;
-      for (const id of [...visible]) {
-        const near = adj.get(id);
-        if (!near) continue;                      // alone in the file: drawn, and rightly so
-        // Asked of the DRAWN units. Two claims inside one collapsed section are joined by an
-        // edge that becomes a self-edge and is dropped, so having each other as neighbours
-        // attaches neither — which is why a folded section could sit alone with nothing
-        // reaching it, the case that was reported.
-        const mine = collapsedRepr(id);
-        if (near.some(o => visible.has(o) && collapsedRepr(o) !== mine)) continue;
-        const held = near.find(o => foldSuppressed.has(o) && !visible.has(o));
-        if (held != null) { visible.add(held); letThrough.push(held); rescued++; }
-      }
-      if (!rescued) break;
-    }
-    // ONLY EVER ADDS. A pass that took the redundant ones back out was tried and produces a
-    // worse fault than the one it tidies: the rescue is greedy, so the set it picks shifts as
-    // the reader folds things, and a claim rescued in one state but not the next VANISHES —
-    // which breaks the stronger promise that opening a section hides nothing outside it. A
-    // spare claim on screen costs a little clutter; a claim disappearing costs trust.
-  }
-
   // 3. What did we hide? Drives the "+3" affordance on a node with a folded subtree.
   const hiddenBelow = new Map();
   for (const id of visible) {
@@ -591,6 +547,68 @@ function filterGraph(graph, state) {
     const linked = a === e.from && b === e.to && e.step != null;
     outEdges.push({ from: a, to: b, type: e.type || "support",
                     step: linked ? e.step : null });
+  }
+
+  // 5b. NOTHING FLOATS, PART TWO: THE CONNECTION IS DRAWN, NOT THE MISSING CLAIMS.
+  //
+  //  Step 2c rescues a claim stranded by a FOLD, by letting the one held-back neighbour through.
+  //  It cannot help the other way a box ends up adrift, which is a claim the walk never reached
+  //  at all: a band head is seeded into the visible set so that no band of the text drops out of
+  //  the view whose subject is the text (step 2a-bis), and that seeding happens before the walk
+  //  and knows nothing about folds. Collapse the claim its band argues towards and the head is
+  //  left on screen attached to nothing.
+  //
+  //  ADDING THE MISSING CLAIMS BACK WAS TRIED AND REVERTED. It fixes this outright, and it
+  //  breaks something worse: a claim on screen only because it was rescued vanishes as soon as
+  //  the rescue stops being needed, so EXPANDING a node could hide one. A spare box costs a
+  //  little clutter; a claim disappearing when you open something costs trust.
+  //
+  //  So no node is added. The EDGE is — one edge, from the adrift claim to the nearest claim
+  //  that is drawn, along the relations the file actually has, passing through whatever is
+  //  folded away in between. That satisfies both rules at once and cannot violate the third,
+  //  because a set of nodes that never grows can never shrink. It is also the more honest
+  //  picture: the reader sees that the connection exists and that something is folded out of it,
+  //  rather than seeing a claim that appears to stand alone.
+  const attached = new Set();
+  for (const e of outEdges) { attached.add(e.from); attached.add(e.to); }
+  const adrift = outNodes.filter(n => n.kind !== "group" && !attached.has(n.id));
+  if (adrift.length) {
+    // Undirected adjacency over the FILE's relations, carrying each hop's direction and type so
+    // the through-edge can be drawn the right way round.
+    const near = new Map();
+    for (const e of ix.edges) {
+      if (!near.has(e.from)) near.set(e.from, []);
+      if (!near.has(e.to)) near.set(e.to, []);
+      near.get(e.from).push({ other: e.to, out: true, type: e.type || "support" });
+      near.get(e.to).push({ other: e.from, out: false, type: e.type || "support" });
+    }
+    const drawn = new Set(outNodes.map(n => n.id));
+    for (const n of adrift) {
+      // Breadth-first, so the edge lands on the NEAREST drawn claim rather than an arbitrary
+      // one: the shortest route is the one a reader would have followed on the unfolded map.
+      const seenIds = new Set([n.id]);
+      let frontier = (near.get(n.id) || []).map(h => ({ hop: h, at: h.other }));
+      let found = null;
+      let hops = 0;
+      while (frontier.length && !found && hops++ < 40) {
+        const next = [];
+        for (const f of frontier) {
+          if (seenIds.has(f.at)) continue;
+          seenIds.add(f.at);
+          const r = drawn.has(f.at) ? f.at : (visible.has(f.at) ? repr(f.at) : null);
+          if (r && r !== n.id && drawn.has(r)) { found = { to: r, hop: f.hop }; break; }
+          for (const h of near.get(f.at) || []) next.push({ hop: f.hop, at: h.other });
+        }
+        frontier = next;
+      }
+      if (!found) continue;
+      const a = found.hop.out ? n.id : found.to;
+      const b = found.hop.out ? found.to : n.id;
+      const key = a + " " + b + " " + found.hop.type;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      outEdges.push({ from: a, to: b, type: found.hop.type, step: null, through: true });
+    }
   }
 
   // 6. Groups that survive: still referenced, and not themselves folded away.
@@ -2414,7 +2432,8 @@ function createLiveMap(container, graph, options) {
         // The inference step rides on the edge record: `planJoins` reads it back off the laid-out
         // graph, and dagre keeps whatever object is handed to it here.
         for (const e of vis.edges)
-          gg.setEdge(e.from, e.to, { step: e.step == null ? null : e.step }, e.type);
+          gg.setEdge(e.from, e.to,
+                     { step: e.step == null ? null : e.step, through: !!e.through }, e.type);
         dagre.layout(gg);
         return gg;
       };
@@ -2734,6 +2753,13 @@ function createLiveMap(container, graph, options) {
       // ordinary map, where "backwards along the text" is not a property the layout shows.
       // Direction is marked but not scored; REACH is what gets the weight. See the CSS note.
       const info = g.edge(e);
+      // A THROUGH-EDGE IS NOT THE RELATION IT LOOKS LIKE. It says "these two are connected, by a
+      // route that runs through claims folded out of the view" — drawn like an ordinary edge it
+      // would assert a direct relation the file does not contain, which is precisely the kind of
+      // false claim about an argument this program exists to prevent. So it keeps the relation's
+      // colour, which is true, and loses its solidity, which is not.
+      path.classList.toggle("is-through", info.through === true);
+      if (info.through === true) path.setAttribute("stroke-dasharray", "1.5 4");
       path.classList.toggle("is-anticipated", info.debt === true);
       path.classList.toggle("is-prepared", info.debt === false);
       path.classList.toggle("is-far", info.far === true);
@@ -3705,6 +3731,9 @@ function injectStyle() {
 .alm-margin-hit{cursor:pointer}
 .alm-join-bar{fill:none;stroke-width:3.6;stroke-linecap:round}
 .alm-join-stem{fill:none;stroke-width:1.6}
+/* A connection whose middle is folded away. Faint, because what it reports is real but partial:
+   the two claims ARE related, and the claims that carry the relation are not on screen. */
+.alm-e.is-through{opacity:.42;stroke-width:1}
 .alm-underline{fill:none;stroke-width:1.2;stroke-dasharray:2.5 3;stroke-linecap:round;opacity:.6}
 .alm-layer-under{pointer-events:none}
 /* Lit from outside: the reader clicked the passage this claim was drawn from. A ring rather
