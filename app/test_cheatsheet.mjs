@@ -48,12 +48,12 @@ function blocks(md) {
   return out;
 }
 
-// SCOPED, AND THE SCOPE IS TEMPORARY. Run across every document in docs/ this reports 20 broken
-// examples in SKILL.md, reference.md, map-semantics.md and extraction-prompt.md — including in
-// the file whose own header claims every rule in it was tested against the CLI. Those four are
-// being rewritten against the cheat sheet; widen this list as each one lands, and delete this
-// comment when it covers the directory.
-const CLEAN = ["argdown-cheatsheet.md"];
+// The documents a model is told to read, plus the prompt it is served. These must be clean:
+// an example that does not parse teaches the mistake to every reconstruction written afterwards.
+// map-semantics.md, order-views.md, viewer.md and reference.md still carry broken examples and
+// are not yet in this list; add each as it is cleaned.
+const CLEAN = ["argdown-cheatsheet.md", "reconstruction-cheatsheet.md",
+               "ipsissima-conventions.md", "extraction-prompt.md", "SKILL.md"];
 const files = fs.readdirSync(DOCS).filter(f => CLEAN.includes(f)).sort();
 console.log("== Argdown examples in the documentation\n");
 

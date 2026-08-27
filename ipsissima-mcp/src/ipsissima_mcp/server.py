@@ -654,11 +654,23 @@ def extract_text_only(sources: str = "") -> str:
 # them into every conversation would cost more than most reconstructions.
 
 for _uri, _file, _desc in (
-    ("ipsissima://argdown/syntax", "SKILL.md",
-     "Argdown syntax and the failure modes that do not announce themselves. Read when a file "
-     "will not parse, or before writing an unfamiliar construction."),
+    # THE THREE THE PROMPT TELLS YOU TO READ FIRST. Together they are the language, the method
+    # and the house conventions — about 8,000 words, against a reconstruction that costs far
+    # more than that in retries when they have not been read.
+    ("ipsissima://argdown/syntax", "argdown-cheatsheet.md",
+     "THE WHOLE ARGDOWN LANGUAGE, checked against the parser rather than inferred. Read before "
+     "writing any .argdown: there is very little Argdown in the world, so a confident guess at "
+     "the syntax is usually wrong, and several of its failures are silent."),
+    ("ipsissima://reconstruction/method", "reconstruction-cheatsheet.md",
+     "How to reconstruct an argument: finding the conclusion, the Assertibility Question, "
+     "linked vs convergent support, unstated premises, attack vs undercut, and where charity "
+     "stops. Read before reconstructing any argument."),
+    ("ipsissima://ipsissima/conventions", "ipsissima-conventions.md",
+     "What Ipsissima records on a claim — provenance, fidelity levels, warrants, tags and front "
+     "matter. Read when attaching metadata."),
     ("ipsissima://argdown/reference", "reference.md",
-     "A full Argdown reference in which every rule was tested against the CLI."),
+     "An older Argdown reference. Superseded by ipsissima://argdown/syntax, which was checked "
+     "against the parser; kept for the sections on tooling."),
     ("ipsissima://ipsissima/map-semantics", "map-semantics.md",
      "What the map draws and why: fidelity borders, tags, sections, selection modes."),
     ("ipsissima://ipsissima/order-views", "order-views.md",
