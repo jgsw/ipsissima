@@ -202,16 +202,118 @@ Three positions, and they converge:
 - **Govier's Modest Charity**: presume people are giving reasons for claims they genuinely
   believe — but *"charity can lead us away from accuracy if it is taken too far"*. Do not improve
   someone's argument until it is no longer theirs.
-- **Stern's misreporting**: an accurate quotation can still misreport. Three of Stern's four
-  illustrations quote *verbatim* — a hedge left just outside the quotation marks, a *some* used to
-  support an *all*, a passage cited for a term it never uses. Quotation advertises fidelity to
-  meaning while sacrificing it.
+- **Stern**: "the principle of charity" names no single thing, and an accurate quotation can
+  misreport. Below.
 
 **The operative rule.** Charity governs how you read an *unclear* text. It never licenses
 attributing a claim the text does not make. When the choice is between a charitable reading and an
 accurate one, the reconstruction records the accurate one and says what is unclear.
 
----
+### 2.1 Two goals, and when they conflict
+
+There are two things a reading of a text can be for (Stern, 287–8):
+
+- **fit** — the meaning of the text, by the standards of the author or their contemporaries. The
+  test: *would the author recognise these thoughts as her own?*
+- **appropriation** — a contribution to a current debate. Getting something right, using the text.
+
+Neither is bad, and they often coincide. But sometimes you must choose, and **the trouble is that
+charity looks like a bridge between them** — as if the philosophically best reading were, for that
+reason, what the text means. It is not a bridge, because it is not one principle.
+
+### 2.2 Charity is ambiguous in three ways, and they are choices you make
+
+Stern's argument: "the more charitable reading" is ambiguous along three dimensions, and until you
+say which you mean, the phrase disguises a commitment rather than stating one. Ipsissima records
+all three in front matter, so that "this reading is uncharitable" becomes something a reader can
+argue with.
+
+**`unit` — what is being chosen between.** Two quite different things:
+
+| `unit:` | the question |
+|---|---|
+| `meaning` | one sentence, two readings. Did *"conscious deliberations do not cause actions"* mean *rarely* or *never*? A question of **disambiguation** |
+| `commitment` | the author says P in one place and not-P in another, both unambiguously. Which did they **hold**? *He said it, but he didn't really mean it* |
+
+**`mode` — what "best light" means.** The literature does not agree, and the candidates come
+apart:
+
+| `mode:` | best means |
+|---|---|
+| `coherence` | consistent with the author's other commitments |
+| `truth` | not false |
+| `agreement` | close to what the interpreter takes to be true or reasonable |
+| `soundness` | the argument works, and fits the author's other texts |
+| `interest` | true *and* not tame or boring |
+
+> **Stern's example.** A seventeenth-century witness says the accused rode a broom to a sabbat.
+> Belief in witches was supported by the leading science, history and theology of the day — so
+> `coherence` says the charitable reading is that she really believed it. But there are no
+> witches, and some accusers must have suspected as much — so `truth` says the charitable reading
+> is that she did not. **Coherence and truth pull opposite ways, and both are called charity.**
+
+**`strength` — how much better than their words the author is assumed to be.**
+
+Lessing on Aristotle: *"Aristotle is not often guilty of a palpable contradiction. Where I would
+seem to find one in such a man I prefer rather to mistrust my own reason."* — *in such a man*, but
+not in others. On that view strength is earned, and varies by author.
+
+The alternative is uniform strength, and then it has to be set somewhere:
+
+| `strength:` | |
+|---|---|
+| `minimal` | what any minimally rational person might hold. Useless in philosophy: as long as *somebody* could hold the worse view, charity cannot choose |
+| `ordinary` | what philosophers can generally be assumed to be committed to |
+| `strong` | the best a trained philosopher could read them as meaning. Severs the link with ordinary meaning — nobody means that |
+
+### 2.3 The move to watch: manufacturing openness
+
+The natural defence of charity is that it only operates when there are *two equally plausible
+interpretations*. Stern's sharpest point is that this defence fails, because **openness can be
+manufactured by the very failure charity is invoked to fix**.
+
+Suppose the author states, unambiguously, something false or inconsistent. The interpreter can
+still say:
+
+- they were being **hyperbolic** — not their considered position;
+- it was **sloppy phrasing** of a different claim;
+- it was a **secret sign** to knowing readers.
+
+Each of these reopens a text that was closed. And the reasoning runs backwards: *"**because** this
+is false or implausible, it is open that it is merely hyperbole."* Cause mistaken for effect.
+
+> **This is where Ipsissima's `warrant:` field comes from, and why it exists.** `hyperbole`,
+> `sloppy-phrasing` and `secret-sign` are Stern's three devices by name. Recording one is not
+> forbidden — sometimes the reading is right. What is forbidden is reaching for one *without
+> saying so*, because then the pattern is invisible. Three claims read as hyperbole is a decision
+> about the author, and nobody notices making it one claim at a time.
+
+A related cost: **charity rewards ambiguous writing.** Of two papers, one admitting a single
+reading and one admitting a hundred, charity ensures the second comes out better — one of its
+hundred readings will beat the first paper's one, and offering any of the other ninety-nine would
+be uncharitable. It also forecloses the question worth asking: *why did the author write
+ambiguously?*
+
+### 2.4 Misreporting, and why it is charity's shadow
+
+Misreporting is using an author's words to make it seem they are saying something they are
+certainly not. We all reject it. Stern's uncomfortable observation is that it and charity share a
+structure:
+
+1. both can resolve a tension between the correct meaning and the best philosophy;
+2. both **advertise** a commitment to meaning through a recognised, meaning-seeking technique —
+   direct quotation in the one case, an interpretative "principle" in the other;
+3. and both can end up **sacrificing** the very commitment they advertise, leaving more room for
+   the best philosophy.
+
+Three of Stern's four illustrations of misreporting quote **verbatim**: a hedged claim quoted
+while the author's own correction, in the same sentence, is left just outside the quotation marks;
+a *some* quoted in support of an *all*; a passage cited as evidence for a term it never uses.
+
+**This is why verifying a quotation is not enough**, and why `check_argdown` reports, for every
+quotation that *is* exact, what it was cut away from. A checker can verify the currency. It cannot
+see the debasement, because the debasement is entirely a matter of what the span was cut away
+**from**.
 
 ## 3. Forms worth recognising
 

@@ -90,6 +90,11 @@ says.
 | `coherence` | chosen because it makes the surrounding text hang together |
 | `convention` | the field's standard reading of this passage |
 
+The first three are Stern's: they are the devices by which an interpreter reopens a text that
+stated its position plainly, and the reasoning runs backwards — *because* this is implausible, it
+is open that it was merely hyperbole. Using one is not forbidden; sometimes the reading is right.
+Using one **silently** is, because then the pattern is invisible.
+
 Any short reason is accepted; the vocabulary is a prompt, not a jail. What matters is that it was
 written down, because **the pattern across a file is the thing worth seeing** — three claims read
 as hyperbole is a decision about the author, and nobody notices making it one claim at a time.
@@ -128,9 +133,17 @@ defaults:
 | `mode` | `coherence` · `truth` · `soundness` · `agreement` · `interest` |
 | `strength` | `minimal` · `ordinary` · `strong` — how much better than his words the author is assumed to be |
 
-`unit`, `mode` and `strength` are the three dimensions along which the principle of charity is
-ambiguous. Declaring them is what makes *"this reading is uncharitable"* a claim someone can argue
-with.
+`unit`, `mode` and `strength` are **Tom Stern's three dimensions along which "the principle of
+charity" is ambiguous**. They are not bureaucracy and they are not obvious: `coherence` and
+`truth` are both called charity and can point opposite ways about the same passage, and a reading
+that is charitable at one `strength` is uncharitable at another. Declaring them is what makes
+*"this reading is uncharitable"* a claim someone can argue with rather than an appeal to a
+principle that names no single thing.
+
+**If you have not read Stern, read §2 of `reconstruction-cheatsheet.md` before choosing these
+values.** It sets out each dimension with the example that shows why it matters, and explains
+where the `warrant:` vocabulary above comes from — `hyperbole`, `sloppy-phrasing` and
+`secret-sign` are Stern's own three devices for reopening a text that said something plainly.
 
 **`generated: true` matters, so do not omit it when a model wrote the file.** It tells the checker
 that nobody has judgement invested in the `quotation`/`paraphrase` markers yet, so it may correct
