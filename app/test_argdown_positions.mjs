@@ -163,6 +163,128 @@ console.log("\npositions: precision order");
   ok("a claim with no chapter gets no position at all", byId.n === undefined);
 }
 
+console.log("\npositions: an argument is placed by its conclusion");
+{
+  // An <Argument> has no words of its own, so nothing above places it. Its main conclusion has
+  // words, and an argument is made where it LANDS.
+  const para = w => w + " " + "filler ".repeat(30);
+  const sources = {
+    "A.md": ["## 1. First", para("ritual opacity ceremony"),
+             "## 2. Second", para("kinship exchange reciprocity"),
+             para("totem sacrifice offering"),
+             para("regress premise inference tortoise")].join("\n"),
+    "B.md": ["## 1. Elsewhere", para("other file entirely words")].join("\n")
+  };
+  const yml = 'chapters:\n  - "A.md"\n  - "B.md"\n';
+  const st = (id, detail) => ({ id, label: id, chapter: "A.md", detail });
+  const nodes = [
+    st("early", "ritual opacity ceremony"),          // line 2, section 1
+    st("mid",   "kinship exchange reciprocity"),     // line 4, section 2
+    st("late",  "totem sacrifice offering"),         // line 5, section 2
+    st("nowhere", "taxation tariff revenue customs"),
+    { id: "far", label: "far", chapter: "B.md", detail: "other file entirely words" },
+    // Lands at its conclusion, NOT at its earliest premise — which is the point: this argument
+    // borrows a premise from section 1 and is argued in section 2.
+    { id: "lands", kind: "argument", chapter: "A.md", conclusion: "late",
+      conclusionText: "totem sacrifice offering" },
+    // A conclusion written inline in the premise-conclusion structure gets an auto-generated
+    // title and no map node. It is still a statement with words.
+    { id: "inline", kind: "argument", chapter: "A.md", conclusion: "Untitled 1",
+      conclusionText: "regress premise inference tortoise" },
+    { id: "inlineQuote", kind: "argument", chapter: "A.md", conclusion: "Untitled 2",
+      conclusionText: "A step the paper does not spell out.",
+      conclusionSource: '"kinship exchange reciprocity"' },
+    // The argument's OWN evidence wins over anything taken from its conclusion.
+    { id: "quoted", kind: "argument", chapter: "A.md",
+      detail: 'The step from "regress premise inference tortoise" onwards.',
+      conclusion: "early", conclusionText: "ritual opacity ceremony" },
+    { id: "declared", kind: "argument", chapter: "A.md", line: 3,
+      conclusion: "late", conclusionText: "totem sacrifice offering" },
+    // A conclusion in another file gives a line number that means nothing in this one.
+    { id: "crossFile", kind: "argument", chapter: "A.md", conclusion: "far" },
+    // Nothing to go on stays unplaced rather than guessing.
+    { id: "empty", kind: "argument", chapter: "A.md", conclusion: null },
+    // WHAT THE REJECTED FALLBACK WOULD HAVE DONE. Placing an argument at its last placed member
+    // puts it after every premise BY CONSTRUCTION, which manufactures the finding
+    // `argdown-exposition` measures. An unfindable conclusion leaves the argument unplaced.
+    { id: "lostConclusion", kind: "argument", chapter: "A.md", conclusion: "nowhere",
+      conclusionText: "taxation tariff revenue customs" }
+  ];
+  const { byId } = P.positions(nodes, sources, yml);
+  eq("an argument lands at its main conclusion",
+     [byId.lands.precision, byId.lands.line], ["inference", 5]);
+  eq("  and so is banded by the section it is argued in, not the one it borrows from",
+     [byId.early.section, byId.lands.section], ["1. First", "2. Second"]);
+  eq("an inline conclusion is placed by its own words",
+     [byId.inline.precision, byId.inline.line], ["inference", 6]);
+  eq("  and by its quotation before its words",
+     [byId.inlineQuote.precision, byId.inlineQuote.line], ["inference", 4]);
+  eq("the argument's own quotation wins",
+     [byId.quoted.precision, byId.quoted.line], ["quotation", 6]);
+  eq("a declared line wins", [byId.declared.precision, byId.declared.line], ["declared", 3]);
+  eq("a conclusion in another chapter is not used",
+     [byId.crossFile.precision, byId.crossFile.line], ["chapter-only", null]);
+  eq("an argument with no conclusion stays unplaced",
+     [byId.empty.precision, byId.empty.line], ["chapter-only", null]);
+  eq("an unfindable conclusion leaves the argument unplaced, not at its last premise",
+     [byId.lostConclusion.precision, byId.lostConclusion.line], ["chapter-only", null]);
+  // THE ASYMMETRY IS DELIBERATE. A statement whose words are not in the text is the
+  // reconstructor's own; placing it from its neighbours would invent a position.
+  eq("a statement is never placed from its neighbours",
+     [byId.nowhere.precision, byId.nowhere.line], ["chapter-only", null]);
+}
+
+console.log("\npositions: the band, derived once");
+{
+  // `##` SECTIONS. `pdf_to_source.py` writes a paper's sections as `#`; `html_to_source.py`
+  // writes the article title as `#` and its sections as `##`, because that is what the
+  // publisher's markup says. Banding on level 1 puts such a paper in a single band.
+  const para = w => w + " " + "filler ".repeat(30);
+  const sources = {
+    "A.md": ["# The Article", para("abstract words before any section"),
+             "## 1. First", para("ritual opacity ceremony"),
+             "## 2. Second", para("kinship exchange reciprocity")].join("\n")
+  };
+  const yml = 'chapters:\n  - "A.md"\n  - "C.md"\n';
+  const nodes = [
+    { id: "s1", chapter: "A.md", detail: "ritual opacity ceremony" },
+    { id: "s2", chapter: "A.md", detail: "kinship exchange reciprocity" },
+    { id: "front", chapter: "A.md", detail: "abstract words before any section" },
+    // A declared `section:` is the FALLBACK for the band, not the winner. It still scopes the
+    // paragraph search, which is what it is for — but a located quotation places the claim
+    // wherever the words actually are, and the band follows the words.
+    { id: "misdeclared", chapter: "A.md", section: "2. Second",
+      detail: 'He wrote "ritual opacity ceremony" of them.' },
+    // A chapter whose text was not supplied — a bundle built without it, a folder half copied.
+    // There is no line to derive a band from, and what the claim declares is all there is.
+    { id: "unplaced", chapter: "C.md", section: "3. Third", detail: "anything at all" }
+  ];
+  const { byId } = P.positions(nodes, sources, yml);
+  eq("sections written as ## are the bands", [byId.s1.section, byId.s2.section],
+     ["1. First", "2. Second"]);
+  eq("a claim before the first section has no band", byId.front.section, null);
+  eq("a located quotation bands the claim where the words are, not where it says",
+     [byId.misdeclared.precision, byId.misdeclared.section], ["quotation", "1. First"]);
+  eq("a claim whose source is missing falls back to its declared section",
+     [byId.unplaced.line, byId.unplaced.section], [null, "3. Third"]);
+}
+
+console.log("\nthe band is derived in ONE place");
+{
+  // THIS IS WHAT THE TEST IS FOR. The rule lived in `positions` and was then worked out AGAIN by
+  // both hosts, and the build's copy drifted: it still filtered headings to level 1 after the
+  // rule had moved to `bandLevel`, so every paper whose sections are `##` built a viewer with no
+  // sections at all — the same defect, fixed once and left standing in a second copy.
+  const hosts = [["the build", "build_argdown_viewer.mjs"],
+                 ["the viewer template", "argdown-viewer.template.html"]];
+  for (const [what, file] of hosts) {
+    const src = fs.readFileSync(path.join(HERE, file), "utf8");
+    ok(what + " does not re-derive the band from the headings",
+       !/\.section\s*=/.test(src.replace(/pos\.section\s*=\s*pos\.section/g, "")),
+       "an assignment to `.section` outside argdown-positions.js is a second copy of the rule");
+  }
+}
+
 console.log("\ndocument-order seating: the key, not the layout");
 {
   // The layout itself needs a DOM and dagre, so it is verified in the browser. What CAN be

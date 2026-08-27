@@ -419,26 +419,20 @@ function attachPositions(graph, root, argdownPath, attached) {
     }
   }
 
+  // THE ENCLOSING HEADING, baked in so the by-position view can lane by section. A chapter is
+  // too coarse a lane for a long article: this paper is ONE file with eight numbered sections,
+  // so every claim landed in a single lane and the section structure the author navigates by was
+  // invisible. Sub-headings deliberately do not get their own lane — that would fragment the
+  // picture without helping anyone find their place.
+  //
+  // `positions` works it out; this used to work it out AGAIN, filtering headings to level 1.
+  // That is right for a source converted from a PDF and wrong for one converted from a
+  // publisher's HTML, where `#` is the article title and `##` are its sections — so a build of
+  // such a paper had no sections at all. The rule moved to `bandLevel` and this copy did not
+  // move with it, which is the whole argument for there not being a copy.
   const { byId } = P.positions(graph.nodes, sources, projectText);
-  // THE ENCLOSING TOP-LEVEL HEADING, baked in so the by-position view can lane by section.
-  // A chapter is too coarse a lane for a long article: this paper is ONE file with eight
-  // numbered sections, so every claim landed in a single lane and the section structure the
-  // author navigates by was invisible. Sub-headings deliberately do not get their own lane —
-  // that would fragment the picture without helping anyone find their place.
-  const headsFor = {};
-  for (const ch of Object.keys(sources)) {
-    if (!sources[ch]) continue;
-    headsFor[ch] = P.headingIndex(sources[ch]).filter(h => h.level === 1);
-  }
   let placed = 0;
-  for (const n of graph.nodes) if (byId[n.id]) {
-    n.pos = byId[n.id];
-    const hs = headsFor[n.pos.chapter] || [];
-    let sec = null;
-    for (const h of hs) if (n.pos.line != null && h.line <= n.pos.line) sec = h.text;
-    n.pos.section = sec;
-    placed++;
-  }
+  for (const n of graph.nodes) if (byId[n.id]) { n.pos = byId[n.id]; placed++; }
   // HOW LONG IS EACH PART OF IT. The retired structure browser reported these and nothing else
   // did; they belong beside the claims rather than in a separate page, so they are baked in here
   // and drawn on the bands of the by-position view.

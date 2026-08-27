@@ -251,8 +251,9 @@ function readingOrder(projectText) {
  *   sources  { "<chapter path>": "<file contents>" }
  *   quarto   the text of _quarto.yml
  *
- * Returns { byId, order } where byId[id] = { chapter, chapterIndex, line, precision, inBook }.
- * Precision, best first: `declared` (a hand-written {line: N}), `paragraph`, `heading`,
+ * Returns { byId, order } where byId[id] = { chapter, chapterIndex, line, precision, section,
+ * inBook }. Precision, best first: `quotation`, `declared` (a hand-written {line: N}),
+ * `inference` (an <Argument>, placed at the claims it is made of), `paragraph`, `heading`,
  * `chapter-only`. Claims citing a file the book does not list are placed after everything and
  * flagged, because a claim sourced outside the manuscript is worth noticing on its own account.
  */
@@ -306,13 +307,78 @@ function positions(nodes, sources, quarto) {
       var wide = locateParagraph(n.detail, all, 1, all.length);
       if (wide.line) { place.line = wide.line; place.precision = "paragraph"; }
     }
-    // The band, derived from wherever the line landed. The claim's own `section:` is preferred
-    // when it has one — the author said which section it belongs to, and that beats a guess from
-    // a line that may have been matched loosely.
-    place.section = n.section
-      || (place.line != null ? sectionOfLine(headsOf(n.chapter), place.line) : null)
-      || null;
     byId[n.id] = place;
+  }
+
+  /* AN ARGUMENT IS PLACED BY ITS CONCLUSION.
+   *
+   * An <Argument> is not a passage of the manuscript. It is a structure the reconstructor built
+   * out of claims, and it has no words of its own, so nothing above places it: across the
+   * published corpus every argument either dropped into the exposition view's unnamed band or
+   * was placed by matching the reconstructor's OWN summary prose against the source — a guess
+   * about a paraphrase, and one that put an argument named after section 3 in section 2.
+   *
+   * Its MAIN CONCLUSION has words, and an argument is made where it LANDS. Three routes to the
+   * same place, best first: the conclusion's own claim where that claim is drawn on the map and
+   * already placed; failing that the conclusion's quotation, then its words, located here.
+   * The last two exist because a conclusion written inline in the premise-conclusion structure
+   * gets an auto-generated title and no map node.
+   *
+   * WHY NOT THE LAST PLACED MEMBER when the conclusion cannot be found. It reads plausibly and
+   * it is wrong: it puts the argument after every one of its premises BY CONSTRUCTION, so every
+   * premise-to-argument relation comes out as support that arrived before the claim it supports.
+   * That is exactly what `argdown-exposition` measures, and on the Carroll dialogue it inverted
+   * the verdict — a text that asserts and then justifies read as one that earns its claims
+   * first. A position that manufactures the finding is worse than no position.
+   *
+   * NOR THE EARLIEST MEMBER: two arguments in this corpus borrow a definition from an earlier
+   * section, and that files them under the section they borrow from rather than the one they
+   * are argued in.
+   *
+   * The argument's OWN evidence still wins. Where the reconstructor quoted the passage, or wrote
+   * a line, that is about the argument itself rather than about its conclusion.
+   *
+   * The statement/argument asymmetry is deliberate. A statement whose words are not in the text
+   * is the reconstructor's own — an imputation — and placing it from its neighbours would invent
+   * a position the text does not support. An argument is BY CONSTRUCTION made of claims.
+   */
+  var lineByTitle = Object.create(null);
+  for (var a = 0; a < nodes.length; a++) {
+    var st = nodes[a], sp = byId[st.id];
+    if (st.label && sp && sp.line != null && !(st.label in lineByTitle))
+      lineByTitle[st.label] = { line: sp.line, chapter: sp.chapter };
+  }
+  for (var b = 0; b < nodes.length; b++) {
+    var arg = nodes[b], ap = byId[arg.id];
+    if (!ap || arg.kind !== "argument") continue;
+    if (ap.precision === "quotation" || ap.precision === "declared") continue;
+    // Only within the argument's own chapter: a conclusion cited from a different file gives a
+    // line number that means nothing here.
+    var drawn = arg.conclusion ? lineByTitle[arg.conclusion] : null;
+    var line = drawn && drawn.chapter === ap.chapter ? drawn.line : null;
+    var body = sources && sources[ap.chapter] != null ? sources[ap.chapter] : null;
+    if (line == null && arg.conclusionText && body != null)
+      line = locateQuotation({ detail: arg.conclusionText, source: arg.conclusionSource }, body);
+    if (line == null && arg.conclusionText && linesOf(ap.chapter))
+      line = locateParagraph(arg.conclusionText, linesOf(ap.chapter),
+                             1, linesOf(ap.chapter).length).line;
+    if (line != null) { ap.line = line; ap.precision = "inference"; }
+  }
+
+  // THE BAND, derived from wherever the line landed, and derived ONCE. This was computed here
+  // and then computed AGAIN, differently, by both hosts — the viewer template and the build —
+  // which is how the build came to be banding on `#` headings after the rule had moved on to
+  // `bandLevel`. A paper whose sections are `##`, which is every source converted from a
+  // publisher's HTML, built a viewer with no sections at all.
+  //
+  // A declared `section:` is the FALLBACK, not the winner. The band is a fact about where the
+  // claim's words are, and `sectionOfLine` reads it off the text; `section:` is what a claim
+  // with no line at all has left to go on.
+  for (var d = 0; d < nodes.length; d++) {
+    var nn = nodes[d], pp = byId[nn.id];
+    if (!pp) continue;
+    pp.section = (pp.line != null ? sectionOfLine(headsOf(pp.chapter), pp.line) : null)
+      || nn.section || null;
   }
   return { byId: byId, order: order };
 }

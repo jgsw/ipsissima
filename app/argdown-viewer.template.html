@@ -1811,6 +1811,7 @@ function msPrecisionNote(p){
   if (!p) return "";
   if (p.line == null) return "somewhere in this file — no line recorded";
   return { quotation: "found by its quotation",
+           inference: "where the argument lands — an <Argument> has no words of its own",
            paragraph: "the paragraph it came from",
            heading:   "the section it came from" }[p.precision] || "";
 }
@@ -3016,26 +3017,16 @@ function locateInPage(graph, byPath){
     }
     projectText = "chapters:\n" + cited.map(function(c){ return '  - "' + c + '"'; }).join("\n") + "\n";
   }
+  // WHICH BAND EACH CLAIM FALLS IN is `positions`' answer, not a second one worked out here.
+  // Both hosts used to re-derive it from the headings, and the build's copy drifted: it still
+  // filtered to level 1 after the rule had moved to `bandLevel`, so a paper whose sections are
+  // `##` — every source converted from a publisher's HTML — built a viewer with no sections.
   var located = P.positions(graph.nodes, sources, projectText);
-  // WHICH LEVEL DIVIDES THE TEXT, asked of the file rather than assumed. This filtered to level
-  // 1, which is right for a source converted from a PDF and wrong for one converted from a
-  // publisher's HTML, where `#` is the article title and `##` are its sections. `bandLevel`
-  // takes the shallowest level with more than one heading at it.
-  var headsFor = {};
-  for (ch in sources) if (sources[ch]) {
-    var all = P.headingIndex(sources[ch]);
-    var lvl = P.bandLevel(all);
-    headsFor[ch] = lvl ? all.filter(function(h){ return h.level === lvl; }) : [];
-  }
   var placed = 0;
   for (i = 0; i < graph.nodes.length; i++) {
-    var n = graph.nodes[i], pos = located.byId[n.id];
+    var pos = located.byId[graph.nodes[i].id];
     if (!pos) continue;
-    n.pos = pos;
-    var hs = headsFor[pos.chapter] || [], sec = null;
-    for (var k = 0; k < hs.length; k++)
-      if (pos.line != null && hs[k].line <= pos.line) sec = hs[k].text;
-    n.pos.section = sec;
+    graph.nodes[i].pos = pos;
     placed++;
   }
   graph.words = P.wordCounts(sources);

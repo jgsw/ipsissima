@@ -328,6 +328,7 @@ export function toGraph(res) {
    */
   const stepOfPremise = new Map();     // argument title -> Map(premise title -> step index)
   const stepCount = new Map();
+  const pcsOf = new Map();            // argument title -> { conclusion, members }
   for (const [title, a] of Object.entries(res.arguments || {})) {
     const pcs = a.pcs || [];
     if (!pcs.length) continue;
@@ -340,9 +341,32 @@ export function toGraph(res) {
     for (const t of run) where.set(t, step);          // a PCS with no closing conclusion
     stepOfPremise.set(title, where);
     stepCount.set(title, step);
+    // WHERE THE ARGUMENT LANDS, carried so that `argdown-positions` can place it in the
+    // manuscript. An <Argument> has no words of its own, so nothing locates it: across this
+    // corpus every argument either dropped out of the exposition view into an unnamed band or
+    // was placed by matching the reconstructor's own summary prose against the source, which is
+    // a guess about a paraphrase. Its MAIN CONCLUSION has words, and an argument is made where
+    // it lands.
+    //
+    // Not the earliest premise, which was the other candidate: two arguments here borrow a
+    // definition from an earlier section, and anchoring to the earliest member files them under
+    // that section rather than the one they are argued in. Not the LAST member either — that
+    // reads well until you notice it puts every argument after every premise BY CONSTRUCTION,
+    // which manufactures the very thing `argdown-exposition` measures.
+    //
+    // The text and the quotation travel beside the title because a conclusion written inline in
+    // the premise-conclusion structure gets an auto-generated title and no map node of its own.
+    // It is still a statement with words, and words are what place a claim.
+    const main = [...pcs].reverse().find(p => p.role === "main-conclusion");
+    pcsOf.set(title, {
+      conclusion: main ? main.title : null,
+      conclusionText: main ? (main.text || "").trim() : null,
+      conclusionSource: main && main.data ? main.data.source || null : null
+    });
   }
   const byId = new Map(nodes.map(n => [n.id, n]));
   for (const n of nodes) if (stepCount.has(n.label)) n.steps = stepCount.get(n.label);
+  for (const n of nodes) if (pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
 
   for (const e of res.map.edges || []) {
     if (!e.from || !e.to) continue;
@@ -359,10 +383,32 @@ export function toGraph(res) {
 
 /** The process chain and settings every host must use, so a file maps identically everywhere.
  *  `removeTagsFromText` matters: tags drive the facet chips and the node colour, and must not
- *  also be left sitting in the visible label. */
+ *  also be left sitting in the visible label.
+ *
+ *  FRESH EVERY TIME, and that is not a style choice. Every caller spreads this into a request
+ *  --- `argdown.run({ input, ...RUN })` --- and a spread is a SHALLOW copy, so `model` was one
+ *  object shared by every parse in the process. Argdown merges a file's own front matter into
+ *  the request's `model`, so parsing a single file carrying
+ *
+ *      ===
+ *      model:
+ *          mode: strict
+ *      ===
+ *
+ *  wrote `mode: strict` into this object and left it there. Every LATER parse in the same
+ *  process then ran strict without asking: `+` comes back as `entails` and `-` as `contrary`
+ *  instead of `support` and `attack`, so the map redraws its relations for a file that never
+ *  requested it. Nothing is logged and nothing fails.
+ *
+ *  It reaches further than one map. `rebuild_viewers.mjs` builds every viewer in one process,
+ *  so one strict file would have silently built all the ones after it strict; the editor
+ *  re-parses on every pause in typing, where the setting would survive until the page reloaded.
+ *
+ *  Defining the two mutable members as getters means the spread invokes them and each request
+ *  gets its own array and its own `model`. Call sites are unchanged. */
 export const RUN = {
-  process: ["parse-input", "build-model", "build-map", "export-json"],
-  model: { removeTagsFromText: true },
+  get process() { return ["parse-input", "build-model", "build-map", "export-json"]; },
+  get model() { return { removeTagsFromText: true }; },
   logLevel: "error"
 };
 
