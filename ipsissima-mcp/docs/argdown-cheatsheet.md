@@ -96,6 +96,28 @@ That is a **sketched** argument — a title and a description. Refer to it by ti
 An argument becomes **reconstructed** when you give it a premise-conclusion structure (§5).
 The same argument can have both a description and a PCS, written in separate blocks.
 
+### The blank line after a title goes exactly one way
+
+This is the rule most likely to catch you, because it points in opposite directions depending on
+what comes next. It holds for `[Statement]` titles as well as `<Argument>` titles.
+
+| what follows the title | blank line | why |
+|---|---|---|
+| a **relation** (`<+`, `<-`, `<_`, …) | **never** — it is a parse error | the relation is a child of the title, and a tree may not be broken by a blank line |
+| a **premise-conclusion structure** (`(1) …`) | **always** — omitting it is a parse error | the title works as a heading for the PCS, and blank lines separate blocks |
+
+```argdown
+<Law must protect>
+    <_ <Poor reason>: No blank line. The relation hangs off the title.
+
+<No harm, no ban>
+
+(1) A blank line above this one, because a PCS is a new block.
+(2) Another premise.
+-----
+(3) The conclusion.
+```
+
 **Statement or argument — which?** A statement is *what is claimed*. An argument is *the move
 from some claims to another*. If you can say "because", you have an argument.
 
