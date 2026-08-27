@@ -1,71 +1,99 @@
 # Known issues
 
-**Two open defects. The suite finds the first and not the second.** `run_all_tests.mjs` reports
-one failing suite — the first defect below — and CI allows exactly that one. The second is
-reachable at other seeds and the committed run does not reach it, so a green line for everything
-else means "no regression against what the renderer did yesterday", not "the invariants hold".
-
-Searching seeds in CI would make the badge red for a second defect nobody is about to fix, which
-teaches a reader to ignore it. The arrangement is a gate that allows one named failure, plus this
-page — and this page has to be read.
+**One open defect.** The suite is green at the committed seed and finds it at three of five
+others, so green here means "no regression against yesterday", not "the invariants hold". The
+reproducer is one command.
 
 ---
 
-## 1. A second contention drawn unattached (Reasons view)
-
-Found by the committed run, so CI is red on it.
+## A claim can vanish when you expand another (both views, deep fold states)
 
 ```bash
-node app/test_fold_invariants.mjs --steps 1500
-```
-
-```
-Akhlaghi [by argument]: 93 nodes, 8 sections
-   FAIL  no drawn claim is left with nothing attached to it
-         1 claim(s): An urgent unexplored ethical challenge
-         after: as the viewer opens -> toggleGroup(s2)
-```
-
-One action from the opening state. The claim is the paper's **second thesis**; it has exactly two
-relations in the file — it is the conclusion of one premise-conclusion structure and is attacked
-by one claim — and both sit in the section being opened. Opening that section leaves it on screen
-with neither.
-
-This is the first of these in the **by-argument** view; the two fixed in August were both
-by-position. Step 5b's through-edge should have fired and does not, and why is the question.
-
-**It matters more since 27 Aug 2026**, when the instructions were changed to say that a paper may
-argue for more than one thing. Second contentions will now be commoner, and this is the defect
-that greets them.
-
-## 2. A claim can vanish when you expand another (both views, deep fold states)
-
-**Not found by the committed seed.** Other seeds reach it:
-
-```bash
-node app/test_fold_invariants.mjs --steps 1500 --seed 1
+node app/test_fold_invariants.mjs --steps 1200 --seed 1 --dump /tmp/fail.json
 ```
 
 ```
 Carroll [by argument]: 20 nodes, 5 sections
    FAIL  expanding a claim hides nothing that was on screen (no depth limit)
          expanding n19 hid 5: n10, n13, n11
-         after: … -> collapseAll -> toggleGroup(s2) -> toggleNode(n19)
 ```
 
-Opening a claim should only ever add. In a deep enough fold state — the reproducers all pass
-through `collapseAll` followed by opening a section and then a node — expanding one claim can take
-others off the screen. Nothing is lost from the file and pressing the control again brings them
-back, but a map that removes claims when you ask it for more is telling you something false while
-you are reading it.
+### Diagnosed 27 Aug 2026, and it is not what it looks like
 
-**Not diagnosed.** It is about the fold *bookkeeping* rather than about which claims get drawn:
-the state after `collapseAll` is not the union of the individual collapses, and expanding out of
-it takes a different path back.
+The first guess was that the safety guard on stepwise folding measured the wrong thing —
+`keepsEverything` compares `representedBy`, which counts a claim as still shown when it is a
+member of a drawn block. That guess was **wrong**, and the way it was wrong is worth recording:
+the test's own invariant uses the same notion, so guard and invariant already agreed. Tightening
+the guard to compare drawn-as-itself fixed nothing and made stepwise folding refuse more folds,
+which moved the state space and made the failure appear at *every* seed instead of three.
+
+**The real cause.** Replayed from the dumped state, expanding `n19` loses `group:s4` — a block
+that was standing for five claims. Nothing collapsed those five; the block simply stopped being
+drawn, because the walk no longer reaches anything inside `s4`.
+
+It stops reaching because **walking THROUGH a suppressed node goes further than drawing it.** A
+node held back by an opened section is walked through, so the traversal continues past it into
+whatever hangs off it. Expanding that node makes it *drawn*, and the walk then proceeds from its
+children — which stop at the first one in `collapsedNodes`. `s4` lay beyond that stop.
+
+So expanding a claim converts a pass-through into a stop, and the reach of the walk **shrinks**.
+That is the asymmetry, and no guard on the stepwise folds can see it: the state delta shows
+`collapsedNodes` unchanged. The loss is caused by the expansion itself.
+
+### Where a fix probably lies
+
+Not in the guard. Either
+
+- the walk's reach must be made **monotone under expansion** — expanding a node keeps whatever
+  its pass-through was carrying, which means remembering what a suppression was reaching for; or
+- a collapsed group must stop being **contingent on the walk**. A block that stands for five
+  claims disappears when nothing routes into its section, which is what makes representation
+  non-monotone in the first place. A group that is collapsed could be drawn because it is
+  collapsed, not because something reached it.
+
+The second is the deeper fix and the larger change.
+
+### Tools
+
+`--dump FILE` writes the exact failing state as JSON; `--trail` prints untruncated trails. **A
+trail is not a reproducer** — replaying one from a fresh start does not reach the same place,
+because `actionsFor` offers different actions in different states. Two hours went into learning
+that. Use the dump.
+
+---
+
+## Fixed 27 Aug 2026
+
+### A second contention drawn unattached — fixed
+
+In the by-argument view, opening a section left the paper's second contention on screen with
+nothing joined to it. Its **entire connected component** was inside the section being opened, so
+the through-edge repair added in August had nothing to draw a line to: the BFS walked the whole
+component and found nothing drawn.
+
+Two repairs had existed and each covered only half the problem. The old step 2c let a held-back
+neighbour through, and ran **before** groups were collapsed, so it guessed at the finished picture
+and guessed wrong often enough to make sections appear to open several levels at once. Step 5b
+draws a through-edge and needs a drawn claim to reach.
+
+They are now one repair, in one place, with the finished picture in hand: try a through-edge
+first, because it adds no nodes and so cannot make anything vanish; only where no drawn claim is
+reachable at all, name the neighbour that would reconnect it and **run the pass again** with that
+neighbour forced in. Re-running rather than patching the output keeps one description of how a
+picture is built — the rescued claim goes through group collapse and edge rewiring like everything
+else.
+
+One exclusion, restored from the old repair after it broke three fixtures: **nothing is rescued
+under a depth limit.** At depth 0 a lone contention with nothing attached is not adrift; it is
+what was asked for.
+
+Measured across five seeds and 1,200 steps: floating-claim violations 5 → **0**, on the published
+corpus and on a private one.
 
 ---
 
 ## Fixed 23 Aug 2026
+
 
 
 

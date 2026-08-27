@@ -113,12 +113,11 @@ an honest account of the one problem the project has not solved.
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
 
 **Green does not mean everything passes.** The suite runs one fixed seed, which makes it a
-regression gate — it holds the renderer to what it did yesterday — not a proof that its invariants
-hold. **Two defects are open.** The suite finds the first, and CI allows that one failure. The second
-needs another seed:
+regression gate rather than a proof. **One defect is open** and other seeds find it:
 
 ```bash
-node app/test_fold_invariants.mjs --steps 1500 --seed 1
+node app/test_fold_invariants.mjs --steps 1200 --seed 1
 ```
 
-`KNOWN-ISSUES.md` says what they are and why CI is not set to hunt for them.
+`KNOWN-ISSUES.md` has the diagnosis, and the tools — `--dump` writes the exact failing state,
+because a trail is not a reproducer.

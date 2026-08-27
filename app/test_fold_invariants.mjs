@@ -48,6 +48,14 @@ const opt = (flag, dflt) => {
   return i >= 0 ? Number(argv[i + 1]) : dflt;
 };
 const STEPS = opt("--steps", 1500);
+const FULL_TRAIL = process.argv.includes("--trail");
+// `--dump FILE` writes the exact pre-action state and action of each first failure, as JSON.
+// A TRAIL IS NOT A REPRODUCER: replaying one from a fresh start does not reach the same place,
+// because `actionsFor` offers different actions in different states and a description like
+// `depth(null)` does not say what the depth was before. Two hours went into discovering that.
+// The state itself always reproduces.
+const DUMP = (() => { const i = process.argv.indexOf("--dump"); return i > 0 ? process.argv[i + 1] : null; })();
+const dumped = [];
 const SEED = opt("--seed", 20260817);
 
 /* --------------------------------------------------------------- the invariants */
@@ -407,10 +415,22 @@ function run(name, graph, byText) {
   const seen = new Map();   // invariant -> first failure, with the trail that produced it
   let checks = 0;
 
-  const note = (fails, trail) => {
+  const note = (fails, trail, state, action) => {
     for (const f of fails) {
       checks++;
-      if (!seen.has(f.inv)) seen.set(f.inv, { msg: f.msg, trail: trail.slice() });
+      if (!seen.has(f.inv)) {
+        seen.set(f.inv, { msg: f.msg, trail: trail.slice() });
+        if (DUMP && state) dumped.push({
+          map: name, view: byText ? "by position" : "by argument", invariant: f.inv, msg: f.msg,
+          action,
+          state: { collapsedGroups: [...state.collapsedGroups], collapsedNodes: [...state.collapsedNodes],
+                   expandedNodes: [...state.expandedNodes], // The VALUES are Sets, and JSON turns a Set into `{}` — so a dump taken the obvious way
+          // restores a state with every fold mark empty, which is a different state that does not
+          // reproduce anything.
+          groupFolded: [...state.groupFolded].map(([k, v]) => [k, [...v]]),
+                   collapsedLanes: [...state.collapsedLanes], depth: state.depth, byText: !!byText }
+        });
+      }
     }
   };
 
@@ -420,7 +440,7 @@ function run(name, graph, byText) {
     for (const a of actionsFor(graph, vis0, byText)) {
       const r = step(graph, s.state, a, apex, byText);
       checks++;
-      note(r.fails, [s.label, describe(a)]);
+      note(r.fails, [s.label, describe(a)], s.state, a);
     }
   }
 
@@ -432,10 +452,14 @@ function run(name, graph, byText) {
     const a = acts[Math.floor(rand() * acts.length)];
     const r = step(graph, state, a, apex, byText);
     checks++;
-    note(r.fails, trail.concat(describe(a)));
+    note(r.fails, trail.concat(describe(a)), state, a);
     state = r.next; vis = r.after;
     trail.push(describe(a));
-    if (trail.length > 12) trail = [trail[0], "…", ...trail.slice(-4)];
+    // TRIMMED FOR READING, and `--trail` turns that off. A truncated trail is enough to see what
+    // kind of state produced a failure and useless for reproducing one: replaying the visible
+    // tail from a fresh start does not reach the same place, because the elided steps are what
+    // built it. Debugging the vanishing defect cost an hour to that before the flag existed.
+    if (!FULL_TRAIL && trail.length > 12) trail = [trail[0], "…", ...trail.slice(-4)];
   }
 
   console.log(`\n${name} [${byText ? "by position" : "by argument"}]: ${graph.nodes.length} nodes, ` +
@@ -558,6 +582,11 @@ let framingFailed = false;
 
   if (bad) { console.log(`\n${bad} framing check(s) FAILED`); framingFailed = true; }
   else console.log("  all framing checks passed");
+}
+
+if (DUMP && dumped.length) {
+  fs.writeFileSync(DUMP, JSON.stringify(dumped, null, 1));
+  console.log(`\nwrote ${dumped.length} failing state(s) to ${DUMP}`);
 }
 
 process.exit(failed || framingFailed ? 1 : 0);

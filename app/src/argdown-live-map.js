@@ -268,7 +268,32 @@ function laneChapter(lane) {
  *
  *  state = { collapsedGroups:Set, collapsedNodes:Set, depth:number|null, facets:Set|null }
  */
+/** The drawn picture for a fold state.
+ *
+ *  A THIN DRIVER OVER ONE PASS. `filterOnce` walks the graph and repairs what it can; where a
+ *  claim is left with nothing attached AND no drawn claim to draw a through-edge to, it names
+ *  the neighbour that would reconnect it and this runs the pass again with that neighbour
+ *  forced in. Re-running rather than patching the finished output is what keeps ONE description
+ *  of how a picture is built: the rescued claim goes through group collapse and edge rewiring
+ *  like everything else, instead of being assembled a second way here.
+ *
+ *  It terminates because `force` only ever grows and is bounded by the node count; the guard is
+ *  for a future change, not for any graph we have. On five of the six samples it runs once.
+ */
 function filterGraph(graph, state) {
+  let force = null, out = filterOnce(graph, state, force);
+  for (let pass = 0; pass < 8 && out.rescues && out.rescues.length; pass++) {
+    force = new Set(force || []);
+    let grew = false;
+    for (const id of out.rescues) if (!force.has(id)) { force.add(id); grew = true; }
+    if (!grew) break;
+    out = filterOnce(graph, state, force);
+  }
+  delete out.rescues;
+  return out;
+}
+
+function filterOnce(graph, state, force) {
   const ix = index(graph);
   const S = {
     collapsedGroups: state.collapsedGroups || new Set(),
@@ -474,6 +499,10 @@ function filterGraph(graph, state) {
     const chain = groupChain(ix, id).filter(g => S.collapsedGroups.has(g));
     return chain.length ? "group:" + chain[chain.length - 1] : id;
   };
+  // A claim the previous pass could not reconnect any other way. Added here, after the walk and
+  // before groups are collapsed, so it is drawn by the ordinary machinery rather than bolted on.
+  if (force) for (const id of force) if (passes.has(id)) visible.add(id);
+
   // 3. What did we hide? Drives the "+3" affordance on a node with a folded subtree.
   const hiddenBelow = new Map();
   for (const id of visible) {
@@ -628,6 +657,7 @@ function filterGraph(graph, state) {
   //  because a set of nodes that never grows can never shrink. It is also the more honest
   //  picture: the reader sees that the connection exists and that something is folded out of it,
   //  rather than seeing a claim that appears to stand alone.
+  const rescues = [];
   const attached = new Set();
   for (const e of outEdges) { attached.add(e.from); attached.add(e.to); }
   const adrift = outNodes.filter(n => n.kind !== "group" && !attached.has(n.id));
@@ -660,7 +690,29 @@ function filterGraph(graph, state) {
         }
         frontier = next;
       }
-      if (!found) continue;
+      if (!found) {
+        // NOTHING DRAWN IS REACHABLE AT ALL, which is a different situation from the one a
+        // through-edge fixes and needs the other tool. It happens when a claim's WHOLE COMPONENT
+        // sits inside the section being opened: the section's entry claim is drawn, every claim
+        // it relates to is held back, and there is no third party to draw a line to.
+        //
+        // The old repair for this (step 2c, removed 23 Aug) let one held-back neighbour through,
+        // and did it BEFORE groups were collapsed — so it had to guess what the finished picture
+        // would look like, guessed wrong, and let claims through that step 4 would have
+        // represented anyway. That is what made a section appear to open several of its levels
+        // at once. Here the picture is finished, so the question is settled rather than guessed,
+        // and this fires only where a through-edge cannot.
+        // NOT UNDER A DEPTH LIMIT. A reader who asked for two levels asked for the edges to
+        // stop, and at depth 0 a lone contention with nothing attached is not adrift — it is
+        // exactly what was asked for. The old repair carried this exclusion and dropping it
+        // broke three fixtures the moment this one shipped.
+        if (S.depth != null) continue;
+        const rescue = (near.get(n.id) || [])
+          .map(h => h.other)
+          .find(o => ix.byId.has(o) && !visible.has(o));
+        if (rescue != null) rescues.push(rescue);
+        continue;
+      }
       const a = found.hop.out ? n.id : found.to;
       const b = found.hop.out ? found.to : n.id;
       const key = a + " " + b + " " + found.hop.type;
@@ -693,7 +745,7 @@ function filterGraph(graph, state) {
   // The manuscript's word counts ride along with the filtered graph rather than being looked up
   // from the full one: the layout and the toolbar both draw them, and neither is handed the
   // original. Passed through untouched — filtering claims does not change how long a section is.
-  return { nodes: outNodes, edges: outEdges, groups: outGroups,
+  return { nodes: outNodes, edges: outEdges, groups: outGroups, rescues,
            words: graph.words || null, chapterOfIndex };
 }
 
