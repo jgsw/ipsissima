@@ -1056,6 +1056,70 @@ function render(name, source, graph){
 
   if (LIVE) { LIVE.destroy(); LIVE = null; }
 
+/** The rung of the "how much" ladder a map should OPEN on.
+ *
+ *  TWO CONTROLS, AND ONLY ONE OF THEM WAS ADAPTING. A map with more than 25 claims opens with its
+ *  sections folded — the line below — and that is why a 191-claim reconstruction opens showing six
+ *  boxes rather than a wall. But `depth` was left at `null` on every map ever opened, so the
+ *  ladder sat permanently at its top rung and the section fold did all the work alone.
+ *
+ *  The two then interact badly, and the reader meets it on their first click. With depth at
+ *  "everything", unfolding ONE section of Prescott-Couch goes from 6 boxes to 73: the wall was
+ *  deferred, not avoided. Measured across the corpus, unfolding every section gives
+ *
+ *      depth 3   36 claims          depth "everything"   191 claims
+ *
+ *  on the same map. The ladder already does exactly what is wanted; nothing was ever setting it.
+ *
+ *  SO: open on the deepest rung that still fits, measured with the sections OPEN — because what
+ *  the rung has to survive is the reader unfolding things, not the folded view it starts from.
+ *  The reader raises it whenever they want more, and the button already tells them what each rung
+ *  costs.
+ *
+ *  BUDGET, and why this number. 40 claims is about what fits on a laptop screen at a readable
+ *  zoom, and it is above the largest sample that has no structural problem — Carroll's 36 — so
+ *  the small maps that were fine before are untouched and open whole. Chosen from the corpus
+ *  rather than from taste: at 40 the seven published samples open at all, all, d2, d2, d3, d3, d4,
+ *  which matches what a reader would pick by hand.
+ *
+ *  WHERE A MAP IS WIDE RATHER THAN DEEP THIS CANNOT HELP, and it does not pretend to. The book
+ *  skeleton has four apexes and eleven chapters hanging near the top, so even depth 1 draws 49
+ *  claims and every rung is over budget. It opens at 1 and the honest answer for that map was to
+ *  reconstruct it smaller. A control cannot fix a shape.
+ */
+var OPENING_BUDGET = 40;
+
+function openingDepth(graph){
+  var A = window.ArgdownLiveMap;
+  if (!A || !A.filterGraph || !graph || !graph.nodes) return null;
+  var at = function(d){
+    try {
+      return A.filterGraph(graph, {
+        collapsedGroups: new Set(), collapsedNodes: new Set(), expandedNodes: new Set(),
+        groupFolded: new Map(), collapsedLanes: new Set(), depth: d, facets: null
+      }).nodes.length;
+    } catch (e) { return null; }
+  };
+  // Everything fits: leave the ladder alone rather than imposing a limit that hides nothing.
+  var whole = at(null);
+  if (whole == null || whole <= OPENING_BUDGET) return null;
+  // ONLY WHAT THE LADDER CAN EXPRESS. The "how much" slider is built with rungs
+  // `0 … min(maxDepth, 2)` and then `all` — four rungs, never more. Opening on a depth that is
+  // not one of them puts the control OFF ITS LADDER: it falls back to the top rung and reads
+  // "everything" while the map is at something else, so the reader is told the wrong thing and
+  // cannot return to where they started by using the control. This was written with an
+  // unconstrained integer first and did exactly that on Prescott-Couch — slider at "everything",
+  // map at depth 3.
+  var top = Math.min(A.maxDepth ? (A.maxDepth(graph) || 0) : 0, 2);
+  var best = 0;
+  for (var d = 0; d <= top; d++) {
+    var n = at(d);
+    if (n == null) break;
+    if (n <= OPENING_BUDGET) best = d; else break;   // the counts only grow with depth
+  }
+  return best;
+}
+
   var groups = graph.groups || [];
   var top = groups.filter(function(g){ return !g.parent; });
   // A large map opened flat is a wall of boxes at unreadable zoom. Open on the spine with the
@@ -1065,6 +1129,7 @@ function render(name, source, graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true,
     collapsedGroups: collapsed,
+    depth: openingDepth(graph),
     onLocate: msLocate,
     onMenu: ctxShow,
     onMargin: openMargin
