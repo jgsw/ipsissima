@@ -76,11 +76,19 @@ jobs:
       # The frontend is built by the Argdown toolchain, not by the desktop folder: the app IS
       # that page. So its dependencies (esbuild, @argdown/core, CodeMirror, docx, markdown-it)
       # have to be installed before anything can be staged.
+      #
+      # THE ICONS TOO, because the platform set is deliberately not committed — only the
+      # 1024px master is (see app/desktop/.gitignore and brand/README.md). Locally `tauri icon`
+      # is run by hand after the mark changes; a fresh checkout has only source.png, and
+      # tauri's generate_context! fails at MACRO EXPANSION on the missing 32x32.png. The first
+      # tag ever cut is what found this: every earlier build ran on a machine that had the
+      # generated set lying around.
       - name: Build the frontend
         run: |
           npm ci --prefix ../
           npm ci
           npm run frontend
+          node tauri.mjs icon src-tauri/icons/source.png -o src-tauri/icons
 
       # LEFT AT v0 DELIBERATELY. tauri-action reached v1 in 2026 and this workflow runs only on a
       # tag, so nothing here would exercise a major bump before a real release did. Worth doing —
