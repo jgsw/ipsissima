@@ -32,11 +32,24 @@ cat ipsissima-mcp/docs/argdown-cheatsheet.md \
 ## Round trips are the cost of a reconstruction
 
 **Measured across five runs: 37 to 45 tool calls whatever the paper** — 41 for a 266-word passage
-and 44 for a 10,751-word judgment. The reading, the judgement and the map are nearly free; the
-*procedure* is nearly all of it, because every call re-sends the whole conversation and re-enters
-the loop. So the four rules below are worth as much as anything else in this document.
+and 44 for a 10,751-word judgment. Applying the four rules below took the same passage to **six**.
 
-**1. Read the three documents in one call.** Every run so far used three. See above.
+Be clear about what that buys, because the same measurement settled it. Cutting the calls by 85%
+cut the tokens by 31%, not 85%: **the bulk of a reconstruction is the thinking, not the round
+trips**, and one deliberative turn on that run emitted 44,411 tokens on its own. So these rules are
+worth following and they are not the main cost. **Do not trade a worse reading for a shorter run** —
+that is the one saving this document does not want.
+
+One consequence for a long turn: if you are working in a conversation cached for five minutes, a
+turn that thinks for longer than that makes the next request rebuild the whole context. Prefer
+several ordinary turns to one enormous one.
+
+**1. Read the three documents in as few calls as they will fit in — but do not cram.** Served as
+MCP resources this is not a problem. On the command line it is: the three come to about 55 KB, and
+a run that put all three *and* the source in one `cat` overflowed the tool's inline cap, spilled to
+a file, and had to read that file back — the same number of calls, and one enormous turn that took
+eight minutes to digest. **Two calls that fit beat one that overflows.** Never combine the
+documents with the source.
 
 **2. Read the source once, whole, before you start.** Runs that read it in nine or fourteen pieces
 paid for each piece. Read it complete, then re-read only the passage you are quoting.

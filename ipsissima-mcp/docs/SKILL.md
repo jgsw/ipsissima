@@ -91,6 +91,40 @@ judgement half is where a strong model earns its place.
 
 ---
 
+## Set the session up before you start, not during
+
+A reconstruction through this server runs in **your own conversation**, not in a side process. It
+is a long job that reads about 68 KB of reference documents, the whole source, and then holds the
+finished map — and all of that stays in your session afterwards. Four things follow, and the first
+two are free.
+
+1. **Start in a fresh session, or `/clear` first.** Not tidiness: if the job pushes the session
+   past its context limit, compaction replaces the history with a summary *while the job is
+   running*, and what it summarises away may be the source text or the half-built map. That is a
+   wrong reconstruction, not merely an expensive one.
+
+2. **Choose your model and effort BEFORE the first turn, not when the reconstruction starts.**
+   Each effort level is its own cache key, so switching mid-session makes the next request
+   re-read the entire conversation. Deciding at the top costs nothing; deciding at the point of
+   need costs the whole context.
+
+3. **Effort is yours to set, and it is the one setting this server cannot ask for.** A map is only
+   as careful as the reading behind it. Measured on one paper: a lower-effort run made eight
+   mechanical faults where the higher one made none — every one caught by the checker, which is
+   the point, but a misreading inside a summary is not the kind of thing a checker can catch.
+   `ipsissima-mcp/eval/effort-testing/` has the evidence and its limits. For a map you intend to
+   publish or show its author, use the highest effort you have.
+
+4. **If you are billed per token — an API key, a cloud provider, or a subscription that has gone
+   into extra usage — set `promptCacheTtl` to `1h`.** Your conversation is otherwise cached for
+   five minutes, and a single deliberative turn on a long paper can take longer than that; when it
+   does, the next request pays to rebuild the entire context. On a subscription within your plan's
+   included usage this is already an hour and there is nothing to do. **The trap is the middle
+   case**: going into extra usage silently drops you to five minutes, so the job gets more
+   expensive per token at exactly the moment you start paying for it.
+
+---
+
 ## Showing a map to the author
 
 The author reads maps in a browser, not a terminal.
