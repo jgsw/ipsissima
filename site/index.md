@@ -3,7 +3,10 @@ layout: home
 title: Ipsissima
 ---
 
-# Ipsissima
+<!-- NO `# Ipsissima` HERE. The `home` layout already prints `title:` as the page's heading and
+     the site name sits in the nav above it, so a markdown H1 makes the word appear three times
+     before the first sentence. The heading is the front matter's job; this file starts at the
+     first thing a reader has not already been told. -->
 
 **Read an argument reconstruction beside the text it is a reading of.**
 
