@@ -47,6 +47,22 @@ import { toGraph, RUN, metadataProblems, parseProblems } from "./argdown-graph.m
 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+
+/** The esbuild binary, by the name npm actually gave it on THIS platform.
+ *
+ *  npm writes a shim per platform: a bare `esbuild` shell script on macOS and Linux, and
+ *  `esbuild.cmd` plus `esbuild.ps1` on Windows. There is no extensionless file there at all, so
+ *  `execFileSync(".../node_modules/.bin/esbuild")` fails on Windows with a bare ENOENT that names
+ *  the path it wanted and does not say the extension is the problem:
+ *
+ *      Error: spawnSync D:\a\ipsissima\ipsissima\app\node_modules\.bin\esbuild ENOENT
+ *
+ *  Found when the first release built the frontend on a Windows runner — this file had only ever
+ *  run on macOS, where the bare name is right. Resolved once here rather than at the four call
+ *  sites that each had their own copy of the path.
+ */
+const ESBUILD = path.join(HERE, "node_modules", ".bin",
+                          process.platform === "win32" ? "esbuild.cmd" : "esbuild");
 const BUILD = path.resolve(HERE, "src");
 const TEMPLATE = path.join(HERE, "argdown-viewer.template.html");
 const require = createRequire(import.meta.url);
@@ -142,7 +158,7 @@ window.__MARKDOWN__ = function (text) {
   return md.render(text);
 };
 `);
-  const esbuild = path.join(HERE, "node_modules", ".bin", "esbuild");
+  const esbuild = ESBUILD;
   execFileSync(esbuild, [entry, "--bundle", "--format=iife", "--platform=browser",
     "--target=es2019", "--minify", "--legal-comments=none", "--outfile=" + out],
     { cwd: HERE, stdio: ["ignore", "ignore", "pipe"] });
@@ -223,7 +239,7 @@ window.__ARGDOWN_PARSE__ = function (source) {
   return toGraph(res);
 };
 `);
-  const esbuild = path.join(HERE, "node_modules", ".bin", "esbuild");
+  const esbuild = ESBUILD;
   if (!fs.existsSync(esbuild))
     throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
   try {
@@ -250,7 +266,7 @@ window.__ARGDOWN_PARSE__ = function (source) {
  */
 function editorBundle() {
   const out = path.join(HERE, ".editor-bundle.js");
-  const esbuild = path.join(HERE, "node_modules", ".bin", "esbuild");
+  const esbuild = ESBUILD;
   if (!fs.existsSync(esbuild))
     throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
   execFileSync(esbuild, [
@@ -270,7 +286,7 @@ function editorBundle() {
  */
 function exportBundle() {
   const out = path.join(HERE, ".export-bundle.js");
-  const esbuild = path.join(HERE, "node_modules", ".bin", "esbuild");
+  const esbuild = ESBUILD;
   if (!fs.existsSync(esbuild))
     throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
   execFileSync(esbuild, [

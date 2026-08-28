@@ -223,6 +223,18 @@ pub fn run() {
         .expect("error while building Ipsissima")
         .run(|app, event| {
             // macOS delivers file opens here, as file:// URLs, both at launch and afterwards.
+            //
+            // AND THE VARIANT ONLY EXISTS THERE. `RunEvent::Opened` is compiled into Tauri for
+            // macOS alone, so on Linux and Windows this arm is not a dead branch — it is a
+            // compile error, and the whole crate fails to build:
+            //
+            //     error[E0599]: no variant named `Opened` found for enum `RunEvent`
+            //
+            // The comment above was right about the platform from the first day and the code was
+            // never told. It went unnoticed because this crate had only ever been built on a Mac;
+            // the first release is the first time Linux and Windows ever saw it. Windows and
+            // Linux hand the file over in `argv` instead, which `setup` already reads.
+            #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Opened { urls } = event {
                 let paths: Vec<String> = urls
                     .iter()
@@ -230,6 +242,12 @@ pub fn run() {
                     .map(|p| p.to_string_lossy().into_owned())
                     .collect();
                 deliver(app, argdown_paths(paths));
+            }
+            // Without the macOS arm both bindings are unused, and the crate is built with
+            // warnings denied on CI.
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (app, event);
             }
         });
 }
