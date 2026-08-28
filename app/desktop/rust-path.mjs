@@ -22,10 +22,17 @@ export function cargoPath() {
 }
 
 /** True when a `cargo` can actually be found on that PATH. Checked before a build rather than
- *  after twenty seconds of frontend bundling, and reported as the one thing to install. */
+ *  after twenty seconds of frontend bundling, and reported as the one thing to install.
+ *
+ *  BOTH NAMES, because on Windows the executable is `cargo.exe` and looking only for `cargo`
+ *  reports "no Rust toolchain" on a machine with a perfectly good one. The first release found
+ *  this: the Windows runner installs Rust through the toolchain action, and this said it had not.
+ */
 export function haveCargo() {
   const dirs = cargoPath().split(path.delimiter);
   return dirs.some(d => {
-    try { return fs.existsSync(path.join(d, "cargo")); } catch { return false; }
+    try {
+      return fs.existsSync(path.join(d, "cargo")) || fs.existsSync(path.join(d, "cargo.exe"));
+    } catch { return false; }
   });
 }
