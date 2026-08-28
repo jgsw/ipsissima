@@ -69,9 +69,18 @@ jobs:
         with:
           targets: ${{ matrix.rust-targets }}
 
+      # THE SAME TRAP AS `projectPath` BELOW, and it was caught there and missed here.
+      # `defaults.run.working-directory` governs `run` steps only, never an ACTION'S INPUTS — so
+      # this path is resolved from the repository root, not from app/desktop. Written as
+      # `./src-tauri` it pointed at nothing, and the v0.1.0 build died before it compiled a line:
+      #
+      #     Error: The cwd: /Users/runner/work/ipsissima/ipsissima/src-tauri does not exist!
+      #
+      # A cache step is the last place anyone looks for a build failure, which is exactly why it
+      # is worth the comment: nothing here is about caching.
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: "app/desktop/src-tauri -> target"
 
       # The frontend is built by the Argdown toolchain, not by the desktop folder: the app IS
       # that page. So its dependencies (esbuild, @argdown/core, CodeMirror, docx, markdown-it)
