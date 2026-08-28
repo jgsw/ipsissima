@@ -1,10 +1,16 @@
 # Ipsissima — publish the public site to GitHub Pages.
 #
-# ON TAGS, WHICH IS WHAT "THE LATEST STABLE VERSION" MEANS. The site is a place to try the
-# program, and a visitor who tries it should get what a release gives them rather than whatever
-# was pushed twenty minutes ago. `release.yml` runs on the same trigger and builds the desktop
-# packages from the same commit, so the download page and the try-it page always describe one
-# version of the program.
+# TWO LANES, ONE PROMISE. The site is a place to try the program, and a visitor who tries it
+# should get what a release gives them rather than whatever was pushed twenty minutes ago. But
+# the site is also prose, and a typo in index.md should not need a version number. So:
+#
+#   on a TAG        everything is built from the tag. This run IS the release: `release.yml`
+#                   builds the desktop packages on the same trigger from the same commit, so
+#                   the try-it page and the download page always describe one version.
+#   on a SITE EDIT  (a push to main that touches site/, or a manual run) the page's WORDS come
+#                   from main, but the PRODUCT on it — the viewers, the sample pages — is still
+#                   built from the latest release tag, in the build step below. A typo fix can
+#                   only change the words around the program, never the program.
 #
 # A SEPARATE WORKFLOW, NOT A JOB IN release.yml, deliberately. The release runs a three-platform
 # Tauri matrix that takes tens of minutes and can fail on one platform for reasons that have
@@ -18,8 +24,14 @@ name: pages
 on:
   push:
     tags: ["v*"]
-  # So the site can be corrected without cutting a release — a typo in index.md should not need
-  # a version number.
+    # These three filters compose because GitHub applies `paths` to BRANCH pushes only and
+    # ignores it for tag pushes: every `v*` tag deploys, and a push to main deploys only when
+    # it touched the site. Checked against the documented behaviour before being relied on —
+    # this is exactly the kind of trigger that fails silently when guessed.
+    branches: [main]
+    paths: ["site/**"]
+  # Still here for a deploy nothing else triggers: republishing after a Pages incident, or
+  # checking the site-edit lane without editing the site.
   workflow_dispatch:
 
 # One deployment at a time, and let a newer one win: two tags pushed together should leave the
@@ -38,21 +50,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The whole history, because the site-edit lane needs the tags to find the latest
+          # release and a worktree of it to build from. The repository is small; the depth
+          # saved by a shallow clone is not worth a lane that cannot see its release.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
 
-      # The viewer's own dependencies — the Argdown parser, CodeMirror, dagre. `npm ci` rather
-      # than `npm install` so the site is built from the locked versions the tests ran against.
-      - name: Install the app's dependencies
-        working-directory: app
-        run: npm ci
-
       # Builds ipsissima.html, ipsissima-reader.html and one page per sample, and writes
-      # _data/samples.json for the landing page to list them from.
-      - name: Assemble the site
-        run: node site/build_site.mjs
+      # _data/samples.json for the landing page to list them from. `npm ci` rather than
+      # `npm install` so the site is built from the locked versions the tests ran against.
+      - name: Assemble the site (release run)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          ( cd app && npm ci )
+          node site/build_site.mjs
+
+      # The site-edit lane. The release is built in a worktree of its own tag and ONLY its
+      # artifacts are copied over; everything else Jekyll sees — index.md, _config.yml, the
+      # assets, the favicons — is this checkout of main. build_site.mjs resolves every path
+      # from its own location, so run from the worktree it builds the worktree's app against
+      # the worktree's samples, which is the point.
+      #
+      # Before the first release exists there is nothing to pin to, so everything builds from
+      # main: at that point main is all there is, and the fallback says so in the log.
+      - name: Assemble the site (site-edit run)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          TAG=$(git tag --list 'v*' --sort=-version:refname | head -n 1)
+          if [ -z "$TAG" ]; then
+            echo "no release tag yet — building everything from main"
+            ( cd app && npm ci )
+            node site/build_site.mjs
+          else
+            echo "words from main; the product as of $TAG"
+            git worktree add "$RUNNER_TEMP/release" "$TAG"
+            ( cd "$RUNNER_TEMP/release/app" && npm ci )
+            node "$RUNNER_TEMP/release/site/build_site.mjs"
+            mkdir -p site/try site/_data
+            cp "$RUNNER_TEMP/release/site/ipsissima.html" \
+               "$RUNNER_TEMP/release/site/ipsissima-reader.html" site/
+            cp "$RUNNER_TEMP/release/site/try/"*.html site/try/
+            cp "$RUNNER_TEMP/release/site/_data/samples.json" site/_data/
+          fi
 
       - uses: actions/configure-pages@v5
         id: pages
