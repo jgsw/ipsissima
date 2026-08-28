@@ -36,6 +36,18 @@ a prompt read off disk. The command line is still there for a one-off.
 
 ## Try it without installing anything
 
+Open it on the web: **[jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/)**. Nothing is
+installed and nothing is uploaded — the page carries the whole program and does the work in your
+browser. Drop a `.argdown` file onto it, or a whole folder, which brings the manuscript with it so
+the claims can be laid out by where they appear in the text.
+
+To keep a copy, download **`Ipsissima.html`** from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and double-click it. It is one file,
+it works offline, and `Ipsissima Reader.html` beside it is the read-only version — the one to send
+to somebody you want to *show* a reconstruction to.
+
+### Or build it from source
+
 ```bash
 cd app && npm install && node rebuild_viewers.mjs
 ```
@@ -63,6 +75,21 @@ things that fail silently.
 
 Builds are **unsigned**: macOS and Windows will both warn the first time. `app/desktop/INSTALL.md`
 is written for the download page and says exactly what a reader will see and what to click.
+
+## Ipsissima-MCP, the other half
+
+Ipsissima-MCP gets a PDF, EPUB, `.docx` or HTML article into structured Markdown with its
+paragraphs and page numbers intact, and then checks a finished reconstruction against its sources
+word for word. It is an MCP server, so you ask an assistant you are already talking to and it does
+the rest.
+
+**Installation instructions: [`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).**
+
+Be warned that it is, today, a developer's install: a terminal, Python, Node, a virtual
+environment and a path written into a configuration file by hand. That is a fair description of
+most MCP servers at the moment and not a good excuse — if you would rather not, everything above
+this line works without it, and the samples in `samples/` were all built with it so you can see
+what it produces before deciding whether to fight with it.
 
 ## What it does that other Argdown viewers do not
 
