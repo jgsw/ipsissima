@@ -409,6 +409,9 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
   color:var(--fg-dim);font-variant-numeric:tabular-nums}
 #walkcard h3{margin:.15rem 0 .3rem;font-size:14.5px}
 #walkcard p{margin:.3rem 0}
+/* The quieter line under an opening statement: how long this will take, and that it can be left.
+   Smaller and dimmed so it reads as an aside rather than as the next thing being claimed. */
+#walkcard p.wsub{font-size:11.5px;color:var(--fg-dim)}
 #walkcard b{font-weight:600}
 #walkcard .row{display:flex;gap:.4rem;align-items:center;margin-top:.7rem}
 #walkcard .grow{flex:1}
@@ -1790,10 +1793,14 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function
  * where the rest of it lives. It is not documentation and must not try to be: everything it
  * leaves out is already written down under "How to use", one button away.
  *
- * LENGTH IS THE CONSTRAINT, not coverage. Nine steps and a sign-off where there is a manuscript
- * to point at, seven without — 387 words, which is under two minutes read at a normal pace.
+ * LENGTH IS THE CONSTRAINT, not coverage. Ten steps and a sign-off where there is a manuscript
+ * to point at, eight without — 411 words, which is about two minutes read at a normal pace.
  * Counted rather than guessed, because a tour nobody finishes teaches nothing, and every
  * addition to this list has to displace something already in it.
+ *
+ * AND THE NUMBER NOW HAS A PROMISE RESTING ON IT. The title card says "two minutes" and the line
+ * under it says a couple of minutes, so the word count is no longer a private budget: adding a
+ * step without taking one out makes the first thing the reader is told untrue.
  *
  * IT DEMONSTRATES RATHER THAN INSTRUCTS. The fold step presses the badge itself and the reader
  * watches the reasons arrive; the manuscript step performs the jump. Explaining a gesture in a
@@ -1967,11 +1974,23 @@ function walkSteps(){
   };
   var steps = [];
 
+  // THE TITLE CARD, and the only step that points at nothing. It says what the application is
+  // for before the tour starts showing how it works: somebody who has just been handed a window
+  // full of boxes and arrows needs the sentence before the demonstration. It carries the "leave
+  // whenever" line for the whole tour, which is why the step after it no longer says so too.
+  steps.push({
+    title: "Ipsissima in two minutes",
+    body: "<p>Ipsissima helps you understand and analyse your own, and other people's, " +
+          "arguments by visualising them.</p>" +
+          "<p class='wsub'>This tour takes a couple of minutes — leave whenever you've seen " +
+          "enough.</p>",
+    before: function(){ if (LIVE) LIVE.fit(); }
+  });
+
   steps.push({
     title: "This is an argument map",
     body: "<p>It shows what a piece of writing <b>argues</b> — not what it is about, but the " +
-          "claims it makes and how they hold each other up.</p>" +
-          "<p>A minute or two. Leave whenever you like.</p>",
+          "claims it makes and how they hold each other up.</p>",
     before: function(){ if (LIVE) LIVE.fit(); }
   });
 

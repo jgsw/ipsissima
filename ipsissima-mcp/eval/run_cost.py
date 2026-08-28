@@ -100,7 +100,7 @@ def read(path, map_name):
     TURNS, NOT CALLS, ARE THE ROUND TRIPS. Two tools invoked in one turn are one trip and one lot
     of carried context, which is why both numbers are reported and why their ratio matters.
     """
-    usage, seen_call, calls, order = {}, set(), [], []
+    usage, seen_call, calls, order, ttl = {}, set(), [], [], {}
     with open(path, encoding="utf-8", errors="replace") as fh:
         for line in fh:
             try:
@@ -115,9 +115,17 @@ def read(path, map_name):
             if any(k in u for k in USAGE_KEYS):
                 if mid not in usage:
                     usage[mid] = {k: 0 for k in USAGE_KEYS}
+                    ttl[mid] = {}
                     order.append(mid)
                 for k in USAGE_KEYS:
                     usage[mid][k] = max(usage[mid][k], int(u.get(k) or 0))
+                # WHICH TTL THE CACHE WRITES ASKED FOR. Subagents sit outside the main
+                # conversation's bucket and get five minutes by default even on a subscription,
+                # which is what let one eight-minute turn throw away a whole context. Reported
+                # here so that setting `subagentPromptCacheTtl` can be seen to have taken effect.
+                for k, v in (u.get("cache_creation") or {}).items():
+                    if v:
+                        ttl[mid][k] = max(ttl[mid].get(k, 0), int(v))
             for block in m.get("content") or []:
                 if not isinstance(block, dict) or block.get("type") != "tool_use":
                     continue
@@ -126,7 +134,11 @@ def read(path, map_name):
                     continue
                 seen_call.add(bid)
                 calls.append((mid, classify(block.get("name", "?"), block.get("input"), map_name)))
-    return [usage[m] for m in order], calls
+    buckets = {}
+    for m in order:
+        for k, v in ttl[m].items():
+            buckets[k] = buckets.get(k, 0) + v
+    return [usage[m] for m in order], calls, buckets
 
 
 def main():
@@ -138,7 +150,7 @@ def main():
     ap.add_argument("--calls", action="store_true", help="print every turn's usage")
     a = ap.parse_args()
 
-    turns, calls = read(a.transcript, a.map)
+    turns, calls, buckets = read(a.transcript, a.map)
     if not turns:
         sys.exit(f"no assistant turns with usage in {a.transcript}")
 
@@ -194,6 +206,17 @@ def main():
         print("      rebuild the whole context. Fewer and shorter turns avoid it; so would a")
         print("      longer TTL. Note that batching MORE into one turn can cause this rather")
         print("      than prevent it.")
+
+    if buckets:
+        named = {"ephemeral_5m_input_tokens": "5 minutes",
+                 "ephemeral_1h_input_tokens": "1 hour"}
+        print("\n  CACHE WRITES BY TTL")
+        for k, v in sorted(buckets.items(), key=lambda kv: -kv[1]):
+            print(f"  {named.get(k, k):<34}{v:>12,}")
+        if not buckets.get("ephemeral_1h_input_tokens"):
+            print("      All five-minute. Subagents sit outside the main conversation's TTL")
+            print("      bucket and get 5m by default even on a subscription; set")
+            print("      `subagentPromptCacheTtl: \"1h\"` (Claude Code v2.1.242+) to change it.")
 
     print("\n  WHAT THE CALLS WERE FOR")
     for what, n in collections.Counter(c for _, c in calls).most_common():
