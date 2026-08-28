@@ -132,6 +132,47 @@ ambiguous rather than guessing, and refuses to convert several sources until the
 answered. If you are asked which of two drafts is current, or whether you want one map or six,
 that is the server declining to spend your money on a coin toss.
 
+### What a reconstruction costs
+
+Measured over nine runs, not estimated. Roughly:
+
+```
+tokens  ≈  147,000  +  0.9 × bytes of map  +  2.3 × words of source
+```
+
+Three things follow, and they are the whole of what you need to know before pressing go.
+
+**Most of it is fixed.** About 147,000 tokens go on the procedure itself — reading the
+instructions, reading the source, writing, checking, fixing — whatever the paper. That is **92% of
+the cost of mapping a 266-word passage** and still **60% of mapping a long one**. Reconstructing a
+short paper is not cheap, and there is no setting that makes it so.
+
+**A long source costs even when the map is small.** This is the part that surprises. Two maps of
+the same 68,695-word book — one of 88,029 bytes, one of 39,708 — came out only 58,000 tokens apart
+while both sat about 90,000 above what their map size alone predicted. The reading has to happen
+before there is anything to be brief about. **Budget on the length of the text, not on the size of
+the map you want.**
+
+**In practice**, at `max` effort: a journal article runs **200,000–250,000 tokens**, a short
+passage about **160,000**, and a book-length manuscript **280,000–350,000** — the last two figures
+being a whole book mapped once, not per chapter. *Doing a book chapter by chapter costs the fixed
+147,000 every time*, so eleven chapters is over 1.5 million tokens before a single claim is
+written. Map the book in one pass; go back for the chapters that turn out to matter.
+
+Two levers, and they are not equal:
+
+- **Effort** is the largest and the one with a real cost. `high` came in 16% cheaper than `max` on
+  the same paper — and made eight mechanical faults where `max` made none. Good for a draft you
+  will check yourself; poor for anything you intend to publish or show its author. See
+  `eval/effort-testing/`, which keeps both arms side by side.
+- **Round trips** are worth about 47,000 tokens and cost nothing at all. They are already applied:
+  the instructions carry four rules about them, and the same passage went from 41 tool calls to 6.
+
+**A caveat this file would rather state than bury.** The source term rests on two runs at one
+source size, so do not extrapolate it much past 70,000 words. The workings, the residuals and what
+would falsify the model are in `eval/COST-2026-08-27.md`; `eval/run_cost.py` measures any run of
+your own from its transcript.
+
 ---
 
 ## Which file to give it
