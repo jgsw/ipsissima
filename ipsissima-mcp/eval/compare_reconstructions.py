@@ -2,7 +2,12 @@
 """Compare two reconstructions of the SAME source, made under different instructions.
 
     python3 ipsissima-mcp/eval/compare_reconstructions.py \
-        A=path/to/a.argdown B=path/to/b.argdown --source-root-a DIR --source-root-b DIR
+        path/to/a.argdown path/to/b.argdown --source-root-a DIR --source-root-b DIR \
+        --label-a max --label-b high
+
+The two paths are positional. `--source-root-*` is the folder each map's `chapter:` paths are
+relative to, which for a reconstruction folder is the folder itself. The labels head the columns
+and default to A and B.
 
 WHAT THIS IS FOR. The instructions a model is given are a claim — that telling it the whole
 language and the whole method produces better maps, first time, for fewer tokens. That is a claim
