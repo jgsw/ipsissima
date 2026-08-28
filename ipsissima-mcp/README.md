@@ -28,6 +28,24 @@ cd app && npm install && cd ..
 A virtual environment is not fussiness: a Homebrew or system Python will refuse `pip install`
 outright ([PEP 668](https://peps.python.org/pep-0668/)).
 
+**With [uv](https://docs.astral.sh/uv/) instead**, which is the same two steps and faster:
+
+```bash
+uv venv && uv pip install -e ipsissima-mcp
+cd app && npm install && cd ..
+```
+
+**A uv-made `.venv` has no `pip` in it.** That is uv working as designed, not a broken
+environment — but it means `.venv/bin/pip install …` fails with *no such file or directory*, and
+the obvious reading of that message is that the virtual environment did not get made. Use
+`uv pip install` for a uv venv, or `python3 -m venv` if you want `pip` inside it. The entry points
+below are installed either way; `ls .venv/bin/ipsissima-mcp` is the quick way to tell whether the
+package is there.
+
+**`npm install` in `app/` is not optional for the server.** The checker shells out to the Argdown
+parser that lives there, so `check_reconstruction` fails without it even though nothing about it
+looks like a Node program.
+
 `rapidocr` installs with it and is **not optional**. Without an OCR backend, a scanned paper
 converts silently to its cover page and nothing reports it — measured at 345 words of a
 1,220-word article, no error, a perfectly well-formed Markdown file. See
@@ -55,6 +73,28 @@ claude mcp add ipsissima -- /absolute/path/to/ipsissima/.venv/bin/ipsissima-mcp
 
 Use the absolute path. The server finds the Argdown parser and its own documents relative to
 where it is installed, not to where the client happens to be running.
+
+`claude mcp add` is a command of the **Claude Code CLI**, so run it in a terminal where `claude`
+is on the `PATH`. It is not available from inside every client that can talk to an MCP server, and
+`command not found: claude` there means you are in the wrong window rather than that anything is
+missing.
+
+### Check it before you rely on it
+
+The server speaks over stdin and stdout, so "it started" and "it works" are different claims, and
+a client that finds no tools will usually say nothing about why. This asks it directly:
+
+```bash
+.venv/bin/ipsissima-mcp <<'EOF'
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"0"}}}
+EOF
+```
+
+One line of JSON comes back naming the server and its version. **A working install answers 9
+tools, 2 prompts and 8 resources**; if the count is lower, the client is not the problem.
+
+Note that `pymupdf` prints a deprecation notice on startup. It goes to stderr, where it is
+harmless — the protocol is on stdout — and it is not a sign of a bad install.
 
 ---
 
