@@ -1,10 +1,13 @@
 # Ipsissima
 
+**The very words, and how far a reading stands from them.**
+
 Read an argument reconstruction beside the text it is a reading of.
 
-*ipsissima verba* — the very words themselves. Scholars of the Gospels set it against *ipsissima
-vox*, the authentic voice: did he say **these words**, or is this a faithful report of what he
-meant? That is the distinction this program keeps, on every claim.
+*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
+did the author write **these words**, or is this a faithful report of what they meant? Every
+discipline that quotes anybody has had to draw that line — historians since Thucydides, jurists
+whenever quotation marks are at stake. Ipsissima keeps the distinction, on every claim.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team —

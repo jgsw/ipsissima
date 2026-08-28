@@ -26,6 +26,35 @@ discipline that has argued about it for two centuries.
 editor. Both are written by `rebuild_viewers.mjs`.
 
 
+## The identity
+
+Settled 28 Aug 2026, after a research pass on the phrase's history. Three decisions, and the
+reasons they were expensive:
+
+**The copy no longer opens with the Gospels.** The old first paragraph framed the whole program
+with "Scholars of the Gospels set it against *ipsissima vox*" — which made a Christian scholarly
+debate the doorway, and put some readers off at the door. The research showed the frame was too
+small anyway: Thucydides concedes the distinction at 1.22, hadith science formalised it as
+*bi-l-lafẓ* against *bi-l-maʿnā*, and *Masson v. New Yorker* (1991) priced it. The canonical
+paragraph (README, site, help, About) now opens with the distinction itself; the full history,
+Gospel criticism in its place among the others, is the About window's *The name* tab. Keep it
+that way: the history is a chorus, and no single tradition is the frame.
+
+**The strapline is "The very words, and how far a reading stands from them."** It translates the
+name and states the product in the copy's own recurring measure ("how far it stands from its
+source"). The descriptive line — "Read an argument reconstruction beside the text it is a
+reading of" — is not a rival; it stays as the subtitle everywhere.
+
+**Fidelity is pattern; relation is colour.** The mark is one claim box whose border enters solid
+(quotation) and leaves as dash-dot (imputation), quotation marks seated inside — the map's own
+semantics, so the app is already wearing the identity. `brand/README.md` has the palette, the
+files, and how to regenerate everything generated (the platform icon set is not committed;
+`source.png` is). The site sets EB Garamond, self-hosted in `site/assets/fonts/` — the app
+promises no third-party requests and the site keeps the same manners — and its `<hr>` is the
+fidelity ladder. The favicon needed `site/_includes/head.html` (a copy of minima 2.5.1's) because
+the site lives under `/ipsissima/`, where the browser's automatic `/favicon.ico` lookup misses.
+
+
 ## Argdown
 
 `@argdown/cli` 2.0.0 is installed at `app/`

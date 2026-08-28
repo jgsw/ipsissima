@@ -27,10 +27,11 @@
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
 
-*ipsissima verba* — the very words themselves. Scholars of the Gospels use it against
-*ipsissima vox*, the authentic voice: did he say *these words*, or is this a faithful report of
-what he meant? That is the distinction this tool keeps — every claim marked for how far it stands
-from the words it came from, and every quotation checkable against the page it was taken from.
+*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
+did the author write *these words*, or is this a faithful report of what they meant? Every
+discipline that quotes anybody has had to draw that line, and this tool keeps it — every claim
+marked for how far it stands from the words it came from, and every quotation checkable against
+the page it was taken from.
 
 New to it? **Take the walkthrough** — the first entry below. Two minutes, and it runs on the
 reconstruction you have open. It offers to run again next time; if you said no, it lives here.

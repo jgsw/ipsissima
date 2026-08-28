@@ -9,15 +9,19 @@ title: Ipsissima
      own `# Ipsissima`. `default` renders the content and nothing else.
      `title:` stays, because the <title> tag is built from it.
 
-     THE PAGE STILL NEEDS ONE H1, so the tagline is it. That is the better heading anyway: the
+     THE PAGE STILL NEEDS ONE H1, so the strapline is it. That is the better heading anyway: the
      name is already in the nav, and a visitor who has just arrived learns more from what the
-     thing does than from being told its name a second time. -->
+     thing is for than from being told its name a second time. The descriptive line stays as the
+     first thing under it. -->
 
-# Read an argument reconstruction beside the text it is a reading of
+# The very words, and how far a reading stands from them
 
-*ipsissima verba* — the very words themselves. Scholars of the Gospels set it against *ipsissima
-vox*, the authentic voice: did he say **these words**, or is this a faithful report of what he
-meant? That is the distinction this program keeps, on every claim.
+Read an argument reconstruction beside the text it is a reading of.
+
+*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
+did the author write **these words**, or is this a faithful report of what they meant? Every
+discipline that quotes anybody has had to draw that line — historians since Thucydides, jurists
+whenever quotation marks are at stake. Ipsissima keeps the distinction, on every claim.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team —

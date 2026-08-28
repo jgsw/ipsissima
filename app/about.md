@@ -12,12 +12,15 @@
 
 ## Ipsissima
 
+*The very words, and how far a reading stands from them.*
+
 **Ipsissima** reads an argument reconstruction beside the text it is a reading of: the argument as
 a map, the passage each claim was drawn from, and the marks a reader writes in the margin.
 
-*ipsissima verba* — the very words themselves. Scholars of the Gospels set it against *ipsissima
-vox*, the authentic voice: did he say *these words*, or is this a faithful report of what he
-meant? That is the distinction the program keeps, on every claim.
+*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
+did the author write *these words*, or is this a faithful report of what they meant? Every
+discipline that quotes anybody has had to draw that line. Ipsissima keeps the distinction, on
+every claim.
 
 <dl id="aboutmeta">
   <dt>Version</dt><dd id="aboutver">—</dd>
@@ -72,6 +75,31 @@ Question that stops a reconstruction attributing reasoning the author never gave
 Govier**'s *A Practical Study of Argument*, from which come standardising, the distinction between
 linked and convergent support that these maps draw, unstated premises and counterconsiderations;
 with argument schemes from **Walton, Reed and Macagno**. `CREDITS.md` gives the full list.
+
+## The name
+
+*Ipsissima* is the feminine of *ipsissimus*, an impossible superlative of *ipse* — "the very
+one" — and it begins as a joke. Aristophanes coined it in Greek: asked whether he is really the
+god himself, a character in *Plutus* (388 BC) answers *autotatos*, "his very selfest self".
+Plautus translated the gag into Latin (*Trinummus*, c. 190 BC): "Are you then the man himself?" —
+"*Ipsissimus.*" English scholarship took up *ipsissima verba*, "the very words themselves", in the
+early nineteenth century, for the places where the wording is the whole case — a libel had to be
+pleaded in the very words complained of, not a paraphrase of them.
+
+The distinction the phrase names is older than the phrase, and belongs to everybody who has ever
+quoted anybody. Thucydides opens the tradition of history-writing by conceding that his speeches
+keep "the general sense of what was really said" rather than the words. The science of hadith
+distinguishes transmission by exact wording (*bi-l-lafẓ*) from transmission by meaning
+(*bi-l-maʿnā*) — and concedes that most transmission is the latter. The rabbis made faithful
+attribution a virtue: whoever repeats a thing in the name of the one who said it brings
+deliverance to the world (Avot 6:6). Scholars of the sayings of Jesus gave the contrast its
+permanent Latin in the 1950s — *ipsissima verba*, the very words, against *ipsissima vox*, the
+authentic voice — in a tradition that had translated Aramaic speech into Greek text. And the
+United States Supreme Court put a price on it (*Masson v. New Yorker*, 1991): quotation marks
+promise the very words, and altering them is culpable when the alteration changes the meaning.
+
+Every claim in a map here answers the question those traditions kept asking: are these the words,
+or a report of them?
 
 ## Built on
 
