@@ -19,6 +19,41 @@ are short, and every round of the check-and-fix loop costs more than reading the
 | `ipsissima://reconstruction/method` | **how to reconstruct.** Finding the conclusion, the Assertibility Question, linked vs convergent, what to do about what is not said |
 | `ipsissima://ipsissima/conventions` | **what Ipsissima records.** Provenance, fidelity, warrants, tags, front matter |
 
+Without the MCP server, **read all three in one call**, not three:
+
+```bash
+cat ipsissima-mcp/docs/argdown-cheatsheet.md \
+    ipsissima-mcp/docs/reconstruction-cheatsheet.md \
+    ipsissima-mcp/docs/ipsissima-conventions.md
+```
+
+---
+
+## Round trips are the cost of a reconstruction
+
+**Measured across five runs: 37 to 45 tool calls whatever the paper** — 41 for a 266-word passage
+and 44 for a 10,751-word judgment. The reading, the judgement and the map are nearly free; the
+*procedure* is nearly all of it, because every call re-sends the whole conversation and re-enters
+the loop. So the four rules below are worth as much as anything else in this document.
+
+**1. Read the three documents in one call.** Every run so far used three. See above.
+
+**2. Read the source once, whole, before you start.** Runs that read it in nine or fourteen pieces
+paid for each piece. Read it complete, then re-read only the passage you are quoting.
+
+**3. Do not verify quotations one span at a time.** Two runs spent eleven and thirteen calls
+checking `source:` spans individually before ever running the checker. **The checker verifies every
+span in the file in a single call** and names each one that fails, with the text it actually found.
+Eleven calls to save one is not a saving. Write the map with the spans you believe are right, then
+let one check tell you about all of them at once.
+
+**4. Never run the checker twice on the same file.** This was between two and three times as many
+invocations as there were distinct versions of the map — six to ten wasted round trips a run —
+because the faults came from `--format json` and the census came from running it again without.
+**`--format json` now carries the census too**, under `census`: apex, tags, provenance, quotations,
+contribution, fidelity, interpretive load. One call is the whole picture. Run it again only after
+you have *changed* the file.
+
 ---
 
 ## The order of work
@@ -77,6 +112,12 @@ python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown \
 
 Apply what it reports and run it again. **Fix the claim it names — do not rewrite the map.** A
 failing quotation is one claim to re-quote, not a reason to start again.
+
+One call gives you both halves. `findings` is what to fix; `census` is the shape of the finished
+map — the apex, the tags, what reaches a contention, the fidelity counts. **Read the census from
+that same result rather than running the command again without `--format json`**, which is what
+every run measured so far did, and what rule 4 above is about. `--selection-modes` adds the
+node-count table at the cost of six more process spawns; you will rarely want it.
 
 `--no-fix` matters and the MCP tool passes it for you. Without it the checker will *correct the
 file's own `quotation`/`paraphrase` markers* whenever the front matter says `generated: true` —

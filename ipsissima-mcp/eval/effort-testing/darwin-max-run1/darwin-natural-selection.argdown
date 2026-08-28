@@ -1,0 +1,103 @@
+// Darwin 1859 — Natural selection. A single passage of about 520 words, not a paper: continuous
+// prose, no headings, no numbered steps, and two ellipsis markers that are the transcriber's own.
+//
+// PROVENANCE WARNING, CARRIED FROM THE SOURCE FILE. The passage was transcribed from the Penguin
+// edition and has never been checked against the volume. Neither the wording nor the pinpoint
+// p. 168 is verified. Every `source:` below is verified against the transcription and against
+// nothing else.
+//
+// THE SHAPE. Three arguments, serial, the last step of the second branching into two ends:
+//
+//   <The occurrence of useful variations> — argument from the improbability of a universal
+//        negative, carried by an analogy with variation under domestication. Premises linked:
+//        take away the struggle for life, or the variability, and the conclusion has nothing
+//        left to stand on.
+//   <The preservation and inheritance of useful variations> — modus ponens on a conditional
+//        Darwin states, in two steps: preservation in the struggle, then transmission.
+//   <Divergence of character> — serial: an intermediate conclusion, then the apex.
+//
+// TWO APEX CLAIMS, because the passage ends by doing two things that do not rest on each other.
+// It says what the accumulation of small differences comes to — varieties grading into species
+// and genera — and it names the principle. Both rest on the preservation argument.
+//
+// THE HEDGES ARE THE ARGUMENT. Darwin does not conclude that useful variations occur. He
+// concludes that it would be a most extraordinary fact if none ever had, and then conditionalises
+// again: But if variations useful to any organic being DO occur. The single place this
+// reconstruction detaches that antecedent is marked `interpretation`, because the detaching is
+// the reconstruction's move and not his.
+//
+// THE TWO ELISIONS. An ellipsis marker stands before Therefore, and again before the naming
+// sentence. Darwin's Therefore accordingly draws on material this file does not contain. The
+// elided text is not restored and not guessed at: <Divergence of character> is marked
+// `interpretation` for exactly that reason, and the naming claim carries a note on what the
+// demonstrative points back to.
+//
+// NO OBJECTIONS, AND NO TAGS. The passage is a summary. It reports no rival view, concedes
+// nothing to a critic and answers no one; every claim in it is Darwin's own and asserted, which
+// is what an untagged claim means. Supplying an objection to give the map some dialectic would
+// be inventing one.
+
+===
+title: Darwin 1859 — Natural selection
+reconstruction:
+    generated: true
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/darwin-1859-natural-selection.md"
+    reviewed: "2026-08-27"
+===
+
+<The occurrence of useful variations>: From variability, the struggle for life and the advantage of diversity, together with the variations breeders have already got out of domestic species, it would be extraordinary if no variation useful to a being itself had ever arisen.
+    {fidelity: "compression", pinpoint: "p. 168", note: "One sentence of Darwin's, numbered. The premises are linked and not convergent: each of the first three is an antecedent of a single conditional, and removing any one leaves the others supporting nothing."}
+
+(1) [Organic beings vary]: During the long course of ages and under varying conditions of life, organic beings vary at all in the several parts of their organisation.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"If during the long course of ages and under varying conditions of life, organic beings vary at all in the several parts of their organisation, and I think this cannot be disputed\"", note: "Darwin puts this as the antecedent of a conditional and affirms it in the same breath — and I think this cannot be disputed — so it is asserted, not supposed. The scope is vary at all, not vary usefully."}
+(2) [A severe struggle for life]: Owing to the high geometrical powers of increase of each species, there is at some age, season or year a severe struggle for life.
+    {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"if there be, owing to the high geometrical powers of increase of each species, at some age, season or year, a severe struggle for life, and this certainly cannot be disputed\"", note: "The second affirmed antecedent — this certainly cannot be disputed. Darwin's struggle is intermittent, at some age, season or year, not continuous, and the claim keeps that. Paraphrased only to turn his subjunctive there be into a statement that can stand alone."}
+(3) [Diversity is advantageous]: The infinite complexity of the relations of all organic beings to each other and to their conditions of existence makes an infinite diversity in structure, constitution, and habits advantageous to them.
+    {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"the infinite complexity of the relations of all organic beings to each other and to their conditions of existence, causing an infinite diversity in structure, constitution, and habits, to be advantageous to them\"", note: "A participial clause in Darwin's sentence rather than a separate assertion; stated here as the premise it does the work of. It is used twice — here, and again as the premise that makes divergence pay."}
+(4) [Variations useful to man have occurred]: So many variations have occurred useful to man.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"in the same way as so many variations have occurred useful to man\"", note: "Darwin's analogy with variation under domestication, offered in the same sentence as the conclusion it supports and joined to it by in the same way as. Read here as a reason for that conclusion rather than as part of it."}
+-----
+(5) [It would be extraordinary if no useful variation had ever occurred]: It would be a most extraordinary fact if no variation ever had occurred useful to each being's own welfare.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"I think it would be a most extraordinary fact if no variation ever had occurred useful to each being's own welfare\"", note: "The conclusion is this modal claim, not the categorical one that useful variations occur, and Darwin prefixes even this with I think. The I think stands in the quotation rather than in the claim, and nothing in the map turns on removing it: the hedge that carries weight is a most extraordinary fact IF NO variation ever had occurred, which the claim keeps whole."}
+
+<The preservation and inheritance of useful variations>: Given that useful variations occur, the individuals carrying them are the likeliest to survive the struggle, and inheritance carries the character to their offspring.
+    {fidelity: "compression", pinpoint: "p. 168", note: "Darwin's own two-step, numbered: preservation in the struggle first, then transmission by inheritance. He marks the first with assuredly and the second with the strong principle of inheritance."}
+
+(1) [Useful variations do occur]: Variations useful to organic beings do in fact occur.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 168", source: "\"But if variations useful to any organic being do occur\"", note: "Darwin conditionalises: the words are the antecedent of an if, not an assertion, and the argument above establishes only that it would be a most extraordinary fact if none ever had. The reconstruction detaches the antecedent because the rest of the passage proceeds on it — Therefore, Thus, and the naming. The hedge is not lost by this: it survives entire in the claim that supports this one."}
+(2) [A severe struggle for life]
+-----
+(3) [Individuals with useful variations are best preserved]: Individuals thus characterised will have the best chance of being preserved in the struggle for life.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"assuredly individuals thus characterised will have the best chance of being preserved in the struggle for life\"", note: "Thus characterised means characterised by a variation useful to the individual; the title supplies the referent so that the claim can keep Darwin's own words. Best chance, not certainty. Darwin's assuredly sits just outside the quotation and strengthens the claim rather than qualifying it."}
+(4) [A strong principle of inheritance]: There is a strong principle of inheritance.
+    {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"from the strong principle of inheritance\"", note: "Darwin invokes inheritance rather than arguing for it, so this premise records a commitment the passage presupposes and does not defend. Stated no more fully than he states it: nothing is added about how inheritance works."}
+-----
+(5) [Individuals with useful variations leave similarly characterised offspring]: Individuals preserved for a useful variation will tend to produce offspring similarly characterised.
+    {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"they will tend to produce offspring similarly characterised\"", note: "Paraphrased only to replace Darwin's they with what it refers to. Will tend to is his and is kept: the claim is about a tendency, not a rule without exception."}
+
+[It would be extraordinary if no useful variation had ever occurred]
+    +> [Useful variations do occur]
+
+<Divergence of character>: Since diversity is advantageous and useful characters are inherited, the more diversified a species' descendants become the better they fare, and the differences between varieties widen until they are the differences between species and genera.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 168", note: "Darwin's Therefore falls immediately after an ellipsis marker, so his reasoning at this point rests partly on material the transcription elides. The premises named here are the ones the passage itself supplies and the ones he re-invokes in the sentence itself — the incessant struggle of all species to increase in numbers, and the advantage of diversity. They are not offered as a complete account of what his Therefore rests on, and the elided text is not guessed at. Inheritance enters at the second step rather than the first, because it is not what makes diversity pay — it is what makes the differences accumulate, which is the work his Thus is doing."}
+
+(1) [Diversity is advantageous]
+(2) [A severe struggle for life]
+-----
+(3) [The more diversified the descendants, the better their chance]: During the modification of the descendants of any one species, and during the incessant struggle of all species to increase in numbers, the more diversified these descendants become, the better will be their chance of succeeding in the battle of life.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"Therefore during the modification of the descendants of any one species, and during the incessant struggle of all species to increase in numbers, the more diversified these descendants become, the better will be their chance of succeeding in the battle of life\"", note: "A comparative claim — the more diversified, the better the chance — and not the claim that diversification is bound to occur. Darwin restates the struggle here as the incessant struggle of all species to increase in numbers, which is why premise 2 is the same claim as premise 2 of the preceding argument rather than a new one."}
+(4) [Individuals with useful variations leave similarly characterised offspring]
+-----
+(5) [Small differences between varieties grow into the differences between species]: The small differences distinguishing varieties of the same species, will steadily tend to increase till they come to equal the greater differences between species of the same genus, or even of distinct genera.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"Thus the small differences distinguishing varieties of the same species, will steadily tend to increase till they come to equal the greater differences between species of the same genus, or even of distinct genera\"", note: "Will steadily tend to increase is Darwin's scope: a tendency, not a law without exception. So is the ceiling he puts on it — the differences between species of the same genus, or even of distinct genera — which is a limit and not the absence of one."}
+
+[The principle of preservation is what Darwin calls natural selection]: This principle of preservation, I have called, for the sake of brevity, Natural Selection.
+    {fidelity: "quotation", pinpoint: "p. 168", source: "\"This principle of preservation, I have called, for the sake of brevity, Natural Selection\"", note: "A second ellipsis marker precedes this sentence, so the referent of This principle of preservation is supplied by the reconstruction, from the preservation of favoured individuals argued for above. The sentence is a stipulation about a name, and it is an apex claim rather than a remark because it has something to name only if that argument holds."}
+
+<The preservation and inheritance of useful variations>
+    +> [The principle of preservation is what Darwin calls natural selection]

@@ -26,6 +26,19 @@ already and needs to know which line to change -- so `--only-problems` and
 where the checker can work one out, the correction itself. Measured on the Darwin
 sample: 682 words and 4.6s becomes 372 words and 2.0s.
 
+BUT THE LOOP WANTS THE CENSUS TOO, AND WAS PAYING A WHOLE ROUND TRIP FOR IT.
+Dropping the census from json made the reconstructors run the command TWICE on
+the same unchanged file: once with `--format json` for the faults, once without
+for the apex, the tags, the contribution and the fidelity counts, which are facts
+about the finished map that a fix loop plainly wants. Measured across five runs:
+between two and three times as many checker invocations as distinct file states,
+6 to 10 wasted round trips per reconstruction. So `--format json` now carries the
+census as well, under `census`, and the second call is simply unnecessary. It is
+the same text the prose report prints, not a re-rendering of it, so the two cannot
+drift apart. 3.2 KB on Darwin and 6.4 KB on the largest map in the corpus -- far
+less than a round trip costs. `--no-census` turns it off for a caller that really
+only wants the faults.
+
 Usage:
     python3 check_argdown.py FILE.argdown [--cli PATH_TO_ARGDOWN]
     python3 check_argdown.py FILE.argdown --source-root DIR --format json
@@ -938,6 +951,10 @@ def _parse_args():
                          "CLI runs, about 2.8s, and nothing in it can fail -- so it is on for "
                          "a plain run and off whenever the output is being consumed.")
     ap.add_argument("--no-selection-modes", dest="modes", action="store_false")
+    ap.add_argument("--no-census", dest="census", action="store_false", default=True,
+                    help="omit the census from --format json. The census is there so a fix loop "
+                         "need not run the checker a second time on the same file; drop it only "
+                         "if you truly want nothing but the faults.")
     a = ap.parse_args()
     if a.fmt == "json":
         a.only_problems = True
@@ -1182,10 +1199,18 @@ def main():
         raise
 
     if a.fmt == "json":
+        # THE CENSUS RIDES ALONG, because without it the caller runs this command again on a file
+        # it has not touched. `sink` already holds the prose the report wrote; it is passed
+        # through verbatim rather than re-rendered, so the json census and the prose census cannot
+        # disagree. SELECTION MODES is the one section missing, because json mode implies
+        # `--only-problems` and that skips six process spawns worth 2.8s of a 4s run; pass
+        # `--selection-modes` to buy it back.
+        census = sink.getvalue().strip() if (a.census and sink is not None) else ""
         print(json.dumps({"file": os.path.basename(path),
                           "ok": not any(f["severity"] == "!" for f in FINDINGS),
                           "findings": FINDINGS,
-                          **({"vocabulary": VOCABULARY} if VOCABULARY else {})},
+                          **({"vocabulary": VOCABULARY} if VOCABULARY else {}),
+                          **({"census": census} if census else {})},
                          indent=2, ensure_ascii=False))
     elif a.quiet:
         print(f"== {os.path.basename(path)}")

@@ -509,15 +509,22 @@ def check_reconstruction(path: str, source_root: str | None = None,
     Args:
         path: the .argdown file.
         source_root: the folder holding `source/`. Enables the quotation checks.
-        full_report: return the whole prose report — the census as well as the faults.
+        full_report: add the SELECTION MODES node-count table, which costs six more process
+            spawns. Everything else the prose report has — apex, tags, provenance, quotations,
+            contribution, fidelity, interpretive load — is in `census` on EVERY call, so you
+            almost never want this.
+
+    ONE CALL, BOTH HALVES. This used to run the checker a second time in text mode to get the
+    census, and callers duly called it twice: once for the faults, once for the shape. Measured
+    across five reconstructions that was six to ten wasted round trips a run, the single largest
+    piece of avoidable cost in the pipeline. The census now rides in the json, so there is nothing
+    a second call can tell you about a file you have not changed.
     """
     p = Path(path).expanduser()
     if not p.exists():
         return dict(ok=False, error=f"no such file: {p}")
-    if full_report:
-        r = _run_check(p, source_root, fmt="text", extra=["--no-fix"])
-        return dict(ok=r.returncode == 0, report=r.stdout, stderr=r.stderr[:800] or None)
-    r = _run_check(p, source_root, fmt="json", extra=["--no-fix"])
+    extra = ["--no-fix"] + (["--selection-modes"] if full_report else [])
+    r = _run_check(p, source_root, fmt="json", extra=extra)
     try:
         out = json.loads(r.stdout)
     except json.JSONDecodeError:
