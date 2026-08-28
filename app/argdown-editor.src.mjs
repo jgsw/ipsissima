@@ -190,9 +190,9 @@ function claimRefs(knows) {
  *  `fidelity`, `reviewed` on every claim, often longer than the claim — and none of it is the
  *  argument. Folding it is how you get the structure back on one screen.
  */
-function metaRange(state, line) {
+function metaRange(state, line, openAt) {
   const text = line.text;
-  const open = text.indexOf("{");
+  const open = openAt == null ? text.indexOf("{") : openAt;
   if (open < 0) return null;
   let depth = 0, at = line.from + open;
   for (let n = line.number; n <= state.doc.lines; n++) {
@@ -246,19 +246,40 @@ const argdownFolds = foldService.of((state, lineStart) => {
   return null;
 });
 
-/** Every metadata block in the document, for the fold-the-lot command. */
+/** Every metadata block in the document, for the fold-the-lot command.
+ *
+ *  BOTH PLACES METADATA IS WRITTEN, which this used to get wrong. It required the block to START
+ *  a line -- `/^\s*\{/` -- and a reconstruction is just as likely to trail it after the claim on
+ *  the same line. Four of the seven published samples are written that way, so "fold the
+ *  provenance" reported **no provenance to fold** on a file with 162 metadata blocks in it.
+ *  Reported from use on the Wilson map.
+ *
+ *  A BRACE IS NOT ENOUGH TO GO ON once the block need not begin the line: prose can contain one.
+ *  What identifies a metadata block is that it opens with a key -- `{fidelity:`, `{isGroup:` --
+ *  so that is what is matched, and a claim mentioning "the set {a, b}" is left alone.
+ */
 function allMetaRanges(state) {
   const out = [];
+  const OPENS = /\{\s*[A-Za-z_][\w-]*\s*:/;
   for (let n = 1; n <= state.doc.lines; n++) {
     const line = state.doc.line(n);
-    if (!/^\s*\{/.test(line.text)) continue;
-    const r = metaRange(state, line);
+    const m = OPENS.exec(line.text);
+    if (!m) continue;
+    const r = metaRange(state, line, m.index);
     if (!r || r.to <= r.from) continue;
-    // Fold it onto the claim above where there is one, so the provenance disappears rather
-    // than leaving a row of empty braces down the margin.
-    const prev = n > 1 ? state.doc.line(n - 1) : null;
-    out.push(prev && prev.text.trim() && !/^\s*\{/.test(prev.text)
-      ? { from: prev.to, to: r.to + 1 } : r);
+    if (/^\s*\{/.test(line.text)) {
+      // On its own line: fold it onto the claim above where there is one, so the provenance
+      // disappears rather than leaving a row of empty braces down the margin.
+      const prev = n > 1 ? state.doc.line(n - 1) : null;
+      out.push(prev && prev.text.trim() && !/^\s*\{/.test(prev.text)
+        ? { from: prev.to, to: r.to + 1 } : r);
+    } else {
+      // Trailing the claim: take the braces themselves and the space in front of them, so what
+      // is left is the claim as the author would write it without provenance.
+      let from = line.from + m.index;
+      if (m.index > 0 && line.text[m.index - 1] === " ") from--;
+      out.push({ from, to: r.to + 1 });
+    }
     const end = state.doc.lineAt(r.to);
     n = end.number;
   }

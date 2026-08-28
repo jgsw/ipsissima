@@ -199,9 +199,21 @@ main.swapped{flex-direction:row-reverse}
    the rule never matched and the Argdown sat in the top half of an otherwise empty column. */
 
 #side > section:not(.sized){flex:1 1 auto}
-#ms > header,#adpane > header{display:flex;align-items:center;gap:.4rem;padding:.35rem .5rem;
+#ms > header,#adpane > header{display:flex;align-items:center;gap:.4rem;
+  padding:.35rem .7rem .35rem .5rem;
   border-bottom:1px solid var(--line);font-size:12px}
 #adpane > header b{font-weight:600}
+/* THE ROW MUST NOT PUSH ITS OWN CONTROLS OFF THE WINDOW, and it did. The file name and the
+   status message are both variable-width, and flex overflows rather than shrinking text: with
+   every editor button showing, "Save as…" and the close × sat 196px past the right edge of a
+   1280px window. Reported from use as "Save as is too close to the edge", which is what it looks
+   like from the inside — the controls were not near the edge, they were over it.
+   THE NAME GIVES WAY FIRST. A truncated file name is still recognisable and its full value is in
+   the window title; a button that is not on screen cannot be pressed at all. */
+#adpane > header > b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+#adpane > header > .muted{flex:0 0 auto;white-space:nowrap}
+#adpane > header > button{flex:0 0 auto}
 .grow{flex:1 1 auto}
 button.plain.tiny{padding:.05rem .35rem;font-size:11px}
 button.plain.tiny.icon{gap:.25rem}
@@ -2226,7 +2238,21 @@ function walkNodeById(id){
 
 function startWalkthrough(){
   if (WALK) return;
-  if (!LIVE) { setHelp(true); return; }   // nothing to point at; the Help still answers
+  // NOTHING TO POINT AT. Every step of the tour spotlights something on the map, so with no
+  // reconstruction open there is no tour to give.
+  //
+  // This used to open the Help instead, silently, and that reads as a broken control: the reader
+  // chose "Take the walkthrough" from a menu and got a page of reference material with no
+  // explanation. Reported from use on the desktop app, where a window with no file open is the
+  // FIRST thing anybody sees and the walkthrough is the obvious thing to press. So say what
+  // happened, and leave the Help where it was rather than substituting it for the answer.
+  if (!LIVE) {
+    showErr("The walkthrough runs on a reconstruction, and there is not one open yet.\n\n" +
+            "Open an .argdown file — or start one with New Reconstruction — and take the tour " +
+            "from How to use. It will be waiting there.");
+    return;
+  }
+  clearErr();
   setHelp(false);
   ctxHide();
   WALK = {

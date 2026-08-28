@@ -42,6 +42,7 @@ const SUITES = [
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
   ["source pane cleanup",        "node", [path.join(HERE, "test_source_pane.mjs")]],
+  ["folding the provenance",     "node", [path.join(HERE, "test_provenance_fold.mjs")]],
   // The Reader and the page it EXPORTS must be the same program. They came apart once, by two
   // entries in a list that existed twice, and four separate faults were reported before the
   // one cause was found. See the header of test_page_parity.mjs.
