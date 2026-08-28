@@ -69,6 +69,13 @@ SHORTCODES = {".A.": "∀", ".E.": "∃", ".~.": "¬", ".v.": "∨",
 MODES = ["all", "with-title", "with-relations", "with-more-than-one-relation",
          "top-level", "not-used-in-argument"]
 
+#: The parser bundled into this package: one self-contained file, run with `node`. Shipping it
+#: is what lets the server be installed on its own -- before it, using the checker meant cloning
+#: the repository and running `npm install` in `app/`, a directory with nothing to do with it.
+BUNDLED_CLI = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "vendor", "argdown-cli.mjs")
+
+#: A real Argdown CLI in a source checkout. Still accepted, no longer required.
 DEFAULT_CLI = ("app/node_modules/.bin/argdown")
 
 # ---------------------------------------------------------------- findings ---- #
@@ -143,21 +150,51 @@ def record(path, elapsed, nodes=None, edges=None, parsed=True):
 
 
 def find_cli(explicit):
+    """How to run Argdown, as an argv prefix.
+
+    A TUPLE RATHER THAN A PATH, because the answer is now usually two words. The parser that
+    ships with this package is a JavaScript file, so running it is `node .../argdown-cli.mjs`
+    and not an executable of its own. A tuple is also hashable, which `export_json` needs.
+
+    THE BUNDLED COPY IS PREFERRED even in a source checkout that has the real CLI. It is what
+    every installed copy will use, so it should be the one exercised by ordinary work rather
+    than a path only developers take; `test_argdown_shim.mjs` is where the two are compared.
+    """
     if explicit:
-        return explicit
+        explicit = str(explicit)
+        return (_node_or_die(), explicit) if explicit.endswith(".mjs") else (explicit,)
+
+    if os.path.exists(BUNDLED_CLI):
+        node = shutil.which("node")
+        if node:
+            return (node, BUNDLED_CLI)
+
+    # A real CLI, for a checkout whose node_modules are installed -- and the fallback when the
+    # bundle is present but Node is not, so that the message below is about the right thing.
     for base in (os.getcwd(), os.path.dirname(os.path.abspath(__file__)),
                  os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..")):
         cand = os.path.normpath(os.path.join(base, DEFAULT_CLI))
         if os.path.exists(cand):
-            return cand
+            return (cand,)
     found = shutil.which("argdown")
     if found:
-        return found
+        return (found,)
+    if os.path.exists(BUNDLED_CLI):
+        sys.exit("this needs Node to read Argdown files, and there is no `node` on the PATH.\n"
+                 "Install it from https://nodejs.org (any current version), then try again.")
     sys.exit("could not find the argdown CLI; pass --cli")
 
 
+def _node_or_die():
+    node = shutil.which("node")
+    if not node:
+        sys.exit("--cli names a .mjs parser, which needs Node, and there is no `node` on the "
+                 "PATH.\nInstall it from https://nodejs.org, then try again.")
+    return node
+
+
 def run(cli, *args):
-    return subprocess.run([cli, *args], capture_output=True, text=True)
+    return subprocess.run([*cli, *args], capture_output=True, text=True)
 
 
 def parse_dot(dot):

@@ -78,16 +78,6 @@ server = MCPServer(
 
 # ------------------------------------------------------------------ helpers ---- #
 
-def _argdown_cli():
-    """The Argdown CLI, which is ground truth for whether a file is valid."""
-    for cand in (ROOT / "app" / "node_modules" / ".bin" / "argdown",
-                 Path.cwd() / "app" / "node_modules" / ".bin" / "argdown"):
-        if cand.exists():
-            return str(cand)
-    from shutil import which
-    return which("argdown")
-
-
 def _run_check(path, source_root=None, fmt="json", extra=()):
     """Run check_argdown as a subprocess.
 
@@ -96,10 +86,12 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
     faults into the second's report. A process boundary is the cheapest correct isolation, and
     the script is already the supported entry point for the viewer build.
     """
+    # NO `--cli`. Finding the Argdown parser is `check_argdown.find_cli`'s job and it now has a
+    # better answer than this did: the copy bundled into this package, run with `node`. What was
+    # here looked for `app/node_modules/.bin/argdown`, which tied the server to a source checkout
+    # -- and npm writes no extensionless shim of that name on Windows, so it could never have
+    # worked there at all.
     cmd = [sys.executable, str(HERE / "check_argdown.py"), str(path), "--format", fmt, *extra]
-    cli = _argdown_cli()
-    if cli:
-        cmd += ["--cli", cli]
     if source_root:
         cmd += ["--source-root", str(source_root)]
     r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))

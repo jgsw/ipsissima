@@ -42,3 +42,15 @@ ipsissima-paginate = "ipsissima_mcp.paginate:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# THE BUNDLED ARGDOWN PARSER HAS TO TRAVEL WITH THE PACKAGE. Without this, setuptools ships the
+# .py files and silently leaves vendor/argdown-cli.mjs behind -- an install that imports fine and
+# cannot check a reconstruction. It is a build artifact of app/build_argdown_shim.mjs, committed
+# on purpose so that `pip install .` needs no JavaScript toolchain.
+[tool.setuptools.package-data]
+ipsissima_mcp = ["vendor/*.mjs"]
+
+# NOT YET THE PROMPTS. `server.py` reads `docs/` by walking up from its own file, which lands
+# outside the package once it is installed rather than checked out -- so a non-editable install
+# has a parser and no instructions to give the model. That has to be fixed before this is worth
+# publishing anywhere; it is a separate change from bundling the parser and is not made here.

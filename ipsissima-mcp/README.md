@@ -16,23 +16,21 @@ drawn from, and how far each claim stands from the source's own words.
 
 ## Install
 
-You need **Python 3.10+**, **Node** (for the Argdown parser), and ideally
+You need **Python 3.10+**, **Node** (any current version — it reads the Argdown), and ideally
 [**pandoc**](https://pandoc.org/installing.html).
 
 ```bash
 git clone <this repository> && cd ipsissima
 python3 -m venv .venv && .venv/bin/pip install -e ipsissima-mcp
-cd app && npm install && cd ..
 ```
 
 A virtual environment is not fussiness: a Homebrew or system Python will refuse `pip install`
 outright ([PEP 668](https://peps.python.org/pep-0668/)).
 
-**With [uv](https://docs.astral.sh/uv/) instead**, which is the same two steps and faster:
+**With [uv](https://docs.astral.sh/uv/) instead**, which is the same thing and faster:
 
 ```bash
 uv venv && uv pip install -e ipsissima-mcp
-cd app && npm install && cd ..
 ```
 
 **A uv-made `.venv` has no `pip` in it.** That is uv working as designed, not a broken
@@ -42,9 +40,12 @@ the obvious reading of that message is that the virtual environment did not get 
 below are installed either way; `ls .venv/bin/ipsissima-mcp` is the quick way to tell whether the
 package is there.
 
-**`npm install` in `app/` is not optional for the server.** The checker shells out to the Argdown
-parser that lives there, so `check_reconstruction` fails without it even though nothing about it
-looks like a Node program.
+**Node is needed, `npm install` is not.** The checker uses the Argdown parser as ground truth for
+whether a file is valid, and a copy of it is bundled into this package as a single file that
+`node` runs — so there is nothing to install for it and nothing to keep in step. It used to reach
+into `app/node_modules` instead, which meant the server could only run from a source checkout and
+could not run on Windows at all, npm writing no shim of that name there. If `node` is missing the
+checker says so and names the download page, rather than reporting a missing CLI.
 
 `rapidocr` installs with it and is **not optional**. Without an OCR backend, a scanned paper
 converts silently to its cover page and nothing reports it — measured at 345 words of a
