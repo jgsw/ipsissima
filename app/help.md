@@ -144,12 +144,19 @@ every reconstruction:
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — a counterconsideration, or a scope limit the author sets on their own thesis |
 | `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
+| `#authority` | **a proposition whose force comes from its source, not its content** — a decided case, a statute. Chiefly in legal texts |
 
 Each names something the shape of the graph cannot: nothing about how a claim is wired reveals
 that it is Hume's rather than the paper's. On the Tooming reconstruction thirty claims are
 `#reported`, and without the hashtag every one of them would read as something the authors believe.
 
-A file may use any hashtag it likes and Ipsissima will show it — these three are a convention, not
+`#authority` also stands in for something the notation cannot draw. A green arrow means one claim
+supports another, and it means the same whether the support is a reason a reader can weigh or a
+precedent that binds regardless of what anyone thinks of it. *The King hath no prerogative but that
+which the law of the land allows him* holds up the claim above it **because a court decided it in
+1611**. On the Miller map the hashtag marks the two places where that is what an arrow means.
+
+A file may use any hashtag it likes and Ipsissima will show it — these four are a convention, not
 a fixed list. The **hashtags** control lists whatever the file actually contains, and does not
 appear at all when it contains none.
 

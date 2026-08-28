@@ -110,6 +110,19 @@ Use the **whole language**, not the part of it you are sure of:
 - reasons that work only together go in one premise-conclusion structure; reasons that each stand
   alone hang as siblings
 
+**And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
+jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,
+and a condition that must hold before the question can be reached at all. Argdown does not
+distinguish them and **this project does not add syntax** — a private relation would stop the file
+being Argdown and would not open anywhere else.
+
+So use what the language does have. A cited authority gets `#authority` on the **cited
+proposition**. A precondition is usually a *premise* of the step it conditions rather than a
+support hanging off its conclusion, so put it in the premise-conclusion structure. And when a
+distinction the argument turns on still cannot be drawn, **write it in the claim's `note:`** — a
+limitation the reader is told about is a limitation, while one they must infer from a flat arrow
+is a misreading waiting to happen.
+
 ### 4. Check, and fix what it finds
 
 ```

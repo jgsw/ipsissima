@@ -184,9 +184,42 @@ from one they are attacking.
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — Govier's *counterconsideration*, and the scope limits an author sets on their own thesis |
 | `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
+| `#authority` | **a proposition whose force comes from its source, not from its content** — a decided case, a statute, a constitutional instrument. Chiefly for legal texts |
 
 Each answers a question the structure cannot: nothing about the shape of a graph reveals that a
 claim is Hume's rather than the paper's.
+
+### `#authority`, and the thing it half-fixes
+
+An authority is not a reason in the ordinary sense. *The King hath no prerogative but that which
+the law of the land allows him* supports the claim it hangs under **because a court decided it in
+1611**, not because a reader finds it plausible. Article 9 of the Bill of Rights binds whatever
+anyone thinks of it. Drawn as a bare `<+`, both look exactly like evidence, and a reader cannot
+tell from the map which supports are arguments and which are citations.
+
+It earns its place on the three tests below: the structure cannot compute it, it recurs wherever a
+judgment cites its authorities, and *"show me only what this judgment rests on"* is the first
+question a lawyer asks of a case. Tag the **cited proposition**, not the claim it supports.
+
+**What it does not fix, and what to do instead.** Miller exposed `<+` doing three different jobs:
+evidential support, institutional authority, and jurisdictional precondition — the last being
+something that must hold before a court may rule at all. Argdown has one arrow for all three, and
+**this project does not invent syntax**: a map that used a private relation would stop being
+Argdown, would not parse anywhere else, and would fail the promise that Ipsissima displays the
+language rather than a dialect of it.
+
+So:
+
+- **institutional authority** → tag the cited proposition `#authority`;
+- **jurisdictional precondition** → usually a modelling mistake rather than a notation gap. A
+  precondition is a *premise* of the step it conditions, so put it in the premise-conclusion
+  structure instead of hanging it off the conclusion as support;
+- **anything still overloaded** → say so in the claim's `note:`. A limitation a reader is told
+  about is a limitation; one they must infer from a flat arrow is a misreading waiting to happen.
+
+That last rule is general. **Where the notation cannot carry a distinction the argument turns on,
+the note carries it** — and the reconstruction is more honest for saying which distinction the map
+is not drawing.
 
 ### Why there is no `#core`
 

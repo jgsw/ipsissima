@@ -104,9 +104,9 @@ defaults:
     {fidelity: "quotation", pinpoint: "[31]", note: "The court adopts the Divisional Court's own observation."}
 (3) [The courts have supervised the executive for centuries]: the courts have exercised a supervisory jurisdiction over the decisions of the executive for centuries
     {fidelity: "quotation", pinpoint: "[31]"}
-    <+ [The King hath no prerogative but that which the law of the land allows him]: the King hath no prerogative, but that which the law of the land allows him
+    <+ [The King hath no prerogative but that which the law of the land allows him]: the King hath no prerogative, but that which the law of the land allows him #authority
     {fidelity: "quotation", pinpoint: "[32]",
-     note: "The Case of Proclamations (1611), decided in the middle of the constitutional crisis it concerned. The court's example of political controversy not deterring a court."}
+     note: "The Case of Proclamations (1611), decided in the middle of the constitutional crisis it concerned. The court's example of political controversy not deterring a court. Tagged #authority because it holds up the claim above it by having been DECIDED, not by being independently plausible -- a distinction Argdown's single support arrow cannot draw, and which this map therefore draws with a tag."}
 -----
 (4) [That a dispute concerns politicians has never been reason enough to refuse it]: the fact that a legal dispute concerns the conduct of politicians, or arises from a matter of political controversy, has never been sufficient reason for the courts to refuse to consider it
     {fidelity: "quotation", pinpoint: "[31]"}
@@ -405,8 +405,8 @@ defaults:
     {fidelity: "paraphrase", pinpoint: "[63]",
      source: "\"a proceeding in Parliament\" which cannot be impugned or questioned in any court"}
     <- [Prorogation cannot sensibly be described as a proceeding in Parliament]
-(2) [Proceedings in Parliament may not be questioned in any court]: That the Freedome of Speech and Debates or Proceedings in Parlyament ought not to be impeached or questioned in any Court or Place out of Parlyament.
-    {fidelity: "quotation", pinpoint: "[64]", note: "Article 9 of the Bill of Rights 1688, in the spelling the judgment prints."}
+(2) [Proceedings in Parliament may not be questioned in any court]: That the Freedome of Speech and Debates or Proceedings in Parlyament ought not to be impeached or questioned in any Court or Place out of Parlyament. #authority
+    {fidelity: "quotation", pinpoint: "[64]", note: "Article 9 of the Bill of Rights 1688, in the spelling the judgment prints. #authority: it binds the court whatever anyone thinks of it, which an ordinary premise does not."}
 -----
 (3) [The court cannot declare the prorogation null]: The court cannot declare the prorogation null and of no effect, and reasoning back from that, neither can it question the Order in Council which led to it. #reported
     {fidelity: "compression", pinpoint: "[63]",

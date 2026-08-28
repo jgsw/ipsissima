@@ -1123,10 +1123,46 @@ def _report(cli, path, a):
     # but this census read the raw file and counted it, so an explanatory comment mentioning
     # three tags reported three tags that do not exist. Found when a reconstruction had to
     # rewrite its own header comment to stop the census inventing them.
+    #
+    # AND QUOTED STRINGS, which is the SAME BUG in the place the first fix did not look. A
+    # `note:` or `source:` is metadata, and the parser does not read tags out of it: checked
+    # against @argdown/core, a document whose note says "#notatag" yields exactly the tags in
+    # its statement text and no others. This census counted them, so a note explaining why a
+    # claim is tagged reported the tag twice. Found on the Miller map when `#authority` came
+    # back as 4 on a file that carries it twice.
+    #
+    # A census that reads the raw file will keep finding these. It is kept as a text scan
+    # because it must work on a file the parser cannot parse — which is exactly when a
+    # reconstructor most wants to know what is in it — so every place the parser ignores a
+    # `#` has to be subtracted by hand, and this is the second.
     uncommented = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
     uncommented = re.sub(r"^\s*//.*$", "", uncommented, flags=re.M)
     uncommented = re.sub(r"<!--.*?-->", " ", uncommented, flags=re.S)
-    tags = Counter(re.findall(r"(?<!\S)#([A-Za-z][\w-]*)", uncommented))
+    uncommented = re.sub(r'"(?:[^"\\]|\\.)*"', ' ', uncommented)
+
+    # ONCE PER CLAIM, NOT ONCE PER MENTION — the third and last way this census disagreed with
+    # the parser. A statement defined once and referred to again carries its tags in the text
+    # every time, and Argdown still has one statement with one set of tags. Counting raw
+    # occurrences made Prescott-Couch report 22 conceded, 10 contested and 58 reported where the
+    # parser has 15, 7 and 52: fourteen claims are written out more than once there, and the 16
+    # repeats are exactly the 16 the count was over by.
+    #
+    # What a reader wants from this line is HOW MANY CLAIMS a chip would select, which is the
+    # parser's number. So tags are gathered per title and counted as a set.
+    seen_tag = set()
+    loose = Counter()
+    for line in uncommented.split("\n"):
+        found = re.findall(r"(?<!\S)#([A-Za-z][\w-]*)", line)
+        if not found:
+            continue
+        where = re.search(r"\[([^\]]+)\]|<([^>]+)>", line)
+        if where:
+            title = where.group(1) or where.group(2)
+            for t in found:
+                seen_tag.add((title, t))
+        else:
+            loose.update(found)          # a tag with no claim on its line: count each one
+    tags = Counter(t for _, t in seen_tag) + loose
     if tags:
         print("\n   TAGS (drive the overview view via selection.selectedTags):")
         for t, c in tags.most_common():
