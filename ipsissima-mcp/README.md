@@ -71,6 +71,39 @@ converts silently to its cover page and nothing reports it — measured at 345 w
 1,220-word article, no error, a perfectly well-formed Markdown file. See
 `eval/CONVERTER-FINDINGS.md`.
 
+### Which assistants can use this
+
+Two questions that get confused, and they have different answers.
+
+**The server works with any MCP client.** It is a plain MCP server — the official Python SDK,
+protocol `2024-11-05`, spoken over stdin and stdout — and there is nothing Anthropic-specific in
+it. Claude Code, Claude Desktop, VS Code, Cursor and anything else that talks MCP can run it.
+Point the client at the `ipsissima-mcp` command, in whatever way that client is configured.
+
+**The `.mcpb` bundle is Claude Desktop's install format, not a protocol.** No other client opens
+one. Elsewhere, install from source and configure the command yourself, as below. Nothing is lost
+by doing that; the bundle is a convenience, not a capability.
+
+**What genuinely varies is prompts and resources.** MCP has three kinds of thing, and clients
+support them unevenly: tools are universal, prompts and resources much less so. That matters more
+here than it would for most servers, because this one's *method* is not in its tools. The nine
+tools convert documents and check reconstructions; how to actually reconstruct an argument — the
+Assertibility Question, linked versus convergent support, what fidelity levels mean, what to do
+about what an author did not say — is served as a prompt (`reconstruct_argument`) and three
+reference documents served as resources. A client that offers only tools gives the model the
+machinery and none of the instructions, which is the exact situation the extraction prompt exists
+to prevent: there is very little Argdown in the world, and a model guessing at it confidently
+writes files that do not parse.
+
+If your client cannot reach prompts and resources, hand the model the documents directly — they
+are in `src/ipsissima_mcp/docs/`, and `extraction-prompt.md` opens by naming the three it needs.
+That is a documented fallback, not a workaround.
+
+**The model is a separate question from the client.** Ipsissima-MCP does not reconstruct
+arguments; it prepares sources and checks results, and the reading itself is the model's
+judgement. A weaker model behind a fully capable client will produce a weaker reconstruction, and
+`check_reconstruction` will report the difference rather than repair it.
+
 ### Tell your assistant about it
 
 **Claude Code**

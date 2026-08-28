@@ -268,7 +268,10 @@ def main():
     if not a.start or not a.end:
         print("  * read the report above, then set --start / --end (or edit the Config) and re-run")
     print(f'  * reconstruct into {skel.name}, then:')
-    print(f'      python3 .claude/skills/argdown/check_argdown.py "{skel}" --source-root "{folder}"')
+    # THE INSTALLED COMMAND, not a path. This named `.claude/skills/argdown/check_argdown.py`,
+    # which has not existed for some time -- so the last thing this tool told you to do was run a
+    # file that is not there. `ipsissima-check` is the console script and works from any install.
+    print(f'      ipsissima-check "{skel}" --source-root "{folder}"')
     print(f'      node app/build_argdown_viewer.mjs '
           f'"{skel}" --source-root "{folder}"')
 

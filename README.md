@@ -88,6 +88,12 @@ the rest.
 provisions Python and the dependencies itself. You need [Node](https://nodejs.org) on the machine
 — the Argdown parser is JavaScript, and travels inside the bundle — and nothing else.
 
+**It is not Claude-only.** The server is plain MCP over stdio, so any MCP client can run it —
+VS Code, Cursor, and the rest. Only the `.mcpb` bundle is Claude Desktop's; elsewhere you install
+from source and point the client at the command. The one thing worth checking is whether your
+client supports MCP *prompts and resources* as well as tools, because this server's method lives
+in those rather than in its tools.
+
 Everything else, including installing from source and the command line tools, is in
 [`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).
 

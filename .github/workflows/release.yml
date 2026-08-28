@@ -167,7 +167,12 @@ jobs:
 
             It does not reconstruct arguments itself. That judgement belongs to the model, and
             the instructions given to it are served as prompts read off disk, where anyone can
-            read and change them. Full instructions, and the install from source, are in
+            read and change them.
+
+            **Not Claude-only.** The bundle is Claude Desktop's install format, but the server
+            underneath is plain MCP over stdio and any MCP client can run it — install from
+            source and point the client at the command. Full instructions, and the install from
+            source, are in
             [ipsissima-mcp/README.md](https://github.com/jgsw/ipsissima/blob/main/ipsissima-mcp/README.md#install).
           releaseDraft: true
           prerelease: false
