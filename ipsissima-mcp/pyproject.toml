@@ -12,9 +12,20 @@ license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "James Wilson" }]
 keywords = ["argdown", "argument", "reconstruction", "pdf", "epub", "philosophy"]
 classifiers = [
+  # 4 - Beta rather than 5 - Production/Stable: the interface is settled and in daily use, and
+  # this is the first version anyone else can install.
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Education",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Text Processing :: Markup",
+  "Topic :: Scientific/Engineering",
 ]
 
 # pymupdf and pymupdf4llm do the PDF work; rapidocr is NOT optional in practice — without an OCR
@@ -32,6 +43,12 @@ dependencies = [
 
 [project.optional-dependencies]
 zotero = ["pyzotero>=1.5"]
+
+# The sidebar of the PyPI page, which is otherwise a summary with nowhere to go from it.
+[project.urls]
+Homepage = "https://jgsw.github.io/ipsissima/"
+Source = "https://github.com/jgsw/ipsissima"
+Issues = "https://github.com/jgsw/ipsissima/issues"
 
 [project.scripts]
 ipsissima-mcp = "ipsissima_mcp.server:main"

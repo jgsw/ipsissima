@@ -86,6 +86,33 @@ else:
             for name in named:
                 check(f"the wheel carries docs/{name}", has(f"docs/{name}"))
 
+            # THE DEPENDENCIES SURVIVED THE TOML. A sub-table ends the table it sits in, so a
+            # `[project.urls]` written above `dependencies` rehomes every requirement as a URL --
+            # which happened once here, while adding exactly that table.
+            #
+            # That particular slip is caught by "the wheel builds" above, and loudly: setuptools
+            # refuses it with `project.urls.dependencies must be string`. Checked, rather than
+            # assumed, after this comment first claimed it would pass silently. What is left for
+            # these assertions is every quieter way the list could empty out -- an edit to the
+            # requirements, a backend that reads them differently -- where nothing refuses
+            # anything and the install simply has no libraries.
+            zf = zipfile.ZipFile(wheels[0])
+            meta = next((n for n in names if n.endswith(".dist-info/METADATA")), None)
+            text = zf.read(meta).decode("utf-8") if meta else ""
+            declared = re.findall(r'^\s*"([A-Za-z0-9_.-]+)\s*[><=]',
+                                  (MCP / "pyproject.toml").read_text(encoding="utf-8"), re.M)
+            reqs = {r.split(";")[0].strip().lower()
+                    for r in re.findall(r"^Requires-Dist:\s*(.+)$", text, re.M)}
+            for d in sorted(set(declared)):
+                check(f"the wheel requires {d}",
+                      any(r.startswith(d.lower()) for r in reqs),
+                      f"Requires-Dist has {sorted(reqs)}")
+
+            # The command a client is configured to run. Without it the install is inert.
+            eps = next((n for n in names if n.endswith(".dist-info/entry_points.txt")), None)
+            check("the wheel installs the ipsissima-mcp command",
+                  bool(eps) and "ipsissima-mcp" in zf.read(eps).decode("utf-8"))
+
 
 print(f"\n{fails} FAILED" if fails else "\nthe package carries everything it serves")
 sys.exit(1 if fails else 0)

@@ -9,7 +9,7 @@ page numbers intact, and checking a finished reconstruction against its sources 
 The judgement half, turning a paper into an argument, is done by the assistant you are already
 talking to; this server hands it the instructions and then checks its work.
 
-The result opens in [Ipsissima](../README.md), which shows the map, the passage each claim was
+The result opens in [Ipsissima](https://github.com/jgsw/ipsissima), which shows the map, the passage each claim was
 drawn from, and how far each claim stands from the source's own words.
 
 ---
