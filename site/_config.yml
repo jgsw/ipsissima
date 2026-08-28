@@ -1,0 +1,27 @@
+# Jekyll configuration for the public site at jgsw.github.io/ipsissima
+#
+# EDIT index.md, NOT HTML. The landing page is markdown and is meant to stay that way; this file
+# exists so that Jekyll renders it, and for nothing else.
+#
+# The built pages — ipsissima.html, ipsissima-reader.html and try/*.html — are put here by
+# site/build_site.mjs at deploy time and are NOT committed. They carry no front matter, so Jekyll
+# copies them through untouched rather than trying to render 2.5 MB of inlined JavaScript as a
+# template.
+
+title: Ipsissima
+description: Read an argument reconstruction beside the text it is a reading of.
+lang: en-GB
+
+# `minima` ships with GitHub Pages and needs nothing installed. The site is two pages; a theme
+# that had to be built and vendored would be more machinery than the thing it decorates.
+theme: minima
+
+# The repository holds a great deal that is not the website. Only what this folder contains is
+# published, and these are the parts of it that are inputs rather than output.
+exclude:
+  - build_site.mjs
+  - README.md
+
+# Relative links in index.md should keep working when the site is served from a subdirectory,
+# which it is: github.io/<user>/<repo>/. Set by the workflow rather than hard-coded, so a fork
+# or a custom domain does not have to edit this file.

@@ -1,0 +1,77 @@
+# Ipsissima — publish the public site to GitHub Pages.
+#
+# ON TAGS, WHICH IS WHAT "THE LATEST STABLE VERSION" MEANS. The site is a place to try the
+# program, and a visitor who tries it should get what a release gives them rather than whatever
+# was pushed twenty minutes ago. `release.yml` runs on the same trigger and builds the desktop
+# packages from the same commit, so the download page and the try-it page always describe one
+# version of the program.
+#
+# A SEPARATE WORKFLOW, NOT A JOB IN release.yml, deliberately. The release runs a three-platform
+# Tauri matrix that takes tens of minutes and can fail on one platform for reasons that have
+# nothing to do with the web page — an unsigned Windows build, a Linux dependency. This needs
+# Node and nothing else, finishes in a couple of minutes, and its failing or succeeding says
+# something about the site rather than about a cross-compilation.
+#
+# WHAT IS PUBLISHED IS BUILT HERE, NEVER COMMITTED. See site/build_site.mjs for why.
+name: pages
+
+on:
+  push:
+    tags: ["v*"]
+  # So the site can be corrected without cutting a release — a typo in index.md should not need
+  # a version number.
+  workflow_dispatch:
+
+# One deployment at a time, and let a newer one win: two tags pushed together should leave the
+# site showing the later, not whichever finished last.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # The viewer's own dependencies — the Argdown parser, CodeMirror, dagre. `npm ci` rather
+      # than `npm install` so the site is built from the locked versions the tests ran against.
+      - name: Install the app's dependencies
+        working-directory: app
+        run: npm ci
+
+      # Builds ipsissima.html, ipsissima-reader.html and one page per sample, and writes
+      # _data/samples.json for the landing page to list them from.
+      - name: Assemble the site
+        run: node site/build_site.mjs
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      # Jekyll renders index.md and copies the built HTML through untouched. `baseurl` comes from
+      # configure-pages rather than _config.yml, so a fork or a custom domain needs no edit.
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./site
+          destination: ./_site
+
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -29,3 +29,12 @@ app/desktop/src-tauri/icons/*.icns
 .claude/
 .vscode/
 .idea/
+
+# The public site is assembled by site/build_site.mjs at deploy time, for the same reason the two
+# HTML files above are not committed: they are generated, and 2.5 MB of them per release would
+# live in git for ever. `site/index.md` and `site/_config.yml` ARE the site and are committed.
+site/ipsissima.html
+site/ipsissima-reader.html
+site/try/
+site/_data/
+site/_site/
