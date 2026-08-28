@@ -47,15 +47,25 @@ $brand-color: #2A5FB4;
 
 @import "minima";
 
-/* The wordmark: the name set as the phrase appears in scholarship — italic, cited. */
+/* The wordmark: the mark beside the name, the name set as the phrase appears in scholarship —
+ * italic, cited. The mark is inlined in _includes/header.html from brand/favicon.svg. */
 .site-title,
 .site-title:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: "EB Garamond", Garamond, Georgia, serif;
   font-style: italic;
   font-weight: 500;
   font-size: 28px;
   letter-spacing: 0.005em;
   color: #203A6A;
+}
+.site-mark {
+  width: 30px;
+  height: 30px;
+  display: block;
+  flex: none;
 }
 
 h1, h2, h3, h4 {
