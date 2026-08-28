@@ -3,8 +3,9 @@
 
   Same arrangement as help.md, one rule: `##` starts a TAB, in this order. Raw HTML is allowed,
   and the ids below are filled in at runtime — `aboutver`, `aboutbuilt`, `abouthost`,
-  `aboutauthor`, `aboutlicence`, `aboutdeps`, `aboutdebug`. Deleting one does not break anything;
-  the thing it was showing simply stops appearing.
+  `aboutauthor`, `aboutlicence`, `aboutdeps`, `aboutdebug`, and the fold state trio
+  `foldstateid` / `foldstatein` / `foldstatego` / `foldstateerr`. Deleting one does not break
+  anything; the thing it was showing simply stops appearing.
 
   Keep it about this level of detail. Zettlr's About is the model and is more verbose than
   Ipsissima has debts to repay — but Argdown's credit is not the place to economise.
@@ -136,3 +137,19 @@ without even the implied warranty of merchantability or fitness for a particular
 Worth quoting if something goes wrong.
 
 <dl id="aboutdebug"></dl>
+
+### The fold state
+
+One line that names exactly what is folded and shown right now — which sections are shut, which
+claims the reader folded or opened by hand, the depth, the view. **Report a folding bug with the
+`.argdown` file and this line**, and the state can be rebuilt instead of guessed at. A click
+selects the whole line.
+
+<p><code id="foldstateid">no map on screen</code></p>
+
+It is tied to this exact map — the `map=` fingerprint refuses a file it does not belong to — and
+two identical lines are the same state, so comparing them answers "are we looking at the same
+thing?" To rebuild a reported state, paste its line here:
+
+<p><input id="foldstatein" type="text" spellcheck="false" autocomplete="off" placeholder="ipsfold1 map=… view=…"><button id="foldstatego" type="button" class="plain">Restore</button></p>
+<p id="foldstateerr" hidden></p>

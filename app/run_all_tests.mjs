@@ -38,6 +38,7 @@ const SUITES = [
   ["edge direction (arrowheads)", "node", [path.join(BUILD, "test_edge_direction.js")]],
   ["re-seat vs edge routes",     "node", [path.join(BUILD, "test_reseat_edges.js")]],
   ["fold invariants (state space)", "node", [path.join(HERE, "test_fold_invariants.mjs"), "--steps", "1500"]],
+  ["fold state identifier (round-trip)", "node", [path.join(HERE, "test_fold_state_id.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],

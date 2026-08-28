@@ -19,12 +19,13 @@ are short, and every round of the check-and-fix loop costs more than reading the
 | `ipsissima://reconstruction/method` | **how to reconstruct.** Finding the conclusion, the Assertibility Question, linked vs convergent, what to do about what is not said |
 | `ipsissima://ipsissima/conventions` | **what Ipsissima records.** Provenance, fidelity, warrants, tags, front matter |
 
-Without the MCP server, **read all three in one call**, not three:
+Without the MCP server, **two calls** — the three together are about 55 KB, which is over the
+inline cap, so one `cat` of all of them spills to a file you then have to read back. See rule 1
+below:
 
 ```bash
-cat ipsissima-mcp/docs/argdown-cheatsheet.md \
-    ipsissima-mcp/docs/reconstruction-cheatsheet.md \
-    ipsissima-mcp/docs/ipsissima-conventions.md
+cat ipsissima-mcp/docs/argdown-cheatsheet.md ipsissima-mcp/docs/ipsissima-conventions.md
+cat ipsissima-mcp/docs/reconstruction-cheatsheet.md
 ```
 
 ---
@@ -60,8 +61,19 @@ it.
 A spill is not an error. It is the tool telling you where it put the output, and the next thing to
 do is open it.
 
-**2. Read the source once, whole, before you start.** Runs that read it in nine or fourteen pieces
-paid for each piece. Read it complete, then re-read only the passage you are quoting.
+**2. Read the source once, whole, before you start — in as few reads as the CAP allows.** Runs
+that read it in nine or fourteen dribbles paid for each one. Read it through, then re-read only the
+passage you are quoting.
+
+**Know the cap before you spend a call on it.** `Read` refuses anything over about **25,000
+tokens**, and that limit is SEPARATE from the ~30 KB inline cap that makes a `cat` spill to a file
+— so a chunk sized against the one is rejected by the other, having read nothing. Two calls were
+lost exactly that way on a 434 KB book: 26,681 tokens and 38,631 tokens, both refused before a word
+arrived.
+
+So the arithmetic is: **roughly 90 KB of prose per read, and a source of N kilobytes needs at least
+N/90 of them.** A book-length manuscript takes six or seven, not three, and no instruction can make
+it take fewer. Size the chunks first; do not discover the ceiling by hitting it.
 
 **3. Do not verify quotations one span at a time.** Two runs spent eleven and thirteen calls
 checking `source:` spans individually before ever running the checker. **The checker verifies every

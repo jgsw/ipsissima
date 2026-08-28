@@ -244,3 +244,8 @@ invariant violations fell from **23 to 10**, and this class went to **zero**. Th
 trail is not a reproducer** — replaying one from a fresh start does not reach the same place,
 because `actionsFor` offers different actions in different states. Two hours went into learning
 that. Use the dump.
+
+Every failure also prints a **fold state identifier** — one line that names the pre-action
+state, rebuildable in the app itself: About → Debug → The fold state, paste, Restore, then
+perform the trail's last step by hand. The same line is what to ask a reader for when they
+report a folding bug, alongside the `.argdown`. `docs/FOLDING.md` has the full story.

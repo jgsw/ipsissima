@@ -4266,6 +4266,12 @@ function createLiveMap(container, graph, options) {
              expandedNodes: [...state.expandedNodes], groupFolded: [...state.groupFolded],
              collapsedLanes: [...state.collapsedLanes],
              depth: state.depth, facets: state.facets ? [...state.facets] : null, allText,
+             // `spine` and `byText` were missing from this snapshot, which meant a host that
+             // rebuilt the map — the live editor, after a keystroke — silently lost the spine
+             // setting: exactly the dropped-in-silence failure setState's own comment warns
+             // about. `byText` rides along so the snapshot is the whole fold state in one
+             // shape, the one the fold state identifier encodes.
+             spine: state.spine, byText: state.byText,
              // WHERE THE CAMERA IS. A host that rebuilds the map — a live editor redrawing after
              // a keystroke — can hand this straight back and the reader keeps their place
              // instead of being thrown to a fresh fit on every edit.
@@ -4760,8 +4766,151 @@ function frameFor(w, h, cw, ch, minScale, apex) {
 }
 
 
+/* ------------------------------------------------------------------ the fold state identifier
+ *
+ * One line of text that names a fold state exactly, so a folding bug can be REPORTED as the
+ * map plus this line and REBUILT instead of guessed at. The dump taught the lesson ("a trail
+ * is not a reproducer"); this is the same lesson for the field, where nobody is running the
+ * harness. It is an ENCODING, not a hash: a hash would identify the state and reconstruct
+ * nothing. Equality of strings is equality of states, because the encoding is canonical —
+ * every list sorted, every empty field omitted, one space between tokens.
+ *
+ *   ipsfold1 map=6b2c91e4 view=arg depth=2 folds=n12,n9 gf=n7:s2+s3
+ *
+ * `map=` is a fingerprint of the graph's STRUCTURE — node ids, edges, group ids — because
+ * node ids are positional and the same ids on a different map would silently mean different
+ * claims. Decoding against the wrong file refuses with both fingerprints rather than drawing
+ * nonsense. Every id is percent-escaped, because lane names carry `|` and section paths carry
+ * anything the author wrote.
+ */
+
+/** FNV-1a, 32 bits, as 8 hex digits. A mismatch alarm, not security. */
+function fnv1a(s) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+
+/** The structural identity of a graph: what the identifier's ids are relative to. */
+function mapFingerprint(graph) {
+  const nodes = (graph.nodes || []).map(n => n.id).sort();
+  const edges = (graph.edges || []).map(e => e.from + ">" + e.to + ":" + (e.type || "")).sort();
+  const groups = (graph.groups || []).map(g => g.id).sort();
+  return fnv1a(nodes.join(",") + "|" + edges.join(",") + "|" + groups.join(","));
+}
+
+const encId = id => encodeURIComponent(String(id));
+
+/** Accepts the live state (Sets and a Map) and the dump's shape (arrays) alike, because the
+ *  invariant harness and the About window must speak the same format or there are two. */
+function encodeFoldState(graph, state) {
+  const list = v => (v == null ? [] : Array.from(v));
+  const sorted = v => list(v).map(encId).sort().join(",");
+  const out = ["ipsfold1", "map=" + mapFingerprint(graph),
+               "view=" + (state.byText ? "pos" : "arg")];
+  if (state.depth != null) out.push("depth=" + state.depth);
+  if (state.spine != null) out.push("spine=" + state.spine);
+  const push = (key, v) => { const s = sorted(v); if (s) out.push(key + "=" + s); };
+  push("sects", state.collapsedGroups);
+  push("folds", state.collapsedNodes);
+  push("opens", state.expandedNodes);
+  const gf = list(state.groupFolded)
+    .map(([k, v]) => [encId(k), list(v).map(encId).sort().join("+")])
+    .filter(([, v]) => v)     // an empty active set suppresses nothing and is the same as absent
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([k, v]) => k + ":" + v).join(";");
+  if (gf) out.push("gf=" + gf);
+  push("lanes", state.collapsedLanes);
+  // `facets` is three-valued: null means every facet (omitted), a set means only those, and an
+  // EMPTY set really does hide every faceted claim — so it encodes as `facets=` with no value.
+  if (state.facets != null) out.push("facets=" + sorted(state.facets));
+  return out.join(" ");
+}
+
+/** The inverse. Returns a state in its NATIVE shape — Sets, and a Map of Sets — which is what
+ *  `filterGraph` reads directly and what `setState` copies from; or throws one plain sentence
+ *  saying what is wrong. Splitting on any whitespace forgives a line wrap between tokens; a
+ *  wrap INSIDE a token cannot be forgiven and the id error below is what names it. */
+function decodeFoldState(graph, text) {
+  const toks = String(text).trim().split(/\s+/);
+  if (toks[0] !== "ipsfold1")
+    throw new Error('not a fold state identifier — it starts with "ipsfold1"');
+  const nodeIds = new Set((graph.nodes || []).map(n => n.id));
+  const groupIds = new Set((graph.groups || []).map(g => g.id));
+  const laneIds = new Set();
+  for (const n of graph.nodes || []) {
+    const l = textLane(n);
+    if (l !== "gutter") { laneIds.add(l); laneIds.add(laneChapter(l)); }
+  }
+  const facetIds = new Set((graph.nodes || []).map(n => n.facet).filter(Boolean));
+  const seen = new Set();
+  const fields = {};
+  for (const t of toks.slice(1)) {
+    const eq = t.indexOf("=");
+    if (eq < 0) throw new Error('unrecognised token "' + t + '" — every field is key=value');
+    const key = t.slice(0, eq);
+    if (seen.has(key)) throw new Error('the field "' + key + '" appears twice');
+    seen.add(key);
+    fields[key] = t.slice(eq + 1);
+  }
+  const own = mapFingerprint(graph);
+  if (fields.map !== own)
+    throw new Error("this state belongs to a different map — it names " + fields.map +
+                    " and this file is " + own);
+  if (fields.view !== "arg" && fields.view !== "pos")
+    throw new Error('view must be "arg" or "pos", not "' + fields.view + '"');
+  const num = (key, min) => {
+    if (!(key in fields)) return null;
+    const n = Number(fields[key]);
+    if (!Number.isInteger(n) || n < min)
+      throw new Error(key + " must be an integer, not \"" + fields[key] + "\"");
+    return n;
+  };
+  const ids = (key, known, what) => {
+    if (!(key in fields)) return [];
+    if (fields[key] === "") return [];
+    return fields[key].split(",").map(s => {
+      const id = decodeURIComponent(s);
+      if (!known.has(id))
+        throw new Error('"' + id + '" is not ' + what + " of this map — the fingerprint " +
+                        "matches, so the identifier was probably damaged in transit");
+      return id;
+    });
+  };
+  const gf = [];
+  if (fields.gf) for (const entry of fields.gf.split(";")) {
+    const c = entry.indexOf(":");
+    if (c < 0) throw new Error('gf entries are node:section+section — got "' + entry + '"');
+    const k = decodeURIComponent(entry.slice(0, c));
+    if (!nodeIds.has(k)) throw new Error('"' + k + '" is not a claim of this map');
+    gf.push([k, entry.slice(c + 1).split("+").map(s => {
+      const g = decodeURIComponent(s);
+      if (!groupIds.has(g)) throw new Error('"' + g + '" is not a section of this map');
+      return g;
+    })]);
+  }
+  const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes", "facets"];
+  for (const key of seen) if (!known.includes(key))
+    throw new Error('unknown field "' + key + '" — this identifier may come from a newer build');
+  return {
+    collapsedGroups: new Set(ids("sects", groupIds, "a section")),
+    collapsedNodes:  new Set(ids("folds", nodeIds, "a claim")),
+    expandedNodes:   new Set(ids("opens", nodeIds, "a claim")),
+    groupFolded:     new Map(gf.map(([k, v]) => [k, new Set(v)])),
+    collapsedLanes:  new Set(ids("lanes", laneIds, "a band")),
+    depth:           num("depth", 0),
+    spine:           num("spine", 0),
+    byText:          fields.view === "pos",
+    facets:          "facets" in fields ? new Set(ids("facets", facetIds, "a facet")) : null
+  };
+}
+
 const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               membersOfGroup, reduceFold,
+              encodeFoldState, decodeFoldState, mapFingerprint,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
               junctionFeet, pcsRows, premiseHull,

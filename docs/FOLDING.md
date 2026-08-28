@@ -308,3 +308,21 @@ clean. Every invariant in this file now holds.
 
 The order matters. The walk finds that something is wrong. The shrinker says what. Enumeration
 then holds the ground, because a shape once minimised is a shape the generator can be taught.
+
+## The fourth instrument: the fold state identifier — 28 August 2026
+
+Every instrument above starts from a failure the harness produced. A failure a *reader*
+produces arrives as prose — "collapse the conditional answer, then its supporter, and the badge
+lies" — which is a trail, and a trail is not a reproducer. So the fold state now has a name:
+one canonical line of text (About → Debug) that encodes the entire state — view, depth, every
+fold and hand-open, the per-section marks — against a fingerprint of the map's structure, so it
+refuses a file it does not belong to. Report a folding bug as the `.argdown` plus that line,
+paste the line back into the same build, and you are looking at the reported screen.
+
+It is an encoding, not a hash — a hash would identify the state and rebuild nothing — and it is
+canonical, so equal strings are equal states. `encodeFoldState` / `decodeFoldState` live beside
+`reduceFold` and are exercised by `test_fold_state_id.mjs`: 3,500 walked states round-trip to
+the identical string and the identical drawn picture, and damage, wrong-map, and
+fields-from-the-future are each refused with a sentence. The invariant harness prints the
+identifier with every failure and writes it into `--dump`, so a state the walk finds and a
+state a reader reports are now the same kind of object.

@@ -28,7 +28,8 @@ import { toGraph, RUN } from "./argdown-graph.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
-const { filterGraph, reduceFold, membersOfGroup, index, frameFor, textLane, laneChapter } =
+const { filterGraph, reduceFold, membersOfGroup, index, frameFor, textLane, laneChapter,
+        encodeFoldState } =
   require(path.join(HERE, "src", "argdown-live-map.js"));
 
 /** Is this a band of the by-position view rather than an Argdown section? */
@@ -468,9 +469,14 @@ function run(name, graph, byText) {
     for (const f of fails) {
       checks++;
       if (!seen.has(f.inv)) {
-        seen.set(f.inv, { msg: f.msg, trail: trail.slice() });
+        // The identifier of the PRE-action state, same convention as the dump: rebuild this,
+        // then perform the trail's last step by hand, and you are looking at the failure.
+        seen.set(f.inv, { msg: f.msg, trail: trail.slice(),
+                          id: state ? encodeFoldState(graph, Object.assign({}, state, { byText: !!byText }))
+                                    : null });
         if (DUMP && state) dumped.push({
           map: name, view: byText ? "by position" : "by argument", invariant: f.inv, msg: f.msg,
+          id: seen.get(f.inv).id,
           action,
           state: { collapsedGroups: [...state.collapsedGroups], collapsedNodes: [...state.collapsedNodes],
                    expandedNodes: [...state.expandedNodes], // The VALUES are Sets, and JSON turns a Set into `{}` — so a dump taken the obvious way
@@ -540,6 +546,9 @@ function run(name, graph, byText) {
     console.log(`   FAIL  ${inv}`);
     console.log(`         ${f.msg}`);
     console.log(`         after: ${f.trail.join(" -> ")}`);
+    // Paste this into About -> Debug -> The fold state of the same .argdown, perform the
+    // trail's last step by hand, and the failure is on screen instead of in a JSON dump.
+    if (f.id) console.log(`         state before the last step: ${f.id}`);
   }
   return seen.size;
 }

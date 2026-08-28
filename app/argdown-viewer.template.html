@@ -640,6 +640,15 @@ body.fs #fsexit{display:inline-flex}
   letter-spacing:.06em;color:var(--fg-dim)}
 #aboutmeta dt,#aboutdeps dt{font-weight:600}
 #aboutdeps dd{font-variant-numeric:tabular-nums}
+/* The fold state identifier: one long token, so it wraps anywhere and a click selects the
+   whole of it — the point is to be copied. */
+#foldstateid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+  word-break:break-all;cursor:pointer;user-select:all}
+#foldstatein{width:100%;box-sizing:border-box;margin:.2rem 0 .4rem;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
+  padding:.4rem .5rem;border:1px solid var(--line);border-radius:6px;
+  background:var(--bg);color:var(--fg)}
+#foldstateerr{font-size:.85em;color:#d9534f}
 #help pre.hx{background:var(--bg-alt,rgba(0,0,0,.04));padding:.5rem .6rem;border-radius:5px;
   font:11.5px/1.55 var(--argdown-font);
   font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual;
@@ -1460,6 +1469,46 @@ function fillAbout(){
       dt.textContent = r[0]; dd.textContent = r[1];
       dbg.append(dt, dd);
     });
+  }
+
+  // THE FOLD STATE IDENTIFIER — refreshed on every fill, unlike the rows above, because it
+  // names the state the reader is looking at NOW, and About opens many times per session.
+  var fid = $("foldstateid");
+  if (fid) {
+    try {
+      fid.textContent = (LIVE && CURRENT_GRAPH)
+        ? window.ArgdownLiveMap.encodeFoldState(CURRENT_GRAPH, LIVE.getState())
+        : "no map on screen";
+    } catch (e) { fid.textContent = "unavailable — " + ((e && e.message) || e); }
+  }
+  var go = $("foldstatego"), inp = $("foldstatein");
+  if (go && inp && !go.onclick) {
+    var applyFold = function(){
+      var err = $("foldstateerr"), s = (inp.value || "").trim();
+      if (!s || !LIVE || !CURRENT_GRAPH) return;
+      try {
+        var p = window.ArgdownLiveMap.decodeFoldState(CURRENT_GRAPH, s);
+        LIVE.setState({ collapsedGroups: p.collapsedGroups, collapsedNodes: p.collapsedNodes,
+                        expandedNodes: p.expandedNodes, groupFolded: p.groupFolded,
+                        collapsedLanes: p.collapsedLanes, depth: p.depth, facets: p.facets,
+                        spine: p.spine, expositionOrder: p.byText }, true);
+        inp.value = "";
+        if (p.byText && !LIVE.getState().byText) {
+          // setState fell back: the by-position view needs positions this build's graph does
+          // not carry. The rest of the state HAS been applied; say so rather than closing over it.
+          if (err) { err.textContent = "Applied, but this build has no by-position layout for " +
+                                       "this file, so the map stays in the by-argument view.";
+                     err.hidden = false; }
+        } else {
+          if (err) err.hidden = true;
+          closeAbout();
+        }
+      } catch (e2) {
+        if (err) { err.textContent = String((e2 && e2.message) || e2); err.hidden = false; }
+      }
+    };
+    go.onclick = applyFold;
+    inp.addEventListener("keydown", function(ev){ if (ev.key === "Enter") applyFold(); });
   }
 }
 
