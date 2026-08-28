@@ -41,28 +41,33 @@ import { spawnSync } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
-import { execFileSync } from "child_process";
+import * as esbuild from "esbuild";
 import { argdown } from "@argdown/node";
 import { toGraph, RUN, metadataProblems, parseProblems } from "./argdown-graph.mjs";
 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-/** The esbuild binary, by the name npm actually gave it on THIS platform.
+/** Bundle one entry point with esbuild, through its JS API rather than its command line.
  *
- *  npm writes a shim per platform: a bare `esbuild` shell script on macOS and Linux, and
- *  `esbuild.cmd` plus `esbuild.ps1` on Windows. There is no extensionless file there at all, so
- *  `execFileSync(".../node_modules/.bin/esbuild")` fails on Windows with a bare ENOENT that names
- *  the path it wanted and does not say the extension is the problem:
+ *  NOT THE `.bin` SHIM, ON ANY PLATFORM, and the reason is that the shim is a different artifact
+ *  on each. On macOS and Linux `node_modules/.bin/esbuild` is the 10 MB native binary itself; on
+ *  Windows npm writes `esbuild.cmd` and `esbuild.ps1` there and no extensionless file at all. So
+ *  a hardcoded bare name fails on Windows with ENOENT — and naming the `.cmd` instead then fails
+ *  with EINVAL, because Node has refused to `execFileSync` a `.cmd` or `.bat` since the
+ *  CVE-2024-27980 hardening. Both were found by the first release, one per attempt.
  *
- *      Error: spawnSync D:\a\ipsissima\ipsissima\app\node_modules\.bin\esbuild ENOENT
- *
- *  Found when the first release built the frontend on a Windows runner — this file had only ever
- *  run on macOS, where the bare name is right. Resolved once here rather than at the four call
- *  sites that each had their own copy of the path.
+ *  `shell: true` would get past that and bring Windows quoting with it, for paths this build
+ *  does not control. The API takes the same options with no shell, no shim and no quoting — and,
+ *  the deciding argument, it makes the code path IDENTICAL on every platform. What is tested here
+ *  on macOS is then the same code Windows runs, which the subprocess route could never be.
  */
-const ESBUILD = path.join(HERE, "node_modules", ".bin",
-                          process.platform === "win32" ? "esbuild.cmd" : "esbuild");
+function bundle(opts) {
+  esbuild.buildSync(Object.assign({
+    bundle: true, format: "iife", platform: "browser", target: "es2019",
+    minify: true, legalComments: "none", absWorkingDir: HERE
+  }, opts));
+}
 const BUILD = path.resolve(HERE, "src");
 const TEMPLATE = path.join(HERE, "argdown-viewer.template.html");
 const require = createRequire(import.meta.url);
@@ -158,10 +163,7 @@ window.__MARKDOWN__ = function (text) {
   return md.render(text);
 };
 `);
-  const esbuild = ESBUILD;
-  execFileSync(esbuild, [entry, "--bundle", "--format=iife", "--platform=browser",
-    "--target=es2019", "--minify", "--legal-comments=none", "--outfile=" + out],
-    { cwd: HERE, stdio: ["ignore", "ignore", "pipe"] });
+  bundle({ entryPoints: [entry], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(entry, { force: true }); fs.rmSync(out, { force: true });
   return wrap("markdown-it + footnotes", js, "LIVEMAP_DEPS");
@@ -239,16 +241,9 @@ window.__ARGDOWN_PARSE__ = function (source) {
   return toGraph(res);
 };
 `);
-  const esbuild = ESBUILD;
-  if (!fs.existsSync(esbuild))
-    throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
   try {
-    execFileSync(esbuild, [
-      entry, "--bundle", "--format=iife", "--platform=browser",
-      "--target=es2019", "--minify", "--legal-comments=none",
-      "--define:process.env.NODE_ENV=\"production\"",
-      "--outfile=" + out
-    ], { cwd: HERE, stdio: ["ignore", "ignore", "pipe"] });
+    bundle({ entryPoints: [entry], outfile: out,
+             define: { "process.env.NODE_ENV": '"production"' } });
   } finally {
     fs.rmSync(entry, { force: true });
   }
@@ -266,13 +261,7 @@ window.__ARGDOWN_PARSE__ = function (source) {
  */
 function editorBundle() {
   const out = path.join(HERE, ".editor-bundle.js");
-  const esbuild = ESBUILD;
-  if (!fs.existsSync(esbuild))
-    throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
-  execFileSync(esbuild, [
-    "argdown-editor.src.mjs", "--bundle", "--format=iife", "--platform=browser",
-    "--target=es2019", "--minify", "--legal-comments=none", "--outfile=" + out
-  ], { cwd: HERE, stdio: ["ignore", "ignore", "pipe"] });
+  bundle({ entryPoints: ["argdown-editor.src.mjs"], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(out, { force: true });
   return wrap("CodeMirror 6 + the Argdown mode", js, "EDITOR");
@@ -286,13 +275,7 @@ function editorBundle() {
  */
 function exportBundle() {
   const out = path.join(HERE, ".export-bundle.js");
-  const esbuild = ESBUILD;
-  if (!fs.existsSync(esbuild))
-    throw new Error("esbuild not installed. Run: npm install --save-dev esbuild");
-  execFileSync(esbuild, [
-    "argdown-export.src.mjs", "--bundle", "--format=iife", "--platform=browser",
-    "--target=es2019", "--minify", "--legal-comments=none", "--outfile=" + out
-  ], { cwd: HERE, stdio: ["ignore", "ignore", "pipe"] });
+  bundle({ entryPoints: ["argdown-export.src.mjs"], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(out, { force: true });
   return wrap("the .docx export (docx 9.x)", js, "EXPORTER");
