@@ -202,6 +202,11 @@ here"*, *"the analogy breaks down at exactly the point that matters"*.
 An undercut properly targets an **argument** (an inference has to exist to be undercut). The
 parser will let you undercut a statement; do not.
 
+**And it should come FROM an argument as well.** Both ends, not one. If the objection is worth
+making it has premises; give it them, and give it a premise-conclusion structure. A `<Title>: prose`
+argument with no numbered structure is a *sketch*, and a sketch is thin evidence for a move that
+denies an inference.
+
 ### Nesting
 
 Children of the same parent sit at the **same indentation**. Deeper indentation makes a child of

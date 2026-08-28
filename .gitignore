@@ -13,6 +13,8 @@ app/desktop/dist/
 app/desktop/src-tauri/target/
 app/desktop/src-tauri/gen/
 samples/**/*(map).html
+# Built from the display fixtures while checking a rendering change; the .argdown is the fixture.
+fixtures/**/*(map).html
 
 # The platform icon set is regenerated from icons/source.png with `npx tauri icon`.
 app/desktop/src-tauri/icons/*.png

@@ -1,0 +1,69 @@
+{
+  "//": "Files that cannot be published, named so the coverage is visible. The files are NOT in this repository. Point IPSISSIMA_PRIVATE_CORPUS at the folder holding them; anything reading this MUST skip cleanly when a file is absent. See docs/CORPUS.md.",
+  "env": "IPSISSIMA_PRIVATE_CORPUS",
+  "entries": [
+    {
+      "path": "Gettier 1963 - Is justified true belief knowledge",
+      "role": "reconstruction",
+      "format": "folder",
+      "private": "in copyright",
+      "catches": "a damaged text layer where OCR genuinely helps; the labelled repairs the converter is scored on"
+    },
+    {
+      "path": "Horton 2020 - Aggregation Risk and Reductio",
+      "role": "reconstruction",
+      "format": "folder",
+      "private": "in copyright",
+      "catches": "running heads, footnotes, printed page numbers that differ from sheet numbers"
+    },
+    {
+      "path": "greenspan.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "a premise-conclusion structure whose premises are not all bracketed -- the SCP rendering defect"
+    },
+    {
+      "path": "core argument of populism.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "statement mentions (@[...]) in quantity"
+    },
+    {
+      "path": "welcome to argdown.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "bold, italic and links in statement text"
+    },
+    {
+      "path": "semmelweiss.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "ten reconstructed arguments, for PCS rendering"
+    },
+    {
+      "path": "censorship.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "an ordinary map written by the language's author"
+    },
+    {
+      "path": "pros and cons legalisation of soft drugs.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "an ordinary map written by the language's author"
+    },
+    {
+      "path": "Word vs argdown.argdown",
+      "role": "display",
+      "format": "argdown",
+      "private": "Argdown's own sample map",
+      "catches": "an ordinary map written by the language's author"
+    }
+  ]
+}

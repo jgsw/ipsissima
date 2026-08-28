@@ -65,22 +65,29 @@ Use the **whole language**, not the part of it you are sure of:
 ### 4. Check, and fix what it finds
 
 ```
-check_reconstruction(argdown_path, source_root, format="json")
+check_reconstruction(path=..., source_root=...)
 ```
 
 Without the MCP server, the same thing on the command line:
 
 ```bash
-python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown --source-root DIR --format json
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown \
+    --source-root DIR --no-fix --format json
 ```
 
 Apply what it reports and run it again. **Fix the claim it names — do not rewrite the map.** A
 failing quotation is one claim to re-quote, not a reason to start again.
 
+`--no-fix` matters and the MCP tool passes it for you. Without it the checker will *correct the
+file's own `quotation`/`paraphrase` markers* whenever the front matter says `generated: true` —
+which is helpful once you have decided you want it, and disconcerting in the middle of a run
+when you did not ask.
+
 **Stop when the `!` findings are gone**, not when the report is empty. `!` is a fault; `?` is
 something to look at, and some of those are judgements you are entitled to make differently —
 a claim whose text is the author's words but which declares `paraphrase` is reported, and is
-sometimes exactly right. `--format json` gives `"ok": true` when nothing is a fault.
+sometimes exactly right. `ok` is `true` when no `!` remains; the `?` findings come back beside
+it, so read them once before you stop and act on the ones you agree with.
 
 ---
 
@@ -91,8 +98,12 @@ sometimes exactly right. `--format json` gives `"ok": true` when nothing is a fa
    claims is a report of the paper, whereas forcing them into one is a claim the paper does not
    make. What does not belong at the apex is loose framing material that was never attached.
 2. Every claim placed in the text — a `chapter`, and a verified `source` quotation wherever the
-   words allow.
-3. Every claim marked for fidelity, and every departure carrying a `warrant`.
+   words allow. *Placed*, not *annotated*: declare the `chapter` once in the front matter's
+   `defaults:` and override it only where a claim comes from a different file.
+3. Every claim marked for fidelity, and every departure carrying a `warrant`. **An
+   `<Argument>` takes a marker like any other claim, and usually should** — assembling premises
+   into a numbered structure is your work even where every step is the author's. The checker now
+   names every unmarked node, and on a first draft they are almost all arguments.
 4. Objections of the right kind, attributed to whoever made them.
 5. The author's hedges and scope intact. *Most* is not *all*.
 6. Nothing invented. If the source raises a point and drops it, the dropping is recorded.

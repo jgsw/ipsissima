@@ -74,11 +74,17 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .quit()
         .build()?;
 
+    // NEW COMES FIRST, as it does in every File menu, and it is the one that was missing: the
+    // app could open a reconstruction and could not begin one, so a blank start meant making an
+    // .argdown somewhere else first. It unloads what is open and asks before it does.
     let file_menu = SubmenuBuilder::new(app, "File")
+        .item(&item("new", "New Reconstruction", Some("CmdOrCtrl+N"))?)
+        .separator()
         .item(&item("open", "Open…", Some("CmdOrCtrl+O"))?)
         .item(&item("open-folder", "Open Folder…", Some("CmdOrCtrl+Shift+O"))?)
         .separator()
         .item(&item("save", "Save", Some("CmdOrCtrl+S"))?)
+        .item(&item("save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
         .item(&item("export", "Send This Back…", Some("CmdOrCtrl+E"))?)
         .separator()
         .close_window()
@@ -115,7 +121,12 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .fullscreen()
         .build()?;
 
+    // The walkthrough sits ABOVE the reference, because it is for the reader who cannot yet
+    // tell which topic in the reference answers their question. It is also where the tour
+    // itself says it will be found when somebody turns it off, so the two have to agree.
     let help_menu = SubmenuBuilder::new(app, "Help")
+        .item(&item("walkthrough", "Take the Walkthrough", None)?)
+        .separator()
         .item(&item("help", "How to Use Ipsissima", Some("CmdOrCtrl+/"))?)
         .item(&item("about", "About Ipsissima", None)?)
         .build()?;

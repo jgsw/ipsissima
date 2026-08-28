@@ -23,36 +23,120 @@ began. `zotero_get_item_children` reports what an item has; this decides what to
 from __future__ import annotations
 
 import argparse
+import contextlib
+import glob
+import os
+import re
 import sqlite3
 import shutil
 import tempfile
 from pathlib import Path
 
-ZOTERO = Path.home() / "Zotero"
-STORAGE = ZOTERO / "storage"
+#: The newest `userdata` schema this file has been read against. Zotero's layout is not a public
+#: interface, and every query below names columns in it. Refusing above a checked ceiling turns a
+#: silently wrong answer into a message; see `_check_schema`.
+SCHEMA_MAX = 129
 
 #: Best first. The number is only for reporting; the order of the list is what decides.
 ROUTES = [("application/epub+zip", "epub"), ("text/html", "html"), ("application/pdf", "pdf")]
 
 
+def data_dir():
+    """Where Zotero actually keeps its data.
+
+    NOT `~/Zotero`, WHICH IS ONLY THE DEFAULT. A relocated data directory used to fail
+    invisibly rather than loudly: `_zotero_available()` in the server gates tool REGISTRATION,
+    so the result was not an error but a server with no Zotero tool in it and nothing saying
+    why. Honours `ZOTERO_DATA_DIR`, then the profile's own `extensions.zotero.dataDir`, then
+    the default.
+    """
+    env = os.environ.get("ZOTERO_DATA_DIR")
+    if env:
+        return Path(env).expanduser()
+    for prefs in glob.glob(str(Path.home() / "Library" / "Application Support" / "Zotero"
+                               / "Profiles" / "*" / "prefs.js")):
+        try:
+            text = Path(prefs).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        m = re.search(r'user_pref\("extensions\.zotero\.dataDir",\s*"((?:[^"\\]|\\.)*)"\)', text)
+        if m:
+            return Path(m.group(1).encode().decode("unicode_escape")).expanduser()
+    return Path.home() / "Zotero"
+
+
+def storage_dir():
+    return data_dir() / "storage"
+
+
+def _check_schema(db):
+    """Refuse a layout this file has not been read against, rather than answer wrongly."""
+    try:
+        row = db.execute("SELECT version FROM version WHERE schema='userdata'").fetchone()
+    except sqlite3.Error:
+        return                                  # no version table: leave it to the queries
+    if row and row[0] > SCHEMA_MAX:
+        raise SystemExit(
+            f"Zotero's userdata schema is version {row[0]}; this has been checked against "
+            f"{SCHEMA_MAX}.\nThe queries here name columns in a layout that is not a public "
+            "interface, so a newer one may\nreturn the wrong rows rather than fail. Check "
+            "`attachments()` against the new schema and raise\nSCHEMA_MAX in from_zotero.py.")
+
+
+@contextlib.contextmanager
 def _db():
     """A COPY of the Zotero database. Never the live file: Zotero holds it open, and a reader
-    that locks it can stop the application writing."""
-    tmp = Path(tempfile.mkdtemp()) / "z.sqlite"
-    shutil.copy(ZOTERO / "zotero.sqlite", tmp)
-    return sqlite3.connect(tmp)
+    that locks it can stop the application writing.
+
+    THE WRITE-AHEAD LOG IS PART OF THE DATABASE. Copying `zotero.sqlite` alone gets a database
+    with no WAL to recover, so every transaction Zotero has committed but not yet checkpointed
+    is simply absent -- measured on this library, 2000 rows of 2001. That is not an abstract
+    loss: it is exactly the workflow this module's own docstring describes, where the connector
+    has just saved a paper. The tool then reports "nothing in Zotero matches", which is a claim
+    about the library and not about our copy of it.
+
+    MAIN FILE FIRST, then the WAL: copied the other way round, the WAL can be checkpointed away
+    between the two reads and the copy is the older of the two states rather than the newer.
+    Opened WITHOUT `immutable`, because immutable is precisely the flag that says "assume no
+    WAL" -- it is what zotero-mcp uses, and it is why they have the same blind spot.
+
+    RELEASED WHEN DONE. This used to be `tempfile.mkdtemp()` with no cleanup, so every lookup
+    left 56 MB behind until the machine was rebooted.
+    """
+    src = data_dir() / "zotero.sqlite"
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td) / "z.sqlite"
+        shutil.copy(src, tmp)
+        wal = src.with_name("zotero.sqlite-wal")
+        if wal.exists():
+            shutil.copy(wal, tmp.with_name("z.sqlite-wal"))
+        db = sqlite3.connect(tmp)
+        try:
+            _check_schema(db)
+            yield db
+        finally:
+            db.close()
+
+
+def _like(fragment):
+    """A user's literal string, made safe for LIKE.
+
+    `%` AND `_` ARE WILDCARDS IN A PATTERN and ordinary characters in a title. Interpolated
+    unescaped, a search for "50%" matched every item in the library and a search for "a_b"
+    matched "aXb" -- silently, and as though those were the answer.
+    """
+    return "%" + fragment.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 
 
 def attachments(item_key=None, doi=None, title=None):
     """Every local attachment of the matching item(s): [{key, kind, path, title, journal}]."""
-    db = _db()
     where, args = [], []
     if item_key:
         where.append("parent.key = ?"); args.append(item_key)
     if doi:
         where.append("LOWER(doiv.value) = LOWER(?)"); args.append(doi)
     if title:
-        where.append("titlev.value LIKE ?"); args.append(f"%{title}%")
+        where.append("titlev.value LIKE ? ESCAPE '\\'"); args.append(_like(title))
     sql = """
       SELECT att.key, ia.contentType, ia.path, titlev.value, pubv.value, parent.key
       FROM itemAttachments ia
@@ -65,10 +149,25 @@ def attachments(item_key=None, doi=None, title=None):
       LEFT JOIN itemData dD ON dD.itemID=parent.itemID AND dD.fieldID=(SELECT fieldID FROM fields WHERE fieldName='DOI')
       LEFT JOIN itemDataValues doiv ON doiv.valueID=dD.valueID
       WHERE ia.path LIKE 'storage:%'
-    """ + ("".join(" AND " + w for w in where))
+        -- THE TRASH IS NOT THE LIBRARY. A deleted attachment, or a live attachment hanging off a
+        -- deleted parent, is still joined by every table above -- Zotero marks rather than
+        -- removes. Eleven items in this library are currently reachable through a deleted
+        -- parent, and returning one means offering a file the user believes they threw away.
+        AND att.itemID NOT IN (SELECT itemID FROM deletedItems)
+        AND parent.itemID NOT IN (SELECT itemID FROM deletedItems)
+    """ + ("".join(" AND " + w for w in where)) + """
+      -- DETERMINISTIC, so `best()` returns the same attachment on every run of one library.
+      -- Without it the order is whatever the query plan happened to produce, and a re-saved
+      -- snapshot could win or lose from run to run. Newest first: where a page has been saved
+      -- twice, the later save is the one the reader meant.
+      ORDER BY att.dateAdded DESC, att.key
+    """
     out = []
-    for akey, ctype, path, ttl, pub, pkey in db.execute(sql, args):
-        f = STORAGE / akey / path.split("storage:", 1)[1]
+    storage = storage_dir()
+    with _db() as db:
+        rows = list(db.execute(sql, args))
+    for akey, ctype, path, ttl, pub, pkey in rows:
+        f = storage / akey / path.split("storage:", 1)[1]
         if not f.exists():
             continue
         kind = next((k for ct, k in ROUTES if ct == ctype), None)

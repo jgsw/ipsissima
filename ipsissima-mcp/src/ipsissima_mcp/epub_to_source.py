@@ -46,7 +46,17 @@ FURNITURE = re.compile(
     # The bibliography goes for the same reason it goes in the article pipeline: it is a list of
     # other people's titles and it swamps any search of the author's own prose. NOTES stay --
     # in a scholarly book they carry argument, and they are what the reconstruction will cite.
-    r"|references\b|bibliography|works\s+cited|further\s+reading)", re.I)
+    r"|references\b|bibliography|works\s+cited|further\s+reading"
+    # PROJECT GUTENBERG WRAPS EVERY TEXT IT SERVES, and it is the source for out-of-copyright
+    # philosophy, so this is not one book's quirk. The licence runs to some 2,900 words of legal
+    # boilerplate carrying the same words as the book around it -- on Russell's `Problems of
+    # Philosophy` it survived as a chapter, which is 2,900 words a reconstruction could quote
+    # and attribute to Russell. Matched narrowly, on the licence rather than on the name: a
+    # chapter genuinely ABOUT Project Gutenberg keeps its place.
+    r"|(the\s+)?full\s+project\s+gutenberg"
+    r"|project\s+gutenberg[^\n]{0,24}licen[cs]e"
+    r"|start\s+of\s+(the\s+)?project\s+gutenberg"
+    r"|end\s+of\s+(the\s+)?project\s+gutenberg)", re.I)
 
 
 XHTML = "{http://www.w3.org/1999/xhtml}"

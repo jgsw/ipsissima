@@ -1,0 +1,11 @@
+project:
+  type: book
+
+book:
+  title: "R (on the application of Miller) v The Prime Minister"
+  author: "The Supreme Court of the United Kingdom"
+  chapters:
+    - "source/miller-2019-uksc-41.md"
+
+# The provenance tooling reads this file to learn the reading order. Without it every claim falls
+# out of the exposition-order view. The path must match the `chapter:` metadata in the .argdown.

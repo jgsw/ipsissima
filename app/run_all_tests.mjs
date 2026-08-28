@@ -38,12 +38,19 @@ const SUITES = [
   ["edge direction (arrowheads)", "node", [path.join(BUILD, "test_edge_direction.js")]],
   ["re-seat vs edge routes",     "node", [path.join(BUILD, "test_reseat_edges.js")]],
   ["fold invariants (state space)", "node", [path.join(HERE, "test_fold_invariants.mjs"), "--steps", "1500"]],
+  ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
   ["source pane cleanup",        "node", [path.join(HERE, "test_source_pane.mjs")]],
+  // The Reader and the page it EXPORTS must be the same program. They came apart once, by two
+  // entries in a list that existed twice, and four separate faults were reported before the
+  // one cause was found. See the header of test_page_parity.mjs.
+  ["the exported page is the Reader", "node", [path.join(HERE, "test_page_parity.mjs")]],
   ["annotated export (docx/md)", "node", [path.join(HERE, "test_export.mjs")]],
   ["the one-file bundle",        "node", [path.join(HERE, "test_bundle.mjs")]],
   ["how the parser fails",       "node", [path.join(HERE, "test_parse_failure.mjs")]],
+  ["relation colours",           "node", [path.join(HERE, "test_relation_colours.mjs")]],
+  ["the private corpus",         "node", [path.join(HERE, "test_private_corpus.mjs")]],
   ["the documented examples",    "node", [path.join(HERE, "test_cheatsheet.mjs")]],
   ["the desktop host adapter",   "node", [path.join(HERE, "test_host.mjs")]],
   ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
@@ -54,8 +61,10 @@ const SUITES = [
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],
+  ["reading Zotero safely",      PY, [path.join(PYTESTS, "test_zotero.py")]],
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),
                                                 "--self-test"]],
+  ["the PDF probe",              PY, [path.join(MCP, "eval", "probe_pdf.py"), "--self-test"]],
   // Last, because it is the slow one and the only one that measures how the maps LOOK.
   ["map quality vs baseline",    "node", [path.join(HERE, "map_quality.mjs")]]
 ];

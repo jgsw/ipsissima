@@ -43,7 +43,7 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { execFileSync } from "child_process";
 import { argdown } from "@argdown/node";
-import { toGraph, RUN, metadataProblems } from "./argdown-graph.mjs";
+import { toGraph, RUN, metadataProblems, parseProblems } from "./argdown-graph.mjs";
 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -56,8 +56,11 @@ const require = createRequire(import.meta.url);
 const yaml = require("js-yaml");
 // The one-file container, shared with the page so that "what a bundle is" is defined once.
 const BUNDLE = require(path.join(BUILD, "argdown-bundle.js"));
-
-const MARKER = /[ \t]*<!--\s*INLINE:([A-Z_]+)\s*-->[ \t]*\n?/g;
+// And the section list, shared with the page for exactly the same reason -- see the header of
+// argdown-page.js for what having TWO of them cost. The marker vocabulary, the substitution and
+// the JSON escaping all live there now; nothing in this file may keep a second copy of any of
+// them, because the page's copy of the copy is the one nobody looks at.
+const PAGE = require(path.join(BUILD, "argdown-page.js"));
 
 /** A literal </script> inside a payload would close the wrapper early.
  *
@@ -71,10 +74,9 @@ const wrap = (label, body, part) =>
   `<!-- ${label} -->\n<script${part ? ` data-part="${part}"` : ""}>\n` +
   `${body.replace(/<\/script/gi, "<\\/script")}\n</script>\n`;
 
-/** JSON that is safe to sit inside a <script> body. `wrap` handles the close tag; U+2028 and
- *  U+2029 are literal line terminators in JS source and have to go too. */
-const safeJSON = (value) =>
-  JSON.stringify(value).replace(/[\u2028\u2029]/g, c => "\\u" + c.charCodeAt(0).toString(16));
+/** JSON that is safe to sit inside a <script> body. One implementation, in argdown-page.js,
+ *  because the browser needs the identical rule when it writes a payload of its own. */
+const safeJSON = PAGE.safeJSON;
 
 /** Read a script that will be inlined, and SYNTAX-CHECK it first.
  *
@@ -162,6 +164,10 @@ function liveMapDeps() {
          // `ArgdownExposition` at layout time to put a sparkline on every band header, and a
          // classic script that is not there yet is simply undefined.
          wrap("argdown-exposition.js", readScript("argdown-exposition.js"), "LIVEMAP_DEPS") +
+         // What a page is made of, so that the page can build one. In EVERY build, and before
+         // the main script: `exportPage` asks it which of this page's own sections a copy
+         // carries, and a classic script that is not there yet is simply undefined.
+         wrap("argdown-page.js", readScript("argdown-page.js"), "LIVEMAP_DEPS") +
          // The one-file container. 5 KB, and in EVERY build including the read-only ones,
          // because opening a bundle is the common case now: it is what gets emailed. A viewer
          // that could not open one would be a viewer that could not open the file it was sent.
@@ -179,7 +185,7 @@ function parserBundle() {
   const out = path.join(HERE, ".viewer-bundle.js");
   fs.writeFileSync(entry, `
 import { argdown } from "@argdown/core";
-import { toGraph, RUN, metadataProblems, withComment } from "./argdown-graph.mjs";
+import { toGraph, RUN, metadataProblems, parseProblems, withComment } from "./argdown-graph.mjs";
 // The text surgery for adding and removing comments, so the page can edit a file without
 // anyone having to know that a metadata block is YAML.
 window.__ARGDOWN_COMMENT__ = { withComment: withComment };
@@ -201,6 +207,18 @@ window.__ARGDOWN_PARSE__ = function (source) {
     throw e;
   }
   const res = argdown.run({ input: source, ...RUN });
+  // A SYNTAX ERROR IS RETURNED, NOT THROWN. Unread, it left a truncated document behind and the
+  // map came out empty with nothing said. The old guard on a missing map caught some of these
+  // and said only that there was no map, which tells a reader nothing they can act on; this
+  // names the line. (No back-ticks in this comment: it is injected into a template literal.)
+  const broke = parseProblems(res, source);
+  if (broke.length) {
+    const first = broke[0];
+    const e = new Error("Syntax error at line " + first.line + ", column " + first.column +
+                        ": " + first.message);
+    e.parse = broke;
+    throw e;
+  }
   if (!res.map) throw new Error("Argdown produced no map for this input");
   return toGraph(res);
 };
@@ -282,8 +300,16 @@ function exportBundle() {
 function helpPart() {
   const md = fs.readFileSync(path.join(HERE, "help.md"), "utf8");
   const about = fs.readFileSync(path.join(HERE, "about.md"), "utf8");
+  // THE FILE A NEW RECONSTRUCTION STARTS FROM, and it rides in this section because it is the
+  // same kind of thing as the other two: prose that ships with the build and gets revised as
+  // prose. Keeping it as a real .argdown rather than a string in the template is what lets the
+  // test suite parse it — a starter file that does not parse would teach the syntax wrongly to
+  // the one person guaranteed not to spot it.
+  const starter = fs.readFileSync(path.join(HERE, "new-reconstruction.argdown"), "utf8");
   return wrap("help.md", `window.__HELP_MD__ = ${safeJSON(md)};`, "HELP") +
-         wrap("about.md", `window.__ABOUT_MD__ = ${safeJSON(about)};`, "HELP");
+         wrap("about.md", `window.__ABOUT_MD__ = ${safeJSON(about)};`, "HELP") +
+         wrap("new-reconstruction.argdown",
+              `window.__STARTER_ARGDOWN__ = ${safeJSON(starter)};`, "HELP");
 }
 
 function buildStamp() {
@@ -391,10 +417,28 @@ function attachPositions(graph, root, argdownPath, attached) {
   // reader of the map that they are looking at the author's words when they are looking at a
   // summary. That is the misleading this override exists to stop.
   //
-  // The rule is NOT reimplemented here. It leans on difflib's near-match, which has no clean
-  // JavaScript equivalent, and one rule in two languages is the drift hazard that
-  // test_argdown_positions.mjs already exists to police. So the build asks check_argdown.py and
-  // uses its answer.
+  // The rule is NOT reimplemented here, and the reason given for that HAS EXPIRED — read this
+  // before deciding where the rule should live.
+  //
+  // It used to say: "it leans on difflib's near-match, which has no clean JavaScript
+  // equivalent". That was true of the rule this replaced, which accepted anything scoring 0.75
+  // similarity over a window. `_is_verbatim` in argdown_provenance.py has since been tightened
+  // to a CONTIGUOUS RUN — fold whitespace and case, strip punctuation, ask whether the claim is
+  // a substring of the source — and touches difflib nowhere. See its own docstring, which says
+  // so; only these comments still describe the old rule.
+  //
+  // Measured 27 Aug 2026: the JavaScript equivalent is four lines on top of
+  // `ArgdownPositions.normalise`, which is ALREADY inlined into every build and already
+  // cross-checked against the Python by test_argdown_positions.mjs. Run over the whole published
+  // corpus it agreed with this checker on 251 of 251 adjudicated claims — 79 quotation, 172
+  // paraphrase, no disagreements.
+  //
+  // Why that matters more than the tidiness: this call is the ONLY place fidelity is ever
+  // derived, and it runs only for a per-file build given `--source-root`. A folder opened in the
+  // app, a folder dropped on the standalone, and a bundle built without a folder all draw
+  // borders exactly as the file declares them — which on this corpus was wrong 6 times. The
+  // status line says "borders as declared, not checked" in those cases, honestly, but honesty
+  // about an unchecked border is not the same as a checked one.
   //
   // Only `quotation` and `paraphrase` are ever adjudicated. `interpretation` and `imputation`
   // are judgements about the READING, not facts about the words, and nothing here may touch
@@ -470,20 +514,25 @@ function templateText() {
   const b64 = fs.readFileSync(woff2).toString("base64");
   if (!html.includes("__ARGVU_WOFF2__"))
     throw new Error("the template has no __ARGVU_WOFF2__ slot — the @font-face rule was lost");
+  // THE TEMPLATE AND THE SECTION LIST HAVE TO AGREE, and this is the only moment either is
+  // read. A marker added to the HTML without being added to `PARTS` would be filled here (the
+  // builder enumerates its own parts object) and dropped by the page's export (which asks
+  // argdown-page.js what a copy carries) -- so the section would be missing from the file
+  // somebody was SENT and present in every file built here, which is the shape of the bug this
+  // whole arrangement exists to make impossible. Better no artifact than a lying one.
+  const wrong = PAGE.checkTemplate(html);
+  if (wrong.length)
+    throw new Error("the template and argdown-page.js disagree about what a page is made of:\n" +
+                    wrong.map(w => "  " + w).join("\n"));
   TEMPLATE_TEXT = html.replace("__ARGVU_WOFF2__", () => b64);
   return TEMPLATE_TEXT;
 }
 
 function fill(parts) {
-  const html = templateText();
-  const seen = new Set();
-  const out = html.replace(MARKER, (m, key) => {
-    seen.add(key);
-    return parts[key] != null ? parts[key] : "";
-  });
-  for (const k of Object.keys(parts))
-    if (!seen.has(k)) throw new Error(`template has no INLINE:${k} marker`);
-  return out;
+  const r = PAGE.fill(templateText(), parts);
+  if (r.missing.length)
+    throw new Error(`template has no INLINE:${r.missing.join(", INLINE:")} marker`);
+  return r.html;
 }
 
 async function main() {
@@ -563,6 +612,23 @@ async function main() {
       process.exit(1);
     }
     const res = await argdown.runAsync({ input: source, ...RUN });
+    // AND A SYNTAX ERROR STOPS IT TOO, for the reason the braces do. The parser reports these
+    // by returning them rather than raising, so an unread `parserErrors` meant a file with one
+    // bad line built an 875 KB page saying `0 nodes, 0 edges` and exited 0. Better no artifact
+    // than a lying one.
+    const broke = parseProblems(res, source);
+    if (broke.length) {
+      console.error(`\n  ${path.basename(src)} has ${broke.length} syntax error(s).`);
+      console.error("  Argdown reports these by returning them rather than raising, so the");
+      console.error("  document is truncated at the fault and the map would be built from");
+      console.error("  whatever survived.\n");
+      for (const b of broke) {
+        console.error(`    line ${b.line}, column ${b.column}: ${b.message}`);
+        if (b.text) console.error(`      ${b.text}`);
+      }
+      console.error("\n  Nothing was written.");
+      process.exit(1);
+    }
     if (!res.map) throw new Error(`Argdown produced no map for ${input}`);
     if (wantsEditor && !parts.PARSER) parts.PARSER = parserBundle();
     // CARRIED ONLY WHERE THERE IS SOMETHING TO EXPORT. 350 KB is worth it on a map whose margins

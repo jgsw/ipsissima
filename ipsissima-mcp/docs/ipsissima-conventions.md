@@ -64,6 +64,21 @@ The map draws it as the border of the box, so it is visible without opening anyt
 matter, so the checker computes it rather than believing you: it takes the claim's own text, looks
 for it in the cited source, and reports every mismatch. Mark your best guess and run the checker.
 
+**And it is more forgiving than it looks.** The comparison normalises **punctuation, quotation
+marks, dashes and case**, so none of these stops a claim counting as a quotation:
+
+| still a `quotation` | |
+|---|---|
+| dropping a leading *"Recall that"* | you may quote from mid-sentence |
+| `“curly”` against `"straight"` | and en-dash against hyphen |
+| lower-casing an opening capital | to fit the claim into your own syntax |
+| removing the parentheses from *"spatial (and sensorimotor) strategies"* | punctuation only |
+
+What it does **not** forgive is changing a word, or joining two passages that are not adjacent —
+which is a `splice`, reported separately. Knowing this is worth saying out loud: a reconstruction
+that did not know it spent ten pre-emptive corrections downgrading claims that were quotations
+all along.
+
 This became a check because instruction did not work. The first test of these instructions got the
 marker wrong 8 times in 14; stating the rule explicitly halved the rate on the next paper and did
 not remove it; across six reference reconstructions 38 of 126 were wrong, always in the same

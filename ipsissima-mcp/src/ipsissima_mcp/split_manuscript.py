@@ -40,6 +40,19 @@ import re
 import sys
 
 H1 = re.compile(r"^#\s+(.*?)\s*$")
+
+
+def heading_re(level=1):
+    """The pattern for a chapter heading at `level`.
+
+    WHY THIS IS NOT ALWAYS `#`. A book converted from an EPUB has whatever heading levels its
+    publisher used, and they are not a convention -- they are that publisher's markup. Project
+    Gutenberg sets the book's title as `<h1>` and every chapter as `<h2>`, so a fifteen-chapter
+    Russell arrives with exactly two `#` headings in it and splits into two chapters. The
+    exposition view bands claims by chapter file, so that is not a cosmetic loss: thirteen bands
+    the reader should have had simply do not exist.
+    """
+    return re.compile(r"^#{%d}\s+(.*?)\s*$" % level)
 LABEL = re.compile(r"\\?\[(?:chap|sec|fig|tab|eq):[^\]]*\\?\]")
 FOOTNOTE_DEF = re.compile(r"^\[\^([^\]]+)\]:")
 FOOTNOTE_REF = re.compile(r"\[\^([^\]]+)\]")
@@ -81,9 +94,10 @@ def classify(title):
     return "matter", None, clean
 
 
-def split(path):
+def split(path, level=1):
     lines = open(path, encoding="utf-8").read().splitlines()
     meta, start = frontmatter(lines)
+    HEAD = heading_re(level)
 
     # Footnote definitions live in a block at the end; lift them out before splitting.
     defs, body = {}, []
@@ -93,7 +107,8 @@ def split(path):
         if mo:
             block = [lines[i]]
             i += 1
-            while i < len(lines) and not FOOTNOTE_DEF.match(lines[i]) and not H1.match(lines[i]):
+            while i < len(lines) and not FOOTNOTE_DEF.match(lines[i]) \
+                    and not HEAD.match(lines[i]):
                 block.append(lines[i])
                 i += 1
             defs[mo.group(1)] = [l for l in block]
@@ -108,11 +123,11 @@ def split(path):
     # that would have found it.
     sections, cur = [], None
     for line in body:
-        mo = H1.match(line)
+        mo = HEAD.match(line)
         if mo:
             kind, num, clean = classify(mo.group(1))
             cur = dict(kind=kind, number=num, title=clean, raw=mo.group(1),
-                       lines=["# " + clean])
+                       lines=["# " + clean])   # normalised to `#` in its own file
             sections.append(cur)
             continue
         if cur is None:
@@ -131,9 +146,34 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--title")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--level", type=int, default=1, metavar="N",
+                    help="split on headings at this level (default 1, i.e. `#`). An EPUB keeps "
+                         "its publisher's levels: Project Gutenberg sets chapters as `##`, so a "
+                         "book from there needs --level 2.")
     a = ap.parse_args()
 
-    meta, sections, defs = split(a.book)
+    meta, sections, defs = split(a.book, a.level)
+
+    # EVERY ASSUMPTION IS PRINTED, and the level is now one of them. Splitting a fifteen-chapter
+    # book into two is not an error anything can detect from the inside -- the two files are
+    # valid, the words are all there, and only the count says something went wrong. So look one
+    # level deeper and say so when that is plainly where the chapters are.
+    # COUNT WHAT IS ACTUALLY PRODUCED, not what `classify` calls a chapter. Russell's headings
+    # are "CHAPTER I. APPEARANCE AND REALITY", which does not begin with a digit and so is filed
+    # as matter -- so a filter on `kind` reports nothing at either level and the check never
+    # fires. The number of files this will write is the honest measure.
+    if len(sections) <= 2:
+        deeper = split(a.book, a.level + 1)[1]
+        if len(deeper) > max(2, len(sections) * 2):
+            print(f"   ! this splits into {len(sections)} file(s) at level {a.level}, but "
+                  f"{len(deeper)} at level {a.level + 1}.")
+            print(f"     The chapters are probably `{'#' * (a.level + 1)}` -- an EPUB keeps its "
+                  f"publisher's heading levels. Re-run with --level {a.level + 1}:")
+            for s in deeper[:6]:
+                print(f"        {s['title'][:64]}")
+            if len(deeper) > 6:
+                print(f"        … and {len(deeper) - 6} more")
+            print()
     title = a.title or meta.get("title") or os.path.splitext(os.path.basename(a.book))[0]
 
     # Assign each section to a part. Chapters before the first marker form an implicit part.

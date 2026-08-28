@@ -307,6 +307,26 @@ function positions(nodes, sources, quarto) {
       var wide = locateParagraph(n.detail, all, 1, all.length);
       if (wide.line) { place.line = wide.line; place.precision = "paragraph"; }
     }
+    // ---- IS THE BORDER TRUE? -----------------------------------------------------------
+    // THE MAP DRAWS A SOLID BORDER FOR `quotation`, which is a claim that these are the
+    // author's own words — and until now the app drew it AS DECLARED. `--derive-fidelity`
+    // checks it, but it has exactly one caller: the builder, and only when given
+    // `--source-root`. A folder opened in the app, a folder dropped on the standalone, a
+    // bundle, and every exported page never asked. Those are the ordinary ways to read a
+    // reconstruction now, so the border was believed rather than checked almost everywhere.
+    //
+    // This is the seam to do it at because the manuscript is already here: `positions` is
+    // handed the source text of every chapter in order to place the claim in it. Nothing
+    // new is loaded and nothing new is parsed.
+    //
+    // COMPUTED, NOT ADJUDICATED. This records what the words are; it does not decide what
+    // the border should be. `interpretation`, `imputation` and `compression` are judgements
+    // about the reading and nothing here is entitled to touch them — the same line
+    // `check_argdown.py` draws. The renderer reads `verbatim` and may say that a claim
+    // declaring `quotation` is not one; it must not silently redraw it as something else.
+    var chapterText = sources[n.chapter];
+    place.verbatim = chapterText == null ? null
+                   : isVerbatim(n.detail || n.label || "", chapterText);
     byId[n.id] = place;
   }
 
@@ -428,11 +448,54 @@ function wordCounts(sources) {
   return { total: total, byChapter: byChapter, bySection: bySection };
 }
 
+/** Is this claim the source's WORDS — allowing punctuation and case to differ, but nothing else?
+ *
+ *  THE SECOND IMPLEMENTATION OF ONE RULE, and deliberately so. `argdown_provenance._is_verbatim`
+ *  is the other. That is normally the thing this project refuses, and the reason it is right here
+ *  is worth setting out, because the comment it replaces gave a different reason that has expired.
+ *
+ *  WHAT THE OLD COMMENTS SAID: that the rule "leans on difflib and has no clean JavaScript
+ *  equivalent", so the build asks Python rather than working it out again. That described the
+ *  rule this one REPLACED — 0.75 similarity over a window. The current rule is: fold punctuation
+ *  and case away, then ask whether the claim appears as a contiguous run of the source. There is
+ *  no difflib in it and there never needs to be.
+ *
+ *  WHY DUPLICATE RATHER THAN MOVE. Python's copy cannot go: `--fix` writes markers with it and
+ *  the MCP reading checks use it, and making a Python server shell out to Node is a worse
+ *  dependency than four pinned lines. And the border cannot keep being asked of Python, because
+ *  `--derive-fidelity` has exactly one caller — the builder, and only when given `--source-root`.
+ *  A folder opened in the app, a folder dropped on the standalone, a bundle, and every exported
+ *  page draw the border AS DECLARED. Those are now the ordinary ways to read a reconstruction,
+ *  and "the border is checked rather than believed" is close to the point of the program.
+ *
+ *  So it is duplicated and PINNED: `test_argdown_positions.mjs` cross-checks this against the
+ *  Python on the whole corpus, which is the same answer this project already gives for the
+ *  positions rule and the reason that file exists.
+ *
+ *  ONE TRAP, and it is the only place the two languages can drift. Python's `\w` is
+ *  Unicode-aware and JavaScript's is ASCII-only, so `/[^\w\s]+/` would treat every accented
+ *  letter as punctuation here and as a letter there — on a corpus with Etiévant and naïve in it
+ *  that is not hypothetical. `\p{L}\p{N}_` with the `u` flag is what Python's `\w` means.
+ */
+function foldPunctuation(text) {
+  return normalise(text).text.toLowerCase()
+    .replace(/[^\p{L}\p{N}_\s]+/gu, " ")
+    .split(/\s+/).join(" ").trim();
+}
+
+function isVerbatim(claim, body) {
+  var a = foldPunctuation(claim);
+  if (!a) return false;
+  return foldPunctuation(body).indexOf(a) >= 0;
+}
+
+
 var API = { positions: positions, readingOrder: readingOrder, headingIndex: headingIndex,
             wordCounts: wordCounts,
             sectionSpan: sectionSpan, locateParagraph: locateParagraph,
             bandLevel: bandLevel, sectionOfLine: sectionOfLine,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
+            isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownPositions = API;

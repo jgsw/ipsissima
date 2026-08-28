@@ -262,13 +262,48 @@ Three things read or write one:
   the attachment back, so a bundle that is commented on stays a bundle.
 * **the Export menu** — writes one, and also writes a **self-contained page**: a copy of the
   viewer with the whole reconstruction baked in, assembled in the browser from its own inlined
-  scripts. ~550 KB read-only, ~1.9 MB with the editor. That is the artifact for a reader who has
-  nothing — they double-click it.
+  scripts. ~1.1 MB for the Akhlaghi reconstruction, most of it the manuscript. That is the
+  artifact for a reader who has nothing — they double-click it.
 
 The page export needs `window.__ARGDOWN_SHELL__` (the template, carried as text) and the
 `data-part` attribute on every inlined `<script>`; both are added by `build_argdown_viewer.mjs`
-for the two standalone builds only. What it produces is the same artifact the per-file Node build
-produces — deliberately, so there is never a second kind of viewer to keep in step.
+for the two standalone builds only.
+
+#### The two routes came apart, and what stops them doing it again — 27 Aug 2026
+
+The paragraph above used to end "what it produces is the same artifact the per-file Node build
+produces — deliberately, so there is never a second kind of viewer to keep in step". That was the
+intention and it was not true, because **the list of what a page is made of existed twice**: once
+as the builder's `parts` object, once as a literal inside the page's `pageParts`. They differed by
+two entries, `HELP` and `STAMP`.
+
+The cost was out of all proportion to the cause. `help.md` carries six elements the program writes
+into — `helpstats`, `helpArrangeNote`, `relkey`, `fidkey`, `aboutdeps`, `aboutdebug` — so in an
+exported page `statsLine` reached `$("helpstats").textContent` on nothing, threw, and **took the
+rest of `render` with it**. Reported as four separate faults: the Help panel empty but for "About
+Ipsissima", no Notes tab, the Exposition button doing nothing, and no relation key. One forgotten
+array entry, and no test, no build warning and nothing on screen said so.
+
+The fix is `app/src/argdown-page.js`, the same shape as `argdown-bundle.js`: a classic script
+inlined into every build and `require`d by the builder, holding the section list, the marker
+regex, the substitution and the JSON escaping. Two things about it are worth keeping:
+
+* **the page names what it DROPS, not what it keeps.** A keep-list has to be remembered when a
+  section is added; a drop-list has to be argued for. An exported page now carries everything the
+  page it came from has, minus `PARSER`, `EDITOR`, `EXPORTER` and `SHELL` — four bundles that are
+  a hundred kilobytes or more each and that a reading copy has no use for.
+* **the build refuses to write a page whose template and section list disagree** (`checkTemplate`),
+  so a ninth `INLINE:` marker cannot be added and silently left out of every exported copy.
+
+`app/test_page_parity.mjs` checks both, and counts the help-owned elements the program writes into
+— that count is the standing argument for `HELP` never being droppable, recomputed from the files
+rather than asserted.
+
+At the same time the **"… with the editor" export was withdrawn.** It shipped CodeMirror and the
+parser inside the copy, 1.5 MB, "so they can reply". The objection is not the weight: Ipsissima
+*is* the editor, in a browser tab or as an application, and embedding a private copy of the
+workbench in every file that goes out makes every such file a fork of the program frozen at the
+moment it was sent.
 
 ### Argdown in Zettlr exports — which filter, and why
 

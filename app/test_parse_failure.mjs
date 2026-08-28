@@ -12,7 +12,7 @@
  * parse error must never blank the map — half the keystrokes in a line leave the file invalid,
  * and a picture that vanished at each of them would be unusable. That rule was written as a
  * `try/catch`, so it protected against the errors that throw and none of these. Typing one stray
- * character after a metadata block's closing brace took a 23-claim map to nothing, with the
+ * character after a metadata block's closing brace took a whole map to nothing, with the
  * header still reporting "edited".
  *
  * So the viewer treats an empty graph as a failure when the last good one was not empty, and
@@ -65,25 +65,40 @@ console.log("\na YAML error in a metadata block — the silent class");
 // trusted as the signal, and an emptied document is all a caller reliably gets.
 const darwin = fs.readFileSync(path.join(HERE, "..", "samples",
   "Darwin 1859 - Natural selection", "darwin-natural-selection.argdown"), "utf8");
-const anchor = 'reviewed: "2026-08-18"}\n    + <The Divergence Argument>';
-check("the fixture still contains the line this edits", darwin.includes(anchor), true);
+// FOUND, NOT NAMED. This used to pin an exact string — `reviewed: "2026-08-18"}` followed by a
+// particular argument title — and a node count of 23. Both were facts about one version of one
+// reconstruction, so rebuilding the Darwin map under better instructions broke four checks in a
+// test that is not about Darwin at all. The behaviour being pinned is the PARSER's: a YAML error
+// inside any `{…}` empties the document in silence. So the test now finds a metadata block for
+// itself and takes the map's size as it is.
+// STATED AS AN EXISTENTIAL, because that is what the claim actually is. The first version of
+// this pinned one exact string and a node count of 23 — facts about one version of one
+// reconstruction — so rebuilding the Darwin map broke four checks in a test that is not about
+// Darwin. The second version searched for the shape and found a different one, because WHERE
+// the damage falls changes what the parser does: inside a premise-conclusion structure it
+// empties the document AND reports; before a relation line it empties in silence.
+//
+// The claim worth pinning is neither of those positions. It is that SOME position in a real
+// reconstruction produces the silent case — an emptied document with nothing raised anywhere —
+// because that is what the viewer's guard exists for and what no error count would catch. So
+// damage every metadata block in turn and require at least one to be silent.
+const closes = [...darwin.matchAll(/\}/g)].map(m => m.index);
+check("the fixture has metadata blocks to damage", closes.length > 0, true);
 const realGood = parse(darwin);
-check("the sample parses to its claims", realGood.nodes, 23);
+check("the sample parses to its claims", realGood.nodes > 0, true);
 
-// One stray character after the closing brace, which is what a model writing Argdown gets wrong
-// and what a reader gets wrong reaching for the end of a line.
-const realBroken = parse(darwin.replace(anchor, 'reviewed: "2026-08-18"}Z\n    + <The Divergence Argument>'));
-check("does NOT throw", realBroken.threw, false);
-check("  and reports NO parser or lexer error — nothing, on a real file",
-      realBroken.reported, 0);
-check("  but empties the document, which is the only signal there is", realBroken.nodes, 0);
-check("  so 23 claims become 0 with nothing raised anywhere",
-      realGood.nodes > 0 && realBroken.nodes === 0 && realBroken.reported === 0, true);
-
-console.log("\na structural error — the class that IS reported");
-const structural = parse("[a]: text\n  \n    ++ [b]: nope\n");
-check("comes back with no claims as well",
-      structural.nodes === 0 || structural.reported > 0, true);
+let silent = 0, emptied = 0;
+for (const i of closes) {
+  const r = parse(darwin.slice(0, i + 1) + "Z" + darwin.slice(i + 1));
+  if (r.threw) continue;
+  if (r.nodes === 0) emptied++;
+  if (r.nodes === 0 && r.reported === 0) silent++;
+}
+check(`a stray character after a closing brace empties the document (${emptied} of ${closes.length} places)`,
+      emptied > 0, true);
+check("  and in at least one place it does so with NOTHING raised anywhere",
+      silent > 0, true);
+check("  which is why an error count cannot be the signal", silent > 0 && emptied >= silent, true);
 
 console.log("\nthe rule the viewer depends on");
 // The guard is "empty now, not empty before" — so an empty file must stay legitimately empty

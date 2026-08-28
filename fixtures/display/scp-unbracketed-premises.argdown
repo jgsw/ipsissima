@@ -1,0 +1,52 @@
+// WHAT THIS IS FOR: an argument whose premises are NOT in square brackets. This is the Greenspan
+// case, and it was reported from use testing as broken.
+//
+// THIS IS THE ONE THAT ASSERTS SOMETHING FALSE, and that is why it matters more than the rest of
+// the premise-conclusion work. A premise written without a title gets an auto-generated one
+// ("Untitled 1") and, under Argdown's default `statementSelectionMode: with-title`, NEVER
+// BECOMES A MAP NODE. So an argument standing on five premises of which one is bracketed draws
+// with exactly ONE arrow into it, and the map says the argument has one reason. It has five.
+// Nothing on the page says otherwise and the reader has no way to find out.
+//
+// Measured against Argdown's own `greenspan.argdown`: <Turnover Argument> has FIVE premises and
+// none of them is bracketed, so the whole structure is invisible and the argument arrives as a
+// lone box carrying its prose description.
+//
+// THREE SHAPES IN ONE FILE, because the fault is about the MIX rather than about bare premises:
+//   <All Bare>       no premise titled          -- draws as a lone box, no arrows at all
+//   <Mixed>          one of three titled        -- draws ONE arrow, and that is the lie
+//   <All Titled>     every premise titled       -- the case that always worked
+//
+// WHAT TO SEE: all three arguments show all of their premises, in order and numbered. <Mixed>
+// must not read as an argument with a single reason.
+//
+// IF THE DEFECT IS PRESENT: <All Bare> has nothing attached, <Mixed> has one arrow in from
+// [Named premise] alone, and only <All Titled> looks right.
+
+[Contention]: Bubbles cannot occur in the housing market.
+
+<All Bare>: Transaction costs render bubbles unlikely.
+
+(1) Sales in real estate incur substantial transaction costs.
+(2) Where transaction costs are substantial, market turnover is low.
+(3) Where turnover is low, no speculative conflagration develops.
+-----
+(4) Bubbles cannot occur.
+    +> [Contention]
+
+<Mixed>: Prices track fundamentals.
+
+(1) [Named premise]: Prices in a thick market track fundamentals.
+(2) The housing market is thick.
+(3) A market tracking fundamentals has no bubble.
+-----
+(4) The housing market has no bubble.
+    +> [Contention]
+
+<All Titled>: Diversification protects the aggregate.
+
+(1) [Local only]: Housing bubbles are local.
+(2) [Aggregate safe]: A local shock does not move the aggregate.
+-----
+(3) [No macro risk]: Housing bubbles carry no macroeconomic risk.
+    +> [Contention]

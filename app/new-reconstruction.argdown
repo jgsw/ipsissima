@@ -1,0 +1,42 @@
+// A NEW RECONSTRUCTION. Everything below is a placeholder — replace it with the argument you
+// are reading. Lines beginning with // are comments and never reach the map.
+//
+// A CLAIM goes [in square brackets]; an ARGUMENT — a step with its premises written out — goes
+// <in angle brackets>. Under a claim, `+` means "is a reason for it" and `-` means "tells
+// against it", so the relation always belongs to the thing it is indented under.
+//
+// The block between === and === is the reconstruction's own metadata. Add
+//   defaults:
+//       chapter: "source/your-paper.md"
+// once there is a manuscript, then open the FOLDER rather than this file: every claim is then
+// located in the text, and the Exposition view — the same claims in the order the paper
+// presents them — becomes available.
+//
+// Press ? or "How to use" for the rest.
+
+===
+title: A new reconstruction
+reconstruction:
+    aim: fit
+    unit: commitment
+    mode: coherence
+    strength: ordinary
+===
+
+# What the paper argues {isGroup: true}
+
+[main-claim]: The claim the paper is finally arguing for.
+    {fidelity: "interpretation", note: "Say here why you read the paper as claiming this."}
+    + <the-argument>
+    - [an-objection]: A difficulty the paper answers, or one it leaves open.
+        {fidelity: "interpretation"}
+
+<the-argument>: How the paper gets from its reasons to that claim.
+    {fidelity: "interpretation"}
+
+    (1) [first-premise]: A premise — in the author's own words wherever you can quote them.
+        {fidelity: "quotation"}
+    (2) [second-premise]: The premise it needs alongside the first.
+        {fidelity: "paraphrase"}
+    ----
+    (3) [main-claim]

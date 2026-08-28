@@ -32,7 +32,8 @@ import dagre from "@dagrejs/dagre";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { filterGraph, layoutByText, membersOfGroup, reduceFold, sanitiseGraph,
-        seatInDocumentOrder, hiddenSpans, drawnPolyline, boxesOf, junctionGeometry } =
+        seatInDocumentOrder, hiddenSpans, drawnPolyline, boxesOf, junctionGeometry,
+        junctionFeet, pcsRows, premiseHull } =
   require(path.join(HERE, "src", "argdown-live-map.js"));
 const POS = require(path.join(HERE, "src", "argdown-positions.js"));
 
@@ -624,6 +625,86 @@ console.log("\nlinked-premise junctions");
   const asIs = junctionGeometry(tiny, below, 20, 0);
   say(Math.abs(narrow.tip.x - asIs.tip.x) < 1e-9,
       "on a box too narrow to slide along, it stays put rather than hanging off the edge");
+
+  /* WHERE EACH MEMBER LANDS ON THE BAR.
+   *
+   * The defect these hold against: every member used to be moved to the junction POINT, so a
+   * premise well to the side ran almost parallel to the bar and its last units lay along it --
+   * the two strokes merged and there was no visible join. Seen at 7x on the supported-premise
+   * fixture. What must be true now is that the feet are distinct, ordered, on the bar, and
+   * approached from outside it.
+   */
+  const feet = junctionFeet(b, below, 12);
+  say(feet.length === below.length, "every member of a junction gets a foot");
+  const distinct = new Set(feet.map(f => f.land.x.toFixed(4) + "," + f.land.y.toFixed(4)));
+  say(distinct.size === feet.length,
+      "the feet are DISTINCT -- members meet the bar at their own places, not all at one point");
+  // On the bar's line, and never past its ends.
+  const onBar = feet.every(f => Math.abs(f.land.y - b.j.y) < 1e-6 &&
+                                f.land.x >= Math.min(b.bar[0].x, b.bar[1].x) - 1e-6 &&
+                                f.land.x <= Math.max(b.bar[0].x, b.bar[1].x) + 1e-6);
+  say(onBar, "every foot sits ON the bar, between its ends");
+  const span = Math.max(...feet.map(f => f.land.x)) - Math.min(...feet.map(f => f.land.x));
+  say(span < Math.abs(b.bar[1].x - b.bar[0].x) - 1e-6,
+      "and inset from them, so the bar overhangs its outermost member");
+  // Ordered: a member further along the bar's direction lands further along it. A bar that
+  // braided its own premises would say the drawing could not tell them apart.
+  say(feet[0].land.x < feet[1].land.x && feet[1].land.x < feet[2].land.x,
+      "the feet keep the order the premises arrive in -- the members do not cross");
+  // The lift is outside the bar, square to it: that is what makes the approach perpendicular.
+  say(feet.every(f => f.lift.y > f.land.y && Math.abs(f.lift.x - f.land.x) < 1e-6),
+      "each member turns onto the bar SQUARE to it, from outside");
+  say(junctionFeet(null, below) .length === 0 && junctionFeet(b, []).length === 0,
+      "no junction, or no arrivals, is no feet");
+}
+
+console.log("\nthe premise-conclusion structure");
+{
+  const say = (ok, what) => { cases++; if (!ok) failures++;
+    console.log(`   ${ok ? "ok  " : "FAIL"}  ${what}`); };
+
+  /* WHICH LINES THE ARGUMENT'S OWN BOX HAS TO DRAW.
+   *
+   * The defect: an untitled premise is not selected into the map, so it became no node, no arrow
+   * and no trace -- an argument on five premises of which one was bracketed drew with ONE arrow
+   * and the map said it had one reason. `pcsRows` is what puts the missing lines back.
+   */
+  const pcs = [
+    { n: 1, role: "premise", title: "A", text: "titled premise", step: 0, drawn: true },
+    { n: 2, role: "premise", title: null, text: "bare premise", step: 0, drawn: false },
+    { n: 3, role: "main-conclusion", title: null, text: "so this", step: 0, drawn: false,
+      rule: "Modus ponens", uses: [1, 2] }
+  ];
+  const rows = pcsRows(pcs);
+  say(rows.length === 2, "a line with a box of its own is not drawn twice");
+  say(rows[0].n === 2 && rows[1].n === 3,
+      "the numbers are the FILE'S -- a drawn line leaves a gap, it does not renumber the rest");
+  say(rows[1].bar === true && rows[1].rule === "Modus ponens",
+      "a conclusion carries the inference bar and the rule that licenses it");
+  say(rows[0].bar === false && rows[0].rule === null,
+      "a premise carries neither");
+  say(pcsRows(null).length === 0 && pcsRows([]).length === 0,
+      "an argument with no structure asks for no rows");
+  say(pcsRows([{ n: 1, role: "premise", text: "x", step: 0, drawn: true }]).length === 0,
+      "and one whose every line is drawn asks for none either");
+
+  /* THE ENCLOSURE, which must never gather a claim that is not a premise of the step. */
+  const P = (x, y) => ({ x, y, width: 80, height: 40 });
+  const asBox = b => ({ id: "o", x0: b.x - b.width / 2, x1: b.x + b.width / 2,
+                        y0: b.y - b.height / 2, y1: b.y + b.height / 2 });
+  const two = [P(100, 300), P(220, 300)];
+  const hull = premiseHull(two, []);
+  say(!!hull, "two premises side by side get an enclosure");
+  say(hull.x < 60 && hull.x + hull.width > 260 && hull.y < 280,
+      "and it encloses both of them, with room to spare");
+  say(premiseHull([P(100, 300)], []) === null,
+      "one premise is not a group -- nothing to enclose");
+  // The refusal. A stranger sitting between two premises must veto the enclosure: drawing it
+  // would say that claim is one of the premises.
+  say(premiseHull(two, [asBox(P(160, 300))]) === null,
+      "an enclosure that would swallow another claim is REFUSED, not drawn");
+  say(premiseHull(two, [asBox(P(160, 900))]) !== null,
+      "a claim well clear of it does not veto anything");
 }
 
 console.log("\nthe real maps");

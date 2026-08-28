@@ -22,7 +22,21 @@ matter from the licence on the article.
 
 This folder began as a test of the shared converter against a paper unlike the older ones:
 modern, two-column, with a clean digital text layer and its own numbered sections. It now carries
-a reconstruction as well — 48 nodes, 27 verified quotations, every claim placed in the text.
+a reconstruction as well — **127 nodes, 102 verified quotations, every claim placed in the text**.
+
+**Rebuilt 27 August 2026 under the rewritten instructions**, and the difference is the point of
+keeping the note. The first reconstruction had 48 nodes, 3 premise-conclusion structures, 27
+quotations and no undercuts at all. The second has 127 nodes, 19 premise-conclusion structures,
+102 quotations and 7 undercuts, and passes the checker with nothing outstanding. It was written
+in three rounds — none of which found a fault; all three found *observations*, and the map is
+better for the two rounds that would not have happened before those became visible to the loop.
+
+What the rebuild also showed is a cost. At this size the layout metrics that measure **legibility**
+go the wrong way — edge crossings across the whole map went from 1 to 109 — while every metric
+that measures **correctness** stayed clean: no hidden arrowheads, no inverted arrivals, no
+overlapping nodes. Nothing is drawn wrongly; there is simply more of it than the eye can take at
+once, which is an argument about how much a map should show by default rather than about how it
+draws.
 
 Build a viewer for it with:
 
@@ -56,14 +70,17 @@ responses" plus options that "deserve to be mentioned", never as a complete part
 as `[candidates-may-not-exhaust]`, tagged `#dispute`: the observation is textual, the objection
 is the reconstruction's.
 
-**Fidelity.** 48 of 48 nodes marked: 27 quotation, 13 paraphrase, 3 compression, 5
-interpretation, **no imputations**. The five interpretations are all warranted — two
-`enthymeme` (the two arguments the authors make in continuous prose and never number) and three
-`coherence`. Interpretive load on the contention is **0**: a route to it runs on reported
-material alone, which is what `aim: fit` should look like.
+**Fidelity.** 110 of 128 nodes marked: 55 quotation, 42 paraphrase, 10 compression, 3
+interpretation, **no imputations**. The three interpretations are all warranted `enthymeme`.
 
-**Provenance.** Every claim carries a `chapter`; 27 are pinned by a verified quotation and the
-rest located to a paragraph. `section` is carried only where a claim has no quotation to pin it,
+The 18 unmarked nodes are arguments, and that is worth saying plainly rather than leaving to be
+discovered: an `<Argument>` carries fidelity like any other claim and usually should, because
+assembling premises into a numbered structure is the reconstructor's work even where every step
+is the author's. An argument with no marker hovers bare, and here it is more likely that the
+marker was not written than that none applies.
+
+**Provenance.** Every claim carries a `chapter`; 102 of 104 are pinned by a verified quotation
+and the other two located to a paragraph. `section` is carried only where a claim has no quotation to pin it,
 and every one cites the authors' own numbered sections rather than the converter — this is the
 first folder here where that is true.
 

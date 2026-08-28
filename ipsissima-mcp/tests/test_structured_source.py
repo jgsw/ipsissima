@@ -18,6 +18,7 @@ toolchain treats as unacceptable, because there is nothing for a reader to notic
 import re
 import sys
 import tempfile
+from xml.etree import ElementTree as ET
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -142,6 +143,123 @@ check("markers are in page order down the file",
       [int(re.search(r"p\.(\d+)", l).group(1)) for l in out.splitlines() if l.startswith("<!-- p.")],
       sorted(int(re.search(r"p\.(\d+)", l).group(1))
              for l in out.splitlines() if l.startswith("<!-- p."))) 
+
+# ---------------------------------------------- a book that arrives at the wrong level ---- #
+# BOTH OF THESE WERE FOUND ON ONE FILE: Russell's `Problems of Philosophy` from Project
+# Gutenberg, which is the obvious source for out-of-copyright philosophy and so is worth getting
+# right once rather than per book.
+
+from epub_to_source import FURNITURE                                         # noqa: E402
+from split_manuscript import heading_re, split                               # noqa: E402
+
+print("Project Gutenberg's wrapper is not the book")
+# The licence is ~2,900 words of boilerplate carrying the same vocabulary as the book around it.
+# It survived as a chapter, which is 2,900 words a reconstruction could quote as Russell's.
+for label in ("THE FULL PROJECT GUTENBERG LICENSE", "THE FULL PROJECT GUTENBERG\u2122 LICENSE",
+              "Project Gutenberg License", "*** START OF THE PROJECT GUTENBERG EBOOK ***"):
+    check(f"  dropped: {label[:44]}", bool(FURNITURE.match(label)), True)
+# Narrow on purpose: a chapter genuinely ABOUT Project Gutenberg keeps its place.
+check("  a chapter about Project Gutenberg is kept",
+      bool(FURNITURE.match("Project Gutenberg and the Public Domain")), False)
+check("  and an ordinary chapter is kept",
+      bool(FURNITURE.match("CHAPTER I. APPEARANCE AND REALITY")), False)
+
+print("\nchapters are not always `#`")
+# AN EPUB KEEPS ITS PUBLISHER'S HEADING LEVELS. Gutenberg sets the book title as h1 and every
+# chapter as h2, so a fifteen-chapter book split into two files -- valid Markdown, all the words
+# present, and thirteen exposition bands the reader should have had simply absent.
+BOOK = """# THE PROBLEMS OF PHILOSOPHY
+
+Front prose.
+
+## CHAPTER I. APPEARANCE AND REALITY
+
+Is there any knowledge so certain that no reasonable man could doubt it?
+
+## CHAPTER II. THE EXISTENCE OF MATTER
+
+In this chapter we have to ask ourselves whether there is any such thing as matter.
+
+## CHAPTER III. THE NATURE OF MATTER
+
+We have found that it is possible to doubt whether matter exists.
+"""
+with tempfile.TemporaryDirectory() as td:
+    book = Path(td) / "book.md"
+    book.write_text(BOOK, encoding="utf-8")
+    at1 = split(str(book), 1)[1]
+    at2 = split(str(book), 2)[1]
+    # At level 2 the book's own `#` title and the prose under it fall before the first chapter
+    # heading, and become a Front matter section -- prose before the first heading is still
+    # prose, which is deliberate and is why the count is chapters + 1.
+    chapters2 = [s["title"] for s in at2 if s["title"] != "Front matter"]
+    check("  a Gutenberg book splits into one file at level 1", len(at1), 1)
+    check("  and into its chapters at level 2", chapters2,
+          ["CHAPTER I. APPEARANCE AND REALITY", "CHAPTER II. THE EXISTENCE OF MATTER",
+           "CHAPTER III. THE NATURE OF MATTER"])
+    check("  the title and its prose are kept as front matter, not dropped",
+          [s["title"] for s in at2][0], "Front matter")
+    check("  which is the count that says the level was wrong", len(at2) > len(at1) * 2, True)
+
+check("a level-3 heading is not matched at level 2",
+      bool(heading_re(2).match("### Deeper")), False)
+check("  and a level-2 heading is", bool(heading_re(2).match("## Chapter")), True)
+
+# ------------------------------------------------------------------------- TEI ---- #
+# PANDOC WRITES TEI AND DOES NOT READ IT (`--list-input-formats` offers docbook, jats and
+# endnotexml, and no tei), so a TEI book had no route in at all and the only way was its PDF --
+# the exact inversion this file's own docstring complains about. Open Book Publishers ship TEI
+# for every title under CC-BY, and they are one of the few places a whole philosophy book is
+# openly licensed, so the gap was worth closing rather than working around.
+
+from tei_to_source import convert_one                                        # noqa: E402
+from ingest import is_tei                                                    # noqa: E402
+
+TEI_NS = "http://www.tei-c.org/ns/1.0"
+CHAPTER = f"""<?xml version="1.0" encoding="UTF-8"?>
+<TEI xmlns="{TEI_NS}"><text><body>
+  <div><head>1. Introduction</head>
+    <p>A claim that <hi rendition="simple:italic">does matter</hi> here.<note n="1">A note.</note></p>
+    <div><head>1.1 A section</head>
+      <p>See <ref target="https://example.org/x">the paper</ref> and <ref target="ch1.xml#a1">1.4</ref>.</p>
+      <quote>A block quotation.</quote>
+    </div>
+  </div>
+</body></text></TEI>"""
+
+body = ET.fromstring(CHAPTER).find(f"{{{TEI_NS}}}text/{{{TEI_NS}}}body")
+md, n_notes = convert_one(body)
+
+check("the chapter title is a level-one heading", md.splitlines()[0], "# 1. Introduction")
+check("  and a nested div is one level deeper", "## 1.1 A section" in md, True)
+check("emphasis survives", "*does matter*" in md, True)
+check("a real URL stays a link", "[the paper](https://example.org/x)" in md, True)
+# An internal target points inside the publisher's own bundle and means nothing outside it.
+check("  an internal anchor keeps its text and loses the link",
+      "1.4" in md and "ch1.xml" not in md, True)
+check("a quotation becomes a block quote", "> A block quotation." in md, True)
+# A FOOTNOTE IS NOT INLINE PROSE: left in place it welds the note into the middle of the sentence
+# carrying the marker, which is how a quotation comes to contain a citation and fail to verify.
+check("the footnote is lifted out of the sentence", "[^1]" in md and "A note." in md, True)
+check("  and defined at the foot", md.rstrip().endswith("[^1]: A note."), True)
+check("  and counted", n_notes, 1)
+check("the note's text is not left inline",
+      "here.[^1]" in md.replace("\n", " "), True)
+
+print("\nTEI is told from other XML by its namespace, not its extension")
+with tempfile.TemporaryDirectory() as td:
+    x = Path(td) / "c.xml"
+    x.write_text(CHAPTER, encoding="utf-8")
+    check("  a TEI file is recognised", is_tei(str(x)), True)
+    j = Path(td) / "j.xml"
+    j.write_text('<?xml version="1.0"?><article xmlns="http://jats.nlm.nih.gov"/>', encoding="utf-8")
+    check("  and JATS is not taken for it", is_tei(str(j)), False)
+    # `.zip` is also how a .docx, an .odt and an .epub arrive, and those belong to pandoc.
+    z = Path(td) / "d.docx"
+    import zipfile as _z
+    with _z.ZipFile(z, "w") as zf:
+        zf.writestr("word/document.xml", "<w:document/>")
+    check("  a .docx is not taken for a TEI bundle", is_tei(str(z)), False)
 
 print()
 if fails:

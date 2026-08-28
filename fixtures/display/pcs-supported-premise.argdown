@@ -1,0 +1,45 @@
+// WHAT THIS IS FOR: a premise that is itself supported by a further argument -- the case that
+// decides whether "premises of one step fold and unfold as one" is a fold rule or a fold bug.
+//
+// Premises of one inference step assert nothing individually: knock one out and the step is
+// destroyed, which is what distinguishes a LINKED step from a list of independent `+` reasons.
+// So they fold as one -- there is no reader question to which "show me premise two but not
+// premise one" is the answer.
+//
+// BUT A SUPPORTED PREMISE STILL UNFOLDS SEPARATELY. [Contested premise] below has an argument of
+// its own standing behind it. That argument is A LEVEL DOWN, not a second premise of the step
+// above, so revealing it is one click of the ordinary ladder and NOT a violation of
+// "opening a section reveals one level of it, not several".
+//
+// The two rules pull in opposite directions and that is exactly why this file exists: fold the
+// premises as one group, and the group's own badge must still descend into the supported
+// premise one level at a time.
+//
+// WHAT TO SEE:
+//   - the three premises of <Main Argument> fold and unfold together, as one enclosure
+//   - [Contested premise] keeps a fold badge OF ITS OWN, standing for <Backing Argument>
+//   - unfolding the premise group does NOT bring <Backing Argument> on screen with it
+//   - unfolding [Contested premise] afterwards brings it, and only it
+//
+// IF THE FOLD RULE IS WRONG in the direction that costs most: opening the premise group reveals
+// the backing argument too, which is the "several levels at once" defect KNOWN-ISSUES.md records
+// being fixed once already.
+
+[Contention]: The policy should be adopted.
+
+<Main Argument>: The policy is both effective and affordable.
+
+(1) [Effective]: The policy achieves what it sets out to achieve.
+(2) [Contested premise]: The policy is affordable within the current budget.
+(3) [Sufficient]: An effective and affordable policy should be adopted.
+-- Modus ponens {uses: [1,2,3]} --
+(4) [Adopt]: The policy should be adopted.
+    +> [Contention]
+
+<Backing Argument>: The costing has been independently audited.
+
+(1) [Audit]: The independent audit put the cost below the budget line.
+(2) [Audit reliable]: The auditor has no stake in the outcome.
+-----
+(3) [Costing sound]: The costing can be relied on.
+    +> [Contested premise]

@@ -32,6 +32,140 @@
  *
  *  Returns [{ line, column, message, text }], line 1-based.
  */
+/** Syntax errors the parser REPORTS rather than throws.
+ *
+ *  THE SAME SHAPE OF SILENCE AS THE BRACES ABOVE, and it sat open right beside the guard built
+ *  for that one. `argdown.run` does not throw on a syntax error; it returns `parserErrors` and
+ *  `lexerErrors` and carries on with a document truncated at the fault. Nothing read either
+ *  array. So a file with one bad line built an 875 KB page reporting `0 nodes, 0 edges`, exited
+ *  0, and opened on an empty canvas with the error panel blank.
+ *
+ *  An empty canvas is not a silence. It is a statement — *this file has no argument in it* —
+ *  and a reader handed a reconstruction has no reason to doubt it.
+ *
+ *  Returns [{ line, column, message, text }], line 1-based: the same shape `metadataProblems`
+ *  returns, so the three consumers that already know how to present one need no new code.
+ */
+export function parseProblems(res, source) {
+  const out = [];
+  if (!res) return out;
+  const lines = String(source || "").split("\n");
+  const at = (line) => {
+    const l = lines[line - 1];
+    return l == null ? "" : (l.length > 90 ? l.slice(0, 90) + "\u2026" : l);
+  };
+  for (const e of res.lexerErrors || []) {
+    const line = e && e.line ? e.line : 1;
+    out.push({ line, column: (e && e.column) || 1,
+               message: String((e && e.message) || e).split("\n")[0], text: at(line) });
+  }
+  for (const e of res.parserErrors || []) {
+    // Chevrotain hangs the position off the offending token. `previousToken` is the fallback:
+    // an error at end-of-input has a token with no position of its own.
+    const tok = (e && e.token && e.token.startLine ? e.token : e && e.previousToken) || {};
+    const line = tok.startLine || 1;
+    out.push({ line, column: tok.startColumn || 1,
+               message: String((e && e.message) || e).split("\n")[0], text: at(line) });
+  }
+  return out;
+}
+
+
+/* Statement and argument mentions, rendered as what they mention.
+ *
+ *  A PLAIN BLOCK COMMENT, not JSDoc, and only because of what it has to quote: `tsc`
+ *  reads `@` in a `/**` block as opening a tag, and the examples below begin `@[` and
+ *  `@<`, which are not identifiers. The whole suite failed on "Identifier expected".
+ *
+ *  ARGDOWN DOES NOT STRIP THESE. Bold, italic and links are resolved away into `labelText` with
+ *  their markup removed, so the worst they do is lose their emphasis. Mentions are left in the
+ *  text exactly as written, so a box showed `@[Voice of the People]` — sigil, brackets and all.
+ *  That is the one presentation which is both ugly and wrong, because it reads as a syntax error
+ *  the reader should go and report. Seven of them in Argdown's own populism map, six in
+ *  Greenspan's.
+ *
+ *  WHY THE LENGTH IS COMPUTED FROM THE TITLE rather than from the range. The two mention types
+ *  disagree about what `stop` means in `@argdown/core` 2.0, and the disagreement is silent:
+ *
+ *      "We should heed @[Voice] and also @<Turnover>."
+ *      statement-mention  start 15, stop 23   ->  stop is EXCLUSIVE
+ *      argument-mention   start 33, stop 43   ->  stop is INCLUSIVE
+ *
+ *  Trusting either convention eats a character of the neighbouring prose on half the mentions in
+ *  a file. So the markup is rebuilt from the title the range already carries, checked against the
+ *  text at `start`, and skipped where it does not match — a mention left alone is a blemish, and
+ *  a mis-sliced one silently corrupts a claim.
+ *
+ *  Returns { text, ranges } with the remaining ranges shifted to match the new text, so the
+ *  emphasis work still to come has correct offsets to draw from.
+ */
+export function resolveMentions(text, ranges) {
+  const src = String(text || "");
+  const all = (ranges || []).slice().sort((a, b) => (a.start | 0) - (b.start | 0));
+  const cuts = [];
+  for (const r of all) {
+    if (r.type !== "statement-mention" && r.type !== "argument-mention") continue;
+    if (!r.title) continue;
+    const markup = r.type === "statement-mention" ? "@[" + r.title + "]" : "@<" + r.title + ">";
+    const start = r.start | 0;
+    if (src.slice(start, start + markup.length) !== markup) continue;   // not where it claims
+    cuts.push({ start, end: start + markup.length, to: r.title });
+  }
+  if (!cuts.length) return { text: src, ranges: all };
+
+  let out = "", read = 0, shift = 0;
+  const moved = [];
+  const shifts = [];
+  for (const c of cuts) {
+    out += src.slice(read, c.start) + c.to;
+    read = c.end;
+    shift += c.to.length - (c.end - c.start);          // negative: the text gets shorter
+    shifts.push({ at: c.end, by: shift });
+  }
+  out += src.slice(read);
+
+  // Shift whatever survives. A range that started inside a mention we rewrote is dropped rather
+  // than guessed at — there is no honest place to put it.
+  const shiftFor = (pos) => {
+    let s = 0;
+    for (const x of shifts) if (pos >= x.at) s = x.by;
+    return s;
+  };
+  for (const r of all) {
+    if (r.type === "statement-mention" || r.type === "argument-mention") continue;
+    const inside = cuts.some(c => r.start >= c.start && r.start < c.end);
+    if (inside) continue;
+    moved.push({ ...r, start: (r.start | 0) + shiftFor(r.start | 0),
+                 stop: (r.stop | 0) + shiftFor(r.stop | 0) });
+  }
+  return { text: out, ranges: moved };
+}
+
+
+/* Mention markup, stripped from text that arrives with NO ranges to slice by.
+ *
+ *  A PLAIN BLOCK COMMENT for the same reason `resolveMentions` above is one: `tsc` reads the `@`
+ *  in a `/**` block as opening a tag, and `@[` is not an identifier.
+ *
+ *  WHY THIS EXISTS BESIDE `resolveMentions` RATHER THAN CALLING IT. That function is the right
+ *  one and works from `labelTextRanges`, which is what makes it safe -- it rebuilds each mention
+ *  from the title the range carries instead of trusting `stop`, because the two mention types
+ *  disagree about whether `stop` is inclusive. The lines of a premise-conclusion structure carry
+ *  no ranges at all: `pcs[].text` is a plain string. So there is nothing to slice by, and the
+ *  markup has to be matched as markup.
+ *
+ *  That is safe HERE precisely because it is a match rather than a slice -- there is no index to
+ *  be off by one. It is not a replacement for `resolveMentions`, which keeps the surviving ranges
+ *  aligned so emphasis can still be drawn; this one has no ranges to keep.
+ *
+ *  Without it, a premise reading `... in spectators (@[Causal link]).` -- Argdown's own
+ *  `censorship.argdown`, premise (1) of <Argument from expertise> -- draws with the sigil and
+ *  brackets intact, which reads as a syntax error the viewer failed to handle.
+ */
+export function stripMentionMarkup(text) {
+  return String(text || "").replace(/@\[([^\]]+)\]/g, "$1").replace(/@<([^>]+)>/g, "$1");
+}
+
 export function metadataProblems(source, yamlLoad) {
   const out = [];
   if (typeof yamlLoad !== "function") return out;
@@ -288,7 +422,16 @@ export function toGraph(res) {
         nodes.push({
           id: n.id,
           label: n.labelTitle || n.title || n.id,
-          detail: (n.labelText || "").trim(),
+          // MENTIONS RESOLVED, EMPHASIS CARRIED. `labelText` arrives with `@[…]` and `@<…>`
+          // still in it -- see resolveMentions -- and its `ranges` were dropped here, which is
+          // the single cause behind bold, italic, links and both mention forms all being lost.
+          // The ranges now travel with the node so the renderer can draw them; nothing reads
+          // them yet, and a field that is carried can be drawn, whereas one that is thrown away
+          // has to be recovered first.
+          ...(() => {
+            const r = resolveMentions(n.labelText || "", n.labelTextRanges || []);
+            return { detail: r.text.trim(), detailRanges: r.ranges };
+          })(),
           // WHAT THE NODE IS, not what it is tagged. The tag used to win here, so every
           // <Argument> that carried one — all 13 in the reference maps — arrived at the renderer
           // indistinguishable from a plain statement, and the language's central distinction
@@ -328,19 +471,75 @@ export function toGraph(res) {
    */
   const stepOfPremise = new Map();     // argument title -> Map(premise title -> step index)
   const stepCount = new Map();
+  const ruleOfStep = new Map();       // argument title -> Map(step index -> {rule, uses})
   const pcsOf = new Map();            // argument title -> { conclusion, members }
   for (const [title, a] of Object.entries(res.arguments || {})) {
     const pcs = a.pcs || [];
     if (!pcs.length) continue;
     const where = new Map();
     let step = 0, run = [];
-    for (const p of pcs) {
+    /* ONE WALK, THREE ANSWERS.
+     *
+     * This loop used to run for its effect on `where` alone, and a second pass below asked the
+     * same list for the main conclusion. The STRUCTURE that list describes -- the numbering, the
+     * order, the premise/conclusion roles, and the rule each step names -- was read and thrown
+     * away both times. It was the largest thing missing from the map and it was never missing
+     * from the parse. The walk now builds `lines` as well, and the two older answers fall out of
+     * the same pass rather than costing another.
+     */
+    /* THE WORDS OF A LINE, which are not always on the line.
+     *
+     * A conclusion can be written as a bare REFERENCE -- `(3) [Causal link]` in Argdown's own
+     * `censorship.argdown` -- carrying a title and no text at all. Drawn literally that is a row
+     * reading "(3)" and nothing else, which looks like the renderer failed rather than like the
+     * reference it is. The words are at the statement's own definition, elsewhere in the file,
+     * and `res.statements` is indexed by exactly that title.
+     *
+     * The title is the last resort: a statement referred to but never defined has no words
+     * anywhere, and its name is the most that can honestly be shown.
+     */
+    const wordsOf = (q) => {
+      let t = (q.text || "").trim();
+      if (!t && q.title) {
+        const rec = res.statements && res.statements[q.title];
+        for (const m of (rec && rec.members) || [])
+          if (m.text && String(m.text).trim()) { t = String(m.text).trim(); break; }
+        if (!t) t = q.title;
+      }
+      return stripMentionMarkup(t);
+    };
+    const lines = [];
+    for (let i = 0; i < pcs.length; i++) {
+      const p = pcs[i], inf = p.inference;
+      lines.push({
+        // THE NUMBER AS WRITTEN, never the index of whatever survived. A reader checking the map
+        // against the file needs (4) to mean the line the file calls (4) -- and the renderer
+        // draws only the lines that have no box of their own, so numbering the drawn ones would
+        // renumber the argument silently and leave the map and the file disagreeing.
+        n: i + 1,
+        role: p.role,
+        title: p.title || null,
+        text: wordsOf(p),
+        step,
+        // THE RULE THAT LICENSES THIS STEP, and the premises it declares it uses. Both hang off
+        // the CONCLUSION's `inference` in Argdown's model -- an inference belongs to the line
+        // that closes a step, not to the premises that feed it -- which is why they are read
+        // here and not from the premises above.
+        rule: inf && inf.inferenceRules && inf.inferenceRules.length
+                ? inf.inferenceRules.join(", ") : null,
+        uses: inf && inf.data && Array.isArray(inf.data.uses) ? inf.data.uses.slice() : null
+      });
       if (p.role === "premise") run.push(p.title);
       else { for (const t of run) where.set(t, step); run = []; step++; }
     }
     for (const t of run) where.set(t, step);          // a PCS with no closing conclusion
     stepOfPremise.set(title, where);
     stepCount.set(title, step);
+    // THE RULE, INDEXED BY THE STEP IT LICENSES, so the bar that gathers a step's premises can
+    // name it. The rule is written on the conclusion's line, but what it describes is the whole
+    // step -- and the step is the thing the reader sees, as a bar with several lines meeting it.
+    ruleOfStep.set(title, new Map(lines.filter(l => l.rule || l.uses)
+                                       .map(l => [l.step, { rule: l.rule, uses: l.uses }])));
     // WHERE THE ARGUMENT LANDS, carried so that `argdown-positions` can place it in the
     // manuscript. An <Argument> has no words of its own, so nothing locates it: across this
     // corpus every argument either dropped out of the exposition view into an unnamed band or
@@ -361,11 +560,31 @@ export function toGraph(res) {
     pcsOf.set(title, {
       conclusion: main ? main.title : null,
       conclusionText: main ? (main.text || "").trim() : null,
-      conclusionSource: main && main.data ? main.data.source || null : null
+      conclusionSource: main && main.data ? main.data.source || null : null,
+      pcs: lines
     });
   }
   const byId = new Map(nodes.map(n => [n.id, n]));
   for (const n of nodes) if (stepCount.has(n.label)) n.steps = stepCount.get(n.label);
+  /* WHICH LINES OF THE STRUCTURE ALREADY HAVE A BOX OF THEIR OWN.
+   *
+   * A titled premise is selected into the map and arrives at its argument as an arrow. An
+   * UNTITLED one is not selected at all, and under Argdown's default
+   * `statementSelectionMode: with-title` it becomes nothing whatever -- no node, no arrow, no
+   * trace. So an argument standing on five premises of which one is bracketed drew with exactly
+   * ONE arrow into it, and the map said the argument had one reason. It had five. Argdown's own
+   * `greenspan.argdown` is worse: <Turnover Argument> has five premises and NONE of them is
+   * bracketed, so the argument arrived as a lone box carrying its prose description and the
+   * whole structure was invisible.
+   *
+   * That is a map asserting something false rather than a map keeping quiet, which is why it
+   * ranks above the rest of the premise-conclusion work. The renderer draws the lines that have
+   * no box, so the structure is complete on screen and no claim is drawn twice; `drawn` is how
+   * it tells the two apart.
+   */
+  const drawnTitles = new Set(nodes.filter(n => n.kind === "statement").map(n => n.label));
+  for (const [, rec] of pcsOf)
+    for (const l of rec.pcs) l.drawn = l.title != null && drawnTitles.has(l.title);
   for (const n of nodes) if (pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
 
   for (const e of res.map.edges || []) {
@@ -374,7 +593,15 @@ export function toGraph(res) {
     const target = byId.get(e.to.id), source = byId.get(e.from.id);
     if (edge.type === "support" && target && source && stepOfPremise.has(target.label)) {
       const k = stepOfPremise.get(target.label).get(source.label);
-      if (k != null) edge.step = k;
+      if (k != null) {
+        edge.step = k;
+        // Carried on the EDGE because that is what the renderer has in hand when it plans the
+        // bars: `planJoins` groups the arrivals by target and step, and would otherwise have to
+        // find its way back to the argument's own record to ask what licenses the step.
+        const inf = (ruleOfStep.get(target.label) || new Map()).get(k);
+        if (inf && inf.rule) edge.rule = inf.rule;
+        if (inf && inf.uses) edge.uses = inf.uses;
+      }
     }
     edges.push(edge);
   }

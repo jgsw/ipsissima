@@ -373,5 +373,248 @@ check("  no institution name survives",
 check("prose that merely mentions downloading is left alone",
       strip_access_stamps("The data were downloaded from a public archive by the authors.")[1], [])
 
+# ----------------------------------------------------------------- the abstract ---- #
+# IT WAS ALWAYS FOUND AND ALWAYS THROWN AWAY. `find_boundaries` reads the front matter in order
+# to CUT it, so the abstract's position was already known; everything before the cut was then
+# discarded, abstract included. It is the one paragraph written to say what the paper argues, and
+# someone opening an unfamiliar map has nothing else that does.
+
+from pdf_to_source import find_abstract, ABSTRACT_HEAD                       # noqa: E402
+
+
+def frow(text, small=False):
+    return (0, 30.0, 0.0, 10.0, text, 0, small)
+
+
+# TWO LAYOUTS. A modern journal runs the word into the text; requiring the line to BE the word
+# found nothing at all on those, which is how Etiévant came back with no abstract.
+check("the word alone opens an abstract", bool(ABSTRACT_HEAD.match("Abstract")), True)
+check("  spaced out, as papers set it", bool(ABSTRACT_HEAD.match("A B S T R A C T")), True)
+check("  and run into the text, which is the common case",
+      ABSTRACT_HEAD.match("Abstract: Vaccine safety programs").group(1),
+      "Vaccine safety programs")
+
+BODY = ("Vaccine safety surveillance programs monitor possible short-term rare adverse events "
+        "following vaccination and usually have access only to data on vaccinated individuals.")
+ROWS = [frow("Journal of Causal Inference 2026"), frow("Received December 19, 2024"),
+        frow("Abstract: " + BODY), frow("We provide a complete formal treatment of the design."),
+        frow("a footnote about funding", small=True),
+        frow("Keywords: adverse events; causal inference"),
+        frow("MSC 2020: 62D10"), frow("1 Introduction"), frow("Programs such as the VSD.")]
+
+got = find_abstract(ROWS, 7, [10.0] * len(ROWS), 10.0)
+check("the abstract starts on the line that names it", got.startswith("Vaccine safety"), True)
+check("  and runs on into the next line",
+      got.endswith("complete formal treatment of the design."), True)
+# Keywords, a received date and an article-info block all follow an abstract and none is one.
+check("  and stops at the next piece of apparatus", "Keywords" in got, False)
+check("  ignoring apparatus-sized lines inside it", "funding" in got, False)
+
+check("a paper with no abstract gets none",
+      find_abstract([frow("1 Introduction"), frow("Programs such as the VSD.")], 1,
+                    [10.0, 10.0], 10.0), None)
+# A heading with nothing under it, or a stray line reading "abstract", is not an abstract.
+check("  nor does a heading with nothing under it",
+      find_abstract([frow("Abstract"), frow("1 Introduction")], 2, [10.0, 10.0], 10.0), None)
+
+# ------------------------------------------------------- a numbered paragraph ---- #
+# A JUDGMENT IS CITED BY ITS PARAGRAPH NUMBER -- "Miller (No 2) at [50]" -- so losing the numbers
+# loses the only address a claim in such a document has. All 71 were lost on the Miller, in FOUR
+# different ways, and each had to be found separately because each hid the next:
+#
+#   1. a lone number matches no indent band, so it fell through to "merge into the previous
+#      block" and was swallowed by the paragraph ABOVE the one it numbers;
+#   2. a number opening a page is the page's first line and has no letters, so the running-head
+#      test dropped it -- 8 of them;
+#   3. a number low on a sheet normalises to "#" exactly as the printed page number does, so the
+#      footer test dropped it -- 1 more;
+#   4. "64. Article 9 provides:" has the shape of "2. Hume and abstraction", so a short numbered
+#      paragraph was promoted to a section heading.
+#
+# What tells a paragraph number from a page number is that the paragraph's first line is BESIDE
+# it, on the same line. What tells it from a heading is that it arrived as its own row.
+
+from pdf_to_source import PARA_NUMBER, detect_furniture                      # noqa: E402
+
+check("a margin paragraph number is recognised", bool(PARA_NUMBER.match("30.")), True)
+check("  in either punctuation", bool(PARA_NUMBER.match("(4)")), True)
+check("  and bare", bool(PARA_NUMBER.match("7")), True)
+# Bounded at three digits so a year, a page range or a sum on a line of its own is not mistaken.
+check("a year on its own line is not a paragraph number", bool(PARA_NUMBER.match("2019")), False)
+check("prose is not", bool(PARA_NUMBER.match("30. It is important")), False)
+
+
+def line(y, x, text, size=13.0):
+    return dict(x0=x, y0=y, x1=x + 40, width=40, size=size, text=text)
+
+
+# Miller's real geometry: numbers at the margin (x=72) with their prose beside them (x=108);
+# the printed page number centred and alone (x=295, y=794) on a 842pt sheet.
+PAGES = []
+for n in range(4):
+    PAGES.append(([line(70.8, 72, f"{n * 3 + 1}."),
+                   line(70.8, 108, "The machinery for leaving the Union is contained"),
+                   line(400.0, 72, f"{n * 3 + 2}."),
+                   line(400.0, 108, "Parliamentary sittings are normally divided"),
+                   line(738.0, 72, f"{n * 3 + 3}."),
+                   line(738.0, 108, "Before considering the question of justiciability"),
+                   line(794.0, 295, str(n + 3))], 842.0))
+
+is_furniture, heads, footers = detect_furniture(PAGES)
+
+
+def furniture_for(lines, height, want):
+    """As `convert` calls it: `alone` says nothing is printed to the right on the same line."""
+    for l in lines:
+        if l["text"] != want:
+            continue
+        alone = not any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * l["size"]
+                        and o["x0"] > l["x0"] for o in lines)
+        return is_furniture(l["text"], l["y0"], height, alone=alone)
+    return "not found"
+
+
+lines0 = PAGES[1][0]
+check("the printed page number is still furniture", furniture_for(lines0, 842.0, "4"), "page number")
+check("a paragraph number at the page TOP is not", furniture_for(lines0, 842.0, "4."), None)
+check("  nor one at the page FOOT", furniture_for(lines0, 842.0, "6."), None)
+check("  nor one in the middle", furniture_for(lines0, 842.0, "5."), None)
+
+# ------------------------------------------------------------- where the article ends ---- #
+# TWO FAULTS IN ONE LOOP, and together they cost 37% of the Dewey. `BACK_MATTER` matched the bare
+# singular "reference", which on a scan whose OCR splits prose into short fragments leaves a line
+# that IS that word; and the loop that used it had neither the "last third" bound its own comment
+# claimed nor a `break`, so the EARLIEST match anywhere in the paper won. The output was
+# well-formed Markdown and a third of the article simply was not in it.
+
+from pdf_to_source import BACK_MATTER, find_boundaries                       # noqa: E402
+
+check("a real bibliography heading is found", bool(BACK_MATTER.match("References")), True)
+check("  in capitals too", bool(BACK_MATTER.match("REFERENCES")), True)
+check("  and the other names for it", bool(BACK_MATTER.match("Bibliography")), True)
+check("the bare singular is NOT a heading", bool(BACK_MATTER.match("reference")), False)
+check("  which is what a fragmented 'with reference to' leaves behind",
+      bool(BACK_MATTER.match("Reference")), False)
+check("  and the phrase itself never matched", bool(BACK_MATTER.match("with reference to")), False)
+
+
+def rows_with(*texts):
+    """(printed, x0, y0, height, text, col, small) — only `text` matters to the back-matter scan."""
+    return [(0, 30.0, float(i), 10.0, t, 0, False) for i, t in enumerate(texts)]
+
+
+# A false match in the FIRST two-thirds must not cut the article at all.
+early = rows_with(*(["body text"] * 20 + ["reference"] + ["body text"] * 40))
+check("a stray match early in the paper does not end the article",
+      find_boundaries(early, 30, 10, [10] * len(early))[1], len(early))
+
+# A real heading in the last third does end it, at the heading.
+late = rows_with(*(["body text"] * 40 + ["References"] + ["Smith, J. (1999)."] * 8))
+check("a bibliography in the last third ends the article there",
+      find_boundaries(late, 30, 10, [10] * len(late))[1], 40)
+
+# Two back-matter headings: the article ends at the EARLIER of them.
+both = rows_with(*(["body text"] * 40 + ["Acknowledgements"] + ["Thanks."] * 3
+                   + ["References"] + ["Smith, J. (1999)."] * 8))
+check("  and at the first of two, not the last",
+      find_boundaries(both, 30, 10, [10] * len(both))[1], 40)
+
+# ------------------------------------------------------------------ reading order ---- #
+# SORTING BY y0 ALONE IS NOT READING ORDER. A typesetter's line is one `y`; an OCR'd line is a
+# row of word-fragments each carrying its own baseline. On the Dewey those spread 3.5pt within
+# one printed line -- wider than the gap between successive `y` values -- so the extractor's own
+# order survived and the article came out interleaved right-to-left. Two of 169 sentences
+# verified. Valid Markdown, every word present, and unreadable.
+
+from pdf_to_source import reading_order                                      # noqa: E402
+
+
+def frag(y, x, text, size=7.5):
+    return dict(y0=y, x0=x, x1=x + 40, width=40, size=size, text=text)
+
+
+# The real geometry, from page 3 of the Dewey: one printed line whose fragments span 3.5pt,
+# followed by the next line 9.6pt below.
+SCAN = [frag(64.08, 156.9, "is looking, and not a"),
+        frag(65.14, 74.9, "act of seeing;"),
+        frag(65.29, 31.6, "with the"),
+        frag(65.58, 261.2, "sensation of"),
+        frag(67.62, 145.6, "it"),
+        frag(75.11, 65.7, "The sensory quale gives the value")]
+
+check("a scanned line is read left to right, not by baseline",
+      [l["text"] for l in reading_order(SCAN)],
+      ["with the", "act of seeing;", "it", "is looking, and not a", "sensation of",
+       "The sensory quale gives the value"])
+check("  and the next printed line stays after it, not merged into the band",
+      reading_order(SCAN)[-1]["text"], "The sensory quale gives the value")
+
+# A clean digital PDF has no jitter: every line is its own band and nothing moves.
+CLEAN = [frag(100.0, 72.0, "First line."), frag(112.0, 72.0, "Second line."),
+         frag(124.0, 72.0, "Third line.")]
+check("a clean PDF is left exactly as it was",
+      [l["text"] for l in reading_order(CLEAN)],
+      ["First line.", "Second line.", "Third line."])
+
+# The band must not swallow a genuine next line. 9.6pt advance against 7.5pt glyphs gives a
+# 4.5pt tolerance, so two lines one advance apart stay apart.
+TIGHT = [frag(100.0, 200.0, "b"), frag(104.6, 72.0, "next line")]
+check("two lines a full advance apart are not banded together",
+      [l["text"] for l in reading_order(TIGHT)], ["b", "next line"])
+
+check("no lines is not an error", reading_order([]), [])
+
+# --------------------------------------------------------------- de-hyphenation ---- #
+# WHICH HYPHEN IS THE TYPESETTER'S. Two conventions mark a word broken across a printed line:
+# U+00AD SOFT HYPHEN in a modern PDF, and a bare ASCII hyphen in an older scan whose text layer
+# predates the convention. Joining on the wrong one is silent either way -- an unjoined break
+# leaves "estab- lished", and a wrongly joined compound leaves "wellestablished".
+#
+# The rule USED to be `any soft hyphen anywhere`, which a single pasted passage could satisfy.
+# These hold the comparison that replaced it, and the welding it is there to prevent.
+
+from pdf_to_source import dehyphenate, trust_soft_hyphens as rule           # noqa: E402
+
+check("a document with no soft hyphens uses the blunt rule", rule(0, 40), False)
+check("  and one that breaks its lines with soft hyphens trusts them", rule(86, 0), True)
+check("a handful of soft hyphens does NOT outvote a hundred ASCII breaks",
+      rule(4, 114), False)
+check("  which is the case that produced a hundred broken words", rule(4, 114), False)
+check("the tie goes to soft, because welding is the worse failure", rule(5, 5), True)
+check("no hyphens of either kind is not a soft document", rule(0, 0), False)
+
+check("the soft rule joins a soft break",
+      dehyphenate("estab\u00ad lished", True), "established")
+check("  and leaves a real compound alone",
+      dehyphenate("well-established", True), "well-established")
+check("  including one that falls at a line end",
+      dehyphenate("well- established", True), "well- established")
+check("the blunt rule joins a line-end ASCII break",
+      dehyphenate("estab- lished", False), "established")
+check("  and that is exactly why it must not be used on a soft document",
+      dehyphenate("well- established", False), "wellestablished")
+
+# THE DOCUMENT'S OWN EVIDENCE. Measured on Robeyns -- 95,478 words, no soft hyphens, so the blunt
+# branch runs over the whole book -- the rule welded `wellknown`, `nonideal` and `decisionmaking`.
+# Each of those compounds is written WITH its hyphen elsewhere in the same book, mid-line, where
+# no line break can be responsible. Collecting those pairs first prevents all three.
+from pdf_to_source import keep_hyphen                                        # noqa: E402
+
+BOOK = "It is a well-known result. Non-ideal theory and decision-making both matter."
+keep = keep_hyphen(BOOK)
+check("compounds written mid-line are collected", ("well", "known") in keep, True)
+check("  and a break is NOT mistaken for one", ("con", "trolling") in keep_hyphen("con-\n\ntrolling"), False)
+
+check("a compound the document hyphenates keeps its hyphen at a break",
+      dehyphenate("a well- known result", False, keep), "a well-known result")
+check("  and so does one seen only in another sentence",
+      dehyphenate("in decision- making", False, keep), "in decision-making")
+check("an ordinary broken word is still joined",
+      dehyphenate("estab- lished", False, keep), "established")
+check("  and a pair the document never hyphenates is joined too",
+      dehyphenate("con- trolling", False, keep), "controlling")
+check("case does not defeat it", dehyphenate("A Well- Known result", False, keep),
+      "A Well-Known result")
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

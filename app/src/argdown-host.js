@@ -67,15 +67,31 @@ function pickFile(exts) {
   });
 }
 
-function pickSavePath(suggested) {
+/** Where should this go? The OS's own dialog, with the reader's own folders in it.
+ *
+ *  `filters` is optional and defaults to Argdown, because the .argdown is what Save writes and
+ *  that was this function's only caller for a long time. It is a parameter now because EXPORT
+ *  goes through here too: a Word file, a Markdown file or a self-contained page offered with an
+ *  `.argdown` filter is a dialog that argues with the reader about what they are saving.
+ */
+function pickSavePath(suggested, filters) {
   return T.dialog.save({
     defaultPath: suggested || "reconstruction.argdown",
-    filters: [{ name: "Argdown", extensions: ["argdown"] }]
+    filters: filters || [{ name: "Argdown", extensions: ["argdown"] }]
   });
 }
 
 function readText(abs) { return T.fs.readTextFile(abs); }
 function writeText(abs, text) { return T.fs.writeTextFile(abs, text); }
+
+/** Bytes, for the exports that are not text.
+ *
+ *  A .docx is a zip. Handing it to `writeTextFile` produces a file of the right length and the
+ *  wrong contents, because the bytes go through a UTF-8 encode on the way — and Word's error
+ *  message for that says the file is corrupt, which sends someone looking at the export code
+ *  rather than at the write. Takes a Uint8Array; the page gets one from `blob.arrayBuffer()`.
+ */
+function writeBinary(abs, bytes) { return T.fs.writeFile(abs, bytes); }
 
 /* Folders that are never a manuscript, skipped before they are walked.
  *
@@ -191,7 +207,7 @@ var API = {
   onMenu: onMenu,
   join: join, dirname: dirname, basename: basename,
   pickDirectory: pickDirectory, pickFile: pickFile, pickSavePath: pickSavePath,
-  readText: readText, writeText: writeText, readDirDeep: readDirDeep,
+  readText: readText, writeText: writeText, writeBinary: writeBinary, readDirDeep: readDirDeep,
   watch: watch, onOpenPaths: onOpenPaths,
   SKIP_DIRS: SKIP_DIRS
 };

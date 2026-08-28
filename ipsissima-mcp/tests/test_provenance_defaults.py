@@ -210,5 +210,62 @@ check("  while a claim that is NOT in the source is still absent",
       prov.find_quote("The author holds that moral facts are fixed by convention alone and "
                       "that no amount of reflection could revise them.", _body)[0], "absent")
 
+# ------------------------------------------- a sketched argument is still a node ---- #
+# `title_edges` resolves an ARGUMENT endpoint to that argument's main conclusion, because the
+# report is about claims and where they sit in the text. A SKETCHED argument -- `<Title>: prose`
+# with no numbered structure -- has no main conclusion, so the lookup returned None and the edge
+# was dropped. Silently, and at BOTH ends: its attack on the contention did not count, and the
+# reasons hanging off it were reported as reaching no contention at all, which is how a properly
+# wired objection came back `inert`.
+#
+# Measured on the published corpus before the fix: 6 of 47 arguments sketched, 13 relations
+# invisible -- all of them in the newest and largest map, and the cheatsheet encourages the
+# sketched form, so it was getting worse.
+
+import json as _json                                                         # noqa: E402
+import subprocess as _sub                                                    # noqa: E402
+import tempfile as _tmp                                                      # noqa: E402
+import os as _os                                                             # noqa: E402
+
+SKETCH = """[Contention]: The main thesis holds.
+    - <Sketched>
+    - <Reconstructed>
+
+<Sketched>: An objection stated in prose, with no numbered structure.
+    + [Reason A]: A reason for the sketched objection.
+
+<Reconstructed>
+
+(1) [Reason B]: A reason for the reconstructed objection.
+-----
+(2) [Reconstructed conclusion]: So the objection stands.
+"""
+
+_cli = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                     "..", "..", "app", "node_modules", ".bin", "argdown")
+if _os.path.exists(_cli):
+    with _tmp.TemporaryDirectory() as _td:
+        _f = _os.path.join(_td, "s.argdown")
+        open(_f, "w", encoding="utf-8").write(SKETCH)
+        _sub.run([_cli, "json", _f, "--outputDir", _td], capture_output=True)
+        _js = [x for x in _os.listdir(_td) if x.endswith(".json")]
+        _doc = _json.load(open(_os.path.join(_td, _js[0]))) if _js else None
+
+    if _doc:
+        _edges = {(a, b, k) for a, b, k in prov.title_edges(_doc)}
+        check("a sketched argument's attack on the contention survives",
+              ("Sketched", "Contention", "attack") in _edges, True)
+        check("  and the reason hanging off it does too",
+              ("Reason A", "Sketched", "support") in _edges, True)
+        # The reconstructed one always worked; it is here so a fix that broke it would show.
+        check("a reconstructed argument still resolves to its main conclusion",
+              ("Reconstructed conclusion", "Contention", "attack") in _edges, True)
+        check("  and its premise reaches that conclusion",
+              ("Reason B", "Reconstructed conclusion", "support") in _edges, True)
+        check("nothing reaches the reconstructed argument by its own title",
+              any(b == "Reconstructed" for _a, b, _k in _edges), False)
+else:
+    print("  SKIP  the Argdown CLI is not installed; sketched-argument edges not checked")
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

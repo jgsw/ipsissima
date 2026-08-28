@@ -1,0 +1,37 @@
+// WHAT THIS IS FOR: the premise-conclusion structure itself -- numbering, order, the
+// premise/intermediate-conclusion distinction, and the named inference rule with its `{uses:}`.
+//
+// An <Argument> with a PCS used to arrive at the renderer as ONE BOX carrying its prose
+// description. `toGraph` walked the structure twice -- once to number the inference steps so the
+// renderer could join linked premises with a bar, once to find the main conclusion so the
+// argument could be placed in the manuscript -- and threw the result away both times. So the
+// numbering was gone, the order was gone, the distinction between a premise and an intermediate
+// conclusion was gone, and `inference.inferenceRules` and `inference.data` were read by nothing
+// at all.
+//
+// TWO STEPS, DELIBERATELY. One step exercises nothing: it is the SECOND step that shows whether
+// the intermediate conclusion is understood as a conclusion of one step and a premise of the
+// next, which is the whole reason the notation numbers its lines.
+//
+// WHAT TO SEE:
+//   - the argument box carries its premises IN ORDER, numbered (1)...(5) as written
+//   - (3) is marked as an intermediate conclusion, not as a premise
+//   - the two premises of step one are drawn inside one enclosure, joined by an inference bar
+//   - the bar carries the rule name -- "Modus ponens", then "Practical syllogism"
+//   - `{uses: [1,2]}` and `{uses: [3,4]}` are available to the viewer, not dropped
+//
+// IF THE DEFECT IS PRESENT: one box reading "The observatory's cost is trivial against its
+// return." and nothing else -- five premises and two named rules with no trace on the map.
+
+[Contention]: The observatory should be funded.
+
+<Observatory Argument>: The observatory's cost is trivial against its return.
+
+(1) [Budget share]: The observatory costs one part in ten thousand of the science budget.
+(2) [Trivial threshold]: A cost of one part in ten thousand of a budget is trivial.
+-- Modus ponens {uses: [1,2]} --
+(3) [Cost trivial]: The observatory's cost is trivial.
+(4) [Real return]: The observatory returns knowledge obtainable no other way.
+-- Practical syllogism {uses: [3,4]} --
+(5) [Worth funding]: The observatory is worth funding.
+    +> [Contention]

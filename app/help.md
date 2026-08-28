@@ -23,6 +23,9 @@
 what he meant? That is the distinction this tool keeps — every claim marked for how far it stands
 from the words it came from, and every quotation checkable against the page it was taken from.
 
+New to it? **Take the walkthrough** — the first entry below. Two minutes, and it runs on the
+reconstruction you have open. It offers to run again next time; if you said no, it lives here.
+
 ## Reading the map
 
 Every box is one claim. Arrows run *from a reason to what it bears on*, so an arrow points at the
@@ -125,12 +128,38 @@ border of each box says which:
 
 Hover any box to see its level named. Unmarked claims are drawn plain.
 
+## Whose claim is this
+
+A different question, and the border does not answer it. *Whose words* is one thing; *who is
+putting this forward* is another, and a map loses it where prose keeps it easily — "Hume holds…",
+"even granting that…", "one might object…". Without it a reader cannot tell a position the author
+holds from one the author is attacking.
+
+So a claim may carry a **hashtag**, and three of them recur often enough to mean the same thing in
+every reconstruction:
+
+| | the claim is |
+|---|---|
+| *(no hashtag)* | **the author's own, asserted.** The common case |
+| `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
+| `#conceded` | **something the author grants tells against them** — a counterconsideration, or a scope limit the author sets on their own thesis |
+| `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
+
+Each names something the shape of the graph cannot: nothing about how a claim is wired reveals
+that it is Hume's rather than the paper's. On the Tooming reconstruction thirty claims are
+`#reported`, and without the hashtag every one of them would read as something the authors believe.
+
+A file may use any hashtag it likes and Ipsissima will show it — these three are a convention, not
+a fixed list. The **hashtags** control lists whatever the file actually contains, and does not
+appear at all when it contains none.
+
 ## The controls
 
 - **how much** — how many levels of reasons are showing, from the main claim outwards. The number
   on each button is how many claims it puts on screen.
 - **sections** — whether the argument's sections are folded into blocks or opened out
-- **kinds** — switch a kind of claim off to take it off the map. The number is how many there are.
+- **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
+  carry it. This control appears only when the file uses hashtags at all.
 - **full claims** — show every claim's whole text, rather than the first few lines with a "more"
   link
 
@@ -170,6 +199,16 @@ single paper and is the reconstructor's own sequence for several.
 
 **Open a folder** instead when there is no `.argdown` yet, or when you want to pick the folder
 rather than hunt for the file inside it. It is the same result either way.
+
+**Start a new one** when there is nothing to open. It is on the panel Ipsissima shows when no file
+is loaded, and in **File ▸ New Reconstruction** in the app. What appears is a small working
+skeleton — a claim, the argument for it, an objection, two premises — with a border of each kind, so
+the vocabulary the map draws with is on screen before you have written anything. Type over it. It
+unloads whatever is open, and asks first if there is anything unsaved.
+
+**Save** writes the reconstruction back where it came from. **Save as…** writes it somewhere else
+and goes on editing *that* file, which is what you want before a substantial revision. In a browser
+that cannot choose where to write, Save offers the file as a download instead and says so.
 
 ## The claim and its source
 
@@ -307,7 +346,8 @@ move. An *objection* is different — that is a move, and belongs on the map as 
 ## Sending it back
 
 The **Export** button in the Notes pane offers four things, and the right one depends entirely on
-what the reader on the other end has.
+what the reader on the other end has. All four ask where to put the file rather than dropping it
+in Downloads — the annotated essay belongs beside the essay.
 
 - **Word (.docx)** — the essay itself, with the margin marks as **real Word comments** beside the
   passage each one is about. What a student opens without being told how.
@@ -318,7 +358,9 @@ what the reader on the other end has.
   this program.
 - **Reconstruction as a web page** — a copy of *this page* with the whole thing inside it: map,
   essay, margins. They double-click it. Nothing to install, nothing to unzip, no folder to point
-  anything at. Add the editor if you want them to be able to answer back.
+  anything at. It is a reading copy: everything this page does, apart from parsing a new file and
+  editing one. Somebody who wants to answer back opens the reconstruction in Ipsissima itself,
+  which is a browser tab or an application rather than a copy frozen into the file you sent.
 
 A file that carries its text this way says so — **+ essay** beside the file name in the Argdown
 pane. That copy is a snapshot taken when the file was made, so if the real manuscript is open

@@ -29,6 +29,8 @@ interface Window {
   ArgdownPositions?: any;
   ArgdownExposition?: any;
   ArgdownBundle?: any;
+  /** The section list a page is assembled from, shared with the builder. */
+  ArgdownPage?: any;
   /** Vendored layout engine, loaded before the renderer. */
   dagre?: any;
 }
@@ -37,5 +39,6 @@ declare var ArgdownLiveMap: any;
 declare var ArgdownPositions: any;
 declare var ArgdownExposition: any;
 declare var ArgdownBundle: any;
+declare var ArgdownPage: any;
 declare var ArgdownHost: any;
 declare var dagre: any;

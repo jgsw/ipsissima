@@ -38,6 +38,7 @@ exact failure the fidelity markers exist to prevent.
 
 import re
 import statistics
+import textwrap
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -257,6 +258,47 @@ def detect_columns(pages, page_width):
     return statistics.median(found)
 
 
+def reading_order(lines):
+    """One column's lines in the order a person reads them: down the page, left to right.
+
+    SORTING BY `y0` ALONE IS NOT READING ORDER, and on an old scan it is not even close. A
+    typesetter's line is one `y`; an OCR'd line is a row of word-fragments each carrying its own
+    baseline. On the Dewey those baselines spread 3.5pt within a single printed line, which is
+    wider than the gap between successive `y` values in the sorted list -- so the extractor's own
+    order survived, and the article came out with its words interleaved right-to-left:
+
+        "…and con[in psychology should come at]trolling working hypothesis…"
+
+    Two of 169 sentences verified against the printed article. It is the worst single failure the
+    converter has had, and it looked like nothing: valid Markdown, every word present, the right
+    number of them.
+
+    So group by BAND rather than by exact `y`, then read each band left to right. The band is
+    0.6 of the median glyph size, which sits above the fragment jitter and below the line advance
+    -- on the Dewey, 4.5pt against a 3.5pt spread and a 9.6pt advance. A clean digital PDF has no
+    jitter at all and bands one line each, which is why this changes nothing on the modern papers.
+
+    PER COLUMN, and that is why this is not in `sheet_lines`. Two columns share their `y` values,
+    so banding a whole sheet would read across the gutter, one line from each column in turn.
+    """
+    if not lines:
+        return []
+    ordered = sorted(lines, key=lambda l: l["y0"])
+    sizes = [l.get("size") or 0 for l in ordered if l.get("size")]
+    tol = 0.6 * (statistics.median(sizes) if sizes else 10.0)
+    out, band, top = [], [], None
+    for l in ordered:
+        if top is None or l["y0"] - top <= tol:
+            if top is None:
+                top = l["y0"]
+            band.append(l)
+        else:
+            out.extend(sorted(band, key=lambda z: z["x0"]))
+            band, top = [l], l["y0"]
+    out.extend(sorted(band, key=lambda z: z["x0"]))
+    return out
+
+
 def order_columns(lines, split, offset):
     """One page's lines in reading order -- left column top to bottom, then right -- with the
     right column's left edges SHIFTED into the left column's frame.
@@ -268,10 +310,10 @@ def order_columns(lines, split, offset):
     paragraph break on the right-hand half of every page is then wrong.
     """
     if split is None:
-        return [dict(l, col=0) for l in lines]
+        return reading_order([dict(l, col=0) for l in lines])
     left = [dict(l, col=0) for l in lines if l["x0"] < split]
     right = [dict(l, col=1, x0=l["x0"] - offset) for l in lines if l["x0"] >= split]
-    return sorted(left, key=lambda l: l["y0"]) + sorted(right, key=lambda l: l["y0"])
+    return reading_order(left) + reading_order(right)
 
 
 def column_offset(lines, split):
@@ -395,6 +437,13 @@ def detect_furniture(pages, extra=()):
     head can differ ("ANALYSIS 23.6 JUNE 1963" then "122 ANALYSIS"). A FOOTER is whatever repeats
     in the bottom band across pages, which is what a download stamp does and what body text never
     does.
+
+    AND ALL OF IT NEEDS ONE MORE FACT: whether the line is ALONE on its line. "Bare digits" is a
+    good signal for a page number and a bad one on its own, because a document whose paragraphs
+    are numbered in the margin puts bare digits in both bands -- and a numbered paragraph opening
+    or closing a sheet was dropped as furniture. The page number is alone; the paragraph number
+    has its paragraph's first line beside it. `is_furniture` takes that as `alone`, because it
+    cannot be seen from the text.
     """
     tops, top_rep, bottoms = set(), Counter(), Counter()
     for lines, height in pages:
@@ -410,10 +459,31 @@ def detect_furniture(pages, extra=()):
             # "ANALYSIS 23.6 JUNE 1963" and "122 ANALYSIS" each occur on one page only.
             top_rep[re.sub(r"[\d.]+", "#", l["text"])] += 1
             letters = re.sub(r"[^A-Za-z]", "", l["text"])
-            if len(l["text"]) <= 60 and (not letters or letters.isupper()):
+            # A BARE NUMBER WITH TEXT BESIDE IT IS A PARAGRAPH NUMBER, NOT A RUNNING HEAD.
+            #
+            # "bare digits" is a good signal for a head and a bad one on its own: in a document
+            # whose paragraphs are numbered in the margin, the number opening a page IS the first
+            # line of that page and has no letters in it, so it was dropped as furniture. On the
+            # Miller judgment that took 8 of 71 paragraph numbers -- exactly those that happened
+            # to fall at a page top -- and a judgment is cited by those numbers.
+            #
+            # A running head is alone on its line; a paragraph number has its paragraph's first
+            # line to the right of it, on the same line. That is the whole distinction, and the
+            # geometry to see it is already here.
+            beside = any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
+                         and o["x0"] > l["x0"] for o in lines)
+            if len(l["text"]) <= 60 and (not letters or letters.isupper()) and not beside:
                 tops.add(l["text"])
         for l in lines:
             if l["y0"] > height * 0.86:
+                # THE SAME CONFUSION AT THE OTHER END OF THE PAGE. The footer test normalises
+                # every digit to "#", so a paragraph number low on a sheet -- "30." on Miller's
+                # twelfth -- is indistinguishable from the printed page number and was counted
+                # as the footer that repeats on every page. Text beside it on the same line says
+                # it is a paragraph number, exactly as at the top.
+                if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
+                       and o["x0"] > l["x0"] for o in lines):
+                    continue
                 bottoms[re.sub(r"[\d.]+", "#", l["text"])] += 1
     repeated = {k for k, n in bottoms.items() if n >= max(2, len(pages) * 0.6)}
     # A TWO-SIDED RUNNING HEAD CANNOT REACH HALF THE SHEETS, and requiring it to was why one of
@@ -443,13 +513,23 @@ def detect_furniture(pages, extra=()):
             if k and LICENCE.search(l["text"]) and l["y0"] - ordered[k - 1]["y0"] < _h * 0.05:
                 imprint.add(ordered[k - 1]["text"])
 
-    def is_furniture(text, y0, height):
-        if text in tops or (y0 <= height * 0.14
-                            and re.sub(r"[\d.]+", "#", text) in repeated_tops):
+    def is_furniture(text, y0, height, alone=True):
+        """`alone` is whether the line has nothing printed to the right of it on its own line.
+
+        WITHOUT IT THE BANDS CANNOT TELL A PAGE NUMBER FROM A PARAGRAPH NUMBER. Both are bare
+        digits, both normalise to "#", and a numbered paragraph that happens to begin near the
+        top or bottom of a sheet lands in the very band the furniture tests watch -- so "30." on
+        Miller's twelfth sheet was dropped as the page footer, and eight more were dropped as
+        running heads. The number is in the margin with its paragraph's first line beside it;
+        the page number is alone. Callers that know pass it; the default keeps the old behaviour
+        for callers that do not.
+        """
+        if (text in tops or (y0 <= height * 0.14
+                             and re.sub(r"[\d.]+", "#", text) in repeated_tops)) and alone:
             return "running head"
-        if re.fullmatch(r"\d{1,4}", text):
+        if re.fullmatch(r"\d{1,4}", text) and alone:
             return "page number"
-        if y0 > height * 0.86 and re.sub(r"[\d.]+", "#", text) in repeated:
+        if y0 > height * 0.86 and re.sub(r"[\d.]+", "#", text) in repeated and alone:
             return "page footer"
         # THE JOURNAL'S LICENCE LINE, which prints once, on the article's first page, and so is
         # invisible to the repeats detector. It sits INSIDE the note zone, between the last
@@ -521,9 +601,19 @@ def note_opening(text, dotted=False):
 #: Where an article's BACK MATTER starts. These are section headings, not phrases that might turn
 #: up in prose, so the line has to BE one -- short, and the whole of itself. "References" inside a
 #: sentence about someone's references is not a bibliography.
+#: A LONE PARAGRAPH NUMBER, set in the margin beside the paragraph it numbers. Legal judgments
+#: are cited BY that number -- "Miller (No 2) at [50]" -- so losing it loses the only address a
+#: claim in such a document has. Bounded at three digits so a year, a page range or a sum of
+#: money on a line of its own cannot be mistaken for one.
+PARA_NUMBER = re.compile(r"^\(?(\d{1,3})[.)]?$")
+
 BACK_MATTER = re.compile(
     r"^\W{0,3}(?:"
-    r"references?|bibliography|works\s+cited|literature\s+cited"
+    # PLURAL ONLY. `references?` also matched the bare singular, and on a scan whose OCR
+    # splits prose into short fragment lines, "with reference to" leaves a line that IS
+    # the word "reference" -- twice in the Dewey. A section heading is "References"; the
+    # singular as a heading is vanishingly rare and is not worth 37% of an article.
+    r"references|bibliography|works\s+cited|literature\s+cited"
     r"|acknowledge?ments?|acknowledgements"
     r"|appendix(?:\s+[A-Z0-9]+)?|appendices"
     r"|notes?|endnotes?|footnotes?"
@@ -541,6 +631,57 @@ FRONT_MATTER = re.compile(
     r"^\W{0,3}(?:a\s*b\s*s\s*t\s*r\s*a\s*c\s*t|keywords?|key\s+words?|"
     r"article\s+info(?:rmation)?|a\s+r\s+t\s+i\s+c\s+l\s+e|highlights?|"
     r"received:?|accepted:?|published(?:\s+online)?:?)\b", re.I)
+
+
+#: The abstract's opening, as distinct from the rest of the front-matter vocabulary, with whatever
+#: follows it on the same line. TWO LAYOUTS, and only one of them puts the word alone: a modern
+#: journal runs it into the text -- "Abstract: Vaccine safety surveillance programs..." -- and
+#: requiring the line to BE the word found nothing at all on those. Papers also space the letters
+#: out ("A B S T R A C T") often enough that the gaps have to be optional.
+ABSTRACT_HEAD = re.compile(r"^\W{0,3}a\s*b\s*s\s*t\s*r\s*a\s*c\s*t\b\s*[:.\u2014-]?\s*(.*)$",
+                           re.I)
+
+
+def find_abstract(rows, first, sizes, body_size):
+    """The article's abstract, or None.
+
+    IT WAS ALWAYS FOUND AND ALWAYS THROWN AWAY. `find_boundaries` reads the front matter in order
+    to cut it, so the abstract's position is already known -- it is the prose between the word
+    "Abstract" and the article's first heading. Everything before `first` was then discarded,
+    abstract included.
+
+    That is a real loss for a reader rather than a tidiness question: the abstract is the one
+    paragraph written to say what the paper argues, and someone opening an unfamiliar map has
+    nothing else that does. It is not part of the manuscript a claim can cite -- no reconstruction
+    should quote it as though it were the argument -- so it goes in the front matter, not the body.
+
+    STOPS AT THE NEXT PIECE OF APPARATUS. Keywords, a received date and an article-info block all
+    follow an abstract and none of them is one.
+    """
+    start, out = None, []
+    for i, (_p, _x, _y, _h, text, _c, _small) in enumerate(rows[:first or len(rows)]):
+        mo = ABSTRACT_HEAD.match(text.strip())
+        if mo:
+            start = i + 1
+            if mo.group(1).strip():          # "Abstract: <the abstract begins here>"
+                out.append(mo.group(1).strip())
+            break
+    if start is None:
+        return None
+    for i in range(start, first or len(rows)):
+        _p, x0, _y, _h, text, _c, small = rows[i]
+        t = text.strip()
+        if not t:
+            continue
+        if FRONT_MATTER.match(t):           # keywords, received:, article info -- the abstract ended
+            break
+        if small:                           # a footnote or an affiliation, not the abstract
+            continue
+        out.append(t)
+    text = re.sub(r"\s+", " ", " ".join(out)).strip()
+    # A COUPLE OF WORDS IS NOT AN ABSTRACT. A heading with nothing under it, or a stray line that
+    # happened to read "abstract", would otherwise be recorded as one.
+    return text if len(text.split()) >= 20 else None
 
 
 def looks_like_heading(text, x0, margin, size, body_size):
@@ -639,7 +780,17 @@ def find_boundaries(rows, margin, body_size, sizes):
     first, last = 0, len(rows)
 
     # ---- back matter: the first line on the last third of the paper that IS a section heading
-    for i in range(len(rows) - 1, -1, -1):
+    #
+    # THE LAST THIRD WAS DOCUMENTED AND NOT IMPLEMENTED. This loop ran over every row in the
+    # paper and had no `break`, so it kept going after a match and the EARLIEST one anywhere in
+    # the document won. On the Dewey a fragment line reading "reference" at 63% through cut the
+    # article there and discarded 37% of it, silently: the output was well-formed and the words
+    # were simply not in it.
+    #
+    # Scanning forward from the two-thirds mark and stopping at the first match gives what the
+    # comment always claimed. Forward rather than backward on purpose: a paper with both
+    # "Acknowledgements" and "References" ends at the earlier of them.
+    for i in range(int(len(rows) * 2 / 3), len(rows)):
         printed, x0, y0, height, text, _col, small = rows[i]
         t = text.strip()
         if not BACK_MATTER.match(t):
@@ -658,6 +809,7 @@ def find_boundaries(rows, margin, body_size, sizes):
         if len(t) > 70:
             continue
         last = i
+        break
     # ---- front matter: only where the paper announced some
     seen_front = False
     for i, (printed, x0, y0, height, text, _col, small) in enumerate(rows[:160]):
@@ -694,7 +846,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
               caps_headings=None):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
 
-    Three rules beyond the bands, each of which was a bug first:
+    Four rules beyond the bands, each of which was a bug first:
       * a lower-case first letter NEVER starts a block, whatever the indent -- this is what stops
         a drop cap, whose first lines are indented to clear the big letter, from reading as two
         paragraphs, and the runover of a displayed proposition from reading as a new one;
@@ -705,7 +857,11 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         while "1. Introduction" survived only because its first paragraph happened to be
         indented, which is exactly the kind of luck that hides a bug for one paper;
       * inside a footnote block the marker is the only delimiter, since a runover there sits at
-        the margin and can begin with a capital ("New York, 1957), p. 16.").
+        the margin and can begin with a capital ("New York, 1957), p. 16.");
+      * a LONE PARAGRAPH NUMBER in the margin opens the paragraph it numbers, and absorbs the
+        line after it. It matches no band -- it sits left of the paragraph indent -- so it fell
+        through to the merge rules and was swallowed by the paragraph ABOVE the one it numbers.
+        A judgment is cited by those numbers, and all 71 of Miller's were lost.
     """
     blocks = []
     expected = 1                      # the next footnote number the sequence is looking for
@@ -735,12 +891,37 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         if caps_headings and text in caps_headings:
             own_headings = dict(own_headings)
             own_headings[text] = caps_headings[text]
+        # A LONE PARAGRAPH NUMBER OPENS THE PARAGRAPH IT NUMBERS, and absorbs the line after it.
+        #
+        # Set in the margin, a bare "1." is left of the paragraph indent and matches no band, so
+        # it fell through to whichever merge branch happened to apply -- which is why the SAME
+        # kind of line was treated two different ways in one document. On Miller, "1." became a
+        # block of its own and "2." was appended to the end of the paragraph before it. All 71
+        # numbers were lost as openers, and a judgment is cited by exactly those numbers.
+        #
+        # The heading test runs FIRST, so a numbered section heading still wins and a number is
+        # never absorbed into one.
+        if not notes and blocks and blocks[-1].pop("awaits_text", False):
+            blocks[-1]["text"] += " " + text
+            blocks[-1]["pages"].add(page)
+            continue
         if (text in own_headings or (end_marker and end_marker in text)
                 or (number_headings and NUMBERED.match(text))):
             # A heading has to START a block. Recognising one after assembly is too late: these
             # sit at the margin like a continuation line, so the indent rule swallows them into
             # the paragraph above and there is nothing left to promote.
             kind = "own-heading"
+        elif PARA_NUMBER.match(text.strip()):
+            # BEFORE THE BANDS, because a lone number matches none of them: it sits left of the
+            # paragraph indent, so it fell through to "merge into the previous block" and was
+            # swallowed by the paragraph ABOVE the one it numbers. Marking it at block-creation
+            # time cannot work -- by then it has already been merged and there is no block to
+            # mark. On Miller that was 69 of 71 numbers; the two that survived did so because
+            # the block before them happened to be a heading, which is the kind of luck that
+            # hides a bug for one document.
+            blocks.append(dict(page=page, pages={page}, kind="body",
+                               text=text.strip(), awaits_text=True, numbered_para=True))
+            continue
         elif blocks and ((bands["hanging"] and x0 > bands["hanging"] - 5) or text[:1].islower()):
             blocks[-1]["text"] += " " + text
             blocks[-1]["pages"].add(page)
@@ -759,7 +940,50 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
     return blocks
 
 
-def dehyphenate(text, soft):
+def trust_soft_hyphens(soft_marks, ascii_breaks):
+    """Which hyphen convention is breaking the lines in this document?
+
+    `any soft hyphen anywhere` was too weak a test. One pasted passage, one quoted title, one
+    word set by a different tool declared the whole document soft-hyphenated, and every ASCII
+    line-end break was then left unjoined -- a paper with four soft hyphens and a hundred-odd
+    ASCII breaks came out with a hundred-odd broken words, none of which will ever verify
+    against a quotation.
+
+    So compare the two rather than testing one for presence, and trust whichever is doing the
+    work. THE TIE GOES TO SOFT, deliberately: the two failures are not equally bad. An unjoined
+    break leaves "estab- lished", which is visibly wrong and fails a quotation check loudly. The
+    blunt rule welds "well-established" into "wellestablished", which is not a word, reads as
+    one, and is flagged by nothing.
+    """
+    return soft_marks > 0 and soft_marks >= ascii_breaks
+
+
+def keep_hyphen(text):
+    """Compounds this document writes WITH a hyphen, so the blunt rule does not weld them.
+
+    THE BLUNT RULE'S KNOWN COST, MEASURED. Where a document uses no soft hyphens the ASCII rule
+    joins on any hyphen followed by whitespace, and a real compound broken at a line end is welded
+    into something that is not a word and reads as one. On Robeyns -- 95,478 words, no soft
+    hyphens at all -- it produced `wellknown`, `nonideal` and `decisionmaking`. Three in a book,
+    against hundreds of correct joins, and silent every time.
+
+    THE DOCUMENT ALREADY KNOWS. A book that breaks "well-known" across a line writes it
+    "well-known" everywhere else, so the evidence needed is in the text and needs no dictionary
+    and no dependency. So: collect every compound the document spells with a hyphen INSIDE a line,
+    where no line break can be responsible, and keep the hyphen when the same pair meets at a
+    break.
+
+    Conservative on purpose. A pair seen hyphenated mid-line is kept; a pair never seen that way
+    is joined as before. So this can only ever prevent a weld, never cause a split -- and where a
+    document is inconsistent with itself, the hyphen wins, which is the recoverable error.
+    """
+    out = set()
+    for a, b in re.findall(r"(\w+)-(\w+)", text):
+        out.add((a.lower(), b.lower()))
+    return out
+
+
+def dehyphenate(text, soft, keep=None):
     """Rejoin words broken across a printed line -- without destroying real compound hyphens.
 
     WHICH HYPHEN IS THE TYPESETTER'S? In a modern PDF, the two are different characters: a break
@@ -776,18 +1000,36 @@ def dehyphenate(text, soft):
     if soft:
         text = re.sub(r"\u00ad\s*", "", text)
         return text
-    return re.sub(r"(\w)-\s+(\w)", r"\1\2", text)
+    if not keep:
+        return re.sub(r"(\w)-\s+(\w)", r"\1\2", text)
+
+    # WITH THE DOCUMENT'S OWN EVIDENCE in hand, decide each break rather than joining all of them.
+    def join(m):
+        left, right = m.group(1), m.group(2)
+        tail = re.search(r"(\w+)$", left)
+        head = re.match(r"(\w+)", right)
+        if tail and head and (tail.group(1).lower(), head.group(1).lower()) in keep:
+            return left + "-" + right          # this document writes it hyphenated
+        return left + right
+
+    return re.sub(r"(\w+)-\s+(\w+)", join, text)
 
 
-def finish(blocks, repairs, applied, soft=False):
+def finish(blocks, repairs, applied, soft=False, keep=None):
     """De-hyphenate, collapse whitespace, then repair.
 
     Repairs run LAST and on the assembled block, because a repair can straddle a printed line
     break -- and they are scoped to every page a block SPANS, not the page it starts on, because
     the block carrying the worst of them began on one page and ended on the next.
     """
+    # The document's own hyphenated compounds, gathered across ALL blocks before any of them is
+    # repaired -- the evidence for one block usually sits in another.
+    if keep is None and not soft:
+        keep = set()
+        for b in blocks:
+            keep |= keep_hyphen(b["text"])
     for b in blocks:
-        b["text"] = re.sub(r"\s+", " ", dehyphenate(b["text"], soft)).strip()
+        b["text"] = re.sub(r"\s+", " ", dehyphenate(b["text"], soft, keep)).strip()
         for page, wrong, right, _why in repairs:
             if page in b["pages"] and wrong in b["text"] + " ":
                 b["text"] = (b["text"] + " ").replace(wrong, right).strip()
@@ -927,6 +1169,7 @@ def convert(cfg):
         None if cfg.columns == 1 else sheets[0][2] / 2)
     offset = column_offset(every, split) if split is not None else 0
     sheets = [(order_columns(l, split, offset), h, w) for l, h, w in sheets]
+    abstract = None
     is_furniture, heads, footers = detect_furniture([(l, h) for l, h, _ in sheets], cfg.furniture)
 
     declared = cfg.first_page if cfg.first_page is not None else cfg.first_sheet + 1
@@ -964,8 +1207,11 @@ def convert(cfg):
                                       {t for t in skip} | {l["text"] for l in lines
                                                            if is_furniture(l["text"], l["y0"], height)}
                                       )]
+        beside = {id(l) for l in lines
+                  if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
+                         and o["x0"] > l["x0"] for o in lines)}
         for l in lines:
-            why = is_furniture(l["text"], l["y0"], height)
+            why = is_furniture(l["text"], l["y0"], height, alone=id(l) not in beside)
             if why:
                 dropped[why] += 1
                 continue
@@ -1000,6 +1246,8 @@ def convert(cfg):
     auto_front = auto_back = None
     if not cfg.starts_at or not cfg.end_marker:
         af, ab = find_boundaries(body, bands["margin"], doc_size, body_sizes)
+        # BEFORE THE CUT, because after it the abstract is gone. See `find_abstract`.
+        abstract = find_abstract(body, af, body_sizes, doc_size)
         if not cfg.starts_at and af:
             auto_front = af
         if not cfg.end_marker and ab < len(body):
@@ -1044,7 +1292,10 @@ def convert(cfg):
     else:
         flow, notes = split_footnotes(body, bands["display"], margin=bands["margin"])
 
-    soft = any("\u00ad" in row[4] for row in body)
+    # Which hyphen convention is breaking this document's lines -- see `trust_soft_hyphens`.
+    soft_marks = sum(row[4].count("\u00ad") for row in body)
+    ascii_breaks = sum(1 for row in body if row[4].rstrip().endswith("-"))
+    soft = trust_soft_hyphens(soft_marks, ascii_breaks)
     auto_caps = {}
     if not cfg.own_headings:
         auto_caps = caps_heading_map(body, bands["margin"], doc_size, body_sizes,
@@ -1063,7 +1314,14 @@ def convert(cfg):
 
     out, used, seen = [], [], set()
     for b in blocks:
-        mo = cfg.number_headings and NUMBERED.match(b["text"])
+        # A NUMBERED PARAGRAPH IS NOT A NUMBERED HEADING, and on the page they are identical:
+        # "64. Article 9 provides:" has exactly the shape of "2. Hume and abstraction", and a
+        # short paragraph opening a quotation was promoted to a section heading because of it.
+        #
+        # What tells them apart is not the text but how it ARRIVED. A heading is one line; a
+        # numbered paragraph is a number in the margin and its prose beside it, two rows that
+        # `to_blocks` joined. That is known there and nowhere else, so it is recorded there.
+        mo = cfg.number_headings and not b.get("numbered_para") and NUMBERED.match(b["text"])
         if mo:
             out.append(f"# {mo.group(1)} {mo.group(2)}".rstrip())
             used.append(mo.group(0))
@@ -1116,7 +1374,12 @@ def convert(cfg):
         heading_gaps=heading_gaps(used),
         repairs_applied=sum(applied.values()), repairs_total=len(cfg.repairs),
         repairs_missing=[w for _p, w, _r, _y in cfg.repairs if not applied[w]],
-        stretch_median=round(statistics.median(ratios), 1), suspicious=suspicious)
+        stretch_median=round(statistics.median(ratios), 1), suspicious=suspicious,
+        # REPORTED BECAUSE IT IS A CHOICE. Which hyphen convention was trusted decides whether
+        # a hundred words are joined or broken, and it was silent until it went wrong.
+        hyphens=dict(soft=soft_marks, ascii_line_end=ascii_breaks,
+                     rule="soft" if soft else "ascii"),
+        abstract=abstract)
 
     cfg.out.write_text(header(cfg, report) + "\n\n".join(out) + "\n", encoding="utf-8")
     return report
@@ -1150,7 +1413,15 @@ def header(cfg, r):
     edges = ", ".join(f"{k} {round(b[k])}" for k in ("margin", "display", "paragraph", "hanging")
                       if b[k] is not None)
     lines = [
-        "---", f'title: "{cfg.title}"', f'author: "{cfg.author}"', f'source: "{cfg.source}"',
+        "---", f'title: "{cfg.title}"', f'author: "{cfg.author}"', f'source: "{cfg.source}"']
+    # THE FRONT MATTER, NOT THE BODY. The abstract says what the paper argues and is exactly what
+    # a reader opening an unfamiliar map wants -- but it is not a passage a claim may cite, and
+    # putting it in the manuscript would invite a reconstruction to quote it as the argument.
+    # Folded YAML (`>-`) so a long one stays readable in the file it is written to.
+    if r.get("abstract"):
+        lines.append("abstract: >-")
+        lines += ["  " + s for s in textwrap.wrap(r["abstract"], 92)]
+    lines += [
         "---", "",
         "<!-- CONVERTED TEXT - NOT THE PUBLISHED ARTICLE.",
         f"     Made by pdf_to_source.py from {cfg.pdf.name}.",

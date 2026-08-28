@@ -567,7 +567,14 @@ def split_manuscript(path: str, out: str, title: str | None = None,
 # is not offered a tool that can only fail.
 
 def _zotero_available():
-    return (Path.home() / "Zotero" / "zotero.sqlite").exists()
+    # THE SAME RESOLUTION THE READER USES, not a second guess at it. This gates tool
+    # REGISTRATION, so a hard-coded `~/Zotero` against a relocated data directory did not
+    # produce an error -- it produced a server with no Zotero tool in it and nothing saying why.
+    try:
+        from ipsissima_mcp.from_zotero import data_dir
+    except ImportError:
+        from from_zotero import data_dir
+    return (data_dir() / "zotero.sqlite").exists()
 
 
 if _zotero_available():

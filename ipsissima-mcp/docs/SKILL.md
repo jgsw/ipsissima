@@ -30,8 +30,8 @@ python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<file>.argdown" \
     --source-root "<manuscript dir>" --format json
 ```
 
-`--format json` gives the faults with their locations and fixes, and nothing else: 221 words
-rather than 687 on the Darwin sample, and 2.4s rather than 10.5. Bare, it prints the full census —
+`--format json` gives the faults with their locations and fixes, and nothing else: 372 words
+rather than 682 on the Darwin sample, and 2.0s rather than 4.6. Bare, it prints the full census —
 apex, sections, tags, debt — which is what a person wants once and a fix loop wants never.
 
 **Parsing clean is necessary, not sufficient.** A file can parse perfectly and be four

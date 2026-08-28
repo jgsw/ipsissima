@@ -36,6 +36,15 @@ body{margin:0;background:var(--bg);color:var(--fg);
 header{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
   border-bottom:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);
   flex:0 0 auto;flex-wrap:nowrap;overflow:hidden}
+/* NOTHING IN THE BAR SHRINKS EXCEPT THE TITLE, and this rule is the whole reason the bar was
+   losing controls. A flex item's default is `flex-shrink:1`, so the two segmented groups were
+   being squeezed below their content width — and `.seg` sets `overflow:hidden`, so the buttons
+   at the right-hand end of each group were not narrowed, they were CUT OFF THE END.
+   Measured 27 Aug 2026, workbench with a file open: at every width from 901px to about 1370px
+   the Notes and Manuscript toggles were not on screen at all, and neither was Exposition. The
+   comment 40 lines below promises "nothing is merely clipped: a button half off the edge is
+   worse than one honestly absent" — that promise was being kept only below 820px. */
+header > *{flex:0 0 auto}
 /* One row, always. A bar that reflows to two lines as the window narrows is exactly the kind of
    movement that breaks concentration, so the title gives up its width first and the buttons
    shed their labels before anything wraps. */
@@ -45,22 +54,26 @@ header{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
 header h1{font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;
   text-overflow:ellipsis;min-width:2rem;flex:0 1 auto}
 /* ---------------------------------------------------------------- narrow screens
-   Two thresholds, each for a different reason.
+   Two thresholds, and only one of them is a width.
 
-   At 900px the buttons shed their LABELS. The bar is one row and must stay one row -- a toolbar
-   that reflows as the window narrows is the kind of movement that breaks concentration -- so the
-   title gives up its width first, then the labels go, and the icons carry the meaning.
+   THE LABELS GO WHEN THEY DO NOT FIT, not at 900px. A media query cannot know how many buttons
+   are on screen, and the number varies by more than the labels are worth: Exposition appears
+   only once the claims are placed, Notes only once something is written in the margins, Open…
+   only in a build that can open a second file, Undo and Redo only once there is something to
+   take back. So the same 900px served a Viewer with seven controls and a workbench with
+   thirteen, and the workbench needed 1370px. `fitHeader` in the script measures instead and
+   sets `.tight`; the bar is one row and stays one row, the title gives up its width first, then
+   the labels go, and the icons carry the meaning.
 
    At 820px the two COLUMNS stop making sense: neither can hold a paragraph at a readable measure,
    and two cramped panes are worse than one good one. Below it the panes become mutually exclusive
    (see isNarrow in the script), so the window shows the map, or the Argdown, or the text -- whole --
-   and the toolbar switches between them in one tap. */
-@media (max-width:900px){
-  #fitbtn span,#fslabel{display:none}
-  header .icon span,#laybtn span,#helpbtn span{display:none}
-  header{gap:.4rem;padding:.35rem .5rem}
-  .seg button{padding:.2rem .45rem}
-}
+   and the toolbar switches between them in one tap. That one IS a width, because it is about how
+   much room a paragraph needs, which does not depend on what is in the toolbar. */
+header.tight #fitbtn span,header.tight #fslabel{display:none}
+header.tight .icon span,header.tight #laybtn span,header.tight #helpbtn span{display:none}
+header.tight{gap:.4rem;padding:.35rem .5rem}
+header.tight .seg button{padding:.2rem .45rem}
 @media (max-width:820px){
   /* One pane at a time: whichever is up takes the whole area. */
   #side{width:auto;max-width:none;min-width:0;flex:1 1 auto;border-left:0}
@@ -107,6 +120,48 @@ main.swapped{flex-direction:row-reverse}
 #side.solo{flex:1 1 auto;width:auto;max-width:none}
 #stage{flex:1;min-width:0;position:relative}
 #map{position:absolute;inset:0}
+
+/* THE ARTICLE'S OWN ABSTRACT, on a fold at the map's top-left.
+ *
+ * ORIENTATION MATERIAL, NOT ARGUMENT, and the drawing has to say so before a word of it is read.
+ * Everything on the map is a claim in a box whose border states whose words it is; so this is
+ * deliberately NOT a box of that family — no fidelity border, no kind colour, serif prose on the
+ * panel colour rather than the map's sans. It sits in the page's HTML layer above the SVG, so it
+ * can never be clicked as a claim, folded into a section, or swept into an export of the map.
+ *
+ * IT LIVES IN #stage RATHER THAN IN THE MAP'S OWN TOOLBAR. `$("stage").hidden` already follows
+ * the map pane, so the control appears and disappears with the map for free, and the live-map
+ * file stays agnostic about where the argument came from — which is the contract stated at the
+ * top of argdown-live-map.js and worth keeping.
+ *
+ * TEXT SELECTION IS LEFT ON. "Not selectable as a claim" is about the map's own selection, not
+ * about the clipboard: someone orienting themselves in an unfamiliar paper may well want to
+ * paste the abstract into their notes, and taking that away would be a loss for no gain.
+ *
+ * THE HEIGHT STOPS SHORT OF THE BOTTOM, so unfolding a long abstract never hides the controls
+ * the reader needs to get back to the map. Two caps, because one was not enough: `calc(100% -
+ * 4.5rem)` clears the toolbar at its usual single row, and the 62% clears it when it WRAPS —
+ * measured at 900x700, where the bar takes four rows and 110px of a 640px stage, which the first
+ * cap alone overlapped by about 40px. Anything longer than the cap scrolls inside the panel. */
+#abs{position:absolute;left:8px;top:8px;z-index:8;display:flex;flex-direction:column;
+  align-items:flex-start;gap:.3rem;min-height:0;
+  max-width:min(32rem,calc(100% - 16px));max-height:min(calc(100% - 4.5rem),62%)}
+#absbtn{background:var(--panel);font-size:11.5px;padding:.2rem .5rem;flex:0 0 auto}
+/* The chevron IS the affordance: it points right when there is something folded away and down
+   when it is open, so the button says what a click will do without a second label. */
+#absbtn .chev{transition:transform .18s ease}
+#absbtn.on .chev{transform:rotate(90deg)}
+#abspanel{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:.45rem .7rem .6rem;min-height:0;overflow:auto;
+  box-shadow:0 6px 22px rgba(0,0,0,.16)}
+#abshead{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.25rem}
+/* Says in words what the panel's shape already says: this is the paper's own summary of itself,
+   and none of it is a move in the reconstruction. Cheap, and it stops the one misreading that
+   would matter. */
+#abswhere{font-size:10.5px;font-style:italic;color:var(--fg-dim);line-height:1.4}
+#absbody{font:13px/1.65 Georgia,"Times New Roman",serif;color:var(--fg)}
+#absbody p{margin:0 0 .5rem}
+#absbody p:last-child{margin-bottom:0}
 
 /* THE MANUSCRIPT PANE. Its width is a CSS variable so the drag handle can set one number and
    nothing has to be recomputed; `flex:0 0 auto` keeps the stage giving up the space rather than
@@ -159,6 +214,30 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #notes > header{display:flex;align-items:center;gap:.4rem;padding:.35rem .5rem;
   border-bottom:1px solid var(--line);font-size:12px}
 #notes > header b{font-weight:600}
+/* THE KIND FILTER, on the strip under the header. Modelled on #adextern -- same colour, same
+   border, same 11.5px -- because both are a quiet row of controls belonging to the pane above
+   them, and a second visual idiom here would be a second thing to learn.
+
+   SCROLLS SIDEWAYS RATHER THAN WRAPPING. "reconstructor's notes" is the longest label in the
+   program and the pane goes down to 14rem; wrapping put the segmented control on its own line
+   under a one-word label, which reads as two controls. The map toolbar takes the same view of
+   the same problem at 560px. */
+#notefilter{display:flex;flex:0 0 auto;align-items:center;gap:.4rem;padding:.3rem .5rem;
+  border-bottom:1px solid var(--line);background:var(--panel);font-size:11.5px;
+  color:var(--fg-dim);overflow-x:auto;scrollbar-width:none}
+#notefilter::-webkit-scrollbar{display:none}
+#notefilter[hidden]{display:none}
+#notefilter > b{font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;
+  font-size:9px;flex:0 0 auto}
+#notefilter .seg{flex:0 0 auto}
+#notefilter .seg button{padding:.1rem .45rem;font-size:11px}
+/* The count rides on the button, so the cost of a click is visible before it is made -- the same
+   move the map toolbar makes with its own counts, and for the same reason. Tabular figures so
+   the row does not jitter when a comment is deleted. */
+#notefilter .seg button[data-count]::after{content:attr(data-count);margin-left:.3rem;opacity:.55;
+  font-variant-numeric:tabular-nums}
+#notefilter .seg button.on[data-count]::after{opacity:.8}
+#notefilter .seg button:disabled{opacity:.4;cursor:not-allowed}
 #notelist{flex:1 1 auto;min-height:0;overflow:auto;padding:.4rem}
 .note{border:1px solid var(--line);border-left-width:3px;border-radius:5px;padding:.4rem .55rem;
   margin-bottom:.4rem;cursor:pointer;font-size:12.5px;line-height:1.5}
@@ -205,6 +284,30 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #adhost .cm-scroller{font:12.5px/1.6 var(--argdown-font);
   font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual}
 #adhost .cm-content{padding:.5rem 0}
+/* CODEMIRROR'S FLOATING LAYERS, BROUGHT UNDER THE PROGRAM'S OWN.
+ *
+ * Reported as: with Find open in the Argdown pane, the search panel is drawn on top of the
+ * Layout menu, so the menu is only half visible. The cause is not the menu. CodeMirror's base
+ * theme gives `.cm-panels` z-index 300 and `.cm-tooltip` z-index 500, and NEITHER IS CONTAINED:
+ * `.cm-editor` is position:relative with z-index auto, which makes no stacking context, so both
+ * compete in the page's root context — against every overlay this program puts up, and every one
+ * of them is lower. The full scale here is #drop 5, #err 9, #help 11, #fsexit 12, #about 40,
+ * #ctx 60, #cdlg 80. So the search panel outranks the About window, the context and Layout
+ * menus, and the comment dialog; a lint tooltip, at 500, outranks them by more. The Layout menu
+ * is simply the pair that overlap most often.
+ *
+ * `.cm-gutters` (200) and the cursor layer (150) sit INSIDE `.cm-scroller`, which is
+ * position:relative with z-index 0 and so does make a stacking context. They are already
+ * contained and are deliberately left alone.
+ *
+ * 1 and 2 rather than 0: they must still beat `.cm-scroller`, which is the editor's own text and
+ * is z-index 0 in that same root context. The tooltip stays above the panel, as it was.
+ *
+ * THE `#adhost` PREFIX IS LOAD-BEARING. CodeMirror's rules are `.ͼ1 .cm-panels`, two classes,
+ * and its stylesheet is injected AFTER this one — so a bare `.cm-panels` rule here has equal
+ * specificity, loses on order, and does nothing at all. */
+#adhost .cm-panels{z-index:1}
+#adhost .cm-tooltip{z-index:2}
 #ms select{font:inherit;font-size:12px;max-width:16rem;flex:1;min-width:0}
 #ms .muted{font-size:11px;color:var(--fg-dim);white-space:nowrap}
 #ms > header button{padding:.05rem .4rem;line-height:1.1;font-size:15px}
@@ -258,6 +361,67 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
   color:var(--fg);resize:vertical}
 #cdlg .row{display:flex;gap:.4rem;align-items:center;margin-top:.6rem}
 button.plain.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ---------------------------------------------------------------- the walkthrough
+   THE HOLE IS A SHADOW, not four rectangles. The obvious way to dim everything except one
+   control is to lay four divs around it, and it goes wrong the moment the target has rounded
+   corners or sits half off the edge of the window — the seams show, and clamping four boxes to
+   the viewport is four chances to leave a gap. A single box with a 100vmax spread shadow is the
+   dim, the hole and the ring in one element, and it cannot come apart.
+
+   `#walk` itself is transparent and covers the window, so it EATS STRAY CLICKS. A tour that
+   drives the map is a tour that can be derailed by one click on the wrong box, and the reader
+   has no way to know they have derailed it. The scrim is also where a click means "next".
+
+   No transition on the shadow: `box-shadow` interpolates badly across a large spread and the
+   dim visibly pumps. Only the position and size are animated, which is what the eye follows. */
+#walk{position:fixed;inset:0;z-index:75;--walk-scrim:rgba(20,22,26,.5)}
+@media (prefers-color-scheme:dark){#walk{--walk-scrim:rgba(0,0,0,.58)}}
+#walkspot{position:absolute;border-radius:10px;pointer-events:none;
+  box-shadow:0 0 0 100vmax var(--walk-scrim);outline:2.5px solid var(--accent);
+  outline-offset:2px;
+  transition:left .32s cubic-bezier(.4,0,.2,1),top .32s cubic-bezier(.4,0,.2,1),
+             width .32s cubic-bezier(.4,0,.2,1),height .32s cubic-bezier(.4,0,.2,1)}
+/* A step with nothing to point at — the welcome, the sign-off — still wants the dim, and gets it
+   from a plain background rather than from a shadow spreading out of a zero-sized box. A 0x0 box
+   with a 10px radius and a 100vmax spread is a legal way to ask for a full-screen dim and a
+   strange one, and it was the only case where the scrim did not always come out in a capture.
+   No hole to cut means nothing to cut it out of. */
+#walk.nohole{background:var(--walk-scrim)}
+#walkspot.blank{outline:0;width:0;height:0;left:50%;top:50%;transition:none;box-shadow:none}
+#walkspot::after{content:"";position:absolute;inset:-2px;border-radius:12px;
+  outline:2px solid var(--accent);outline-offset:0;opacity:0;
+  animation:walkpulse 1.9s ease-out infinite}
+#walkspot.blank::after{display:none}
+@keyframes walkpulse{
+  0%{opacity:.55;transform:scale(1)}
+  70%{opacity:0;transform:scale(1.09)}
+  100%{opacity:0;transform:scale(1.09)}
+}
+@media (prefers-reduced-motion:reduce){
+  #walkspot{transition:none}
+  #walkspot::after{animation:none}
+}
+#walkcard{position:absolute;width:min(25rem,calc(100vw - 1.6rem));background:var(--bg);
+  border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.3);
+  padding:.75rem .9rem .65rem;font-size:13px;line-height:1.5}
+#walkcard .wcount{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--fg-dim);font-variant-numeric:tabular-nums}
+#walkcard h3{margin:.15rem 0 .3rem;font-size:14.5px}
+#walkcard p{margin:.3rem 0}
+#walkcard b{font-weight:600}
+#walkcard .row{display:flex;gap:.4rem;align-items:center;margin-top:.7rem}
+#walkcard .grow{flex:1}
+/* The fidelity strokes, drawn small beside their names. Prose cannot carry "long dash versus
+   short dash", which is the whole reason the Help draws them too. */
+#walkcard .wkey{display:grid;grid-template-columns:44px 1fr;align-items:center;
+  gap:.05rem .35rem;margin:.45rem 0 .1rem;font-size:11.5px;color:var(--fg-dim)}
+#walkcard .wkey svg{width:44px;height:16px;color:var(--fg)}
+#walkcard .wkey b{color:var(--fg);font-weight:600}
+/* The rail: which step of how many, without a number to read. */
+#walkcard .wrail{display:flex;gap:3px;margin-top:.5rem}
+#walkcard .wrail i{flex:1;height:3px;border-radius:2px;background:var(--line)}
+#walkcard .wrail i.on{background:var(--accent)}
 #ctx{position:fixed;z-index:60;min-width:12rem;max-width:20rem;background:var(--bg);
   border:1px solid var(--line);border-radius:7px;box-shadow:0 6px 22px rgba(0,0,0,.16);
   padding:.25rem;font-size:12.5px}
@@ -544,6 +708,34 @@ body.fs #fsexit{display:inline-flex}
        the passage it came from at the same time. -->
   <div id="stage">
   <div id="map"></div>
+  <!-- THE ABSTRACT, FOR SOMEONE MEETING THIS MAP COLD. A reconstruction says what a paper
+       argues; the abstract says what the paper says it argues, in the author's own words, and
+       those are the two things a reader wants side by side in the first minute. The ingest
+       already keeps it — pdf_to_source.py writes it into the source file's YAML front matter,
+       out of the body precisely so no claim can cite it — and until now the viewer threw it
+       away.
+
+       ON A FOLD, and shut to begin with. It is worth reading once and then in the way: the
+       owner's words are "once the user's done with reading it and wants to focus on the map".
+       Three ways out, because a panel over the picture must be trivially dismissible — the
+       button again, the ×, or Escape.
+
+       Shown ONLY when there is one. Papers have abstracts; a chapter of Dewey, a judgment, a
+       1928 Economic Journal article do not, and an empty control that never opens teaches the
+       reader that the feature is broken. -->
+  <div id="abs" hidden>
+    <button class="plain icon" id="absbtn" aria-expanded="false" aria-controls="abspanel"
+            title="The article's own abstract — what the paper says it argues, in its authors' words. Click again to fold it away.">
+      <svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg><span>Abstract</span></button>
+    <div id="abspanel" role="note" hidden>
+      <div id="abshead">
+        <span id="abswhere"></span>
+        <span class="grow"></span>
+        <button class="plain x" id="absclose" title="Fold the abstract away (Esc)">&times;</button>
+      </div>
+      <div id="absbody"></div>
+    </div>
+  </div>
   <div id="err"></div>
   <button id="fsexit" title="Leave full screen (Esc)">
     <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor"
@@ -566,7 +758,12 @@ body.fs #fsexit{display:inline-flex}
     <div class="box">
       <h2>Drop an <code>.argdown</code> file — or its folder — here</h2>
       <p><button class="plain" id="pick">choose a file</button>
-         &nbsp;·&nbsp; <button class="plain" id="pickdir">choose a folder</button></p>
+         &nbsp;·&nbsp; <button class="plain" id="pickdir">choose a folder</button>
+         <!-- THE THIRD ANSWER TO A COLD START. The panel offered two ways to open something that
+              already exists, and no way to begin; someone whose reconstruction does not exist yet
+              had to be told to create an empty file somewhere else and drop it on this. Hidden in
+              a build with no editor, where it would only produce a file nobody could type into. -->
+         &nbsp;·&nbsp; <button class="plain" id="picknew" hidden>start a new one</button></p>
       <p>A folder brings the manuscript with it, so the claims can be laid out
          <b>by where they appear in the text</b>. A lone file gives the argument map only —
          unless it is a <b>bundle</b>, which carries the text inside it.</p>
@@ -608,6 +805,32 @@ body.fs #fsexit{display:inline-flex}
     </div>
   </div>
 
+  <!-- THE WALKTHROUGH. Empty here on purpose: every word of it is written in the script, beside
+       the code that knows whether the pane a step is about exists in this build. A step whose
+       text lives in the HTML and whose availability lives in the JS is a step that will one day
+       explain the Argdown editor to somebody holding a Reader. -->
+  <div id="walk" hidden role="dialog" aria-label="Walkthrough">
+    <div id="walkspot"></div>
+    <!-- Announced when it changes, because the ring the sighted reader is following says nothing
+         to a screen reader and the card is the whole of the step for them. -->
+    <div id="walkcard" aria-live="polite">
+      <div class="wcount" id="walkcount"></div>
+      <h3 id="walktitle"></h3>
+      <div id="walkbody"></div>
+      <div class="row">
+        <button class="plain tiny" id="walkquit">Skip</button>
+        <span class="grow"></span>
+        <button class="plain tiny" id="walkback">Back</button>
+        <!-- The other answer to the last card's question. Declared here rather than built when
+             the question is asked, so that the check in test_page_parity.mjs -- no id reached
+             for that nothing defines -- can see it. It caught this one. -->
+        <button class="plain tiny" id="walkno" hidden>No, I&rsquo;m set</button>
+        <button class="plain primary" id="walknext">Next</button>
+      </div>
+      <div class="wrail" id="walkrail" aria-hidden="true"></div>
+    </div>
+  </div>
+
   <!-- THE MANUSCRIPT. Draggable divider, because how much of it you want to see depends on
        whether you are reading the text or checking a claim against it. -->
   <div id="split" hidden title="Drag to resize"></div>
@@ -628,6 +851,13 @@ body.fs #fsexit{display:inline-flex}
                 title="Fold every {…} provenance block, so the argument's shape is on one screen. Again to unfold.">{…}</button>
         <button class="plain tiny icon" id="adsave" hidden title="Write the Argdown back to disk">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.8v8.6"/><path d="M6.6 8.2 10 11.6l3.4-3.4"/><path d="M3.5 13.2v2.3a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-2.3"/></svg><span>Save</span></button>
+        <!-- SAVE AS. There was a Save and there was an Export, and no way to write the
+             reconstruction to a DIFFERENT file — so keeping a copy before a substantial revision
+             meant leaving Ipsissima to duplicate the file in the Finder first. The label is not
+             an icon: "Save" and "Save as" drawn with the same glyph and distinguished only by a
+             tooltip is exactly the pair a reader clicks wrongly. -->
+        <button class="plain tiny" id="adsaveas" hidden
+                title="Write the Argdown to a different file, and go on editing that one">Save as…</button>
         <button class="plain x" data-close="argdown" title="Close">&times;</button>
       </header>
       <!-- SOMEBODY ELSE CHANGED THIS FILE. A strip rather than a dialog: the event arrives when
@@ -645,19 +875,44 @@ body.fs #fsexit{display:inline-flex}
       <div id="adhost"><pre id="src"></pre></div>
     </section>
     <div class="vsplit" id="vsplit1" hidden title="Drag to resize"></div>
+    <!-- ONE NAME PER THING. This pane was headed "Margins" while the toolbar button that opens
+         it says "Notes" and the help calls it the Notes pane, so the same pane had two names
+         depending on where you read about it. It is Notes everywhere now. -->
     <section id="notes" hidden aria-label="Notes and comments">
       <header>
-        <b>Margins</b>
+        <b>Notes</b>
         <span id="notecount" class="muted"></span>
         <span class="grow"></span>
         <button class="plain tiny icon" id="expbtn" hidden
-                title="Send this back: the annotated essay as Word or Markdown, or the whole
+                title="Export: the annotated essay as Word or Markdown, or the whole
                        reconstruction as one file">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3.6"/><path d="M6.6 6.9 10 3.5l3.4 3.4"/><path d="M3.5 13.4v2.1a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-2.1"/></svg><span>Export</span></button>
         <button class="plain tiny" id="delallc" hidden
                 title="Remove every comment from the file. Notes are left alone.">Delete all comments</button>
         <button class="plain x" data-close="notes" title="Close">&times;</button>
       </header>
+      <!-- WHICH OF THE TWO HANDS TO READ. See MARGIN_KINDS: a comment is someone writing ON the
+           reconstruction, a note is the reconstruction's own aside about its reading. Twenty
+           marks on an essay mix a tutor's feedback with the reconstructor's working, and the two
+           are read for different reasons — marking, versus checking how a claim was taken.
+
+           A SEGMENTED CONTROL, because this is one setting with three values and exactly one is
+           always in force. The names are the export menu's own words, shortened only by the fact
+           that a segmented control already means "only": the same three-way choice is offered in
+           two places and must not be called two different things.
+
+           ON ITS OWN ROW, not in the header, which already carries Export, Delete all comments
+           and a close button and overflows at the pane's 14rem minimum. Shown only when BOTH
+           kinds are present: with one kind written the choice is not a choice, which is the view
+           the export button takes of the same question. -->
+      <div id="notefilter" hidden>
+        <b>show</b>
+        <span class="seg" role="group" aria-label="Which marginalia to show">
+          <button data-want="both">everything</button>
+          <button data-want="comment" title="Remarks ON the reconstruction — a tutor on a student's argument, a reader on a colleague's">comments</button>
+          <button data-want="note" title="The reconstruction's own asides — why a claim was read that way, which step is imputed">reconstructor&rsquo;s notes</button>
+        </span>
+      </div>
       <div id="notelist"></div>
     </section>
     <div class="vsplit" id="vsplit2" hidden title="Drag to resize"></div>
@@ -748,6 +1003,11 @@ function highlight(text){
 
 function render(name, source, graph){
   clearErr();
+  // A TOUR IS ABOUT THE RECONSTRUCTION THAT WAS OPEN. Dropping a file reaches this through a
+  // document-level listener, which the scrim does not stop, and the map about to be destroyed is
+  // the one the tour has pinned a camera to and a step's worth of state in. Ended rather than
+  // restored: the file being opened brings its own state and there is nothing left to put back.
+  if (WALK) abandonWalkthrough();
   NAME = name; SOURCE = source || ""; CURRENT_GRAPH = graph;
   $("fname").innerHTML = name ? name.replace(/&/g,"&amp;").replace(/</g,"&lt;") : "Argdown viewer";
   $("adname").textContent = name || "Argdown";
@@ -793,6 +1053,9 @@ function render(name, source, graph){
   }
   MSCHAPTER = null; MSLINES = [];
   $("msnote").textContent = "";
+  // Offered from the same manuscript the chapter list was just built from, so a file opened into
+  // this page cannot leave the previous one's abstract behind it.
+  syncAbstract();
   // The Text toggle is offered only once there is a manuscript to show.
   $("panes").querySelector('[data-p="text"]').hidden = !msAvailable();
   PANES.text = false;
@@ -827,6 +1090,10 @@ function render(name, source, graph){
   // looks like a change and the map jumps once for nothing.
   MAP_SIG = mapSignature(graph);
   setArrangement("reasons");
+  // LAST, and only ever once. The first reconstruction somebody opens is the first moment there
+  // is anything for a walkthrough to point at; every later `render` is a file they chose while
+  // already knowing what this is.
+  maybeStartWalkthrough();
 }
 
 /** The footer line and the debugging block. Its own function because a live edit redraws the
@@ -889,7 +1156,7 @@ function statsLine(graph){
   $("helpstats").textContent =
     graph.nodes.length + " claims\n" + (graph.edges||[]).length + " relations\n" +
     groups.length + " sections\n" + placedCount(graph) + " placed in the text" +
-    (ftxt ? "\n\nkinds:\n  " + ftxt : "");
+    (ftxt ? "\n\nhashtags:\n  " + ftxt : "");
 }
 
 function placedCount(graph){
@@ -1005,6 +1272,15 @@ function buildHelpPages(){
     intro.forEach(function(n){ box.appendChild(n); });
   }
   toc.textContent = "";
+  // FIRST, AND GOING SOMEWHERE ELSE. The walkthrough is the one entry here that is not reference
+  // material, and it is aimed at the one reader who cannot yet tell which of the topics below
+  // answers their question. It is also the promise the walkthrough makes on its way out —
+  // "it is the first thing in the list" — so it has to be exactly that.
+  var wt = document.createElement("button");
+  wt.type = "button";
+  wt.textContent = "Take the walkthrough";
+  wt.onclick = function(){ setHelp(false); startWalkthrough(); };
+  toc.appendChild(wt);
   pages.forEach(function(pg, i){
     var b = document.createElement("button");
     b.type = "button";
@@ -1212,6 +1488,66 @@ else if (narrowQuery.addListener) narrowQuery.addListener(onBreakpoint);
 // returns immediately when the answer has not changed, so this costs nothing on an ordinary drag.
 window.addEventListener("resize", onBreakpoint);
 
+/* ---- the toolbar sheds its labels when, and only when, they do not fit -----------------
+ *
+ * MEASURED, NOT A BREAKPOINT, because the bar's width is not a property of the window. Which
+ * controls are on it depends on the file and the build: Exposition appears once the claims are
+ * placed, Notes once something is written in the margins, Open… only where a second file can be
+ * opened, Undo and Redo once there is something to take back. A Viewer showing a lone .argdown
+ * has seven controls; the workbench with a folder open has thirteen. One number cannot serve
+ * both, and the number that was there (900px) served neither: the workbench needed 1370px, so
+ * between 901 and 1370 the two segmented groups were clipped and the reader simply could not
+ * reach the Manuscript or Notes toggles.
+ *
+ * WHY THE CLASS IS REMOVED BEFORE MEASURING. The question is "do the labels fit", and it cannot
+ * be answered while they are hidden. Removing and re-adding inside one call is free: style is
+ * recalculated on the `scrollWidth` read and nothing is painted in between, so there is no
+ * flicker. It also makes the decision a pure function of the available width rather than of the
+ * state it is currently in, which is what stops it oscillating.
+ *
+ * The header's own children must not shrink for this to work at all -- see `header > *` in the
+ * stylesheet. With the default `flex-shrink:1` the bar never overflows, because the groups give
+ * way instead and clip their contents, so there is nothing here to detect.
+ *
+ * KNOWN GAP, and it is the same one `isNarrow` records above. A viewport driven from OUTSIDE the
+ * page -- devtools' device emulation, a CDP test harness -- restyles without firing `resize` and
+ * without notifying a ResizeObserver. Counted 27 Aug 2026 under Chrome DevTools Protocol
+ * emulation: three viewport changes, zero callbacks of either kind, while `innerWidth` and the
+ * header's own `clientWidth` both followed correctly. Dragging a real window, and the app's
+ * webview, fire both. So a harness checking this has to call `fitHeader` itself after it sets a
+ * width; there is nothing to fix in the page.
+ */
+/* `body > header`, not `header`. The Argdown pane, the Notes pane and the About card each have a
+   header of their own; a bare tag selector happens to return the toolbar today only because it
+   is first in the document, which is not a thing to depend on. */
+function toolbar(){ return document.querySelector("body > header"); }
+
+function fitHeader(){
+  var h = toolbar();
+  if (!h) return;
+  h.classList.remove("tight");
+  if (h.scrollWidth > h.clientWidth + 1) h.classList.add("tight");
+}
+
+/* OBSERVED RATHER THAN CALLED FROM EVERY SITE THAT CHANGES THE BAR. `render`, `markState`,
+ * `applyPanes`, the host wiring and the narrow-screen switch all show or hide a control between
+ * them, and the next one will be added by someone who does not know this exists. Watching
+ * `hidden` and `disabled` on the toolbar's own descendants catches all of them and cannot be
+ * forgotten; watching its box catches the window. Neither observer sees the class this sets:
+ * `class` is not in the attribute filter, and toggling it leaves the header's border box the
+ * same size once it settles. */
+(function(){
+  var h = toolbar();
+  if (!h) return;
+  if (window.ResizeObserver) new ResizeObserver(fitHeader).observe(h);
+  if (window.MutationObserver)
+    new MutationObserver(fitHeader).observe(h,
+      { subtree: true, attributes: true, attributeFilter: ["hidden", "disabled"] });
+})();
+window.addEventListener("resize", fitHeader);
+// Once now, for the first paint and for anything without a ResizeObserver.
+fitHeader();
+
 function applyPanes(){
   var side = PANES.argdown || PANES.text || PANES.notes;
   $("stage").hidden = !PANES.map;
@@ -1316,7 +1652,19 @@ function setPane(name, on){
   if (isNarrow()) keepOnePane(on ? name : null);
   // Something has to be on screen. Turning off the last pane turns the map back on rather than
   // leaving an empty window with no way back.
-  if (!PANES.map && !PANES.argdown && !PANES.text) PANES.map = true;
+  //
+  // NOTES COUNTS AS SOMETHING ON SCREEN, and leaving it out of this list was a real bug rather
+  // than an oversight of taste. On a narrow window `keepOnePane` had just turned the map OFF so
+  // Notes could have the window; this line then saw map, argdown and text all false and turned
+  // the map straight back on. Both panes were then live, `#side.solo` took the width, and the
+  // stage was squeezed to ZERO — with its absolutely-positioned children still painting, because
+  // nothing clips them. Measured at 375px on the Akhlaghi map: stage width 0, and the floating
+  // map toolbar drawn across the middle of the notes list. Present in the committed build too,
+  // and found because the Abstract control lands in the same corner as the pane's header.
+  //
+  // The pane is never empty in the way `text` can be: with no marginalia it still explains how
+  // to write some, so it is always worth a window.
+  if (!PANES.map && !PANES.argdown && !PANES.text && !PANES.notes) PANES.map = true;
   if (name === "text" && on && !MSCHAPTER && msAvailable()) msRender(MS.chapters[0].path);
   applyPanes();
 }
@@ -1434,6 +1782,816 @@ Array.prototype.forEach.call($("panes").children, function(b){
 Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function(b){
   b.onclick = function(){ setPane(b.dataset.close, false); };
 });
+
+/* ================= THE WALKTHROUGH =====================================================
+ *
+ * WHAT IT IS FOR. Somebody who knows nothing about Ipsissima AND nothing about argument maps.
+ * By the end they should be able to start, and should know that the Help and the tooltips are
+ * where the rest of it lives. It is not documentation and must not try to be: everything it
+ * leaves out is already written down under "How to use", one button away.
+ *
+ * LENGTH IS THE CONSTRAINT, not coverage. Nine steps and a sign-off where there is a manuscript
+ * to point at, seven without — 387 words, which is under two minutes read at a normal pace.
+ * Counted rather than guessed, because a tour nobody finishes teaches nothing, and every
+ * addition to this list has to displace something already in it.
+ *
+ * IT DEMONSTRATES RATHER THAN INSTRUCTS. The fold step presses the badge itself and the reader
+ * watches the reasons arrive; the manuscript step performs the jump. Explaining a gesture in a
+ * caption and leaving it unperformed is how the first draft read, and the first draft was a
+ * list of assertions about a picture that never moved.
+ *
+ * IT DRIVES THE REAL CONTROLS. Every action below goes through the same handler the button or
+ * the badge calls -- `applyLayout`, `setArrangement`, a click dispatched on the fold badge --
+ * so there is no second implementation of anything to fall out of step, and what the reader is
+ * shown is what they will get when they do it themselves.
+ *
+ * IT PUTS EVERYTHING BACK. The state of the map, the panes and the arrangement are taken at the
+ * start and restored at the end, so a tour is something that happened rather than something
+ * that left the workbench rearranged.
+ */
+
+/* WHERE THE CHOICE IS KEPT, AND WHAT HAPPENS WHEN THERE IS NOWHERE TO KEEP IT.
+ *
+ * `localStorage` is the only store all three homes share -- the desktop app (a real origin
+ * inside the webview), Ipsissima.html on disk, and a page somebody was sent. It is also the one
+ * that is not always there: Safari refuses it outright for `file://` and throws SecurityError
+ * on the FIRST TOUCH, not on read, so every access has to be inside a try. Private windows and
+ * a browser set to block site data do the same.
+ *
+ * Probed by writing, reading and removing, because a store that exists and refuses writes is a
+ * store that would silently forget the reader's answer. Anything that throws leaves `ok` false
+ * and the page opens exactly as before -- this runs at load and must never be able to stop it.
+ */
+var WALK_KEY = "ipsissima.walkthrough.v1";
+var WALK_STORE = (function(){
+  try {
+    var s = window.localStorage;
+    if (!s) return { ok: false };
+    var probe = WALK_KEY + ".probe";
+    s.setItem(probe, "1");
+    var back = s.getItem(probe);
+    s.removeItem(probe);
+    if (back !== "1") return { ok: false };
+    return {
+      ok: true,
+      get: function(){ try { return s.getItem(WALK_KEY); } catch (e) { return null; } },
+      set: function(v){ try { s.setItem(WALK_KEY, v); } catch (e) {} }
+    };
+  } catch (e) { return { ok: false }; }
+})();
+
+function walkSeen(){ return WALK_STORE.ok ? WALK_STORE.get() === "seen" : false; }
+function walkRemember(v){ if (WALK_STORE.ok) WALK_STORE.set(v); }
+
+var WALK = null;                       // the run in progress, or null
+
+/* ---- reading the map, from outside it ---------------------------------------------------- */
+
+/** Every claim or block currently DRAWN, in the order the SVG holds them. Read from the DOM
+ *  rather than from the graph because that is the only honest answer to "what can the reader
+ *  see": the graph knows 127 claims and six of them are on the screen. */
+function walkBoxes(sel){
+  // Each selector scoped separately. `"#map " + ".alm-n, .alm-g"` reads as "#map .alm-n" OR
+  // ".alm-g anywhere", which is the kind of quiet wrong that finds an element on the other side
+  // of the page and rings it.
+  var q = sel.split(",").map(function(one){ return "#map " + one.trim(); }).join(",");
+  return Array.prototype.slice.call(document.querySelectorAll(q));
+}
+/** The rectangle covering all of these elements. Used where the thing being pointed at is not
+ *  one element -- a band's header is its name at one end and its sparkline at the other. */
+function walkUnion(els){
+  var out = null;
+  els.filter(Boolean).forEach(function(e){
+    var r = e.getBoundingClientRect();
+    if (!r.width && !r.height) return;
+    out = out ? { left: Math.min(out.left, r.left), top: Math.min(out.top, r.top),
+                  right: Math.max(out.right, r.right), bottom: Math.max(out.bottom, r.bottom) }
+              : { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  });
+  if (!out) return null;
+  out.width = out.right - out.left; out.height = out.bottom - out.top;
+  return out;
+}
+/** The one drawn highest on the screen. In the Reasons view that is the claim everything else
+ *  is leading up to, which is the whole point of the arrangement. */
+function walkTopmost(els){
+  var best = null, bestY = Infinity;
+  els.forEach(function(e){
+    var r = e.getBoundingClientRect();
+    if (r.height && r.top < bestY) { bestY = r.top; best = e; }
+  });
+  return best;
+}
+/** The drawn box for one id, without going through a selector. Ids are the file's own names --
+ *  `lane:ch:0|3. Method` is a real one -- and putting them in a CSS selector is an escaping
+ *  problem nobody needs. */
+function walkElById(id){
+  return walkBoxes(".alm-n, .alm-g").filter(function(e){ return e.dataset.id === id; })[0] || null;
+}
+/** A closed fold badge, and its count. `+3` on a claim means three reasons are hidden under it.
+ *
+ *  Prefers a SMALL one: a badge promising eleven boxes is a bad thing to press while explaining
+ *  what a box is. `cap` is that preference, and callers pass it first and then drop it, because
+ *  a map whose every fold is large still has to be able to demonstrate folding. */
+function walkClosedBadge(sel, cap){
+  var best = null, bestN = Infinity;
+  walkBoxes(sel || ".alm-n").forEach(function(e){
+    var b = e.querySelector(".alm-toggle.is-closed");
+    if (!b) return;
+    var t = b.querySelector("text");
+    var n = t ? parseInt(String(t.textContent).replace(/[^0-9]/g, ""), 10) : 0;
+    if (!n) return;                               // 0 is a badge we could not read
+    if (cap && n > cap) return;
+    if (n < bestN) { bestN = n; best = { id: e.dataset.id, box: e, badge: b, count: n }; }
+  });
+  return best;
+}
+function walkSmallestFold(sel){
+  return walkClosedBadge(sel, 6) || walkClosedBadge(sel, 0);
+}
+/** An OPEN badge — a claim whose reasons are already on screen.
+ *
+ *  Needed because a small map has no closed one. A reconstruction under 25 claims opens flat
+ *  (see the note in `render`), so on the twenty-claim Carroll map every badge is a minus and the
+ *  folding step dropped itself out of the tour entirely — six steps instead of seven, and the
+ *  one control the reader will use most never mentioned. Demonstrated the other way round
+ *  instead: press the minus and watch the reasons go away.
+ *
+ *  The LOWEST one, because depth is a proxy for how much a fold will move: a claim near the
+ *  bottom of the argument has little underneath it, and folding the apex would take most of the
+ *  map off the screen while the card explains that folding is tidy.
+ */
+function walkOpenBadge(){
+  var best = null, bestY = -Infinity;
+  walkBoxes(".alm-n:not(.alm-k-group)").forEach(function(e){
+    var b = e.querySelector(".alm-toggle.is-open");
+    if (!b) return;
+    var y = e.getBoundingClientRect().top;
+    if (y > bestY) { bestY = y; best = { id: e.dataset.id, box: e, badge: b, count: 0 }; }
+  });
+  return best;
+}
+/** A large map opens with its sections folded into blocks, so the first thing a reader meets is
+ *  six dashed boxes each saying "84 claims" -- and "every box is one claim" is then simply false
+ *  on the screen in front of them. Open the smallest section so the sentence is true. Measured on
+ *  the 127-claim Tooming and Jakapi reconstruction, where the map opens as six blocks, the
+ *  smallest holding two claims and the largest eighty-four. */
+function walkEnsureClaims(){
+  if (walkBoxes(".alm-n:not(.alm-k-group)").length) return false;
+  var b = walkSmallestFold(".alm-n.alm-k-group");
+  if (!b) return false;
+  b.badge.dispatchEvent(new MouseEvent("click", { bubbles: false }));
+  return true;
+}
+
+/* ---- the steps --------------------------------------------------------------------------
+ *
+ * Each is { title, body, before, target, act }. `before` sets the page up, `target` names what
+ * the ring goes round, `act` is the demonstration and runs a beat after the ring lands so the
+ * reader is looking at the right thing when it happens.
+ *
+ * `target` returns `{ map: [ids], pad, topOnly, find }`. `find` is called AFTER the camera has
+ * moved, not before: `spotlight` unfolds whatever is hiding its targets, and an unfold re-lays
+ * the map -- so an element captured a moment earlier can be one the renderer has since taken
+ * off the page, and a ring round a detached node is a ring at 0,0.
+ *
+ * A step whose subject this build does not have is simply not pushed. The list is therefore
+ * shorter on a lone .argdown than on a folder, and shorter again in a Reader -- which is right:
+ * a tour of a manuscript pane that is not there teaches somebody a control they will look for
+ * and fail to find.
+ */
+function walkSteps(){
+  var swatchLine = function(attrs, name, gloss){
+    return boxSwatch('stroke="currentColor" ' + attrs) +
+           "<span><b>" + name + "</b> — " + gloss + "</span>";
+  };
+  var steps = [];
+
+  steps.push({
+    title: "This is an argument map",
+    body: "<p>It shows what a piece of writing <b>argues</b> — not what it is about, but the " +
+          "claims it makes and how they hold each other up.</p>" +
+          "<p>A minute or two. Leave whenever you like.</p>",
+    before: function(){ if (LIVE) LIVE.fit(); }
+  });
+
+  steps.push({
+    title: "Every box is one claim",
+    body: "<p>One box, one thing the writing says. Where a claim runs long the box shows the " +
+          "first lines and a <b>▾ more</b> link for the rest.</p>",
+    before: function(){ walkEnsureClaims(); },
+    target: function(){
+      var el = walkTopmost(walkBoxes(".alm-n:not(.alm-k-group)")) ||
+               walkTopmost(walkBoxes(".alm-n"));
+      if (!el) return null;
+      var id = el.dataset.id;
+      return { map: [id], pad: 90, find: function(){ return walkElById(id); } };
+    }
+  });
+
+  steps.push({
+    title: "Green supports, red attacks",
+    body: "<p>An arrow runs <b>from a reason to what it bears on</b>. Green means it supports " +
+          "that claim; red means it tells against it.</p>" +
+          "<p>So the claim being argued for sits at the top, and everything below leads up " +
+          "to it.</p>",
+    // A CLAIM AND WHAT POINTS AT IT, not the whole map. Fitting the map and saying "look at the
+    // arrows" put the card over the middle of the picture and the arrows under it; framing one
+    // junction shows an arrowhead arriving somewhere, which is the sentence made visible.
+    target: function(){
+      var top = walkTopmost(walkBoxes(".alm-n"));
+      if (!top) return null;
+      var ids = [top.dataset.id];
+      var es = (CURRENT_GRAPH && CURRENT_GRAPH.edges) || [];
+      for (var i = 0; i < es.length && ids.length < 4; i++)
+        if (es[i].to === ids[0]) ids.push(es[i].from);
+      // NOT UNFOLDED TO REACH THEM. Most of what points at a paper's contention is inside a
+      // section that is still shut, and `spotlight` frames a folded block in place of a claim
+      // it holds — which is what we want here, since the ARROW is drawn to the block and the
+      // arrow is the subject. Unfolding instead would open the sections one at a time until
+      // 127 boxes were on screen, three steps before the reader has been told what a fold is.
+      return { map: ids, pad: 90, reveal: false,
+               find: function(){ return walkElById(ids[0]); } };
+    }
+  });
+
+  // WHICH BADGE, DECIDED WHEN THE STEP RUNS AND REMEMBERED FOR THE DEMONSTRATION. Two steps and
+  // a re-fit happen between the list being built and this step arriving, so the badge that was
+  // smallest at build time may not be drawn at all; and `act` must press the badge the ring is
+  // round, not whichever one is smallest by then.
+  var folded = null;
+  if (walkClosedBadge() || walkOpenBadge()) steps.push({
+    // Chosen in `before`, not in `target`: the card's words name the count on that badge, and
+    // the card is written before the camera moves.
+    before: function(){ folded = walkSmallestFold() || walkOpenBadge(); },
+    title: "The badge folds reasons away",
+    body: function(){
+      return (folded && folded.count
+        ? "<p>A <b>+" + folded.count + "</b> counts what is hidden under a claim. Press it and " +
+          "they arrive; it becomes a <b>−</b> that puts them away again.</p>"
+        : "<p>The <b>−</b> under a claim puts its reasons away. The badge then counts them — " +
+          "<b>+3</b>, <b>+8</b> — and pressing it brings them back.</p>") +
+             "<p>A whole section folds the same way — click its box to shut it into one " +
+             "block.</p>";
+    },
+    target: function(){
+      if (!folded) return null;
+      var id = folded.id;
+      return { map: [id], pad: 60, find: function(){
+        var box = walkElById(id);
+        // The badge, not the box: "click here" about a control 18 units across is not sayable
+        // by ringing the claim it hangs off.
+        return box && box.querySelector(".alm-toggle");
+      } };
+    },
+    act: function(){
+      var box = folded && walkElById(folded.id);
+      // Whichever way round this badge goes. Selected by class rather than remembered, so a
+      // badge that changed state between the step starting and the demonstration running is
+      // still pressed once rather than twice.
+      var badge = box && box.querySelector(".alm-toggle");
+      if (badge) badge.dispatchEvent(new MouseEvent("click", { bubbles: false }));
+    }
+  });
+
+  steps.push({
+    title: "The border says whose words",
+    body: "<p>How far the reconstruction stands from what the author actually wrote. Solid is a " +
+          "quotation checked against the page; the line breaks up as it moves away.</p>" +
+          '<div class="wkey">' +
+          swatchLine('stroke-width="2.6"', "quotation", "the source's own words") +
+          swatchLine('stroke-width="1.4" stroke-dasharray="6 2"', "paraphrase",
+                     "close restatement") +
+          swatchLine('stroke-width="1.4" stroke-dasharray="2 3"', "interpretation",
+                     "a reading the text supports") +
+          swatchLine('stroke-width="1.2" stroke-dasharray="7 2 1.5 2"', "imputation",
+                     "a premise the author never states") +
+          "</div>",
+    target: function(){
+      // A claim whose border is NOT the default, so the thing being described is visible in the
+      // ring rather than only in the key.
+      var els = walkBoxes(".alm-n:not(.alm-k-group)");
+      var el = els.filter(function(e){ return /alm-f-(paraphrase|interpretation|imputation)/
+                                              .test(e.getAttribute("class") || ""); })[0] ||
+               walkTopmost(els);
+      if (!el) return null;
+      var id = el.dataset.id;
+      return { map: [id], pad: 70, find: function(){ return walkElById(id); } };
+    }
+  });
+
+  // Offered only where the claims can actually be placed in the text. `textbtn` already answers
+  // that question for the toolbar, and asking it the same way keeps the two from disagreeing.
+  if (!$("textbtn").hidden && !$("textbtn").disabled) {
+    steps.push({
+      title: "Exposition: the same claims, in reading order",
+      body: "<p>The same claims, laid out where the reader meets them in the text — section " +
+            "by section, left to right.</p>" +
+            "<p>The line on each section header is its <b>justificatory debt</b>: below the " +
+            "axis, claims asserted before their reasons arrive; above, claims their reasons " +
+            "have already earned.</p>",
+      before: function(){ setArrangement("exposition"); },
+      target: function(){
+        // The header strip, not the band: a section is hundreds of units tall and the name and
+        // the sparkline are the top twenty of them. The second band rather than the first,
+        // because the first is the whole file and its header carries the same mark for the
+        // paper as a whole — a section is the thing this step is about.
+        // A SECTION BAND, NOT THE FILE'S. Both are drawn the same way and both carry a
+        // sparkline, and the file's is the whole paper -- which is the footer's mark, not this
+        // step's. Taking "the second one" picked it anyway on the first run, because the order
+        // the renderer appends bands in is the layout's order and not the document's: the frame
+        // came out at scale 0.58 round a 2,112-unit band instead of 1.4 round a 697-unit one.
+        // The id says which is which: a section's carries the file's id and then a bar.
+        var bands = walkBoxes(".alm-g").filter(function(e){
+          return e.querySelector(".alm-spark") && e.dataset.id.indexOf("|") > 0; });
+        var band = bands[0] || walkBoxes(".alm-g")[0];
+        if (!band) return null;
+        var id = band.dataset.id;
+        // Enough of the band to see that it holds claims, framed on its header.
+        return { map: [id], topOnly: 240, pad: 30, find: function(){
+          var b = walkElById(id);
+          // THE WHOLE HEADER, name and mark together. The sparkline alone is three pixels tall
+          // at a fitted zoom and a ring round it reads as a smudge.
+          return b && walkUnion([b.querySelector(".alm-glabel"), b.querySelector(".alm-spark")]);
+        } };
+      }
+    });
+
+    // Which claim gets the demonstration. Named once so the ring and the jump are about the
+    // same claim, and so the copy can say what the manuscript is about to do.
+    var placed = null;
+    steps.push({
+      title: "Study: the map beside the essay",
+      body: function(){
+        return "<p><b>Layout ▸ Study</b> puts the manuscript " +
+               (isNarrow() ? "up — on a window this narrow the panes take turns rather than " +
+                             "sharing"
+                           : "next to the map") + ".</p>" +
+               "<p><b>Double-click</b> a claim — or shift-click it — and the essay scrolls to " +
+               "the passage it was drawn from. Click a passage and the claims taken from it " +
+               "light up on the map.</p>";
+      },
+      before: function(){
+        for (var i = 0; i < LAYOUTS.length; i++)
+          if (LAYOUTS[i].id === "study") applyLayout(LAYOUTS[i]);
+        placed = walkBoxes(".alm-n:not(.alm-k-group)").filter(function(e){
+          var n = walkNodeById(e.dataset.id);
+          return n && n.pos && n.pos.chapter;
+        })[0];
+        placed = placed ? placed.dataset.id : null;
+      },
+      target: function(){
+        if (!placed) return null;
+        return { map: [placed], pad: 80, find: function(){ return walkElById(placed); } };
+      },
+      act: function(){
+        var n = placed && walkNodeById(placed);
+        if (!n) return;
+        msLocate(n);
+        // AND PUT THE CAMERA BACK. Going to a passage opens the manuscript pane, which changes
+        // the map's container, which re-measures and re-FRAMES the map -- so the claim the ring
+        // was round ended up 2,200px below the window and the ring with it. The jump is the
+        // point of this step; losing sight of the claim it started from is not.
+        if (LIVE) LIVE.spotlight([placed], { pad: 80 });
+      }
+    });
+  }
+
+  steps.push({
+    title: "The margins",
+    body: "<p>A folded corner on a claim is a mark in the margin: <b>left</b>, the " +
+          "reconstructor's aside about why the claim was read that way; <b>right</b>, " +
+          "someone's comment on it.</p>" +
+          (ED ? "<p><b>Right-click</b> a claim to write one. The <b>Notes</b> pane lists every " +
+                "mark, with Edit and Delete on each.</p>"
+              : "<p>The <b>Notes</b> pane lists every mark in one place. Writing comments " +
+                "needs the full Ipsissima; this build reads them.</p>"),
+    // MAP AND NOTES, and the manuscript put away. Three panes at once is the layout the reader
+    // would choose for a job, not the one to meet a pane in.
+    before: function(){ setPane("text", false); setPane("argdown", false); setPane("notes", true); },
+    target: function(){
+      // A CLAIM THAT ACTUALLY CARRIES A CORNER. "Appears on the map" is the whole sentence, and
+      // a ring round the pane instead points at the list rather than at the mark — at this zoom
+      // the corner is a few pixels and nobody would ever find it unaided.
+      var el = walkBoxes(".alm-n").filter(function(e){ return e.querySelector(".alm-margin"); })[0];
+      if (!el) return { el: $("notes") };
+      var id = el.dataset.id;
+      return { map: [id], pad: 70, find: function(){ return walkElById(id); } };
+    }
+  });
+
+  steps.push({
+    title: "The Argdown",
+    body: "<p>The reconstruction itself: a plain-text file, in a small language called " +
+          "<b>Argdown</b>. Click any claim's name here and it lights up on the map.</p>" +
+          (ED ? "<p>Edit it and the map redraws as you type.</p>"
+              : "<p>Read-only in this build; the full Ipsissima edits it and redraws as you " +
+                "type.</p>"),
+    before: function(){ setPane("notes", false); setPane("text", false); setPane("argdown", true); },
+    target: function(){ return { el: $("adpane") }; }
+  });
+
+  return steps;
+}
+
+/** The claim a drawn box stands for. The renderer hands out ids; the graph holds everything
+ *  else about them, and the walkthrough needs the position to know which claims can be jumped
+ *  to in the manuscript. */
+function walkNodeById(id){
+  var ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
+  for (var i = 0; i < ns.length; i++) if (ns[i].id === id) return ns[i];
+  return null;
+}
+
+/* ---- running it -------------------------------------------------------------------------- */
+
+function startWalkthrough(){
+  if (WALK) return;
+  if (!LIVE) { setHelp(true); return; }   // nothing to point at; the Help still answers
+  setHelp(false);
+  ctxHide();
+  WALK = {
+    i: -1,
+    steps: walkSteps(),
+    timers: [],
+    // Put back exactly what was on screen. A tour is not a mode the reader has to get out of.
+    was: { state: LIVE.getState(), arrange: ARRANGEMENT, panes: JSON.parse(JSON.stringify(PANES)) }
+  };
+  // MAP ONLY, AND THE REASONS VIEW. The tour teaches cumulatively and the first thing it says is
+  // "this is an argument map"; a window already showing three panes has answered a question the
+  // reader has not been asked yet.
+  for (var i = 0; i < LAYOUTS.length; i++)
+    if (LAYOUTS[i].id === "read") applyLayout(LAYOUTS[i]);
+  // Marked seen the moment it STARTS, not when it finishes. Somebody who closes the window
+  // halfway through has still met it, and a flag written only at the end is a tour that greets
+  // them again every single morning until they sit through all of it.
+  walkRemember("seen");
+  $("walk").hidden = false;
+  document.addEventListener("keydown", walkKey, true);
+  window.addEventListener("resize", walkOnResize);
+  walkGo(0);
+  // Somewhere for the keyboard to be. Without this the first Tab goes to whatever the page had
+  // focused before the tour opened, which is behind the scrim and unreachable.
+  $("walknext").focus();
+}
+
+function walkClearTimers(){
+  if (!WALK) return;
+  WALK.timers.forEach(clearTimeout);
+  WALK.timers = [];
+}
+function walkLater(fn, ms){
+  if (!WALK) return;
+  WALK.timers.push(setTimeout(function(){ if (WALK) fn(); }, ms));
+}
+
+function walkGo(i){
+  if (!WALK) return;
+  walkClearTimers();
+  if (i < 0) return;
+  if (i >= WALK.steps.length) return walkOffer();
+  WALK.i = i;
+  WALK.at = Date.now();
+  var st = WALK.steps[i];
+  WALK.find = null;
+  if (st.before) { try { st.before(); } catch (e) {} }
+  // AFTER `before`, NOT BEFORE IT. The marks from a previous step's demonstration are that
+  // step's, not this one's — but `before` can make marks of its own: opening a section to have
+  // claims to point at lights the claims it revealed, which dims every other box on the map.
+  // Clearing first and then setting up left step two explaining "every box is one claim" over a
+  // map where every box including the ringed one was at half opacity.
+  if (LIVE) LIVE.markClaims([]);
+  walkCard(st, i);
+  // A beat for whatever `before` changed to reach the DOM, then the camera is aimed, then a
+  // beat for the first frames of its glide before the card is placed. The RING does not depend
+  // on either delay -- `walkFollow` rides the target until it stops -- but the card is placed
+  // once, and placing it against a box that has not started moving yet puts it on the wrong
+  // side of the screen.
+  walkLater(function(){
+    var t = null;
+    try { t = st.target ? st.target() : null; } catch (e) { t = null; }
+    if (t && t.map && LIVE)
+      LIVE.spotlight(t.map, { pad: t.pad, topOnly: t.topOnly, reveal: t.reveal });
+    walkLater(function(){
+      // THE ELEMENT IS LOOKED UP EVERY TIME, NOT HELD. Each render pass builds a claim's fold
+      // badge afresh inside the reused box, so a badge captured before the demonstration is a
+      // detached node the moment the demonstration presses it — the ring vanished and the card
+      // fell back to the middle of the screen, over the fold it had just performed.
+      WALK.find = t ? (t.find || function(){ return t.el; }) : null;
+      walkPlace(true);
+      walkFollow();
+      if (st.act) walkLater(function(){
+        try { st.act(); } catch (e) {}
+        // A fold re-lays the map and the camera is pinned to the badge, so the ring has to
+        // travel with it.
+        walkFollow();
+      }, 700);
+    }, 260);
+  }, 90);
+}
+
+/** The card's own contents. Separate from placement because the words should change the moment
+ *  Next is pressed, while where the card SITS cannot be known until the camera has stopped. */
+function walkCard(st, i){
+  $("walkcount").textContent = "Step " + (i + 1) + " of " + WALK.steps.length;
+  $("walktitle").textContent = st.title;
+  // A function where the words depend on what the step just found — which badge, how narrow the
+  // window is. A string everywhere else, because most of them do not.
+  $("walkbody").innerHTML = typeof st.body === "function" ? st.body() : st.body;
+  $("walkback").hidden = i === 0;
+  $("walknext").textContent = i === WALK.steps.length - 1 ? "Finish" : "Next";
+  $("walkquit").hidden = false;
+  $("walkno").hidden = true;
+  var rail = $("walkrail");
+  rail.textContent = "";
+  for (var k = 0; k < WALK.steps.length; k++) {
+    var b = document.createElement("i");
+    if (k <= i) b.className = "on";
+    rail.appendChild(b);
+  }
+  rail.hidden = false;
+}
+
+/* A named handler so it can be taken off again, and so the resize Event is never mistaken for
+ * the moveCard flag. */
+function walkOnResize(){ walkPlace(true); }
+
+/** Keep the ring on the target while anything is still moving.
+ *
+ *  A DEADLINE WAS NOT ENOUGH, and this is the bug that made the ring land in the wrong place.
+ *  The camera glides for 350ms, so the first attempt measured at 420ms — comfortably after —
+ *  and it was still wrong by 127px, because a page whose tab is not compositing does not run
+ *  its transitions on the clock the timers are on. A single measurement at any fixed moment is
+ *  a bet on the browser's schedule. Following for a beat instead is a measurement that cannot
+ *  be early: the ring rides the box while it travels, and the CSS transition on the spot turns
+ *  a per-frame chase into a smooth one.
+ *
+ *  The CARD is not moved by the follow. Re-deciding which side of a moving target it should sit
+ *  on, sixty times a second, is how a caption ends up flickering between two corners.
+ */
+function walkFollow(maxMs){
+  if (!WALK) return;
+  var until = Date.now() + (maxMs || 2600);
+  var last = null, stillSince = Date.now();
+  var tick = function(){
+    if (!WALK) return;
+    var r = walkPlace(false);
+    var same = r && last && Math.abs(r.left - last.left) < 0.6 &&
+               Math.abs(r.top - last.top) < 0.6 && Math.abs(r.width - last.width) < 0.6;
+    if (!same) stillSince = Date.now();
+    last = r;
+    // STOPS WHEN THE TARGET STOPS, and gives up on a deadline only as a backstop. A fixed
+    // duration has to be picked for the slowest step, and the slowest step here is switching to
+    // the Exposition view on a 127-claim reconstruction — heavy enough that a 900ms follow
+    // ended while the camera was still travelling and left the ring at the top of the window,
+    // a quarter of a screen from the band header it was meant to be round.
+    if (Date.now() < until && Date.now() - stillSince < 260) requestAnimationFrame(tick);
+    else walkPlace(true);
+  };
+  requestAnimationFrame(tick);
+}
+
+/** Put the hole over the target and the card somewhere it does not cover it.
+ *
+ *  ALSO RUN ON RESIZE, because the ring is in viewport pixels and the thing it is round is not:
+ *  narrowing the window past 820px throws a pane away underneath it, and a ring left behind
+ *  points at nothing.
+ */
+function walkPlace(moveCard){
+  if (!WALK) return;
+  var spot = $("walkspot"), card = $("walkcard");
+  var el = null;
+  try { el = WALK.find ? WALK.find() : null; } catch (e) { el = null; }
+  // An element, or a rectangle worked out from several. Both arrive here; only the numbers
+  // matter from this point on.
+  var r = el ? (el.getBoundingClientRect ? el.getBoundingClientRect() : el) : null;
+  // OFF THE SCREEN COUNTS AS NOTHING TO POINT AT. The hole is drawn by a shadow spreading from
+  // the target, so a target below the fold takes the dim away with it and the step arrives with
+  // no scrim, no ring, and a card floating over an undimmed window.
+  if (r && (r.bottom < 0 || r.top > window.innerHeight ||
+            r.right < 0 || r.left > window.innerWidth)) r = null;
+  $("walk").classList.toggle("nohole", !(r && r.width && r.height));
+  if (!r || !r.width || !r.height) {
+    spot.className = "blank";
+    spot.style.left = spot.style.top = "50%";
+    spot.style.width = spot.style.height = "0px";
+  } else {
+    var pad = 6;
+    spot.className = "";
+    spot.style.left = Math.max(0, r.left - pad) + "px";
+    spot.style.top = Math.max(0, r.top - pad) + "px";
+    spot.style.width = Math.min(window.innerWidth, r.width + pad * 2) + "px";
+    spot.style.height = Math.min(window.innerHeight, r.height + pad * 2) + "px";
+  }
+  if (moveCard === false) return r;
+  var cw = card.offsetWidth, chh = card.offsetHeight, gap = 16, m = 8;
+  var W = window.innerWidth, H = window.innerHeight;
+  var x, y;
+  if (!r || !r.width) {                       // nothing to avoid: dead centre
+    x = (W - cw) / 2; y = (H - chh) / 2;
+  } else {
+    /* THE ROOMIEST SIDE, NOT THE FIRST ONE THAT FITS. The first version tried below, then
+     * above, then the sides, and "below" almost always fitted — which on the arrows step put
+     * the card squarely over the arrows arriving at the ringed claim, the one thing the step
+     * was about. Ranking by how much room each side has left picks the empty half of the map
+     * instead. Measured on the Tooming map at 1280x820: below had 408px of room, the right-hand
+     * side 496, and the arrows are below. */
+    var sides = [
+      { room: H - r.bottom, x: r.left + r.width / 2 - cw / 2, y: r.bottom + gap,
+        fits: r.bottom + gap + chh + m <= H },
+      { room: r.top, x: r.left + r.width / 2 - cw / 2, y: r.top - gap - chh,
+        fits: r.top - gap - chh - m >= 0 },
+      { room: W - r.right, x: r.right + gap, y: r.top + r.height / 2 - chh / 2,
+        fits: r.right + gap + cw + m <= W },
+      { room: r.left, x: r.left - gap - cw, y: r.top + r.height / 2 - chh / 2,
+        fits: r.left - gap - cw - m >= 0 }
+    ].filter(function(s){ return s.fits; });
+    sides.sort(function(a, b){ return b.room - a.room; });
+    if (sides.length) { x = sides[0].x; y = sides[0].y; }
+    else {
+      // NOWHERE CLEAR. On a phone-sized window a pane IS the window, so there is no side to
+      // stand beside; the card takes the half of the screen the target is not in and overlaps
+      // the rest.
+      x = (W - cw) / 2;
+      y = (r.top + r.height / 2 > H / 2) ? m : H - chh - m;
+    }
+  }
+  card.style.left = Math.max(m, Math.min(x, W - cw - m)) + "px";
+  card.style.top = Math.max(m, Math.min(y, H - chh - m)) + "px";
+}
+
+/** Is "show this again next time?" a question worth asking here?
+ *
+ *  Only where there IS a next time this could run on its own, and somewhere to write the answer.
+ *  In a page carrying its own reconstruction the tour never starts by itself (see
+ *  `maybeStartWalkthrough`), and where storage is refused nothing can be remembered — asking
+ *  either way offers a choice that would have no effect, which is worse than not asking.
+ */
+function walkCanAsk(){ return WALK_STORE.ok && !window.__ARGDOWN_PAYLOAD__; }
+
+/** The last card: the choice the brief asks for, and where to find this again. */
+function walkOffer(){
+  if (!WALK) return;
+  walkClearTimers();
+  WALK.find = null;
+  WALK.i = WALK.steps.length;
+  walkRestore();
+  $("walkcount").textContent = "";
+  $("walktitle").textContent = "That is the tour";
+  $("walkrail").hidden = true;
+  $("walkback").hidden = true;
+  $("walkquit").hidden = true;
+  if (!walkCanAsk()) {
+    $("walkbody").innerHTML =
+      "<p>Everything else is under <b>How to use</b>, and every control on screen says what it " +
+      "does if you rest on it.</p>" +
+      "<p>This walkthrough is the first thing in that list, whenever you want it again.</p>";
+    $("walknext").textContent = "Close";
+    $("walknext").onclick = function(){ stopWalkthrough(); };
+    walkPlace();
+    return;
+  }
+  $("walkbody").innerHTML =
+    "<p>Everything else is under <b>How to use</b>, and every control on screen says what it " +
+    "does if you rest on it.</p>" +
+    "<p>Show this walkthrough again next time?</p>";
+  $("walknext").textContent = "Yes, show it again";
+  // The two answers are the two buttons, so neither is a default reached by pressing Enter twice.
+  $("walkno").hidden = false;
+  $("walkno").onclick = function(){ walkRemember("seen"); walkFarewell(); };
+  $("walknext").onclick = function(){
+    walkRemember("again");
+    walkFarewell();
+  };
+  walkPlace();
+}
+
+/** Said once, and only where it is needed: they have just turned the tour off, so they are the
+ *  people who need to be told it is still there. */
+function walkFarewell(){
+  if (!WALK) return;
+  var again = WALK_STORE.ok && WALK_STORE.get() === "again";
+  $("walktitle").textContent = again ? "It will run again next time" : "It is in the Help";
+  $("walkbody").innerHTML = again
+    ? "<p>And it is under <b>How to use ▸ Take the walkthrough</b> whenever you want it sooner.</p>"
+    : "<p>Press <b>How to use</b> in the toolbar and it is the first thing in the list — " +
+      "<b>Take the walkthrough</b>.</p>";
+  $("walkno").hidden = true;
+  $("walknext").textContent = "Close";
+  $("walknext").onclick = function(){ stopWalkthrough(); };
+  walkPlace();
+}
+
+/** Everything the tour moved, moved back.
+ *
+ *  The FOLDS come back exactly; the camera comes back only as a fresh fit, because `setState`
+ *  restores the fold state and re-frames and there is no way to hand it a saved viewport —
+ *  `view` is honoured at `createLiveMap` and nowhere else. On the run this is written for that
+ *  costs nothing: the tour starts on a map that has just been opened and fitted. Someone who
+ *  panned somewhere interesting and then took the tour from the Help loses that pan, which is
+ *  worth one line of note and not a change to the renderer's state contract.
+ */
+function walkRestore(){
+  if (!WALK || !WALK.was) return;
+  var was = WALK.was;
+  for (var k in was.panes) PANES[k] = was.panes[k];
+  applyPanes();
+  setArrangement(was.arrange, false);
+  if (LIVE) { LIVE.markClaims([]); LIVE.setState(was.state, true); }
+  WALK.was = null;
+}
+
+/** End it and put nothing back — for when what it was about has gone. */
+function abandonWalkthrough(){
+  if (!WALK) return;
+  WALK.was = null;
+  stopWalkthrough();
+}
+
+function stopWalkthrough(){
+  if (!WALK) return;
+  walkClearTimers();
+  walkRestore();
+  document.removeEventListener("keydown", walkKey, true);
+  window.removeEventListener("resize", walkOnResize);
+  $("walkno").hidden = true;
+  $("walk").hidden = true;
+  WALK = null;
+  // Rewire, because the offer card replaced both handlers with its own answers.
+  $("walknext").onclick = function(){ if (WALK) walkGo(WALK.i + 1); };
+  $("walknext").textContent = "Next";
+}
+
+/* ESCAPE ASKS RATHER THAN VANISHES. Leaving early is one of the two moments the brief wants the
+ * choice offered, and a tour that simply disappears on Escape never offers it. From the offer
+ * card itself Escape does close, because there the question has been asked. */
+function walkKey(e){
+  if (!WALK) return;
+  if (e.key === "Escape") {
+    e.preventDefault(); e.stopPropagation();
+    if (WALK.i >= WALK.steps.length) stopWalkthrough(); else walkOffer();
+    return;
+  }
+  if (WALK.i >= WALK.steps.length) return;
+  // ENTER AND SPACE ONLY WHERE NO BUTTON WOULD HAVE TAKEN THEM. `startWalkthrough` puts focus on
+  // Next, so Enter there is the button's own; handling it here as well advanced two steps at
+  // once for anybody working by keyboard, which is the only way to hit it.
+  var onCard = document.activeElement &&
+               document.activeElement.closest && document.activeElement.closest("#walkcard");
+  if (e.key === "ArrowRight" || ((e.key === "Enter" || e.key === " ") && !onCard)) {
+    e.preventDefault(); e.stopPropagation(); walkGo(WALK.i + 1);
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault(); e.stopPropagation(); walkGo(WALK.i - 1);
+  }
+}
+
+$("walknext").onclick = function(){ if (WALK) walkGo(WALK.i + 1); };
+$("walkback").onclick = function(){ if (WALK) walkGo(WALK.i - 1); };
+$("walkquit").onclick = function(){ if (WALK) walkOffer(); };
+/* A click on the scrim advances. It is the gesture everybody tries, and the alternative -- a
+ * click that does nothing -- reads as a page that has frozen. Clicks inside the card are the
+ * card's own and are left alone. */
+$("walk").onclick = function(e){
+  if (!WALK || e.target.closest("#walkcard")) return;
+  if (WALK.i >= WALK.steps.length) return;   // the offer is a question; it wants an answer
+  // NOT TWICE IN A BLINK. Clicking the scrim is the fast way through, and a double-click on it
+  // is one gesture that would otherwise cost two steps -- the second of them unread.
+  if (Date.now() - (WALK.at || 0) < 350) return;
+  walkGo(WALK.i + 1);
+};
+
+/* SHOWN ONCE, TO SOMEBODY WHO HAS NEVER SEEN THIS BEFORE, AND ONLY IN THE WORKBENCH.
+ *
+ * NOT IN A PAGE THAT CARRIES ITS OWN RECONSTRUCTION. A built map or an exported copy is a
+ * reconstruction somebody was SENT -- a student handed back a marked essay, a colleague sent one
+ * argument to look at. They did not choose a tool; they opened a document, and greeting them
+ * with a nine-step tour of an editor they do not have is the software talking about itself. The
+ * workbench is the opposite case: nothing is open until they open it, and the whole window is
+ * unexplained. So the tour is BUILT INTO both -- an exported page carries every step and offers
+ * it under "How to use", where somebody curious will find it -- and STARTS on its own only in
+ * the workbench. `__ARGDOWN_PAYLOAD__` is exactly that distinction and needs no new flag.
+ *
+ * ON THE FIRST RECONSTRUCTION, not on the first load. Opening the workbench shows a drop panel
+ * and no map, and a tour of an argument map with no argument map is nothing at all.
+ *
+ * WITH NOWHERE TO REMEMBER THE ANSWER, IT DOES NOT START ITSELF. See the note on WALK_STORE:
+ * a tour that cannot record having been seen would greet the reader every single time they
+ * opened the file, and a greeting that cannot be dismissed for good is worse than one that has
+ * to be asked for. It stays in the Help, which is a button away.
+ */
+var WALK_OFFERED = false;
+function maybeStartWalkthrough(){
+  if (WALK_OFFERED || WALK) return;
+  WALK_OFFERED = true;
+  if (window.__ARGDOWN_PAYLOAD__) return;
+  if (!WALK_STORE.ok) return;
+  if (walkSeen()) return;
+  // A beat after the first render, so the map has been framed against a container with a real
+  // size before the camera is asked to point anywhere. See the ResizeObserver note in the
+  // renderer: a map framed blind has boxes of the wrong size, not merely the wrong position.
+  setTimeout(startWalkthrough, 450);
+}
+
 // What the next export will carry. Remembered between openings, because someone marking a stack
 // of essays chooses once and then repeats.
 var EXPORT_WANT = "both";
@@ -1485,20 +2643,21 @@ function openExportMenu(){
   items.push({ label: "Reconstruction + essay (.argdown)",
                hint: "one file \u00b7 opens here, and stays editable",
                run: exportBundleFile });
-  if (window.__ARGDOWN_SHELL__) {
+  // ONE KIND OF PAGE, NOT TWO. There used to be a second entry here that shipped CodeMirror and
+  // the parser inside the copy -- 1.5 MB -- "so they can reply". It was withdrawn on 27 Aug 2026,
+  // and the argument is about where an editor comes from rather than about the weight. Ipsissima
+  // is the editor: it runs in a browser tab and it runs as an app, and a reader who wants to
+  // write back opens their reconstruction in one of those. Embedding a private copy of the
+  // workbench in every file that goes out means every such file is a fork of the program frozen
+  // at the moment it was sent, and the one thing that must not be forked is the program.
+  if (window.__ARGDOWN_SHELL__)
     items.push({ label: "Reconstruction as a web page",
-                 hint: "one file \u00b7 opens by double-clicking \u00b7 " + sizeOf(pageBytes(false)),
-                 run: function(){ exportPage(false); } });
-    // OFFERED ONLY BY A BUILD THAT HAS AN EDITOR TO GIVE. The Viewer carries the template and
-    // can export a page, but it has no CodeMirror in it; offering this there produced a 1.5 MB
-    // file with the parser inside and no way to type into it, which is the worst of both.
-    if (document.querySelector('script[data-part="EDITOR"]'))
-      items.push({ label: "\u2026 with the editor, so they can reply",
-                   hint: "the same page, and they can write comments back \u00b7 " +
-                         sizeOf(pageBytes(true)),
-                   run: function(){ exportPage(true); } });
-  }
-  ctxMenu("Send this back", items, $("expbtn"));
+                 hint: "one file \u00b7 opens by double-clicking \u00b7 " + sizeOf(pageBytes()),
+                 run: exportPage });
+  // The button says Export and so does the menu it opens. It said "Send this back" here, which
+  // is what the feature is FOR but not what it is called, and a menu whose title does not match
+  // the button that opened it reads as the wrong menu.
+  ctxMenu("Export", items, $("expbtn"));
 }
 
 /** Round bytes to something a person can weigh a choice against. */
@@ -1516,14 +2675,23 @@ function sizeOf(n){
  * `build_argdown_viewer.mjs` produces from Node -- there is not a second kind of viewer here,
  * and there must never be, or one of them will quietly rot.
  *
- * The read-only copy leaves out the parser (515 KB), the editor and the .docx exporter, and
- * carries the graph baked instead: exactly what a per-file build is. The editable copy is the
- * workbench, and carries the template on so that IT can export in turn.
+ * WHICH SECTIONS A COPY CARRIES IS NOT DECIDED HERE, and that is the fix for the bug this
+ * comment used to describe wrongly. The list lived in two places -- the builder's `parts` object
+ * and a literal in this function -- and they disagreed by two entries, HELP and STAMP, for long
+ * enough that four separate faults were reported against exported pages before anyone found the
+ * one cause. `argdown-page.js` now holds the section list, both routes read it, and a copy
+ * carries everything this page HAS apart from a short, argued-for drop-list. See its header.
  */
-function pageParts(editable){
-  return { LIVEMAP_DEPS: true, PAYLOAD: true,
-           PARSER: editable, EDITOR: editable, EXPORTER: editable, SHELL: editable };
+function pagePartNames(){
+  var out = [], all = document.querySelectorAll("script[data-part]");
+  for (var i = 0; i < all.length; i++) {
+    var k = all[i].getAttribute("data-part");
+    if (out.indexOf(k) < 0) out.push(k);
+  }
+  return out;
 }
+
+function pageParts(){ return window.ArgdownPage.exportParts(pagePartNames()); }
 
 var PART_BYTES = null;
 /** What each inlined section weighs, measured once. */
@@ -1538,8 +2706,8 @@ function partBytes(){
   return PART_BYTES;
 }
 
-function pageBytes(editable){
-  var want = pageParts(editable), have = partBytes();
+function pageBytes(){
+  var want = pageParts(), have = partBytes();
   // The template is in every copy; the payload is roughly the reconstruction plus the essay.
   var n = (window.__ARGDOWN_SHELL__ || "").length;
   for (var k in want) if (want[k] && have[k]) n += have[k];
@@ -1560,12 +2728,9 @@ function pageScripts(part){
   return out;
 }
 
-/** JSON safe to sit inside a <script> body -- the browser-side twin of the builder's helper. */
-function safeJSON(value){
-  return JSON.stringify(value)
-    .replace(/<\/script/gi, "<\\/script")
-    .replace(/[\u2028\u2029]/g, function(c){ return "\\u" + c.charCodeAt(0).toString(16); });
-}
+/** JSON safe to sit inside a <script> body. It WAS the browser-side twin of the builder's
+ *  helper, written out twice; both now call the one in argdown-page.js. */
+function safeJSON(value){ return window.ArgdownPage.safeJSON(value); }
 
 /** The name to hang on what goes out. The ESSAY's name, not the reconstruction's, because
  *  everything in this menu lands in one email to one student and they should all say the same
@@ -1612,7 +2777,7 @@ function embeddedFont(){
   return null;
 }
 
-function exportPage(editable){
+function exportPage(){
   var shell = window.__ARGDOWN_SHELL__;
   if (!shell) return;
   var font = embeddedFont();
@@ -1635,14 +2800,14 @@ function exportPage(editable){
     showErr("The reconstruction could not be written into a page: " + (e && e.message || e));
     return;
   }
-  var want = pageParts(editable), parts = {}, k;
+  var want = pageParts(), parts = {}, k;
   for (k in want) parts[k] = want[k] ? pageScripts(k) : "";
   parts.PAYLOAD = '<script data-part="PAYLOAD">\nwindow.__ARGDOWN_PAYLOAD__ = ' +
                   payload + ';\n<\/script>\n';
-  // The builder's own marker syntax, so one template serves both routes.
-  var html = shell.replace(/[ \t]*<!--\s*INLINE:([A-Z_]+)\s*-->[ \t]*\n?/g,
-                           function(m, key){ return parts[key] || ""; });
-  saveBlob(new Blob([html], { type: "text/html" }),
+  // The builder's own substitution, not a second one written to the same marker syntax. The
+  // regex was duplicated here and the duplicate was not the problem -- the LIST of what to
+  // substitute was -- but a shared vocabulary with a private matcher is half a fix.
+  saveBlob(new Blob([window.ArgdownPage.fill(shell, parts).html], { type: "text/html" }),
            exportBase() + " - reconstruction.html");
 }
 
@@ -1765,6 +2930,14 @@ $("aboutclose").onclick = closeAbout;
 $("about").addEventListener("click", function(e){ if (e.target === $("about")) closeAbout(); });
 document.addEventListener("keydown", function(e){
   if (e.key !== "Escape") return;
+  // SOMETHING ELSE ON THE PAGE MAY HAVE HAD THIS ESCAPE ALREADY. CodeMirror's search panel
+  // closes on Escape and marks the event handled; this listener is on the document, so
+  // preventDefault does not keep it away, and one press in the Find box shut the panel AND left
+  // full screen. Measured: full screen on, Find open, one Escape in the search field, and both
+  // went. `defaultPrevented` is the exact discriminator and not a guess — with the caret merely
+  // in the editor and no panel open, CodeMirror's Escape command declines and the flag stays
+  // false, so Escape still leaves full screen from inside the text.
+  if (e.defaultPrevented) return;
   // About first, then the dialogs, then the panel, then the open panel, then full screen: one
   // Esc should undo one thing. The
   // open panel is dismissable only when there IS a map to go back to — on a cold start it is
@@ -1773,6 +2946,9 @@ document.addEventListener("keydown", function(e){
   if (!$("cdlg").hidden) return closeCommentDialog();
   if (!$("ctx").hidden) return ctxHide();
   if ($("help").classList.contains("show")) return setHelp(false);
+  // The abstract sits with the panels rather than with full screen: it is a thing the reader
+  // opened over the map, and one Escape should put it back before it touches anything else.
+  if (!$("abspanel").hidden) return setAbstract(false);
   if (LIVE && $("drop").classList.contains("show")) return $("drop").classList.remove("show");
   if (document.body.classList.contains("fs")) setFull(false);
 });
@@ -1943,6 +3119,116 @@ function readableSource(text) {
   return lines.join("\n");
 }
 
+/** The `abstract:` out of a source file's YAML front matter, or "" where there is none.
+ *
+ *  WHY IT IS READ HERE RATHER THAN BAKED IN BY THE BUILD. A manuscript reaches this page three
+ *  ways — inlined by build_argdown_viewer.mjs, carried inside a bundle, or dropped as a folder
+ *  on the standalone — and only the first passes through the builder. Reading the front matter
+ *  in the page serves all three from one piece of code, and cannot go stale against a file the
+ *  reader has just re-converted on disk. `attachPositions` bakes each chapter's FULL text, front
+ *  matter and all, so nothing had to be added to the payload for this.
+ *
+ *  NOT A YAML PARSER, and deliberately not. The page carries no YAML library — pulling one in
+ *  for one optional string would be several hundred KB in every exported page — and the shapes
+ *  that actually occur here are few: pdf_to_source.py writes a folded block (`abstract: >-` and
+ *  two-space-indented lines, wrapped at 92 columns), and a hand-written source may write one
+ *  quoted line. Both are handled; a `key: value` at column 0 ends the block, which is the rule
+ *  YAML itself uses.
+ *
+ *  Folded (`>`) joins its lines with spaces and keeps blank lines as paragraph breaks, which is
+ *  what folded scalars mean; literal (`|`) keeps every newline. Getting that wrong is visible —
+ *  the 174-word Etiévant abstract came out as 17 one-line paragraphs the first time.
+ */
+function frontMatterAbstract(text) {
+  var lines = String(text == null ? "" : text).split("\n");
+  if (!lines.length || !/^---\s*$/.test(lines[0])) return "";
+  var i, head = null, body = [];
+  for (i = 1; i < lines.length; i++) {
+    if (/^(---|\.\.\.)\s*$/.test(lines[i])) break;             // end of the front matter
+    if (head == null) {
+      var mo = /^abstract\s*:\s*(.*)$/.exec(lines[i]);
+      if (mo) { head = mo[1].trim(); }
+      continue;
+    }
+    // Inside the block: anything indented belongs to it, a bare key at column 0 ends it.
+    if (/^\S/.test(lines[i])) break;
+    body.push(lines[i].replace(/^ {1,2}/, ""));
+  }
+  if (head == null) return "";
+  // `>` or `|`, with YAML's optional chomping and indentation indicators after it (`>-`, `|2+`).
+  var block = /^([>|])[-+0-9]*\s*$/.exec(head);
+  if (!block) {
+    // One line, possibly quoted. Nothing fancier: a value with an escaped quote inside it has
+    // never appeared here, and a half-right unescaper would be worse than none.
+    return head.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
+  }
+  if (block[1] === "|") return body.join("\n").replace(/\s+$/, "");
+  var out = [], run = [];
+  for (i = 0; i < body.length; i++) {
+    if (!body[i].trim()) { if (run.length) { out.push(run.join(" ")); run = []; } continue; }
+    run.push(body[i].trim());
+  }
+  if (run.length) out.push(run.join(" "));
+  return out.join("\n\n");
+}
+
+/* ---- THE ABSTRACT, ON A FOLD ---------------------------------------------------------
+ *
+ * See the markup in #stage for why it is offered and why it is shut to begin with. This half is
+ * only: find one, draw it, and keep the two ways of dismissing it agreeing with each other.
+ */
+var ABSTRACT = null;        // { text, chapter } for the one being offered, or null
+
+/** The abstract to show, and the chapter it came from.
+ *
+ *  THE FIRST CHAPTER IN READING ORDER THAT HAS ONE. `MS.chapters` is already in reading order —
+ *  the order the builder baked it in, which is the order `positions` used — so this is the
+ *  abstract of the thing the reader is starting to read. A book split into files may carry
+ *  several (a collection of papers) or none (Dewey, a judgment, Ramsey); a single article has
+ *  exactly one, and taking the first is right in all three cases.
+ */
+function manuscriptAbstract(){
+  if (!msAvailable()) return null;
+  for (var i = 0; i < MS.chapters.length; i++) {
+    var t = frontMatterAbstract(MS.chapters[i].text);
+    if (t) return { text: t, chapter: MS.chapters[i].path };
+  }
+  return null;
+}
+
+/** Unfold the abstract, or fold it away. One function, because the button, the ×, Escape and a
+ *  fresh file all mean the same thing by it and must not drift apart. */
+function setAbstract(open){
+  if (!ABSTRACT) open = false;
+  $("abspanel").hidden = !open;
+  $("absbtn").classList.toggle("on", !!open);
+  $("absbtn").setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+/** Offer the abstract, or do not. Called from `render`, so a second file opened into the same
+ *  page cannot leave the first one's abstract on screen. */
+function syncAbstract(){
+  ABSTRACT = manuscriptAbstract();
+  $("abs").hidden = !ABSTRACT;
+  var body = $("absbody");
+  body.textContent = "";
+  if (ABSTRACT) {
+    ABSTRACT.text.split(/\n{2,}/).forEach(function(para){
+      var p = document.createElement("p");
+      p.textContent = para;      // textContent, never innerHTML: these are somebody else's words
+      body.appendChild(p);
+    });
+    // The chapter is named only where there is more than one. On a single paper "paper.md" is
+    // noise — there is nowhere else it could have come from.
+    $("abswhere").textContent = "the article's own abstract, not part of the reconstruction" +
+      (MS.chapters.length > 1 ? " · " + ABSTRACT.chapter.replace(/^.*\//, "") : "");
+  }
+  setAbstract(false);          // a file opens on its map, never on a panel over it
+}
+
+$("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
+$("absclose").onclick = function(){ setAbstract(false); };
+
 function msIndexParagraphs(lines){
   MSPARA = new Array(lines.length + 1);
   var i = 0;
@@ -1990,7 +3276,7 @@ function showArgdown(text){
         onClaimClick: function(name){ var n = claimByLabel(name); if (n) followClaim(n); },
         onChange: function(next){ SOURCE = next; DIRTY = true; markState(); schedulePreview(); }
       });
-      ["adfind","adnums","adfold","adsave"].forEach(function(id){ $(id).hidden = false; });
+      ["adfind","adnums","adfold","adsave","adsaveas"].forEach(function(id){ $(id).hidden = false; });
       // Published for the same reason `__ARGDOWN_PARSE__` is: a page that embeds this needs a
       // way in, and so does anything driving it to check that an edit really reaches the map.
       window.__ARGDOWN_EDITOR__ = ED;
@@ -2316,7 +3602,48 @@ function exportMarks(chapterPath, want){
   return marks;
 }
 
-function saveBlob(blob, name){
+/** Write an export where the reader says, rather than where the browser insists.
+ *
+ *  EVERY EXPORT LANDED IN DOWNLOADS. That is right for a page and wrong for an application: the
+ *  annotated essay belongs beside the essay, in the folder the reconstruction was opened from,
+ *  and a tutor marking a stack of them was moving each file out of Downloads by hand. Three
+ *  routes, same order of trust as `saveArgdown`:
+ *
+ *    1. the host's own save dialog, which is the OS's, with the reader's folders in it
+ *    2. `showSaveFilePicker`, which is the browser's version of the same thing (Chromium only)
+ *    3. the download, unchanged, for everyone else
+ *
+ *  BYTES, NOT TEXT, on the host path. A .docx is a zip; `writeTextFile` would UTF-8 encode it
+ *  into a file Word calls corrupt, and the reader would have no way to tell that from a bad
+ *  export. `mime` decides the dialog's filter, so the picker offers "Word document" rather than
+ *  arguing that the file should be an .argdown.
+ */
+async function saveBlob(blob, name){
+  var ext = (name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || "";
+  var kind = { docx: "Word document", md: "Markdown", html: "Web page",
+               argdown: "Argdown" }[ext.toLowerCase()] || "File";
+  try {
+    if (HOST && HOST.writeBinary) {
+      var target = await HOST.pickSavePath(name, [{ name: kind, extensions: [ext] }]);
+      if (!target) return;                       // the reader changed their mind
+      await HOST.writeBinary(target, new Uint8Array(await blob.arrayBuffer()));
+      return;
+    }
+    if (typeof window.showSaveFilePicker === "function") {
+      var accept = {}; accept[blob.type || "application/octet-stream"] = ["." + ext];
+      var h = await window.showSaveFilePicker({
+        suggestedName: name, types: [{ description: kind, accept: accept }] });
+      var w = await h.createWritable();
+      await w.write(blob); await w.close();
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;    // the reader changed their mind
+    // Anything else falls through to the download, which is the route that always works. Said
+    // out loud, because "it saved" and "it saved somewhere else" look identical from here.
+    showErr("Could not write it where you asked (" + (e && e.message || e) + "), so it is " +
+            "being offered as a download instead.");
+  }
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
   a.href = url; a.download = name;
@@ -2373,15 +3700,41 @@ var MARGIN_KINDS = {
                     "Edited in the Argdown, beside the claim it belongs to, rather than here." }
 };
 
+/* WHICH OF THE TWO HANDS THE PANE IS SHOWING.
+ *
+ * "both" | "comment" | "note" — the same three words `exportMarks` and EXPORT_WANT already use,
+ * so the two three-way choices in this program cannot drift into different names for the same
+ * distinction.
+ *
+ * DELIBERATELY NOT THE SAME VARIABLE AS EXPORT_WANT. They answer different questions: what I am
+ * reading now, and what I am about to send someone. Filtering the pane down to a student's
+ * comments while checking them should not silently change what the next Word file carries — and
+ * the export menu states its own choice with a tick, so there is nothing hidden either way.
+ */
+var NOTE_WANT = "both";
+
 function renderNotes(){
   var list = $("notelist"), items = marginalia();
   list.textContent = "";
   var nc = items.filter(function(m){ return m.kind === "comment"; }).length;
   var nn = items.length - nc;
-  $("notecount").textContent = items.length
-    ? nc + " comment" + (nc === 1 ? "" : "s") + " \u00b7 " +
-      nn + " reconstructor's note" + (nn === 1 ? "" : "s")
-    : "";
+  // OFFERED ONLY WHERE IT CAN DO SOMETHING. With one kind written the choice is not a choice —
+  // the same view the Export button takes of the same question. The fallback matters as much as
+  // the hiding: a filter left on "comments" by one file must not open the next one empty.
+  var both = nc > 0 && nn > 0;
+  if (!both) NOTE_WANT = "both";
+  var filter = $("notefilter");
+  filter.hidden = !both;
+  Array.prototype.forEach.call(filter.querySelectorAll("button[data-want]"), function(b){
+    b.classList.toggle("on", b.dataset.want === NOTE_WANT);
+    b.dataset.count = String(b.dataset.want === "both" ? items.length
+                           : b.dataset.want === "comment" ? nc : nn);
+  });
+  // The totals are said ONCE. With the filter up they ride on its buttons, where the reader is
+  // choosing; without it they belong here, beside the pane's name.
+  $("notecount").textContent = (both || !items.length) ? ""
+    : nc ? nc + " comment" + (nc === 1 ? "" : "s")
+         : nn + " reconstructor's note" + (nn === 1 ? "" : "s");
   $("panes").querySelector('[data-p="notes"]').hidden = false;
   var comments = items.filter(function(m){ return m.kind === "comment"; });
   $("delallc").hidden = !(ED && comments.length);
@@ -2400,7 +3753,10 @@ function renderNotes(){
     list.appendChild(none);
     return;
   }
-  items.forEach(function(m){
+  // Never empty when there is anything to show: the guard above drops NOTE_WANT back to "both"
+  // whenever the kind it names is absent, so a filtered list always has something in it.
+  var shown = items.filter(function(m){ return NOTE_WANT === "both" || m.kind === NOTE_WANT; });
+  shown.forEach(function(m){
     var d = document.createElement("div");
     d.className = "note is-" + m.kind;
     var who = document.createElement("div");
@@ -2442,6 +3798,15 @@ function renderNotes(){
     list.appendChild(d);
   });
 }
+
+/* ONE HANDLER FOR THE GROUP, because the three buttons are one setting. Three handlers would be
+ * three places to forget the redraw. */
+$("notefilter").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-want]");
+  if (!b || b.dataset.want === NOTE_WANT) return;
+  NOTE_WANT = b.dataset.want;
+  renderNotes();
+});
 
 /** Remove every comment in the file at once. Notes are left alone — they are the
  *  reconstruction's own reasoning, not feedback, and clearing feedback should not clear them. */
@@ -2573,14 +3938,27 @@ function argdownForSaving(){
   return files.length ? window.ArgdownBundle.attach(text, files, BUNDLE.meta) : text;
 }
 
-async function saveArgdown(){
+/** SAVE, and SAVE AS, which is the same act with the first step forced.
+ *
+ *  `asNew` means "ask me where", and the difference is only ever about the FIRST of the three
+ *  routes below: with somewhere already to write, Save writes there and Save As asks; with
+ *  nowhere, they are the same thing, because Save was already going to ask. Written as one
+ *  function for that reason -- two would be two places to keep the bundle-rebuilding, the
+ *  watcher move and the dirty flag correct, and they would drift on the third of those first.
+ *
+ *  AND THE NEW FILE BECOMES THE OPEN ONE. A Save As that wrote a copy and left the reader
+ *  editing the original is the version of this command that loses work: the next Save goes
+ *  somewhere they have stopped thinking about. So `HOST_PATH` and `AD_HANDLE` move, and the
+ *  watcher moves with them.
+ */
+async function saveArgdown(asNew){
   var text = argdownForSaving();
   try {
     // THE HOST FIRST, when there is one: a real path, written in place, with no permission to
     // re-request and nothing to go stale. This is the branch that makes Ipsissima behave like an
     // application rather than like a page that can download things.
     if (HOST) {
-      var target = HOST_PATH;
+      var target = asNew ? null : HOST_PATH;
       if (!target) {
         target = await HOST.pickSavePath(NAME || "reconstruction.argdown");
         if (!target) return;                     // the reader changed their mind
@@ -2593,12 +3971,15 @@ async function saveArgdown(){
       AD_PENDING = null;
       adExternHide();
       hostWatchArgdown();          // a Save As moves which file we are watching
+      // The window's title follows the file, or a Save As leaves it naming the one it came from.
+      NAME = HOST.basename(target);
+      $("fname").textContent = NAME;
       DIRTY = false; markState();
-      $("adstate").textContent = "saved";
+      $("adstate").textContent = asNew ? "saved as " + NAME : "saved";
       setTimeout(markState, 1800);
       return;
     }
-    if (AD_HANDLE && AD_HANDLE.createWritable) {
+    if (AD_HANDLE && AD_HANDLE.createWritable && !asNew) {
       var w = await AD_HANDLE.createWritable();
       await w.write(text); await w.close();
       DIRTY = false; markState();
@@ -2614,8 +3995,18 @@ async function saveArgdown(){
       var w2 = await h.createWritable();
       await w2.write(text); await w2.close();
       AD_HANDLE = h; DIRTY = false; markState();
-      $("adstate").textContent = "saved";
+      if (h.name) { NAME = h.name; $("fname").textContent = NAME; }
+      $("adstate").textContent = asNew ? "saved as " + NAME : "saved";
       setTimeout(markState, 1800);
+      return;
+    }
+    // A BROWSER WITH NO PICKER CANNOT DO SAVE AS, and saying so is better than doing the
+    // download and letting the reader believe the file moved. Save falls through to the
+    // download below, which is what it has always done and what its own label warns about.
+    if (asNew) {
+      showErr("This browser cannot choose where to write a file, so there is no Save as here.\n\n" +
+              "Use Save, which offers the reconstruction as a download, and rename it — or open " +
+              "it in the Ipsissima app, where Save as writes wherever you point it.");
       return;
     }
   } catch (e) {
@@ -2632,7 +4023,8 @@ async function saveArgdown(){
   $("adstate").textContent = "downloaded";
   setTimeout(markState, 2400);
 }
-$("adsave").onclick = saveArgdown;
+$("adsave").onclick = function(){ saveArgdown(false); };
+$("adsaveas").onclick = function(){ saveArgdown(true); };
 
 // Nothing is lost silently. The browser decides the wording; all a page can do is object.
 window.addEventListener("beforeunload", function(e){
@@ -2932,10 +4324,18 @@ $("mschapter").onchange = function(){ msRender(this.value); $("msnote").textCont
  *  is not duplicated here: `argdown-positions.js` is the same module the build uses and is
  *  inlined into this page, so a map drawn from a dropped folder is laid out by the same rule.
  *
- *  The one thing this cannot do is DERIVE fidelity. That check lives in check_argdown.py --
- *  it leans on difflib's near-match, which has no clean JavaScript equivalent, and rewriting it
- *  here would put one rule in two languages, which is the drift the shared module exists to
- *  prevent. So borders are as the file declares them, and the status line says so.
+ *  The one thing this cannot do is DERIVE fidelity. That check lives in check_argdown.py, so
+ *  borders here are as the file declares them and the status line says so -- which on the
+ *  published corpus means 6 borders in 251 shown as the file has them rather than as the source
+ *  has them.
+ *
+ *  THE REASON GIVEN FOR THAT NO LONGER HOLDS, and it is written down here because this is where
+ *  someone will next wonder. It used to read "it leans on difflib's near-match, which has no
+ *  clean JavaScript equivalent"; that was true of the rule `_is_verbatim` replaced. The rule now
+ *  is a contiguous-substring test over normalised text, and `ArgdownPositions.normalise` -- the
+ *  script immediately above this one -- already does the normalising, in this very page.
+ *  Measured 27 Aug 2026: four lines on top of it agreed with the Python service on 251 of 251
+ *  adjudicated claims across the corpus. See the note in build_argdown_viewer.mjs.
  */
 var SOURCE_EXT = /\.(md|qmd|markdown|txt|tex|rmd|rst|org)$/i;
 var PROJECT_FILES = ["argdown-project.yml", "argdown_project.yml", "argdown-project.yaml",
@@ -3386,8 +4786,73 @@ function hostWatchManuscript(){
   }).then(function(stop){ UNWATCH = stop; });
 }
 
+/* ---- starting from nothing ------------------------------------------------------------
+ *
+ * THE MISSING THIRD ANSWER. Ipsissima could open a file and it could open a folder, and it could
+ * not begin one — so a reconstruction that did not exist yet started outside the program, in a
+ * text editor, with a file the writer had to know the first six lines of before Ipsissima would
+ * draw anything at all. That is a cold start with a prerequisite, which is the same as no cold
+ * start.
+ *
+ * IT UNLOADS WHAT IS OPEN, so it asks the same question every other route that does that asks,
+ * through the same `confirmDiscard`. The starter is a real .argdown file in the build (see
+ * `helpPart` in the builder) rather than a string here: it is parsed by the test suite, and a
+ * skeleton that did not parse would teach the syntax wrongly to the one reader who cannot yet
+ * tell.
+ *
+ * Assigned rather than declared inside the block below, because the desktop menu is wired
+ * outside it and a function declaration in a block is not something to rely on reaching there.
+ *
+ * OFFERED ONLY WHERE BOTH THE PARSER AND THE EDITOR ARE, and it is the editor half that is easy
+ * to get wrong -- this was first written gated on the parser alone, which offered "start a new
+ * one" in the Viewer, where the skeleton would appear and could not be typed into. The condition
+ * is the one `showArgdown` uses to decide whether there is an editor at all, so the two cannot
+ * disagree about it.
+ */
+var newReconstruction = null;
+var canEdit = !!window.ArgdownEditor && typeof window.__ARGDOWN_PARSE__ === "function";
+
 if (typeof window.__ARGDOWN_PARSE__ === "function"){
   $("openbtn").hidden = false;
+
+  newReconstruction = canEdit ? function(){
+    if (!confirmDiscard("Start a new reconstruction")) return;
+    var text = window.__STARTER_ARGDOWN__;
+    if (!text) {
+      showErr("This build carries no starter reconstruction to begin from.");
+      return;
+    }
+    var graph;
+    try { graph = window.__ARGDOWN_PARSE__(text); }
+    catch (e) {
+      // Cannot happen from a build that ran the tests, and worth saying plainly if it does:
+      // the fault is in the shipped file, not in anything the reader did.
+      showErr("The starter reconstruction in this build does not parse: " +
+              (e && e.message || e));
+      return;
+    }
+    // EVERYTHING THE OPEN FILE OWNED GOES, and the list is the one `loadDropped` resets plus the
+    // two that say where Save writes. Leaving `HOST_PATH` behind would make the first Save of a
+    // brand-new reconstruction silently overwrite the file it replaced.
+    DERIVED_IN_PAGE = false;
+    MS = null;
+    ALL_SOURCES = {};
+    BUNDLE = null;
+    HOST_PATH = null;
+    AD_HANDLE = null;
+    if (UNWATCH) { UNWATCH(); UNWATCH = null; }
+    if (UNWATCH_AD) { UNWATCH_AD(); UNWATCH_AD = null; }
+    AD_ON_DISK = null;
+    AD_PENDING = null;
+    adExternHide();
+    $("drop").classList.remove("show");
+    render("untitled.argdown", text, graph);
+    // OPENED ON THE ARGDOWN, because the first thing anyone does with a blank reconstruction is
+    // type into it, and a map of a skeleton is not what they came for.
+    if (!PANES.argdown) setPane("argdown", true);
+  } : null;
+  $("picknew").hidden = !newReconstruction;
+  if (newReconstruction) $("picknew").onclick = newReconstruction;
   var pickFile = function(){
     var i = document.createElement("input");
     i.type = "file"; i.accept = ".argdown,.ad,text/plain";
@@ -3555,13 +5020,16 @@ if (HOST) {
     ({
       "about":           openAbout,
       "help":            function(){ setHelp(!$("help").classList.contains("show")); },
+      "walkthrough":     function(){ startWalkthrough(); },
       "open":            function(){ $("openbtn").click(); },
       "open-folder":     async function(){
                            if (!confirmDiscard("Open that folder")) return;
                            var d = await HOST.pickDirectory();
                            if (d) await hostLoadDir(d, null);
                          },
-      "save":            saveArgdown,
+      "new":             function(){ if (newReconstruction) newReconstruction(); },
+      "save":            function(){ saveArgdown(false); },
+      "save-as":         function(){ saveArgdown(true); },
       "export":          function(){ if (!$("expbtn").hidden) $("expbtn").click(); },
       "undo":            function(){ if (ED) ED.undo(); },
       "redo":            function(){ if (ED) ED.redo(); },

@@ -24,7 +24,7 @@ once. A check-and-fix loop is a different reader -- it has the map in context
 already and needs to know which line to change -- so `--only-problems` and
 `--format json` drop the census and print the faults, each with its location and,
 where the checker can work one out, the correction itself. Measured on the Darwin
-sample: 687 words and 10.5s becomes 221 words and 2.4s.
+sample: 682 words and 4.6s becomes 372 words and 2.0s.
 
 Usage:
     python3 check_argdown.py FILE.argdown [--cli PATH_TO_ARGDOWN]
@@ -44,9 +44,14 @@ import sys
 import tempfile
 from collections import Counter
 
+#: THE PARSER'S OWN TABLE, all twelve. Four were missing -- `.^.` `.v_.` `.<>.` `.[].` -- and
+#: the editor's linter was missing the same four, so a heading containing one was rewritten and
+#: neither implementation said a word. Read them out of `RUN.model.shortcodes` after a parse if
+#: this ever needs checking again; there are 40 in total, the rest being emoji.
 SHORTCODES = {".A.": "∀", ".E.": "∃", ".~.": "¬", ".v.": "∨",
               ".->.": "→", ".<->.": "↔", ".P.": "\U0001d5e3",
-              ".O.": "\U0001d5e2"}
+              ".O.": "\U0001d5e2", ".^.": "∧", ".v_.": "⊻",
+              ".<>.": "◇", ".[].": "◻"}
 
 MODES = ["all", "with-title", "with-relations", "with-more-than-one-relation",
          "top-level", "not-used-in-argument"]
@@ -68,6 +73,9 @@ DEFAULT_CLI = ("app/node_modules/.bin/argdown")
 # `?` always a thing to look at.
 FINDINGS = []
 
+#: What the run found out about the map's shape, for the ledger.
+SHAPE = {"parsed": True}
+
 # Value sets a fix has to choose from, collected once rather than restated on every finding that
 # needs them. Printed at the foot of the short report and carried in the JSON envelope.
 VOCABULARY = {}
@@ -77,6 +85,48 @@ def finding(check, severity, message, **where):
     """Record a fault. `where` carries whatever locates it: line, title, chapter, fix."""
     FINDINGS.append(dict(check=check, severity=severity, message=message,
                          **{k: v for k, v in where.items() if v is not None}))
+
+
+# ------------------------------------------------------------------ ledger ---- #
+# WHY A LOG AT ALL. The question "which mistakes does a model actually make writing Argdown"
+# cannot be answered from the corpus, because every map in the corpus passed before it was
+# committed. The failures happen in the fix loop and are then edited away, leaving no trace, so
+# the evidence for improving the instructions is destroyed by the very process that would use
+# it. One line per run, appended, is enough to recover it.
+#
+# NO CONTENT, ever -- the basename, the counts, and the check names. The ledger lives outside
+# any repository so it survives a clone and is never committed by accident.
+LEDGER = os.environ.get("IPSISSIMA_CHECK_LOG") or os.path.join(
+    os.path.expanduser("~"), ".ipsissima", "check-log.jsonl")
+
+
+def record(path, elapsed, nodes=None, edges=None, parsed=True):
+    """Append one run to the ledger. Never raises: a log that breaks a check is worse than none."""
+    if str(LEDGER).lower() in ("off", "0", "none", ""):
+        return
+    try:
+        import hashlib
+        with open(path, "rb") as fh:
+            digest = hashlib.sha1(fh.read()).hexdigest()[:12]
+        counts = {}
+        for f in FINDINGS:
+            counts[f"{f['severity']} {f['check']}"] = counts.get(f"{f['severity']} {f['check']}", 0) + 1
+        os.makedirs(os.path.dirname(LEDGER), exist_ok=True)
+        with open(LEDGER, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+                "file": os.path.basename(path),
+                # The content hash is what makes ROUNDS visible: the same name with a new hash
+                # is the next round of one fix loop, and the same hash twice is a re-run.
+                "sha": digest,
+                "elapsed": round(elapsed, 2),
+                "parsed": parsed, "nodes": nodes, "edges": edges,
+                "faults": sum(1 for f in FINDINGS if f["severity"] == "!"),
+                "looks": sum(1 for f in FINDINGS if f["severity"] == "?"),
+                "checks": counts,
+            }, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 
 def find_cli(explicit):
@@ -124,6 +174,22 @@ def parse_dot(dot):
 # The CLI colours its errors for a terminal. A caller reading the JSON is not a terminal, and
 # the escape sequences are both noise and a decoding hazard downstream.
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def parser_message(raw):
+    """The parser's complaint, without the JavaScript stack behind it.
+
+    THE STACK IS THE BULK AND NONE OF THE SIGNAL. A YAML error inside a metadata block -- the
+    mistake a model writing Argdown actually makes -- comes back as three useful lines naming
+    the line, the column and the offending character, followed by some 950 characters of
+    node_modules paths. Truncating at 1200 kept the noise and sometimes cut the caret line that
+    says WHERE. Cutting at the first stack frame keeps the diagnosis and drops the trace.
+    """
+    text = ANSI.sub("", raw or "").strip()
+    cut = re.search(r"\n\s+at\s+\S", text)
+    if cut:
+        text = text[:cut.start()].rstrip()
+    return text[:1200]
 
 
 def unescape_dot(s):
@@ -367,6 +433,13 @@ def pcs_report(doc):
             how = ("only one premise" if first
                    else "nothing but the conclusion of the step before"
                    if prems == 0 else f"{prems} premise and the step before")
+            finding("thin-step", "?",
+                    f"inference step {step} rests on {how} -- an inference bar with a single "
+                    "claim above it links nothing, so the map draws a plain arrow. Sometimes "
+                    "right; more often a premise is missing",
+                    title=title, conclusion=concl,
+                    fix="add the premise the step actually needs, or drop the bar if the move "
+                        "really is immediate")
             print(f"      ? <{title}> step {step} -> [{concl}]: {how}")
 
     if found["unfilled"]:
@@ -419,6 +492,33 @@ def fidelity_report(cli, path):
     print(f"\n   FIDELITY: {il['marked']}/{il['total']} nodes marked -- "
           + ", ".join(f"{v} {k}" for k, v in census.items()))
 
+    # ---- nodes carrying no marker at all, which are nearly always arguments --- #
+    # A CENSUS IS NOT A CHECK, and this one was only a census. On the rebuilt Tooming 18 of 128
+    # nodes carried no fidelity marker and every one was an `<Argument>` -- the count was
+    # printed, in prose, on a report the fix loop does not read. So the loop stopped at `ok`
+    # with a fifth of the map unmarked and nothing had said so.
+    #
+    # `?` and not `!`: an argument really can have no marker to give. But assembling premises
+    # into a numbered structure is the reconstructor's work even where every step is the
+    # author's, so an unmarked argument is far more often forgotten than judged.
+    bare = prov.unmarked(doc) if hasattr(prov, "unmarked") else []
+    if bare:
+        print(f"      {len(bare)} node(s) carry NO fidelity marker:")
+        for title in bare[:10]:
+            finding("fidelity", "?",
+                    "carries no `fidelity` marker. An <Argument> takes one like any other claim, "
+                    "and usually should: assembling premises into a numbered structure is the "
+                    "reconstructor's work even where every step is the author's",
+                    title=title,
+                    fix="mark it, or say in a `note:` why none applies")
+            print(f"      ? [{title[:64]}]")
+        if len(bare) > 10:
+            for title in bare[10:]:
+                finding("fidelity", "?",
+                        "carries no `fidelity` marker", title=title,
+                        fix="mark it, or say in a `note:` why none applies")
+            print(f"      \u2026 and {len(bare) - 10} more")
+
     unwarranted, warrants, odd = prov.warrant_gaps(doc)
     if warrants:
         print("      warrants given: "
@@ -444,6 +544,12 @@ def fidelity_report(cli, path):
             print(f"           \u2026 and {n - 10} more")
         print("        vocabulary: " + ", ".join(sorted(prov.WARRANTS)))
     for o in odd:
+        finding("warrant", "?",
+                f"carries a `warrant` but is marked `{o['fidelity'] or 'unmarked'}` -- a "
+                "warrant explains a DEPARTURE from the text, so either the marker understates "
+                "the claim or the warrant is not needed",
+                title=o["title"], fidelity=o["fidelity"],
+                fix="mark the departure the warrant is for, or drop the warrant")
         print(f"      ? [{o['title']}] carries a warrant but is marked "
               f"`{o['fidelity'] or 'unmarked'}` -- a warrant explains a DEPARTURE")
 
@@ -458,6 +564,11 @@ def fidelity_report(cli, path):
         print(f"\n   READING POLICY: {shown or '(empty block)'}")
         for k, v in unknown:
             opts = prov.POLICY_VALUES.get(k)
+            finding("reading-policy", "?",
+                    f"`{k}: {v}` is outside the documented vocabulary",
+                    key=k, value=v,
+                    fix=(f"use one of: {' | '.join(opts)}" if opts
+                         else "check the key against the documented reading policy"))
             print(f"      ? `{k}: {v}` is outside the documented vocabulary"
                   + (f" ({' | '.join(opts)})" if opts else ""))
     else:
@@ -597,6 +708,13 @@ def provenance_report(cli, path, source_root, fix=None):
         print("      claim may capture the meaning better than either passage alone. What it")
         print("      should not do is leave a reader to discover the join. Record it in the")
         print("      claim's `note:`, or mark the elision in the text.")
+        for title, gap, left, right in splices:
+            finding("splice", "?",
+                    f"joins two passages {gap} characters apart in the source, using mostly "
+                    "the source's own words -- often a good compression, but a reader should "
+                    "not have to discover the join",
+                    title=title, gap=gap,
+                    fix="record the join in the claim's `note:`, or mark the elision in the text")
         for title, gap, left, right in splices[:8]:
             print(f"      ? [{title}] joins passages {gap} characters apart")
             print(f"           \u2026{left}  |  {right}\u2026")
@@ -654,6 +772,12 @@ def provenance_report(cli, path, source_root, fix=None):
         if len(over) > 10:
             print(f"           \u2026 and {len(over) - 10} more")
     if under:
+        for t in under:
+            finding("fidelity", "?",
+                    "the claim's own text IS the source's words, but it declares less than "
+                    "`quotation` -- harmless, and sometimes deliberate, but it is free "
+                    "precision given up",
+                    title=t, fix="mark it `quotation`, unless the understatement is deliberate")
         print(f"      ? {len(under)} claim(s) whose text IS the source's words but which claim "
               f"less.")
         print("        Harmless, and sometimes deliberate — but it is free precision given up:")
@@ -825,9 +949,20 @@ def _parse_args():
 
     # ---- 0. the derived-fidelity service, for the viewer build ------------ #
     # ONE IMPLEMENTATION, TWO CALLERS. The renderer needs to know whether a claim's own text is
-    # in the source; the rule for that leans on difflib and has no clean JavaScript equivalent,
-    # and a second implementation is the drift hazard test_argdown_positions.mjs already exists
-    # to police. So the build asks this, rather than working it out again.
+    # in the source, and asks this rather than working it out again.
+    #
+    # THE STATED REASON FOR THAT HAS EXPIRED. It read "the rule leans on difflib and has no clean
+    # JavaScript equivalent", which described the rule `_is_verbatim` REPLACED -- a 0.75
+    # similarity score over a window. The rule now is: fold whitespace and case, strip
+    # punctuation, ask whether the claim is a contiguous substring of the source. No difflib.
+    #
+    # Measured 27 Aug 2026 over the whole published corpus: a four-line JavaScript port on top of
+    # `ArgdownPositions.normalise` -- already inlined in every viewer, already cross-checked
+    # against this module by test_argdown_positions.mjs -- agreed with this service on 251 of 251
+    # adjudicated claims (79 quotation, 172 paraphrase). So the choice of where the rule lives is
+    # open again, and it matters: this is the only place fidelity is ever derived, and only a
+    # per-file build with --source-root calls it. The app, the standalone viewer and a bundle
+    # build all draw the border the file declares.
     if a.derive_fidelity:
         if not a.source_root:
             print("{}")
@@ -874,12 +1009,14 @@ def _report(cli, path, a):
         # THE PARSER'S OWN WORDS, not a summary of them. It names the line, and a caller about
         # to edit the file needs that far more than it needs our gloss on it.
         finding("parse", "!", "the file does not parse",
-                detail=ANSI.sub("", (r.stderr or r.stdout)).strip()[:1200])
+                detail=parser_message(r.stderr or r.stdout))
         print("\nFAILED TO PARSE\n")
         print(r.stderr or r.stdout)
+        SHAPE["parsed"] = False
         return 1
     dot = r.stdout
     nodes, kinds, edges, clusters = parse_dot(dot)
+    SHAPE.update(nodes=len(nodes), edges=len(edges))
     print(f"   parses OK -- {len(nodes)} nodes "
           f"({Counter(kinds.values()).get('argument-map-node', 0)} arguments), "
           f"{len(edges)} edges, {len(clusters)} clusters")
@@ -1027,6 +1164,7 @@ def main():
     a, cli, path = _parse_args()
     if a is None:
         return
+    started = __import__("time").time()
 
     # ---- the report, with its prose sent nowhere when nobody asked for prose ---- #
     sink = io.StringIO() if a.quiet else None
@@ -1061,6 +1199,8 @@ def main():
                 print(f"       fix: {f['fix']}")
         for name, values in sorted(VOCABULARY.items()):
             print(f"   {name} must be one of: {', '.join(values)}")
+    record(path, __import__("time").time() - started, nodes=SHAPE.get("nodes"),
+           edges=SHAPE.get("edges"), parsed=SHAPE.get("parsed", True))
     if code:
         sys.exit(code)
 

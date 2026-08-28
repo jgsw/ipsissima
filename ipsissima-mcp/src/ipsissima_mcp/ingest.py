@@ -177,13 +177,16 @@ def plain_text(path):
     # is not, and the bare import raises ModuleNotFoundError from inside a PDF conversion. The
     # MCP server hid this for a while by putting the directory on sys.path itself.
     try:
-        from .pdf_to_source import join_spans
+        from .pdf_to_source import (join_spans, dehyphenate, trust_soft_hyphens,
+                                    keep_hyphen)
     except ImportError:
-        from pdf_to_source import join_spans
-    out = []
+        from pdf_to_source import (join_spans, dehyphenate, trust_soft_hyphens,
+                                   keep_hyphen)
+    # One-element lists so the counting inside the loops writes through without a `nonlocal`.
+    blocks, soft_marks, ascii_breaks = [], [0], [0]
     with pymupdf.open(path) as doc:
         for i, page in enumerate(doc, 1):
-            out.append(f"<!-- p.{i} begins here -->")
+            blocks.append(f"<!-- p.{i} begins here -->")
             # READ AS `dict` AND GROUPED BY BLOCK, which gives the same paragraphs `blocks` gives
             # while keeping the SPANS. A footnote marker is only recognisable as a span set
             # smaller than the body of its own line, and `get_text("blocks")` has already
@@ -195,11 +198,45 @@ def plain_text(path):
                 for l in block.get("lines", []):
                     spans = l.get("spans", [])
                     if spans:
-                        parts.append(join_spans(spans))
-                text = " ".join(" ".join(parts).split())
-                if text:
-                    out.append(text)
-    return "\n\n".join(out)
+                        one = join_spans(spans)
+                        # COUNTED HERE AND NOWHERE ELSE. Which hyphen convention this document
+                        # uses is decided by comparing soft hyphens against ASCII hyphens at a
+                        # PRINTED line end -- and a printed line ends here, before the parts are
+                        # joined into a paragraph. Count it after the join and the evidence has
+                        # already been destroyed.
+                        if one.rstrip().endswith("-"):
+                            ascii_breaks[0] += 1
+                        soft_marks[0] += one.count("\u00ad")
+                        parts.append(one)
+                text = " ".join(parts)
+                if text.strip():
+                    blocks.append(text)
+    # DE-HYPHENATED, WHICH THIS ROUTE SIMPLY DID NOT DO. `pdf_to_source.py` has rejoined words
+    # broken across a printed line since it was written; this one never called it, and the word
+    # "hyphen" did not appear in this file. On the Dewey that left 94 broken words, and the
+    # share of sentences verifying word-for-word against the printed article went from 44% to
+    # 67% with the repair applied -- the largest single loss the converter had.
+    #
+    # The convention is decided over the WHOLE document rather than per block, for the reason
+    # `trust_soft_hyphens` gives: which hyphen is the typesetter's is a fact about the document,
+    # and a block holding one soft hyphen says nothing about the rest.
+    # REPAIRED ACROSS BLOCKS, NOT WITHIN THEM. `pdf_to_source.py` de-hyphenates each block on
+    # its own and is right to: there, `to_blocks` has already assembled real paragraphs, so a
+    # break always falls inside one. Here a block is whatever pymupdf returned, and on a scan
+    # that is often a single printed line -- so the breaks fall BETWEEN blocks
+    # (`con-` `\n\n` `trolling`) and a per-block pass leaves every one of them. It did: 93 of 94
+    # survived the first attempt at this fix.
+    #
+    # The page markers protect the page boundaries for free: `<!-- p.4 begins here -->` does not
+    # begin with a word character, so the rule cannot join a word across a page and destroy the
+    # marker. A word genuinely broken across a page stays broken, which is the safe way round.
+    soft = trust_soft_hyphens(soft_marks[0], ascii_breaks[0])
+    joined = "\n\n".join(blocks)
+    # The compounds this document writes with a hyphen mid-line, so the blunt rule cannot weld
+    # one that happens to fall at a line end. See `keep_hyphen`.
+    joined = dehyphenate(joined, soft, None if soft else keep_hyphen(joined))
+    out = [re.sub(r"[ \t]+", " ", b).strip() for b in joined.split("\n\n")]
+    return "\n\n".join(b for b in out if b)
 
 
 def from_pdf(path, allow_ocr=True):
@@ -293,10 +330,60 @@ def from_pandoc(path, ext):
     return r.stdout, notes
 
 
+def is_tei(path):
+    """Is this XML a TEI document? Decided by the namespace, not the extension.
+
+    `.xml` says nothing on its own -- it could be TEI, JATS, DocBook or a publisher's own schema,
+    and the right handler differs for each. The namespace declaration is the one honest answer,
+    and it is in the first few hundred bytes.
+    """
+    TEI_NS = "http://www.tei-c.org/ns/1.0"
+    try:
+        if zipfile.is_zipfile(path):
+            # A BUNDLE IS SNIFFED THROUGH TO ITS CONTENTS. `.zip` on its own says even less than
+            # `.xml` -- it is also how a .docx, an .odt and an .epub arrive -- so routing every
+            # zip here would take three formats away from pandoc, which handles them properly.
+            with zipfile.ZipFile(path) as z:
+                names = [n for n in z.namelist() if n.lower().endswith(".xml")]
+                if not names or any(n.startswith(("word/", "content.xml", "META-INF/")) 
+                                    for n in z.namelist()):
+                    return False
+                return any(TEI_NS in z.read(n)[:2048].decode("utf-8", "replace")
+                           for n in names[:5])
+        with open(path, "rb") as fh:
+            return TEI_NS in fh.read(2048).decode("utf-8", "replace")
+    except (OSError, zipfile.BadZipFile):
+        return False
+
+
+def from_tei(path):
+    """TEI, which pandoc cannot read -- see `tei_to_source.py` for why this module exists."""
+    try:
+        from .tei_to_source import convert_one, documents
+    except ImportError:
+        from tei_to_source import convert_one, documents
+    parts, notes, total = [], [], 0
+    for name, body in documents(path):
+        text, n = convert_one(body)
+        if len(text.split()) < 40:
+            continue
+        parts.append(text)
+        total += n
+    if not parts:
+        raise SystemExit(f"no TEI body found in {os.path.basename(path)}")
+    notes.append(f"TEI: {len(parts)} document(s), {total} footnote(s), publisher's own structure")
+    return "\n\n".join(parts), notes
+
+
 def ingest_one(path, allow_ocr=True):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".pdf":
         md, notes = from_pdf(path, allow_ocr=allow_ocr)
+    # BEFORE the pandoc branch, and by content rather than extension. pandoc 3.10 writes TEI and
+    # does not read it, so a TEI book had no route in at all and the only way was its PDF --
+    # which is exactly the inversion `structured_source.py` exists to complain about.
+    elif ext in (".zip", ".xml") and is_tei(path):
+        md, notes = from_tei(path)
     elif ext in PANDOC_FORMATS:
         md, notes = from_pandoc(path, ext)
     elif ext in PASSTHROUGH:

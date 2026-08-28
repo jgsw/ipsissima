@@ -1,0 +1,28 @@
+// WHAT THIS IS FOR: statement and argument mentions inside a CLAIM'S OWN TEXT.
+//
+// Argdown resolves bold, italic and links away into plain text, but leaves mentions exactly as
+// written. So a claim whose text mentions another claim used to draw as
+//
+//     We should heed @[Voice of the People] and the @<Turnover Argument>.
+//
+// with the sigils and brackets intact -- which reads as a syntax error the viewer failed to
+// handle rather than as the reference it is.
+//
+// WHY THIS FIXTURE HAD TO BE WRITTEN. The audit cited three of Argdown's own sample maps as
+// evidence, counting nine mentions in the populism map and six in Greenspan's. Every one of them
+// is in the FREE PROSE under a section heading, which never becomes a node, so not one of those
+// files exercises the defect at all. The bug is real and those files do not show it. This is the
+// smallest file that does.
+//
+// WHAT TO SEE: two boxes. `Main` reads "We should heed Voice of the People and the Turnover
+// Argument." -- the names in plain text, no `@`, no brackets. If sigils are visible, the
+// resolution in `toGraph` has regressed.
+
+[Voice of the People]: The people speak with one voice.
+
+[Main]: We should heed @[Voice of the People] and the @<Turnover Argument>.
+    + [Voice of the People]
+    + <Turnover Argument>
+
+<Turnover Argument>: Turnover in office is what keeps the voice honest.
+    + [Voice of the People]

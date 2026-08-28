@@ -1,5 +1,10 @@
 # Sample reconstructions
 
+**One of the corpus's three roles — `docs/CORPUS.md` has the other two.** These are the worked
+reconstructions: few, full, real, and the expensive ones. A document that is here only to test a
+converter belongs in `fixtures/ingest/`, and a map that is here only to test the renderer belongs
+in `fixtures/display/` and needs no source text at all.
+
 Worked examples: someone else's published argument, reconstructed in Argdown, with the text it
 was drawn from sitting beside it. Each folder is self-contained — the converted source, the
 `.argdown`, and the script that made the source — so opening one in Ipsissima gives you the map,

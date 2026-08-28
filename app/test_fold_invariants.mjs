@@ -48,6 +48,10 @@ const opt = (flag, dflt) => {
   return i >= 0 ? Number(argv[i + 1]) : dflt;
 };
 const STEPS = opt("--steps", 1500);
+//: How often to stop and check EVERY badge rather than the one just clicked. Sampling the
+//: states rather than the nodes is what makes exhaustive node coverage affordable at all --
+//: see the note at the call site.
+const DEEP_EVERY = opt("--deep-every", 40);
 const FULL_TRAIL = process.argv.includes("--trail");
 // `--dump FILE` writes the exact pre-action state and action of each first failure, as JSON.
 // A TRAIL IS NOT A REPRODUCER: replaying one from a fresh start does not reach the same place,
@@ -95,6 +99,51 @@ const INVARIANTS = [
       const shown = represented(g, after);
       const missing = ctx.apex.filter(id => !shown.has(id));
       return missing.length ? `apex ${missing.join(", ")} is not represented` : null;
+    }
+  },
+  {
+    // REPORTED FROM USE, and the map was telling the truth about the count and lying about what
+    // clicking would do: a badge reading "+1" that reveals nothing when clicked. The badge is a
+    // PROMISE -- `n.hidden` is drawn as "+N" and the tooltip says "Show N claims" -- so a click
+    // that changes nothing is the interface contradicting itself, and a reader has no way to
+    // tell it from a dead control.
+    //
+    // None of the other invariants can see this. They ask what must NOT happen when the picture
+    // changes; this asks that the picture change at all.
+    name: "a badge offering N claims reveals at least one when clicked",
+    when: a => a.type === "toggleNode",
+    check: (g, before, after, action, ctx) => {
+      if (!ctx.opening) return null;              // shutting one is not a promise to show
+      const was = before.nodes.find(n => n.id === action.id);
+      if (!was || !(was.hidden > 0)) return null; // no badge, nothing promised
+      const shownBefore = represented(g, before), shownAfter = represented(g, after);
+      const gained = [...shownAfter].filter(id => !shownBefore.has(id));
+      if (gained.length) return null;
+      return `${action.id} showed a badge offering ${was.hidden} but revealed nothing`;
+    }
+  },
+  {
+    // THE MIRROR OF THE BADGE INVARIANT ABOVE, and the same promise in the other direction. A
+    // node with children and nothing hidden below it is drawn with a MINUS, and the tooltip
+    // offers to fold them away. A click that hides nothing is the same broken contract.
+    //
+    // OPEN DEFECT -- see KNOWN-ISSUES.md. On the Akhlaghi map's default view, 43 claims carry a
+    // minus and 8 of them hide nothing when clicked, "Revelatory Non-Interference" among them.
+    // The cause is that a reconstruction is a DAG rather than a tree: collapsing one parent
+    // cannot remove a claim that another parent still holds up, and the badge is drawn from
+    // `expandable` -- does this have children? -- rather than from "would folding change
+    // anything?", which only the walk can answer.
+    name: "a minus badge hides at least one claim when clicked",
+    when: a => a.type === "toggleNode",
+    check: (g, before, after, action, ctx) => {
+      if (ctx.opening) return null;               // opening is the invariant above
+      const was = before.nodes.find(n => n.id === action.id);
+      if (!was || was.kind === "group") return null;
+      if (!was.expandable || was.hidden > 0) return null;   // no minus was drawn
+      const shownBefore = represented(g, before), shownAfter = represented(g, after);
+      const lost = [...shownBefore].filter(id => !shownAfter.has(id));
+      if (lost.length) return null;
+      return `${action.id} showed a minus but folding it hid nothing`;
     }
   },
   {
@@ -455,6 +504,27 @@ function run(name, graph, byText) {
     note(r.fails, trail.concat(describe(a)), state, a);
     state = r.next; vis = r.after;
     trail.push(describe(a));
+
+    // ---- EVERY BADGE, NOW AND AGAIN -----------------------------------------------------
+    // THE WALK CHECKS ONE NODE PER STATE -- the one the action touched -- so on a map carrying
+    // fifty fold badges its coverage of any given state is one in fifty, chosen at random.
+    // Measured: 923 checks over 800 steps on the 127-node Tooming map, about 1.15 per state.
+    // Two badge defects reported by a reader survived 1,200 steps at twelve seeds because of it.
+    //
+    // Checking every badge in every state is the obvious answer and costs a `filterGraph` per
+    // badge: about 380 ms per state on that map, or four hundred seconds a seed. So the states
+    // are sampled instead of the nodes. Every DEEP_EVERY-th state is examined exhaustively,
+    // which trades a walk that looks at everything thinly for one that also looks at a few
+    // states completely. `docs/FOLDING.md` sets out why both are needed.
+    if (i % DEEP_EVERY === 0) {
+      for (const n of vis.nodes) {
+        if (n.kind === "group" || !n.expandable) continue;
+        const act = { type: "toggleNode", id: n.id };
+        const deep = step(graph, state, act, apex, byText);
+        checks++;
+        note(deep.fails, trail.concat("[every-badge] " + describe(act)), state, act);
+      }
+    }
     // TRIMMED FOR READING, and `--trail` turns that off. A truncated trail is enough to see what
     // kind of state produced a failure and useless for reproducing one: replaying the visible
     // tail from a fresh start does not reach the same place, because the elided steps are what

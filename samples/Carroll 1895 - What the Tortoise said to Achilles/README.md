@@ -11,9 +11,10 @@
 *Mind* 4.14 (1895), reprinted *Mind* 104.416 (October 1995), pp. 691–693. Three pages, 1,443
 words, entirely dialogue. Open **`carroll-tortoise-achilles (map).html`**.
 
-**This folder is the first test of `extraction-prompt.md`**, and it was built by following that
-prompt and nothing else. What the prompt failed to prevent is recorded below, because that is
-what the test was for.
+**Rebuilt 27 August 2026** under the current instructions, from the source and not from the map
+it replaced. The account further down of what the *first* attempt got wrong is kept, because the
+instructions were changed in response to it and the record of why is worth more than the file it
+describes.
 
 ## The reconstruction
 
@@ -27,8 +28,31 @@ conclusion anywhere: the dialogue ends with the narrator leaving for the Bank an
 reading of what it *shows* is the reader's. Marking that is not a weakness of the reconstruction;
 concealing it would be.
 
-4 quotation · 11 paraphrase · 5 interpretation · 1 imputation, all six departures warranted.
-14 of 14 quotations verify. One contention, nothing disconnected, nothing inert.
+36 nodes, 7 of them arguments. 7 quotation · 14 paraphrase · 7 compression · 6 interpretation ·
+2 imputation, and all eight departures warranted `coherence`. **27 of 27 quotations verify.** One
+contention, nothing disconnected, nothing inert. Tags: 14 `#reported`, 4 `#conceded`,
+3 `#contested`.
+
+**It is the only map in the corpus that uses all seven relation constructs**, and each is earned
+rather than collected. The one worth knowing about is the contradiction. Achilles grants that
+anyone who accepts A and B must accept Z, and a dozen lines later grants that a reader who accepts
+A and B but not C is *as yet* under no logical necessity to accept Z. Neither is a premise of the
+other, so no inference bar can hold them — `><` is the only construct that can record it, and the
+whole joke turns on that "as yet".
+
+**Having imputed a conclusion, the map argues against itself.** `<A different moral>` is tagged
+`#contested` and undercuts the apex argument: it grants the regress, grants that A and B compel Z,
+and denies that this licenses any conclusion about the *status of a rule* rather than about a
+reasoner who will not infer. A reconstruction whose conclusion is its own should show the reader
+where it could be wrong, and this is what that looks like.
+
+### Where the dialogue fights the form
+
+Six places, all noted in the file. The one that cannot be resolved: Achilles's "Quite so" and "You
+might… though such obtuseness would certainly be phenomenal" are assents in a conversation, not
+claims offered as reasons — and they are load-bearing, because without them the regress cannot
+start. They sit as `#conceded` premises, which reads them as more assertoric than the dialogue
+makes them. The notes say so rather than hiding it.
 
 ## Quoting a damaged source
 
@@ -62,7 +86,8 @@ one of the five sample maps where it fires.
 ```bash
 python3 "../../ipsissima-mcp/src/ipsissima_mcp/ingest.py" \
     "<the PDF>" --out .
-python3 ../../.claude/skills/argdown/check_argdown.py carroll-tortoise-achilles.argdown --source-root .
+python3 ../../ipsissima-mcp/src/ipsissima_mcp/check_argdown.py \
+    carroll-tortoise-achilles.argdown --source-root . --no-fix --format json
 node "../../app/build_argdown_viewer.mjs" \
     carroll-tortoise-achilles.argdown --source-root .
 ```

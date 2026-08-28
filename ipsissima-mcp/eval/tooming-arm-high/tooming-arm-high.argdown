@@ -1,0 +1,716 @@
+===
+title: Tooming and Jakapi 2026 — Aphantasia as a challenge for Humean abstraction
+reconstruction:
+    generated: true
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/tooming-jakapi-2026-aphantasia-humean-abstraction.md"
+    reviewed: "2026-08-27"
+===
+
+# What the paper concludes {isGroup: true}
+
+[The challenge to Hume stands unanswered]: Severe aphantasia poses a challenge to Hume's
+account of abstraction, and none of the empirical or exegetical responses considered has
+successfully addressed it.
+    {fidelity: "compression", pinpoint: "§5",
+     source: "\"We examined potential empirical and exegetical responses to this challenge and argued that none of them has successfully addressed it.\"",
+     note: "The paper's central thesis. Its strength is fixed by note 19, recorded separately as a concession: the claim is that a Humean owes an answer, not that the theory is refuted."}
+    <+ [Only a challenge, not a refutation]
+
+[Only a challenge, not a refutation]: That aphantasia cannot be accommodated is not by itself
+a ground for holding that Hume's theory of abstraction is fundamentally flawed. #conceded
+    {fidelity: "paraphrase", pinpoint: "n. 19",
+     source: "\"We do not make the strong claim that Hume's theory of abstraction is fundamentally flawed on the grounds that it cannot accommodate the ability of severe aphantasics to engage in abstract thought.\"",
+     note: "A scope limit the authors set on their own thesis, and the reason the apex claim is worded as a challenge rather than a refutation."}
+
+[The challenge extends beyond Hume]: The existence of severe aphantasia may also pose problems
+for other historical and contemporary theories that try to ground higher-level mental phenomena
+in the capacity to generate mental imagery.
+    {fidelity: "paraphrase", pinpoint: "§5",
+     source: "\"The existence of severe aphantasia may also pose problems for other historical and contemporary theories that try to ground various higher-level mental phenomena in the capacity to generate mental imagery.\"",
+     note: "The word 'various' is dropped from the claim text; the hedge 'may' is the authors' own and is kept."}
+    <+ [The bearing of aphantasia on abstract thought is unexplored]
+
+[Empirical work must distinguish the uses of imagery]: Empirical study of aphantasia should be
+sensitive to the difference between possessing mental imagery, using it imaginatively, and using
+it in the projective way that Humean abstraction requires.
+    {fidelity: "compression", pinpoint: "§1; §4.1",
+     source: "\"If our argument is on the right track, empirical study of aphantasia should be sensitive to such nuances\"",
+     note: "Compresses the programmatic claim of §1 with its restatement as an invitation to researchers at the end of §4.1."}
+    <+ [An invitation to empirical researchers]
+
+[An invitation to empirical researchers]: Empirical researchers should develop more robust
+experimental paradigms to test whether aphantasics are capable of projective imagination.
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"Our concerns should be read as an invitation for empirical researchers to develop more robust experimental paradigms to test whether aphantasics are capable of projective imagination.\""}
+
+# What Hume's account requires {isGroup: true}
+
+<Hume's mechanism of abstraction>: Hume supplies the psychological mechanism Berkeley lacked,
+by which a particular image comes to do general work.
+    {note: "Form: interpretive reconstruction of a mechanism, the reading then restated in contemporary terms. The premises are linked: drop the individuality of ideas and the custom has nothing to work on."}
+
+<Hume's mechanism of abstraction>
+
+(1) [All ideas are individual]: Abstract ideas are therefore in themselves individual, however
+    they may become general in their representation.
+    {fidelity: "quotation", pinpoint: "T 1.1.7.6, quoted §2.2",
+     source: "\"Abstract ideas are therefore in themselves individual, however they may become general in their representation.\"",
+     note: "Hume's words, adopted by the authors as their reading of him."}
+    <+ [Berkeley's starting point]: Hume adopts Berkeley's view that all ideas are individual in
+    nature and can only be general by signifying a number of other individual ideas of the same
+    kind. #reported
+        {fidelity: "paraphrase", pinpoint: "T 1.1.7.1, §2.2",
+         source: "\"Hume's account begins by adopting Berkeley's view that all ideas are individual in nature and can only be general by signifying a number of other individual ideas of the same kind\""}
+(2) [Individual ideas are mental imagery]: Hume's individual ideas can be identified with mental
+    imagery in the contemporary sense.
+    {fidelity: "paraphrase", pinpoint: "§2.1",
+     source: "\"Individual ideas are literally image-like (T 1.1.7.10; cf. Garrett, 2008: 50) and can be identified with mental imagery in the contemporary sense.\""}
+(3) [A general term revives one individual idea]: After a custom of applying one name to
+    resembling objects has been acquired, the hearing of that name revives the idea of one of
+    these objects, and makes the imagination conceive it with all its particular circumstances
+    and proportions.
+    {fidelity: "paraphrase", pinpoint: "T 1.1.7.7, quoted §2.2",
+     source: "\"the hearing of that name revives the idea of one of these objects, and makes the imagination conceive it with all its particular circumstances and proportions\"",
+     note: "The claim's opening clause paraphrases the sentence before the quoted span, which supplies the custom the revival depends on; the rest is Hume's words."}
+(4) [Generality is a readiness to imagine any of them]: What is required is the readiness of the
+    mind to imagine any of the individual ideas that fall under the general term.
+    {fidelity: "quotation", pinpoint: "§2.2",
+     source: "\"What is required is the readiness of the mind to imagine any of the individual ideas that fall under the general term.\""}
+    <+ [The grasp of generality is only partial]: The mind cannot entertain all the ideas a
+    general term signifies, so it conjures some of them and holds itself ready to consider any.
+        {fidelity: "compression", pinpoint: "T 1.1.7.7-10, §2.2",
+         source: "\"While the mind cannot entertain all the ideas signified by the term ‘triangle,’ it can conjure some of them and is ready to consider any of them.\""}
+-----
+(5) [Abstraction is projective imagination]: The psychological mechanism responsible for
+    abstraction is a kind of projective imagination that involves invoking some determinate
+    mental image and using it to call to mind other mental images that belong under the same
+    category.
+    {fidelity: "quotation", pinpoint: "§2.2",
+     source: "\"The psychological mechanism responsible for abstraction is a kind of projective imagination that involves invoking some determinate mental image and using it to call to mind other mental images that belong under the same category.\"",
+     note: "The authors' own restatement of Hume in contemporary terms, and the premise the whole challenge turns on."}
+(6) [Projection requires selective attention and filtering]: Projective imagination requires
+    selective attention to the features that generalize across category members while ignoring
+    irrelevant ones, and the filtering out of irrelevant images the mind produces spontaneously.
+    {fidelity: "compression", pinpoint: "§2.2",
+     source: "\"This sensitivity requires selective attention to the features that generalize across category members (e.g. being triangular) while ignoring the features that are not relevant to the category\"",
+     note: "Joins that sentence to the one after it, which adds the filtering requirement. Both are needed later, in §4.1, where reduced frontal delta power is said to bear on filtering."}
+-----
+(7) [Humean abstraction requires imagining with imagery]: Hume's account requires the capacity to
+    imagine by using mental imagery, in the specific projective way just described, and not
+    merely the possession of imagery.
+    {fidelity: "compression", pinpoint: "§2.2; §3",
+     source: "\"Recall that for Hume, abstraction requires imagining by using mental images.\""}
+
+[Projective use is more than having imagery]: Using imagination projectively is different from
+merely having mental imagery, and is more specific than imagination in the general sense of
+controlled manipulation of mental images.
+    {fidelity: "compression", pinpoint: "§2.2",
+     source: "\"This way of using imagination is thus different from merely having mental imagery.\"",
+     note: "The distinction the authors introduce in §1 and then use twice: to rebut the unconscious-imagery response and to draw the methodological moral."}
+    +> [Humean abstraction requires imagining with imagery]
+
+## Identifying Hume's ideas with mental imagery
+
+<The identification of ideas with imagery>: Hume's individual ideas and contemporary mental
+imagery are the same psychological phenomenon.
+    {note: "Form: argument from similarity, backed by an elimination — no other contemporary category is a candidate."}
+
+<The neuroscientific category objection>: Hume's individual ideas and contemporary mental
+imagery belong to two different kinds of category, so the two cannot be identified. #reported
+    {note: "An objection the authors raise on an opponent's behalf in order to answer it. Form: refutation of an identification by pointing to a difference in kind. Reconstructed rather than sketched because the authors answer it at two different points -- once at a premise and once at the inference."}
+
+<The neuroscientific category objection>
+
+(1) [Mental imagery is a neuroscientific category]: Mental imagery is a neuroscientific category
+    that is essentially defined in terms of neurocognitive processes. #reported
+    {fidelity: "paraphrase", pinpoint: "§2.1",
+     source: "\"it could be argued that mental imagery is a neuroscientific category that is essentially defined in terms of neurocognitive processes (compare Nanay, 2023)\"",
+     note: "Nanay 2023 is cited as a comparison, not as the objection's author. Deliberately not marked `quotation` although the words are the source's: the hedge 'it could be argued that' sits just outside the span, and this is a view the authors report in order to answer."}
+    <- [Imagery is not merely a neuroscientific category]: Even if the causal basis of mental
+      imagery consists in neural processes, the phenomenological and representational
+      similarities are sufficient to conclude that mental images and Hume's individual ideas
+      are identical.
+        {fidelity: "paraphrase", pinpoint: "§2.1",
+         source: "\"Even if its causal basis consists in neural processes, there are still sufficient phenomenological and representational similarities between mental images and Hume's individual ideas to conclude that the two are identical.\""}
+(2) [Hume's ideas are phenomenal, not neuroscientific]: Hume's notion of individual ideas has
+    nothing to do with neuroscientific categories, and is instead understood in phenomenal and
+    representational terms. #reported
+    {fidelity: "paraphrase", pinpoint: "§2.1",
+     source: "\"Hume's notion of individual ideas, on the other hand, has nothing to do with neuroscientific categories, and is instead understood in phenomenal and representational terms.\""}
+-----
+(3) [Ideas and imagery differ significantly]: There are significant differences between Hume's
+    individual ideas and mental imagery. #reported
+    {fidelity: "paraphrase", pinpoint: "§2.1",
+     source: "\"It could be objected that there are significant differences between them.\""}
+    -> [Individual ideas are mental imagery]
+
+<The neuroscientific category objection>
+    <_ [The property cluster view licenses the identification]: Even if the causal basis of mental
+      imagery is neurophysiological, the homeostatic property cluster theory of natural kinds
+      makes its phenomenological and representational features part of understanding the kind,
+      and Hume attributed many of those features to individual ideas.
+        {fidelity: "compression", pinpoint: "§2.1",
+         source: "\"the characteristic phenomenological and representational features of mental imagery are important for understanding it as a natural kind, even if its causal basis is rooted in something neurophysiological or neuropsychological\"",
+         note: "An undercut, not a rebuttal: it grants that the essence of mental imagery may lie in something neural and denies that this blocks the identification. The source field carries the general statement of the view; the claim adds the application the authors draw from it two sentences later."}
+    <_ <Failure of the identification would be worse for Hume>: Even granting that the two
+      categories cannot be identified, that would not save Hume — it would render his account
+      of abstraction immediately hopeless from the contemporary perspective.
+        {fidelity: "interpretation", warrant: "coherence", pinpoint: "§2.1",
+         source: "\"If it turned out that the contemporary category of mental imagery cannot be identified with Hume's notion, this would render his account of abstraction immediately hopeless from the contemporary perspective.\"",
+         note: "Read as an undercut rather than a rebuttal: the authors do not deny that the two categories might differ, they deny that conceding the difference protects the Humean. The sentence is stated without any label for its argumentative role, so the role is the reconstruction's reading."}
+
+# The case that resists the account {isGroup: true}
+
+<Aphantasia challenges Humean abstraction>: Severe aphantasics abstract without the capacity
+Hume's account makes a precondition of abstraction.
+    {note: "Form: refutation by counterexample, deliberately weakened by the authors to an explanatory challenge (note 19). The premises are linked."}
+
+<Aphantasia challenges Humean abstraction>
+
+(1) [Humean abstraction requires imagining with imagery]
+(2) [Severe aphantasics cannot imagine using imagery]: Severe aphantasics appear to lack the
+    capacity to imagine by using mental imagery.
+    {fidelity: "paraphrase", pinpoint: "§3; §5",
+     source: "\"Since individuals with severe aphantasia appear to lack that capacity while nevertheless engaging in abstract thought, this raises the question of how Hume's account of abstraction can accommodate such cases.\""}
+(3) [Severe aphantasics think abstractly]: Aphantasics as cognitively functioning individuals are
+    capable of abstract thought as much as anyone else.
+    {fidelity: "quotation", pinpoint: "§3",
+     source: "\"aphantasics as cognitively functioning individuals are capable of abstract thought as much as anyone else\""}
+    <+ [Aphantasics articulate abstract thoughts]: This is evident in everyday situations and in
+    experimental contexts where aphantasics are competent conversational partners who articulate
+    their thoughts about abstract matters.
+        {fidelity: "paraphrase", pinpoint: "§3",
+         source: "\"This is evident both in everyday situations and in experimental contexts where aphantasics are involved as competent conversational partners and articulate their thoughts about abstract matters.\""}
+-----
+(4) [The explanatory challenge]: Hume's imagistic account of abstraction faces the explanatory
+    challenge of accommodating the ability of aphantasics to engage in abstract thought.
+    {fidelity: "quotation", pinpoint: "§3",
+     source: "\"Hume's imagistic account of abstraction faces the explanatory challenge of accommodating the ability of aphantasics to engage in abstract thought.\""}
+
+[Severe aphantasics cannot imagine using imagery]
+    <- [Aphantasia may be misreport or faulty introspection]: Aphantasia may be due to
+      idiosyncratic reporting, or may involve faulty introspection rather than any imagery
+      deficit. #reported
+        {fidelity: "compression", pinpoint: "§3",
+         source: "\"According to the first, aphantasia is due to idiosyncratic reporting. According to the second, aphantasia involves faulty introspection\"",
+         note: "Two of the four accounts of aphantasia the paper lists from Phillips 2026. The paper promises to address 'some of the controversies' in the next section and in fact addresses only the unconscious-imagery account, so these two are raised and dropped. Recorded here as an unanswered attack rather than silently completed."}
+
+<Severe aphantasia is a real and cross-modal deficit>
+
+(1) [Severe aphantasics report no imagery]: Severe aphantasics are individuals who, as indicated
+    by their self-reports, are unable to form mental imagery, at least insofar as conscious
+    imagery is concerned.
+    {fidelity: "quotation", pinpoint: "§3",
+     source: "\"Severe aphantasics are individuals who, as indicated by their self-reports, are unable to form mental imagery, at least insofar as conscious imagery is concerned.\""}
+(2) [Less subjective measures track aphantasia]: There are neurophysiological and behavioural
+    differences associated with aphantasia that do not depend on self-report, such as the reduced
+    or absent imagery bias in binocular rivalry.
+    {fidelity: "compression", pinpoint: "§3",
+     source: "\"There are now also other, less subjective neurophysiological and behavioral differences associated with aphantasia, however.\""}
+(3) [Aphantasia is not confined to vision]: Aphantasia is not just a visual imagery impairment
+    but concerns other sensory modalities as well.
+    {fidelity: "quotation", pinpoint: "§3",
+     source: "\"aphantasia is not just a visual imagery impairment but concerns other sensory modalities as well\""}
+-----
+(4) [Severe aphantasics cannot imagine using imagery]
+
+[Severe aphantasia is rare but real]: Roughly 1% of the human population are estimated to have
+lifelong severe aphantasia, on some data 4% are aphantasic, and the condition is by now
+well-established.
+    {fidelity: "compression", pinpoint: "§1; §3",
+     source: "\"some data suggest that 4% of the human population are aphantasics (Dance et al., 2022), while people with lifelong severe aphantasia are estimated to make up approximately 1% of the human population\"",
+     note: "Recorded because it does opposite work in two places: §3 introduces it as showing the case is worth taking seriously, and §4.4 makes it the premise of the mere-exception response."}
+
+# The responses, eliminated {isGroup: true}
+
+<The challenge survives every response>: Every response canvassed leaves the explanatory
+challenge where it was.
+    {note: "Form: elimination of alternatives. Linked, not convergent: one surviving response would leave the conclusion unsupported. Premises 5-7 are the three options the authors mention without exploring in detail."}
+
+<The challenge survives every response>
+
+(1) [The explanatory challenge]
+(2) [Unconscious imagery does not help]
+(3) [Spatial imagery does not help]
+(4) [Words as proxies do not help]
+(5) [Aphantasia cannot be treated as a mere exception]
+(6) [Involuntary imagery does not help]
+(7) [Memory does not help]
+(8) [Other sensory modalities do not help]
+-----
+(9) [The challenge to Hume stands unanswered]
+
+<The challenge survives every response>
+    <_ [The list of responses is not shown to be exhaustive]: Even granting that each response
+      considered fails, the paper does not argue that the responses it considers are the only
+      ones available, so their failure does not license the conclusion that the challenge is
+      unanswerable. #contested
+        {fidelity: "interpretation", warrant: "the standard critical question for an elimination of alternatives; this objection is the reconstruction's own and is not made by the authors", pinpoint: "§4",
+         source: "\"There are some additional options that deserve to be mentioned, although we won't explore them in detail.\"",
+         note: "The authors' own sentence shows they take the list to be open. Their conclusion is correspondingly modest — that no response HAS succeeded, not that none could — so this undercut bites only against a stronger reading."}
+
+## The three options mentioned in passing
+
+[Involuntary imagery does not help]: Severe aphantasics could not perform Humean abstraction by
+using involuntary mental imagery, because in Hume imagination is under at least some control of
+the agent.
+    {fidelity: "paraphrase", pinpoint: "§4",
+     source: "\"This proposal is not workable because in Hume, imagination is under at least some control of the agent, i.e., it is not entirely involuntary.\""}
+    <- [Aphantasics retain involuntary imagery]: Severe aphantasics have intact involuntary mental
+      images, so they could perform Humean abstraction by using involuntary mental imagery.
+      #reported
+        {fidelity: "paraphrase", pinpoint: "§4",
+         source: "\"someone could try to argue that since severe aphantasics have intact involuntary mental images (Krempel and Monzel, 2024; K¨onigsmark et al., 2021), they could perform Humean abstraction by using involuntary mental imagery\""}
+
+[Memory does not help]: Severe aphantasics could not perform Humean abstraction by using memory
+instead of imagination, because Humean memory preserves the previously experienced order and
+position of past experiences, and it is arguably the lack of such constraints that makes
+imagination the suitable candidate to play the abstractive role.
+    {fidelity: "paraphrase", pinpoint: "§4",
+     source: "\"in Hume, memory preserves the previously experienced order and position of past experiences and it is arguably the lack of such constraints that makes imagination the suitable candidate to play the abstractive role\""}
+    <- [Aphantasics could abstract by remembering]: Severe aphantasics could perform Humean
+      abstraction by using memory, instead of imagination. #reported
+        {fidelity: "quotation", pinpoint: "§4",
+         source: "\"someone could try to argue that severe aphantasics could perform Humean abstraction by using memory, instead of imagination\""}
+
+[Other sensory modalities do not help]: The proponent of the Humean view is not safe to assume
+that aphantasics can perform abstraction by using imagery from other sensory modalities.
+    {fidelity: "paraphrase", pinpoint: "§4",
+     source: "\"the proponent of Humean view of abstraction is not safe to assume that aphantasics can perform abstraction by using imagery from other sensory modalities\""}
+    <+ [Aphantasia can be multisensory]: A clustering analysis found a profile of aphantasics who
+      relied predominantly on verbal strategies while having low imagery across all sensory
+      modalities.
+        {fidelity: "paraphrase", pinpoint: "§4",
+         source: "\"One of the clusters included aphantasics who relied predominantly on verbal strategies while having low imagery across all sensory modalities\""}
+    <- [Non-visual imagery may be intact]: Since aphantasia research has focused on visual
+      imagery, a case could be made that aphantasics have imagery of other modalities intact and
+      could perform abstraction by it. #reported
+        {fidelity: "paraphrase", pinpoint: "§4",
+         source: "\"a case could be made that aphantasics have imagery of other modalities intact, by which they could perform abstraction\""}
+
+## Unconscious imagery
+
+[Unconscious imagery does not help]: In light of the available empirical evidence, it is
+implausible that aphantasics can perform Humean abstraction by using unconscious mental imagery.
+    {fidelity: "quotation", pinpoint: "§4.1",
+     source: "\"it is implausible that aphantasics can perform Humean abstraction by using unconscious mental imagery\""}
+
+<The unconscious imagery response>: Aphantasics lack only conscious imagery, and can perform
+abstraction with the unconscious imagery they retain. #reported
+    {note: "Form: inference to the best explanation of the behavioural and neural findings. Reconstructed to be attacked at its premise and undercut at its inference — the paper does both, and says so: 'There are two reasons for this.'"}
+
+<The unconscious imagery response>
+
+(1) [Aphantasics have intact unconscious imagery]: Aphantasics do have mental imagery, although
+    they are not conscious of it themselves. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"Some empirical studies suggest that aphantasics do, in fact, have mental imagery, although they are not conscious of it themselves.\""}
+    <+ [Aphantasics are unimpaired on objective memory tasks]: Aphantasics were not impaired on
+      any subjective or objective measure in 3D object and spatial memory tasks, suggesting that
+      they had their imagery intact. #reported
+        {fidelity: "paraphrase", pinpoint: "§4.1",
+         source: "\"aphantasics weren't impaired in any of the subjective or objective measures, suggesting that they had their imagery intact\""}
+    <+ [Imagery-related cortex still activates in aphantasics]: Domain-specific ventral temporal
+      cortex regions and the domain-general fusiform imagery node still activate during imagery
+      tasks despite the absence of conscious visual experience. #reported
+        {fidelity: "quotation", pinpoint: "§4.1",
+         source: "\"domain-specific ventral temporal cortex regions and the domain-general fusiform imagery node still activate during imagery tasks despite the absence of conscious visual experience\""}
+(2) [Unconscious imagery would meet Hume's requirement]: Imagery of which the subject is not
+    conscious would be enough to satisfy the conditions of Humean abstraction. #reported
+    {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "§4.1",
+     source: "\"We are doubtful, however, if the appeal to unconscious imagery can settle that severe aphantasics can in fact satisfy the conditions of Humean abstraction.\"",
+     note: "Unstated by the proponent and never asserted by the authors; the response needs it, and the authors' own doubt is directed at exactly this step. Supplied as an imputed premise of the reported response, not of the paper."}
+    <- [Hume may not allow unconscious ideas at all]: It is unclear if Hume himself would be
+      willing to acknowledge this option, given that his overall view of the mind seems to treat
+      all elements of thought as conscious. #conceded
+        {fidelity: "quotation", pinpoint: "n. 21",
+         source: "\"it is unclear if Hume himself would be willing to acknowledge this option, given that his overall view of the mind seems to treat all elements of thought as conscious\"",
+         note: "Raised in a footnote and set aside: the authors say that regarding the theory of abstraction as an intrinsically interesting theory apart from Hume's broader commitments, it is less clear whether consciousness matters. Recorded as raised and dropped rather than pursued."}
+-----
+(3) [Aphantasics could abstract unconsciously]: Aphantasics can perform Humean abstraction by
+    relying on intact but unconscious imagery. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"the claim that aphantasics can perform Humean abstraction by relying on intact but unconscious imagery remains unsubstantiated\"",
+     note: "Deliberately not marked `quotation` although the words are the source's: they occur only inside a sentence that DENIES them, and a solid border would present the authors as asserting what they reject."}
+    -> [Unconscious imagery does not help]
+
+<Aphantasics may lack imagery altogether>
+
+(1) [Aphantasics show no priming from unconscious imagery]: Aphantasics exhibited priming effects
+    neither in the explicit nor in the implicit task, suggesting the absence of both conscious and
+    unconscious imagery.
+    {fidelity: "quotation", pinpoint: "§4.1",
+     source: "\"aphantasics exhibited priming effects neither in the explicit nor in the implicit task, suggesting the absence of both conscious and unconscious imagery\""}
+(2) [Physiological responses to imagined stimuli are reduced]: Aphantasics have reduced automatic
+    pupil dilatation in response to imagined bright stimuli and reduced skin conductance response
+    to reading frightening stories.
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"it has been also shown that aphantasics have reduced automatic pupil dilatation in response to imagined bright stimuli (Kay et al., 2022) and reduced skin conductance response to reading frightening stories\""}
+(3) [Aphantasic imagery does not cross-decode with perception]: The failure of cross-decoding
+    suggests that aphantasics do not have intact quasi-perceptual representations.
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"The failure of cross-decoding thus suggests that aphantasics do not have intact quasi-perceptual representations.\""}
+    <+ [Aphantasic imagery is in a different format]: If the way in which normal imagery
+      represents is significantly different from the way in which the putative imagistic
+      representations of aphantasics represent, it is unclear if the latter counts as mental
+      imagery in a meaningful sense.
+        {fidelity: "quotation", pinpoint: "§4.1",
+         source: "\"if the way in which ‘normal’ imagery represents is significantly different from the way in which the putative imagistic representations of aphantasics represent, it is unclear if the latter counts as mental imagery in a meaningful sense\"",
+         note: "Quotation marks around 'normal' are dropped from the claim text; the source field carries them as printed."}
+-----
+(4) [Some aphantasics may have no imagery at all]: At least some aphantasics may lack any imagery,
+    whether conscious or unconscious.
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"these data further support the idea that aphantasics may lack any imagery, whether conscious or unconscious\"",
+     note: "The authors' hedge is 'may lack'; the claim keeps it."}
+    -> [Aphantasics have intact unconscious imagery]
+    +> [Unconscious imagery does not help]
+
+<The projective use is unproven>: Even granting aphantasics internal representations that could
+broadly be described as imagery, it remains unproven that those representations can sustain the
+projective imagining abstraction requires.
+    {note: "Form: undercut of an inference. The authors state the point in exactly that shape — the challenge 'does not rest on the assumption that aphantasics lack mental images altogether'."}
+
+<The projective use is unproven>
+
+(1) [Projective use is more than having imagery]
+(2) [Aphantasics' projective capacity is unproven]: Whether aphantasics can select a mental image
+    to represent a range of other images that are instances of the relevant category, and be
+    disposed to project it to all other instances, remains unproven.
+    {fidelity: "paraphrase", pinpoint: "§4.1",
+     source: "\"can aphantasics select a mental image to represent a range of other images that are instances of the relevant category, and also be disposed to project it to all other instances? This remains unproven.\""}
+    <+ [Aphantasics show reduced frontal delta power]: Aphantasics exhibit reduced frontal delta
+      power that is crucial for filtering out irrelevant information and maintaining the
+      manipulation of internally generated representations, and such filtering is required for
+      projective imagination.
+        {fidelity: "compression", pinpoint: "§4.1",
+         source: "\"aphantasics exhibit reduced frontal delta power that is crucial for filtering out irrelevant information and maintaining the manipulation of internally generated representations\"",
+         note: "Joins the reported finding to the authors' own inference from it, two sentences later, that this gives a preliminary reason to suspect failure at projective imagination."}
+        <- [One study is not proof]: Citing one study is insufficient to prove that aphantasics
+          are incapable of projective imagination. #conceded
+            {fidelity: "quotation", pinpoint: "§4.1",
+             source: "\"We acknowledge that citing one study is insufficient to prove that aphantasics are incapable of projective imagination.\""}
+-----
+(3) [Unconscious imagery does not help]
+
+<The unconscious imagery response>
+    <_ <The projective use is unproven>
+
+## Spatial imagery
+
+[Spatial imagery does not help]: Severe aphantasics could not perform Humean abstraction by
+relying on the spatial imagery they retain.
+    {fidelity: "compression", pinpoint: "§4.2",
+     section: "4.2 Spatial imagery",
+     note: "The section states no single sentence of conclusion; it raises the proposal as a question and gives two problems with it."}
+
+<The spatial imagery response>: Severe aphantasics, who retain spatial imagery though they lack
+object imagery, could form a custom to imagine a range of spatial images and so perform Humean
+abstraction. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.2",
+     source: "\"couldn't severe aphantasics just perform abstraction by forming a custom to imagine a range of spatial images?\"",
+     note: "Form: argument from analogy with the object-imagery case. The authors put it as a question rather than assert it."}
+
+<The spatial imagery response>
+
+(1) [Aphantasics retain spatial imagery]: Severe aphantasics, despite lacking object imagery,
+    still retain spatial imagery. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.2",
+     source: "\"A case can be made that severe aphantasics, despite lacking object imagery, still retain spatial imagery.\"",
+     note: "Deliberately not marked `quotation`: the hedge 'A case can be made that' sits just outside the span, and the claim is the reported proposal, not the authors' assertion."}
+    <+ [Aphantasics use spatial strategies]: Aphantasics often use spatial and sensorimotor
+      strategies to solve visual working memory tasks, and mental rotation is a task perfectly
+      suited for spatial imagery. #reported
+        {fidelity: "compression", pinpoint: "§4.2",
+         source: "\"aphantasics often use spatial (and sensorimotor) strategies to solve visual working memory tasks\""}
+(2) [Spatial imagery could carry the custom]: A custom to imagine a range of spatial images in
+    response to a general term would be enough for Humean abstraction. #reported
+    {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "§4.2",
+     source: "\"If Humean abstraction requires forming a custom to imagine a range of individual ideas that fall under a general term in response to a single individual idea associated with the term, couldn't severe aphantasics just perform abstraction by forming a custom to imagine a range of spatial images?\"",
+     note: "The step the rhetorical question invites, imputed to the response rather than to the authors, who go on to deny it."}
+-----
+(3) [Aphantasics could abstract spatially]: Severe aphantasics could perform Humean abstraction
+    with spatial imagery. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.2"}
+    -> [Spatial imagery does not help]
+
+[Spatial imagery cannot present sensible particulars]: Since spatial imagery is a representation
+of spatial relations but not modality-specific properties, spatial imagery does not seem suitable
+for representing determinate sensible particulars, which Hume's view assumes the need for.
+    {fidelity: "compression", pinpoint: "§4.2",
+     source: "\"Since spatial imagery is a representation of spatial relations but not modality-specific properties, spatial imagery does not seem suitable for representing determinate sensible particulars. However, Hume's view assumes the need for such representations.\""}
+    -> [Spatial imagery could carry the custom]
+
+<The spatial imagery response>
+    <_ <Spatial aphantasia recreates the problem>: Even if aphantasics could abstract by spatial
+      imagery, a version of Hume's account grounded in spatial rather than object imagery would
+      face the same challenge over again, from those who lack spatial imagery.
+        {note: "Form: parallel-case undercut. It grants the response's premises and denies that they rescue the account."}
+
+<Spatial aphantasia recreates the problem>
+
+(1) [Spatial aphantasia may be real]: Around 3.5% of respondents scored very low on the spatial
+    imagery items, suggesting that spatial aphantasia is a real phenomenon.
+    {fidelity: "quotation", pinpoint: "§4.2",
+     source: "\"Around 3.5% of respondents scored very low on the spatial imagery items, suggesting that spatial aphantasia is a real phenomenon.\""}
+(2) [A parallel argument would apply]: If spatial aphantasia exists, then a parallel argument can
+    be constructed against a version of Hume's account of abstraction that grounds abstraction in
+    spatial rather than object imagery.
+    {fidelity: "quotation", pinpoint: "§4.2",
+     source: "\"If spatial aphantasia exists, then a parallel argument can be constructed against a version of Hume's account of abstraction that grounds abstraction in spatial rather than object imagery.\""}
+-----
+(3) [Spatial imagery does not help]
+
+## Words as proxies
+
+[Words as proxies do not help]: Aphantasics could not perform Humean abstraction by operating
+with words as proxies for mental imagery.
+    {fidelity: "compression", pinpoint: "§4.3",
+     section: "4.3 Abstraction by using words as proxies"}
+
+<The words as proxies response>: Individuals with aphantasia are able to mimic abstraction by
+using operations with words as proxies for mental imagery. #reported
+    {fidelity: "quotation", pinpoint: "§4.3",
+     source: "\"individuals with aphantasia are able to mimic abstraction by using operations with words as proxies for mental imagery\"",
+     note: "Form: extension of a role the paper has already granted to language in Hume's own account."}
+
+<The words as proxies response>
+
+(1) [General terms already do work in Hume]: General terms invoke individual ideas connected to
+    them and enable the mind to regard an individual idea as representing all ideas of its kind.
+    {fidelity: "quotation", pinpoint: "§4.3",
+     source: "\"General terms invoke individual ideas connected to them and enable the mind to regard an individual idea as representing all ideas of its kind.\""}
+(2) [Hume allows terms without complete ideas]: Hume states that in reasoning, which is analogous
+    to abstracting, we do not annex distinct and compleat ideas to every term we make use of.
+    {fidelity: "paraphrase", pinpoint: "T 1.1.7.14, §4.3",
+     source: "\"we do not annex distinct and compleat ideas to every term we make use of\""}
+(3) [Aphantasics rely on verbal strategies]: Aphantasics rely on verbal strategies to perform
+    various behavioral tasks. #reported
+    {fidelity: "quotation", pinpoint: "§4.3",
+     source: "\"aphantasics rely on verbal strategies to perform various behavioral tasks\""}
+-----
+(4) [Aphantasics could abstract with words alone]: Aphantasics do not use any ideas or imagery in
+    the processes of abstracting and reasoning, relying solely on linguistic operations. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.3",
+     source: "\"aphantasics do not use any ideas or imagery in the processes of abstracting and reasoning, instead relying solely on linguistic operations\"",
+     note: "The authors mark this as the more radical version of the response."}
+    -> [Words as proxies do not help]
+
+[Hume's account of thinking is essentially imagistic]: The ideational component is necessary for
+forming abstract ideas, so that while the operational use of words is an integral part of
+abstraction, the process as Hume describes it is inevitably concerned with individual ideas.
+    {fidelity: "compression", pinpoint: "§4.3",
+     source: "\"While the operational use of words is an integral part of the process of abstraction, the process, as described by Hume, is inevitably concerned with individual ideas.\""}
+    -> [Aphantasics could abstract with words alone]
+
+<Words without ideas would be nonsense>: On the proposal, severe aphantasics would be thinking
+and speaking nonsense by Hume's own standard.
+    {note: "Form: reductio. Premise 3 is supplied by the reconstruction; without it the passage records an absurdity but draws no conclusion from it."}
+
+<Words without ideas would be nonsense>
+
+(1) [The response makes aphantasics use words they do not understand]: The response suggests that
+    individuals with severe aphantasia think and speak using general terms whose meanings they do
+    not grasp.
+    {fidelity: "paraphrase", pinpoint: "§4.3",
+     source: "\"this response suggests that individuals with severe aphantasia think and speak using general terms whose meanings they do not grasp\""}
+(2) [Words without ideas are nonsense for Hume]: For Hume, using words without any associated
+    ideas would be equivalent to thinking and speaking nonsense.
+    {fidelity: "paraphrase", pinpoint: "§4.3",
+     source: "\"it seems clear that for him, using words without any associated ideas would be equivalent to thinking and speaking nonsense\""}
+(3) [Aphantasics do not speak nonsense]: Severe aphantasics do not think and speak nonsense.
+    {fidelity: "imputation", warrant: "enthymeme", pinpoint: "§4.3",
+     note: "Never stated in §4.3, and the reductio does not close without it. The authors do assert the corresponding claim about abstract thought in §3, and describe the parallel conclusion in §4.4 as verging on the offensive, so it is plainly theirs."}
+-----
+(4) [Words as proxies do not help]
+
+## Aphantasia as a mere exception
+
+[Aphantasia cannot be treated as a mere exception]: Hume could not, given his commitments, treat
+severe aphantasia as an exception calling for a different explanation from his basic account.
+    {fidelity: "paraphrase", pinpoint: "§4.4",
+     source: "\"we focus on whether Hume, given his commitments, could treat severe aphantasia as an exception that calls for a different explanation from his basic account that appeals to imaginative operations with individual ideas\"",
+     note: "The authors' answer to their own question is 'It is highly implausible that he could.'"}
+
+<The mere exception response>: Hume could treat aphantasia as an interesting exception without
+giving up his account of abstraction. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.4",
+     source: "\"Hume could just treat aphantasia as an interesting exception.\"",
+     note: "Form: appeal to precedent, the precedent being Hume's own handling of the missing shade of blue. The authors note this response differs from the rest in letting Hume keep his account as a good explanation of typical cases."}
+
+<The mere exception response>
+
+(1) [Severe aphantasia is rare but real]
+(2) [A theory need not explain every case]: From the fact that a theory of abstraction does not
+    explain all the cases of abstraction, we should not conclude that the theory isn't fruitful,
+    insofar as it still makes sense of most cases. #reported
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"From the fact that a theory of abstraction does not explain all the cases of abstraction, we should not conclude that the theory isn't fruitful, insofar as it still makes sense of most cases.\""}
+-----
+(3) [Hume may keep the account and file aphantasia as an exception]: Hume might not have to treat
+    severe aphantasics as constituting a counterexample that would require giving up his account
+    of abstraction. #reported
+    {fidelity: "paraphrase", pinpoint: "§4.4",
+     source: "\"Hume might not have to treat them as constituting a counterexample that would require giving up his account of abstraction\""}
+    -> [Aphantasia cannot be treated as a mere exception]
+
+<The missing shade of blue precedent>: Hume himself kept the Copy Principle while granting a
+counterexample to it, so a Humean may do the same here. #reported
+    {note: "Form: argument from precedent, attributed to Earp 2020. Undercut below, not attacked: the authors grant that Hume did this and deny that aphantasia is the same kind of case."}
+
+<The missing shade of blue precedent>
+
+(1) [Hume granted the missing shade as a counterexample]: Hume allows that someone who has seen
+    every shade of blue but one could fill in the gap and form an idea of the missing shade
+    without a corresponding impression, which seems to violate the Copy Principle. #reported
+    {fidelity: "compression", pinpoint: "T 1.1.1.10; EHU 2.8, §4.4",
+     source: "\"Hume allows that it is conceivable that this person, upon seeing all the other shades arranged in a sequence, could mentally fill in the gap and form an idea of the missing shade, even though they have never had a corresponding sensory impression.\""}
+(2) [Hume kept the principle anyway]: Hume treats this as a singular and minor exception, so rare
+    and unimportant, in his view, that it does not justify revising or rejecting the general
+    principle. #reported
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"Hume treats this as a singular and minor exception, so rare and unimportant, in his view, that it does not justify revising or rejecting the general principle\""}
+-----
+(3) [A Humean may keep a theory and grant an anomaly]: Hume can regard the missing shade of blue
+    as a legitimate counterexample yet still retain the broader theory by treating the case as an
+    isolated anomaly. #reported
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"Hume can regard the missing shade of blue as a legitimate counterexample yet still retain the broader theory by treating the case as an isolated anomaly\"",
+     note: "Attributed by the authors to Earp 2020."}
+    +> [A theory need not explain every case]
+
+<The missing shade of blue precedent>
+    <_ <The missing shade analogy breaks down>: Even granting that Hume kept the Copy Principle
+      through the missing shade of blue, that precedent does not extend to aphantasia, because the
+      two cases differ at exactly the point that decides the question.
+        {note: "Form: disanalogy — the standard critical question against an argument from precedent, and an undercut rather than a rebuttal."}
+
+<The missing shade analogy breaks down>
+
+(1) [Abstract thought underlies most cognition]: The capacity for abstract conceptual thinking
+    underlies most, if not all, cognitive processes.
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"the capacity for abstract conceptual thinking underlies most, if not all, cognitive processes\"",
+     note: "The authors' hedge 'most, if not all' is kept; it is what makes the disanalogy argument a matter of degree rather than a proof."}
+(2) [A special mechanism would make aphantasic cognition wholly different]: Positing a special
+    abstraction mechanism for aphantasics would imply that most, if not all, of their cognitive
+    mechanisms differ from those of non-aphantasics.
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"positing a special abstraction mechanism for aphantasics would imply that most, if not all, of their cognitive mechanisms differ from those of non-aphantasics\""}
+(3) [Filling a missing shade underlies nothing]: The capacity needed to fill in a missing
+    impression does not underlie cognition in general, so a mechanism for that case carries no
+    such consequences.
+    {fidelity: "paraphrase", pinpoint: "§4.4",
+     source: "\"the capacity needed to fill in a missing impression does not underlie cognition in general\""}
+-----
+(4) [Aphantasia is not a minor curiosity]: The missing shade of blue can plausibly be treated as
+    an exceptional case so narrow and contained that it poses no serious challenge to the
+    theory's explanatory reach, and aphantasia cannot.
+    {fidelity: "compression", pinpoint: "§4.4",
+     source: "\"Hume can plausibly treat the phenomenon as a minor curiosity, i.e., an exceptional case so narrow and contained that it poses no serious challenge to the theory's explanatory reach. In contrast, aphantasia raises a more serious concern.\""}
+    +> [Aphantasia cannot be treated as a mere exception]
+
+<The Copy Principle leaves no room>: A non-imagistic route to abstraction is not something Hume's
+system has space for.
+    {note: "Form: reductio against the exception manoeuvre, turning on a foundational commitment rather than on the aphantasia evidence."}
+
+<The Copy Principle leaves no room>
+
+(1) [The Copy Principle is universal]: One of the foundational assumptions in Hume's conception of
+    the mind is the Copy Principle according to which all simple ideas are copies of corresponding
+    impressions, and it is supposed to be a universal thesis.
+    {fidelity: "compression", pinpoint: "§4.4",
+     source: "\"one of the foundational assumptions in Hume's conception of the mind is the Copy Principle according to which all simple ideas are copies of corresponding impressions\"",
+     note: "Joined to the later sentence 'Because the Copy Principle is supposed to be a universal thesis', four sentences on, which is what makes the premise do its work here."}
+(2) [Non-imagistic abstraction conflicts with the Copy Principle]: Postulating an abstractive
+    process that does not presuppose imagistic operation with individual ideas is inconsistent
+    with the Copy Principle, which implies that ideas inherit their particular nature from the
+    impressions they copy.
+    {fidelity: "compression", pinpoint: "§4.4",
+     source: "\"This is inconsistent with the Copy Principle because the latter implies that ideas inherit their particular nature from the impressions that they are copies of.\"",
+     note: "Joins two passages about 150 characters apart: the sentence stating what a non-imagistic abstractive process would imply, and the next sentence saying why that is inconsistent with the Copy Principle."}
+-----
+(3) [Giving up the Copy Principle gives up Hume]: By giving up the Copy Principle, the resulting
+    account of the mind would cease to be Hume's account in any meaningful sense.
+    {fidelity: "quotation", pinpoint: "§4.4",
+     source: "\"By giving up the Copy Principle, the resulting account of the mind would cease to be Hume's account in any meaningful sense.\""}
+    -> [Hume may keep the account and file aphantasia as an exception]
+
+<The other horn is offensive>: The alternative to revising the theory is a conclusion about
+aphantasics that cannot be accepted.
+    {note: "Form: the second horn of a dilemma. The first horn is that the account must be given up, which is what the Copy Principle argument shows Hume cannot afford."}
+
+<The other horn is offensive>
+
+(1) [Standing pat commits Hume to denying aphantasics abstract thought]: If Hume were to remain
+    satisfied with his theory of abstraction as it stands, this would commit him to the view that
+    individuals with severe aphantasia are incapable of abstract thought.
+    {fidelity: "paraphrase", pinpoint: "§4.4",
+     source: "\"if Hume were to remain satisfied with his theory of abstraction as it stands—as he does in the case of the Copy Principle despite the challenge posed by the missing shade of blue—this would commit him to the view that individuals with severe aphantasia are incapable of abstract thought\"",
+     note: "The claim text drops the em-dashed aside about the Copy Principle; the source field carries the sentence whole."}
+(2) [That conclusion verges on the offensive]: Such a conclusion is not only implausible; it
+    verges on the offensive, since it would entail that severe aphantasics should be treated as
+    devoid of reason.
+    {fidelity: "compression", pinpoint: "§4.4",
+     source: "\"Such a conclusion is not only implausible; it verges on the offensive. It would entail that severe aphantasics should be treated as devoid of reason.\""}
+-----
+(3) [Aphantasia cannot be treated as a mere exception]
+
+# The wider reach {isGroup: true}
+
+<Nothing in the argument is peculiar to Hume>: The argument turns on the imagistic grounding of
+thought, not on anything specific to Hume.
+    {note: "Form: generalisation from a test case. The authors keep it conditional and hedged, and so does the reconstruction."}
+
+<Nothing in the argument is peculiar to Hume>
+
+(1) [The line of argument is not limited to Hume]: The line of argument we propose is not limited
+    to Hume or to the Early Modern period.
+    {fidelity: "quotation", pinpoint: "n. 4",
+     source: "\"The line of argument we propose is not limited to Hume or to the Early Modern period.\"",
+     note: "In the footnote this is the consequent of a conditional: if the critical analysis proves correct, a similar argument is likely against other image-based theories of thought. The conditional, not the consequent alone, is what the authors assert."}
+(2) [Prinz's proxytypes use the same mechanism]: The kind of abstraction mechanism that Hume
+    appealed to can be found in Jesse Prinz's theory of concepts, so if the argument against the
+    Humean account has any bite, it also has it against Prinz's view.
+    {fidelity: "compression", pinpoint: "§1",
+     source: "\"If the argument in this paper against the Humean account of abstraction has any bite, it also has it against Prinz's view.\"",
+     note: "Joins the sentence identifying Hume's abstraction mechanism in Prinz's proxytypes with the conditional drawn from it three sentences later. The authors' conditional form is kept."}
+(3) [Grounded theories rest on off-line perceptual representations]: There are theories of
+    concepts and language comprehension that are predicated on the manipulation of off-line
+    sensory and perceptual representations in grounding conceptual thought, and aphantasics pose
+    a prima facie challenge to such theories.
+    {fidelity: "compression", pinpoint: "§1",
+     source: "\"there are theories in that field that are predicated on the manipulation of off-line sensory and perceptual representations in grounding conceptual thought\"",
+     note: "Joins that sentence to the next paragraph's claim that aphantasics pose a prima facie challenge to such theories, about 180 characters later."}
+-----
+(4) [The challenge extends beyond Hume]
+
+[The bearing of aphantasia on abstract thought is unexplored]: The implications of aphantasia for
+understanding the genesis of abstract thought have not yet been explored in contemporary research
+on concepts and language comprehension, and this is a significant gap.
+    {fidelity: "compression", pinpoint: "§1",
+     source: "\"implications of aphantasia on understanding the genesis of abstract thought have not yet been explored in contemporary research on concepts and language comprehension\"",
+     note: "The authors hedge this with 'As far as we know'. Kept as a claim about the state of the field, which is what makes the paper's contribution worth making rather than what makes it true."}
+
+<Presence of imagery settles nothing on its own>: What has to be measured is a use of imagery,
+not its presence.
+    {note: "Form: a methodological moral drawn from the distinction the paper introduces. The premises are linked and read as a chain of insufficiencies."}
+
+<Presence of imagery settles nothing on its own>
+
+(1) [Projective use is more than having imagery]
+(2) [Imagery evidence does not show imaginative use]: Evidence for the presence of mental imagery
+    does not by itself establish that such imagery is being used imaginatively.
+    {fidelity: "quotation", pinpoint: "§1",
+     source: "\"evidence for the presence of mental imagery does not by itself establish that such imagery is being used imaginatively\""}
+(3) [Imaginative use does not show projective use]: Evidence of imaginative use does not suffice
+    to show that imagery is used in the way required for Humean abstraction.
+    {fidelity: "paraphrase", pinpoint: "§1",
+     source: "\"nor does evidence of imaginative use suffice to show that imagery is used in the way required for Humean abstraction\""}
+-----
+(4) [Empirical work must distinguish the uses of imagery]

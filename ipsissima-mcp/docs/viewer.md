@@ -3,6 +3,34 @@
 Read this when changing the renderer, debugging a map that draws wrongly, or explaining the
 viewer's controls. Building a viewer is a two-line command and stays in SKILL.md.
 
+## What folding means
+
+**Folding a claim hides everything reachable only through it.** Decided 27 August 2026, and
+written down because for a long time it was not: the code implemented something close to this,
+implicitly and in nine interacting places, and every fold defect found so far has lived in the gap
+between what one of those places assumed and what another did.
+
+The word doing the work is **only**. A reconstruction is a DAG and not a tree — across the
+published corpus, up to fourteen claims in a single map have more than one parent — so a claim can
+be held up from two directions at once. Fold one of them and the claim stays, because the other
+still reaches it. That is not a bug; it is what the reader asked for, and the alternative reading
+("hide everything below it") would take away a claim the map still has a reason to draw.
+
+Three consequences follow, and each was a defect before it was a rule:
+
+- **A fold control is drawn only where folding would change the picture.** The badge is a
+  promise — it is drawn as `+N` or `−`, and its tooltip says "Show N claims". A click that does
+  nothing is the interface contradicting itself, and a reader cannot tell it from a dead control.
+- **A claim already folded is not foldable**, and a claim on screen only because the connectivity
+  rescue forced it there is not expandable — the walk does not proceed from it, so expanding it
+  reveals nothing.
+- **The rescue does not override a fold.** Where a claim is left with nothing attached *because
+  the reader folded it*, it is not adrift: it is exactly what was asked for. The same exemption
+  already applied under a depth limit, for the same reason, and extending it to hand folds closed
+  the last case in which folding appeared to do nothing at all.
+
+`docs/FOLDING.md` sets out how these were found and why the earlier tests could not see them.
+
 ## Checking the fold logic systematically
 
 Three visibility bugs reached the author in a row — a section that blanked the map, a section
@@ -36,6 +64,23 @@ limit** (a limit is an instruction to hide distant material, and folds compress 
 one, so expanding under a limit can legitimately push things past it).
 
 It does **not** cover geometry — see the next section.
+
+### And a second instrument, which finds a different class
+
+```bash
+node app/test_fold_exhaustive.mjs 4      # 21 shapes, 1,008 states, under a second
+node app/test_fold_exhaustive.mjs 5      # 315 shapes, 30,240 states
+```
+
+The walk above samples: one big map, a random path, and — decisively — **the invariants checked at
+the one node the action touched**. On a map carrying fifty badges that is a coverage of one in
+fifty per state. This does the opposite: every graph shape of N claims, every combination of
+collapsed claims, every depth, and **every node in every state**.
+
+A defect that survives it has a counterexample with four claims in it, which a person can hold in
+their head. Its first run found one the corpus had not shown in a day of looking. Neither
+instrument replaces the other: the walk needs real section structure, bands and a manuscript to
+exercise them; this needs the space to be small enough to exhaust.
 
 
 ## Checking the geometry systematically
@@ -341,9 +386,16 @@ looking at the author's words when they are looking at a summary.
 
 Three constraints shaped this, and each rules something out:
 
-- **The rule is not reimplemented in JavaScript.** It leans on difflib's near-match, which has no
-  clean JS equivalent, and one rule in two languages is the drift hazard
-  `test_argdown_positions.mjs` already exists to police. So the build asks rather than works it
+- **The rule is not reimplemented in JavaScript.** ~~It leans on difflib's near-match, which has
+  no clean JS equivalent~~ — **this reason expired** when `_is_verbatim` was tightened from a
+  0.75 similarity score to a contiguous-substring test over normalised text. Measured 27 Aug
+  2026: four lines on top of `ArgdownPositions.normalise`, which is already inlined in every
+  viewer and already cross-checked against `argdown_provenance.py` by
+  `test_argdown_positions.mjs`, agree with `--derive-fidelity` on **251 of 251** adjudicated
+  claims across the corpus (79 quotation, 172 paraphrase). What still holds is that one rule in
+  two languages is a drift hazard — and the project's answer to that hazard has never been "do
+  not duplicate", it has been "duplicate and pin it with a cross-check", which is what
+  `test_argdown_positions.mjs` is. So the build asks rather than works it
   out again — at the cost of the build now needing `python3`, which the rest of the toolchain
   needs anyway.
 - **Only `quotation` and `paraphrase` are ever adjudicated.** `interpretation` and `imputation`
@@ -356,6 +408,26 @@ Three constraints shaped this, and each rules something out:
 The consequence worth stating plainly: **the picture is now right even when the file is wrong.**
 The checker still reports the discrepancy so the file can be corrected, but a reader of the map
 is no longer misled while it waits.
+
+### How far that actually reaches — measured 27 Aug 2026
+
+Less far than the paragraph above implies, and the gap has grown as the tool has. `--derive-fidelity`
+has exactly one caller in the program: `attachPositions` in `build_argdown_viewer.mjs`, guarded by
+`if (argdownPath && root)`. So:
+
+| how a map is opened | borders |
+|---|---|
+| `build_argdown_viewer.mjs FILE.argdown --source-root DIR` | **checked** |
+| `build_argdown_viewer.mjs BUNDLE.argdown` (no folder) | as declared |
+| `--standalone` build, folder dropped on it | as declared |
+| the desktop app, folder opened | as declared |
+| a page exported from any of the above | as declared |
+
+The three "as declared" rows are now the ordinary way to read a reconstruction, and the first row
+is a step taken to publish a sample. The page is honest about it — the status line reads
+*borders as declared, not checked* whenever positions were worked out in the page — but a reader
+who has been told the border says whose words these are is being shown an unchecked one most of
+the time. On this corpus that is 6 claims in 251.
 
 A claim shorter than 30 characters gets no verdict either way. A short claim can coincide with
 its source by accident, and calling that a quotation would be worse than asking.

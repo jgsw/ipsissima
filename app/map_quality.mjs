@@ -124,7 +124,16 @@ function measure(L) {
 
     // 1. Can the arrowhead be seen? It is drawn at the last point; the fold badge is a filled
     //    circle at the bottom centre, painted after the edges.
-    if (box && s) {
+    //
+    //    ONLY WHERE A BADGE IS ACTUALLY DRAWN. This used to compute the badge position for every
+    //    node and count an arrowhead near it as hidden, which was accidentally right while
+    //    `expandable` meant "has children at all" -- nearly every node had one. Once the badge
+    //    was drawn only where it does something, this went on counting arrowheads that nothing
+    //    was hiding, and reported a correctness regression on maps whose drawing had not
+    //    changed. `badgeCentres` in the renderer has always filtered on `expandable`; this is
+    //    the same rule, said once more, and the two must agree.
+    const target = vis.nodes.find(n => n.id === e.w);
+    if (box && s && target && target.expandable) {
       const badge = { x: box.x, y: box.y + s.height / 2 };
       if (dist(end, badge) < API.BADGE_R) hiddenArrowheads++;
     }
@@ -246,7 +255,7 @@ function render(L, file, title) {
     const col = e.name === "attack" ? "#cc3b3b" : e.name === "undercut" ? "#d08018" : "#3a9d5d";
     body += `<path d="${smooth(pts)}" fill="none" stroke="${col}" stroke-width="1.8" marker-end="url(#q-${e.name})"/>`;
   }
-  const marks = ["support:#3a9d5d", "attack:#cc3b3b", "undercut:#d08018", "contradiction:#8b5cc7"]
+  const marks = ["support:#3a9d5d", "attack:#cc3b3b", "undercut:#d08018", "contradictory:#8b5cc7"]
     .map(x => { const [k, v] = x.split(":");
       return `<marker id="q-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="${v}"/></marker>`; })
     .join("");

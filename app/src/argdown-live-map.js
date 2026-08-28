@@ -15,7 +15,8 @@
  *   edges:  [{ from, to, type }]        from = the reason, to = what it bears on
  *   groups: [{ id, label, parent }]     optional, nestable
  *
- * `type` is "support" | "attack" | "undercut" | "contradiction". `facet` is whatever the host
+ * `type` is one of Argdown's `relationType` values -- "support" | "attack" | "undercut" |
+ * "contradictory", or strict mode's "entails" | "contrary". `facet` is whatever the host
  * wants the filter chips to switch on — real Argdown tags in exports, the `kind:` metadata in
  * the structure map. Argdown's IMap nodes carry no tags, so this has to come from the adapter.
  */
@@ -444,6 +445,11 @@ function filterOnce(graph, state, force) {
   //     three whole sections hang off claims deep inside "The verdict", and simply stopping at
   //     the fold deleted them from the map. Hiding a section must hide the section, not
   //     everything the section happens to stand in front of.
+  //  ONE WALK, RUN MORE THAN ONCE. The body below is the only thing that knows what a fold
+  //  does; asking "would folding this claim change anything?" any other way means a second
+  //  description of the same rules, and this file already records what that costs. So the walk
+  //  became a function, and the question is answered by running it.
+  const runWalk = (alsoCollapsed) => {
   const visible = new Set();
   const dist    = new Map(seeds.map(id => [id, 0]));
   const walked  = new Set();   // id|fold keys already processed
@@ -453,11 +459,51 @@ function filterOnce(graph, state, force) {
     const key = id + "|" + (fold || "");
     if (walked.has(key) || (fold && visible.has(id))) continue;
     walked.add(key);
-    if (!fold) {
+    // A CLAIM THE READER OPENED BY HAND IS DRAWN, EVEN WHERE ITS SECTION HOLDS IT BACK.
+    //
+    // `reduceFold` already says this twice -- opening a section skips its hand-opened members
+    // when it lays down the marks, and expanding a claim deletes the mark it carries -- but the
+    // walk overruled both, because suppression is inherited from the PARENT's active set and
+    // not only from the node's own mark. So a claim could be exempt by the state machine and
+    // suppressed by the walk anyway, which is how clicking "+" on a claim made THAT CLAIM
+    // disappear: it was on screen only because the connectivity rescue had forced it in, and
+    // expanding it removed the reason for the rescue. Found on Gettier once the stop above was
+    // in place; the same shape as the crutch-withdrawal the rescue's own comments predict.
+    //
+    // Drawing hand-COLLAPSED suppressed claims as well was tried, on the argument that a fold
+    // with no badge on screen is a trap. It is much worse: it puts a section's deeper levels on
+    // screen the moment the section opens: "opening a section reveals one level of it, not
+    // several" went from silent to 12 violations over five seeds, e.g. a section showing four
+    // claims from below its entry level of the seven it has. Only the OPENED mark is exempt --
+    // which is the one that invariant already carves out for.
+    if (!fold || S.expandedNodes.has(id)) {
       if (visible.has(id)) continue;
       visible.add(id);
-      if (S.collapsedNodes.has(id)) continue;
     }
+    // A CLAIM THE READER FOLDED STOPS THE WALK WHETHER OR NOT IT IS DRAWN -- for exactly the
+    // reason the depth limit below does, which is the same lesson learned twice.
+    //
+    // This check used to sit inside the `if (!fold)` above, so a claim the reader had shut was
+    // honoured only when it happened to be DRAWN. Held back by an opened section instead, it was
+    // walked THROUGH, and the walk poured past the reader's own fold into whatever hung off it.
+    // Two things followed, and only the second was ever reported. The map showed material behind
+    // a claim the reader had shut -- opening a section brought back the subtree of a claim that
+    // was still visibly collapsed. And because pass-through reached FURTHER than drawing,
+    // expanding a claim turned a pass-through into a stop and the reach of the walk SHRANK:
+    // Carroll, section 2 opened with n3 shut, expanding n19 lost the whole of s4, five claims
+    // that a block on screen had been standing for. That is the vanishing defect in
+    // KNOWN-ISSUES.md, and no guard on the stepwise folds could see it, because the loss is
+    // caused by the expansion itself and the state delta shows `collapsedNodes` unchanged.
+    //
+    // MAKING THE GUARD STRICTER WAS TRIED FIRST AND WAS WRONG -- see the note in KNOWN-ISSUES:
+    // guard and invariant already agreed, so tightening it fixed nothing and refused more folds.
+    // The asymmetry is in the walk, not in what the walk is measured by, and the cure is to give
+    // both branches the same stopping rule rather than to police the difference afterwards.
+    // Measured over 1,200 fold states at each of twelve seeds: violations of this invariant
+    // 10 -> 0 on the published corpus and 15 -> 0 with a private one added. It bites only where
+    // the reader has folded something by hand -- with `collapsedNodes` empty it is a no-op --
+    // which is why no fixture and no quality metric moves.
+    if (S.collapsedNodes.has(id) || id === alsoCollapsed) continue;
     // The depth limit applies whether or not this node is drawn. Exempting the passed-through
     // ones let a folded section reach PAST the limit and show material the reader had asked to
     // hide -- and then unfolding it correctly took that material away, which read as expanding
@@ -476,6 +522,19 @@ function filterOnce(graph, state, force) {
       queue.push({ id: c, fold: still.length ? still.sort().join("\u0000") : null });
     }
   }
+  return { visible, dist };
+  };
+  const { visible, dist } = runWalk(null);
+  // THE WALK'S OWN ANSWER, KEPT BEFORE THE RESCUE EDITS IT. `visible` gains the forced claims a
+  // few lines below, and the badge question is asked by re-running the walk -- which does not
+  // apply the rescue. Comparing the post-rescue set against a pre-rescue one makes the second
+  // look smaller by however many claims were forced in, and a fold that changes nothing then
+  // reads as a fold that removes something. That is the last of the badge defects, and its
+  // counterexample is five claims: `n8->n9, n8->n79, n9->n79` beside a SEPARATE component
+  // `n17->n80` whose two claims carry `groupFolded` marks. n8 has two parents, so folding n9
+  // takes nothing away -- and the rescue, firing on the other component entirely, made it look
+  // as though it did.
+  const walkedOnly = new Set(visible);
 
   // 2c. NOTHING FLOATS — and the claims are no longer smuggled in to achieve it.
   //
@@ -504,10 +563,78 @@ function filterOnce(graph, state, force) {
   if (force) for (const id of force) if (passes.has(id)) visible.add(id);
 
   // 3. What did we hide? Drives the "+3" affordance on a node with a folded subtree.
+  //
+  // A RESCUED CLAIM PROMISES NOTHING, and must not be given a badge. The line above puts `force`
+  // claims into `visible` so that nothing is drawn floating -- they are there to keep a
+  // connection honest, not because the reader has opened a path to them. The walk never reached
+  // them and still does not proceed FROM them, so expanding one reveals nothing at all.
+  //
+  // Counting them here gave a badge reading "+1" that did nothing when clicked, which is worse
+  // than no badge: the badge is a PROMISE -- it is drawn as "+N" and its tooltip says "Show N
+  // claims" -- so a click that changes nothing is the interface contradicting itself, and a
+  // reader cannot tell it from a dead control. Reported from use on the Akhlaghi map, where
+  // collapsing "The conditional answer" gave its supporter a badge for a claim two stops away.
+  //
+  // Found by sweeping 4,230 fold states of that map and asking of every badge whether expanding
+  // it revealed anything: 6 did not, and all 6 were rescued claims.
+  // WHAT IS DRAWN, which is not what the walk reached. A claim inside a collapsed section is on
+  // screen as that section's block, so revealing it changes nothing a reader can see. Both
+  // halves of the badge are measured against this, and both were wrong before they were.
+  const drawnSet = s => {
+    const out = new Set();
+    for (const id of s) out.add(collapsedRepr(id));
+    return out;
+  };
+  const drawnNow = drawnSet(walkedOnly);   // like for like: neither side has the rescue in it
+
+  const forced = force ? new Set(force) : null;
   const hiddenBelow = new Map();
   for (const id of visible) {
-    const n = kids(id).filter(c => !visible.has(c)).length;
+    if (forced && forced.has(id)) continue;
+    // A CHILD ALREADY STANDING BEHIND A BLOCK IS NOT HIDDEN. It used to be enough that a child
+    // was outside `visible`; but if revealing it would only put it inside a section block that
+    // is already on screen, the picture does not change and the badge promised nothing it can
+    // give. Found by exhausting every four-claim map WITH SECTIONS -- 5,940 cases, the smallest
+    // being `n1->n0, n2->n1, n3->n0` with n0 and n2 in a shut section: n1 offered "+1" for a
+    // claim that would have appeared inside the block beside it.
+    const n = kids(id).filter(c => !visible.has(c) && !drawnNow.has(collapsedRepr(c))).length;
     if (n) hiddenBelow.set(id, n);
+  }
+
+  // 3b. And what would FOLDING hide? The other half of the same promise.
+  //
+  // A claim with children and nothing hidden below it is drawn with a MINUS, and the tooltip
+  // offers to fold them away. On the Akhlaghi map 43 claims carried one and 8 of them hid
+  // nothing at all when clicked.
+  //
+  // A RECONSTRUCTION IS A DAG, NOT A TREE. Collapsing one parent cannot remove a claim that
+  // another parent still holds up, so "has children" -- which is what the badge was drawn from
+  // -- does not mean "folding me will do something". Nor does anything simpler: a rule based on
+  // who a claim's parents are was measured across six maps and four fold states, and it removed
+  // every dead badge AND three working ones, all of them under a depth limit, where a claim's
+  // visibility depends on the walk continuing rather than on its parentage. Losing a control
+  // that works is the worse error.
+  //
+  // So ask the walk, which is the only thing that knows. One extra walk per candidate, each
+  // O(V+E), on the tens of claims that could carry a minus -- a few thousand operations, which
+  // is nothing beside the layout that follows.
+  //
+  // AND THE COMPARISON IS OF WHAT IS DRAWN, not of what the walk reached. A claim inside a
+  // collapsed section is already standing behind that section's block, so losing it changes
+  // nothing a reader can see -- and counting it left one dead minus behind on the Akhlaghi map,
+  // reachable by shutting two sections and then looking at n44. Mapping both sets through
+  // `collapsedRepr` asks the question about the picture instead.
+  const foldable = new Set();
+  for (const id of visible) {
+    if (hiddenBelow.has(id)) continue;                    // it is a "+", not a "−"
+    // ALREADY SHUT IS NOT FOLDABLE. Folding a claim the reader has already folded is a no-op --
+    // `reduceFold` adds it to a set it is in. It can still be DRAWN with children visible, when
+    // those children are held up by another parent too, and it then showed a minus that did
+    // nothing. Found by exhausting every four-node shape: `n1->n0, n2->n1, n3->n1` with n0 shut
+    // is the smallest map in the world that exhibits it.
+    if (S.collapsedNodes.has(id)) continue;
+    if (!kids(id).some(c => visible.has(c))) continue;    // nothing below it is drawn
+    if (drawnSet(runWalk(id).visible).size < drawnNow.size) foldable.add(id);
   }
 
   // Which file each chapter index names. Only the nodes know, and both the word-count lookup
@@ -553,6 +680,10 @@ function filterOnce(graph, state, force) {
         id: n.id, label: n.label || n.id, detail: n.detail || "",
         kind: n.kind || "statement", facet: n.facet || null, color: n.color || null,
         steps: n.steps == null ? null : n.steps,   // inference steps, if this is an argument
+        // The premise-conclusion structure itself. Carried onto the drawn node because the
+        // renderer draws the lines that have no box of their own, and it cannot know which
+        // those are without the list.
+        pcs: n.pcs || null,
         note: n.note || null,          // the reconstructor's marginalia
         comment: n.comment || null,    // someone else's, on the argument
         fidelity: n.fidelity || null,
@@ -563,7 +694,11 @@ function filterOnce(graph, state, force) {
         group: firstVisibleGroup(ix, n.group, S),
         hidden: hiddenBelow.get(id) || 0,
         collapsed: S.collapsedNodes.has(id),
-        expandable: (ix.childrenOf.get(id) || []).some(c => passes.has(c))
+        // A BADGE IS A PROMISE, so it is drawn only where the promise can be kept: either
+        // something is hidden below and expanding will reveal it, or folding will actually
+        // take something away. `some(c => passes.has(c))` -- "does this have children at all"
+        // -- was neither of those, and drew a dead control on both halves.
+        expandable: (hiddenBelow.get(id) || 0) > 0 || foldable.has(id)
       });
     } else {
       if (!folded.has(r)) folded.set(r, []);
@@ -634,7 +769,11 @@ function filterOnce(graph, state, force) {
     // would draw a linkage between things that are not on screen.
     const linked = a === e.from && b === e.to && e.step != null;
     outEdges.push({ from: a, to: b, type: e.type || "support",
-                    step: linked ? e.step : null });
+                    step: linked ? e.step : null,
+                    // The rule travels with the step and dies with it. A bar that survives into
+                    // a folded picture would be naming an inference whose premises are no longer
+                    // on screen, which says more than the drawing can show.
+                    rule: linked ? (e.rule || null) : null });
   }
 
   // 5b. NOTHING FLOATS, PART TWO: THE CONNECTION IS DRAWN, NOT THE MISSING CLAIMS.
@@ -707,6 +846,14 @@ function filterOnce(graph, state, force) {
         // exactly what was asked for. The old repair carried this exclusion and dropping it
         // broke three fixtures the moment this one shipped.
         if (S.depth != null) continue;
+        // NOR WHERE THE READER EMPTIED THIS CLAIM BY HAND, which is the same reasoning again.
+        // Folding a claim means hiding everything reachable only through it; a claim left with
+        // nothing attached BECAUSE IT WAS FOLDED is not adrift, it is exactly what was asked
+        // for. Rescuing it puts back the one thing the reader just took away — and because the
+        // rescue re-runs the whole pass, the fold appeared to do nothing at all. That is the
+        // residue documented in docs/FOLDING.md: `n1->n0, n2->n1, n3->n1`, fold n1 and then n0,
+        // and n1 comes straight back.
+        if (S.collapsedNodes.has(n.id)) continue;
         const rescue = (near.get(n.id) || [])
           .map(h => h.other)
           .find(o => ix.byId.has(o) && !visible.has(o));
@@ -1619,6 +1766,43 @@ function hiddenSpans(poly, boxes, minRun) {
   });
 }
 
+/* The premise-conclusion block drawn inside an argument's own box. */
+const PCS_NUM_W = 24;    // the gutter the line numbers sit in
+const PCS_BAR_H = 11;    // vertical room for an inference bar above a conclusion line
+const PCS_GAP   = 7;     // between the argument's prose and the structure below it
+
+/** PURE: which lines of a premise-conclusion structure the argument's own box has to draw.
+ *
+ *  THE ANSWER IS "THE ONES WITH NO BOX OF THEIR OWN", and both halves of that matter.
+ *
+ *  A TITLED premise is selected into the map, becomes a node, and arrives at its argument as an
+ *  arrow. Drawing it here as well would put the same claim on screen twice with no way for the
+ *  reader to tell it was one claim -- which is worse than the omission this repairs.
+ *
+ *  An UNTITLED one is not selected at all. Under Argdown's default `statementSelectionMode` it
+ *  becomes no node, no arrow and no trace, so an argument standing on five premises of which one
+ *  is bracketed drew with exactly ONE arrow into it and the map said it had one reason. That is
+ *  the map asserting something false, and it is the reason this function exists.
+ *
+ *  THE NUMBERS ARE THE FILE'S OWN. Renumbering the survivors 1..n would read more tidily and be
+ *  a lie: a reader checking the map against the source needs (4) to mean the line the file calls
+ *  (4). A gap in the numbering is INFORMATION -- it says that line is on the map as a box.
+ *
+ *  A conclusion carries `bar`, because an inference bar is what says the lines above it are
+ *  premises rather than more assertions, and `rule` where the file named one.
+ */
+function pcsRows(pcs) {
+  if (!Array.isArray(pcs) || !pcs.length) return [];
+  const rows = [];
+  for (const l of pcs) {
+    if (!l || l.drawn) continue;
+    const concl = l.role === "intermediary-conclusion" || l.role === "main-conclusion";
+    rows.push({ n: l.n, role: l.role, concl, bar: concl,
+                text: String(l.text || ""), rule: concl ? (l.rule || null) : null });
+  }
+  return rows;
+}
+
 /** PURE: where the linked premises of one inference step should meet before the arrow goes on.
  *
  *  WHY A JUNCTION AT ALL. Argdown draws two quite different things with the same arrow. Premises
@@ -1687,8 +1871,98 @@ function junctionGeometry(target, arrivals, gap, avoidCentre) {
   }
   const spread = (hi - lo) / 2;
   const half = Math.min(Math.max(target.width / 2, 30), Math.max(12, spread * 0.85));
-  return { j, tip, bar: [{ x: j.x - dy * half, y: j.y + dx * half },
-                         { x: j.x + dy * half, y: j.y - dx * half }] };
+  // `dir` runs ALONG the bar and `out` points away from the box, towards the premises. Both are
+  // returned rather than recovered by the caller: they are already computed here, and a second
+  // derivation from the bar's two endpoints loses the sign of `out` whenever the bar is
+  // symmetric about the junction -- which it always is.
+  return { j, tip, dir: { x: bx, y: by }, out: { x: dx, y: dy }, half,
+           bar: [{ x: j.x - dy * half, y: j.y + dx * half },
+                 { x: j.x + dy * half, y: j.y - dx * half }] };
+}
+
+/** PURE: where each member of a junction LANDS on the bar, and where its line turns onto it.
+ *
+ *  THE BAR IS A RAKE, NOT A POINT, and that is the whole of this repair. Every member used to be
+ *  moved to the junction point `j`, so all of them converged on one spot. A premise sitting well
+ *  to the side then ran almost PARALLEL to the bar on the way in, and its last few units lay
+ *  along the bar itself: the two strokes merged, and the picture showed a bar that simply carried
+ *  on off to the right with no visible join at all. Seen at 7x on `pcs-supported-premise`, the
+ *  arriving line and the bar were not distinguishable.
+ *
+ *  Each member now lands at its own place along the bar and turns onto it PERPENDICULARLY,
+ *  through a short stub. A shallow arrival stays shallow -- that is where the premise actually
+ *  is, and bending the long run of the edge to disguise it would be a lie about the layout -- but
+ *  it now meets the bar at a right angle instead of grazing it, which is what makes the join
+ *  read as a join.
+ *
+ *  Returns one { land, lift } per arrival IN THE ORDER GIVEN: `land` is the point on the bar,
+ *  `lift` the point just outside it where the line turns.
+ */
+function junctionFeet(geo, arrivals, approach) {
+  if (!geo || !arrivals || !arrivals.length) return [];
+  const a = approach == null ? 12 : approach;
+  const { j, dir, half } = geo;
+  // Ordered by where each arrival already is along the bar, so the members do not cross one
+  // another on the way in. A bar that visibly braided its own premises would say the drawing
+  // could not tell them apart -- the opposite of what it is there to assert.
+  const order = arrivals.map((p, i) => ({ i, t: (p.x - j.x) * dir.x + (p.y - j.y) * dir.y }))
+                        .sort((u, v) => u.t - v.t);
+  const n = order.length, out = new Array(n);
+  for (let k = 0; k < n; k++) {
+    // EVENLY SPACED across the bar. Keeping each member's own offset and clamping it to the bar
+    // was tried first: two premises on the same side both clamp to the same end and land on one
+    // point, which is the convergence this exists to remove, moved to the end of the bar.
+    // INSET FROM THE ENDS, so the bar overhangs its outermost member. Spanning the full width
+    // put the outer members exactly on the bar's tips, where a line arriving shallow still reads
+    // as the bar carrying on rather than as something meeting it -- the same illusion this
+    // function exists to break, moved from the middle to the ends. A rake's beam sticks out past
+    // its outermost tine, and for the same reason.
+    const inset = Math.min(6, half * 0.25);
+    const span = Math.max(0, half - inset);
+    const t = n === 1 ? 0 : -span + (2 * span * k) / (n - 1);
+    const land = { x: j.x + dir.x * t, y: j.y + dir.y * t };
+    out[order[k].i] = { land,
+                        lift: { x: land.x + geo.out.x * a, y: land.y + geo.out.y * a } };
+  }
+  return out;
+}
+
+/** PURE: the enclosure round the premises of one inference step, or null if it cannot be drawn.
+ *
+ *  THE RATIONALE CONVENTION, and the reason use testing asked for it: premises that work together
+ *  are drawn inside one box, so the group reads as a SINGLE MOVE rather than as several separate
+ *  reasons. The bar already asserts the linkage; the enclosure asserts it at a glance and at any
+ *  zoom, which a thin line between distant boxes does not.
+ *
+ *  IT IS REFUSED RATHER THAN FORCED WHERE IT WOULD ENCLOSE A STRANGER. The premises of one step
+ *  need not be adjacent -- dagre seats by rank and crossing count, and knows nothing about which
+ *  argument a claim belongs to -- so their bounding box can easily contain a claim that has
+ *  nothing to do with the step. Drawing it anyway would say that claim IS one of the premises,
+ *  which is the same class of falsehood as the missing-premise defect this whole change exists to
+ *  repair. A missing enclosure costs the reader a cue; a wrong one tells them something untrue,
+ *  and the ordering principle in ARGDOWN-SUPPORT-PLAN.md puts the second far below the first.
+ *
+ *  `boxes` are dagre nodes ({x, y, width, height}, centred); `others` are the drawn boxes in
+ *  `boxesOf`'s edge form ({x0, x1, y0, y1}). The two shapes differ because that is what each call
+ *  site already has, and converting either would be a copy that could drift.
+ */
+function premiseHull(boxes, others, pad) {
+  if (!boxes || boxes.length < 2) return null;
+  const m = pad == null ? 9 : pad;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const b of boxes) {
+    if (!b || !(b.width > 0) || b.x == null || b.y == null) return null;
+    x0 = Math.min(x0, b.x - b.width / 2);  x1 = Math.max(x1, b.x + b.width / 2);
+    y0 = Math.min(y0, b.y - b.height / 2); y1 = Math.max(y1, b.y + b.height / 2);
+  }
+  if (!isFinite(x0) || !isFinite(y0)) return null;
+  const r = { x: x0 - m, y: y0 - m, width: (x1 - x0) + m * 2, height: (y1 - y0) + m * 2 };
+  for (const o of others || []) {
+    if (o.x1 <= r.x || o.x0 >= r.x + r.width) continue;
+    if (o.y1 <= r.y || o.y0 >= r.y + r.height) continue;
+    return null;                                    // it would swallow something else
+  }
+  return r;
 }
 
 function boxesOf(g, vis) {
@@ -1852,10 +2126,18 @@ const BADGE_CLEAR = 3;
 /** How much extra bow is worth paying to uncross a node's departures. Generous, because a
  *  crossing is far more distracting than a gently bowed line -- but not unlimited.
  *
- *  MEASURED, not guessed. At 45 three crossings survived; at 120 none do, and the worst bend,
- *  worst overshoot and worst edge-crossing count across all six maps are IDENTICAL at 45, 120,
- *  400 and unbounded. So the allowance buys the crossings for nothing, and the earlier readings
- *  that suggested a trade-off came from deciding edge by edge rather than per source. */
+ *  MEASURED, not guessed -- and RE-MEASURED on 28 Aug 2026, when a bigger corpus moved it.
+ *  Departure crossings surviving across every map at every level: 3 at 45, 1 at 120, 1 at 250,
+ *  0 at 400, 0 unbounded. On the six maps this was first tuned against, 120 left none and cost
+ *  nothing, which is what the note here used to say. The seventh -- Wilson at "+ detail", denser
+ *  since it was rebuilt -- is the first fan where the trade is real: buying that last crossing
+ *  costs, on that one row and nowhere else, worst bend 225 -> 294, overshoot 120 -> 160 and
+ *  detour 1.6 -> 2.0. A line twice as long as its direct route is worse to look at than the one
+ *  crossing it removes, so 120 stands and the crossing is recorded in the baseline. KNOWN-ISSUES
+ *  carries the table.
+ *
+ *  The earlier readings that suggested a trade-off at 45 came from deciding edge by edge rather
+ *  than per source. That is a different fault, and it is fixed. */
 const DEPARTURE_BOW_ALLOWANCE = 120;
 /** How far to the side of the badge an arrival point is moved, which is a DIFFERENT measurement
  *  and was wrongly sharing the one above.
@@ -2236,11 +2518,27 @@ const el = (name, attrs) => {
   return e;
 };
 
+/* THE KEYS ARE ARGDOWN'S OWN `relationType` STRINGS, and that is the whole point. `toGraph`
+ * passes `e.relationType` through untouched, so a name here that Argdown never emits matches
+ * nothing and every lookup below falls through to `REL.support` -- drawing the relation in the
+ * green reserved for "this is a reason for that", which is the one thing it is not.
+ *
+ * `contradiction` was such a name. Argdown emits `contradictory`, so all four `><` relations in
+ * the Akhlaghi sample drew as support, and their `marker-end` pointed at an arrowhead that was
+ * never defined because the markers are generated FROM this table.
+ *
+ * STRICT MODE renames all three. `model.mode: strict` emits `entails`, `contrary` and
+ * `contradictory` and never emits `support` or `attack` at all -- so before these were added,
+ * every relation in a strict map drew green, including its attacks. They take the colour of the
+ * relation they are the strict form of: same meaning to a reader, so same colour.
+ */
 const REL = {
   support:       { color: "#3a9d5d", dash: null },
   attack:        { color: "#cc3b3b", dash: null },
   undercut:      { color: "#d08018", dash: "5 3" },
-  contradiction: { color: "#8b5cc7", dash: "2 3" }
+  contradictory: { color: "#8b5cc7", dash: "2 3" },
+  entails:       { color: "#3a9d5d", dash: null },
+  contrary:      { color: "#cc3b3b", dash: null }
 };
 
 const DEFAULTS = {
@@ -2321,6 +2619,10 @@ function createLiveMap(container, graph, options) {
   const defs     = el("defs");
   const viewport = el("g", { class: "alm-viewport" });
   const gGroups  = el("g", { class: "alm-layer-groups" });
+  // The enclosure round the premises of one inference step. Its own layer, between the sections
+  // and the edges, because it is a BACKDROP: the member lines have to run over it to the bar,
+  // and a section's box has to stay legible underneath it.
+  const gHulls   = el("g", { class: "alm-layer-hulls" });
   const gEdges   = el("g", { class: "alm-layer-edges" });
   const gNodes   = el("g", { class: "alm-layer-nodes" });
   const gMeasure = el("g", { class: "alm-measure" });
@@ -2329,7 +2631,7 @@ function createLiveMap(container, graph, options) {
   // It has to sit on top: the whole point is that the reader sees the line continue across a
   // node instead of appearing to start at it.
   const gUnder = el("g", { class: "alm-layer-under" });
-  viewport.append(gGroups, gEdges, gNodes, gUnder);
+  viewport.append(gGroups, gHulls, gEdges, gNodes, gUnder);
   svg.append(defs, viewport, gMeasure);
   container.appendChild(svg);
 
@@ -2360,11 +2662,15 @@ function createLiveMap(container, graph, options) {
 
 
   let fitTimer = null;
+  // The fold control the reader last pressed, and where it was on the screen. Set by the
+  // controls, consumed by the very next render. See `holdStill`.
+  let pin = null;
   const drawn = new Map();     // node id -> <g>
   const drawnEdge = new Map();
   const drawnDir  = new Map();   // chevrons, keyed like drawnEdge // key    -> <path>
   const drawnUnder = new Map();  // hidden-line stretches, keyed the same // key -> <g>
   const drawnJoin  = new Map();  // linked-premise junctions // "to|step" -> <g>
+  const drawnHull  = new Map();  // the enclosure round one step's premises // "to|step" -> <rect>
   const drawnGroup = new Map();
   let lastFit = null;
   let lastG = null;          // the layout the last render produced; `focus` reads positions off it
@@ -2436,14 +2742,46 @@ function createLiveMap(container, graph, options) {
     const clip  = !open && full.lines.length > opt.maxLines;
     const body  = clip ? { lines: full.lines.slice(0, opt.maxLines), width: full.width } : full;
     const lh    = opt.fontSize + 4, th = opt.titleSize + 4;
+
+    /* THE PREMISE-CONCLUSION STRUCTURE, ONE LINE PER LINE OF THE ARGUMENT.
+     *
+     * WRAPPING EVERY PREMISE IN FULL WAS THE FIRST VERSION AND IT IS WRONG. A premise is a whole
+     * sentence; five of them wrapped to two or three lines each is a box tall enough to shove its
+     * neighbours off the map, and the height then reports the length of the PROSE rather than the
+     * shape of the argument -- which is the one thing this block is drawn to show. Measured on
+     * the Greenspan fixture, <All Bare>: 11 wrapped lines against 4 clipped.
+     *
+     * So each line is clipped to one, and the box says how many premises there are, in what
+     * order, which of them is a conclusion and what rule licenses the step. The words are one
+     * click away on the control the claim text already has -- and open, the rows wrap in full.
+     */
+    const rows = pcsRows(n.pcs);
+    const rowSize = opt.fontSize - 1, rowLh = rowSize + 3;
+    const rowsOut = rows.map(r => {
+      const m = open && r.text ? measure(r.text, rowSize, false) : null;
+      return Object.assign({}, r, {
+        lines: m ? m.lines : [r.text],
+        width: m ? m.width
+                 : Math.min(textWidth(r.text, rowSize, "400"), opt.maxLabelWidth)
+      });
+    });
+    let pcsH = 0, pcsW = 0;
+    for (const r of rowsOut) {
+      pcsW = Math.max(pcsW, r.width + PCS_NUM_W);
+      pcsH += r.lines.length * rowLh + (r.bar ? PCS_BAR_H : 0);
+    }
+    if (rowsOut.length) pcsH += PCS_GAP;
+    // The text control now serves the structure as well as the claim text, so a box carrying a
+    // structure always offers it -- otherwise a clipped premise would have no way to be read.
+    const more = clip || rowsOut.length > 0 || (open && full.lines.length > opt.maxLines);
     return {
-      title, body, clipped: clip, expandable: clip || (open && full.lines.length > opt.maxLines),
-      width:  Math.max(title.width, body.width) + opt.padX * 2,
+      title, body, clipped: clip, expandable: more, pcs: rowsOut, pcsHeight: pcsH,
+      width:  Math.max(title.width, body.width, pcsW) + opt.padX * 2,
       // The badge is drawn for every expandable node, hidden children or not, and its circle
       // has r=9 centred ON the bottom edge. Reserving space only when something was hidden
       // let the circle overlap the last line of an expanded node.
-      height: title.lines.length * th + body.lines.length * lh + opt.padY * 2 +
-              (n.expandable ? 15 : 0) + (clip || open && full.lines.length > opt.maxLines ? 11 : 0)
+      height: title.lines.length * th + body.lines.length * lh + opt.padY * 2 + pcsH +
+              (n.expandable ? 15 : 0) + (more ? 11 : 0)
     };
   }
 
@@ -2471,13 +2809,18 @@ function createLiveMap(container, graph, options) {
     return w;
   }
 
-  function fitLabel(text, maxWidth) {
+  /** Cut a single line to fit, with an ellipsis. The size and weight are parameters because the
+   *  premise-conclusion rows are lighter and smaller than a group's name, and measuring them
+   *  against the group label's metrics cut them in the wrong place. The defaults are the group
+   *  label's, so every existing caller is unchanged. */
+  function fitLabel(text, maxWidth, size, weight) {
+    const sz = size == null ? 11 : size, wt = weight == null ? "600" : weight;
     if (!(maxWidth > 20)) return text;
-    if (textWidth(text, 11, "600") <= maxWidth) return text;
+    if (textWidth(text, sz, wt) <= maxWidth) return text;
     let lo = 1, hi = text.length;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
-      if (textWidth(text.slice(0, mid) + "…", 11, "600") <= maxWidth) lo = mid;
+      if (textWidth(text.slice(0, mid) + "…", sz, wt) <= maxWidth) lo = mid;
       else hi = mid - 1;
     }
     return text.slice(0, lo).trimEnd() + "…";
@@ -2544,7 +2887,8 @@ function createLiveMap(container, graph, options) {
         // graph, and dagre keeps whatever object is handed to it here.
         for (const e of vis.edges)
           gg.setEdge(e.from, e.to,
-                     { step: e.step == null ? null : e.step, through: !!e.through }, e.type);
+                     { step: e.step == null ? null : e.step, through: !!e.through,
+                       rule: e.rule || null }, e.type);
         dagre.layout(gg);
         return gg;
       };
@@ -2591,7 +2935,15 @@ function createLiveMap(container, graph, options) {
     // just grown by a claim, so `stranded` decides the old camera shows too little and re-fits —
     // and the reader, who was reading one corner, is thrown to a view of the whole thing.
     // Honoured once, so the next fold or depth change behaves normally.
-    if (opt.fitOnRender && !honourCamera && (fit || !userMoved || stranded(lastFit)))
+    //
+    // A PIN BEATS THE RE-FRAMING, including the `stranded` rescue. The reader has just pointed
+    // at one thing and asked for it to change; holding that thing still is a better answer than
+    // any framing of the whole, and it cannot strand them, because the point it holds is a point
+    // that was on the screen. An explicit refit (`fit`) and a camera handed back by the host
+    // still win — neither comes from a fold control, so neither ever has a pin to argue with.
+    const held = pin && !fit && !honourCamera && applyPin(pin);
+    pin = null;
+    if (opt.fitOnRender && !honourCamera && !held && (fit || !userMoved || stranded(lastFit)))
       fitTo(lastFit.w, lastFit.h, lastFit.apex);
     // The restored camera still has to be PUT ON THE PAGE. `fitTo` is what normally writes the
     // transform, so skipping it left the viewport with no transform at all and the map drawn at
@@ -2675,17 +3027,80 @@ function createLiveMap(container, graph, options) {
                              "font-size": opt.fontSize });
       t.textContent = l; box.appendChild(t); y += 1;
     }
+    /* THE PREMISE-CONCLUSION STRUCTURE, drawn as the file wrote it.
+     *
+     * LEFT-ALIGNED AND NUMBERED, where the claim text above it is centred. That is not a
+     * decorative difference: these lines are an ORDERED LIST whose numbers are referred to by
+     * `{uses: [1,2]}` and by the reader checking the map against the source, and a centred list
+     * has no column for its numbers to line up in. The prose above is one statement and centres
+     * correctly; the structure below is several, and reads as a list because it is one.
+     *
+     * The bar goes ABOVE the line it licenses, which is where Argdown's own notation puts it and
+     * where two centuries of logic notation puts it. The rule name sits at the right-hand end of
+     * the bar, so a step with no named rule simply has a plain bar rather than a gap.
+     */
+    if (s.pcs && s.pcs.length) {
+      const rowSize = opt.fontSize - 1, rowLh = rowSize + 3;
+      const x0 = opt.padX, x1 = s.width - opt.padX;
+      const open = allText || textOpen.has(n.id);
+      let py = opt.padY + s.title.lines.length * (opt.titleSize + 4) +
+               s.body.lines.length * (opt.fontSize + 4) + PCS_GAP;
+      for (const r of s.pcs) {
+        if (r.bar) {
+          const by = py + PCS_BAR_H / 2;
+          let barEnd = x1;
+          if (r.rule) {
+            const label = fitLabel(r.rule, (x1 - x0) * 0.62, 8.5, "400");
+            const rt = el("text", { class: "alm-pcs-rule", x: x1, y: by + 3,
+                                    "text-anchor": "end", "font-size": 8.5 });
+            rt.textContent = label;
+            box.appendChild(rt);
+            barEnd = x1 - textWidth(label, 8.5, "400") - 5;
+          }
+          box.appendChild(el("path", { class: "alm-pcs-bar",
+                                       d: `M${x0},${by}L${Math.max(x0 + 12, barEnd)},${by}` }));
+          py += PCS_BAR_H;
+        }
+        const g = el("g", { class: "alm-pcs-row" + (r.concl ? " is-conclusion" : "") });
+        // The whole line on hover, because a clipped premise is otherwise unreadable and the
+        // reader should not have to open the box to find out what it says.
+        const rowTip = el("title");
+        rowTip.textContent = "(" + r.n + ") " +
+          (r.role === "premise" ? "premise" :
+           r.role === "main-conclusion" ? "conclusion" : "intermediate conclusion") +
+          " — " + r.text;
+        g.appendChild(rowTip);
+        const num = el("text", { class: "alm-pcs-num", x: x0, y: py + rowSize,
+                                 "font-size": rowSize });
+        num.textContent = "(" + r.n + ")";
+        g.appendChild(num);
+        for (const l of r.lines) {
+          const t = el("text", { class: "alm-pcs-text", x: x0 + PCS_NUM_W, y: py + rowSize,
+                                 "font-size": rowSize });
+          t.textContent = open ? l : fitLabel(l, x1 - x0 - PCS_NUM_W, rowSize, "400");
+          g.appendChild(t);
+          py += rowLh;
+        }
+        box.appendChild(g);
+      }
+    }
+
     // "show more / show less" for the claim text itself, at the foot of the text block.
     if (s.expandable) {
       const open = allText || textOpen.has(n.id);
       const ty = opt.padY + s.title.lines.length * (opt.titleSize + 4) +
-                 s.body.lines.length * (opt.fontSize + 4) + 7;
+                 s.body.lines.length * (opt.fontSize + 4) + (s.pcsHeight || 0) + 7;
       const more = el("g", { class: "alm-more" });
       const label = el("text", { x: s.width / 2, y: ty, "text-anchor": "middle", "font-size": 9 });
       label.textContent = open ? "▲ less" : "▼ more";
       more.append(el("rect", { x: s.width / 2 - 26, y: ty - 9, width: 52, height: 12,
                                rx: 6, ry: 6, fill: "transparent" }), label);
-      more.addEventListener("click", ev => { ev.stopPropagation(); toggleText(n.id); });
+      // Showing a claim's full text re-lays the map exactly as a fold does, so it is held still
+      // for the same reason — on the box's TOP edge, where its title is, since the text it is
+      // about to grow runs downwards from there.
+      more.addEventListener("click", ev => {
+        ev.stopPropagation(); holdStill([n.id], "top"); toggleText(n.id);
+      });
       box.appendChild(more);
     }
 
@@ -2734,7 +3149,22 @@ function createLiveMap(container, graph, options) {
       const t = el("text", { x: s.width / 2, y: cy + 3.5, "text-anchor": "middle",
                              "font-size": 10 });
       t.textContent = hidden ? "+" + n.hidden : "−";
-      badge.append(el("circle", { cx: s.width / 2, cy, r: 9 }), t);
+      // A HIT AREA LARGER THAN THE BADGE, and larger BY A FIXED NUMBER OF SCREEN PIXELS.
+      //
+      // The badge is 18 units across, so on a reconstruction fitted whole — the 127-claim map
+      // this was reported on sits at the 0.5 zoom floor — it is a 9-pixel target, and a reader
+      // trying to fold an isolated claim gets the pointer only when they are exactly on it.
+      // Simply drawing a bigger circle does not fix that: it is in graph units, so it shrinks
+      // with everything else and the target is still 9 pixels at the zoom where it matters.
+      //
+      // The reach therefore comes from a transparent stroke with `vector-effect:non-scaling-
+      // stroke`, which is measured in screen pixels whatever the zoom: 8px of extra radius at
+      // every scale. Half of the badge already hangs below the box, so half of the added reach
+      // is over empty canvas; the half that is over the box costs the bottom-centre of the claim
+      // its select-click, which is the corner a reader aiming at this control aims through
+      // anyway. Drawn FIRST so the visible circle keeps its own hover and colour rules.
+      badge.append(el("circle", { class: "alm-toggle-hit", cx: s.width / 2, cy, r: 9 }),
+                   el("circle", { cx: s.width / 2, cy, r: 9 }), t);
       const one = n.hidden === 1;
       const what = n.kind === "group" ? (one ? "claim in this group" : "claims in this group")
                                       : (one ? "reason for or against this"
@@ -2760,6 +3190,11 @@ function createLiveMap(container, graph, options) {
       badge.addEventListener("click", ev => {
         setLit(marksFor(n));
         ev.stopPropagation();
+        // KEEP THIS BADGE WHERE IT IS. Opening a section's block replaces the block with the
+        // section's own box, so that box is named as the stand-in; a claim's badge survives its
+        // own fold and needs none. A band's block and its band share an id, so one name covers
+        // both ends there.
+        holdStill(n.kind === "group" && n.groupId ? [n.id, n.groupId] : [n.id]);
         // A folded band carries no groupId — its own id IS the handle (`lane:ch:2|3. Method`),
         // and reduceFold routes on the prefix.
         if (n.kind === "group") toggleGroup(n.groupId || n.id);
@@ -2836,7 +3271,7 @@ function createLiveMap(container, graph, options) {
     const geometry = edgeGeometry(g, vis, sizes);
     // Every drawn box, once, so the hidden-span test does not rebuild them per edge.
     const allBoxes = boxesOf(g, vis);
-    const joins = planJoins(g, vis, geometry);
+    const joins = planJoins(g, vis, geometry, allBoxes);
     for (const e of g.edges()) {
       const key = e.v + " " + e.w + " " + e.name;
       keep.add(key);
@@ -2922,7 +3357,9 @@ function createLiveMap(container, graph, options) {
       const strip = groups.some(o => o.parent === gr.id);
       let box = drawnGroup.get(gr.id);
       if (!box) {
-        box = el("g", { class: "alm-g" });
+        // `data-id` for the same reason the claim boxes carry one: so a section's box can be
+        // named from outside the renderer — by a test, and by anything that has to point at it.
+        box = el("g", { class: "alm-g", "data-id": gr.id });
         box.append(el("rect", { class: "alm-gbox", rx: 10, ry: 10 }),
                    el("rect", { class: "alm-ghit" }),
                    el("text", { class: "alm-glabel", "font-size": 11, "font-weight": "600" }),
@@ -2931,7 +3368,12 @@ function createLiveMap(container, graph, options) {
         box.appendChild(el("title"));
         if (gr.fold !== false)
           box.addEventListener("click", ev => {
-            ev.stopPropagation(); setLit([]); toggleGroup(gr.id);
+            ev.stopPropagation(); setLit([]);
+            // The section's box is about to become a block. Hold the box's bottom edge, which is
+            // where the block's own badge will land, so the control that undoes this click is
+            // under the pointer that made it.
+            holdStill([gr.id, "group:" + gr.id]);
+            toggleGroup(gr.id);
           });
         drawnGroup.set(gr.id, box);
       }
@@ -3026,7 +3468,7 @@ function createLiveMap(container, graph, options) {
    *  Mutates the geometry: each member's last point is moved back to the bar, which is what
    *  makes the lines meet rather than merely pass close to one another.
    */
-  function planJoins(g, vis, geometry) {
+  function planJoins(g, vis, geometry, allBoxes) {
     const member = new Set(), bars = new Map();
     const groups = new Map();
     for (const e of g.edges()) {
@@ -3037,7 +3479,8 @@ function createLiveMap(container, graph, options) {
       if (!pts || pts.length < 2) continue;
       const k = e.w + "|" + step;
       if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push({ key: e.v + " " + e.w + " " + e.name, pts, name: e.name });
+      groups.get(k).push({ key: e.v + " " + e.w + " " + e.name, pts, name: e.name,
+                           from: e.v, rule: (info && info.rule) || null });
     }
     for (const [k, list] of groups) {
       if (list.length < 2) continue;
@@ -3048,11 +3491,54 @@ function createLiveMap(container, graph, options) {
       const geo = junctionGeometry(target, list.map(m => m.pts[m.pts.length - 1]), 20,
                                    node && node.expandable ? 13 : 0);
       if (!geo) continue;
-      for (const m of list) {
+      // Each member finishes on the bar rather than at the junction point; see `junctionFeet`.
+      // Only the last few units of the edge change -- the long run stays whatever dagre routed.
+      const feet = junctionFeet(geo, list.map(m => m.pts[m.pts.length - 1]));
+      list.forEach((m, i) => {
         member.add(m.key);
-        m.pts[m.pts.length - 1] = geo.j;
-      }
-      bars.set(k, { geo, name: list[0].name, count: list.length });
+        const f = feet[i];
+        if (!f) { m.pts[m.pts.length - 1] = geo.j; return; }
+        // ONLY WHERE THERE IS ROOM FOR THE STUB. A premise sitting directly under its argument
+        // has a short, near-vertical route whose second-to-last point is already inside the
+        // twelve units the stub wants, so turning out to `lift` and back to `land` drew a hook
+        // -- the line went DOWN away from the bar and then up onto it. Visible at 7x on
+        // `pcs-supported-premise` as a small tick beside the arrow stem.
+        //
+        // Such an edge needs no help in any case: it is arriving perpendicular already, which is
+        // the whole point of the stub. So the stub is added where the approach is shallow enough
+        // to need it and skipped where it is not.
+        const prev = m.pts[m.pts.length - 2];
+        const room = prev ? (prev.x - f.land.x) * geo.out.x + (prev.y - f.land.y) * geo.out.y
+                          : Infinity;
+        if (room >= 14) { m.pts[m.pts.length - 1] = f.lift; m.pts.push(f.land); }
+        else m.pts[m.pts.length - 1] = f.land;
+      });
+      /* THE RULE IS NAMED ONCE, ON WHICHEVER BAR ACTUALLY STANDS FOR THE STEP.
+       *
+       * A step can end up drawn in two places at once, and the first version named it in both.
+       * Where a step's premises are titled they get boxes and arrive here as a junction; where
+       * its CONCLUSION is untitled it has no box, so the argument draws the conclusion inside
+       * itself with an inference bar above it. The observatory fixture is exactly that shape,
+       * and "Modus ponens" appeared twice ten pixels apart -- which reads as two inferences
+       * rather than as one seen from two sides.
+       *
+       * So the junction yields to the box. The bar above the conclusion is the better place: it
+       * has the conclusion under it, which is what a rule licenses, whereas the junction only
+       * has the premises going in.
+       */
+      const step = Number(k.slice(k.lastIndexOf("|") + 1));
+      const inBox = node && Array.isArray(node.pcs) && node.pcs.some(l =>
+        l && !l.drawn && l.step === step &&
+        (l.role === "main-conclusion" || l.role === "intermediary-conclusion"));
+      const named = inBox ? null : list.find(m => m.rule);
+      // The enclosure round this step's premises. `others` deliberately includes the ARGUMENT
+      // itself: a hull that reached up over its own conclusion would read as the conclusion
+      // being one of its premises, which is the shape of circularity.
+      const mine = new Set(list.map(m => m.from));
+      const hull = premiseHull(list.map(m => g.node(m.from)),
+                               (allBoxes || []).filter(b => !mine.has(b.id)));
+      bars.set(k, { geo, name: list[0].name, count: list.length, hull,
+                    rule: named ? named.rule : null });
     }
     return { member, bars };
   }
@@ -3061,6 +3547,30 @@ function createLiveMap(container, graph, options) {
     for (const [k, holder] of drawnJoin) {
       if (joins.bars.has(k)) continue;
       drawnJoin.delete(k); holder.remove();
+    }
+    // An enclosure goes when its step does, and also when the step survives but the enclosure
+    // has become impossible -- a fold can move a stranger into the middle of it.
+    for (const [k, r] of drawnHull) {
+      const info = joins.bars.get(k);
+      if (info && info.hull) continue;
+      drawnHull.delete(k); r.remove();
+    }
+    for (const [k, info] of joins.bars) {
+      if (!info.hull) continue;
+      let r = drawnHull.get(k);
+      if (!r) {
+        r = el("rect", { class: "alm-hull", rx: 10, ry: 10 });
+        r.appendChild(el("title"));
+        gHulls.appendChild(r);
+        drawnHull.set(k, r);
+      }
+      r.setAttribute("x", info.hull.x);
+      r.setAttribute("y", info.hull.y);
+      r.setAttribute("width", info.hull.width);
+      r.setAttribute("height", info.hull.height);
+      const t = r.querySelector("title");
+      if (t) t.textContent = info.count + " premises of one inference step" +
+                             (info.rule ? " — " + info.rule : "");
     }
     for (const [k, info] of joins.bars) {
       let holder = drawnJoin.get(k);
@@ -3081,8 +3591,39 @@ function createLiveMap(container, graph, options) {
       const line = holder.querySelector(".alm-join-bar");
       line.setAttribute("d", `M${bar[0].x},${bar[0].y}L${bar[1].x},${bar[1].y}`);
       line.setAttribute("stroke", rel.color);
+      /* THE RULE THE FILE NAMED, on the bar that is the step. `inference.inferenceRules` was
+       * parsed and read by nothing at all -- two rules named in Argdown's own `censorship`
+       * sample, one in `welcome to argdown`, and every one of them invisible.
+       *
+       * Set BESIDE the bar rather than along it. Text on the bar has to rotate with it, and a
+       * bar that runs vertically -- which is most of them, since dagre lays the map out
+       * bottom-to-top -- then carries a rule name turned on its side. Horizontal beside the end
+       * of the bar reads at any angle the bar takes, which is the same reason the junction's own
+       * geometry works in axis-aligned normals rather than in the raw direction.
+       */
+      let rt = holder.querySelector(".alm-join-rule");
+      if (info.rule) {
+        if (!rt) { rt = el("text", { class: "alm-join-rule", "font-size": 9 }); holder.appendChild(rt); }
+        // PAST THE END OF THE BAR AND ON THE BOX'S SIDE OF IT. Sitting level with the bar, the
+        // label lay across the member arriving at that end and across its direction chevron --
+        // three marks in one place. The far end is where the bar stops and the box has not yet
+        // begun, and `-out` is the only direction from there with nothing else in it.
+        const { out, half } = info.geo;
+        const far = bar[0].x >= bar[1].x ? bar[0] : bar[1];
+        // The way out along the bar, taken from the bar itself rather than from `dir` -- `dir`
+        // may point either way round and guessing its sign from x put the label back on top of
+        // the members on a vertical bar.
+        const ux = half > 0 ? (far.x - j.x) / half : 1;
+        const uy = half > 0 ? (far.y - j.y) / half : 0;
+        rt.setAttribute("x", far.x + ux * 5 - out.x * 6);
+        rt.setAttribute("y", far.y + uy * 5 - out.y * 6 + 3);
+        rt.setAttribute("text-anchor", (Math.sign(far.x - j.x) || 1) < 0 ? "end" : "start");
+        rt.setAttribute("fill", rel.color);
+        rt.textContent = info.rule;
+      } else if (rt) rt.remove();
       holder.querySelector("title").textContent =
-        info.count + " premises of one inference step — linked, so all of them are needed";
+        info.count + " premises of one inference step — linked, so all of them are needed" +
+        (info.rule ? "\n\nby " + info.rule : "");
     }
   }
 
@@ -3164,7 +3705,7 @@ function createLiveMap(container, graph, options) {
   }
 
   function clearAll() {
-    for (const m of [drawn, drawnEdge, drawnGroup, drawnDir]) {
+    for (const m of [drawn, drawnEdge, drawnGroup, drawnDir, drawnJoin, drawnHull]) {
       for (const [, e] of m) e.remove();
       m.clear();
     }
@@ -3235,6 +3776,99 @@ function createLiveMap(container, graph, options) {
     return overlapX < 40 || overlapY < 40;
   }
 
+  /* ---------------------------------------------- keeping the clicked control still
+   *
+   * EVERY FOLD RE-LAYS THE WHOLE MAP. dagre is given a different set of nodes and answers with a
+   * different arrangement, so the box whose badge was just pressed is somewhere else afterwards
+   * — and the reader, who is looking at their pointer, has to find it again. Measured over 130
+   * clicks on the 127-claim Tooming and Jakapi reconstruction, sections open, camera taken: the
+   * badge moved a median of 110px and a worst of 4,665px, which is off the screen and gone. 67
+   * of those 130 clicks moved it more than 100px. "Open a claim and shut it again" cost two
+   * hunts across the map.
+   *
+   * So the camera follows: the control that was clicked is put back where it was on the screen.
+   * Nothing about WHAT is drawn changes — this only writes view.x and view.y — so the fold state
+   * machine and its invariants are untouched by it.
+   */
+
+  /** Where a drawn box's fold badge sits on the screen, from the LAYOUT rather than from the DOM.
+   *
+   *  getBoundingClientRect was the obvious way and is wrong here: boxes glide on a 350ms
+   *  transition, so a rect read during one reports where the node still is and not where it is
+   *  going — and "open it and quickly close it again", the case this exists for, is exactly the
+   *  case where the previous glide has not finished. `lastG` holds the settled answer.
+   *
+   *  `edge` is which edge of the box the control sits on: the fold badge is drawn at the
+   *  bottom-centre, and a section's own box has no badge at all, so its bottom-centre is what
+   *  the block that replaces it is measured against. The claim-text "more" link is anchored on
+   *  the TOP instead, because that is where its title is and the text grows downwards from it.
+   */
+  function controlPoint(id, edge) {
+    const p = lastG && lastG.node(id);
+    if (!p || p.x == null || p.y == null || !p.height) return null;
+    const r = svg.getBoundingClientRect();
+    const gy = edge === "top" ? p.y - p.height / 2 : p.y + p.height / 2;
+    return { x: r.left + view.x + p.x * view.k, y: r.top + view.y + gy * view.k };
+  }
+
+  /** Remember where the control the reader just pressed is, so the next render can put it back.
+   *
+   *  `ids` is that control's own node first, then whatever will STAND IN for it once the fold
+   *  has happened — a section's block (`group:s2`) becomes the section's box (`s2`) when it is
+   *  opened, and the other way round when it is shut. The first id that resolves wins, at each
+   *  end independently, so one list covers both directions.
+   */
+  function holdStill(ids, edge) {
+    pin = null;
+    const r = svg.getBoundingClientRect();
+    for (const id of ids) {
+      const at = controlPoint(id, edge);
+      if (!at) continue;
+      // ONLY IF IT IS ON THE SCREEN. A pointer is by definition over the control it pressed, but
+      // the keyboard is not: tab moves focus through badges whatever the camera shows, nothing
+      // here scrolls to follow, and Enter on a badge off the edge of the pane would otherwise
+      // pin the view to a point nobody can see — and, because a pin overrides it, skip the
+      // re-framing that used to rescue exactly that case.
+      if (at.x < r.left || at.x > r.right || at.y < r.top || at.y > r.bottom) return;
+      pin = { ids, edge, x: at.x, y: at.y };
+      return;
+    }
+  }
+
+  /* GLIDE THE CAMERA IN STEP WITH THE BOXES, not before them. The boxes take `--alm-dur` to
+   * travel and the viewport transform is applied instantly, so moving the camera on its own
+   * slid the whole map sideways and then let the nodes catch up — the badge was under the
+   * pointer at the start and at the end and nowhere near it in between. With the same duration
+   * and the same easing on both, and only the translation changing, the two interpolations
+   * compose to a constant: the badge is under the pointer for every frame of the move.
+   *
+   * Temporary, never permanent: a transition left on the viewport makes dragging and wheel-zoom
+   * feel like treacle, so it is taken off again as soon as the move is over. Written once here
+   * because fitTo, centreOn, applyPin and spotlight all need exactly this and the four copies
+   * had already begun to be four chances to change one and not the others.
+   */
+  function glide() {
+    viewport.style.transition = `transform ${opt.duration}ms cubic-bezier(.4,0,.2,1)`;
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => { viewport.style.transition = ""; }, opt.duration + 40);
+  }
+
+  /** Put it back. Returns false if nothing it named survived the fold, so the caller can fall
+   *  through to the ordinary re-framing rather than leave the camera nowhere. */
+  function applyPin(p) {
+    let now = null;
+    for (const id of p.ids) { now = controlPoint(id, p.edge); if (now) break; }
+    if (!now) return false;
+    view.x += p.x - now.x;
+    view.y += p.y - now.y;
+    // The reader named a point to hold, which is a camera they chose; a later fold must not
+    // undo it. Same reasoning as `centreOn`.
+    userMoved = true;
+    glide();
+    applyView();
+    return true;
+  }
+
   function fitTo(w, h, apex) {
     // clientWidth/Height, not getBoundingClientRect: the rect is measured AFTER any CSS
     // transform, and reveal.js scales the whole slide to the window. Fitting to the scaled
@@ -3252,18 +3886,96 @@ function createLiveMap(container, graph, options) {
     // Better to stay legible and let the reader pan, or fold a Part away.
     const f = frameFor(w, h, cw, ch, opt.minScale, apex);
     view.k = f.k; view.x = f.x; view.y = f.y;
-    // Glide the camera rather than cutting to the new frame — but only here. A permanent
-    // transition on the viewport would make dragging and wheel-zoom feel like treacle.
-    viewport.style.transition = `transform ${opt.duration}ms cubic-bezier(.4,0,.2,1)`;
-    clearTimeout(fitTimer);
-    fitTimer = setTimeout(() => { viewport.style.transition = ""; }, opt.duration + 40);
+    glide();                      // rather than cutting to the new frame
     userMoved = false;
     applyView();
   }
+
+  /** PUBLIC: fill the frame with these nodes, and say where they ended up.
+   *
+   *  DIFFERENT FROM `centreOn` IN THE ONE WAY THAT MATTERS: it changes the zoom. `centreOn`
+   *  deliberately does not, because it serves a reader who chose their own zoom to read at and
+   *  would lose it to a search result. This serves the walkthrough, which is *pointing* — "that
+   *  badge, there" is not sayable at a zoom where the badge is nine pixels across — and the
+   *  walkthrough puts the reader's camera back when it is done.
+   *
+   *  Everything else is borrowed rather than rewritten: `reveal` unfolds whatever is hiding the
+   *  targets, `frameFor` decides the scale (the same floor, the same 1.4 ceiling, so a two-claim
+   *  map cannot be blown up to nonsense), and `glide` runs the move on the same curve and the
+   *  same duration as every other camera move in here.
+   *
+   *  `opts.pad` is slack in GRAPH units around the targets, so the thing being pointed at is not
+   *  jammed against the edge of the pane. `opts.topOnly` crops the target box to its first N
+   *  units of height: a section band in the Exposition view is hundreds of units tall and the
+   *  thing worth looking at — its name and its sparkline — is the top twenty of them.
+   *
+   *  Returns false when nothing named is drawn, so a caller can skip a step rather than talk
+   *  about something the reader cannot see.
+   */
+  function spotlight(ids, opts) {
+    opts = opts || {};
+    const want = new Set(ids || []);
+    if (!want.size || !lastG) return false;
+    // ONLY CLAIMS ARE UNFOLDED, and the distinction is not fussiness. `reveal` counts an id as
+    // shown by looking for it among the drawn NODES, so handing it the id of a section band —
+    // which is a group and lives nowhere in that list — sends it down its own escape hatch and
+    // it expands the entire map to go looking. Pointing at the header of a band that is already
+    // on the screen would have blown the Exposition view open to 127 boxes.
+    if (opts.reveal !== false) {
+      const claims = [...want].filter(id => (graph.nodes || []).some(n => n.id === id));
+      if (claims.length) reveal(claims);
+    }
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, found = 0;
+    for (const id of want) {
+      // The node itself if it is drawn; otherwise whatever block stands in for it, exactly as
+      // `centreOn` resolves it — a claim inside a folded section has no box of its own.
+      let p = lastG.node(id);
+      if (!p) {
+        const rep = lastVis.nodes.find(n => (n.members || []).includes(id));
+        if (rep) p = lastG.node(rep.id);
+      }
+      if (!p || p.x == null) continue;
+      found++;
+      x0 = Math.min(x0, p.x - p.width / 2); x1 = Math.max(x1, p.x + p.width / 2);
+      y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2);
+    }
+    if (!found) return false;
+    if (opts.topOnly) y1 = Math.min(y1, y0 + opts.topOnly);
+    const pad = opts.pad == null ? 40 : opts.pad;
+    x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+    const cw = container.clientWidth || 800;
+    const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
+    const ch = Math.max(80, (container.clientHeight || 500) - bar);
+    const f = frameFor(x1 - x0, y1 - y0, cw, ch, opt.minScale);
+    view.k = f.k;
+    view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
+    view.y = ch / 2 - ((y0 + y1) / 2) * view.k;
+    // The walkthrough asked for this camera; a fold performed as part of the tour must not
+    // re-frame it away underneath. Same reasoning as `centreOn`.
+    userMoved = true;
+    glide();
+    applyView();
+    return true;
+  }
   function attachZoom() {
     let dragging = false, sx = 0, sy = 0, down = null;
-    svg.addEventListener("wheel", ev => {
+    // THE WHEEL BELONGS TO THE WHOLE PANE, not to the drawing inside it. Attached to the SVG,
+    // zooming was refused over anything in the container that is not part of the SVG — which is
+    // the floating toolbar, a strip across the bottom that is 20 of 345 sampled points, about a
+    // sixteenth of the map. It also made the zoom depend on the SVG root's own empty area being
+    // hit-tested, which is a thing engines are entitled to differ about, and the report this
+    // fixes is of a pointer showing the pan cursor over background that would not zoom.
+    // Listening on the container removes the dependence: the rectangle the reader sees as "the
+    // map" is the rectangle the wheel works over.
+    container.addEventListener("wheel", ev => {
+      // ONE EXCEPTION. On a narrow window the toolbar becomes a strip that scrolls sideways
+      // (see the max-width:560px rule), and a wheel over a thing that scrolls belongs to that
+      // thing. Asked of the element rather than of the media query, so the two cannot drift.
+      const bar = ev.target && ev.target.closest && ev.target.closest(".alm-bar");
+      if (bar && bar.scrollWidth > bar.clientWidth + 1) return;
       ev.preventDefault();
+      // The SVG's own box, not the container's: `view` is written into the SVG's coordinate
+      // system, and the two differ the moment a host gives the container a border or padding.
       const r = svg.getBoundingClientRect();
       const mx = ev.clientX - r.left, my = ev.clientY - r.top;
       const f = ev.deltaY < 0 ? 1.12 : 1 / 1.12;
@@ -3473,7 +4185,11 @@ function createLiveMap(container, graph, options) {
       if (!fBox.childElementCount && vals.length) {
         const total = {};
         for (const n of graph.nodes || []) if (n.facet) total[n.facet] = (total[n.facet] || 0) + 1;
-        fBox.innerHTML = '<b title="Kinds of claim. Switch one off to take it off the map">kinds</b>'
+        // HASHTAGS, NOT "KINDS". Testers did not know what a "kind" was, and the word named
+        // nothing in the file: what the buttons list is whatever `#tags` the .argdown actually
+        // carries. The control already appears only when there are some -- `vals.length` above.
+        fBox.innerHTML = '<b title="Hashtags the file uses. Switch one off to take those claims '
+          + 'off the map. See Help for what #reported, #conceded and #contested mean.">hashtags</b>'
           + vals.map(v => `<button data-facet="${v}" data-count="${total[v] || 0}">${v}</button>`).join("");
       }
       fBox.querySelectorAll("button").forEach(b =>
@@ -3667,9 +4383,7 @@ function createLiveMap(container, graph, options) {
     view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
     view.y = ch / 2 - ((y0 + y1) / 2) * view.k;
     userMoved = true;             // the reader asked for this camera; a fold must not undo it
-    viewport.style.transition = `transform ${opt.duration}ms cubic-bezier(.4,0,.2,1)`;
-    clearTimeout(fitTimer);
-    fitTimer = setTimeout(() => { viewport.style.transition = ""; }, opt.duration + 40);
+    glide();
     applyView();
     return true;
   }
@@ -3720,7 +4434,7 @@ function createLiveMap(container, graph, options) {
 
   return {
     setState, getState, toggleGroup, toggleNode,
-    markClaims,
+    markClaims, spotlight,
     fit: () => fitTo(lastFit.w, lastFit.h),
     // The host calls this when a pane opens or closes. If the last render was measured blind, the
     // sizes have to be thrown away first — otherwise this redraws the slivers exactly as they are.
@@ -3760,7 +4474,18 @@ function injectStyle() {
 .alm-n.alm-k-opponent .alm-box{stroke:#cc3b3b}
 .alm-n.alm-k-survey .alm-box{stroke:#9a9a9a;stroke-dasharray:4 3}
 .alm-n.alm-k-survey .alm-title{font-style:italic}
-.alm-n.alm-k-group .alm-box{fill:var(--alm-group-bg,#f4f1e8);stroke:#8a7f6a;stroke-dasharray:4 3}
+/* A FOLDED SECTION IS MADE OF CLAIMS, so it is drawn like one. It used to be cream on brown
+   while everything inside it was white on slate, and testers read the difference as meaning
+   something -- then found it meant only "this is a section rather than an argument", which is
+   a distinction about the file rather than about the reasoning, and not one they wanted. Two
+   boxes that differ in colour should differ in kind; these do not.
+   The DASH stays, and now carries the whole distinction on its own: it says the box stands for
+   more than it shows, which is the one thing a reader does need to know.
+   It was also wrong in dark mode and could not be fixed there: the group rule outranks the
+   prefers-color-scheme:dark rule that repaints the ordinary box, so a folded section stayed
+   cream on a dark map. Inheriting the fill fixes both at once.
+   (No back-ticks in this comment -- the stylesheet is a template literal.) */
+.alm-n.alm-k-group .alm-box{stroke-dasharray:4 3}
 /* FIDELITY -- whose words the claim is in. Orthogonal to kind, so it takes the border while
    colour keeps carrying argumentative role. Solid = the source's own words; the line breaks
    up as the reconstruction moves further from them, and imputation -- a premise the
@@ -3774,6 +4499,18 @@ function injectStyle() {
 .alm-n.is-collapsed .alm-box{stroke-width:2}
 .alm-n .alm-title{fill:var(--alm-fg,#1a1a1a)}
 .alm-n .alm-text{fill:var(--alm-fg-dim,#555)}
+/* THE PREMISE-CONCLUSION STRUCTURE inside an argument's box. The numbers are quieter than the
+   text they index -- they are an apparatus for referring to the lines, not part of what the
+   argument says -- and a conclusion is set in the claim's own ink because it is the thing being
+   asserted, where a premise is what is being granted. */
+.alm-n .alm-pcs-num{fill:var(--alm-fg-faint,#9a9a9a);font-variant-numeric:tabular-nums}
+.alm-n .alm-pcs-text{fill:var(--alm-fg-dim,#555)}
+.alm-n .alm-pcs-row.is-conclusion .alm-pcs-text{fill:var(--alm-fg,#1a1a1a)}
+/* The inference bar. Solid and full-width, because what it says -- everything above this line
+   is a reason, what is below it is what follows -- is a claim about the argument's structure and
+   not an ornament. */
+.alm-n .alm-pcs-bar{stroke:var(--alm-fg-faint,#9a9a9a);stroke-width:1;fill:none}
+.alm-n .alm-pcs-rule{fill:var(--alm-fg-faint,#9a9a9a);font-style:italic}
 .alm-n:hover .alm-box{stroke-width:2.5}
 /* The circle is the one control that says "show / hide what argues for this". A closed one is
    filled and inviting; an open one is quiet, because most of the time you leave it alone. */
@@ -3783,6 +4520,13 @@ function injectStyle() {
 .alm-toggle.is-closed circle{fill:var(--alm-accent,#3a7bd5);stroke:var(--alm-accent,#3a7bd5)}
 .alm-toggle.is-closed text{fill:#fff}
 .alm-toggle:hover circle{stroke:#222;stroke-width:2}
+/* The badge's reach, in SCREEN pixels rather than graph units -- see paintNode. NO BACKTICKS IN
+   THIS BLOCK: it lives inside a template literal and one ends the string.
+   It has to beat the three rules above, all of which name .alm-toggle circle, so it names the
+   class as well and sits after them. pointer-events:all rather than relying on a transparent
+   paint counting as painted, which is true but is not the sort of thing to rest a control on. */
+.alm-toggle circle.alm-toggle-hit{fill:transparent;stroke:transparent;stroke-width:16;
+  vector-effect:non-scaling-stroke;pointer-events:all}
 .alm-more{cursor:pointer}
 .alm-more text{fill:var(--alm-accent,#3a7bd5);pointer-events:none}
 .alm-more:hover text{text-decoration:underline}
@@ -3871,6 +4615,17 @@ function injectStyle() {
 /* The hit area sits above the fold so the whole corner is clickable, not just the ink. */
 .alm-margin-hit{cursor:pointer}
 .alm-join-bar{fill:none;stroke-width:3.6;stroke-linecap:round}
+/* The rule name beside the bar. Italic and small: it names the LICENCE for the step, which is a
+   remark about the argument rather than a move in it. */
+.alm-join-rule{font-style:italic;opacity:.85;pointer-events:none}
+/* The enclosure round the premises of one inference step: the Rationale convention, which draws
+   what works together as one thing. A WASH WITH NO BORDER, deliberately -- a section's group box
+   is already a dashed rectangle, and a second bordered rectangle a few pixels away would read as
+   another section rather than as a different kind of grouping altogether. It takes no clicks:
+   the fold control belongs to the argument, and a second thing to click here would be a second
+   answer to a question that has one. */
+.alm-hull{fill:var(--alm-hull,rgba(58,157,93,.075));stroke:none;pointer-events:none}
+.alm-layer-hulls{pointer-events:none}
 .alm-join-stem{fill:none;stroke-width:1.6}
 /* A connection whose middle is folded away. Faint, because what it reports is real but partial:
    the two claims ARE related, and the claims that carry the relation are not on screen. */
@@ -3967,6 +4722,10 @@ function injectStyle() {
   .alm-toggle circle{fill:var(--alm-node-bg,#23262b)}
   .alm-n .alm-title{fill:var(--alm-fg,#e8e8e8)}
   .alm-n .alm-text{fill:var(--alm-fg-dim,#aaa)}
+  .alm-n .alm-pcs-text{fill:var(--alm-fg-dim,#aaa)}
+  .alm-n .alm-pcs-row.is-conclusion .alm-pcs-text{fill:var(--alm-fg,#e8e8e8)}
+  .alm-n .alm-pcs-num,.alm-n .alm-pcs-rule{fill:var(--alm-fg-faint,#7d7d7d)}
+  .alm-n .alm-pcs-bar{stroke:var(--alm-fg-faint,#7d7d7d)}
   .alm-bar{background:var(--alm-bar-bg,rgba(30,32,36,.94))}
 }`;
   document.head.appendChild(s);
@@ -4005,6 +4764,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               membersOfGroup, reduceFold,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
+              junctionFeet, pcsRows, premiseHull,
               seatInDocumentOrder, straightenDetours, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,

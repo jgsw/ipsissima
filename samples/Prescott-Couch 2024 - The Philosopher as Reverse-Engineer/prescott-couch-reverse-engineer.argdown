@@ -1,241 +1,764 @@
-// Alexander Prescott-Couch, "The Philosopher as Reverse-Engineer", Analysis 84.2 (2024),
-// pp. 368–384. Seventeen pages, ~5,900 words of prose. CC-BY 4.0.
+// Prescott-Couch, "The Philosopher as Reverse-Engineer" (Analysis 84.2, 2024) — a critical
+// notice of Matthieu Queloz, THE PRACTICAL ORIGINS OF IDEAS (2021).
 //
-// THE FORM, AT THE TOP. CONVERGENT OBJECTION TO A SCOPE CLAIM, which is the characteristic shape
-// of a book symposium and not on the usual list of forms. The paper does not try to refute
-// Pragmatic Genealogy; it grants that the method is valuable and argues that three separate
-// claims made FOR it are too strong. Each of §§2, 3 and 4 is an independent line, and the
-// verdict survives losing any one of them — so they hang as siblings, never as a chain.
+// TOP-LEVEL FORM: conductive. Three independent lines of objection are weighed, against
+// counterconsiderations the author concedes, to a hedged verdict — the method has limits, not
+// that it is useless — and that verdict is then used as evidence for a second, separately
+// argued conclusion about the worldview behind the method.
 //
-// AND THE FORMS INSIDE IT, which the top-level label does not describe:
-//   <Socratic Questioning Already Includes It>   two independent interweavings, then a levels
-//                                                argument that is the section's real weight
-//   <The Levels Argument>                        a DILEMMA: either the genealogy gives only a
-//                                                job description, or specifying content begs
-//                                                the question. Both horns are the author's
-//   <Genealogy Is Not Required>                  refutation by counterexample — Beitz does the
-//                                                historically-local functional work directly
-//   <The Atomism Limit>                          the positive half, and the paper's most
-//                                                original claim: not "unnecessary" but
-//                                                "structurally unable"
-//   <Intrinsic Value by Alchemy>                 a COUNTEREXAMPLE (praying to Jesus Christ)
-//                                                plus a charge of ad-hocness
-//
-// WHAT THE MAP MAKES VISIBLE THAT THE PROSE DOES NOT. The paper reads as a sequence of polite
-// hesitations. Drawn, §3's atomism argument and §4's constitutive-relations argument turn out to
-// be THE SAME OBJECTION arriving twice — that a method looking at concepts one at a time cannot
-// see relations that hold between them — and neither section says so. That convergence is
-// recorded in [atomism-and-constitution-converge], and it is the reconstruction's, not the
-// author's.
-//
-// THE SECOND CONTENTION IS THE ONE THE PAPER ENDS ON and the one a section-by-section reading
-// loses. §5 does not merely sum up: it says the limits matter BECAUSE they point at a
-// Weltanschauung that forces a choice between apologist and engineer. That is a different claim
-// from "the method has limits", and the paper's last paragraph is about it.
-//
-// TWO APEXES, AND THAT IS RIGHT FOR A BOOK SYMPOSIUM. [pragmatic-question] is Queloz's proposal
-// — the thing being examined — and [weltanschauung-constrains] is Prescott-Couch's own
-// conclusion. A critical notice properly has the target as a top-level node with the objections
-// running into it, and a map with only the critic's conclusion at the top would misreport the
-// genre.
-//
-// A NOTE ON WHOSE VIEW IS WHOSE. Queloz's positions are reported, not endorsed, and are tagged
-// #reported so the map can be read as "what is being objected to" against "the objection".
-// Untagged claims in the objection groups are Prescott-Couch's own.
-//
-// FIDELITY.
-//   quotation      the author's own words, checked against the converted source
-//   paraphrase     close restatement
-//   compression    (unmarked default) several sentences reduced to one claim
-//   interpretation a reading the text supports but does not state
-//   imputation     a premise the argument NEEDS but the author never states
-//
-// The source is the publisher's HTML snapshot with the PDF's pagination laid over it, so a
-// `section` here is the paper's own numbered heading and a page marker is the printed page.
+// The paper is a critical notice, so its sections and its objections coincide. What shows the
+// map is not a table of contents is where the wiring crosses the sections: §1's axiological
+// motivation is the "stingy axiology" of §4; §2's remark about constitutive and symbolic
+// connections is the premise §4 closes on; and §1, which offers no reason for the verdict at
+// all, is what supplies the object of the paper's LAST claim.
 
 ===
 title: Prescott-Couch 2024 — The Philosopher as Reverse-Engineer
 reconstruction:
+    generated: true
     aim: fit
-    unit: commitment
+    unit: meaning
     mode: coherence
     strength: ordinary
 defaults:
     chapter: "source/prescott-couch-2024-philosopher-as-reverse-engineer.md"
-    reviewed: "2026-08-23"
+    reviewed: "2026-08-27"
 ===
 
 # The verdict {isGroup: true}
 
-[limits-not-uselessness]: Pragmatic Genealogy is worth using for certain goals, but each of the three things claimed for it — that it can replace Socratic questioning, that it is required for answering the Pragmatic Question, and that it reconciles naturalism with humanism — is too strong.
-    {fidelity: "compression", section: "5. Conclusion", source: "\"I have raised some objections to different aspects of Queloz's discussion, but these objections, even if sound, do not show the method is useless. They only show that it has certain limits.\"", note: "The paper's own summary is two sentences; joining them into one contention, and naming the three limits it is a verdict on, is the reconstruction's. Doing so is what makes the three sections siblings rather than a sequence."}
-    + [socratic-cannot-be-replaced]
-    + [genealogy-not-required]
-    + [humanism-not-reconciled]
+[Turn to Pragmatic Genealogy sometimes]: Philosophers should turn to Pragmatic Genealogy sometimes, for certain goals.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"Should philosophers turn to Pragmatic Genealogy? Sometimes, for certain goals.\"", note: "ONE OF TWO CONTENTIONS. The paper answers its own title question here, and then, in its last paragraph, argues a further point about the worldview behind the method. Joining the two would assert a single thesis the paper never states; dropping either loses half its work."}
 
-[weltanschauung-constrains]: The limits matter because they point at the outlook behind Pragmatic Genealogy, which forces a choice between the role of the apologist and the role of the engineer — and a Williams-esque sensibility need not accept that choice.
-    {fidelity: "paraphrase", section: "5. Conclusion", source: "\"For it forces us to choose between the role of the apologist and the role of the engineer.\"", note: "A SECOND CONTENTION, not a restatement of the first. The paper's last paragraph moves from what the method cannot do to what its governing picture costs, and that move is the piece a section-by-section reading loses."}
-    + [limits-not-uselessness]
-    + [engineering-is-not-the-only-response]
+[The method has certain limits]: The objections raised against Queloz's discussion show only that Pragmatic Genealogy has certain limits.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"They only show that it has certain limits\"", note: "Not an apex. The paper uses this claim once more, as evidence that something is wrong with the Weltanschauung — so it is an intermediate conclusion, and the last paragraph is where the paper stops."}
 
-[engineering-is-not-the-only-response]: When we find problems with our practices, those problems need not be engineering problems.
-    {fidelity: "paraphrase", section: "5. Conclusion", source: "\"A Williams-esque sensibility might look for ways of responding to tensions and ambivalences besides trying to engineer them away.\""}
+[The method is not useless]: The objections raised, even if sound, do not show that Pragmatic Genealogy is useless. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"these objections, even if sound, do not show the method is useless\""}
 
-# What is being objected to {isGroup: true}
+[Turn to Pragmatic Genealogy sometimes]
+    <+ [The method has certain limits]
+    <+ [The method is not useless]
 
-[pragmatic-question]: Instead of orienting inquiry around the Socratic Question — what is X? — we should orient it around the Pragmatic Question: what is the point or purpose of our possessing the concept X? #reported
-    {fidelity: "paraphrase", section: "The Philosopher as Reverse-Engineer", note: "The paper's own statement of the view, in its opening. Emphasis in the original is dropped, which is why this is a paraphrase rather than a quotation."}
+# The worldview behind the method {isGroup: true}
 
-[genealogies-are-models]: A 'genealogy' in Queloz's sense is not an actual historical explanation but an idealised state-of-nature model that aims to illuminate the function of a conceptual practice. #reported
-    {fidelity: "paraphrase", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?", note: "Stated twice, once in the introduction and once at the head of §3. Both objections in §3 are objections to THIS, which is why it is wired to them rather than left as scene-setting."}
-    +> <Genealogy Is Not Required>
-    +> <The Atomism Limit>
+[The Weltanschauung]: We should not submit ourselves to the definitions of the concepts we have but rather construct those concepts for ourselves on the basis of our needs and wants. #reported
+    {fidelity: "quotation", pinpoint: "pp. 372, 383", source: "\"We should not submit ourselves to the definitions of the concepts we have but rather construct those concepts for ourselves on the basis of our needs and wants\"", note: "The paper states this view twice, eleven pages apart. Quoted here from p. 372, where the three motivations converge on it; the conclusion on p. 383 puts it again as a slogan about concepts being made for us, and that is the form the last argument turns against. An elision joining the two would bridge most of the paper, so only the first is quoted."}
 
-[craig-on-knowledge]: Craig's paradigm case reverse-engineers the function of the concept of knowledge — identifying good informants — from a state-of-nature story about a community that depends on others for information. #reported
-    {fidelity: "compression", section: "The Philosopher as Reverse-Engineer", note: "Six sentences of exposition reduced to one. The atomism objection works by contrast with it: Craig's story shows what a concept does ON ITS OWN, which is exactly the class of answer the objection says is not the only one."}
-    +> <The Atomism Limit>
+[The engineering Weltanschauung is constraining]: The Weltanschauung behind Pragmatic Genealogy is supposed to be liberating, but to Prescott-Couch it feels constraining.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"I believe this view is supposed to be liberating, but to me, it feels constraining.\"", note: "THE SECOND CONTENTION. The hedge is the author's own and is kept: he reports how the view strikes him, not that it is constraining tout court."}
 
-# The three motivations {isGroup: true}
+[The engineering Weltanschauung is constraining]
+    <+ [The method has certain limits]
 
-// NOT AN ARGUMENT, and drawing it as one would misreport the paper. §1 is a survey of why anyone
-// asks the Pragmatic Question at all, and the paper endorses none of the three. They are wired
-// to the contention nowhere; they support [pragmatic-question] as what makes it intelligible.
+[The Weltanschauung is liberating]: The Weltanschauung behind Pragmatic Genealogy is liberating. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"I believe this view is supposed to be liberating, but to me, it feels constraining.\"", note: "Drawn as a contradiction rather than an attack because liberating and constraining cannot both be true of the same picture. The quotation deliberately runs on into the second half of the sentence, which is the author's denial and is drawn as the contradicting claim: this half is what the view is supposed to be, not what he says it is."}
 
-[motive-metaphysical]: One motivation is metaphysical: anti-realism about a domain, which leaves us needing something else for the discourse to do if we wish to conserve it. #reported
-    {fidelity: "compression", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?"}
-    +> [pragmatic-question]
+[The Weltanschauung is liberating]
+    >< [The engineering Weltanschauung is constraining]
 
-[motive-axiological]: A second is axiological: that what is ultimately valuable is practical, so anything like knowledge can matter only derivatively. #reported
-    {fidelity: "compression", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?"}
-    +> [pragmatic-question]
+<The false choice between apologist and engineer>: The Weltanschauung constrains because it presents two roles as the only ones available, and a third response is available.
+    {fidelity: "compression", pinpoint: "p. 383"}
 
-[motive-methodological]: A third is methodological: we can get insight into how we should change our practices by seeing where they came from and what holds them in place. #reported
-    {fidelity: "paraphrase", section: "1. Why should we want to replace the Socratic Question with the Pragmatic Question?", source: "\"we can get insight into how we should change our practices by seeing where they came from and what holds them in place\""}
-    +> [pragmatic-question]
+<The false choice between apologist and engineer>
 
-# Objection I: the two questions cannot be prised apart {isGroup: true}
-
-[socratic-cannot-be-replaced]: Socratic questioning cannot be replaced by Pragmatic questioning; functional considerations deserve a modest place among others, not exclusive weight.
-    {fidelity: "paraphrase", section: "2. Can we replace the Socratic Question with the Pragmatic Question?", source: "\"It is better to take the more modest approach of considering functional claims within the context of other complementary and competing considerations, in the way that typical Socratic exchange unfolds.\""}
-    + <Socratic Questioning Already Includes It>
-    + <The Levels Argument>
-    // AND IT ATTACKS THE PROPOSAL ITSELF. Without this edge the background sat in its own
-    // island and the checker reported [pragmatic-question] as one of the paper's contentions,
-    // which inverts the paper: it is the thesis under examination, not a thing being argued for.
-    -> [pragmatic-question]
-
-<Socratic Questioning Already Includes It>
-
-// CONVERGENT, and the paper marks it: "First… Second…". Either interweaving alone embarrasses
-// the replacement proposal, so these are siblings and not a linked structure.
-
-(1) [already-includes]: A sophisticated approach to Socratic Questioning does not neglect considerations of how concepts help serve practical needs, but rather already includes them.
-    {fidelity: "quotation", source: "\"a sophisticated approach to Socratic Questioning does not neglect considerations of how concepts help serve practical needs, but rather already includes them\"", note: "Paul and Hall on causation is the worked example: fit with scientific practice, fit into a metaphysical theory, and the way science helps us practically are all among their criteria."}
-(2) [presupposes-socratic]: Answering many Pragmatic Questions requires independently answering philosophically substantive Socratic Questions.
-    {fidelity: "paraphrase", source: "\"So, it seems the answer to this Pragmatic Question presupposes answers to other Socratic Questions.\"", note: "Möllers on the separation of powers: 'individual self-determination' and 'collective self-determination' are not self-interpreting, and saying what they are is a Socratic exercise."}
+(1) [The Weltanschauung] #reported
+(2) [Forces a choice]: The Weltanschauung forces us to choose between the role of the apologist and the role of the engineer.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"it forces us to choose between the role of the apologist and the role of the engineer\""}
+(3) [A third response is available]: A Williams-esque sensibility might look for ways of responding to tensions and ambivalences besides trying to engineer them away.
+    {fidelity: "quotation", pinpoint: "p. 383", source: "\"A Williams-esque sensibility might look for ways of responding to tensions and ambivalences besides trying to engineer them away.\"", note: "The author's `might` is kept. He claims a third response is available, not that it succeeds."}
+(4) [Foreclosing an available response constrains]: A picture that presents two roles as the only ones available, when a third response is available, constrains rather than liberates.
+    {fidelity: "imputation", warrant: "enthymeme", pinpoint: "p. 383", note: "Never stated. The step from `it forces a choice` and `a third response is available` to `it constrains` does not go through without it, and the paragraph plainly relies on it."}
 -----
-(3) The two questions are interwoven, so one kind cannot be pursued as a general strategy in place of the other.
-    {fidelity: "interpretation", warrant: "enthymeme", note: "The paper says the two are interwoven and that this 'does not show that asking the Pragmatic Question is misguided'. The step from interweaving to 'not replaceable as a general strategy' is the reconstruction's, and it is what the section needs to reach its own conclusion."}
+(5) [The engineering Weltanschauung is constraining]
 
-<The Levels Argument>
+[A third response is available]
+    <+ [Problems need not be engineering problems]
 
-// A DILEMMA, and both horns are the author's own. This is the section's real weight and the
-// place where the paper stops conceding.
+[Problems need not be engineering problems]: When we resist the temptation to see society as built for us and find problems with our practices, those problems need not be engineering problems.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 383", source: "\"when we resist it, and find problems with our practices, must those problems be engineering problems?\"", note: "Put as a rhetorical question. The sentence that follows offers a way of responding that is not engineering, which fixes the intended answer as no."}
 
-(1) [job-description-only]: A genealogy of justice gives the broad job description of justice; it does not tell us how that job should be performed.
-    {fidelity: "paraphrase", source: "\"For all this genealogy tells us is the broad\"", note: "Quoted only as far as the emphasis in the source allows. The point is the concept/conception distinction the paper draws immediately after: a genealogy of the CONCEPT of justice is not the correct CONCEPTION of justice, which is what Socratic questions about justice aim at."}
-(2) [content-move-begs-the-question]: Specifying the content of morality or justice by asking which norm contents best serve human needs is an indirect means of begging some of the most central questions in moral and political philosophy.
-    {fidelity: "paraphrase", source: "\"taking the pragmatic approach in this context is just an indirect means of begging some of the most central questions in moral and political philosophy\"", note: "The second horn: the escape from the first requires seeing morality and justice as tools for promoting states of affairs, which is a contested first-order position rather than a method."}
-(3) [not-local-to-hume]: This is not a local problem with Hume's genealogy of justice: it arises whenever the Pragmatic Question is applied to a concept picking out a commonly accepted set of norms.
-    {fidelity: "paraphrase", source: "\"This is not a local problem with Hume's particular genealogy of justice.\"", note: "Load-bearing. Without it the dilemma is a remark about one example rather than about the method."}
+[Forces a choice]
+    <+ [The temptation is psychological]
+
+[The temptation is psychological]: There is a deep psychological temptation to think of society as built for us, and we should be cautious about giving into that temptation.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"There is a deep psychological temptation to think of society as built for us\"", note: "Two sentences joined. The second, `We should be cautious about giving into that temptation`, is the author's next sentence."}
+
+# What Pragmatic Genealogy is, and what motivates it {isGroup: true}
+
+[The Pragmatic Question replaces the Socratic]: Pragmatic Genealogists recommend that, in understanding important concepts, we orient our inquiry around the Pragmatic Question — what is the point or purpose of our possessing the concept X? — rather than around the Socratic Question, 'What is X?'. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 368", source: "\"we should instead orient our inquiry around the Pragmatic Question: what is the point or purpose of our possessing the concept X?\""}
+
+[Genealogies are state-of-nature models]: Genealogies, in Queloz's reconstruction, are idealized state-of-nature models that serve to help us understand the functions served by various conceptual practices. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 368", source: "\"idealized state-of-nature models that serve to help us understand the functions served by various conceptual practices\""}
+
+[Craig reverse-engineers knowledge]: Craig's genealogy reverse-engineers the function of our concept of knowledge, which is identifying good informants. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 369", source: "\"Craig's genealogy 'reverse-engineers' the 'function' of our concept of knowledge (identifying good informants)\""}
+
+[Genealogies are state-of-nature models]
+    <+ [Craig reverse-engineers knowledge]
+
+<The motivations converge on a Weltanschauung>: Three interconnected commitments motivate raising the Pragmatic Question, and together they amount to a picture of how we should stand to our concepts.
+    {fidelity: "compression", pinpoint: "pp. 370-372", note: "The three motivations are the author's own inventory, not Queloz's: n. 4 says his account only overlaps with Queloz's, which runs the pragmatic and the model-building advantages together where the author wants them split."}
+
+<The motivations converge on a Weltanschauung>
+
+(1) [The metaphysical motivation]: Raising the Pragmatic Question can be motivated by a metaphysical thesis: some brand of anti-realism with respect to a domain of discourse.
+    {fidelity: "quotation", pinpoint: "p. 370", source: "\"raising the Pragmatic Question can be motivated by a metaphysical thesis: some brand of anti-realism with respect to a domain of discourse\""}
+(2) [The axiological motivation]: The Pragmatic Question is sometimes motivated by a substantive axiological thesis: that what is ultimately valuable is 'practical' rather than, say, epistemic.
+    {fidelity: "paraphrase", pinpoint: "p. 371", source: "\"the Pragmatic Question is sometimes motivated by a substantive axiological thesis: that what is ultimately valuable is 'practical'\"", note: "The quotation stops at the footnote marker that interrupts the sentence; `rather than, say, epistemic` is the parenthesis that follows it."}
+(3) [The methodological motivation]: The Pragmatic Question is sometimes motivated by a methodological thesis: we can get insight into how we should change our practices by seeing where they came from and what holds them in place.
+    {fidelity: "quotation", pinpoint: "p. 371", source: "\"the Pragmatic Question is sometimes motivated by a methodological thesis: we can get insight into how we should change our practices by seeing where they came from and what holds them in place\""}
+(4) [The commitments interconnect]: The commitments are loosely interconnected into a broad Weltanschauung.
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"the commitments are loosely interconnected into a broad Weltanschauung\""}
 -----
-(4) On the questions that are practically pressing, the Pragmatic Question either misses what Socratic questioners are asking or answers it by assumption.
-    {fidelity: "interpretation", warrant: "coherence", note: "The paper states the two horns in successive paragraphs and never names the disjunction. Naming it is the reconstruction's, and it is what makes the section an argument rather than two complaints."}
+(5) [The Weltanschauung] #reported
 
-# Objection II: the tool is not required, and cannot do some of the work {isGroup: true}
+[The Weltanschauung]
+    <- [You need not share all three] #conceded
+    <+ [Sharing none makes you unsympathetic]
 
-[genealogy-not-required]: State-of-nature genealogies are neither necessary for the functional claims they are recommended for, nor able to capture a whole class of practical roles concepts have.
-    {fidelity: "compression", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?"}
-    + <Genealogy Is Not Required>
-    + <The Atomism Limit>
+[You need not share all three]: You do not need to share all these philosophical commitments to find Pragmatic Genealogy valuable. #conceded
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"you do not need to share all these philosophical commitments to find Pragmatic Genealogy valuable\"", note: "A counterconsideration, and the author's own: it tells against the claim that the approach rests on a single package, and he grants it before answering it."}
+    <+ [Queloz denies the axiological commitment]
 
-<Genealogy Is Not Required>
+[Queloz denies the axiological commitment]: Queloz argues that Pragmatic Genealogy is compatible with denying the axiological commitment, at least in some form. #reported
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"Queloz argues that Pragmatic Genealogy is compatible with denying the axiological commitment, at least in some form\""}
 
-// REFUTATION BY COUNTEREXAMPLE. Queloz claims state-of-nature stories are needed for
-// self-effacement and for historically local functionality; the section produces a case of each
-// done without them.
+[Sharing none makes you unsympathetic]: If you share none of these commitments, you are unlikely to be sympathetic to the approach.
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"if you share none of these commitments, you are unlikely to be sympathetic to the approach\""}
 
-(1) [self-effacement-without-models]: Sophisticated forms of consequentialism have self-effacing elements and rarely appeal to state-of-nature stories to articulate them.
-    {fidelity: "paraphrase", source: "\"there are many cases of philosophers articulating and defending claims about self-effacement and historically local functionality without the state-of-nature apparatus\""}
-(2) [beitz-does-it-directly]: Beitz's account of human rights is functional and historically local, and proceeds directly rather than through a state-of-nature story.
-    {fidelity: "compression", note: "The stronger of the two counterexamples, because historically local functionality is exactly what Queloz claims the apparatus is called for. The paper adds that the directness lets Beitz propose MORE subtle functions, not fewer."}
+[The scope of the approach may vary by concept]: Different philosophers might reasonably differ about the appropriate scope of Pragmatic Genealogy, finding it illuminating for some concepts and not others. #conceded
+    {fidelity: "paraphrase", pinpoint: "n. 10", source: "\"different philosophers might reasonably differ about the appropriate scope of Pragmatic Genealogy\""}
+
+[Sharing none makes you unsympathetic]
+    <- [The scope of the approach may vary by concept] #conceded
+
+# The philosophical project: can the Socratic Question be replaced? {isGroup: true}
+
+[Replace Socratic with Pragmatic Questioning]: One could, as a general philosophical strategy, replace Socratic Questions with Pragmatic Questions, as Pragmatic Genealogists recommend. #reported
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"one could, as a general philosophical strategy, replace Socratic Questions with Pragmatic Questions, as Pragmatic Genealogists recommend\""}
+    <- [Queloz does not recommend it in all cases] #conceded
+    <+ [The Pragmatic Question replaces the Socratic]
+    >< [Functional considerations deserve only a modest role]
+
+[Queloz does not recommend it in all cases]: Queloz does not recommend replacing Socratic Questions with Pragmatic Questions in all cases. #conceded
+    {fidelity: "paraphrase", pinpoint: "n. 11", source: "\"Queloz does not recommend doing this in all cases\"", note: "A scope correction the author makes about his own target, in a footnote, before pressing the objection."}
+
+<The two questions look separable>: What something is and what good it does are distinct, so the two kinds of questioning can be pursued independently. #reported
+    {fidelity: "compression", pinpoint: "p. 372", note: "The prima facie case, set out in order to be complicated: `However, things are not so simple`."}
+
+<The two questions look separable>
+
+(1) [Being and doing are distinct properties]: What something is and what good it does seem like distinct properties. #reported
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"what something is and what good it does seem like distinct properties\""}
+(2) [So the questions are distinct]: A question inquiring about what something is is distinct from a question inquiring about what good it does. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 372", source: "\"so a question inquiring about one is distinct from a question inquiring about the other\""}
 -----
-(3) The genealogical apparatus is not required for the claims it is recommended for.
-    {fidelity: "paraphrase"}
+(3) [Replace Socratic with Pragmatic Questioning] #reported
 
-[queloz-says-called-for]: Queloz does not hold the apparatus necessary, only that it is 'called for' in letting one explain and understand more. #reported #conceded
-    {fidelity: "paraphrase", section: "3. Does answering the Pragmatic Question require Pragmatic Genealogy?", source: "\"called for\"", note: "The author records this himself, from correspondence, and concedes it complicates the dialectic — leaving his own claim 'as a hypothesis'. Recorded as a scope limit on the objection rather than as a counter-argument, because that is how the paper treats it."}
-    -> <Genealogy Is Not Required>
+<Socratic Questioning has gone off the rails>: Analysis by intuition-fitting has become baroque, so the Socratic Question should give way to the Pragmatic Question. #reported
+    {fidelity: "compression", pinpoint: "pp. 369, 372, 376", note: "The pragmatists' motivating argument, assembled from three places where the author reports it: Craig's turn after post-Gettier analysis, the `back-and-forth of proposed analysis and counterexample` that makes pragmatists think philosophy has gone off the rails, and the set of assumptions he says runs through Queloz's discussion. It is reconstructed here because the paper's central diagnostic move undercuts it, and an undercut needs an inference to land on."}
 
-<The Atomism Limit>
+<Socratic Questioning has gone off the rails>
 
-// THE PAPER'S MOST ORIGINAL CLAIM, and the one the prose most understates: not "the tool is
-// unnecessary" but "the tool is structurally unable". LINKED — remove either premise and the
-// limit does not follow.
-
-(1) [genealogies-are-atomistic]: Pragmatic Genealogies examine the effects of possessing certain concepts in isolation rather than looking at them in their role within broader theories.
-    {fidelity: "paraphrase", source: "\"they examine the effects of possessing certain concepts in isolation rather than looking at them in their role within broader theories\""}
-(2) [indirect-roles-exist]: A concept can help us indirectly, by being an essential element of a broader theory that helps us as a whole — as 'work' might, by clarifying a social theory that lets us understand exploitation.
-    {fidelity: "compression", note: "Two worked cases, causation and 'work'. The 'work' case is the sharper one because it is about ENGINEERING a concept rather than explaining one we have, which is where the paper says the limit bites hardest."}
+(1) [Post-Gettier analyses became baroque]: As post-Gettier analyses of knowledge became increasingly baroque, Craig suggested that rather than asking what knowledge is, we should ask what the concept of knowledge does for us. #reported
+    {fidelity: "quotation", pinpoint: "p. 369", source: "\"As post-Gettier analyses of knowledge became increasingly baroque, Craig suggested that rather than asking what knowledge is, we should ask what the concept of knowledge does for us.\""}
+(2) [Analysis and counterexample look derailed]: The typical back-and-forth of proposed analysis and counterexample is the kind of thing that makes pragmatists think philosophy has gone off the rails. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 372", source: "\"the typical back-and-forth of proposed analysis and counterexample, the kind of thing that makes pragmatists think philosophy has gone off the rails\""}
+(3) [The assumed picture of Socratic Questioning]: A question of the form 'What is X?' needs to have as its answer a set of necessary and sufficient conditions for X, and that answer needs to be arrived at and justified by match to intuitive extension. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 376", source: "\"a particular kind of question ('What is X?') needs to have a particular kind of answer (a set of necessary and sufficient conditions for X), and this answer needs to be arrived at and justified by a particular method (match to intuitive extension)\"", note: "Attributed by the author to Queloz's discussion and to proponents of Pragmatic Genealogy generally, with the hedges `appear to run through` and `seem to be shared` — kept as the tag rather than in the text."}
 -----
-(3) [atomism-limit]: State-of-nature stories cannot show the indirect practical roles concepts have, so concentrating on them leaves out important ways conceptual practices help us.
-    {fidelity: "paraphrase", source: "\"State-of-nature stories do not help us understand such indirect practical roles for our concepts, so fixation on them ends up leaving out important ways in which conceptual practices may provide us with practical aid.\""}
+(4) [Replace Socratic with Pragmatic Questioning] #reported
 
-# Objection III: the humanism is not earned {isGroup: true}
+<Socratic Questioning need not take that form>: Questions of the form 'What is X?' need neither that kind of answer nor that method, so the derailment of intuition-fitting analysis is no reason to abandon the question.
+    {fidelity: "compression", pinpoint: "p. 376", note: "AN UNDERCUT, not an attack. The author does not deny that post-Gettier analysis became baroque; he denies that the Socratic Question is committed to the practice that became baroque, which is what would license replacing it."}
 
-[humanism-not-reconciled]: Neither self-effacement, nor Williams's theory of intrinsic value, nor the later account of blame reconciles Pragmatic Genealogy with a humanistic sensibility.
-    {fidelity: "compression", section: "4. Can sophisticated Pragmatic Genealogies reconcile naturalism and humanism?"}
-    + [self-effacement-misses-the-worry]
-    + <Intrinsic Value by Alchemy>
-    + [explanation-cannot-stay-inert]
-    + [constitutive-relations-neglected]
+<Socratic Questioning need not take that form>
 
-[self-effacement-misses-the-worry]: Self-effacement answers a worry about agents' attitudes, but the humanist's worry is about the instrumental explanation of why things matter — the pragmatist's stingy axiology.
-    {fidelity: "paraphrase", section: "4. Can sophisticated Pragmatic Genealogies reconcile naturalism and humanism?", source: "\"the pragmatist's stingy axiology\"", note: "The distinction the section turns on: an account can permit non-instrumental thinking while still holding that, at bottom, almost everything matters only instrumentally."}
-
-<Intrinsic Value by Alchemy>
-
-// A COUNTEREXAMPLE, then a charge of ad-hocness. The counterexample alone would establish that
-// the conditions are not sufficient; the ad-hocness charge is what makes resting the method's
-// humanistic credentials on them 'risky'.
-
-(1) [williams-conditions]: Queloz appeals to Williams's view that sense-making plus practical necessity are sufficient for something to have intrinsic value. #reported
-    {fidelity: "compression", note: "The two conditions are block-quoted in the source as (SM) and (PN); this compresses them, and the map does not need their wording to carry the objection."}
-(2) [jesus-counterexample]: A community's coherent and socially indispensable valuing of prayer to Jesus Christ would satisfy both conditions without prayer thereby having intrinsic value.
-    {fidelity: "paraphrase", source: "\"Does praying to Jesus Christ, therefore, have\"", note: "The quotation stops where the source's emphasis begins. The rhetorical question is the author's, and the answer he gives is 'It does not seem so'."}
-(3) [alchemy]: Concocting intrinsic value out of intrinsic valuing plus practical necessity is a kind of axiological alchemy, and the conjunction looks reverse-engineered in the bad sense.
-    {fidelity: "paraphrase", source: "\"More generally, there seems to be a kind of axiological alchemy in concocting intrinsic value from intrinsic valuing plus practical necessity\"", note: "The paper's own pun on its title, and the only place it turns the metaphor against the view. The quotation opens at `More generally` deliberately: without it the sentence reads as a standalone verdict, when it is a generalisation from the Jesus Christ case above it."}
+(1) [The assumed picture of Socratic Questioning] #reported
+(2) [Such questions need not have that answer]: Questions of the type 'What is X?' need not have an answer consisting of a set of necessary and sufficient conditions.
+    {fidelity: "paraphrase", pinpoint: "p. 376", source: "\"questions of this type need not have that kind of answer\""}
+(3) [Nor need they use that method]: Even where questions of this type do have such an answer, they need not arrive at or justify that answer using a method of intuition fitting.
+    {fidelity: "paraphrase", pinpoint: "p. 376", source: "\"even if they do, they need not arrive at/justify that answer using a method of intuition fitting\""}
 -----
-(4) Resting Pragmatic Genealogy's humanistic credentials on Williams's theory of intrinsic value is risky.
-    {fidelity: "paraphrase", source: "\"resting Pragmatic Genealogy's humanistic credentials on this view seems risky\""}
+(4) [The case for replacement rests on a caricature]: The confusion about the relation between Socratic and Pragmatic Questioning is generated by a set of assumptions about what a Socratic Question must answer and how, and those assumptions need not hold.
+    {fidelity: "compression", pinpoint: "p. 376", source: "\"I believe confusion around these points is generated by a set of assumptions that appear to run through Queloz's discussion\""}
 
-[explanation-cannot-stay-inert]: The later account of blame does not help: a causal explanation cannot do the normative work claimed for it without yielding reasons, and taking the instrumental benefits seriously creates pressure to re-engineer the practice.
-    {fidelity: "paraphrase", section: "4. Can sophisticated Pragmatic Genealogies reconcile naturalism and humanism?", source: "\"Taking instrumental considerations seriously creates pressure to reengineer our practices to make them more instrumentally valuable.\""}
-    + [dilemma-for-the-blame-move]
+<Socratic Questioning need not take that form>
+    _> <Socratic Questioning has gone off the rails>
 
-[dilemma-for-the-blame-move]: Either the instrumental benefits matter, and they generate re-engineering pressure the humanist objected to; or they do not, and Pragmatic Genealogy adds nothing to the humanist's toolkit.
-    {fidelity: "interpretation", warrant: "coherence", source: "\"it does not seem like Pragmatic Genealogy is adding much of anything to the humanist's toolkit, so it is not crucial to pursuing philosophy as a humanistic discipline, as Queloz claims\"", note: "The paper gives both horns in consecutive sentences and does not call it a dilemma. Naming it is the reconstruction's; without the name the second horn reads as a concession rather than as the other half of the trap."}
+## First challenge: the Socratic already contains the Pragmatic
 
-[constitutive-relations-neglected]: A focus on instrumental relations directs attention away from symbolic and constitutive relations among our values, which Pragmatic Genealogy by its nature cannot get a grip on.
-    {fidelity: "paraphrase", section: "4. Can sophisticated Pragmatic Genealogies reconcile naturalism and humanism?", source: "\"These are the kinds of relations that Pragmatic Genealogy, by its nature, does not have a way of getting a grip on and so, therefore, tends to neglect.\""}
+<Sophisticated Socratic Questioning already includes the Pragmatic>: A leading work of analytic metaphysics asks a Socratic question and counts practical payoff among its criteria, so the two kinds of questioning are not found apart.
+    {fidelity: "compression", pinpoint: "p. 372", note: "Refutation by counterexample: one worked case is enough to show that the two kinds of questioning are not in fact pursued separately."}
 
-# What the map shows and the paper does not {isGroup: true}
+<Sophisticated Socratic Questioning already includes the Pragmatic>
 
-[atomism-and-constitution-converge]: The atomism limit of §3 and the neglect of constitutive relations in §4 are the same objection arriving twice: a method that examines concepts one at a time cannot see relations that hold between them. #contested
-    {fidelity: "imputation", warrant: "coherence", note: "THE RECONSTRUCTION'S, NOT THE AUTHOR'S. The two arguments sit in different sections, are addressed to different claims, and the paper never connects them. Drawn side by side they share a premise — and if they do, the paper's strongest objection is a structural one made twice rather than two separate limits."}
-    +> [genealogy-not-required]
-    +> [humanism-not-reconciled]
+(1) [Paul and Hall ask a Socratic question]: Paul and Hall's book deals with the question 'What is causation?', a Socratic question if there ever was one. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 372", source: "\"deals with the question 'What is causation?' a Socratic question if there ever was one\""}
+(2) [They weigh more than intuitive fit]: Paul and Hall discuss a number of considerations relevant to a good analysis besides fit with intuitive case judgments. #reported
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"Paul and Hall discuss a number of considerations relevant to a good analysis besides fit with intuitive case judgments\""}
+(3) [Those considerations include practical payoff]: Among the considerations Paul and Hall weigh are fit with scientific practice, fit into a broader metaphysical theory, illuminating some aspect of scientific inquiry, and the way science helps us practically. #reported
+    {fidelity: "compression", pinpoint: "p. 372", source: "\"including (i) fit with scientific practice, (ii) fit into a broader metaphysical theory, (iii) illuminating some aspect of scientific inquiry\"", note: "The fourth item, `the way science helps us practically`, follows a footnote marker and is quoted separately in the source text; it is the item that carries the point."}
+-----
+(4) [Socratic Questioning already includes Pragmatic Questioning]: A sophisticated approach to Socratic Questioning does not neglect considerations of how concepts help serve practical needs, but rather already includes them.
+    {fidelity: "quotation", pinpoint: "p. 372", source: "\"a sophisticated approach to Socratic Questioning does not neglect considerations of how concepts help serve practical needs, but rather already includes them\""}
 
-[objections-are-not-exhaustive]: That these three limits are the only ones, or the most important ones, is never argued; the paper offers them as the objections it happens to have. #contested
-    {fidelity: "imputation", warrant: "convention", note: "A book symposium is not obliged to be exhaustive, which is why this is recorded as a limit on what the verdict can claim rather than as a fault. It matters because [limits-not-uselessness] reads as a considered verdict on the method, and what supports it is three particular objections."}
-    -> [limits-not-uselessness]
+[Socratic Questioning already includes Pragmatic Questioning]
+    <- [It includes them differently] #conceded
+
+[It includes them differently]: Sophisticated Socratic Questioning includes practical considerations in a way different from the way suggested by Pragmatic Genealogists. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 372", source: "\"it includes them in a way different from the way suggested by Pragmatic Genealogists\"", note: "The author's own `however`, and it cuts against him here: if the inclusion is different in kind, the counterexample shows less than it seems to. He answers it later by saying the difference is one of modesty (n. 15), which is the conclusion he wants anyway."}
+
+## Second challenge: Pragmatic Questions presuppose Socratic answers
+
+<Pragmatic Questions presuppose Socratic answers>: An illuminating pragmatic account of the separation of powers turns on ideals whose nature only Socratic inquiry can settle.
+    {fidelity: "compression", pinpoint: "p. 373", note: "Argument from a single worked example to a general claim about `many` Pragmatic Questions. The author's own scope word is kept."}
+
+<Pragmatic Questions presuppose Socratic answers>
+
+(1) [Möllers on the separation of powers]: According to Möllers, the division of powers into legislative, executive and judicial branches functions to help negotiate tensions between modern ideals of individual and collective self-determination. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"this division functions to help negotiate tensions between modern ideals of individual and collective self-determination\""}
+(2) [Self-determination ideals are not self-interpreting]: Ideals like individual and collective self-determination are not self-interpreting.
+    {fidelity: "quotation", pinpoint: "p. 373", source: "\"ideals like individual and collective self-determination are not self-interpreting\""}
+(3) [Understanding their nature is Socratic]: Understanding the nature of ideals like individual and collective self-determination is a paradigmatic Socratic exercise.
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"understanding their nature seems like a paradigmatic Socratic exercise\""}
+-----
+(4) [This Pragmatic Question presupposes Socratic answers]: The answer to the Pragmatic Question about the separation of powers presupposes answers to other Socratic Questions.
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"it seems the answer to this Pragmatic Question presupposes answers to other Socratic Questions\""}
+
+[Answering Pragmatic Questions often requires Socratic answers]: Posing and answering many Pragmatic Questions often requires independently answering philosophically substantive Socratic Questions.
+    {fidelity: "quotation", pinpoint: "p. 373", source: "\"posing and answering many Pragmatic Questions often requires independently answering philosophically substantive Socratic Questions\"", note: "The general claim is stated first and the separation of powers is offered to illustrate it, so it is drawn as a thesis the worked case supports rather than as a step inferred from the single case. The author's `many` and `often` are his."}
+    <+ [This Pragmatic Question presupposes Socratic answers]
+
+[Serving is not merely causal-functional]: The way the different branches of government serve the needs for collective and individual self-determination is not merely causal-functional; there are constitutive and symbolic connections between these institutions and these ideals that seem relevant.
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"there are other constitutive and symbolic connections between these institutions and these ideals that seem relevant\""}
+
+[Pragmatic Genealogy cannot illuminate constitutive relations]: Constitutive and symbolic connections are not things that Pragmatic Genealogies are in a good position to illuminate.
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"nor are they things that Pragmatic Genealogies are in a good position to illuminate\"", note: "Raised here in passing — `a point to which I will return` — and cashed out on p. 383. It is the one claim this map uses in two sections, which is why the paper's last objection is not a new one."}
+    <+ [Serving is not merely causal-functional]
+
+[Socratic theorizing discerns constitutive relations]: Constitutive and symbolic connections seem the kind of relations we are better able to discern in the process of broader Socratic theorizing.
+    {fidelity: "paraphrase", pinpoint: "p. 373", source: "\"they seem the kind of relations we are better able to discern in the process of broader Socratic theorizing\""}
+    <+ [Pragmatic Genealogy cannot illuminate constitutive relations]
+    +> [Answering Pragmatic Questions often requires Socratic answers]
+
+## Third challenge: the two questions operate at different levels
+
+<The genealogy of justice gives only a job description>: Hume's genealogy tells us what job justice does, and Socratic questions about justice ask how that job should be done.
+    {fidelity: "compression", pinpoint: "p. 374"}
+
+<The genealogy of justice gives only a job description>
+
+(1) [Hume on justice]: According to Hume, the artificial virtue of justice functions to prevent conflicts over resources in conditions of scarcity and limited benevolence. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"functions to prevent conflicts over resources in conditions of scarcity and limited benevolence\""}
+(2) [Only the job description]: All that Hume's genealogy of justice tells us is the broad job description of justice.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"all this genealogy tells us is the broad job description of justice\""}
+(3) [Not how the job is performed]: Hume's genealogy does not tell us how the job of justice should be performed.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"how that job should be performed\"", note: "The author's sentence here reads `it does not us tell us how that job should be performed` — a transposition in the printed text, so only the clean clause is quoted."}
+-----
+(4) [Concept, not conception]: We have a genealogy of the concept of justice, but what Socratic questions about justice often aim to illuminate is the correct conception of justice.
+    {fidelity: "quotation", pinpoint: "p. 374", source: "\"we have a genealogy of the concept of justice, but what Socratic questions about justice often aim to illuminate is the correct conception of justice\""}
+
+<Genealogies of norm concepts find only the effects of agreement>: For concepts that pick out commonly accepted norms, what a pragmatic genealogy identifies is the benefit of having agreed rules at all, which is not what the content question asks about.
+    {fidelity: "compression", pinpoint: "p. 374", note: "The generalisation of the Hume case: `This is not a local problem with Hume's particular genealogy of justice.`"}
+
+<Genealogies of norm concepts find only the effects of agreement>
+
+(1) [Concept, not conception]
+(2) [The issue is general]: This kind of issue arises whenever the Pragmatic Question is applied to concepts that pick out commonly accepted sets of norms, such as the concepts of morality and justice.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"this kind of issue arises in cases when the Pragmatic Question is applied to concepts that pick out commonly accepted sets of norms, such as the concepts of morality and justice\""}
+(3) [Norms coordinate by being agreed]: One thing that commonly accepted sets of norms typically do is coordinate behaviour and attenuate conflicts, by providing commonly accepted standards for resolving them.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"One thing that such norms typically do is coordinate behaviour and attenuate conflicts (by providing commonly accepted standards for resolving them)\""}
+(4) [Having agreed rules has effects]: Simply having commonly accepted standards, whatever their content, has certain beneficial effects.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"simple having commonly accepted standards, whatever their content, has certain beneficial effects\"", note: "The printed text reads `simple having`; the quotation reproduces it rather than correcting it, and the claim text says `Simply`, which is why this is a paraphrase."}
+(5) [Genealogy identifies only the effects of agreement]: What Pragmatic Genealogy often identifies as the function of such rules is simply the effects of having an agreed set of rules.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"what Pragmatic Genealogy often identifies as the function of these rules is simply the effects of having an agreed set of rules\""}
+(6) [Content effects are distinct]: The effects of having an agreed set of rules are distinct from the effects due to rules having a particular content.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"such effects are distinct from the effects due to rules having a particular content\""}
+(7) [Socratic Questioning targets content]: It is the right content of morality or justice that Socratic Questioning is aiming to identify.
+    {fidelity: "quotation", pinpoint: "p. 374", source: "\"it is the right content of morality or justice that Socratic Questioning is aiming to identify\""}
+-----
+(8) [The Pragmatic Question misses the key issue]: The Pragmatic Question is not really touching on the key issue that Socratic Questioners are grappling with.
+    {fidelity: "quotation", pinpoint: "p. 374", source: "\"the Pragmatic Question is not really touching on the key issue that Socratic Questioners are grappling with\""}
+
+<Specify content by looking at needs>: The content of morality or justice can itself be settled pragmatically, by asking how different norm contents would affect human needs. #contested
+    {fidelity: "compression", pinpoint: "p. 374", note: "An objection the author raises on the pragmatist's behalf — `Of course, one might try to…` — and then answers. Left as a sketch because the paper gives it a single sentence; its premises would be the reconstruction's, not the paper's."}
+
+[Content can be specified pragmatically]: One might approach specifying the content of morality or justice by looking at how various different norm contents would affect various human needs. #contested
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"one might try to approach specifying the content of morality or justice by looking at the way in which various different norm contents would affect various human needs\""}
+
+[The Pragmatic Question misses the key issue]
+    <- <Specify content by looking at needs>
+
+<The pragmatic route to content begs the question>: Settling the content of morality pragmatically requires consequentialist assumptions, so it does not offer a fresh alternative to Socratic argument but takes a side in it.
+    {fidelity: "compression", pinpoint: "p. 374", note: "AN UNDERCUT. It grants that the content of morality could be approached this way; what it denies is that doing so escapes the Socratic tradition, which is what the objection needed to show."}
+
+<The pragmatic route to content begs the question>
+
+(1) [Content can be specified pragmatically] #contested
+(2) [Requires controversial assumptions]: Approaching the content of morality or justice this way requires adopting some highly controversial assumptions about the nature of morality or justice.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"we would have to adopt some highly controversial assumptions about the nature of morality or justice\""}
+(3) [Morality as a tool for needs]: On such an approach we would see morality and justice as tools for the promotion of certain states of affairs, namely the satisfaction of various human needs.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"we would see morality and justice as tools for the promotion of certain states of affairs, namely the satisfaction of various human needs\""}
+(4) [Both structure and consequences are controversial]: Both the consequentialist structure of such a theory and the particular consequences to be promoted are highly controversial within discussions of these topics.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"both the consequentialist structure of such a theory, as well as the particular consequences to be promoted (needs satisfaction), are (obviously) highly controversial within discussions of these topics\""}
+-----
+(5) [Begging the central questions]: Taking the pragmatic approach in this context is just an indirect means of begging some of the most central questions in moral and political philosophy.
+    {fidelity: "quotation", pinpoint: "p. 374", source: "\"taking the pragmatic approach in this context is just an indirect means of begging some of the most central questions in moral and political philosophy\""}
+
+[A simplistic version of a well-trodden view]: Rather than offering a fresh approach that gets us away from pedantic Socratism, the pragmatic approach here gives us a simplistic version of a well-trodden view within the long Socratic tradition.
+    {fidelity: "paraphrase", pinpoint: "p. 374", source: "\"rather than offering a fresh approach that gets us away from pedantic Socratism, we just have a simplistic version of a well-trodden view within the long Socratic tradition\"", note: "The source marks this with `That is,` — a restatement of the question-begging charge in terms of what it costs the approach, so it is drawn as a claim that one supports rather than a second inference."}
+    <+ [Begging the central questions]
+    +> [Starting with functionality can beg questions]
+
+<The pragmatic route to content begs the question>
+    _> <Specify content by looking at needs>
+
+[The pragmatic approach ends up committed to consequentialism]: Applied to the content of morality or justice, the pragmatic approach ends up committed to consequentialism, and the normative role of functions within it cannot be distinguished from the role of consequences in consequentialist theories.
+    {fidelity: "paraphrase", pinpoint: "n. 19", source: "\"I do not see how this distinction can be maintained\""}
+    +> [A simplistic version of a well-trodden view]
+
+[Queloz distances Pragmatic Genealogy from consequentialism]: Queloz wishes to distance Pragmatic Genealogy from consequentialism. #reported
+    {fidelity: "paraphrase", pinpoint: "n. 19", source: "\"Queloz, who wishes to distance Pragmatic Genealogy from consequentialism\""}
+    >< [The pragmatic approach ends up committed to consequentialism]
+
+[Commitment to consequentialism is not itself an objection]: It is not necessarily an objection to the pragmatic approach that, when applied to the content of morality or justice, it ends up committed to consequentialism. #conceded
+    {fidelity: "quotation", pinpoint: "n. 19", source: "\"it is not necessarily an objection to the pragmatic approach that, when applied to the content of morality or justice, it ends up committed to consequentialism\"", note: "The author's own concession in the same footnote: consequentialism might be true, and the pragmatic approach might offer a novel argument in its favour. What makes the result damaging is Queloz's wish to distance the two, not the commitment as such."}
+
+[The pragmatic approach ends up committed to consequentialism]
+    <- [Commitment to consequentialism is not itself an objection] #conceded
+    <- [Queloz can restrict the approach] #conceded
+
+[Queloz can restrict the approach]: Queloz could deny that the pragmatic approach should be applied to the content of morality or justice, an option available to him because he claims not to see Pragmatic Genealogy as the One True Method. #conceded
+    {fidelity: "paraphrase", pinpoint: "n. 19", source: "\"another option would be to deny that the pragmatic approach should be applied to the content of morality or justice\"", note: "An escape route the author names and leaves open, rather than closing it. Recorded because leaving it out would make the objection look decisive."}
+
+## What the three challenges license
+
+<The case for a modest role>: Functional considerations are entangled with other theoretical questions and can smuggle substantive commitments in as method, so they belong among the other considerations rather than above them.
+    {fidelity: "compression", pinpoint: "p. 375", note: "CONDUCTIVE. The three challenges are convergent — each stands if the others fail — and the author's own concession that the interweaving does not show the Pragmatic Question misguided is weighed in as part of the argument, not treated as an objection to it."}
+
+<The case for a modest role>
+
+(1) [Socratic Questioning already includes Pragmatic Questioning]
+(2) [Answering Pragmatic Questions often requires Socratic answers]
+(3) [The Pragmatic Question misses the key issue]
+(4) [Interconnection does not show the Pragmatic Question misguided]: Noting that Socratic and Pragmatic questioning can be interconnected does not show that asking the Pragmatic Question is misguided. #conceded
+    {fidelity: "quotation", pinpoint: "p. 375", source: "\"Noting that Socratic and Pragmatic questioning can be interconnected does not show that asking the Pragmatic Question is misguided\""}
+(5) [Functional considerations may still be useful]: Considerations about the basic needs served by conceptual practices may be useful to consider when it comes to most philosophical questions. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 375", source: "\"considerations about the basic needs served by conceptual practices may be useful to consider, but I see little reason to give exclusive weight to functional considerations or to give them some superordinary role\"", note: "The quotation runs on into the author's own `but`, which is drawn separately as the next step of this argument. Cutting it off would make a concession look like an endorsement."}
+(6) [Functional considerations are interconnected with other issues]: In many cases the relevant functional considerations are interconnected with other theoretical issues.
+    {fidelity: "quotation", pinpoint: "p. 375", source: "\"in many cases, the relevant functional considerations are interconnected with other theoretical issues\""}
+(7) [Starting with functionality can beg questions]: Starting with functionality can be a way of begging substantive questions through the guise of methodology.
+    {fidelity: "quotation", pinpoint: "p. 375", source: "\"starting with functionality can be a way of begging substantive questions through the guise of methodology\""}
+-----
+(8) [No exclusive weight to functional considerations]: There is little reason to give exclusive weight to functional considerations or to give them some superordinary role.
+    {fidelity: "paraphrase", pinpoint: "p. 375", source: "\"I see little reason to give exclusive weight to functional considerations or to give them some superordinary role\""}
+
+[Functional considerations deserve only a modest role]: It is better to take the more modest approach of considering functional claims within the context of other complementary and competing considerations, in the way that typical Socratic exchange unfolds.
+    {fidelity: "quotation", pinpoint: "p. 375", source: "\"It is better to take the more modest approach of considering functional claims within the context of other complementary and competing considerations, in the way that typical Socratic exchange unfolds.\"", note: "The positive counterpart of the claim above it, in the author's next sentence: no exclusive weight, therefore a place among the other considerations. Drawn as a claim that one supports rather than as a further inference."}
+    <+ [No exclusive weight to functional considerations]
+
+[Functional considerations deserve only a modest role]
+    +> [The method has certain limits]
+
+# The tool: are state-of-nature models the way to answer the question? {isGroup: true}
+
+<State-of-nature stories are valuable>: State-of-nature stories earn their place because they let us understand self-effacing and historically inflected functionality better than we otherwise could. #reported
+    {fidelity: "compression", pinpoint: "p. 377", note: "Queloz's answer, to which he devotes a chapter, to the worry that the models are an analytical tool too many."}
+
+<State-of-nature stories are valuable>
+
+(1) [Genealogies are state-of-nature models] #reported
+(2) [They illuminate self-effacing functionality]: State-of-nature stories help us better understand cases in which, for a practice to serve its function, the agents must possess autonomous motives to engage in it. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"cases in which for a practice to serve its function, the agents must possess autonomous motives to engage in it\""}
+(3) [They illuminate historically inflected functions]: State-of-nature stories help us better understand more complex, historically inflected functional relations, ones in which a practice has a number of different functions and serves a variety of historically local needs. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"they help us better understand more complex, historically inflected functional relations, ones in which a practice has a number of different functions and serves a variety of historically local needs\""}
+-----
+(4) [State-of-nature stories are worth their place]: State-of-nature stories are valuable for answering the Pragmatic Question. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"Queloz says there are two reasons that such state-of-nature stories are valuable\""}
+
+[One analytical tool too many]: A state-of-nature story might be one analytical tool too many.
+    {fidelity: "quotation", pinpoint: "p. 376", source: "\"A state-of-nature story might be one analytical tool too many.\"", note: "The same worry is put in the introduction, of Craig: `do we really need an elaborate state-of-nature story to make the point that our concept of knowledge can function to flag good informants?` The author's `might` is his, and is kept."}
+    <+ [Functions can be found without the stories]
+    <+ [Claims about self-effacement are made without the apparatus]
+    <- [State-of-nature stories are worth their place]
+    +> [The tool is more limited than Queloz suggests]
+
+[Functions can be found without the stories]: In many cases the potential functions of a concept seem intuitively obvious, and they can be vindicated by showing that the functional hypothesis can explain many features of the concept.
+    {fidelity: "paraphrase", pinpoint: "p. 376", source: "\"In many cases, the potential functions seem intuitively obvious, and they can be vindicated by showing that the functional hypothesis can explain many features of the concept.\""}
+
+<Philosophers make these points without the apparatus>: Self-effacement and historically local functionality are articulated and defended in the literature without any state-of-nature story.
+    {fidelity: "compression", pinpoint: "pp. 377-378", note: "Refutation by counterexample, twice over and convergently: consequentialism answers to the first of Queloz's two reasons, Beitz to the second. The author's own hedge is that a full defence `would take us too far afield`, so he offers the cases rather than the defence."}
+
+<Philosophers make these points without the apparatus>
+
+(1) [Consequentialism is self-effacing without the apparatus]: Sophisticated forms of consequentialism have self-effacing elements, but few appeal to state-of-nature stories to articulate and defend such views.
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"sophisticated forms of consequentialism have self-effacing elements, but few appeals to state-of-nature stories to articulate and defend such views\"", note: "The printed text reads `but few appeals to state-of-nature stories`; the quotation keeps it and the claim text reads `few appeal`."}
+(2) [Self-effacement can be stated directly]: It seems you can make points about self-effacement directly, simply by stating that for a practice to achieve its function, participants may not or cannot be thinking about the ultimate aim of the practice much of the time.
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"It seems you can make points about self-effacement directly, for example, simply by stating that for a practice to achieve its function, participants may not or cannot be thinking about the ultimate aim of the practice much of the time.\"", note: "The author's `It seems` is kept in the claim: this whole line of objection is withdrawn to a hypothesis a page later, and the hedge is where the withdrawal starts."}
+(3) [Beitz's account is historically local]: Beitz thinks that the concept of human rights is important given certain historically contingent circumstances. #reported
+    {fidelity: "quotation", pinpoint: "p. 377", source: "\"Beitz thinks that the concept of human rights is important given certain historically contingent circumstances\""}
+(4) [Beitz proceeds directly]: Rather than proceeding via an historically-inflected state-of-nature story, Beitz proceeds in a more direct way. #reported
+    {fidelity: "quotation", pinpoint: "p. 377", source: "\"rather than proceeding via an historically-inflected state-of-nature story, Beitz proceeds in a more direct way\""}
+(5) [Directness enables more subtle functions]: The more direct approach enables Beitz to propose more subtle, theoretically complex kinds of functions for human rights practice.
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"the more direct approach enables him to propose more subtle, theoretically complex kinds of functions for human rights practice\""}
+-----
+(6) [Claims about self-effacement are made without the apparatus]: There are many cases of philosophers articulating and defending claims about self-effacement and historically local functionality without the state-of-nature apparatus.
+    {fidelity: "quotation", pinpoint: "p. 377", source: "\"there are many cases of philosophers articulating and defending claims about self-effacement and historically local functionality without the state-of-nature apparatus\""}
+
+[Directness enables more subtle functions]
+    <+ [Directness handles the complexity]
+
+[Directness handles the complexity]: Beitz's directness does not prevent him from dealing with the complexities of multiple, historically local functions that various aspects of human rights practice serve.
+    {fidelity: "paraphrase", pinpoint: "p. 377", source: "\"this directness does not prevent him from dealing with the complexities of multiple, historically local functions that various aspects of human rights practice serve\""}
+
+<Philosophers make these points without the apparatus>
+    -> <State-of-nature stories are valuable>
+
+<Queloz claims only that genealogy is called for>: Queloz's claim is that the genealogical apparatus lets one explain and understand more, not that it is necessary, and cases where philosophers manage without it do not tell against that. #conceded
+    {fidelity: "compression", pinpoint: "p. 378", note: "AN UNDERCUT THE AUTHOR TURNS ON HIMSELF, and the reason it is drawn as one: it grants every counterexample and denies that they license the conclusion, because the target claim was never a necessity claim. He records it and then withdraws the objection to the status of a hypothesis rather than pressing it."}
+
+<Queloz claims only that genealogy is called for>
+
+(1) [Queloz does not claim necessity]: Queloz does not hold that Pragmatic Genealogy is necessary for making claims about self-effacement. #conceded
+    {fidelity: "quotation", pinpoint: "p. 378", source: "\"Queloz does not hold that Pragmatic Genealogy is necessary for making claims about self-effacement\""}
+(2) [Genealogy is called for]: Queloz holds that Pragmatic Genealogy is 'called for' in that it allows one to 'explain and understand more' about cases of self-effacement and local functionality. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"he holds that it is 'called for' in that it allows one to 'explain and understand more' about cases of self-effacement and local functionality\""}
+(3) [The details would have to be examined]: One would need to look at the details of the philosophical projects mentioned to show that adding in the genealogical apparatus would not enable them to explain more. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"one would need to look at the details of the philosophical projects I mention here to show that adding in the genealogical apparatus would not enable them to explain more\""}
+-----
+(4) [The unnecessity claim is left as a hypothesis]: Prescott-Couch leaves the claim that state-of-nature stories are unnecessary as a hypothesis rather than establishing it. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"I, therefore, leave this as a hypothesis.\"", note: "The paper raises this line of objection over a page and a half and then drops it. Recording the dropping is what keeps the map from claiming more for the argument than the paper does."}
+
+<Queloz claims only that genealogy is called for>
+    _> <Philosophers make these points without the apparatus>
+
+## What the models cannot do
+
+<Pragmatic Genealogies assess concepts atomistically>: Because state-of-nature models look at a concept in isolation, they cannot see the practical good a concept does through its place in a theory.
+    {fidelity: "compression", pinpoint: "p. 378", note: "The turn the paper makes at `let us leave these arguments aside`: from what the models are not needed for, to what they are not able to do. This is the argument that survives the concession above."}
+
+<Pragmatic Genealogies assess concepts atomistically>
+
+(1) [Genealogies assess atomistically]: Pragmatic Genealogies suggest an atomistic assessment of our conceptual practices.
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"they suggest an atomistic assessment of our conceptual practices\""}
+(2) [Concepts examined in isolation]: Pragmatic Genealogies examine the effects of possessing certain concepts in isolation rather than looking at them in their role within broader theories.
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"they examine the effects of possessing certain concepts in isolation rather than looking at them in their role within broader theories\""}
+(3) [Concepts can help indirectly]: A concept may help us practically in indirect ways, by clarifying aspects of scientific inquiry, or by being an essential element in a broader theory that, as a whole theory, helps us.
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"there are other, more indirect ways in which the concept of causation might help us practically: for example, by helping us clarify aspects of scientific inquiry... by being an essential element in a broader philosophy of science or metaphysical theory that, as a whole theory, helps us\"", note: "An elision within one sentence: the omitted span is the parenthetical example about drawing causal conclusions from statistical data."}
+(4) [State-of-nature stories miss indirect roles]: State-of-nature stories do not help us understand such indirect practical roles for our concepts.
+    {fidelity: "quotation", pinpoint: "p. 378", source: "\"State-of-nature stories do not help us understand such indirect practical roles for our concepts\""}
+-----
+(5) [Fixation leaves out practical aid]: Fixation on state-of-nature stories ends up leaving out important ways in which conceptual practices may provide us with practical aid.
+    {fidelity: "paraphrase", pinpoint: "p. 378", source: "\"fixation on them ends up leaving out important ways in which conceptual practices may provide us with practical aid\""}
+
+<A genealogical model could be contrived>: A state-of-nature model could after all be built for a concept whose value runs through a theory, by imagining a community that has the theory and then acquires the concept. #contested
+    {fidelity: "compression", pinpoint: "n. 25", note: "The author raises the objection against himself in a footnote and answers it there. Left as a sketch: the footnote states the possibility and its answer, and giving the possibility premises would be the reconstruction's work."}
+
+[One could imagine such a community]: One could imagine a community that had all the aspects of the relevant scientific, social or metaphysical theory but lacked the relevant concept, and then note the improved practical situation of the individuals after the concept was introduced. #contested
+    {fidelity: "paraphrase", pinpoint: "n. 25", source: "\"One could imagine a community that had all the aspects of the relevant scientific, social or metaphysical theory but lacked the relevant concept\""}
+
+[A genealogical model could explain indirect functions]: One could construct a genealogical model that would explain the function of such concepts via their role in clarifying practically helpful theories. #contested
+    {fidelity: "paraphrase", pinpoint: "n. 25", source: "\"This is not to say that one could not construct a genealogical model that would 'explain' the function of such concepts via their role in clarifying practically helpful theories.\"", note: "The source states this as a double negative — what the author declines to say — so the claim text puts it positively and the quotation keeps the original form."}
+    <+ [One could imagine such a community]
+
+[State-of-nature stories miss indirect roles]
+    <- <A genealogical model could be contrived>
+
+<The apparatus does no work in a contrived model>: Even in such a model the state-of-nature machinery is idle, because everything is settled by a fit between concept and theory that is in place before the story begins.
+    {fidelity: "compression", pinpoint: "n. 25", note: "AN UNDERCUT. It concedes that the model can be built and denies that building it shows the apparatus does anything."}
+
+<The apparatus does no work in a contrived model>
+
+(1) [A genealogical model could explain indirect functions] #contested
+(2) [The apparatus does no work]: In such a contrived model, the apparatus of the state-of-nature is not really doing any important work.
+    {fidelity: "quotation", pinpoint: "n. 25", source: "\"in such a contrived model, the apparatus of the state-of-nature is not really doing any important work\""}
+(3) [The fit does the work]: All the work would be done by the fit between the concept and the theories possessed by the agents independently of and prior to the concept's introduction.
+    {fidelity: "paraphrase", pinpoint: "n. 25", source: "\"All the work would be being done by the fit between the concept and the theories possessed by the agents independently of and prior to the concept's introduction.\""}
+-----
+(4) [The contrived model vindicates nothing]: That such a model could be contrived does not show that state-of-nature stories help us understand indirect practical roles for our concepts.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "n. 25", note: "The footnote states the two premises and leaves the conclusion to the reader; drawing it is what makes the footnote an answer to the objection it raises."}
+
+<The apparatus does no work in a contrived model>
+    _> <A genealogical model could be contrived>
+
+<Conceptual engineering needs the indirect roles>: Engineering a concept to fit a theory is a project whose point is invisible to a model that looks at the concept alone.
+    {fidelity: "compression", pinpoint: "p. 379", note: "The author's `Whatever the merits of this account` is why the Marxist conception is tagged as reported: it is used to fix the KIND of account at issue, not endorsed."}
+
+<Conceptual engineering needs the indirect roles>
+
+(1) [Engineering makes the point pressing]: The point about indirect practical roles becomes particularly important when we want to engineer our concepts, not merely explain why we have the concepts we have.
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"This point becomes particularly important, I believe, when we want to engineer our concepts, not merely explain why we have the concepts we have.\""}
+(2) [A Marxist concept of work]: The most benefit might come from a concept of work engineered so as to integrate into and clarify Marxist social theory, for example a conception of work tied to the production of surplus value. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"you might think that the most benefit would come from a concept that would be engineered in a way that would integrate into and clarify Marxist social theory, for example, a conception of work tied to the production of surplus value\""}
+(3) [Isolated, the benefit is invisible]: Viewed in isolation from the broader theory, it is hard to see the benefit of engineering the concept of work in that way.
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"Viewed in isolation of this broader theory, it is hard to see the benefit of engineering the concept in this way.\""}
+(4) [The benefit is indirect]: Such a concept might help us indirectly by clarifying aspects of a practically beneficial social theory. #reported
+    {fidelity: "quotation", pinpoint: "p. 379", source: "\"such a concept might help us indirectly by clarifying aspects of a practically beneficial social theory\""}
+-----
+(5) [Genealogy cannot understand such accounts]: An account of a concept's practical benefits that runs through its role in a broader theory is not the kind of account that a pragmatic genealogical model helps us to understand.
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"it is not the kind of account that a pragmatic genealogical model helps us to understand\""}
+
+[The tool is more limited than Queloz suggests]: Pragmatic Genealogy is a more limited tool than Queloz's discussion suggests.
+    {fidelity: "paraphrase", pinpoint: "p. 370", source: "\"argue that this tool is more limited than Queloz's discussion suggests\"", note: "Quoted from the paper's own statement of what section 3 will do; the section delivers it rather than restating it."}
+    <+ [Fixation leaves out practical aid]
+    <+ [Genealogy cannot understand such accounts]
+    +> [The method has certain limits]
+
+# The humanistic credentials {isGroup: true}
+
+[There is more to life than basic needs]: There is more to human life than finding the means to the satisfaction of basic needs. #reported
+    {fidelity: "quotation", pinpoint: "p. 379", source: "\"there is more to human life than finding the means to the satisfaction of basic needs\"", note: "The humanistic sensibility's claim, reported by the author, who then argues on its behalf without asserting it in his own voice."}
+
+[It seems overly instrumentalist]: Pragmatic Genealogy seems overly instrumentalist in orientation. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"it seems (i) overly 'instrumentalist' in orientation\"", note: "The first of the three ways the paper says Pragmatic Genealogy seems un-humanistic. Queloz's replies attack it; the author's answers to those replies leave it standing, and that is what the section contributes to the verdict."}
+    <+ [There is more to life than basic needs]
+    <+ [Self-effacement does not answer the concern]
+    <+ [Explanation does not alleviate the tension]
+    <- [The instrumentalism concern is answered]
+    <- [Instrumental considerations complement humanism]
+    +> [The method has certain limits]
+
+[It seems insensitive to things that matter]: Pragmatic Genealogy seems insensitive to things that matter. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"(ii) insensitive to things that matter\"", note: "The second of the three. The third, that Pragmatic Genealogy fails to take seriously historical difference, is named and then not discussed."}
+    <+ [There is more to life than basic needs]
+    <+ [The humanist prizes rarefied values]
+    <+ [Resting the credentials on Williams is risky]
+    <+ [The neglect should give the humanist pause]
+    <- [Genealogy can vindicate intrinsic values]
+    +> [The method has certain limits]
+
+[The third concern is not pursued]: The concern that Pragmatic Genealogy fails to take seriously historical difference is raised and then not discussed. #conceded
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"I'll discuss the first two concerns.\"", note: "Three concerns are named; two are pursued. Recorded so the section's conclusion is not read as answering all three."}
+
+<Self-effacement answers instrumentalism>: Pragmatic Genealogy can account for practices whose benefits require that participants not think instrumentally, so it does not impose an instrumental outlook. #reported
+    {fidelity: "compression", pinpoint: "pp. 379-380", note: "Queloz's reply to the first of the three humanistic concerns."}
+
+<Self-effacement answers instrumentalism>
+
+(1) [Genealogy does not require instrumental thinking]: Even if Pragmatic Genealogies provide us with instrumental reasons for valuing our conceptual practices, the method does not require that individuals think in an instrumental way. #reported
+    {fidelity: "quotation", pinpoint: "p. 379", source: "\"even if Pragmatic Genealogies provide us with instrumental reasons for valuing our conceptual practices, the method does not require that individuals think in an instrumental way\""}
+(2) [Benefits may require non-instrumental thinking]: It might be that these instrumental benefits can only be achieved if individuals do not think in a merely instrumental way. #reported
+    {fidelity: "quotation", pinpoint: "p. 379", source: "\"it might be that these instrumental benefits can only be achieved if individuals do not think in a merely instrumental way\""}
+(3) [Genealogy accounts for self-effacement]: Pragmatic Genealogy can account for self-effacing conceptual practices. #reported
+    {fidelity: "quotation", pinpoint: "p. 379", source: "\"Pragmatic genealogy can account for self-effacing conceptual practices.\""}
+-----
+(4) [The instrumentalism concern is answered]: The humanist's concern about instrumentalism is met. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 379", source: "\"Queloz argues these concerns rest on an overly simplistic understanding of Pragmatic Genealogy\""}
+
+<The concern is about the explanation, not the attitude>: What troubles the humanist is the pragmatist's account of what ultimately matters, which self-effacement leaves exactly where it was.
+    {fidelity: "compression", pinpoint: "p. 380", note: "AN UNDERCUT. Every premise of Queloz's reply is granted — self-effacement is real and the method permits it — and what is denied is that granting them touches the concern, which was never about how agents think."}
+
+<The concern is about the explanation, not the attitude>
+
+(1) [The concern is not about attitude]: The concern with instrumentalism is not just with an instrumentalist attitude on the part of agents.
+    {fidelity: "quotation", pinpoint: "p. 380", source: "\"The concern with instrumentalism is not just with an instrumentalist attitude on the part of agents.\""}
+(2) [The concern is about the explanation]: The humanist's concern is with the instrumental explanation of why things matter.
+    {fidelity: "paraphrase", pinpoint: "p. 380", source: "\"the instrumental explanation of why things matter\""}
+(3) [The stingy axiology]: At bottom, most of the things we care about matter only instrumentally, even if we need to think otherwise to prevent disaster.
+    {fidelity: "quotation", pinpoint: "p. 380", source: "\"At bottom, most of the things we care about matter only instrumentally, even if we need to think otherwise to prevent disaster.\"", note: "MOST, not all. The pragmatist's claim as the author states it is restricted, and the restriction is what makes it an axiology rather than a slogan."}
+-----
+(4) [Self-effacement does not answer the concern]: Appealing to the way our conceptual practices can be self-effacing does not fully answer the humanist's concern.
+    {fidelity: "paraphrase", pinpoint: "p. 380", source: "\"I do not think appealing to the way that our conceptual practices can be self-effacing fully answers the humanist's concern\"", note: "The author's `fully` is kept: the appeal answers part of the concern."}
+
+<The concern is about the explanation, not the attitude>
+    _> <Self-effacement answers instrumentalism>
+
+[The stingy axiology]
+    <+ [The axiological motivation]
+    >< [The humanist prizes rarefied values]
+
+[The humanist prizes rarefied values]: The humanist sensibility typically prides itself on sensitivity to a wide variety of, sometimes rarefied, values. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 380", source: "\"which typically prides itself on sensitivity to a wide variety of (sometimes rarefied) values\""}
+
+## Whether Williams on intrinsic value rescues the axiology
+
+<Williams on intrinsic value rescues the axiology>: On Williams' account, what a Pragmatic Genealogy establishes is part of what makes something intrinsically valuable, so the method's focus on basic needs is no bar to a wide range of values. #reported
+    {fidelity: "compression", pinpoint: "pp. 380-381", note: "Queloz's second reply, which the author says needs a bit of unpacking and then unpacks over a page."}
+
+<Williams on intrinsic value rescues the axiology>
+
+(1) [The Sense-Making Condition]: Individuals can coherently treat X as an intrinsic good, which is to say that they can make sense of X as an intrinsic value from the inside. #reported
+    {fidelity: "quotation", pinpoint: "p. 380", source: "\"Individuals can coherently treat X as an intrinsic good, which is to say that they can make sense of X as an intrinsic value from the inside.\""}
+(2) [The Practical Necessity Condition]: It is necessary, or nearly necessary, for basic human purposes and needs that human beings should treat X as an intrinsic good. #reported
+    {fidelity: "quotation", pinpoint: "p. 380", source: "\"It is necessary (or nearly necessary) for basic human purposes and needs that human beings should treat X as an intrinsic good\""}
+(3) [The two conditions are sufficient]: Williams, as reconstructed by Queloz, thinks these conditions are sufficient for something to have intrinsic value. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 380", source: "\"Williams (as reconstructed by Queloz) thinks the following conditions are sufficient for something to have intrinsic value\""}
+(4) [Genealogy vindicates practical necessity]: A Pragmatic Genealogy can help vindicate the Practical Necessity Condition on intrinsic value. #reported
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"a Pragmatic Genealogy can help vindicate the Practical Necessity Condition on intrinsic value\""}
+-----
+(5) [Genealogy can vindicate intrinsic values]: Pragmatic Genealogy is not only compatible with a range of intrinsic values but can even help vindicate them. #reported
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"pragmatic genealogy is not only compatible with a range of intrinsic values but can even help vindicate them\""}
+
+<The praying counterexample>: A practice can be coherently valued as an intrinsic good and be socially indispensable without being intrinsically valuable.
+    {fidelity: "compression", pinpoint: "p. 381", note: "Refutation by counterexample against a sufficiency claim, and an ATTACK rather than an undercut: it denies a premise of Queloz's reply outright."}
+
+<The praying counterexample>
+
+(1) [A coherent practice of prayer]: Imagine a community that believes praying to Jesus Christ has intrinsic value, and this belief is embedded in a coherent set of mutually supporting attitudes and intentions.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"Imagine a community that believes that praying to Jesus Christ has intrinsic value, and this belief is embedded in a coherent set of mutually supporting attitudes and intentions.\"", note: "A supposition, entertained to construct the counterexample. Not asserted by the author."}
+(2) [The practice is socially indispensable]: Imagine that this belief promotes charity, social harmony and existential consolation, and that absent the practice we would have selfishness, conflict and death-of-God wailing.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"it promotes charity, social harmony, existential consolation\"", note: "Also part of the supposition. It supplies the Practical Necessity Condition, as the first premise supplies the Sense-Making Condition."}
+(3) [Prayer lacks intrinsic value]: Praying to Jesus Christ does not seem to have intrinsic value.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"Does praying to Jesus Christ, therefore, have intrinsic value? It does not seem so.\""}
+-----
+(4) [The conditions are not sufficient]: Williams' conditions are not plausible sufficient conditions for something having intrinsic value.
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"Williams' conditions are not plausible sufficient conditions for something having intrinsic value\""}
+
+[Prayer lacks intrinsic value]
+    <+ [It depends on whether there is a Jesus Christ]
+
+[It depends on whether there is a Jesus Christ]: Whether praying to Jesus Christ has intrinsic value depends on whether there is a Jesus Christ.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 381", source: "\"does not this depend on whether there is a Jesus Christ?\"", note: "Put as a rhetorical question, and read as its assertion because it is offered as a further reason for the verdict just given."}
+
+[The two conditions are sufficient]
+    <- <The praying counterexample>
+
+<Axiological alchemy>: The two conditions have no independent plausibility and no reason to be conjoined, and the account needs a second, different theory of intrinsic value elsewhere.
+    {fidelity: "compression", pinpoint: "p. 381"}
+
+<Axiological alchemy>
+
+(1) [Alchemy]: There seems to be a kind of axiological alchemy in concocting intrinsic value from intrinsic valuing plus practical necessity.
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"More generally, there seems to be a kind of axiological alchemy in concocting intrinsic value from intrinsic valuing plus practical necessity.\"", note: "The quotation carries the author's `More generally`: this is the generalisation of the praying counterexample, not a fresh charge."}
+(2) [Reverse-engineered in the bad sense]: Williams' account of intrinsic value seems reverse-engineered in the bad sense, designed to defuse an objection in an ad hoc manner.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"designed to defuse an objection in an ad hoc manner\""}
+(3) [Two conceptions of intrinsic value are needed]: An entirely different view of intrinsic value is required when it comes to the intrinsic importance of basic needs.
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"an entirely different view of intrinsic value is required when it comes to the intrinsic importance of basic needs\""}
+-----
+(4) [Williams' view is idiosyncratic and faces challenges]: Williams' view of intrinsic value is idiosyncratic and faces challenges.
+    {fidelity: "quotation", pinpoint: "p. 381", source: "\"Williams' view of intrinsic value is idiosyncratic and faces challenges\""}
+
+<Resting the credentials on Williams is risky>: Whatever the fate of Williams' account, a method's humanistic credentials should not hang on a theory of intrinsic value this idiosyncratic.
+    {fidelity: "compression", pinpoint: "p. 381", note: "AN UNDERCUT, and the second of the author's two stated problems with Queloz's response. It does not require that Williams' view be false: it says that even a defensible version could not carry the dialectical weight Queloz puts on it. The author's `There is of course more to say here` is why the conclusion says risky rather than untenable."}
+
+<Resting the credentials on Williams is risky>
+
+(1) [Williams' view is idiosyncratic and faces challenges]
+(2) [Odd to rest credentials on it]: It seems odd to let Pragmatic Genealogy's humanistic credentials rest on Williams' view of intrinsic value.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"it seems odd to let Pragmatic Genealogy's humanistic credentials rest on it\""}
+-----
+(3) [Resting the credentials on Williams is risky]: Resting Pragmatic Genealogy's humanistic credentials on Williams' view of intrinsic value seems risky.
+    {fidelity: "paraphrase", pinpoint: "p. 381", source: "\"resting Pragmatic Genealogy's humanistic credentials on this view seems risky\""}
+
+<Resting the credentials on Williams is risky>
+    _> <Williams on intrinsic value rescues the axiology>
+
+## Whether explanation without justification reconciles the two
+
+<Explanation without justification reconciles the two>: An account of a practice's function can be an explanation rather than a justification and still do normative work that complements the humanist's own reasons. #reported
+    {fidelity: "compression", pinpoint: "p. 382", note: "Queloz's later paper on blame, which the author brings in himself as a possible route beyond the book."}
+
+<Explanation without justification reconciles the two>
+
+(1) [Blame's function]: Blame's function is to coordinate moral sensibilities by alerting and sanctioning those who are insufficiently responsive to the community's conception of moral reasons. #reported
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"blame's function is to coordinate moral sensibilities by alerting and sanctioning those who are insufficiently responsive to the community's conception of moral reasons\""}
+(2) [Function explains, not justifies]: The account of blame's function serves not as a justification of the practice of blame but as an explanation of it, the practice being justified by the moral reasons that render individuals blameworthy. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"this account of blame's function serves not as a justification of the practice of blame but simply as a... explanation of the practice, the practice being justified by the moral reasons that render individuals blameworthy\"", note: "The elision skips the parenthetical `functional-causal`, which the printed text sets with a double hyphen the quotation checker cannot fold."}
+(3) [An additional reason to cultivate blame]: The account gives us an additional reason to cultivate the practice of blame, since it solves a coordination problem. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"it gives us an additional reason to cultivate the practice of blame\""}
+(4) [It strengthens confidence]: The account can strengthen our confidence in the practice of blame by indicating that it is not a hold-over from an enchanted world. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"it can 'strengthen our confidence' in the practice of blame by indicating that it is not a hold-over from an enchanted world\""}
+(5) [It indicates pointlessness]: The account can indicate when participating in the practice might be pointless or counterproductive. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"it can indicate when participating in the practice might be pointless or counterproductive\""}
+-----
+(6) [Instrumental considerations complement humanism]: Instrumental considerations might complement rather than conflict with the humanist's focus on the internal standards and values of the practice. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"These are all ways that instrumental considerations might compliment rather than conflict with the humanist's focus on the internal standards and values of the practice.\"", note: "The printed text reads `compliment`; the quotation keeps it and the claim text reads `complement`."}
+
+<Instrumental considerations create reengineering pressure>: An explanation that can raise our confidence in a practice can equally lower it for the parts of the practice that do not pay their way.
+    {fidelity: "compression", pinpoint: "p. 382", note: "The author's hedge — `While I lack space to extensively argue the case, I am sceptical` — governs this whole line and is why its conclusion is about pressure rather than about refutation."}
+
+<Instrumental considerations create reengineering pressure>
+
+(1) [Normative work requires justificatory force]: It is hard for a causal explanation to serve these various normative functions without the explanatory considerations also in some sense being justificatory, that is, yielding reasons to engage in the practice or modify it in some way.
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"it is hard for a causal explanation to serve these various normative functions without the explanatory considerations also in some sense being 'justificatory', that is, yielding reasons to engage in the practice or modify it in some way\""}
+(2) [Not a concern for the first consideration]: This is not a big concern when it comes to Queloz's first consideration, since the additional instrumental reasons point in the same direction as the other reasons. #conceded
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"This is not a big concern when it comes to Queloz's first consideration, since the additional instrumental reasons point in the same direction as the other reasons.\"", note: "One of Queloz's three considerations is granted outright. Leaving the concession out would make the objection cover three points where the author presses it on two."}
+(3) [Aspects of a practice may be hold-overs]: Even if instrumental considerations indicate that the practice as a whole is not a hold-over, they might suggest that many aspects of the practice are.
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"even if instrumental considerations strengthen our confidence by indicating that the practice as a whole is not a hold-over, they might suggest that many aspects of the practice are\""}
+(4) [Nature is not the perfect engineer]: After all, nature is not the perfect engineer.
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"After all, nature is not the perfect engineer.\""}
+(5) [Costs should decrease confidence]: If instrumental benefits are supposed to increase our confidence in a practice, comparative instrumental costs should correspondingly decrease our confidence in the aspects of the practice that are not instrumentally valuable.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 382", source: "\"should not comparative instrumental costs correspondingly decrease our confidence in the aspects of the practice that are not instrumentally valuable?\"", note: "Put as a rhetorical question. The sentence that follows draws the consequence, which fixes the answer as yes."}
+-----
+(6) [Pressure to reengineer]: Taking instrumental considerations seriously creates pressure to reengineer our practices to make them more instrumentally valuable.
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"Taking instrumental considerations seriously creates pressure to reengineer our practices to make them more instrumentally valuable.\""}
+
+<Either the pressure is real or the genealogy adds nothing>: If the instrumental considerations are weighty enough to matter they conflict with the humanist's reasons, and if they are not they add nothing to the humanist's resources.
+    {fidelity: "compression", pinpoint: "p. 382", note: "A dilemma. The paper states the second horn explicitly and the first is what the previous argument establishes; the disjunction that makes them a dilemma is imputed below."}
+
+<Either the pressure is real or the genealogy adds nothing>
+
+(1) [Pressure to reengineer]
+(2) [Either the pressure is real or the benefits are unimportant]: Either the pressure to reengineer our practices is real, or the instrumental benefits are not important enough to generate it.
+    {fidelity: "imputation", warrant: "enthymeme", pinpoint: "p. 382", note: "Never stated. The paragraph moves straight from `Perhaps this pressure is very weak` to what follows if it is, and the argument is a dilemma only if the two horns exhaust the options."}
+(3) [Weak pressure means unimportant benefits]: If the pressure is very weak, that is because the instrumental benefits are not very important, at least in comparison to other considerations.
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"Perhaps this pressure is very weak because these instrumental benefits are not very important, at least in comparison to other considerations.\""}
+(4) [Then genealogy adds nothing]: If the instrumental benefits are not very important, Pragmatic Genealogy is not adding much of anything to the humanist's toolkit.
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"then it does not seem like Pragmatic Genealogy is adding much of anything to the humanist's toolkit\"", note: "The antecedent and the consequent are two sentences apart in the source: the condition is stated as `Perhaps this pressure is very weak because these instrumental benefits are not very important`, and this claim joins it to what the author says follows."}
+-----
+(5) [Genealogy is not crucial to humanistic philosophy]: Pragmatic Genealogy is not crucial to pursuing philosophy as a humanistic discipline, as Queloz claims.
+    {fidelity: "paraphrase", pinpoint: "p. 382", source: "\"it is not crucial to pursuing philosophy as a humanistic discipline, as Queloz claims\""}
+
+[Explanation does not alleviate the tension]: Shifting from justification to explanation does not do much to alleviate the tension between the humanistic sensibility and the engineering sensibility.
+    {fidelity: "quotation", pinpoint: "p. 382", source: "\"shifting from justification to explanation does not do much to alleviate the tension between the humanistic sensibility and the engineering sensibility\"", note: "Introduced by `The point is that`, which marks the section's summary rather than a further inference from the dilemma's conclusion."}
+    <+ [Genealogy is not crucial to humanistic philosophy]
+
+<Either the pressure is real or the genealogy adds nothing>
+    -> <Explanation without justification reconciles the two>
+
+## What the method cannot see
+
+<Genealogy neglects constitutive relations>: Instrumental relations are not the only ones among our values, and the ones a pragmatic genealogy cannot see are the ones humanistic moral theory works with.
+    {fidelity: "compression", pinpoint: "p. 383", note: "The section's last objection, and the cashing-out of a point left hanging on p. 373."}
+
+<Genealogy neglects constitutive relations>
+
+(1) [Focus directs attention away]: A focus on instrumental relations directs attention away from important symbolic and constitutive relations among our values.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"such a focus directs attention away from important symbolic and constitutive relations among our values\""}
+(2) [Norms may constitute mutual recognition]: Adhering to certain norms may constitute a valuable relation of mutual recognition. #reported
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"adhering to certain norms constitutes a valuable relation of mutual recognition\""}
+(3) [Genealogy cannot grip such relations]: Pragmatic Genealogy, by its nature, does not have a way of getting a grip on constitutive and symbolic relations and so tends to neglect them.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"These are the kinds of relations that Pragmatic Genealogy, by its nature, does not have a way of getting a grip on and so, therefore, tends to neglect.\""}
+(4) [Humanistic theory has interpretive elements]: Good humanistic moral theory typically has interpretive elements that Pragmatic Genealogy ignores.
+    {fidelity: "quotation", pinpoint: "p. 383", source: "\"good humanistic moral theory typically has interpretive elements that Pragmatic Genealogy ignores\""}
+-----
+(5) [The neglect should give the humanist pause]: The neglect of constitutive and symbolic relations might give the humanist pause.
+    {fidelity: "paraphrase", pinpoint: "p. 383", source: "\"This neglect might give the humanist pause.\""}
+
+[Genealogy cannot grip such relations]
+    <+ [Pragmatic Genealogy cannot illuminate constitutive relations]
+
+<Widen the notion of function>: A pragmatic approach could work with a notion of function capacious enough to take in constitutive and expressive relations. #contested
+    {fidelity: "compression", pinpoint: "n. 29", note: "The author raises the objection against himself in a footnote and answers it with a dilemma. Left as a sketch: the footnote concedes the possibility in one clause and spends the rest of its length denying that it helps."}
+
+[A more capacious notion of function]: It is theoretically possible for a pragmatic approach to adopt a more capacious notion of 'function', one that might encompass things like constitutive and expressive relations. #contested
+    {fidelity: "paraphrase", pinpoint: "n. 29", source: "\"one that might encompass things like constitutive and expressive relations\""}
+
+[Genealogy cannot grip such relations]
+    <- <Widen the notion of function>
+
+<The structure dilemma>: Build less structure into the pragmatic approach and it stops being distinctive; build more and it begs the questions it was meant to clarify.
+    {fidelity: "compression", pinpoint: "n. 29", note: "AN UNDERCUT. The footnote grants that the notion of function could be widened, and denies that widening it leaves anything worth having — so the objection's premise stands and its point does not."}
+
+<The structure dilemma>
+
+(1) [A more capacious notion of function] #contested
+(2) [Capaciousness costs privilege]: If a pragmatic approach adopts a more capacious notion of function, Pragmatic Genealogy is no longer a privileged tool for answering the Pragmatic Question.
+    {fidelity: "paraphrase", pinpoint: "n. 29", source: "\"if we do this, Pragmatic Genealogy is no longer a privileged tool for answering the Pragmatic Question\""}
+(3) [Less structure, less distinctive]: The less structure we build into the pragmatic approach, the less distinctive it is from the Socratic approach and the less it can be used to clarify Socratic debates.
+    {fidelity: "quotation", pinpoint: "n. 29", source: "\"the less structure we build into the pragmatic approach, the less distinctive it is from the Socratic approach and the less it can be used to clarify Socratic debates\""}
+(4) [More structure, begs the questions]: If we build more structure into the pragmatic approach, it will beg and obscure many of the crucial philosophical questions.
+    {fidelity: "quotation", pinpoint: "n. 29", source: "\"if we build more structure into the pragmatic approach, it will beg and obscure many of the crucial philosophical questions\""}
+-----
+(5) [Widening the notion does not help]: Adopting a more capacious notion of function does not rescue the pragmatic approach.
+    {fidelity: "interpretation", warrant: "coherence", pinpoint: "n. 29", note: "The footnote sets out both horns and leaves the disjunction's upshot unstated."}
+
+<The structure dilemma>
+    _> <Widen the notion of function>
+
+[The method has certain limits]
+    <+ [Genealogy is not crucial to humanistic philosophy]
+    <- [The third concern is not pursued] #conceded

@@ -48,6 +48,7 @@ const splitWidth = lift("splitWidth");
 const soleWinner = lift("soleWinner");
 const sideLayout = lift("sideLayout", ["sideAxis"]);
 const scrollWithin = lift("scrollWithin");
+const frontMatterAbstract = lift("frontMatterAbstract");
 
 let fails = 0;
 const check = (name, got, want) => {
@@ -281,6 +282,53 @@ scrollWithin(h, null);
 check("a missing element is harmless", h.scrollTop, 0);
 scrollWithin(null, el(100));
 check("  and so is a missing host", true, true);
+
+/* THE ABSTRACT, out of the front matter the same cleanup blanks.
+ *
+ * Read in the page rather than baked in by the builder, because a manuscript arrives three ways
+ * and only one of them passes through the builder. That makes this parser shipped code with no
+ * Node caller, which is exactly the kind of thing that rots — hence these.
+ *
+ * The shape that matters is pdf_to_source.py's: `abstract: >-` and two-space-indented lines
+ * wrapped at 92 columns. A folded scalar joins with spaces; getting that wrong is visible, and
+ * did happen — the 174-word Etievant abstract first came out as 17 one-line paragraphs.
+ */
+console.log("frontMatterAbstract");
+const fm = (...lines) => ["---", 'title: "A paper"', ...lines, "---", "", "Body text."].join("\n");
+
+check("a folded block is joined with spaces",
+      frontMatterAbstract(fm("abstract: >-", "  One line of it", "  and the next line.")),
+      "One line of it and the next line.");
+check("  a blank line inside it is a paragraph break",
+      frontMatterAbstract(fm("abstract: >-", "  First para.", "", "  Second para.")),
+      "First para.\n\nSecond para.");
+check("  chomping and indent indicators are accepted",
+      frontMatterAbstract(fm("abstract: >2-", "  Folded anyway.")), "Folded anyway.");
+check("a literal block keeps its newlines",
+      frontMatterAbstract(fm("abstract: |", "  Line one.", "  Line two.")),
+      "Line one.\nLine two.");
+check("a quoted one-liner is unquoted",
+      frontMatterAbstract(fm('abstract: "Short and quoted."')), "Short and quoted.");
+check("  a bare one-liner is taken as it stands",
+      frontMatterAbstract(fm("abstract: Short and bare.")), "Short and bare.");
+
+// THE BLOCK MUST END AT THE NEXT KEY. Swallowing `licence:` into the abstract puts the file's
+// metadata on screen as if the author had written it, which is worse than showing nothing.
+check("the block stops at the next key",
+      frontMatterAbstract(fm("abstract: >-", "  The abstract.", 'licence: "CC-BY-4.0"')),
+      "The abstract.");
+check("  and at the end of the front matter",
+      frontMatterAbstract(["---", "abstract: >-", "  The abstract.", "---", "", "# Body",
+                           "abstract: not this one"].join("\n")), "The abstract.");
+
+// The papers that have none must produce none. Dewey, Ramsey and Miller are the real cases.
+check("a file with no abstract gives nothing", frontMatterAbstract(fm('author: "Someone"')), "");
+check("  nor does one with no front matter at all",
+      frontMatterAbstract("# A chapter\n\nabstract: not front matter here"), "");
+check("  nor an unterminated front matter",
+      frontMatterAbstract("---\ntitle: \"Truncated\"\n"), "");
+check("empty input is safe", frontMatterAbstract(""), "");
+check("null is safe", frontMatterAbstract(null), "");
 
 console.log(fails ? `\n${fails} FAILED` : "\nall passed");
 process.exit(fails ? 1 : 0);

@@ -395,5 +395,86 @@ if (!fs.existsSync(argdownFile)) {
      "the paragraph locator has stopped working; heading precision alone gives 94");
 }
 
+/* ------------------------------------------------------------------ the border rule ---- */
+/* THE SECOND RULE THIS FILE POLICES, and it is here for the reason the first one is.
+ *
+ * `quotation` is the one fidelity level with a fact of the matter, and the map draws it as a
+ * solid border — a claim asserting that these are the author's own words. Until now the border
+ * was CHECKED only when `build_argdown_viewer.mjs` was given `--source-root`: that is the sole
+ * caller of `--derive-fidelity`. A folder opened in the app, a folder dropped on the standalone,
+ * a bundle, and every exported page drew the border AS DECLARED — and those are the ordinary
+ * ways to read a reconstruction now.
+ *
+ * So the rule exists in JavaScript too (`ArgdownPositions.isVerbatim`) and the app can check
+ * rather than believe. Python's copy cannot go — `--fix` writes markers with it and the MCP
+ * reading checks use it — so the two are pinned against each other here, exactly as the
+ * positions rule above is.
+ *
+ * Measured when this was written: 251 adjudicated claims across the published corpus, 251
+ * agreements, 0 disagreements. */
+{
+  const fold = P.foldPunctuation, verb = P.isVerbatim;
+  ok("punctuation and case fold away", verb("The cat sat", "the cat, sat on the mat"));
+  ok("  and trimming at the ends stays verbatim", verb("cat sat", "the cat sat on the mat"));
+  ok("a word dropped INSIDE is not verbatim", !verb("cat mat", "the cat sat on the mat"));
+  ok("  nor is a word substituted",
+     !verb("the cat lay on the mat", "the cat sat on the mat"));
+  ok("an empty claim is never verbatim", !verb("", "anything at all"));
+
+  // THE ONE PLACE THE TWO LANGUAGES CAN DRIFT. Python's `\w` is Unicode-aware and JavaScript's
+  // is ASCII-only, so `[^\w\s]` would treat an accented letter as punctuation here and as a
+  // letter there. On a corpus containing Etiévant that is not hypothetical.
+  eq("an accented letter is a letter, not punctuation",
+     fold("Etiévant argues"), "etiévant argues");
+  eq("  and a dash between words is punctuation",
+     fold("well-known case"), "well known case");
+  eq("  as is an em dash", fold("a claim — and its hedge"), "a claim and its hedge");
+}
+
+/* THE FIXTURES PROVE THE RULE; ONLY THE CORPUS PROVES THE TWO LANGUAGES AGREE. Same reasoning
+ * as the book cross-check above, and the same shape: run Python's `--derive-fidelity` over each
+ * sample, ask the JavaScript the same question of the same claims, and require every answer to
+ * match. Skipped with a notice where the Argdown CLI or the venv is missing, so a bare checkout
+ * still runs everything that does not need them. */
+{
+  const SAMPLES = path.join(HERE, "..", "samples");
+  const venv = path.join(HERE, "..", ".venv", "bin", "python3");
+  const py = fs.existsSync(venv) ? venv : "python3";
+  const CHECK = path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py");
+  let agree = 0, disagree = 0, ran = 0;
+  const bad = [];
+  if (fs.existsSync(SAMPLES) && fs.existsSync(CHECK)) {
+    for (const dir of fs.readdirSync(SAMPLES)) {
+      const d = path.join(SAMPLES, dir);
+      if (!fs.statSync(d).isDirectory()) continue;
+      const ad = fs.readdirSync(d).find(f => f.endsWith(".argdown"));
+      const srcDir = path.join(d, "source");
+      if (!ad || !fs.existsSync(srcDir)) continue;
+      let declared;
+      try {
+        declared = JSON.parse(execFileSync(py, [CHECK, path.join(d, ad), "--source-root", d,
+                                                "--derive-fidelity"],
+                                           { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }));
+      } catch { continue; }
+      const body = fs.readdirSync(srcDir).filter(f => f.endsWith(".md"))
+        .map(f => fs.readFileSync(path.join(srcDir, f), "utf8")).join("\n\n");
+      const res = argdown.run({ input: fs.readFileSync(path.join(d, ad), "utf8"), ...RUN });
+      const g = toGraph(res);
+      for (const [title, want] of Object.entries(declared)) {
+        const node = g.nodes.find(x => x.label === title || x.id === title);
+        const text = node ? (node.detail || node.label) : null;
+        if (!text) continue;
+        ran++;
+        const got = P.isVerbatim(text, body) ? "quotation" : "paraphrase";
+        if (got === want) agree++;
+        else { disagree++; if (bad.length < 4) bad.push(`${dir.slice(0, 22)} / ${title.slice(0, 34)}: py=${want} js=${got}`); }
+      }
+    }
+  }
+  if (!ran) console.log("  skip  no corpus to cross-check the border rule against");
+  else ok(`the border rule agrees with Python on all ${ran} adjudicated claims`,
+          disagree === 0, bad.join("\n          "));
+}
+
 console.log(`\n${fail ? "FAILED" : "all checks passed"} — ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

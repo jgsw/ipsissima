@@ -8,11 +8,19 @@
  * fail the measure is simply wrong.
  *
  * The second half runs the REAL reconstructions, and exists because the measure was designed
- * against them. Williams's contention arrives at the end and Horton's claims are stated at the
- * start; that difference is the thing the exposition arrangement exists to show, and it is worth
- * a regression test that it keeps being visible. The assertion is on the ORDER, not on the exact
+ * against them. Darwin earns his conclusion before stating it and Carroll's dialogue does not;
+ * that difference is the thing the exposition arrangement exists to show, and it is worth a
+ * regression test that it keeps being visible. The assertion is on the ORDER, not on the exact
  * percentages — a change to the placement rules may move both numbers, and should; a change that
  * stops the two texts being distinguishable is a bug.
+ *
+ * AND A REBUILT SAMPLE MOVES THEM TOO, which is the harder case, because the fixture is a real
+ * file that gets better. Carroll went from 20 claims to 36 when the reconstructions were rebuilt
+ * in August 2026, and its lean went from +0.24 to -0.09: the fuller reading picks up the
+ * step-by-step build of the regress that the thin map had left out, so the text stopped looking
+ * like pure debt and started looking like what it is, which is both. The old assertion — that
+ * Carroll leans to debt — was true of the thin map and is false of the good one. What survives
+ * a better reconstruction is the SHAPE of the claim, not its number.
  */
 import fs from "fs";
 import path from "path";
@@ -164,16 +172,24 @@ console.log("the real reconstructions");
     const r = EX.ranks(g.nodes);
     return EX.verdict(EX.reaches(g.edges, r.rank), r.n);
   };
-  // CARROLL against DARWIN. The Tortoise dialogue keeps asserting and then justifying — Achilles
-  // states the next step and only then defends it — so it leans towards debt. Darwin's paragraph
-  // is the opposite shape: variation, then struggle, then the conclusion those two earn, with
-  // every premise linked. Two public-domain texts, and the measure has to tell them apart.
+  // CARROLL against DARWIN. Darwin's paragraph is one shape the whole way down: variation, then
+  // struggle, then the conclusion those two earn, with every premise linked, so almost all of its
+  // support arrives before the claim it supports. The Tortoise dialogue is not one shape: the
+  // Tortoise announces the infinite race-course before he runs it and Achilles states each step
+  // before defending it, while the regress itself is built up in text order. Two public-domain
+  // texts, and the measure has to tell them apart.
+  //
+  // READ `lean` AS A DEBT SHARE: (lean + 1) / 2 is the fraction of supporting weight that arrives
+  // AFTER the claim it supports. That is 46% for Carroll and 5% for Darwin — a text that is half
+  // in debt against one that is hardly in debt at all.
   const c = load("Carroll 1895 - What the Tortoise said to Achilles",
                  "carroll-tortoise-achilles.argdown");
   const d = load("Darwin 1859 - Natural selection", "darwin-natural-selection.argdown");
-  console.log(`        Carroll lean ${c.lean.toFixed(2)}  ·  Darwin lean ${d.lean.toFixed(2)}`);
-  check("Carroll asserts and then justifies — leans to debt", c.lean > 0.1, true);
-  check("Darwin earns its conclusion first — leans away from it", d.lean < -0.3, true);
+  const debt = v => Math.round(((v + 1) / 2) * 100);
+  console.log(`        Carroll lean ${c.lean.toFixed(2)} (${debt(c.lean)}% in debt)  ·  ` +
+              `Darwin lean ${d.lean.toFixed(2)} (${debt(d.lean)}% in debt)`);
+  check("Darwin earns its conclusion first — leans hard away from it", d.lean < -0.6, true);
+  check("Carroll carries real debt that Darwin does not", c.lean > -0.4, true);
   check("  and the two are told apart by a margin a reader could see",
         c.lean - d.lean > 0.5, true);
 }

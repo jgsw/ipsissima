@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "What the Ipsissima window is allowed to ask the host for. Deliberately short: the app reads and writes text files the reader themselves chose, and does nothing else \u2014 no network, no shell, no process spawning.",
+  "description": "What the Ipsissima window is allowed to ask the host for. Deliberately short: the app reads and writes files the reader themselves chose \u2014 the reconstruction as text, and an export (a .docx is a zip, so it goes out as bytes) to wherever they point the save dialog. Nothing else: no network, no shell, no process spawning.",
   "windows": [
     "main"
   ],
@@ -11,6 +11,7 @@
     "dialog:allow-save",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
+    "fs:allow-write-file",
     "fs:allow-read-dir",
     "fs:allow-watch",
     "fs:allow-unwatch",

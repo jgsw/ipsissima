@@ -88,18 +88,48 @@ the engineer, and that is a different claim from "the method has limits".
 
 Measured end to end, because a corpus has to be affordable to be worth having:
 
+**Rebuilt 27 August 2026** under the current instructions, from the source rather than from the
+map it replaced.
+
 | | |
 |---|---|
-| source, whole file | 8,480 words |
-| source, trimmed for the prompt | 5,940 words (back matter cut for the prompt only, never from the file) |
-| the reconstruction | 36 claims, 5 premise-conclusion structures, 24 relations |
-| verified quotations | 21 of 21 exact |
-| check → fix rounds | **2** |
+| source, whole file | 8,658 words |
+| the reconstruction | **191 nodes**, 31 of them arguments, 201 edges, 14 sections |
+| verified quotations | **156 of 156 exact**, and nothing sits against any of them |
+| fidelity | 190/190 marked — 55 quotation, 96 paraphrase, 32 compression, 5 interpretation, 2 imputation, every departure warranted |
+| tags | 58 `#reported`, 22 `#conceded`, 10 `#contested` |
+| check → fix rounds | **3 states, 7 calls** |
 
-The first check came back with fifteen findings, and every one was a fidelity marker rather than
-a structural fault: claims marked `quotation` whose `source:` field held a real quotation while
-the claim's own text was a summary. That is the failure mode the fidelity check exists for, and
-it is the one a human reviewer would not have caught by eye.
+**The paper argues two things and the map says so.** That philosophers should turn to Pragmatic
+Genealogy *sometimes, for certain goals*; and that the Weltanschauung behind it, "supposed to be
+liberating", feels constraining. The limits verdict is an *intermediate* conclusion, not the
+apex — the paper uses it once more, to say the limits "point to concerns about the broader
+Weltanschauung", so it is not where the paper stops.
+
+**The version this replaced had no objections at all.** There are 28, of four kinds: 7 undercuts,
+4 contradictions, 17 attacks — and **7 of the attacks are the author's own conceded
+counterconsiderations**. On p. 378 the author undercuts his own objection, granting that Queloz
+never claimed genealogy was *necessary*, and then withdraws: *"I, therefore, leave this as a
+hypothesis."* A map of a critical notice that shows no objections is a reconstruction that did not
+look.
+
+**What the genre invites, and the map refuses.** The tempting reconstruction of a critical notice
+is *what the method under discussion is* — Queloz's two aspects, Craig on knowledge,
+self-effacement, Williams on intrinsic value. All of that is here, but as 58 `#reported` claims
+wired as premises of four reported arguments the paper then attacks. Prescott-Couch argues for no
+method; he argues that one has limits.
+
+### Where working backwards fought the paper's own order
+
+**Section 1 is unreachable from the verdict.** Its three motivations are reasons *for* Pragmatic
+Genealogy, and nothing in them supports "the method has limits" — so working back from the stated
+conclusion leaves the whole section unattached, which is exactly what the apex census caught. It
+connects only through the *second* contention, because §1 is where the Weltanschauung is stated in
+full, eleven pages before the conclusion restates it as a slogan.
+
+**Three of the paper's "therefore"s are restatements.** *"That is,"*, *"It is better to…"* and
+*"The point is that"* each look like a further inference and are the same claim in other words.
+The thin-step check caught all three.
 
 ## Rebuilding
 

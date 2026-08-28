@@ -38,12 +38,17 @@ const argdownMode = StreamLanguage.define({
       if (state.front) { stream.skipToEnd(); return "meta"; }
       if (stream.match(/^\s*\/\//)) { stream.skipToEnd(); return "comment"; }
       if (stream.match(/^#{1,6}\s/)) { stream.skipToEnd(); return "heading"; }
-      // An inference line. Three or more hyphens is the safe one; exactly two opens an
-      // expanded inference and is the trap the linter warns about.
+      // An inference line. Three or more hyphens is the ordinary one; exactly two OPENS AN
+      // EXPANDED INFERENCE, which is legal Argdown and not a mistake -- a deliberate pair
+      // delimits the rule name between them. It was drawn as `invalid`, which marked every
+      // legitimate expanded inference in the file as a syntax error. The linter still warns,
+      // because an UNPAIRED `--` silently eats the next statement, but that is a caution and
+      // not a fault -- which is exactly the severity `check_argdown.py` gives it.
       if (stream.match(/^\s*-{3,}\s*$/)) return "operator";
-      if (stream.match(/^\s*--\s*$/)) return "invalid";
+      if (stream.match(/^\s*--\s*$/)) return "operator";
       if (stream.match(/^\s*\(\d+\)/)) return "number";
-      if (stream.match(/^\s*(?:<?[+\-_]>?)(?=\s)/)) return "keyword";
+      // `><` (contradiction) was missing, so it fell through and drew as ordinary prose.
+      if (stream.match(/^\s*(?:><|<?[+\-_]>?)(?=\s)/)) return "keyword";
       if (stream.match(/^\s+/)) return null;
     }
     if (state.meta) {
@@ -55,10 +60,20 @@ const argdownMode = StreamLanguage.define({
     if (stream.eat("{")) { state.meta = 1; return "meta"; }
     if (stream.match(/^@?\[[^\]\n]*\]/)) return "variableName";
     if (stream.match(/^@?<[^>\n]*>/)) return "typeName";
+    // Two tag forms, and only the bare one was highlighted. `#(a tag with spaces)` is the
+    // parenthesised form. A number IS a tag: against @argdown/core 2.0 `#42` appears in
+    // `response.tags`, whatever the cheatsheet used to say.
+    if (stream.match(/^#\([^)\n]*\)/)) return "labelName";
     if (stream.match(/^#[\w-]+/)) return "labelName";
     if (stream.match(/^"[^"\n]*"/)) return "string";
+    // Argdown has four emphasis forms and only `**bold**` was highlighted. Order matters:
+    // the doubled forms must be tried before the single ones or `**x**` lexes as two empty
+    // italics.
     if (stream.match(/^\*\*[^*\n]+\*\*/)) return "strong";
-    if (stream.match(/^[^[<{#"*\n]+/)) return null;
+    if (stream.match(/^__[^_\n]+__/)) return "strong";
+    if (stream.match(/^\*[^*\n]+\*/)) return "emphasis";
+    if (stream.match(/^_[^_\n]+_/)) return "emphasis";
+    if (stream.match(/^[^[<{#"*_\n]+/)) return null;
     stream.next();
     return null;
   }
@@ -100,14 +115,19 @@ export function traps(text) {
     // A LONE `--` OPENS AN EXPANDED INFERENCE and swallows the next line as its rule name. A
     // four-statement structure written this way comes back with three, exit code 0, nothing said.
     if (/^\s*--\s*$/.test(line))
-      out.push({ from: start, to: start + line.length, severity: "error",
-        message: "A lone `--` opens an expanded inference and eats the next line as its rule " +
-                 "name — the claim below this will vanish from the map with no error. Use " +
-                 "`-----` for an ordinary inference step." });
+      out.push({ from: start, to: start + line.length, severity: "warning",
+        message: "`--` opens an expanded inference. A deliberate PAIR is fine — the rule name " +
+                 "goes between them. But an unpaired `--` eats the next line as its rule name, " +
+                 "and the claim below will vanish from the map with no error. For an ordinary " +
+                 "inference step write `-----`." });
 
     // SYMBOL SHORTCODES REWRITE TEXT, headings included: `# III.A. The Types` becomes `III∀ …`,
     // and every reference to that heading then fails to match.
-    const sc = line.match(/\.(A|E|~|v|->|<->|P|O)\./);
+    // ALL TWELVE, read off the parser's own table rather than remembered. Four were missing
+    // — `.^.` `.v_.` `.<>.` `.[].` — so a heading containing one was rewritten with nothing
+    // said, which is the exact failure this warning exists for. Longest alternatives first, or
+    // `.v.` matches inside `.v_.`.
+    const sc = line.match(/\.(<->|->|<>|v_|\[\]|A|E|~|v|\^|P|O)\./);
     if (sc)
       out.push({ from: start + sc.index, to: start + sc.index + sc[0].length, severity: "warning",
         message: `\`${sc[0]}\` is a symbol shortcode and will be rewritten (${sc[0]} → a logic ` +

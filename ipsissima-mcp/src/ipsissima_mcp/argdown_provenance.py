@@ -488,6 +488,16 @@ def fidelity_of(doc):
     return out
 
 
+def unmarked(doc):
+    """Nodes carrying no fidelity marker at all, in document order.
+
+    SEPARATED FROM `fidelity_of` BECAUSE THE CALLERS WANT DIFFERENT THINGS. That returns a map
+    with `None` for the unmarked, which is right for measuring a distribution and useless for
+    naming them: a check has to say WHICH claim to go and mark.
+    """
+    return [title for title, f in fidelity_of(doc).items() if f is None]
+
+
 # A claim shorter than this is not tested for being verbatim: a six-word claim can coincide with
 # the source by accident, and calling that a quotation would be worse than asking.
 MIN_VERBATIM = 30
@@ -1515,7 +1525,26 @@ def title_edges(doc):
                 main_conclusion[name] = s["title"]
 
     def resolve(title, kind):
-        return title if kind == "equivalence-class" else main_conclusion.get(title)
+        """An endpoint as the claim the report is about.
+
+        A SKETCHED ARGUMENT RESOLVES TO ITSELF, and used to resolve to nothing. `<Title>: prose`
+        with no numbered structure has no main conclusion, so `main_conclusion.get` returned
+        None and `add` dropped the edge -- SILENTLY, and at BOTH ends. Every relation touching a
+        sketched argument was therefore invisible to reachability: its attack on the contention
+        did not count, and the reasons hanging off it were reported as reaching no contention at
+        all, which is how a properly wired objection came back as `inert`.
+
+        Measured on the published corpus: 6 of 47 arguments are sketched and 13 relations were
+        being dropped, all of them in the newest and largest map. The cheatsheet positively
+        encourages the sketched form, so this was getting worse rather than better.
+
+        An argument is a node on the map whether or not it has a structure, so standing for
+        itself is the honest resolution -- and as of the argument-placement work it has a
+        position in the manuscript too.
+        """
+        if kind == "equivalence-class":
+            return title
+        return main_conclusion.get(title) or title
 
     edges, seen = [], set()
 
