@@ -75,7 +75,7 @@ The flag is **`--outputDir`**. `--outDir` is accepted silently, ignored, and the
 the working directory instead.
 
 **Claude: never hand over a .argdown file without running the validator.** The `argdown` skill
-(`ipsissima-mcp/docs/`) carries the syntax and the failure modes; `reference.md` beside it is
+(`ipsissima-mcp/src/ipsissima_mcp/docs/`) carries the syntax and the failure modes; `reference.md` beside it is
 a full reference in which every rule was tested against the CLI rather than inferred.
 
 Why a skill and not a generator: the failure was Claude's knowledge of the syntax, not missing

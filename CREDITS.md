@@ -60,7 +60,7 @@ why these won.
 
 ## How to reconstruct an argument — Fisher, Govier, Walton
 
-`ipsissima-mcp/docs/reconstruction-cheatsheet.md` is the method a reconstruction here follows, and
+`ipsissima-mcp/src/ipsissima_mcp/docs/reconstruction-cheatsheet.md` is the method a reconstruction here follows, and
 almost none of it is this project's invention. **The method is Alec Fisher's and the structural
 distinctions are Trudy Govier's**, as that document says at the top and again wherever it uses
 them.

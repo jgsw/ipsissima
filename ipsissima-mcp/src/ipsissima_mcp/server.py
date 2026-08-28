@@ -37,8 +37,15 @@ from typing import Any
 from mcp.server import MCPServer
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]                      # the repository root
-DOCS = HERE.parents[1] / "docs"             # ipsissima-mcp/docs
+
+#: The prompts and reference documents, INSIDE the package rather than beside it.
+#:
+#: They used to be found by walking up from this file to `ipsissima-mcp/docs`, which is only
+#: where they live in a source checkout. Installed anywhere else, that walk arrives above
+#: site-packages and every prompt the server serves comes back as "(missing: ...)": a server that
+#: starts, registers, answers its handshake, and hands the model an apology instead of the
+#: instructions. Editable installs hide it completely, which is why it survived this long.
+DOCS = HERE / "docs"
 
 sys.path.insert(0, str(HERE))
 
@@ -91,10 +98,15 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
     # here looked for `app/node_modules/.bin/argdown`, which tied the server to a source checkout
     # -- and npm writes no extensionless shim of that name on Windows, so it could never have
     # worked there at all.
+    # NO `cwd`. This used to run in what it took to be the repository root, so that the checker
+    # could find `app/node_modules/.bin/argdown` by looking there; the bundled parser made that
+    # unnecessary, and keeping it would now be actively wrong -- a relative path from the client
+    # would be resolved against a directory inside site-packages instead of against the one the
+    # caller is actually sitting in.
     cmd = [sys.executable, str(HERE / "check_argdown.py"), str(path), "--format", fmt, *extra]
     if source_root:
         cmd += ["--source-root", str(source_root)]
-    r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    r = subprocess.run(cmd, capture_output=True, text=True)
     return r
 
 

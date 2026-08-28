@@ -24,8 +24,8 @@ inline cap, so one `cat` of all of them spills to a file you then have to read b
 below:
 
 ```bash
-cat ipsissima-mcp/docs/argdown-cheatsheet.md ipsissima-mcp/docs/ipsissima-conventions.md
-cat ipsissima-mcp/docs/reconstruction-cheatsheet.md
+cat ipsissima-mcp/src/ipsissima_mcp/docs/argdown-cheatsheet.md ipsissima-mcp/src/ipsissima_mcp/docs/ipsissima-conventions.md
+cat ipsissima-mcp/src/ipsissima_mcp/docs/reconstruction-cheatsheet.md
 ```
 
 ---
