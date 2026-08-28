@@ -3,6 +3,19 @@ title: "Williams, Dewey, and the Nature of Value Inquiry"
 author: "James Wilson"
 source: "Philosophy (2026)"
 rights: "open access; included by the author, who is also the author of Ipsissima"
+abstract: >-
+  For Bernard Williams, ethical inquiry is fundamentally about sense-making: it starts from
+  what we already care about, and is always local. As a result, Williams opposes scientistic
+  models of philosophy, arguing that philosophy should be seen as ‘part of a wider humanistic
+  enterprise of making sense of ourselves and our activities’. This paper critiques the
+  assumptions about disciplinarity on which Williams’s argument is based, and uses some
+  resources from Dewey’s pragmatism to propose some friendly amendments to Williams’s account
+  of the nature of value inquiry. Rather than seeking to assign philosophy either to the
+  humanities or the sciences, it is more fruitful to examine philosophy through the lens of a
+  transdisciplinary epistemology, in which incompatible methodologies and ontologies and how
+  to reconcile them, are central. What is required is less a shift from scientistic to
+  humanistic conceptions of philosophy, than for philosophers working in value inquiry to
+  better align their aspirations for theory with what it can actually deliver.
 ---
 
 <!-- James Wilson, "Williams, Dewey, and the Nature of Value Inquiry", Philosophy 101 (2026).

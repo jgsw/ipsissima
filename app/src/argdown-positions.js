@@ -119,16 +119,44 @@ function sectionOfLine(headings, line) {
 
 /** The line of the paragraph in lines[lo-1..hi-1] that best matches the claim.
  *  Ties go to the earliest, so a claim restated later is placed where it is first made. */
+/** The content words of every line of one source, tokenised ONCE.
+ *
+ *  THE SOURCE DOES NOT CHANGE WHILE A MAP IS BEING PLACED, but this used to be re-derived for
+ *  every claim: `locateParagraph` walked the whole file and called `contentWords` plus built a
+ *  `Set` on each line, once per claim. On the Wilson map that is 161 claims over about a
+ *  thousand lines — 161,000 tokenisations of the same paragraphs, and it made placement 99% of
+ *  the cost of opening a map: 873 ms on Wilson, 847 ms on Prescott-Couch.
+ *
+ *  Keyed on the array itself, which `linesOf` memoises per chapter, so one file is tokenised
+ *  once however many claims cite it. `null` marks a line placement skips — too short, or a
+ *  heading — so the skip test is not repeated either.
+ */
+var LINE_WORDS = typeof WeakMap === "function" ? new WeakMap() : null;
+
+function lineWordSets(lines) {
+  var hit = LINE_WORDS && LINE_WORDS.get(lines);
+  if (hit) return hit;
+  var sets = new Array(lines.length);
+  for (var n = 0; n < lines.length; n++) {
+    var raw = String(lines[n]).trim();
+    sets[n] = (raw.length < MIN_PARA || raw.charAt(0) === "#")
+      ? null : new Set(contentWords(raw));
+  }
+  if (LINE_WORDS) LINE_WORDS.set(lines, sets);
+  return sets;
+}
+
 function locateParagraph(claimText, lines, lo, hi) {
   var want = Object.create(null), total = 0, w;
   var cw = contentWords(claimText);
   for (var i = 0; i < cw.length; i++) { w = cw[i]; want[w] = (want[w] || 0) + 1; total++; }
   if (!total) return { line: null, score: 0 };
+  var sets = lineWordSets(lines);
   var best = 0, bestLine = null;
   for (var n = Math.max(1, lo); n <= Math.min(hi, lines.length); n++) {
-    var raw = String(lines[n - 1]).trim();
-    if (raw.length < MIN_PARA || raw.charAt(0) === "#") continue;
-    var have = new Set(contentWords(raw)), score = 0;
+    var have = sets[n - 1];
+    if (!have) continue;
+    var score = 0;
     for (w in want) if (have.has(w)) score += want[w];
     score /= total;
     if (score > best) { best = score; bestLine = n; }
@@ -186,11 +214,46 @@ function quoteParts(quote) {
   return out;
 }
 
+/** `normalise` and `foldPunctuation` applied to a whole SOURCE, remembered.
+ *
+ *  THE SOURCE IS THE SAME FOR EVERY CLAIM AND WAS RE-DERIVED FOR EACH ONE. `findQuote`
+ *  normalised the entire chapter per quotation and `isVerbatim` folded it per claim — 68 KB
+ *  walked character by character, 161 times over, on the Wilson map. Profiling put `normalise`
+ *  at 44% of the run and `foldPunctuation` at a further 16%: between them, three fifths of the
+ *  cost of opening any map with a manuscript behind it.
+ *
+ *  Keyed on the string, which is the same object each time because `positions` reads it out of
+ *  its own `sources` map, so the lookup is a pointer comparison in practice. Bounded, and
+ *  cleared wholesale rather than evicted one at a time: this holds at most a few chapters, and a
+ *  cache that needs an eviction policy needs a test for the eviction policy.
+ */
+var SRC_CACHE_MAX = 8;
+var NORM_SRC = new Map();
+var FOLD_SRC = new Map();
+
+function normaliseSource(text) {
+  var hit = NORM_SRC.get(text);
+  if (hit) return hit;
+  if (NORM_SRC.size >= SRC_CACHE_MAX) NORM_SRC.clear();
+  hit = normalise(text);
+  NORM_SRC.set(text, hit);
+  return hit;
+}
+
+function foldSource(text) {
+  var hit = FOLD_SRC.get(text);
+  if (hit != null) return hit;
+  if (FOLD_SRC.size >= SRC_CACHE_MAX) FOLD_SRC.clear();
+  hit = foldPunctuation(text);
+  FOLD_SRC.set(text, hit);
+  return hit;
+}
+
 /** The line a quotation starts on, or null if it is not there verbatim. */
 function findQuote(quote, sourceText) {
   var parts = quoteParts(quote);
   if (!parts.length) return null;
-  var n = normalise(sourceText), hay = n.text.toLowerCase();
+  var n = normaliseSource(sourceText), hay = n.lower || (n.lower = n.text.toLowerCase());
   var pos = 0, first = null;
   for (var i = 0; i < parts.length; i++) {
     var idx = hay.indexOf(parts[i].toLowerCase(), pos);
@@ -486,7 +549,9 @@ function foldPunctuation(text) {
 function isVerbatim(claim, body) {
   var a = foldPunctuation(claim);
   if (!a) return false;
-  return foldPunctuation(body).indexOf(a) >= 0;
+  // The claim is folded fresh — it differs every time. The BODY is the same source for every
+  // claim in the file, so it is folded once. See normaliseSource above.
+  return foldSource(body).indexOf(a) >= 0;
 }
 
 

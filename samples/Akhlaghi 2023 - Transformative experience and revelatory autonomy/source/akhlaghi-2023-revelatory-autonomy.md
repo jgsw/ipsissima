@@ -5,6 +5,18 @@ source: "Analysis 83:1 (2023), pp. 3-12"
 doi: "10.1093/analys/anac084"
 licence: "CC-BY-4.0"
 licence_url: "https://creativecommons.org/licenses/by/4.0/"
+abstract: >-
+  Sometimes it is not us but those to whom we stand in special relations that face
+  transformative choices: our friends, family or beloved. A focus upon first-personal rational
+  choice and agency has left crucial ethical questions regarding what we owe to those who face
+  transformative choices largely unexplored. In this paper I ask: under what conditions, if
+  any, is it morally permissible to interfere to try to prevent another from making a
+  transformative choice? Some seemingly plausible answers to this question fail precisely
+  because they concern transformative experiences. I argue that we have a distinctive moral
+  right to revelatory autonomy grounded in the value of autonomous self-making. If this right
+  is outweighed then, I argue, interfering to prevent another making a transformative choice
+  is permissible. This conditional answer lays the groundwork for a promising ethics of
+  transformative experience.
 ---
 
 <!-- (c) Farbod Akhlaghi. "Transformative experience and the right to revelatory autonomy",

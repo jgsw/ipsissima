@@ -599,6 +599,15 @@ body.fs #fsexit{display:inline-flex}
 #helptoc button:last-child{border-bottom:0}
 #helptoc button:hover{background:var(--bg-soft,rgba(58,123,213,.08));color:var(--accent)}
 #helptoc button::after{content:"\203A";float:right;color:var(--fg-dim)}
+/* THE GROUP LABEL. Quiet and small, because it is a signpost and not a choice: nothing happens
+   when you press it, so it must not look like the buttons under it. The rule above it does the
+   dividing, which lets the label itself stay light. */
+#helptoc .tocgroup{margin:1rem 0 .15rem;padding:.5rem .5rem .15rem;
+  border-top:1px solid var(--line);
+  font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-dim)}
+#helptoc .tocgroup:first-child{margin-top:.2rem;border-top:0}
+/* A topic that ends a group should not draw a rule into the label below it. */
+#helptoc button:has(+ .tocgroup){border-bottom:0}
 #help .helpback{position:absolute;top:.65rem;left:.8rem;border:0;background:transparent;
   font:inherit;font-size:12px;color:var(--accent);cursor:pointer;padding:.2rem .3rem}
 #help .helpback:hover{text-decoration:underline}
@@ -1264,14 +1273,28 @@ function buildHelpPages(){
   if (typeof window.__MARKDOWN_TRUSTED__ === "function" && window.__HELP_MD__)
     body.innerHTML = window.__MARKDOWN_TRUSTED__(window.__HELP_MD__);
 
-  // `##` is a topic boundary; anything above the first one is the panel's own introduction and
-  // belongs on the contents page.
-  var kids = [].slice.call(body.children), pages = [], cur = null, intro = [];
+  // `#` is a GROUP, `##` is a topic; anything above the first heading is the panel's own
+  // introduction and belongs on the contents page.
+  //
+  // THE GROUPS EXIST BECAUSE THE LIST GOT LONG. Seventeen topics in one column is a list you
+  // read from the top every time, because nothing in it tells you which part of it to look in;
+  // and the help only grows. They divide by WHAT THE READER IS DOING — reading a map, asking
+  // whose words these are, working with a reconstruction, looking something up — rather than by
+  // which control does it, because somebody consulting the help has a question and not yet a
+  // control. A group is a label in the contents, not a page: there is nothing to read at that
+  // level, and a page whose content is a list of other pages is a level of nothing.
+  var kids = [].slice.call(body.children), pages = [], cur = null, intro = [], group = null;
   kids.forEach(function(node){
+    if (node.tagName === "H1") {
+      group = node.textContent.trim();
+      node.remove();                    // the label is drawn in the contents, not in the body
+      return;
+    }
     if (node.tagName === "H2") {
       cur = document.createElement("section");
       cur.className = "helppage";
       cur.dataset.title = node.textContent.trim();
+      if (group) cur.dataset.group = group;
       body.insertBefore(cur, node);
       pages.push(cur);
     }
@@ -1296,7 +1319,18 @@ function buildHelpPages(){
   wt.textContent = "Take the walkthrough";
   wt.onclick = function(){ setHelp(false); startWalkthrough(); };
   toc.appendChild(wt);
+  var shown = null;
   pages.forEach(function(pg, i){
+    // The group's label, once, above the first topic in it. Written from the page's own
+    // `data-group` so the contents cannot fall out of step with the file: adding a topic under
+    // a `#` in help.md is all it takes to put it in the right place here.
+    if (pg.dataset.group && pg.dataset.group !== shown) {
+      shown = pg.dataset.group;
+      var h = document.createElement("div");
+      h.className = "tocgroup";
+      h.textContent = shown;
+      toc.appendChild(h);
+    }
     var b = document.createElement("button");
     b.type = "button";
     b.textContent = pg.dataset.title;

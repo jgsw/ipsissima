@@ -5,6 +5,19 @@ source: "Neuropsychologia 227 (2026) 109465"
 doi: "10.1016/j.neuropsychologia.2026.109465"
 licence: "CC-BY-4.0"
 licence_url: "https://creativecommons.org/licenses/by/4.0/"
+abstract: >-
+  This paper critically assesses David Hume's imagistic theory of thought in light of
+  aphantasia. Central to Hume's theory is the claim that abstraction requires imaginative
+  operations on individual ideas that are mental representations derived from sensory
+  impressions. We present a challenge to Hume's account of abstraction by drawing on empirical
+  and philosophical insights about aphantasia. Our argument proceeds as follows. If Hume is
+  right, then abstract thinking depends on being able to imaginatively use individual ideas in
+  a specific way. However, since individual ideas in Hume's framework can be identified with
+  mental imagery, individuals with severe aphantasia, who arguably can't imaginatively use
+  mental imagery, should be unable to engage in abstract thought. Yet, they are able to think
+  abstractly. Therefore, Hume's view faces a challenge: abstraction does not seem to require
+  the imaginative use of individual ideas. This reveals a significant limitation not only in
+  Hume's account, but also in imagistic models of cognition more broadly.
 ---
 
 <!-- © Uku Tooming and Roomet Jakapi. "Aphantasia as a challenge for Humean abstraction",

@@ -85,7 +85,11 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .separator()
         .item(&item("save", "Save", Some("CmdOrCtrl+S"))?)
         .item(&item("save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
-        .item(&item("export", "Send This Back…", Some("CmdOrCtrl+E"))?)
+        // EXPORT, because that is what the toolbar button says and what the menu it opens is
+        // titled. "Send This Back" describes what the feature is FOR and is not what it is
+        // called anywhere else, and one feature under two names is one feature the reader has to
+        // learn twice. The same rename was already made on the web side; this was the last of it.
+        .item(&item("export", "Export…", Some("CmdOrCtrl+E"))?)
         .separator()
         .close_window()
         .build()?;

@@ -4,11 +4,20 @@
   EDIT THIS FILE, not the template. It is rendered by the same markdown-it that draws the
   manuscript pane, and inlined into the page by build_argdown_viewer.mjs.
 
-  TWO RULES, and only two:
+  THREE RULES, and only three:
 
+    * `#` starts a GROUP. It is a label in the contents and not a page — there is nothing to read
+      at that level. Groups divide by WHAT THE READER IS DOING, not by which control does it,
+      because somebody consulting the help has a question and does not yet know the control.
     * `##` starts a new TOPIC. The contents list is built from these, in this order, so adding a
       topic is adding a heading. `###` and `####` are subheadings inside a topic.
-    * Everything above the first `##` stays on the contents page, under the title.
+    * Everything above the first heading stays on the contents page, under the title.
+
+  ADDING A TOPIC means putting it under the right `#`, and nothing else: the contents are built
+  from the file, so a topic in the wrong group is a topic filed in the wrong place and not a bug
+  in the program. If a topic genuinely belongs in no group, that is a sign the groups are wrong
+  rather than that the topic needs one of its own — seventeen topics in a flat list is what these
+  four groups were introduced to fix, and it will happen again if they are allowed to multiply.
 
   Raw HTML is allowed here (this is our own text, unlike a manuscript), and four ids are filled
   in by the program at runtime and must survive any rewrite: `relkey`, `fidkey`, `helpstats`,
@@ -26,12 +35,16 @@ from the words it came from, and every quotation checkable against the page it w
 New to it? **Take the walkthrough** — the first entry below. Two minutes, and it runs on the
 reconstruction you have open. It offers to run again next time; if you said no, it lives here.
 
+# Reading a map
+
 ## Reading the map
+
 
 Every box is one claim. Arrows run *from a reason to what it bears on*, so an arrow points at the
 claim it is about.
 
 ## Moving around
+
 
 - **Scroll** — zoom in and out
 - **Drag** — pan across the map
@@ -43,6 +56,7 @@ Opening a section shows the claims it starts from, each still folded — one lev
 section of forty claims never lands on you at once.
 
 ## The two arrangements
+
 
 Both are the argument. What differs is what *orders* the claims — the order of reasons, or the
 order of exposition.
@@ -60,6 +74,7 @@ The **Map**, **Argdown**, **Notes** and **Manuscript** buttons beside them are s
 again — those are panes, and any combination of them can be open at once.
 
 ## What the lines mean
+
 
 <div class="key" id="relkey"></div>
 
@@ -80,7 +95,32 @@ Only relations that reach further than about a twelfth of the reconstruction are
 Most support sits a line or two from what it supports, and that is not a finding about the text,
 it is how prose works. Small arrowheads along a line show its direction where there is room.
 
+## Linked and independent reasons
+
+
+Argdown draws two different things with the same arrow, and the map tells them apart. Premises
+inside one inference step of a **premise-conclusion structure** are *linked*: none of them carries
+any weight without the others, and knocking one out destroys the step. They are gathered onto a
+**bar** and go on as a single arrow.
+
+An ordinary `+` or `-` relation is *independent*: knock it out and the rest still stand. Those
+keep their own arrows. So a fan of separate arrows means several reasons; a bar means one move
+that needs all of them.
+
+A step whose other premise is an intermediate conclusion — internal to the argument, and not
+drawn — arrives as a single line and keeps a plain arrow, because a bar gathering one line would
+claim a linkage you cannot see.
+
+## A line behind a claim
+
+
+…is drawn dashed across it. In **Exposition** a reason several sections away is a long line with
+whatever the text put in between sitting on top of it, and a line re-emerging at a box's edge
+would otherwise look exactly like a line starting there. The broken stretch says the claim it
+crosses has nothing to do with it.
+
 ## Justificatory debt
+
 
 A claim has to be justified, and there are only two places its justification can sit: before it in
 the text, or after. If it comes after, the reader is asked to accept the claim now and take the
@@ -119,7 +159,10 @@ first and the reader carries them — and climbs out across the first third. Wil
 line for most of the paper, earning each step as it goes, and then rises sharply at the very end
 as the contention arrives already paid for.
 
-## Whose words are these
+# Whose words are these?
+
+## How close to the author's words
+
 
 A reconstruction cannot otherwise distinguish the source's words from the reconstructor's. The
 border of each box says which:
@@ -129,6 +172,7 @@ border of each box says which:
 Hover any box to see its level named. Unmarked claims are drawn plain.
 
 ## Whose claim is this
+
 
 A different question, and the border does not answer it. *Whose words* is one thing; *who is
 putting this forward* is another, and a map loses it where prose keeps it easily — "Hume holds…",
@@ -160,17 +204,55 @@ A file may use any hashtag it likes and Ipsissima will show it — these four ar
 a fixed list. The **hashtags** control lists whatever the file actually contains, and does not
 appear at all when it contains none.
 
-## The controls
+## The claim and its source
 
-- **how much** — how many levels of reasons are showing, from the main claim outwards. The number
-  on each button is how many claims it puts on screen.
-- **sections** — whether the argument's sections are folded into blocks or opened out
-- **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
-  carry it. This control appears only when the file uses hashtags at all.
-- **full claims** — show every claim's whole text, rather than the first few lines with a "more"
-  link
+
+**Manuscript** opens the text beside the map. Drag the divider to give it more or less of the
+window. The pane is there in both arrangements: beside **Argdown** it is what lets you check a
+`source:` quotation against the source without leaving the page.
+
+- **Double-click a claim** — jump to the passage it was drawn from
+- <kbd>Shift</kbd>**-click a claim** — the same
+- **Right-click a claim** — **Go to source**, from a menu
+- **Click a claim** — marks it as the one you are working on
+- **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
+  the map. If they are folded away they are opened, and if they all fit on screen the map moves
+  to them.
+- **Click a `[claim]` in the Argdown** — lights it on the map and shows its passage
+
+The note above the passage says how precisely the claim was placed — *found by its quotation* is
+exact, *the paragraph it came from* is as close as an unquoted claim can be pinned. A claim
+located only to its file has no line to highlight, and says so.
+
+The two marks come off separately. Clicking the map's background clears the mark on the map;
+clicking past the passage in the manuscript clears the mark there. Neither touches the other, so
+you can keep a claim marked while reading around it in the text.
+
+Clicking a passage answers with *every* claim it produced, not the nearest one. Across the
+reference maps 57% of placed claims share a line with another — a claim pinned to its paragraph
+carries that paragraph's first line — so "the closest" would be a choice between several the tool
+has no way to make.
+
+## Provenance
+
+
+Metadata in braces records where a claim came from and whose words it is. It is what makes the
+**Exposition** arrangement and the source links work.
+
+```argdown
+[a-claim]: The claim.
+    {chapter: "source/paper.md", fidelity: "quotation",
+     source: "\"the author's exact words\"", reviewed: "2026-08-20"}
+```
+
+`fidelity` says whose words these are — `quotation`, `paraphrase`, `compression`,
+`interpretation`, `imputation` — and the map draws it as the box's border. Press **{…}** in the
+Argdown pane to fold all of it away and see the argument's shape.
+
+# Working with a reconstruction
 
 ## Opening a reconstruction
+
 
 **Open a file.** Ipsissima reads the folder it sits in, so the manuscript comes with it — you do
 not have to find and open the folder yourself. Double-clicking a `.argdown` in Finder or Explorer
@@ -217,57 +299,68 @@ unloads whatever is open, and asks first if there is anything unsaved.
 and goes on editing *that* file, which is what you want before a substantial revision. In a browser
 that cannot choose where to write, Save offers the file as a download instead and says so.
 
-## The claim and its source
+## The controls
 
-**Manuscript** opens the text beside the map. Drag the divider to give it more or less of the
-window. The pane is there in both arrangements: beside **Argdown** it is what lets you check a
-`source:` quotation against the source without leaving the page.
 
-- **Double-click a claim** — jump to the passage it was drawn from
-- <kbd>Shift</kbd>**-click a claim** — the same
-- **Right-click a claim** — **Go to source**, from a menu
-- **Click a claim** — marks it as the one you are working on
-- **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
-  the map. If they are folded away they are opened, and if they all fit on screen the map moves
-  to them.
-- **Click a `[claim]` in the Argdown** — lights it on the map and shows its passage
+- **how much** — how many levels of reasons are showing, from the main claim outwards. The number
+  on each button is how many claims it puts on screen.
+- **sections** — whether the argument's sections are folded into blocks or opened out
+- **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
+  carry it. This control appears only when the file uses hashtags at all.
+- **full claims** — show every claim's whole text, rather than the first few lines with a "more"
+  link
 
-The note above the passage says how precisely the claim was placed — *found by its quotation* is
-exact, *the paragraph it came from* is as close as an unquoted claim can be pinned. A claim
-located only to its file has no line to highlight, and says so.
+## Writing in the margins
 
-The two marks come off separately. Clicking the map's background clears the mark on the map;
-clicking past the passage in the manuscript clears the mark there. Neither touches the other, so
-you can keep a claim marked while reading around it in the text.
 
-Clicking a passage answers with *every* claim it produced, not the nearest one. Across the
-reference maps 57% of placed claims share a line with another — a claim pinned to its paragraph
-carries that paragraph's first line — so "the closest" would be a choice between several the tool
-has no way to make.
+Two hands write in the margin of a reconstruction, and the map keeps them apart:
 
-## Linked and independent reasons
+```argdown
+[a-claim]: The essay's central move.
+    {comment: "Interesting. Try reading Frankfurt on this to deepen it."}
+    {note: "The essay never states this premise; it is imputed."}
+```
 
-Argdown draws two different things with the same arrow, and the map tells them apart. Premises
-inside one inference step of a **premise-conclusion structure** are *linked*: none of them carries
-any weight without the others, and knocking one out destroys the step. They are gathered onto a
-**bar** and go on as a single arrow.
+- `comment` <span style="color:#b5179e">■</span> — a remark *on* the argument: a tutor reading a
+  student's essay. It marks the claim's **top-right** corner.
+- `note` <span style="color:#8a6d1f">■</span> — the reconstructor's own: why a reading was taken,
+  what the map cannot show. It marks the **top-left** corner.
 
-An ordinary `+` or `-` relation is *independent*: knock it out and the rest still stand. Those
-keep their own arrows. So a fan of separate arrows means several reasons; a bar means one move
-that needs all of them.
+A claim carrying both is marked on both sides. Both appear in the **Notes** pane too, where
+clicking one lights the claim and opens its passage.
 
-A step whose other premise is an intermediate conclusion — internal to the argument, and not
-drawn — arrives as a single line and keeps a plain arrow, because a bar gathering one line would
-claim a linkage you cannot see.
+**Neither becomes a node**, and that is deliberate. A comment is about the argument but is not a
+move in it: "try reading Frankfurt on this" drawn as a claim would say the essay contains that
+move. An *objection* is different — that is a move, and belongs on the map as `- [an-objection]`.
 
-## A line behind a claim
+## Export
 
-…is drawn dashed across it. In **Exposition** a reason several sections away is a long line with
-whatever the text put in between sitting on top of it, and a line re-emerging at a box's edge
-would otherwise look exactly like a line starting there. The broken stretch says the claim it
-crosses has nothing to do with it.
+
+The **Export** button in the Notes pane offers four things, and the right one depends entirely on
+what the reader on the other end has. All four ask where to put the file rather than dropping it
+in Downloads — the annotated essay belongs beside the essay.
+
+- **Word (.docx)** — the essay itself, with the margin marks as **real Word comments** beside the
+  passage each one is about. What a student opens without being told how.
+- **Markdown (.md)** — the same, with the marks as quoted asides under each paragraph.
+- **Reconstruction + essay (.argdown)** — one file holding the reconstruction *and* the text it is
+  of. Still an ordinary `.argdown`: the essay travels at the end of it, written as comments the
+  parser ignores, so it opens here, stays editable, and saves back as one file. For anyone who has
+  this program.
+- **Reconstruction as a web page** — a copy of *this page* with the whole thing inside it: map,
+  essay, margins. They double-click it. Nothing to install, nothing to unzip, no folder to point
+  anything at. It is a reading copy: everything this page does, apart from parsing a new file and
+  editing one. Somebody who wants to answer back opens the reconstruction in Ipsissima itself,
+  which is a browser tab or an application rather than a copy frozen into the file you sent.
+
+A file that carries its text this way says so — **+ essay** beside the file name in the Argdown
+pane. That copy is a snapshot taken when the file was made, so if the real manuscript is open
+beside it in a folder, the folder wins.
+
+# Reference
 
 ## Writing Argdown
+
 
 Argdown is line-oriented. Four things make up a reconstruction:
 
@@ -328,67 +421,8 @@ needed — which is why the map gathers them onto a bar:
 The editor marks the first three as you type. The rest show up on the map: check the **Argdown**
 pane against what you expected to see.
 
-## Writing in the margins
-
-Two hands write in the margin of a reconstruction, and the map keeps them apart:
-
-```argdown
-[a-claim]: The essay's central move.
-    {comment: "Interesting. Try reading Frankfurt on this to deepen it."}
-    {note: "The essay never states this premise; it is imputed."}
-```
-
-- `comment` <span style="color:#b5179e">■</span> — a remark *on* the argument: a tutor reading a
-  student's essay. It marks the claim's **top-right** corner.
-- `note` <span style="color:#8a6d1f">■</span> — the reconstructor's own: why a reading was taken,
-  what the map cannot show. It marks the **top-left** corner.
-
-A claim carrying both is marked on both sides. Both appear in the **Notes** pane too, where
-clicking one lights the claim and opens its passage.
-
-**Neither becomes a node**, and that is deliberate. A comment is about the argument but is not a
-move in it: "try reading Frankfurt on this" drawn as a claim would say the essay contains that
-move. An *objection* is different — that is a move, and belongs on the map as `- [an-objection]`.
-
-## Sending it back
-
-The **Export** button in the Notes pane offers four things, and the right one depends entirely on
-what the reader on the other end has. All four ask where to put the file rather than dropping it
-in Downloads — the annotated essay belongs beside the essay.
-
-- **Word (.docx)** — the essay itself, with the margin marks as **real Word comments** beside the
-  passage each one is about. What a student opens without being told how.
-- **Markdown (.md)** — the same, with the marks as quoted asides under each paragraph.
-- **Reconstruction + essay (.argdown)** — one file holding the reconstruction *and* the text it is
-  of. Still an ordinary `.argdown`: the essay travels at the end of it, written as comments the
-  parser ignores, so it opens here, stays editable, and saves back as one file. For anyone who has
-  this program.
-- **Reconstruction as a web page** — a copy of *this page* with the whole thing inside it: map,
-  essay, margins. They double-click it. Nothing to install, nothing to unzip, no folder to point
-  anything at. It is a reading copy: everything this page does, apart from parsing a new file and
-  editing one. Somebody who wants to answer back opens the reconstruction in Ipsissima itself,
-  which is a browser tab or an application rather than a copy frozen into the file you sent.
-
-A file that carries its text this way says so — **+ essay** beside the file name in the Argdown
-pane. That copy is a snapshot taken when the file was made, so if the real manuscript is open
-beside it in a folder, the folder wins.
-
-## Provenance
-
-Metadata in braces records where a claim came from and whose words it is. It is what makes the
-**Exposition** arrangement and the source links work.
-
-```argdown
-[a-claim]: The claim.
-    {chapter: "source/paper.md", fidelity: "quotation",
-     source: "\"the author's exact words\"", reviewed: "2026-08-20"}
-```
-
-`fidelity` says whose words these are — `quotation`, `paraphrase`, `compression`,
-`interpretation`, `imputation` — and the map draws it as the box's border. Press **{…}** in the
-Argdown pane to fold all of it away and see the argument's shape.
-
 ## Map details
+
 
 For checking a file.
 
