@@ -83,13 +83,13 @@ paragraphs and page numbers intact, and then checks a finished reconstruction ag
 word for word. It is an MCP server, so you ask an assistant you are already talking to and it does
 the rest.
 
-**Installation instructions: [`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).**
+**If you use Claude Desktop, it is a double-click.** Download the `.mcpb` bundle from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and open it; Claude Desktop
+provisions Python and the dependencies itself. You need [Node](https://nodejs.org) on the machine
+— the Argdown parser is JavaScript, and travels inside the bundle — and nothing else.
 
-Be warned that it is, today, a developer's install: a terminal, Python, Node, a virtual
-environment and a path written into a configuration file by hand. That is a fair description of
-most MCP servers at the moment and not a good excuse — if you would rather not, everything above
-this line works without it, and the samples in `samples/` were all built with it so you can see
-what it produces before deciding whether to fight with it.
+Everything else, including installing from source and the command line tools, is in
+[`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).
 
 ## What it does that other Argdown viewers do not
 

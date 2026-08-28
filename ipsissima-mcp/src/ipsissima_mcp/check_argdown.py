@@ -149,6 +149,57 @@ def record(path, elapsed, nodes=None, edges=None, parsed=True):
         pass
 
 
+def find_node():
+    """A `node` binary, whether or not this process has a login shell's PATH.
+
+    IT USUALLY DOES NOT. The server's ordinary home is a desktop application that launched it,
+    and a GUI process on macOS inherits launchd's PATH -- `/usr/bin:/bin:/usr/sbin:/sbin` -- not
+    the one your terminal has. Homebrew puts node in `/opt/homebrew/bin`, which is on neither. So
+    `shutil.which("node")` returns None on a machine with a perfectly good Node, and the honest
+    error message that follows tells the user to install what they already have. Measured on this
+    machine before it was written, with the PATH a GUI app actually gets.
+
+    The same trap, for cargo, is documented in app/desktop/rust-path.mjs. Version managers are
+    searched last and newest-first: they are the least likely to be the only Node present and the
+    most likely to hold several.
+    """
+    found = shutil.which("node")
+    if found:
+        return found
+
+    names = ("node.exe", "node") if os.name == "nt" else ("node",)
+    fixed = ["/opt/homebrew/bin",                        # Homebrew, Apple Silicon
+             "/usr/local/bin",                           # Homebrew on Intel; nodejs.org installer
+             "/usr/bin", "/opt/local/bin",               # distributions, MacPorts
+             r"C:\Program Files\nodejs",                 # the Windows installer
+             os.path.join(os.path.expanduser("~"), ".volta", "bin"),
+             os.path.join(os.path.expanduser("~"), ".asdf", "shims")]
+    for d in fixed:
+        for n in names:
+            cand = os.path.join(d, n)
+            if os.path.exists(cand):
+                return cand
+
+    # nvm and fnm keep one directory per installed version; take the highest, by version rather
+    # than by string, so that 20 does not lose to 8.
+    import glob
+    pools = [os.path.join(os.path.expanduser("~"), ".nvm", "versions", "node", "*", "bin"),
+             os.path.join(os.path.expanduser("~"), ".local", "share", "fnm", "node-versions",
+                          "*", "installation", "bin")]
+
+    def version_key(d):
+        m = re.search(r"v?(\d+)\.(\d+)\.(\d+)", d)
+        return tuple(int(g) for g in m.groups()) if m else (0, 0, 0)
+
+    for pool in pools:
+        for d in sorted(glob.glob(pool), key=version_key, reverse=True):
+            for n in names:
+                cand = os.path.join(d, n)
+                if os.path.exists(cand):
+                    return cand
+    return None
+
+
 def find_cli(explicit):
     """How to run Argdown, as an argv prefix.
 
@@ -165,7 +216,7 @@ def find_cli(explicit):
         return (_node_or_die(), explicit) if explicit.endswith(".mjs") else (explicit,)
 
     if os.path.exists(BUNDLED_CLI):
-        node = shutil.which("node")
+        node = find_node()
         if node:
             return (node, BUNDLED_CLI)
 
@@ -180,13 +231,14 @@ def find_cli(explicit):
     if found:
         return (found,)
     if os.path.exists(BUNDLED_CLI):
-        sys.exit("this needs Node to read Argdown files, and there is no `node` on the PATH.\n"
+        sys.exit("this needs Node to read Argdown files, and none could be found -- not on the "
+                 "PATH,\nnor anywhere Node is usually installed.\n"
                  "Install it from https://nodejs.org (any current version), then try again.")
     sys.exit("could not find the argdown CLI; pass --cli")
 
 
 def _node_or_die():
-    node = shutil.which("node")
+    node = find_node()
     if not node:
         sys.exit("--cli names a .mjs parser, which needs Node, and there is no `node` on the "
                  "PATH.\nInstall it from https://nodejs.org, then try again.")

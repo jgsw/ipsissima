@@ -87,14 +87,25 @@ Keep the token out of the repository and out of your shell history — `uv publi
 
 ## Afterwards
 
-Change the install instructions in **three** places, which is where they are:
+The install instructions live in **three** places and all three now lead with the `.mcpb` bundle,
+which is the right answer for somebody who does not want a terminal at all:
 
 - `ipsissima-mcp/README.md` — the Install section
 - `README.md` — the "Ipsissima-MCP, the other half" section
 - `site/index.md` — "The other half"
 
-They should lead with `uvx ipsissima-mcp` and keep the source install underneath, the way the
-main README does for the app. Until then those three say a clone is needed, which is true.
+What publishing adds is the *terminal* install, for people who are in one already: `uvx
+ipsissima-mcp` in place of the clone-and-venv under "The developer's way". Put it there rather
+than at the top; the bundle should stay first.
+
+## The two are not alternatives
+
+The `.mcpb` bundle (built by `build_mcpb.mjs`, attached to every release) declares its
+dependencies rather than carrying them, and the host resolves them **from PyPI**. Today that
+works because the bundle carries this project's own source and `uv` builds it locally. Once
+`ipsissima-mcp` is published, the bundle could instead depend on the released version by name,
+which would make it smaller still and let it update without a new bundle. That is a change worth
+making deliberately, not a consequence of publishing.
 
 ## Versions
 

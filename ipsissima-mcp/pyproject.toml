@@ -7,7 +7,12 @@ name = "ipsissima-mcp"
 version = "0.1.0"
 description = "Turn a document into a source an Argdown reconstruction can cite, and check the reconstruction against it."
 readme = "README.md"
-requires-python = ">=3.10"
+# 3.11, NOT 3.10, and the reason is onnxruntime rather than anything in this code. Current
+# onnxruntime publishes wheels for cp311 upwards only, so on 3.10 the install fails outright --
+# "doesn't have a source distribution or wheel for the current platform". Found by provisioning
+# the .mcpb bundle exactly as the host would, where uv picked 3.10 because this line let it.
+# Claiming 3.10 here does not make it work; it only moves the failure to the user.
+requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "James Wilson" }]
 keywords = ["argdown", "argument", "reconstruction", "pdf", "epub", "philosophy"]
@@ -20,7 +25,6 @@ classifiers = [
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",

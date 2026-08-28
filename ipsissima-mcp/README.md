@@ -16,7 +16,26 @@ drawn from, and how far each claim stands from the source's own words.
 
 ## Install
 
-You need **Python 3.10+**, **Node** (any current version — it reads the Argdown), and ideally
+### The easy way: the Claude Desktop bundle
+
+Download **`ipsissima-mcp-0.1.0.mcpb`** from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and double-click it. Claude Desktop
+installs it, provisions Python and the dependencies itself, and there is nothing to configure —
+no terminal, no virtual environment, no path typed into a JSON file.
+
+**You still need [Node](https://nodejs.org) on the machine.** The Argdown parser is JavaScript
+and is carried inside the bundle, so there is nothing to install *for* it, but something has to
+run it. Nothing else is required: Claude ships a Node runtime for its own extensions but does not
+expose it, and Python it does not ship at all — which is why the bundle asks the host to provide
+one rather than carrying its own.
+
+If the checker later reports that it cannot find Node, install it and restart Claude Desktop.
+It looks in the usual places as well as on the `PATH`, because an application launched from the
+Dock does not get the `PATH` your terminal has.
+
+### The developer's way: from source
+
+You need **Python 3.11+**, **Node** (any current version — it reads the Argdown), and ideally
 [**pandoc**](https://pandoc.org/installing.html).
 
 ```bash

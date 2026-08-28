@@ -143,3 +143,19 @@ jobs:
           gh release upload "${{ github.ref_name }}" "Ipsissima.html" "Ipsissima Reader.html" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # THE MCP BUNDLE, BUILT ONCE. It is a `uv` bundle -- it declares its dependencies rather
+      # than carrying them -- so there is nothing platform-specific in it and three copies would
+      # be three identical files racing to overwrite each other. It rides with the macOS job for
+      # the same reason the pages above do.
+      #
+      # This is the install for a reader who does not want a terminal: double-click, and Claude
+      # Desktop provisions Python and the dependencies itself.
+      - name: Attach the Claude Desktop bundle
+        if: matrix.platform == 'macos-latest'
+        run: |
+          node ../../ipsissima-mcp/build_mcpb.mjs
+          gh release upload "${{ github.ref_name }}" \
+            ../../ipsissima-mcp/build/ipsissima-mcp-*.mcpb --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

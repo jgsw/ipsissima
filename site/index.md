@@ -82,6 +82,10 @@ It does not reconstruct arguments itself. That judgement belongs to the model, a
 instructions given to it are served as a prompt read off disk, where anyone can read and change
 them.
 
+**On Claude Desktop it installs by double-clicking**: take the `.mcpb` bundle from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and open it. You will need
+[Node](https://nodejs.org) on the machine; Claude Desktop provides the rest.
+
 ## Get the application
 
 The desktop application adds what a web page cannot do: open a `.argdown` by double-clicking it,

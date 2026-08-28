@@ -112,5 +112,41 @@ else:
                   bool(eps) and "ipsissima-mcp" in zf.read(eps).decode("utf-8"))
 
 
+
+# ---- 3. the .mcpb manifest still describes this package ---------------------- #
+# The bundle is built by app/build_mcpb.mjs, which runs `mcpb validate` and so catches anything
+# the schema can see. What the schema cannot see is whether the manifest still matches the
+# project beside it: a version bumped in one file and not the other, or an entry_point pointing
+# at a file that has moved. Both would build a bundle that installs and does not start.
+
+manifest_path = MCP / "manifest.json"
+if not manifest_path.is_file():
+    print("  SKIP  no manifest.json; the .mcpb bundle is not checked")
+else:
+    import json as _json
+    manifest = _json.loads(manifest_path.read_text(encoding="utf-8"))
+    pyproject = (MCP / "pyproject.toml").read_text(encoding="utf-8")
+
+    py_version = (re.search(r'^version = "([^"]+)"', pyproject, re.M) or [None, None])[1]
+    check("the manifest and pyproject agree on the version",
+          manifest.get("version") == py_version,
+          f"manifest {manifest.get('version')} vs pyproject {py_version}")
+
+    entry = manifest.get("server", {}).get("entry_point", "")
+    check("the manifest's entry_point exists", entry and (MCP / entry).is_file(),
+          f"entry_point is {entry!r}")
+
+    # The floor is a dependency's, not this code's -- onnxruntime publishes no wheels below
+    # cp311 -- so the two statements of it drift apart easily and only fail at a user's install.
+    py_floor = (re.search(r'requires-python = ">=([\d.]+)"', pyproject) or [None, None])[1]
+    declared = manifest.get("compatibility", {}).get("runtimes", {}).get("python", "")
+    check("the manifest and pyproject agree on the Python floor",
+          py_floor and py_floor in declared,
+          f"manifest says {declared!r}, pyproject says >={py_floor}")
+
+    for key in ("name", "version", "description", "author", "server"):
+        check(f"the manifest has a {key}", key in manifest)
+
+
 print(f"\n{fails} FAILED" if fails else "\nthe package carries everything it serves")
 sys.exit(1 if fails else 0)
