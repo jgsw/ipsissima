@@ -1,20 +1,26 @@
 ---
-layout: home
+layout: default
 title: Ipsissima
 ---
 
-<!-- NO `# Ipsissima` HERE. The `home` layout already prints `title:` as the page's heading and
-     the site name sits in the nav above it, so a markdown H1 makes the word appear three times
-     before the first sentence. The heading is the front matter's job; this file starts at the
-     first thing a reader has not already been told. -->
+<!-- `default`, NOT `home`. Minima's `home` layout prints `title:` as an H1, and the theme's nav
+     already carries the site name immediately above it — so the word "Ipsissima" arrived twice
+     before the reader reached a sentence, and three times when this file also opened with its
+     own `# Ipsissima`. `default` renders the content and nothing else.
+     `title:` stays, because the <title> tag is built from it.
 
-**Read an argument reconstruction beside the text it is a reading of.**
+     THE PAGE STILL NEEDS ONE H1, so the tagline is it. That is the better heading anyway: the
+     name is already in the nav, and a visitor who has just arrived learns more from what the
+     thing does than from being told its name a second time. -->
+
+# Read an argument reconstruction beside the text it is a reading of
 
 *ipsissima verba* — the very words themselves. Scholars of the Gospels set it against *ipsissima
 vox*, the authentic voice: did he say **these words**, or is this a faithful report of what he
 meant? That is the distinction this program keeps, on every claim.
 
-Ipsissima reads [Argdown](https://argdown.org), Christian Voigt's argumentation markup language,
+Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
+Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
 drawn from, and the marks a reader writes in the margin. **It runs entirely in your browser and
 makes no network requests of any kind.**
@@ -80,8 +86,12 @@ builds are on the [releases page](https://github.com/jgsw/ipsissima/releases).
 
 ---
 
-<small>Ipsissima is by James Wilson. The source is on
-<a href="https://github.com/jgsw/ipsissima">GitHub</a>. The samples above are public domain
-(Darwin, Carroll) or Crown copyright reused under the
+<small>Ipsissima is by James Wilson, and stands on other people's work: the
+<a href="https://argdown.org">Argdown</a> language, created by Christian Voigt and maintained by
+the Argdown team; the reconstruction method of Alec Fisher and Trudy Govier; and Tom Stern's
+article on charity and quotation, which is why the checks do not stop at verbatim.
+<a href="https://github.com/jgsw/ipsissima/blob/main/CREDITS.md">CREDITS.md</a> says it properly.
+The source is on <a href="https://github.com/jgsw/ipsissima">GitHub</a>. The samples above are
+public domain (Darwin, Carroll) or Crown copyright reused under the
 <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open
 Government Licence</a> (Miller).</small>

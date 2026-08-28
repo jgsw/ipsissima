@@ -1,16 +1,25 @@
 # Credit where it is owed
 
 Ipsissima is a small program standing on several pieces of other people's work. Some of it is
-code, some of it is a notation, and one of it is an argument in a journal article that changed
-what this program checks.
+code, some of it is a notation, and some of it is scholarship: the method a reconstruction here
+follows is not this project's, and one journal article changed what the program checks.
 
 ---
 
-## Argdown — Christian Voigt
+## Argdown — Christian Voigt, and those who keep it
 
 Ipsissima is a reader and editor for **[Argdown](https://argdown.org)**, and would not exist
 without it. The notation, the parser, and the model of what a reconstruction *is* — statements,
-arguments, premise-conclusion structures, the four relation types — are Christian Voigt's.
+arguments, premise-conclusion structures, the four relation types — are **Christian Voigt's**, and
+the design has held up under everything this project has asked of it.
+
+**A language also has to be kept.** Since the beginning of 2025 Argdown has been renovated and
+maintained by **Kushal** ([@Kushal12341997](https://github.com/Kushal12341997)), **Hatim**
+([@5HATIM5](https://github.com/5HATIM5)), **Lucas** ([@Morstis](https://github.com/Morstis)) and
+**Gregor** ([@ggbetz](https://github.com/ggbetz)), who released Argdown 2.0 in April 2026 — see
+[the release notes](https://argdown.org/changes/), which is where these names come from and which
+gives them as first names and handles. Ipsissima tracks the parser they publish, so their work is
+in every map this program draws.
 
 Ipsissima **bundles the official parser and uses it unmodified**, so a file that parses here
 parses everywhere Argdown does. It never substitutes a parser of its own: the one time a
@@ -49,40 +58,54 @@ why these won.
 
 ---
 
+## How to reconstruct an argument — Fisher, Govier, Walton
+
+`ipsissima-mcp/docs/reconstruction-cheatsheet.md` is the method a reconstruction here follows, and
+almost none of it is this project's invention. **The method is Alec Fisher's and the structural
+distinctions are Trudy Govier's**, as that document says at the top and again wherever it uses
+them.
+
+- **Alec Fisher**, *The Logic of Real Arguments*, 2nd edn (Cambridge, 2004) — working backwards
+  from the conclusion, the **Assertibility Question**, and suppositional contexts. The AQ is what
+  stops a reconstruction attributing reasoning the author never gave: generate the candidate
+  reason, then ask whether the author asserts or clearly assumes it, and drop it if not.
+- **Trudy Govier**, *A Practical Study of Argument*, 7th edn (Cengage, 2010) — standardising,
+  **linked against convergent** support, unstated premises, Modest Charity, the ARG conditions,
+  and conductive arguments with their counterconsiderations. Linked-against-convergent is why a
+  premise-conclusion structure exists in these maps at all.
+- **Trudy Govier**, *Problems in Argument Analysis and Evaluation* (Foris, 1987).
+- **Douglas Walton, Chris Reed and Fabrizio Macagno**, *Argumentation Schemes* (Cambridge,
+  2008) — argument forms paired with the critical questions that probe them.
+
+Ipsissima records the results of that method. It does not perform it, and none of these authors
+has anything to do with this program.
+
+---
+
 ## Tom Stern, and why this program checks what it checks
 
 > Stern, T. (2016) '"Some Third Thing": Nietzsche's Words and the Principle of Charity',
 > *The Journal of Nietzsche Studies*, 47(2), pp. 287–302.
 
-This is not a dependency. It is the reason a whole class of check exists here, and the debt is
-larger than any of the code above.
+Not a dependency, and the largest debt here.
 
-Ipsissima verifies quotations: a claim marked `quotation` is checked, character by character,
-against the source it cites. That is worth having, and it establishes **far less than it looks
-like**. Stern's four illustrations of *misreporting* — using an author's words to make it seem he
-is saying something he certainly is not — **quote accurately in three cases out of four**. Every
-one of those three would come back `exact` from a verbatim checker:
+Ipsissima checks every claim marked `quotation` against its source, character by character. That
+is worth having and **establishes far less than it looks like**: three of Stern's four cases of
+*misreporting* — using an author's words to make him seem to say what he certainly does not —
+quote perfectly accurately, and every one would come back `exact`. A hedge left just outside the
+quotation marks; a partial claim quoted in support of a universal one; a passage quoted for a term
+it never uses.
 
-- a hedged claim quoted, with the author's own unhedged correction, in the same sentence, left
-  just outside the quotation marks;
-- a partial claim ("*some* drives do x") quoted in support of a universal one, with the "whereas
-  some drives do the exact opposite" that follows it dropped;
-- a passage quoted as evidence for a term the passage never uses.
-
-His structural point is what made the difference: misreporting *advertises* a commitment to
-meaning through a recognised meaning-seeking technique — direct quotation — while sacrificing it.
-The importance of the currency is assumed in the act of debasing it. A verbatim checker verifies
-the currency and **cannot see the debasement**, because the debasement is entirely a matter of
-what the span was cut away *from*.
+His structural point is the one that changed the program: misreporting **advertises** a commitment
+to meaning, through the recognised meaning-seeking technique of direct quotation, while sacrificing
+it. A verbatim checker verifies the currency and cannot see the debasement, because the debasement
+lies entirely in what the span was cut away *from*.
 
 So `--source-root` reports, for every quotation that *is* verbatim, what sits immediately around
-it: a dropped qualifier, a continuation that corrects it, an oversized elision. And the fidelity
-vocabulary — quotation, paraphrase, compression, interpretation, imputation — together with
-`unit`, `mode` and `strength`, are Stern's three dimensions of charity rather than an invention
-of this project's.
-
-`ipsissima-mcp/tests/test_reading_checks.py` is built directly on his four cases and is named for
-them.
+it — a dropped qualifier, a correcting continuation, an oversized elision. And the fidelity
+vocabulary, with `unit`, `mode` and `strength`, is Stern's three dimensions of charity rather than
+an invention of this project's. `ipsissima-mcp/tests/test_reading_checks.py` is built on his four
+cases and named for them.
 
 ---
 

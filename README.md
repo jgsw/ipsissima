@@ -6,7 +6,8 @@ Read an argument reconstruction beside the text it is a reading of.
 vox*, the authentic voice: did he say **these words**, or is this a faithful report of what he
 meant? That is the distinction this program keeps, on every claim.
 
-Ipsissima reads [Argdown](https://argdown.org) — Christian Voigt's argumentation markup language —
+Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
+Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
 drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine and
 makes no network requests of any kind.
@@ -82,17 +83,21 @@ is written for the download page and says exactly what a reader will see and wha
 Ipsissima is free software under the **GNU General Public License v3** — see `LICENSE`.
 
 It is a reader and editor for **Argdown**, and would not exist without it. The notation, the
-parser and the model of what a reconstruction *is* are **Christian Voigt's**; Ipsissima bundles
-the official parser and uses it unmodified, so a file that parses here parses everywhere Argdown
-does. The notation is set in **ArgVu**, the Argdown project's own typeface, by **Peter Stahmer**,
-funded by the **KIT Debatelab**. Ipsissima is an independent program and is not endorsed by or
-affiliated with the Argdown project.
+parser and the model of what a reconstruction *is* are **Christian Voigt's**, and the language has
+been maintained since the beginning of 2025 by **Kushal, Hatim, Lucas and Gregor**, who released
+Argdown 2.0 in April 2026. Ipsissima bundles the official parser and uses it unmodified, so a file
+that parses here parses everywhere Argdown does. The notation is set in **ArgVu**, the Argdown
+project's own typeface, by **Peter Stahmer**, funded by the **KIT Debatelab**. Ipsissima is an
+independent program and is not endorsed by or affiliated with the Argdown project.
 
-Its checks owe a particular debt to **Tom Stern's** "'Some Third Thing': Nietzsche's Words and
-the Principle of Charity" (*The Journal of Nietzsche Studies*, 2016), which is why this program
-does not stop at verifying that a quotation is verbatim: three of Stern's four illustrations of
-misreporting quote *accurately*. It began inside a copy of **Simon Goldstein's Deep Drafter**,
-though it shares no code with it.
+The method a reconstruction follows here is **Alec Fisher's** and **Trudy Govier's**, with
+argument schemes from **Walton, Reed and Macagno**; the checks owe a particular debt to **Tom
+Stern's** "'Some Third Thing': Nietzsche's Words and the Principle of Charity" (*The Journal of
+Nietzsche Studies*, 2016), which is why this program does not stop at verifying that a quotation
+is verbatim: three of Stern's four illustrations of misreporting quote *accurately*. It began
+inside a copy of **Simon Goldstein's Deep Drafter**, though it shares no code with it.
+
+`CREDITS.md` says all of this properly.
 
 **`CREDITS.md` has the full account**, including why each of those matters to what the program
 actually does.

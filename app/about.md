@@ -34,9 +34,11 @@ it behaves identically.
 Ipsissima is a reader and editor for **Argdown**, and would not exist without it.
 
 Argdown is the argumentation markup language created by **Christian Voigt**. The notation, the
-parser, and the model of what an argument reconstruction *is* are all his. Ipsissima bundles the
-official parser and uses it unmodified, so a file that parses here parses everywhere Argdown does,
-and a reconstruction written here is not locked to this program.
+parser, and the model of what an argument reconstruction *is* are all his. Since the beginning of
+2025 the language has been renovated and maintained by **Kushal, Hatim, Lucas and Gregor**, who
+released Argdown 2.0 in April 2026. Ipsissima bundles the official parser and uses it unmodified,
+so a file that parses here parses everywhere Argdown does, and a reconstruction written here is
+not locked to this program.
 
 The notation is set in **ArgVu**, the Argdown project's own typeface, designed by **Peter Stahmer**
 and funded by the **KIT Debatelab**. It is what draws `<+` and `<-` as single arrows rather than as
@@ -63,6 +65,13 @@ one; a passage quoted as evidence for a term it never uses. Every one would pass
 So the checker also reports what each verbatim quotation was cut away *from* — a dropped
 qualifier, a continuation that corrects it, an oversized elision — and the fidelity vocabulary
 here follows Stern's dimensions of charity rather than an invention of this program's.
+
+The method by which a reconstruction is made is not this program's either. It follows **Alec
+Fisher**'s *The Logic of Real Arguments* — working back from the conclusion, and the Assertibility
+Question that stops a reconstruction attributing reasoning the author never gave — and **Trudy
+Govier**'s *A Practical Study of Argument*, from which come standardising, the distinction between
+linked and convergent support that these maps draw, unstated premises and counterconsiderations;
+with argument schemes from **Walton, Reed and Macagno**. `CREDITS.md` gives the full list.
 
 ## Built on
 
