@@ -190,7 +190,37 @@ export function metadataProblems(source, yamlLoad) {
       if (done) i = n;
     }
     if (!done) { i = startLine + 1; continue; }
-    try { yamlLoad(block); }
+    // TWO METADATA STYLES ARE VALID, AND THIS ONLY KNEW ONE.
+    //
+    // `{…}` handed to a YAML parser is a FLOW mapping, where commas between entries are
+    // mandatory. That is right for the style the samples use — `{fidelity: "quotation",
+    // pinpoint: "[32]", note: "…"}`, wrapping across lines with the commas kept.
+    //
+    // But a block whose brace sits ALONE on its line is not flow. Argdown reads its interior as
+    // ordinary block YAML, where the entries are separated by newlines and a comma is a syntax
+    // error. Checked against @argdown/core, which parses
+    //
+    //     {                       {chapter: "x.md", fidelity: "quotation"}
+    //     chapter: "x.md"
+    //     fidelity: "quotation"
+    //     }
+    //
+    // identically, and silently yields NOTHING for either style written with the other's
+    // punctuation. This check called the left-hand form 138 broken blocks on a valid map and
+    // refused to draw it — a false alarm that stops a good file opening, which is worse than the
+    // silence it exists to break.
+    //
+    // So: flow first, and where the brace stands alone, block as well. A block that fails both
+    // is broken in a way Argdown will not report, which is the whole point of being here.
+    // THE BRACE'S POSITION DECIDES WHICH PARSE APPLIES. Not "try flow, fall back to block": the
+    // two styles are each other's errors, and a fallback accepts a file Argdown drops. A block
+    // whose brace stands alone AND carries commas parses perfectly as flow YAML and yields
+    // NOTHING from Argdown — precisely the silence this check exists to break.
+    const braceAlone = /^\s*\{\s*$/.test(lines[startLine].slice(open));
+    // Only the braces come off, never the newline after the first, so reported line numbers
+    // still point at the line the reader has to fix.
+    const toParse = braceAlone ? block.replace(/^\s*\{/, "").replace(/\}\s*$/, "") : block;
+    try { yamlLoad(toParse); }
     catch (e) {
       const mark = e && e.mark;
       out.push({

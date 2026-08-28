@@ -202,6 +202,52 @@ console.log("the walkthrough travels, and starts itself only in the workbench");
         /catch \(e\) \{ return \{ ok: false \}; \}/.test(out));
 }
 
+/* THE METADATA CHECK MUST AGREE WITH ARGDOWN, IN BOTH DIRECTIONS.
+ *
+ * It exists because Argdown will not report a broken `{…}`: it drops every claim after the fault
+ * and returns success. So a block it accepts and the check rejects is a good map refused, and a
+ * block it drops and the check accepts is the silence the check was written to break. Both have
+ * happened.
+ *
+ * TWO STYLES ARE VALID AND THEY ARE EACH OTHER'S ERRORS. `{…}` with content on the brace line is
+ * a YAML FLOW mapping and needs commas; a brace standing alone on its line makes the interior
+ * ordinary BLOCK YAML, where a comma is a syntax error. Written with the other's punctuation,
+ * either style yields nothing from Argdown while looking perfectly reasonable.
+ *
+ * The check used to parse every block as flow, so it called 138 blocks broken on a valid
+ * book-length map and refused to draw it. Fixing that by trying flow and falling back to block
+ * would have been worse than the bug: a brace-alone block WITH commas is valid flow YAML and
+ * Argdown drops it, so the fallback would have waved through exactly the file this is for.
+ *
+ * Hence the pairing below: for each case, what the check says and what Argdown does, asserted to
+ * agree. A case where they differ is a bug whichever way round it is.
+ */
+console.log("the metadata check agrees with the parser");
+{
+  const cases = [
+    ["flow, wrapping across lines — the samples' style",
+     `[A]: c. {fidelity: "quotation", pinpoint: "[32]",\n     note: "x"}\n`],
+    ["a brace alone on its line, no commas — also valid",
+     `[A]: c.\n    {\n    chapter: "x.md"\n    fidelity: "quotation"\n    }\n`],
+    ["a brace alone WITH commas — valid flow YAML, and argdown drops it",
+     `[A]: c.\n    {\n    chapter: "x.md",\n    fidelity: "quotation"\n    }\n`],
+    ["flow wrapping without a comma",
+     `[A]: c. {fidelity: "quotation"\n     note: "x"}\n`],
+    ["flow missing a comma",       `[A]: c. {chapter: "x.md" fidelity: "q"}\n`],
+    ["an unterminated string",     `[A]: c. {chapter: "x.md, fidelity: "q"}\n`],
+    ["a duplicated key",           `[A]: c.\n    {\n    chapter: "a"\n    chapter: "b"\n    }\n`]
+  ];
+  for (const [name, src] of cases) {
+    const reported = metadataProblems(src, yaml.load).length > 0;
+    const res = await argdown.runAsync({ input: src, ...RUN });
+    const dropped = Object.keys(res.statements || {}).length === 0;
+    // `check` takes a CONDITION and a detail, not a got/want pair. The agreement is the
+    // condition; the detail says which way round they disagreed.
+    check(`  ${name}`, reported === dropped,
+          `check ${reported ? "reports" : "accepts"} it, argdown ${dropped ? "drops" : "reads"} it`);
+  }
+}
+
 console.log("the file a new reconstruction starts from");
 {
   const starter = fs.readFileSync(path.join(HERE, "new-reconstruction.argdown"), "utf8");
