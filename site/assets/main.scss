@@ -1,0 +1,86 @@
+---
+---
+
+/* The site's face, over minima's bones. Variables set before the import override the theme's
+ * !default values; everything after the import is the identity: EB Garamond (self-hosted from
+ * assets/fonts — the app promises no third-party requests and the site keeps the same manners),
+ * the brand navy on the site title, and the fidelity ladder as the horizontal rule.
+ * brand/README.md is the reference for all of it. */
+
+@font-face {
+  font-family: "EB Garamond";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/eb-garamond-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "EB Garamond";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/eb-garamond-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "EB Garamond";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/eb-garamond-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "EB Garamond";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/eb-garamond-latin-500-italic.woff2") format("woff2");
+}
+
+/* Garamond is quiet at 16px, so the base size rises with it. Paper, ink and the working blue
+ * are the app's own values (the blue deepened to clear AA as link text on paper). */
+$base-font-family: "EB Garamond", Garamond, Georgia, serif;
+$base-font-size: 18px;
+$base-line-height: 1.6;
+$text-color: #1A1A1A;
+$background-color: #FDFDFC;
+$brand-color: #2A5FB4;
+
+@import "minima";
+
+/* The wordmark: the name set as the phrase appears in scholarship — italic, cited. */
+.site-title,
+.site-title:visited {
+  font-family: "EB Garamond", Garamond, Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 28px;
+  letter-spacing: 0.005em;
+  color: #203A6A;
+}
+
+h1, h2, h3, h4 {
+  font-family: "EB Garamond", Garamond, Georgia, serif;
+  font-weight: 500;
+  line-height: 1.25;
+}
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.5rem; margin-top: 2.2rem; }
+h3 { font-size: 1.2rem; }
+
+/* The line under the strapline is the subtitle — the one place an h1 has a paragraph
+ * immediately against it. */
+h1 + p {
+  font-size: 1.12em;
+  color: #6E6A5E;
+}
+
+/* A rule here is the fidelity ladder: solid to dash-dot, quotation to imputation. */
+hr {
+  border: none;
+  height: 12px;
+  margin: 2.4rem 0;
+  background-image: url("ladder.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 12px;
+}

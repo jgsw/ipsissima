@@ -1,0 +1,20 @@
+<!-- minima 2.5.1's head.html, copied so the favicon and font preloads can be added: the site is
+     served under /ipsissima/, where the browser's automatic /favicon.ico lookup misses, so the
+     links must be written with relative_url. Kept in sync with the theme by hand; it has not
+     changed in years. -->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- seo -%}
+  <link rel="icon" href="{{ '/favicon.svg' | relative_url }}" type="image/svg+xml">
+  <link rel="icon" href="{{ '/favicon.ico' | relative_url }}" sizes="48x48 32x32 16x16">
+  <link rel="apple-touch-icon" href="{{ '/apple-touch-icon.png' | relative_url }}">
+  <link rel="preload" href="{{ '/assets/fonts/eb-garamond-latin-400-normal.woff2' | relative_url }}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{{ '/assets/fonts/eb-garamond-latin-500-italic.woff2' | relative_url }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ '/assets/main.css' | relative_url }}">
+  {%- feed_meta -%}
+  {%- if jekyll.environment == 'production' and site.google_analytics -%}
+    {%- include google-analytics.html -%}
+  {%- endif -%}
+</head>
