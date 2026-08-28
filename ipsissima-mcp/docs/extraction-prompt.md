@@ -44,12 +44,21 @@ One consequence for a long turn: if you are working in a conversation cached for
 turn that thinks for longer than that makes the next request rebuild the whole context. Prefer
 several ordinary turns to one enormous one.
 
-**1. Read the three documents in as few calls as they will fit in — but do not cram.** Served as
-MCP resources this is not a problem. On the command line it is: the three come to about 55 KB, and
-a run that put all three *and* the source in one `cat` overflowed the tool's inline cap, spilled to
-a file, and had to read that file back — the same number of calls, and one enormous turn that took
-eight minutes to digest. **Two calls that fit beat one that overflows.** Never combine the
-documents with the source.
+**1. Read the reference documents in TWO calls, and never with the source.** Served as MCP
+resources this is not a problem. On the command line it is: the three documents come to about
+55 KB, which is over the tool's inline cap, so one `cat` of all three does not save a call — it
+spills to a file you must then read back, and produces a turn long enough to outlive the prompt
+cache. **Two `cat`s of about 30 KB each. Not one, not four.**
+
+**And if a call does spill to a file, READ THE FILE.** Do not re-run the command: it will spill
+again, and you will have paid twice for nothing. This is not hypothetical and it is not rare — it
+is the single most common way this rule gets broken. One run crammed all four documents into a
+`cat`, spilled, re-ran *the same `cat`*, spilled again, and wrote 66 KB to disk twice before a
+`Read` finally delivered the text. Two calls wasted, by a run that had this paragraph in front of
+it.
+
+A spill is not an error. It is the tool telling you where it put the output, and the next thing to
+do is open it.
 
 **2. Read the source once, whole, before you start.** Runs that read it in nine or fourteen pieces
 paid for each piece. Read it complete, then re-read only the passage you are quoting.
