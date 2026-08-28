@@ -119,16 +119,56 @@ jobs:
           projectPath: app/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Ipsissima ${{ github.ref_name }}"
+          # NO VERSION NUMBERS IN HERE. This text is reused verbatim for every tag, so a
+          # filename written out in full ("Ipsissima_0.1.0_universal.dmg") is wrong the next time
+          # and quietly tells the reader to download something that is not there.
           releaseBody: |
             Ipsissima reads an Argdown reconstruction beside the manuscript itself.
 
-            **No installation needed:** download `Ipsissima.html` below and double-click it. It
-            works offline in any browser and needs nothing else.
+            ## Nothing to install
 
-            **The app** adds what a page cannot do: double-click a `.argdown` file to open it,
-            save back in place on any platform, and reload the manuscript when it changes on
-            disk. macOS and Windows builds are unsigned — on macOS, right-click the app and
+            Download **`Ipsissima.html`** and double-click it. It works offline in any browser
+            and makes no network requests of any kind. Drop a `.argdown` file onto it — or a
+            whole folder, which brings the manuscript with it so claims can be laid out by where
+            they appear in the text.
+
+            **`Ipsissima.Reader.html`** is the same thing without the editor — the one to send to
+            somebody you want to *show* a reconstruction to.
+
+            New to argument maps? Take the walkthrough: it is the first entry under **How to
+            use**, runs on whatever you have open, and takes about two minutes.
+
+            ## The application
+
+            Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in
+            place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel
+            and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage`
+            are Linux.
+
+            The macOS and Windows builds are **unsigned**. On macOS, right-click the app and
             choose Open the first time; on Windows, choose "More info" then "Run anyway".
+
+            ## Ipsissima-MCP, for Claude Desktop
+
+            Download the **`.mcpb`** bundle and double-click it. Claude Desktop installs it and
+            provisions Python and the dependencies itself. There is nothing to configure: no
+            terminal, no virtual environment, no path typed into a JSON file.
+
+            **You also need [Node](https://nodejs.org)** on the machine — any current version.
+            The Argdown parser is JavaScript and travels inside the bundle, so there is nothing
+            to install *for* it, but something has to run it. If you install Node after the
+            bundle, restart Claude Desktop.
+
+            Then ask for what you want in ordinary words — *"turn this PDF into an argument
+            map"*. It gets the document into structured Markdown with its paragraphs and page
+            numbers intact, and checks the finished reconstruction against its sources word for
+            word: every quotation verified character by character, every claim's distance from
+            the author's own words recorded.
+
+            It does not reconstruct arguments itself. That judgement belongs to the model, and
+            the instructions given to it are served as prompts read off disk, where anyone can
+            read and change them. Full instructions, and the install from source, are in
+            [ipsissima-mcp/README.md](https://github.com/jgsw/ipsissima/blob/main/ipsissima-mcp/README.md#install).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
