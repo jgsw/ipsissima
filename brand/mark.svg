@@ -1,0 +1,17 @@
+<!-- Ipsissima mark: one claim box, drawn with the app's fidelity semantics.
+     The border enters solid (quotation) and leaves as dash-dot (imputation); the
+     dash patterns are scaled from the map's own fidelity ladder. The quotation
+     marks are EB Garamond's own U+201C outline (medium weight, SIL OFL),
+     thickened with a light stroke for icon duty. brand/README.md says how to
+     regenerate the platform icon set and the site favicons from here. -->
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" rx="230" fill="#203A6A"></rect>
+  <g stroke="#FBFAF7" fill="none">
+    <path d="M 205 819 L 205 215 L 836 215" stroke-width="34" stroke-linejoin="miter"></path>
+    <line x1="819" y1="249" x2="819" y2="809" stroke-width="23" stroke-dasharray="55 34"></line>
+    <line x1="785" y1="809" x2="205" y2="809" stroke-width="20" stroke-dasharray="68 27 20 27"></line>
+  </g>
+  <g transform="translate(247.6 1194.0) scale(1.2 -1.2)">
+    <path d="M373 693Q394 693 394 680Q394 675 389.5 672.0Q385 669 377 667Q354 662 332.5 649.5Q311 637 297.5 616.5Q284 596 284 565Q284 551 296.0 537.5Q308 524 324 521Q345 518 357.5 505.5Q370 493 370 474Q370 452 351.5 437.0Q333 422 310 422Q270 422 245.0 450.0Q220 478 220 522Q220 560 235.0 591.5Q250 623 273.5 646.0Q297 669 323.5 681.0Q350 693 373 693ZM188 693Q209 693 209 680Q209 675 204.5 672.0Q200 669 192 667Q169 662 147.5 649.5Q126 637 113.0 616.5Q100 596 100 565Q100 551 112.0 537.5Q124 524 140 521Q160 518 172.5 505.5Q185 493 185 474Q185 452 167.0 437.0Q149 422 125 422Q86 422 60.5 450.0Q35 478 35 522Q35 560 50.0 591.5Q65 623 89.0 646.0Q113 669 139.0 681.0Q165 693 188 693Z" fill="#FBFAF7" stroke="#FBFAF7" stroke-width="10" stroke-linejoin="round"></path>
+  </g>
+</svg>

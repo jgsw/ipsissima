@@ -1,0 +1,13 @@
+<!-- Ipsissima favicon: the claim box simplified for 16px, with EB Garamond's
+     U+201C outline (SIL OFL) heavily thickened so it survives tiny sizes. -->
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <rect width="64" height="64" rx="14" fill="#203A6A"></rect>
+  <g stroke="#FBFAF7" fill="none">
+    <path d="M 13 51 L 13 13 L 52 13" stroke-width="4" stroke-linejoin="miter"></path>
+    <line x1="51" y1="17" x2="51" y2="50" stroke-width="3" stroke-dasharray="6 4"></line>
+    <line x1="48" y1="50" x2="13" y2="50" stroke-width="3" stroke-dasharray="6 4"></line>
+  </g>
+  <g transform="translate(15.4 75.3) scale(0.075 -0.075)">
+    <path d="M373 693Q394 693 394 680Q394 675 389.5 672.0Q385 669 377 667Q354 662 332.5 649.5Q311 637 297.5 616.5Q284 596 284 565Q284 551 296.0 537.5Q308 524 324 521Q345 518 357.5 505.5Q370 493 370 474Q370 452 351.5 437.0Q333 422 310 422Q270 422 245.0 450.0Q220 478 220 522Q220 560 235.0 591.5Q250 623 273.5 646.0Q297 669 323.5 681.0Q350 693 373 693ZM188 693Q209 693 209 680Q209 675 204.5 672.0Q200 669 192 667Q169 662 147.5 649.5Q126 637 113.0 616.5Q100 596 100 565Q100 551 112.0 537.5Q124 524 140 521Q160 518 172.5 505.5Q185 493 185 474Q185 452 167.0 437.0Q149 422 125 422Q86 422 60.5 450.0Q35 478 35 522Q35 560 50.0 591.5Q65 623 89.0 646.0Q113 669 139.0 681.0Q165 693 188 693Z" fill="#FBFAF7" stroke="#FBFAF7" stroke-width="20" stroke-linejoin="round"></path>
+  </g>
+</svg>
