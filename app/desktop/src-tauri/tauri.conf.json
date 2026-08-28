@@ -44,7 +44,7 @@
     ],
     "category": "Education",
     "shortDescription": "Argument reconstruction, against the text it is of.",
-    "longDescription": "Ipsissima reads an Argdown reconstruction beside the manuscript it is a reading of: the argument as a map, the passage each claim was drawn from, and the marks a reader writes in the margin.",
+    "longDescription": "Ipsissima reads an Argdown reconstruction beside the manuscript itself: the argument as a map, the passage each claim was drawn from, and the marks a reader writes in the margin.",
     "fileAssociations": [
       {
         "ext": [

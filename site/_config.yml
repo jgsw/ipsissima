@@ -9,7 +9,7 @@
 # template.
 
 title: Ipsissima
-description: Read an argument reconstruction beside the text it is a reading of.
+description: Read an argument reconstruction beside the text itself.
 lang: en-GB
 
 # `minima` ships with GitHub Pages and needs nothing installed. The site is two pages; a theme

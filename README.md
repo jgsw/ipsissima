@@ -2,7 +2,7 @@
 
 **The very words, and how far a reading stands from them.**
 
-Read an argument reconstruction beside the text it is a reading of.
+Read an argument reconstruction beside the text itself.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write **these words**, or is this a faithful report of what they meant? Every

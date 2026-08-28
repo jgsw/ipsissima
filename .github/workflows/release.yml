@@ -103,7 +103,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: "Ipsissima ${{ github.ref_name }}"
           releaseBody: |
-            Ipsissima reads an Argdown reconstruction beside the manuscript it is a reading of.
+            Ipsissima reads an Argdown reconstruction beside the manuscript itself.
 
             **No installation needed:** download `Ipsissima.html` below and double-click it. It
             works offline in any browser and needs nothing else.

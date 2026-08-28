@@ -2,7 +2,7 @@
   "name": "ipsissima",
   "version": "0.1.0",
   "private": true,
-  "description": "Ipsissima — read an argument reconstruction beside the text it is a reading of. Builds the self-contained viewer and editor.",
+  "description": "Ipsissima — read an argument reconstruction beside the text itself. Builds the self-contained viewer and editor.",
   "license": "GPL-3.0-or-later",
   "author": "James Wilson",
   "type": "commonjs",
