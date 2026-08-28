@@ -428,6 +428,87 @@ def pcs_shapes(doc):
     return out
 
 
+#: Wording that marks a claim as a CONDITION ON THE QUESTION BEING REACHABLE rather than a reason
+#: to believe the answer. Deliberately narrow. `unless` and `provided that` are not here: they are
+#: ordinary English and would fire on half a philosophy paper, and a check that cries wolf on a
+#: hundred claims teaches the reader to skip it.
+PRECONDITION = re.compile(
+    r"\b(precondition|prerequisite|condition precedent"
+    # JURISDICTION AND STANDING ONLY. `power` and `authority` were here and had to go: "Music
+    # has the power to express feeling that cannot be captured in words" is not a jurisdictional
+    # precondition, and it was the check's only hit on the whole corpus. A term that is legal
+    # jargon in one register and ordinary English in another cannot carry this test.
+    r"|(?:no|has|have|had|lacks?|lacked|without)\s+(?:the\s+)?(?:jurisdiction|standing)\s+to"
+    r"|jurisdiction\s+to\s+(?:hear|entertain|decide|adjudicate)"
+    r"|standing\s+to\s+(?:sue|bring|challenge)"
+    r"|(?:must|has to)\s+(?:first|be\s+satisfied)"
+    r"|only\s+(?:then|if)\s+(?:can|does|is|may)"
+    r"|before\s+(?:the\s+)?(?:court|question|issue)\s+\w+\s+(?:be|can))\b", re.I)
+
+
+def preconditions_as_support(doc):
+    """PURE: support relations whose supporting claim reads as a PRECONDITION.
+
+    THE THIRD JOB `<+` IS DOING. Argdown has one support arrow and it carries at least three
+    different things: a reason a reader can weigh, an authority that binds whatever anyone thinks
+    of it, and a condition that must hold before the question can be reached at all. The first is
+    what the arrow means. The second is now marked with `#authority` on the cited proposition.
+    This is the third, and it is a MODELLING error rather than a notation gap: a precondition is a
+    premise of the step it conditions, not a reason hanging off the step's conclusion. Drawn as a
+    bare support it says the court was more likely to be right because it had jurisdiction, which
+    is not what anybody means.
+
+    WHY THIS CAN BE CHECKED AT ALL. The JSON's `relations` omits edges implied by a
+    premise-conclusion structure -- the checker's own census says so -- so a support relation
+    appearing here is by construction a HANGING support and not a premise already inside a PCS.
+    The check therefore never fires on a precondition that has been modelled correctly.
+
+    Reported as a question, never a fault. The wording test is a guess about meaning, and there
+    are real supports that talk this way: a claim ABOUT whether a precondition was met is a
+    perfectly ordinary reason.
+    """
+    # The same local import every other consumer of provenance here uses: this module is run as a
+    # script from several directories, so the sibling is found by path rather than by package.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as prov
+    except ImportError:
+        return []
+    nodes = prov.merged_nodes(doc)
+    out = []
+    for rel in doc.get("relations") or []:
+        if rel.get("relationType") != "support":
+            continue
+        src = rel.get("from")
+        text = (nodes.get(src) or {}).get("text") or ""
+        hit = PRECONDITION.search(text)
+        if hit:
+            out.append((src, rel.get("to"), hit.group(0)))
+    return out
+
+
+def precondition_report(doc):
+    """Print what `preconditions_as_support` found. Silent when there is nothing."""
+    found = preconditions_as_support(doc)
+    if not found:
+        return
+    print(f"\n   SUPPORTS THAT READ AS PRECONDITIONS ({len(found)})")
+    print("      A precondition is not a reason. `<+` says this claim gives you ground to believe")
+    print("      the one above it; a condition on whether the question can be asked at all says")
+    print("      something else, and Argdown draws them identically. Where the condition really is")
+    print("      part of the step, it belongs among that step's PREMISES rather than hanging off")
+    print("      its conclusion. Where the reading is genuinely that the condition supports the")
+    print("      claim, leave it and say so in a note.")
+    for src, dst, phrase in found:
+        finding("precondition-as-support", "?",
+                f"supports [{dst}] with wording that reads as a condition on the question rather "
+                f"than a reason for the answer ({phrase!r})",
+                title=src,
+                fix="move it into the premise-conclusion structure of the step it conditions, or "
+                    "keep it and record in a `note:` why it is a reason and not a precondition")
+        print(f"      ? [{src[:40]}] -> [{str(dst)[:40]}]  ({phrase})")
+
+
 def pcs_report(doc):
     """Print what `pcs_shapes` found. Silent when a file has no premise-conclusion structures."""
     found = pcs_shapes(doc)
@@ -1020,6 +1101,31 @@ def _report(cli, path, a):
     """
     print(f"== {os.path.basename(path)}")
 
+    # IS THIS A DRAFT? Almost every check here is an expectation about a text that has FINISHED
+    # arguing: that the map reaches a contention, that every claim is wired to something. A draft
+    # satisfies none of them and cannot be made to without inventing what the author has not
+    # written -- and a reconstructor faced with a fault it can only clear by invention will
+    # invent. Measured on a book-length draft where nine chapters of eleven reached no conclusion
+    # at all: under the ordinary rules that is nine manufactured apexes and no way for the author
+    # to tell which were his.
+    #
+    # So `draft: true` in the front matter does not silence anything. It moves the findings that
+    # are about UNFINISHEDNESS from fault to observation, and says so in their wording. What the
+    # checker can still be certain about -- a quotation that is not verbatim, a broken metadata
+    # block, a fidelity marker that does not match the words -- is unaffected, because none of
+    # those becomes true or false depending on how done the writing is.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as _prov
+        _fm = _prov.read_frontmatter(path) or {}
+    except ImportError:
+        _fm = {}
+    draft = str(_fm.get("draft", "")).lower() in ("true", "1")
+    if draft:
+        print("   DRAFT: the frontmatter says this text is still being written. Findings about "
+              "unfinishedness\n      are reported as observations rather than faults; every "
+              "check on the words themselves\n      is unchanged.")
+
     # ---- 1. parse -------------------------------------------------------- #
     r = run(cli, "map", path, "--format", "dot", "--stdout")
     if r.returncode != 0:
@@ -1048,13 +1154,33 @@ def _report(cli, path, a):
     for t in terminal:
         print(f"      * {t[:96]}")
     if isolated:
-        print(f"\n   DISCONNECTED ({len(isolated)}) -- attach or delete each:")
+        # IN A DRAFT AN ORPHAN IS A RESULT. A claim wired to nothing in a finished reconstruction
+        # is a fault: either it belongs somewhere or it should go. In a text still being written
+        # it is far more likely to be a passage whose place the AUTHOR has not settled, and
+        # telling the reconstructor to attach or delete it invites exactly the invention this
+        # whole mode exists to prevent.
+        #
+        # DEFENSIVE, AND SAY SO: no case could be constructed that reaches this branch. Argdown's
+        # default statement selection drops a claim with no relations BEFORE the map is exported,
+        # so a genuinely isolated claim never appears in `nodes` and `isolated` stays empty --
+        # it was empty on every sample, on the book-length draft, and on files written to provoke
+        # it. The branch is correct if it is ever reached and it is not known to be reachable.
+        # The draft switch's real work is in the prompt, not here.
+        print(f"\n   DISCONNECTED ({len(isolated)}) -- " +
+              ("material not yet joined to the argument:" if draft else "attach or delete each:"))
         for t in isolated:
-            finding("disconnected", "!",
-                    "claim is wired to nothing: it neither supports nor is supported",
-                    title=t[:160],
-                    fix="attach it with +/- to the claim it bears on, or delete it")
-            print(f"      ! {t[:96]}")
+            if draft:
+                finding("disconnected", "?",
+                        "claim is wired to nothing: it neither supports nor is supported. In a "
+                        "draft this is usually material whose place is not settled yet",
+                        title=t[:160],
+                        fix="leave it if the text has not placed it; attach it once it has")
+            else:
+                finding("disconnected", "!",
+                        "claim is wired to nothing: it neither supports nor is supported",
+                        title=t[:160],
+                        fix="attach it with +/- to the claim it bears on, or delete it")
+            print(f"      {'?' if draft else '!'} {t[:96]}")
     else:
         print("\n   DISCONNECTED: none")
 
@@ -1199,6 +1325,9 @@ def _report(cli, path, a):
     doc_for_pcs = export_json(cli, path)
     if doc_for_pcs:
         pcs_report(doc_for_pcs)
+        # Same export, same question — what is this arrow actually claiming? — so it reads the
+        # document already in hand rather than exporting it a second time.
+        precondition_report(doc_for_pcs)
 
     # ---- 6. JSON cross-check --------------------------------------------- #
     with tempfile.TemporaryDirectory() as td:

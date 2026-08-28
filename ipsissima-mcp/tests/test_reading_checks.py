@@ -224,5 +224,42 @@ check("load-bearing means it holds something up",
 check("an assumption that is itself argued for is not load-bearing",
       any(l["title"] == "bridge" for l in il["leaves"]), False)
 
+
+
+# ---------------------------------------------------------------- the third job of `<+`
+#
+# Argdown has one support arrow doing at least three things: a reason a reader can weigh, an
+# authority that binds regardless, and a condition on whether the question can be reached at all.
+# The second is marked with `#authority`. The third is a MODELLING error — a precondition belongs
+# among the premises of the step it conditions — and this check names it.
+#
+# THE WHOLE DIFFICULTY IS FALSE POSITIVES. The test is a guess about meaning made from wording, so
+# a pattern that is one word too greedy fires on ordinary prose and teaches the reader to skip the
+# check. `power` and `authority` were in the pattern and had to come out: "Music has the power to
+# express feeling that cannot be captured in words" was its only hit on the entire corpus. Both
+# halves are asserted below, and the negative half is the one that matters.
+print("\npreconditions drawn as support")
+import check_argdown as _chk
+
+FIRES = [
+    "The court has no jurisdiction to hear the challenge",
+    "Standing to sue is a precondition of the claim",
+    "Justiciability is a condition precedent to review",
+    "The condition must first be satisfied",
+]
+QUIET = [
+    "Music has the power to express feeling that cannot be fully captured in words",
+    "Parliament has the authority to legislate on the matter",
+    "Prorogation frustrates Parliament unless it is justified",
+    "Most drives do the exact opposite",
+    "The passage is quoted as evidence for a term it never uses",
+]
+for t in FIRES:
+    check(f"  fires: {t[:44]}", bool(_chk.PRECONDITION.search(t)), True)
+for t in QUIET:
+    check(f"  quiet: {t[:44]}", bool(_chk.PRECONDITION.search(t)), False)
+
+
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

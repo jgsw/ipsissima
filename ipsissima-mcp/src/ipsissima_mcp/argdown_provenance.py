@@ -447,6 +447,14 @@ POLICY_VALUES = {
     # every generated file — a warning that could not be cleared, on a line the conventions
     # document tells you to write. Both arms of the instruction comparison hit it.
     "generated": ("true", "false", "True", "False", True, False),
+    # THE TEXT HAS NOT FINISHED ARGUING, and the checks have to know. Every expectation the
+    # checker holds -- that a map reaches a contention, that every claim connects to something --
+    # is an expectation about a FINISHED piece of writing. Applied to a draft they are not checks
+    # but complaints about the state of the manuscript, and the reconstructor's only way to clear
+    # them is to invent the apex the author has not written. See the draft section of
+    # extraction-prompt.md; measured on a book-length draft where nine chapters of eleven had
+    # reached no conclusion at all.
+    "draft":    ("true", "false", "True", "False", True, False),
     "aim":      ("fit", "appropriation"),
     "unit":     ("meaning", "commitment"),
     "mode":     ("coherence", "truth", "soundness", "agreement", "interest"),
