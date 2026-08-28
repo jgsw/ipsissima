@@ -15,12 +15,10 @@ repository, so every path that assumes a checkout keeps working for the person m
 notice. The wheel test below is the only one that would have caught it, so it is the one that
 matters; the cheaper checks above it fail faster and say more precisely what broke.
 """
-import json
 import re
 import shutil
 import subprocess
 import sys
-import sysconfig
 import tempfile
 import zipfile
 from pathlib import Path

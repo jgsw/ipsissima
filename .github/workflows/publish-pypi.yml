@@ -1,0 +1,76 @@
+# Publish Ipsissima-MCP to PyPI.
+#
+# MANUAL ONLY, DELIBERATELY. There is no `push: tags:` trigger here, and the reason is that a tag
+# already means something in this repository: it cuts the desktop release. Those two should not be
+# the same event. The app and the server are versioned separately, an upload to PyPI cannot be
+# undone, and a workflow that fires on every tag would make "publish to a public index forever"
+# the default consequence of building a .dmg. Run this when you mean it.
+#
+# NO TOKEN. This uses PyPI's trusted publishing: the upload is authorised by an OIDC identity
+# GitHub mints for this workflow, so nothing has to be stored in the repository and there is
+# nothing to rotate. It requires a publisher configured at
+# https://pypi.org/manage/account/publishing/ naming this repository, this workflow file and the
+# `pypi` environment; without one the upload step fails saying so, which is the intended
+# behaviour rather than a fault. See ipsissima-mcp/RELEASING.md.
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Tag or commit to build from"
+        required: true
+        default: main
+      repository:
+        description: "Where to publish"
+        required: true
+        default: testpypi
+        type: choice
+        options: [testpypi, pypi]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # THE ENVIRONMENT IS PART OF THE CREDENTIAL. A trusted publisher is bound to it by name, so
+    # this is not decoration: an upload from a job in a different environment is refused. It is
+    # also where a required reviewer can be added if the manual trigger ever stops being enough.
+    environment: ${{ inputs.repository }}
+    permissions:
+      id-token: write        # the OIDC token that stands in for an API token
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - uses: astral-sh/setup-uv@v5
+
+      # THE PARSER IS COMMITTED, AND IS CHECKED HERE ANYWAY. It is a build artifact living in the
+      # source tree, so the one thing that can go wrong is that someone changed the shim and did
+      # not rebuild it. This test rebuilds it and compares, then runs both parsers over the corpus
+      # — so a stale bundle stops the release rather than shipping to everybody.
+      - name: Check the bundled parser is current
+        run: |
+          npm ci --prefix app
+          node app/test_argdown_shim.mjs
+
+      # The same check the release procedure asks for by hand: build a wheel and look inside it
+      # for the parser, the documents, the dependencies and the console script.
+      - name: Check the package carries what it serves
+        run: python3 ipsissima-mcp/tests/test_installable.py
+
+      - name: Build
+        run: uv build --wheel --sdist --out-dir dist ipsissima-mcp
+
+      - name: Publish to TestPyPI
+        if: inputs.repository == 'testpypi'
+        run: uv publish --trusted-publishing always --publish-url https://test.pypi.org/legacy/ dist/*
+
+      - name: Publish to PyPI
+        if: inputs.repository == 'pypi'
+        run: uv publish --trusted-publishing always dist/*
