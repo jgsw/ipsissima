@@ -19,6 +19,14 @@ tauri = { version = "2", features = [] }
 # silently, with no error on either side. It gates `notify` and `notify-debouncer-full`.
 tauri-plugin-fs = { version = "2", features = ["watch"] }
 tauri-plugin-dialog = "2"
+# THE ONLY THING HERE THAT TOUCHES THE NETWORK, and it runs once, when the reader chooses
+# Help ▸ Check for Updates. `rustls` rather than the system TLS on purpose: native-tls wants
+# OpenSSL headers on Linux and a different story on each platform, and this crate has already
+# spent a release learning what per-platform differences cost.
+# `system-proxy` because a good many of the people this is for are on an institutional network
+# that has one, and a check that silently fails there looks like "no updates ever".
+reqwest = { version = "0.13", default-features = false,
+            features = ["rustls", "json", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

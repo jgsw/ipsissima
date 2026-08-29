@@ -12,8 +12,12 @@ whenever quotation marks are at stake. Ipsissima keeps the distinction, on every
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
-drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine and
-makes no network requests of any kind.
+drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine.
+
+**`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
+one file that works with the network cable out. **The desktop application makes exactly one, and
+only when you ask for it**: Help ▸ Check for Updates asks GitHub whether a newer release exists.
+It sends nothing about you or your documents, downloads nothing, and installs nothing.
 
 ---
 

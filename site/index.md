@@ -27,7 +27,8 @@ Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup lang
 Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
 drawn from, and the marks a reader writes in the margin. **It runs entirely in your browser and
-makes no network requests of any kind.**
+makes no network requests of any kind.** (The downloadable application adds one, and only when
+you choose Help ▸ Check for Updates; the page on this site has nothing of the sort.)
 
 ---
 

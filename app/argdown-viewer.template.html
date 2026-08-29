@@ -5214,6 +5214,30 @@ if (HOST) {
       "about":           openAbout,
       "help":            function(){ setHelp(!$("help").classList.contains("show")); },
       "walkthrough":     function(){ startWalkthrough(); },
+      /* THE ONLY MENU ITEM THAT IS NOT A SECOND DOORBELL FOR A BUTTON, because there is no
+       * button: the web page cannot check for updates and should not pretend it can. The
+       * request itself is made in Rust — see `check_for_updates` in src-tauri/src/lib.rs — so
+       * that this page, which is also the file people email to each other, still makes no
+       * network request of its own under any circumstances. */
+      "check-updates":   async function(){
+                           try {
+                             var u = await HOST.checkForUpdates();
+                             if (u.newer)
+                               showErr("Ipsissima " + u.latest + " is available — you have " +
+                                       u.current + ".\n\nDownloads: " + u.url);
+                             else if (u.latest)
+                               showErr("Up to date. This is Ipsissima " + u.current + ".");
+                             else
+                               showErr("No release information came back.\n\n" + u.url);
+                           } catch (e) {
+                             /* Being offline is the ordinary case here, not a fault: the
+                              * application is built to work without a network and most of its
+                              * use is that way. Say what happened and leave it at that. */
+                             showErr("Could not check for updates.\n\n" +
+                                     (e && e.message ? e.message : e) +
+                                     "\n\nThe releases page is github.com/jgsw/ipsissima/releases");
+                           }
+                         },
       "open":            function(){ $("openbtn").click(); },
       "open-folder":     async function(){
                            if (!confirmDiscard("Open that folder")) return;

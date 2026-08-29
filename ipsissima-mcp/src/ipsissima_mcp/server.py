@@ -75,10 +75,28 @@ have to be inferred. If a user offers a PDF of a document they also have as .doc
 ask for the .docx. `plan_job` detects this and reports it as advice.
 """
 
+def _version():
+    """The installed package's version, rather than a second copy of it written out here.
+
+    IT WAS HARDCODED, which made it the sixth place in this repository stating the version and
+    the only one nothing checked. A server that announces 0.1.0 while being 0.3.0 works perfectly
+    and misleads the one person trying to reproduce a fault. The fallback matters for the case
+    where the package is not installed at all -- running the file straight out of a checkout --
+    where metadata does not exist and guessing a number would be worse than admitting it.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+    try:
+        return version("ipsissima-mcp")
+    except PackageNotFoundError:
+        return "0+unknown"
+
+
+VERSION = _version()
+
 server = MCPServer(
     name="ipsissima",
     title="Ipsissima — argument reconstruction",
-    version="0.1.0",
+    version=VERSION,
     instructions=INSTRUCTIONS,
 )
 
@@ -568,6 +586,73 @@ def split_manuscript(path: str, out: str, title: str | None = None,
         cmd += ["--dry-run"]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return dict(ok=r.returncode == 0, report=r.stdout, error=r.stderr[:800] or None)
+
+
+@server.tool(
+    structured_output=True,
+    title="Check for a newer Ipsissima-MCP",
+    description=(
+        "Is there a newer release of Ipsissima-MCP than the one running? Asks GitHub and "
+        "reports what it finds. **This is the only thing here that uses the network for its own "
+        "purposes, and it runs only when called.** It downloads and installs nothing; updating "
+        "is the reader's move, and the answer says how."),
+)
+def check_for_updates() -> dict[str, Any]:
+    """Compare this server's version against the latest release on GitHub.
+
+    ONLY WHEN ASKED, WHICH IS THE POINT. Nothing else in this server contacts the network on its
+    own account -- conversions, checks and the Zotero reader all work against files on disk -- and
+    that is worth keeping true for a tool people point at unpublished manuscripts. So there is no
+    check on startup and none folded into `plan_job`, where it would run every time somebody
+    began a reconstruction. A reader who wants to know asks, and a model can offer to ask.
+
+    Nothing about the machine is sent. A version goes nowhere; what comes back is a version.
+    """
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    current = VERSION
+    url = "https://github.com/jgsw/ipsissima/releases"
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/jgsw/ipsissima/releases/latest",
+            headers={"User-Agent": f"ipsissima-mcp/{current}",
+                     "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            body = _json.load(r)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        # Offline is ordinary here, not a fault. Say so plainly rather than raising.
+        return dict(ok=False, current=current, url=url,
+                    error=f"could not reach GitHub: {e}",
+                    next="check the releases page yourself when you next have a connection")
+
+    latest = (body.get("tag_name") or "").lstrip("v") or None
+    newer = _is_newer(latest, current) if latest else False
+    return dict(
+        ok=True, current=current, latest=latest, newer=newer, url=url,
+        next=(f"Ipsissima-MCP {latest} is out. If you installed the .mcpb bundle, download the "
+              f"new one from {url} and open it; Claude Desktop replaces the old. From source, "
+              f"`git pull` in the repository." if newer
+              else "nothing to do — this is the current release"))
+
+
+def _is_newer(a, b):
+    """Is version `a` later than `b`? Numeric, component by component.
+
+    NOT STRING COMPARISON. "0.10.0" sorts before "0.9.0" as text, so a tenth release would report
+    itself as older than the ninth -- once, months from now, and silently. Unparseable parts count
+    as zero and unparseable versions as "not newer": saying nothing beats sending somebody to a
+    download page for a release that is not there.
+    """
+    def parts(v):
+        return [int(n) if n.isdigit() else 0 for n in str(v).split("-")[0].split(".")]
+    x, y = parts(a), parts(b)
+    for i in range(max(len(x), len(y))):
+        p, q = (x[i] if i < len(x) else 0), (y[i] if i < len(y) else 0)
+        if p != q:
+            return p > q
+    return False
 
 
 # ---------------------------------------------------------- Zotero, if present ---- #

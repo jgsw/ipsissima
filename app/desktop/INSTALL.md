@@ -80,9 +80,14 @@ signed or not. It is a statement about how well known the file is, not about wha
 
 Worth stating plainly, since you are being asked to click past a security warning:
 
-- **It makes no network requests at all.** Not for updates, not for fonts, not for analytics.
-  Everything it needs is inside the application. You can disconnect from the internet and it
-  behaves identically.
+- **It makes one network request, and only when you ask for it.** Help ▸ Check for Updates asks
+  GitHub whether a newer release exists, and that is the whole of it: nothing about you or your
+  documents is sent, nothing is downloaded, and nothing is installed — if there is an update you
+  are told the version number and given the address. Never on startup, never on a timer, never in
+  the background. Everything else it needs is inside the application, and disconnected from the
+  internet it behaves identically except that the update check says it could not reach GitHub.
+  No fonts, no analytics, no telemetry, at any time.
+  *(The one-file `Ipsissima.html` has no update check at all and makes no request of any kind.)*
 - **It reads and writes only the files you open**, and only in your own home folder or on drives
   you have connected. It cannot reach system files, and it is refused by the operating system if
   it tries.
@@ -95,14 +100,15 @@ Worth stating plainly, since you are being asked to click past a security warnin
 
 ## Updating
 
-**Ipsissima does not check for updates, and does not phone home to find out whether one exists.**
-Nothing in it makes a network request. That is a deliberate property rather than an oversight —
-the manuscripts people put into it are often unpublished — and it has the cost you would expect:
-you will not be told when a new version appears.
+**Help ▸ Check for Updates.** It asks GitHub whether a newer release exists and tells you the
+answer. That is all it does: it sends nothing about you or your documents, downloads nothing, and
+installs nothing — if there is a new version you get its number and the address to fetch it from.
 
-So: **watch the [releases page](https://github.com/jgsw/ipsissima/releases)**. GitHub will do
-the watching for you if you press *Watch → Custom → Releases* on the repository, which sends you
-an email when one is published and requires nothing of the app.
+**It is a menu item rather than something that happens on startup**, and that is deliberate. An
+application that contacts a server every time it opens is a different kind of thing to keep on a
+machine holding unpublished work, whatever the request contains. The cost is that you have to
+remember to look; the benefit is that the application does nothing behind your back, and you can
+verify that by watching your network.
 
 To update, install the new version over the old one exactly as you installed the first: on macOS
 drag it to Applications and replace, on Windows run the new installer. Your reconstructions are

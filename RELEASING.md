@@ -19,6 +19,9 @@ they agree and fails the suite when they do not:
 - `ipsissima-mcp/manifest.json`
 - `ipsissima-mcp/pyproject.toml`
 
+`server.py` used to state it a sixth time, hardcoded; it now reads the installed package's
+metadata, which is why that one is not on the list and cannot drift.
+
 **2. `cd app && npm test`.** Everything, including the wheel build and the bundled parser.
 
 **3. Tag and push.**
@@ -45,59 +48,70 @@ and nothing warns you.
 
 ## How an update reaches somebody
 
-**Today: it does not, unless they look.** Ipsissima makes no network request of any kind — not
-for updates, not for fonts, not for analytics — and that is a property worth more than
-convenience for an application whose users open unpublished manuscripts in it. The cost is real
-and should be stated rather than glossed: **somebody running a version with a bug will keep
-running it until they happen to look at the releases page.**
+**One repository, two applications.** They share a tag and nothing else: different users, different
+install mechanisms, different update stories. Answer the two questions separately or you will give
+one of them the other's answer.
 
-The mitigation that costs nothing: tell people to press **Watch → Custom → Releases** on the
-repository. GitHub then emails them, and the application stays silent.
+### Ipsissima, the desktop application
 
-### If that proves too slow, in order of what it costs
+**Help ▸ Check for Updates.** One HTTPS request to the GitHub releases API, made only when the
+reader chooses it. It compares versions and reports; it downloads nothing and installs nothing.
 
-**Option A — a manual check.** A *Check for Updates…* item in the Help menu. One HTTPS request to
-the GitHub releases API, made only when clicked, comparing versions and opening the releases page
-in the browser if there is a newer one. It downloads nothing and installs nothing.
+Three decisions in that, each worth keeping:
 
-- The privacy claim becomes precise instead of absolute: *"makes no network request except the
-  one you ask for by choosing Check for Updates"*. That is a sentence worth keeping, and it is
-  still true of every other thing the app does.
-- No signing keys, no new infrastructure, perhaps forty lines.
-- **This is the recommended next step** if update uptake becomes a problem.
+- **The request is in Rust, not in the page.** The page is also `Ipsissima.html`, the file people
+  email each other, and of *that* file it remains true without qualification that it makes no
+  network request of any kind. Had the fetch gone in the frontend, the claim would have had to be
+  softened for the web version too, for a feature the web version cannot use.
+- **A menu item, not a startup check.** An application that contacts a server every time it opens
+  is a different kind of thing to keep on a machine holding unpublished work, whatever the request
+  contains.
+- **It reports; it does not replace itself.** An application that can rewrite its own binary is a
+  different kind of thing to trust, and this one has no need to be.
 
-**Option B — the Tauri updater.** `tauri-plugin-updater` checks on launch, downloads and installs.
+`Ipsissima.html` and `Ipsissima Reader.html` have no update check and cannot have one: they are
+files somebody saved. They are re-downloaded. This is a good reason to keep the About box naming
+its version.
 
-- Needs a minisign keypair (separate from code signing — an unsigned app can still use it), every
-  release signed, and a `latest.json` published alongside the artefacts.
-- Costs the claim properly: a request on every launch, before the user has done anything. If this
-  is ever built it should be **opt-in, asked once on first run, and default to off** — an
-  application that quietly contacts a server on launch is a different kind of thing from this
-  one, whatever the request contains.
+### Ipsissima-MCP
 
-**What has to change in the documentation either way**, because the absolute claim appears in
-three places and all three would become false:
+**A `check_for_updates` tool.** A server has no menus, so the equivalent of a menu item is a tool
+the reader asks for — *"is there a new version of Ipsissima?"* — and the same rules hold: only on
+request, nothing sent, nothing installed. It is deliberately **not** folded into `plan_job`, where
+it would fire every time somebody began a reconstruction and quietly become a startup check.
 
-- `README.md` — "makes no network requests of any kind"
-- `site/index.md` — the same sentence
-- `app/desktop/INSTALL.md` — "It makes no network requests at all. Not for updates, not for fonts,
-  not for analytics."
+Installing the update is not the same job as for the app:
 
-Change all three in the same commit as the feature. A privacy claim that is true of the version
-somebody read about and false of the version they are running is worse than never having made it.
+| how it was installed | how it updates |
+|---|---|
+| `.mcpb` bundle | download the new bundle and open it; Claude Desktop replaces the old |
+| from source | `git pull` — an editable install needs nothing more |
+| from an index, if ever published | `uvx` fetches the current release each run |
 
-### The other three things update differently
+**The bundle format has no update feed.** There is no `update_url` in the manifest schema and no
+mechanism for Claude Desktop to discover a newer bundle, so the tool is the only thing that will
+tell a bundle user that one exists. That makes it more load-bearing here than the menu item is in
+the app, not less.
 
-- **`Ipsissima.html`** — there is no update mechanism and cannot be one; it is a file somebody
-  saved. They download a new one. This is a good reason to keep the page's About box naming its
-  version.
-- **The `.mcpb` bundle** — Claude Desktop manages extensions, and a newer bundle replaces the old.
-- **The website** — rebuilt from `main` on every push, so it is never out of date. Note the
-  consequence: **the site can be newer than the newest release**, and the samples it serves are
-  built from `main` rather than from the tag. That is usually what you want and is occasionally
-  confusing.
+### What this cost, and where it is written down
 
----
+The absolute claim was in three files and all three now distinguish the two cases:
+
+- `README.md` — the page makes none, the application makes one on request
+- `site/index.md` — the same, noting the site's own copy has nothing of the sort
+- `app/desktop/INSTALL.md` — the full statement, since that is the page somebody reads while being
+  asked to click past a security warning
+
+**If an automatic updater is ever added**, these are the files to revisit again, and the condition
+to hold to is that it be opt-in, asked once, and default to off. A privacy claim that is true of
+the version somebody read about and false of the version they are running is worse than never
+having made it.
+
+### Version comparison is not string comparison
+
+Both checks compare numerically, component by component, and both have tests saying why:
+**`"0.10.0"` sorts before `"0.9.0"` as text.** A tenth release would otherwise have told everybody
+they were up to date — once, months from now, silently, and nobody would connect the two.
 
 ## Uninstalling
 

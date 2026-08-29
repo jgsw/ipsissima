@@ -133,11 +133,97 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .separator()
         .item(&item("help", "How to Use Ipsissima", Some("CmdOrCtrl+/"))?)
         .item(&item("about", "About Ipsissima", None)?)
+        .separator()
+        // THE ONE ITEM IN THIS APPLICATION THAT USES THE NETWORK, and it is in a menu rather
+        // than on a timer for exactly that reason. See `check_for_updates`.
+        .item(&item("check-updates", "Check for Updates…", None)?)
         .build()?;
 
     MenuBuilder::new(app)
         .items(&[&app_menu, &file_menu, &edit_menu, &view_menu, &help_menu])
         .build()
+}
+
+/// What `check_for_updates` reports back.
+#[derive(serde::Serialize)]
+struct UpdateCheck {
+    current: String,
+    latest: Option<String>,
+    newer: bool,
+    url: String,
+}
+
+/// Ask GitHub whether there is a newer release. ONLY when the reader asks.
+///
+/// THIS IS THE ONLY NETWORK REQUEST IPSISSIMA EVER MAKES, and everything about how it is built
+/// follows from wanting that sentence to stay easy to check.
+///
+/// IT LIVES IN RUST RATHER THAN IN THE PAGE. The page is also `Ipsissima.html` — a file people
+/// email to each other and open in a browser — and of that file it is still true without
+/// qualification that it makes no network request of any kind. Had the fetch gone in the page,
+/// that claim would have had to be softened for the web version too, for a feature the web
+/// version cannot use. The shell is the part that can be updated, so the shell is the part that
+/// asks.
+///
+/// IT DOWNLOADS NOTHING AND INSTALLS NOTHING. It compares two version strings and hands back a
+/// URL; opening it is the reader's next move, in their own browser. An application that can
+/// replace its own binary is a different kind of thing to trust, and this one does not need to be.
+///
+/// Nothing about the machine is sent. The request carries a User-Agent because GitHub's API
+/// rejects requests without one, and that is the whole of what leaves.
+#[tauri::command]
+async fn check_for_updates() -> Result<UpdateCheck, String> {
+    const RELEASES: &str = "https://github.com/jgsw/ipsissima/releases";
+    let current = env!("CARGO_PKG_VERSION").to_string();
+
+    let resp = reqwest::Client::builder()
+        .user_agent(format!("Ipsissima/{current}"))
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| e.to_string())?
+        .get("https://api.github.com/repos/jgsw/ipsissima/releases/latest")
+        .send()
+        .await
+        .map_err(|e| format!("could not reach GitHub: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("GitHub answered {}", resp.status()));
+    }
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    let latest = body
+        .get("tag_name")
+        .and_then(|t| t.as_str())
+        .map(|t| t.trim_start_matches('v').to_string());
+
+    // STRING INEQUALITY IS NOT THE TEST. "0.10.0" sorts before "0.9.0" as text, so a tenth
+    // release would have announced itself as older than the ninth. Compare number by number, and
+    // treat anything unparseable as "not newer" rather than guessing.
+    let newer = match &latest {
+        Some(l) => is_newer(l, &current),
+        None => false,
+    };
+
+    Ok(UpdateCheck { current, latest, newer, url: RELEASES.to_string() })
+}
+
+/// Is `a` a later version than `b`? Numeric, component by component.
+fn is_newer(a: &str, b: &str) -> bool {
+    let parts = |v: &str| -> Vec<u64> {
+        v.split('-')
+            .next()
+            .unwrap_or("")
+            .split('.')
+            .map(|n| n.parse().unwrap_or(0))
+            .collect()
+    };
+    let (x, y) = (parts(a), parts(b));
+    for i in 0..x.len().max(y.len()) {
+        let (p, q) = (x.get(i).copied().unwrap_or(0), y.get(i).copied().unwrap_or(0));
+        if p != q {
+            return p > q;
+        }
+    }
+    false
 }
 
 /// Hand over everything queued so far, and empty the queue.
@@ -210,7 +296,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());
@@ -250,4 +336,56 @@ pub fn run() {
                 let _ = (app, event);
             }
         });
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::is_newer;
+
+    /// THE CASE THAT MAKES THIS A FUNCTION RATHER THAN A `>`. As text, "0.10.0" sorts BEFORE
+    /// "0.9.0", so a tenth release would have told everybody they were already up to date --
+    /// silently, and only once, months from now, when nobody would connect the two.
+    #[test]
+    fn ten_is_after_nine() {
+        assert!(is_newer("0.10.0", "0.9.0"));
+        assert!(!is_newer("0.9.0", "0.10.0"));
+        assert!(is_newer("1.0.0", "0.99.99"));
+    }
+
+    #[test]
+    fn same_version_is_not_newer() {
+        assert!(!is_newer("0.1.0", "0.1.0"));
+        assert!(!is_newer("1.2.3", "1.2.3"));
+    }
+
+    #[test]
+    fn each_component_counts() {
+        assert!(is_newer("0.1.1", "0.1.0"));
+        assert!(is_newer("0.2.0", "0.1.9"));
+        assert!(!is_newer("0.1.0", "0.2.0"));
+    }
+
+    /// Missing components are zeroes, not failures: a tag of "1.1" against "1.1.0" is the same
+    /// release, and must not announce itself as an update every time the reader checks.
+    #[test]
+    fn short_versions_are_padded() {
+        assert!(!is_newer("1.1", "1.1.0"));
+        assert!(is_newer("1.2", "1.1.9"));
+    }
+
+    /// Anything unparseable counts as "not newer". Being told nothing is better than being sent
+    /// to a download page for a release that does not exist.
+    #[test]
+    fn nonsense_is_not_newer() {
+        assert!(!is_newer("", "0.1.0"));
+        assert!(!is_newer("banana", "0.1.0"));
+    }
+
+    /// A pre-release tag is dropped before comparing, so "0.2.0-beta.1" reads as 0.2.0.
+    #[test]
+    fn prerelease_suffix_is_ignored() {
+        assert!(is_newer("0.2.0-beta.1", "0.1.0"));
+        assert!(!is_newer("0.1.0-rc1", "0.1.0"));
+    }
 }
