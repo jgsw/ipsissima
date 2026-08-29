@@ -375,6 +375,12 @@ actually filter. `@argdown/map-views` itself is 2.1 MB, nearly all of it the Gra
 only Viz.js needs, so the local build uses `@dagrejs/dagre` (~49 KB, no d3, no lodash) with its
 own renderer instead. See the `argdown` skill's `map-semantics.md`.
 
+*Follow-up, 29 Aug 2026: dagre is gone too. The stability project (`docs/STABILITY-PLAN.md`)
+replaced its ordering, positions, boxes and routes with the project's own — the document
+decides placement, so folding cannot reshuffle it — and by then dagre's whole remaining job
+was one ranking pass, now written down in `layoutByArgument`. Zero layout dependencies; the
+reasoning above about DOT and element identity still stands, and still shaped what replaced it.*
+
 **The rule that makes it work:** build the map once at full detail and filter it client-side.
 Node ids are sequential (`n0`, `n1`, …), so re-running Argdown per view can renumber them — and
 those ids are what key the nodes across renders. Re-run per view and the map jump-cuts.
