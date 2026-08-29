@@ -92,7 +92,15 @@ them.
 
 The desktop application adds what a web page cannot do: open a `.argdown` by double-clicking it,
 save back in place, and reload the manuscript when it changes on disk. macOS, Windows and Linux
-builds are on the [releases page](https://github.com/jgsw/ipsissima/releases).
+builds are on the [releases page](https://github.com/jgsw/ipsissima/releases) — the `.dmg`, the
+`-setup.exe`, and the `.deb` or `.AppImage` respectively.
+
+The builds are unsigned, so the first launch is blocked once, and the block looks worse than it
+is. On macOS: drag Ipsissima into Applications (choose **Replace** if you are updating), launch
+it from there, click **Done** on the warning, then allow it under **System Settings → Privacy &
+Security → Open Anyway**. On Windows: **More info**, then **Run anyway**.
+[Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md) shows
+every dialog before you meet it.
 
 ---
 

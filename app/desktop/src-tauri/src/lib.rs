@@ -147,6 +147,10 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
 /// Where releases are published. A constant so that `open_releases_page` needs no argument.
 const RELEASES: &str = "https://github.com/jgsw/ipsissima/releases";
 
+/// The download page on the site — the one that says what your computer will warn and what to
+/// click, rather than a wall of eight assets. Same zero-argument stance as RELEASES.
+const DOWNLOADS: &str = "https://jgsw.github.io/ipsissima/#get-the-application";
+
 /// What `check_for_updates` reports back.
 #[derive(serde::Serialize)]
 struct UpdateCheck {
@@ -154,6 +158,7 @@ struct UpdateCheck {
     latest: Option<String>,
     newer: bool,
     url: String,
+    downloads: String,
 }
 
 /// Ask GitHub whether there is a newer release. ONLY when the reader asks.
@@ -205,36 +210,42 @@ async fn check_for_updates() -> Result<UpdateCheck, String> {
         None => false,
     };
 
-    Ok(UpdateCheck { current, latest, newer, url: RELEASES.to_string() })
+    Ok(UpdateCheck { current, latest, newer, url: RELEASES.to_string(),
+                     downloads: DOWNLOADS.to_string() })
 }
 
-/// The downloads page, in the reader's own browser.
+/// One of two fixed pages, in the reader's own browser.
 ///
-/// NO ARGUMENT, DELIBERATELY. The address is a constant compiled into the binary, so there is
-/// nothing for the page to pass and nothing to validate: a command that took a URL from the
-/// frontend would be a way to make this application open anything at all, which is a large door
-/// to leave open for the sake of saving one line.
-///
-/// Called only after the reader has been told which version is available and has said yes.
-#[tauri::command]
-fn open_releases_page() -> Result<(), String> {
+/// NO ARGUMENT ON EITHER COMMAND, DELIBERATELY. Each address is a constant compiled into the
+/// binary, so there is nothing for the page to pass and nothing to validate: a command that
+/// took a URL from the frontend would be a way to make this application open anything at all,
+/// which is a large door to leave open for the sake of saving one line. The update dialog
+/// offers the choice — the download page that walks through the install, or the release on
+/// GitHub for what changed — and each choice is its own doorbell.
+fn open_fixed(url: &'static str) -> Result<(), String> {
     #[cfg(target_os = "macos")]
-    let mut cmd = { let mut c = std::process::Command::new("open"); c.arg(RELEASES); c };
+    let mut cmd = { let mut c = std::process::Command::new("open"); c.arg(url); c };
     #[cfg(target_os = "windows")]
     let mut cmd = {
         // `start` is a shell builtin rather than a program, so it needs cmd, and the empty
         // string is the window title `start` would otherwise take the URL to be.
         let mut c = std::process::Command::new("cmd");
-        c.args(["/C", "start", "", RELEASES]);
+        c.args(["/C", "start", "", url]);
         c
     };
     #[cfg(all(unix, not(target_os = "macos")))]
-    let mut cmd = { let mut c = std::process::Command::new("xdg-open"); c.arg(RELEASES); c };
+    let mut cmd = { let mut c = std::process::Command::new("xdg-open"); c.arg(url); c };
 
     cmd.spawn()
         .map(|_| ())
         .map_err(|e| format!("could not open a browser: {e}"))
 }
+
+#[tauri::command]
+fn open_releases_page() -> Result<(), String> { open_fixed(RELEASES) }
+
+#[tauri::command]
+fn open_download_page() -> Result<(), String> { open_fixed(DOWNLOADS) }
 
 /// Is `a` a later version than `b`? Numeric, component by component.
 fn is_newer(a: &str, b: &str) -> bool {
@@ -326,7 +337,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());

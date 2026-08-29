@@ -500,6 +500,21 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 #errclose{position:absolute;top:.3rem;right:.4rem;border:0;background:none;cursor:pointer;
   font:16px/1 system-ui,sans-serif;color:var(--fg-dim);padding:.2rem .4rem;border-radius:6px}
 #errclose:hover{color:var(--fg);background:var(--line)}
+/* THE UPDATE DIALOG. confirm() carried the message but only one destination, and the two a
+   reader may want are different errands: the download page that walks through the install, or
+   the release on GitHub for what changed. Reported from use — the single button opened the
+   release page while the text promised the download page. */
+#upd{position:absolute;inset:0;z-index:80;display:none;background:rgba(20,22,26,.35)}
+#upd.show{display:flex;align-items:center;justify-content:center}
+#updbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;max-width:34rem;
+  margin:1rem;padding:1rem 1.1rem;font:13px/1.55 system-ui,sans-serif;color:var(--fg);
+  box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#updbox p{margin:.5rem 0;white-space:pre-wrap}
+#updbtns{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.9rem;flex-wrap:wrap}
+#updbtns button{font:12.5px system-ui,sans-serif;padding:.45rem .8rem;border-radius:8px;
+  border:1px solid var(--line);background:none;color:var(--fg);cursor:pointer}
+#updbtns button:hover{background:var(--line)}
+#updbtns button.primary{border-color:var(--fg-dim);font-weight:600}
 /* The external-edit strip. Sits under the pane's own header, in the pane the news is about, and
    is the panel colour rather than a warning colour: an edit made in another editor is normal,
    and usually the reader's own doing. */
@@ -778,6 +793,15 @@ body.fs #fsexit{display:inline-flex}
     </div>
   </div>
   <div id="err"><button id="errclose" type="button" aria-label="Dismiss">×</button><span id="errmsg"></span></div>
+  <div id="upd" role="dialog" aria-modal="true" aria-labelledby="updmsg">
+  <div id="updbox"><p id="updmsg"></p>
+    <div id="updbtns">
+      <button id="updlater">Not now</button>
+      <button id="updrel">See what changed</button>
+      <button id="upddl" class="primary">Open the download page</button>
+    </div>
+  </div>
+</div>
   <button id="fsexit" title="Leave full screen (Esc)">
     <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor"
          stroke-width="1.6" stroke-linecap="round"><path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5"/></svg>
@@ -5252,6 +5276,30 @@ if (HOST) {
   // there — see `take_pending_open` in src-tauri/src/lib.rs.
   HOST.onOpenPaths(function(paths){ hostOpenPaths(paths); });
 
+  /** Three buttons, one question. Resolves "downloads", "releases" or null. Esc and a
+   *  click on the scrim both mean "not now" — a dialog with no way out is the fault the err
+   *  box already fixed once, and this one learned from it. */
+  function askUpdate(msg){
+    return new Promise(function(res){
+      $("updmsg").textContent = msg;
+      var box = $("upd");
+      box.classList.add("show");
+      var esc = function(ev){ if (ev.key === "Escape"){ ev.preventDefault(); done(null); } };
+      var done = function(v){
+        box.classList.remove("show");
+        box.onclick = null;
+        document.removeEventListener("keydown", esc, true);
+        res(v);
+      };
+      document.addEventListener("keydown", esc, true);
+      box.onclick = function(ev){ if (ev.target === box) done(null); };
+      $("upddl").onclick = function(){ done("downloads"); };
+      $("updrel").onclick = function(){ done("releases"); };
+      $("updlater").onclick = function(){ done(null); };
+      $("upddl").focus();
+    });
+  }
+
   /* THE MENU RINGS THE SAME DOORBELLS AS THE BUTTONS. Every entry below calls exactly what the
    * corresponding control calls — no menu item has behaviour of its own. That is the whole
    * reason the ids come back to the page rather than being handled in Rust: a File ▸ Open that
@@ -5271,32 +5319,34 @@ if (HOST) {
                            try {
                              var u = await HOST.checkForUpdates();
                              if (u.newer) {
-                               /* TELL THEM HOW, NOT ONLY THAT. "A new version exists" and a URL
-                                * they cannot click is a message that leaves the work undone —
-                                * and the two things a reader most needs to hear are that their
-                                * reconstructions are not involved, and that the security warning
-                                * they had to click past the first time will appear again. The
-                                * release page carries the per-platform detail; this offers to
-                                * open it, because the banner is text and a URL in text is
-                                * something you have to copy out by hand. */
-                               var go = confirm(
+                               /* TELL THEM HOW, AND LET THEM CHOOSE WHERE. The two things a
+                                * reader most needs to hear are that their reconstructions are
+                                * not involved, and that the security warning they saw the first
+                                * time will appear again. Then two destinations, because they
+                                * are different errands: the download page walks through the
+                                * install; the release page says what changed. */
+                               var choice = await askUpdate(
                                  "Ipsissima " + u.latest + " is available. You have " +
                                  u.current + ".\n\n" +
                                  "To update: download the new version and install it over this " +
-                                 "one — on macOS drag it to Applications and replace, on Windows " +
-                                 "run the installer. Nothing needs uninstalling first.\n\n" +
-                                 "Your reconstructions are untouched: they are ordinary files " +
-                                 "where you keep them, and only the application changes.\n\n" +
-                                 "The download is unsigned, so your computer will warn you once " +
-                                 "more, as it did the first time. The download page says what to " +
-                                 "click.\n\n" +
-                                 "Open the download page now?");
-                               if (go) {
+                                 "one — on macOS drag Ipsissima into Applications and choose " +
+                                 "Replace, on Windows run the installer. Nothing needs " +
+                                 "uninstalling first, and your reconstructions are untouched: " +
+                                 "they are ordinary files where you keep them, and only the " +
+                                 "application changes.\n\n" +
+                                 "The download is unsigned, so the first launch is blocked " +
+                                 "once, as it was the first time. The download page shows " +
+                                 "exactly what your system will say and what to click.");
+                               if (choice === "downloads") {
+                                 try { await HOST.openDownloadPage(); }
+                                 catch (e2) { showErr("Could not open a browser.\n\n" + u.downloads); }
+                               } else if (choice === "releases") {
                                  try { await HOST.openReleasesPage(); }
                                  catch (e2) { showErr("Could not open a browser.\n\n" + u.url); }
                                } else {
-                                 showNote("Ipsissima " + u.latest + " is available. The download " +
-                                        "page is " + u.url, 15000);
+                                 showNote("Ipsissima " + u.latest + " is available.\n" +
+                                        "The download page is " + u.downloads + "\n" +
+                                        "What changed: " + u.url, 15000);
                                }
                              }
                              else if (u.latest)
