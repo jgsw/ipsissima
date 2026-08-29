@@ -93,6 +93,67 @@ Worth stating plainly, since you are being asked to click past a security warnin
 
 ---
 
+## Updating
+
+**Ipsissima does not check for updates, and does not phone home to find out whether one exists.**
+Nothing in it makes a network request. That is a deliberate property rather than an oversight —
+the manuscripts people put into it are often unpublished — and it has the cost you would expect:
+you will not be told when a new version appears.
+
+So: **watch the [releases page](https://github.com/jgsw/ipsissima/releases)**. GitHub will do
+the watching for you if you press *Watch → Custom → Releases* on the repository, which sends you
+an email when one is published and requires nothing of the app.
+
+To update, install the new version over the old one exactly as you installed the first: on macOS
+drag it to Applications and replace, on Windows run the new installer. Your reconstructions are
+ordinary files kept wherever you put them, and are not touched by any of this.
+
+**Which version have I got?** Help → About Ipsissima. Worth checking before reporting a bug: the
+first question will be which version, and the answer is not guessable from the app's appearance.
+
+## Uninstalling
+
+**macOS.** Drag `Ipsissima.app` to the Trash. That is genuinely all that is required for the app
+to stop working; if you want the few files it left behind as well:
+
+```bash
+rm -rf ~/Library/Caches/org.ipsissima.desktop \
+       ~/Library/WebKit/org.ipsissima.desktop \
+       ~/Library/Preferences/org.ipsissima.desktop.plist
+```
+
+If you built from source, the repository's own installer will do all of it, and say what it is
+about to do first:
+
+```bash
+node app/desktop/install.mjs --uninstall --dry-run
+```
+
+Drop `--dry-run` to carry it out. It moves applications to the Trash rather than deleting them,
+clears the files above, and unregisters the app so that double-clicking a `.argdown` stops
+offering it.
+
+**Windows.** Settings → Apps → Installed apps → Ipsissima → Uninstall.
+
+**Linux.** `sudo apt remove ipsissima` for the `.deb`; delete the file for the AppImage.
+
+**Your reconstructions are never removed by any of this.** They are `.argdown` and Markdown files
+in folders you chose, and no uninstaller should be going looking for them.
+
+### If you end up with more than one copy
+
+It is easier to do than it sounds — building from source leaves a copy in `target/`, building a
+`.dmg` mounts a disk image containing another, and macOS registers everything it sees. The
+symptom is a double-clicked `.argdown` opening the wrong version, or nothing at all.
+
+```bash
+node app/desktop/install.mjs --status
+```
+
+lists every copy the system knows about, marking any that no longer exist. `node
+app/desktop/install.mjs` rebuilds and collapses them to a single registered copy in
+`~/Applications`.
+
 ## Why it is not signed
 
 Signing an application means paying a certificate authority to attest to your identity, annually,

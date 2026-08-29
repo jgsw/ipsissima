@@ -168,6 +168,27 @@ is on the `PATH`. It is not available from inside every client that can talk to 
 `command not found: claude` there means you are in the wrong window rather than that anything is
 missing.
 
+### Updating and removing it
+
+**The bundle.** Claude Desktop's own extension settings install, update and remove it — a newer
+`.mcpb` from the [releases page](https://github.com/jgsw/ipsissima/releases) replaces the one you
+have. Removing it there is the whole uninstall: the dependencies live in an environment the host
+made and manages, not in your Python installation, so nothing is left behind in yours.
+
+**From source.** Update with `git pull` and re-run the install command; an editable install
+(`pip install -e`) needs nothing more than the pull, which is what editable means. To remove it:
+
+```bash
+claude mcp remove ipsissima      # or delete the entry from the client's config
+rm -rf .venv                     # the environment, and everything installed into it
+```
+
+Nothing is installed outside that virtual environment and the repository, and neither holds your
+reconstructions — those are ordinary files wherever you chose to keep them.
+
+**Neither version checks for updates.** Like the application, this makes no network request of
+its own accord. Watching the releases page on GitHub is the way to hear about a new one.
+
 ### Check it before you rely on it
 
 The server speaks over stdin and stdout, so "it started" and "it works" are different claims, and
