@@ -1,6 +1,6 @@
 {
   "name": "ipsissima-desktop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "The desktop shell for Ipsissima. The application itself is the single HTML file that build_argdown_viewer.mjs produces; this wraps it in a window that the OS can hand files to.",
   "scripts": {
