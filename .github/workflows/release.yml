@@ -145,8 +145,6 @@ jobs:
           # only uploads assets and never touches the body (verified in its create-release.ts:
           # a found draft is adopted, not updated).
           releaseBody: |
-            Ipsissima reads an Argdown reconstruction beside the manuscript itself.
-
             ## Changes
 
             ${{ env.TAG_CHANGES }}
