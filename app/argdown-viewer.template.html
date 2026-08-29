@@ -5222,9 +5222,35 @@ if (HOST) {
       "check-updates":   async function(){
                            try {
                              var u = await HOST.checkForUpdates();
-                             if (u.newer)
-                               showErr("Ipsissima " + u.latest + " is available — you have " +
-                                       u.current + ".\n\nDownloads: " + u.url);
+                             if (u.newer) {
+                               /* TELL THEM HOW, NOT ONLY THAT. "A new version exists" and a URL
+                                * they cannot click is a message that leaves the work undone —
+                                * and the two things a reader most needs to hear are that their
+                                * reconstructions are not involved, and that the security warning
+                                * they had to click past the first time will appear again. The
+                                * release page carries the per-platform detail; this offers to
+                                * open it, because the banner is text and a URL in text is
+                                * something you have to copy out by hand. */
+                               var go = confirm(
+                                 "Ipsissima " + u.latest + " is available. You have " +
+                                 u.current + ".\n\n" +
+                                 "To update: download the new version and install it over this " +
+                                 "one — on macOS drag it to Applications and replace, on Windows " +
+                                 "run the installer. Nothing needs uninstalling first.\n\n" +
+                                 "Your reconstructions are untouched: they are ordinary files " +
+                                 "where you keep them, and only the application changes.\n\n" +
+                                 "The download is unsigned, so your computer will warn you once " +
+                                 "more, as it did the first time. The download page says what to " +
+                                 "click.\n\n" +
+                                 "Open the download page now?");
+                               if (go) {
+                                 try { await HOST.openReleasesPage(); }
+                                 catch (e2) { showErr("Could not open a browser.\n\n" + u.url); }
+                               } else {
+                                 showErr("Ipsissima " + u.latest + " is available. The download " +
+                                         "page is " + u.url);
+                               }
+                             }
                              else if (u.latest)
                                showErr("Up to date. This is Ipsissima " + u.current + ".");
                              else

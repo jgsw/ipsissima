@@ -69,6 +69,14 @@ Three decisions in that, each worth keeping:
 - **It reports; it does not replace itself.** An application that can rewrite its own binary is a
   different kind of thing to trust, and this one has no need to be.
 
+**It says how, not only that.** A version number and a URL somebody has to copy out of a text
+banner by hand is a message that leaves the work undone. So the app names both versions, says the
+new one installs over the old with nothing to uninstall first, says their reconstructions are not
+involved, warns that the unsigned-download prompt will appear again — which is the thing that
+stops people the second time as well as the first — and offers to open the download page in their
+browser. That is what `open_releases_page` is for, and it takes no argument: the address is a
+constant compiled in, so there is nothing for the frontend to pass and nothing to validate.
+
 `Ipsissima.html` and `Ipsissima Reader.html` have no update check and cannot have one: they are
 files somebody saved. They are re-downloaded. This is a good reason to keep the About box naming
 its version.
@@ -87,6 +95,13 @@ Installing the update is not the same job as for the app:
 | `.mcpb` bundle | download the new bundle and open it; Claude Desktop replaces the old |
 | from source | `git pull` — an editable install needs nothing more |
 | from an index, if ever published | `uvx` fetches the current release each run |
+
+**It says how, and for the route they actually used.** The tool returns a `how` map rather than
+one instruction, because somebody who double-clicked a file months ago does not think of
+themselves as having "installed the .mcpb bundle" — so each route is labelled by what the reader
+did, not by its name. It also says that **the application is a separate program on its own
+schedule**: a new Ipsissima-MCP does not mean a new Ipsissima, and one repository makes that
+easier to get wrong, not harder.
 
 **The bundle format has no update feed.** There is no `update_url` in the manifest schema and no
 mechanism for Claude Desktop to discover a newer bundle, so the tool is the only thing that will

@@ -631,10 +631,37 @@ def check_for_updates() -> dict[str, Any]:
     newer = _is_newer(latest, current) if latest else False
     return dict(
         ok=True, current=current, latest=latest, newer=newer, url=url,
-        next=(f"Ipsissima-MCP {latest} is out. If you installed the .mcpb bundle, download the "
-              f"new one from {url} and open it; Claude Desktop replaces the old. From source, "
-              f"`git pull` in the repository." if newer
+        how=_how_to_update(latest, url) if newer else None,
+        next=(f"Ipsissima-MCP {latest} is available (this is {current}). Tell the user how to "
+              f"update, using `how` — it depends on the way they installed it, and they may not "
+              f"know which that was. Nothing needs uninstalling first and their reconstructions "
+              f"are not involved." if newer
               else "nothing to do — this is the current release"))
+
+
+def _how_to_update(latest, url):
+    """Route-by-route instructions, because "there is an update" is not an answer to "what do I do".
+
+    THE READER USUALLY DOES NOT KNOW WHICH ROUTE THEY TOOK. Somebody who double-clicked a file
+    months ago does not think of themselves as having "installed the .mcpb bundle", so all the
+    routes are given with the thing that identifies each one, rather than asking them to choose
+    from names only the person who wrote them would recognise.
+    """
+    return {
+        "if you double-clicked a file to install it (the .mcpb bundle)":
+            f"Download ipsissima-mcp-{latest}.mcpb from {url} and open it. Claude Desktop "
+            f"replaces the old one; there is nothing to remove first. Restart Claude Desktop.",
+        "if you cloned the repository and used a terminal":
+            "`git pull` in the repository. An editable install (`pip install -e`) needs nothing "
+            "more; otherwise re-run the install command afterwards.",
+        "either way":
+            "Your reconstructions and extracted sources are ordinary files where you put them. "
+            "Updating does not touch them, and no version of this has ever written to them.",
+        "the application is separate":
+            f"Ipsissima the viewer/editor is a different program in the same repository and "
+            f"updates on its own schedule — check Help ▸ Check for Updates there. A new "
+            f"Ipsissima-MCP does not mean a new Ipsissima, or the reverse. Both are at {url}."
+    }
 
 
 def _is_newer(a, b):

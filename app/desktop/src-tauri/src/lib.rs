@@ -144,6 +144,9 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .build()
 }
 
+/// Where releases are published. A constant so that `open_releases_page` needs no argument.
+const RELEASES: &str = "https://github.com/jgsw/ipsissima/releases";
+
 /// What `check_for_updates` reports back.
 #[derive(serde::Serialize)]
 struct UpdateCheck {
@@ -173,7 +176,6 @@ struct UpdateCheck {
 /// rejects requests without one, and that is the whole of what leaves.
 #[tauri::command]
 async fn check_for_updates() -> Result<UpdateCheck, String> {
-    const RELEASES: &str = "https://github.com/jgsw/ipsissima/releases";
     let current = env!("CARGO_PKG_VERSION").to_string();
 
     let resp = reqwest::Client::builder()
@@ -204,6 +206,34 @@ async fn check_for_updates() -> Result<UpdateCheck, String> {
     };
 
     Ok(UpdateCheck { current, latest, newer, url: RELEASES.to_string() })
+}
+
+/// The downloads page, in the reader's own browser.
+///
+/// NO ARGUMENT, DELIBERATELY. The address is a constant compiled into the binary, so there is
+/// nothing for the page to pass and nothing to validate: a command that took a URL from the
+/// frontend would be a way to make this application open anything at all, which is a large door
+/// to leave open for the sake of saving one line.
+///
+/// Called only after the reader has been told which version is available and has said yes.
+#[tauri::command]
+fn open_releases_page() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    let mut cmd = { let mut c = std::process::Command::new("open"); c.arg(RELEASES); c };
+    #[cfg(target_os = "windows")]
+    let mut cmd = {
+        // `start` is a shell builtin rather than a program, so it needs cmd, and the empty
+        // string is the window title `start` would otherwise take the URL to be.
+        let mut c = std::process::Command::new("cmd");
+        c.args(["/C", "start", "", RELEASES]);
+        c
+    };
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let mut cmd = { let mut c = std::process::Command::new("xdg-open"); c.arg(RELEASES); c };
+
+    cmd.spawn()
+        .map(|_| ())
+        .map_err(|e| format!("could not open a browser: {e}"))
 }
 
 /// Is `a` a later version than `b`? Numeric, component by component.
@@ -296,7 +326,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());
