@@ -10,17 +10,22 @@ separate decision and not part of this.
 
 ## Cutting a release
 
-**1. One version, in five files.** Nothing keeps them in step, so `app/test_versions.mjs` checks
+**1. One version, in six files.** Nothing keeps them in step, so `app/test_versions.mjs` checks
 they agree and fails the suite when they do not:
 
+- `app/VERSION` — what the build stamps into the page and the About box reports
 - `app/desktop/package.json`
 - `app/desktop/src-tauri/tauri.conf.json`
 - `app/desktop/src-tauri/Cargo.toml`
 - `ipsissima-mcp/manifest.json`
 - `ipsissima-mcp/pyproject.toml`
 
-`server.py` used to state it a sixth time, hardcoded; it now reads the installed package's
-metadata, which is why that one is not on the list and cannot drift.
+`server.py` used to state it again, hardcoded; it now reads the installed package's metadata,
+which is why that one is not on the list and cannot drift.
+
+`app/VERSION` was missed when the test was first written, and the 0.1.1 bump showed what that
+costs: five files said 0.1.1 and the page still called itself 0.1.0, with the test reporting
+agreement. It is covered now.
 
 **2. `cd app && npm test`.** Everything, including the wheel build and the bundled parser.
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ipsissima-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Turn a document into a source an Argdown reconstruction can cite, and check the reconstruction against it."
 readme = "README.md"
 # 3.11, NOT 3.10, and the reason is onnxruntime rather than anything in this code. Current
