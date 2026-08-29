@@ -138,6 +138,15 @@ jobs:
             New to argument maps? Take the walkthrough: it is the first entry under **How to
             use**, runs on whatever you have open, and takes about two minutes.
 
+            ## Or start from a worked example
+
+            Three finished reconstructions, each opening **with the text it was drawn from**, so you
+            can follow a claim back to the passage it came from: a paragraph of Darwin, Carroll's
+            regress about rules of inference, and the Supreme Court on prorogation. They are at
+            [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example)
+            and need nothing installed. Four more, including three journal articles, are in
+            [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
+
             ## The application
 
             Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in

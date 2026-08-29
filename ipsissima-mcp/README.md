@@ -71,6 +71,42 @@ converts silently to its cover page and nothing reports it — measured at 345 w
 1,220-word article, no error, a perfectly well-formed Markdown file. See
 `eval/CONVERTER-FINDINGS.md`.
 
+### Your assistant needs to be able to read and write files
+
+**This is the requirement most likely to catch you out, and it is not obvious from the tool
+list.** Ipsissima-MCP does not carry the whole job. Look at where the work actually happens:
+
+| step | who does it | needs disk access? |
+|---|---|---|
+| `plan_job`, `extract_text` | the server | no — the server writes to disk itself |
+| **read the extracted Markdown** | **the assistant** | **yes, read** |
+| **write the `.argdown`** | **the assistant** | **yes, write** |
+| `check_reconstruction` | the server | no — it reads the file from disk |
+
+`extract_text` writes `source/` and returns a *report* of what it wrote, not the text: the
+Markdown is deliberately stripped from the reply, because a book-length source would otherwise
+arrive in the conversation twice over. And no tool here writes the reconstruction — that is the
+model's judgement, and the model saves it with its own file-writing tool.
+
+So an assistant that cannot touch the filesystem gets as far as a folder full of Markdown it
+cannot read, and has nowhere to put the map it then cannot write.
+
+**What works:**
+
+- **Claude Code** — has its own file tools. Everything below works unmodified.
+- **Anything agentic with a workspace** (Claude's Cowork, an IDE assistant like VS Code or
+  Cursor) — same, provided it can reach the folder you are working in.
+- **Claude Desktop** — the `.mcpb` installs and every tool runs, but on its own the assistant has
+  no file access. Add a filesystem MCP server alongside this one, pointed at the folder you keep
+  reconstructions in, and the whole workflow works.
+
+**How to check yours in one line**, rather than trusting a list that will date: ask it to *write
+a file called `test.md` in this folder, then read it back to me*. If it can do both, it can drive
+Ipsissima-MCP end to end. If it cannot, you can still use the server for everything up to the
+reconstruction — extraction, page images, repair, the Zotero lookup — and then paste the map into
+a file yourself before asking for `check_reconstruction`. That works; it is just handwork the
+other clients do for you.
+
 ### Which assistants can use this
 
 Two questions that get confused, and they have different answers.
