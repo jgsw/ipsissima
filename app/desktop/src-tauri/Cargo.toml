@@ -25,8 +25,10 @@ tauri-plugin-dialog = "2"
 # spent a release learning what per-platform differences cost.
 # `system-proxy` because a good many of the people this is for are on an institutional network
 # that has one, and a check that silently fails there looks like "no updates ever".
-reqwest = { version = "0.13", default-features = false,
-            features = ["rustls", "json", "system-proxy"] }
+# ON ONE LINE, AND IT HAS TO BE. TOML does not allow an inline table to span lines, and cargo's
+# parser is lenient enough not to mind -- so this built and tested perfectly here and broke all
+# three release jobs at once, tauri-action's parser refusing it with "Unterminated inline array".
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "json", "system-proxy"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

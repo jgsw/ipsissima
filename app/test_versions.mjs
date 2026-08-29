@@ -46,6 +46,31 @@ if (versions.length !== 1)
 const bad = Object.entries(found).filter(([, v]) => v && !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v));
 for (const [f, v] of bad) { console.log(`  FAIL  ${f}: ${v} is not a semantic version`); fails++; }
 
+/* ---- and that the manifests parse under a STRICT parser ---- */
+/* Cargo's TOML parser is lenient, and this test reads Cargo.toml with a regex, so between them
+ * a file can be malformed and nothing here notices. A multi-line inline table did exactly that:
+ * `cargo build` and `cargo test` were perfectly happy, and all three release jobs failed at once
+ * on `Unterminated inline array` — after the tag had been pushed. Python's tomllib is strict and
+ * is already required by the other half of this project. */
+import { execFileSync } from "child_process";
+for (const f of ["app/desktop/src-tauri/Cargo.toml", "ipsissima-mcp/pyproject.toml"]) {
+  try {
+    execFileSync("python3", ["-c",
+      "import tomllib,sys; tomllib.load(open(sys.argv[1],'rb'))", path.join(ROOT, f)],
+      { stdio: ["ignore", "ignore", "pipe"] });
+    console.log(`  ok    ${f.padEnd(40)} parses strictly`);
+  } catch (e) {
+    const why = (e.stderr || "").toString().trim().split("\n").pop();
+    console.log(`  FAIL  ${f.padEnd(40)} ${why || "does not parse"}`);
+    fails++;
+  }
+}
+for (const f of ["app/desktop/src-tauri/tauri.conf.json", "ipsissima-mcp/manifest.json",
+                 "app/desktop/package.json"]) {
+  try { JSON.parse(read(f)); console.log(`  ok    ${f.padEnd(40)} parses`); }
+  catch (e) { console.log(`  FAIL  ${f.padEnd(40)} ${e.message}`); fails++; }
+}
+
 console.log(fails ? `\n${fails} failure(s)`
                   : `\nall ${Object.keys(found).length} agree on ${versions[0]}`);
 process.exit(fails ? 1 : 0);
