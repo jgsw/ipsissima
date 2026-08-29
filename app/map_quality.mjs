@@ -39,7 +39,6 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import dagre from "@dagrejs/dagre";
 import { argdown } from "@argdown/core";
 import { toGraph, RUN } from "./argdown-graph.mjs";
 import { createRequire } from "module";
@@ -76,16 +75,12 @@ const size = n => ({ width: Math.max(90, Math.min(190, 8 + (n.label || "").lengt
 function layoutVis(vis) {
   if (!vis.nodes.length) return null;
   const sizes = new Map(vis.nodes.map(n => [n.id, size(n)]));
-  const g = new dagre.graphlib.Graph({ compound: true, multigraph: true });
-  g.setGraph({ rankdir: "BT", ranksep: 46, nodesep: 22, marginx: 16, marginy: 16 });
-  g.setDefaultEdgeLabel(() => ({}));
-  for (const n of vis.nodes) g.setNode(n.id, size(n));
-  for (const gr of vis.groups) g.setNode(gr.id, {});
-  for (const gr of vis.groups) if (gr.parent) g.setParent(gr.id, gr.parent);
-  for (const n of vis.nodes) if (n.group) g.setParent(n.id, n.group);
-  for (const e of vis.edges) g.setEdge(e.from, e.to, {}, e.type);
-  try { dagre.layout(g); } catch { return null; }
-  API.seatInDocumentOrder(g, vis, true);
+  // The renderer's own layout, driven with estimated sizes -- one description of how a map is
+  // arranged, here as everywhere. dagre used to stand in this function; see the note in
+  // argdown-live-map.js above `layoutByArgument`.
+  let g;
+  try { g = API.layoutByArgument(vis, sizes, { ranksep: 46, nodesep: 22 }); }
+  catch { return null; }
   return { g, vis, sizes };
 }
 

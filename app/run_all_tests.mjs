@@ -36,7 +36,6 @@ const SUITES = [
   ["types (tsc --noEmit over the JS)", TSC, ["-p", HERE]],
   ["fold logic (fixtures)",      "node", [path.join(BUILD, "test_argdown_live_map.js")]],
   ["edge direction (arrowheads)", "node", [path.join(BUILD, "test_edge_direction.js")]],
-  ["re-seat vs edge routes",     "node", [path.join(BUILD, "test_reseat_edges.js")]],
   ["fold invariants (state space)", "node", [path.join(HERE, "test_fold_invariants.mjs"), "--steps", "1500"]],
   ["fold state identifier (round-trip)", "node", [path.join(HERE, "test_fold_state_id.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],

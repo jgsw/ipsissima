@@ -4,8 +4,8 @@
  * Graphviz put it. This runs the layout in the browser instead, so collapsing a Part makes the
  * map re-lay-out around it and the nodes glide to their new positions.
  *
- * Classic script, no build step. Sets window.ArgdownLiveMap and needs a global `dagre`
- * (vendor/dagre.min.js) loaded first. Both hosts — the book structure map and the pandoc
+ * Classic script, no build step. Sets window.ArgdownLiveMap; the layout is its own
+ * (`layoutByArgument` / `layoutByText`), with no engine underneath. Both hosts — the book structure map and the pandoc
  * export filter — inline the two files and call createLiveMap.
  *
  * INPUT is a normalised graph, not Argdown's own IMap, so each host writes a small adapter and
@@ -1365,62 +1365,262 @@ function chapterLabel(chapter) {
 }
 
 
-/* ===== document-order seating, hoisted so the harness can drive it ===== */
-/* Re-seat blocks left-to-right in the order the argument was written.
+/* ===== the by-argument layout, owned outright =====
  *
- * dagre orders each rank to minimise edge crossings and knows nothing about the source, so a
- * section lands wherever the heuristic puts it -- on a real file section III.A came out to the
- * RIGHT of III.B, which is unreadable for someone following the argument in order. Argdown's
- * own map builder reorders too, so document order has already been lost twice by this point.
+ * dagre used to stand here. By the end of the stability project (docs/STABILITY-PLAN.md) it
+ * decided none of what a reader sees -- order, positions and boxes came from the home columns,
+ * routes from the router -- and its remaining job was a ranking pass. So the ranking pass is
+ * now written down, dagre is gone from the bundle, and the whole drawing pipeline is readable
+ * end to end. What this must do:
  *
- * This keeps every slot dagre computed -- ranks, widths, gaps, total extent -- and only
- * permutes which block sits in which slot. A block is an outermost visible cluster, or a node
- * in no cluster. Blocks are banded by vertical overlap, because only blocks that sit side by
- * side compete for horizontal order.
+ *   ranks    longest path down from the apexes: a premise sits strictly below every claim it
+ *            supports or attacks. A cycle -- which no published map has, but a reader can
+ *            write -- breaks at the edge that would close it, instead of hanging.
+ *   rows     each rank is a row; its height is its tallest claim; rows are RANKSEP apart,
+ *            plus headroom above any row where section boxes begin, so a box's label strip
+ *            never lies over the row above.
+ *   boxes    a section's box is the hull of its members: 16 aside, 26 above for the label
+ *            strip drawGroups draws, 12 below -- the same language the text layout speaks.
+ *   x        assignHomeColumns, below: the document decides, not the traffic.
+ *   routes   drawn for this arrangement: boundary-anchored, one waypoint per crossed rank,
+ *            stepping around any claim the straight run would pierce.
+ *
+ * Returns the same shape layoutByText returns -- node(), edge(), edges(), graph() -- which is
+ * all the renderer and the quality instruments ever read.
  */
-function seatInDocumentOrder(g, vis, documentOrder) {
-  if (documentOrder === false) return;
-  const visGroups = new Map(vis.groups.map(x => [x.id, x]));
+function layoutByArgument(vis, sizes, opt) {
+  const o = opt || {};
+  const RANKSEP = o.ranksep || 46, NODESEP = o.nodesep || 22, MARGIN = 16;
+  const BOX_TOP = 26, BOX_BOTTOM = 12;
 
-  // Direct children of each container, "" standing for the top level. Seating runs at EVERY
-  // level, not just the outermost: on the Williams map the four numbered propositions are
-  // siblings inside one section, so an outermost-only pass never touched them and dagre had
-  // drawn Williams's (i) (ii) (iii) (iv) as iv, iii, ii, i.
+  // Ranks. Consumers of a claim are the claims its edges point at.
+  const onScreen = new Set(vis.nodes.map(n => n.id));
+  const consumers = new Map(vis.nodes.map(n => [n.id, []]));
+  for (const e of vis.edges)
+    if (consumers.has(e.from) && onScreen.has(e.to)) consumers.get(e.from).push(e.to);
+  const rank = new Map(), onPath = new Set();
+  const rankOf = id => {
+    if (rank.has(id)) return rank.get(id);
+    if (onPath.has(id)) return 0;                    // a cycle: break it here, do not hang
+    onPath.add(id);
+    let r = 0;
+    for (const c of consumers.get(id) || []) r = Math.max(r, rankOf(c) + 1);
+    onPath.delete(id);
+    rank.set(id, r);
+    return r;
+  };
+  for (const n of vis.nodes) rankOf(n.id);
+
+  // Which rows each section's members occupy, nested sections included.
+  const visGroups = new Map(vis.groups.map(x => [x.id, x]));
+  const directNodes = new Map(), directGroups = new Map();
+  for (const n of vis.nodes) {
+    const k = n.group && visGroups.has(n.group) ? n.group : null;
+    if (k) { if (!directNodes.has(k)) directNodes.set(k, []); directNodes.get(k).push(n.id); }
+  }
+  for (const gr of vis.groups) {
+    const k = gr.parent && visGroups.has(gr.parent) ? gr.parent : null;
+    if (k) { if (!directGroups.has(k)) directGroups.set(k, []); directGroups.get(k).push(gr.id); }
+  }
+  const groupRows = new Map();
+  const rowsOfGroup = gid => {
+    if (groupRows.has(gid)) return groupRows.get(gid);
+    const rows = new Set();
+    groupRows.set(gid, rows);                        // set first, so a cyclic parent cannot loop
+    for (const id of directNodes.get(gid) || []) rows.add(rank.get(id));
+    for (const sub of directGroups.get(gid) || []) for (const r of rowsOfGroup(sub)) rows.add(r);
+    return rows;
+  };
+  for (const gr of vis.groups) rowsOfGroup(gr.id);
+
+  // Headroom: how many box tops open above each row -- a section and its subsection starting
+  // on the same row stack two label strips there. Footroom likewise for box bottoms.
+  const topsAt = new Map(), bottomsAt = new Map();
+  const chainAbove = gid => {
+    const rows = groupRows.get(gid);
+    if (!rows || !rows.size) return 0;
+    const top = Math.min(...rows);
+    const parent = (visGroups.get(gid) || {}).parent;
+    const pRows = parent && groupRows.get(parent);
+    return 1 + (pRows && pRows.size && Math.min(...pRows) === top ? chainAbove(parent) : 0);
+  };
+  for (const gr of vis.groups) {
+    const rows = groupRows.get(gr.id);
+    if (!rows || !rows.size) continue;
+    const top = Math.min(...rows), bottom = Math.max(...rows);
+    topsAt.set(top, Math.max(topsAt.get(top) || 0, chainAbove(gr.id)));
+    bottomsAt.set(bottom, (bottomsAt.get(bottom) || 0) + 1);
+  }
+
+  // Rows to y. Rank 0 -- the contentions -- at the top.
+  let maxRank = 0;
+  for (const r of rank.values()) maxRank = Math.max(maxRank, r);
+  const rowHeight = new Map();
+  for (const n of vis.nodes) {
+    const r = rank.get(n.id), h = (sizes.get(n.id) || { height: 54 }).height;
+    rowHeight.set(r, Math.max(rowHeight.get(r) || 0, h));
+  }
+  const rowY = new Map();
+  let y = MARGIN;
+  for (let r = 0; r <= maxRank; r++) {
+    if (!rowHeight.has(r)) continue;
+    y += (topsAt.get(r) || 0) * BOX_TOP;
+    rowY.set(r, y + rowHeight.get(r) / 2);
+    y += rowHeight.get(r) + (bottomsAt.get(r) ? BOX_BOTTOM : 0) + RANKSEP;
+  }
+
+  // The node records. x comes from the columns pass; boxes from their members after it.
+  const nodeMap = new Map();
+  for (const n of vis.nodes) {
+    const sz = sizes.get(n.id) || { width: 120, height: 54 };
+    nodeMap.set(n.id, { x: 0, y: rowY.get(rank.get(n.id)) || MARGIN,
+                        width: sz.width, height: sz.height });
+  }
+  for (const gr of vis.groups) nodeMap.set(gr.id, { x: 0, y: 0, width: 0, height: 0 });
+
+  const edgeList = [], edgeData = new Map();
+  let gw = MARGIN, gh = MARGIN;
+  const g = {
+    node: id => nodeMap.get(id),
+    edge: e => edgeData.get(e.v + " " + e.w + " " + e.name),
+    edges: () => edgeList,
+    graph: () => ({ width: gw, height: gh, nodesep: NODESEP, ranksep: RANKSEP })
+  };
+
+  assignHomeColumns(g, vis);
+
+  // Box verticals, inner sections first so a parent hulls its children's finished boxes.
+  // assignHomeColumns has already set each box's x and width from the same hull.
+  const deepFirst = [...vis.groups].sort((a, b) => {
+    const d = id => { let n = 0, p = (visGroups.get(id) || {}).parent;
+      while (p) { n++; p = (visGroups.get(p) || {}).parent; } return n; };
+    return d(b.id) - d(a.id);
+  });
+  for (const gr of deepFirst) {
+    let y0 = Infinity, y1 = -Infinity;
+    for (const id of directNodes.get(gr.id) || []) {
+      const p = nodeMap.get(id);
+      y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2);
+    }
+    for (const sub of directGroups.get(gr.id) || []) {
+      const p = nodeMap.get(sub);
+      if (p.height) { y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2); }
+    }
+    if (y0 === Infinity) continue;
+    const p = nodeMap.get(gr.id);
+    p.height = (y1 + BOX_BOTTOM) - (y0 - BOX_TOP);
+    p.y = (y0 - BOX_TOP) + p.height / 2;
+  }
+
+  // Routes, drawn for this arrangement. One waypoint per rank the edge crosses, x on the
+  // straight run; endpoints on the box boundary, aimed at the first bend; and where the
+  // straight run would pierce a claim, the waypoints inside that claim's rows step around
+  // its nearer side. Two passes, because one detour can uncover another.
+  const boxes = [];
+  for (const n of vis.nodes) {
+    const p = nodeMap.get(n.id);
+    boxes.push({ id: n.id, x0: p.x - p.width / 2, x1: p.x + p.width / 2,
+                 y0: p.y - p.height / 2, y1: p.y + p.height / 2 });
+  }
+  const M = 10;
+  for (const e of vis.edges) {
+    const vP = nodeMap.get(e.from), wP = nodeMap.get(e.to);
+    if (!vP || !wP) continue;
+    const rv = rank.get(e.from), rw = rank.get(e.to);
+    const inner = [];
+    const step = rv > rw ? -1 : 1;
+    for (let r = rv + step; r !== rw && inner.length < 200; r += step)
+      if (rowY.has(r)) inner.push({ x: 0, y: rowY.get(r) });
+    const pts = [{ x: vP.x, y: vP.y }, ...inner, { x: wP.x, y: wP.y }];
+    const last = pts.length - 1;
+    for (let i = 1; i < last; i++)
+      pts[i].x = pts[0].x + (pts[last].x - pts[0].x) * (i / last);
+    for (let pass = 0; pass < 2; pass++) {
+      let moved = false;
+      for (const b of boxes) {
+        if (b.id === e.from || b.id === e.to) continue;
+        let hit = false;
+        for (let i = 0; i < last && !hit; i++)
+          if (segmentHitsBox(pts[i], pts[i + 1], b, 4)) hit = true;
+        if (!hit) continue;
+        const t = ((b.y0 + b.y1) / 2 - pts[0].y) / ((pts[last].y - pts[0].y) || 1);
+        const ideal = pts[0].x + (pts[last].x - pts[0].x) * Math.max(0, Math.min(1, t));
+        const side = Math.abs(ideal - (b.x0 - M)) <= Math.abs(ideal - (b.x1 + M))
+          ? b.x0 - M : b.x1 + M;
+        for (let i = 1; i < last; i++)
+          if (pts[i].y > b.y0 - 1 && pts[i].y < b.y1 + 1 && pts[i].x !== side) {
+            pts[i].x = side;
+            moved = true;
+          }
+      }
+      if (!moved) break;
+    }
+    pts[0] = boundary(vP, pts[1] || wP);
+    pts[last] = boundary(wP, pts[last - 1] || vP);
+    const key = { v: e.from, w: e.to, name: e.type || "support" };
+    edgeList.push(key);
+    edgeData.set(key.v + " " + key.w + " " + key.name,
+                 { points: pts, step: e.step == null ? null : e.step,
+                   through: !!e.through, rule: e.rule || null });
+  }
+
+  for (const p of nodeMap.values()) {
+    gw = Math.max(gw, p.x + p.width / 2 + MARGIN);
+    gh = Math.max(gh, p.y + p.height / 2 + MARGIN);
+  }
+  return g;
+}
+
+/* ===== stable order: home columns =====
+ *
+ * The stability plan's Phase 2b (docs/STABILITY-PLAN.md). Where the seating pass above
+ * PERMUTES what dagre arranged, this pass replaces the horizontal arrangement outright:
+ * dagre still decides ranks, heights and routes, and every visible block then takes an x that
+ * is a function of the DOCUMENT and the visible membership alone -- never of the order dagre
+ * happened to choose for this particular subset. Folding can remove a claim's neighbours; it
+ * can no longer reshuffle them.
+ *
+ * HOW. One recursive packing over the section tree, in canonical order -- the seating pass's
+ * own key, [section ordinal, source line] -- with a per-row cursor inside each container:
+ * a claim occupies its own rank row; a section occupies every rank row between its first and
+ * its last, so nothing that is not a member can be dealt an x inside its box. Vertically
+ * disjoint blocks may share x, exactly as dagre stacks them. Section boxes are rebuilt as the
+ * hull of their members plus a pad, because the box now follows the members rather than the
+ * members being confined to dagre's box -- which is also why this pass has no unfit bands, no
+ * overlap veto and no fallback: single-path, by construction, which Phase 2a measured to be
+ * the property that matters more than any particular choice of geometry.
+ *
+ * Since 29 Aug 2026 this is the only arrangement: the flag it shipped behind, and the
+ * dagre-arranged path it was measured against, both retired the day dagre did.
+ */
+function assignHomeColumns(g, vis, stats) {
+  const visGroups = new Map(vis.groups.map(x => [x.id, x]));
+  const byId = new Map(vis.nodes.map(n => [n.id, n]));
+
+  // Direct children of each container, "" standing for the top level -- a node whose group is
+  // not on screen is a top-level block for drawing purposes.
   const childrenOf = new Map();
   const add = (parent, id) => {
-    const k = parent || "";
+    const k = parent && visGroups.has(parent) ? parent : "";
     if (!childrenOf.has(k)) childrenOf.set(k, []);
     childrenOf.get(k).push(id);
   };
   for (const n of vis.nodes) add(n.group, n.id);
   for (const gr of vis.groups) add(gr.parent, gr.id);
 
-  // Everything a block occupies: a node is itself; a group is its box plus every descendant.
-  const coveredBy = new Map();
-  const cover = id => {
-    if (coveredBy.has(id)) return coveredBy.get(id);
-    const out = [id];
-    coveredBy.set(id, out);
-    if (visGroups.has(id)) for (const c of childrenOf.get(id) || []) out.push(...cover(c));
-    return out;
-  };
-
-  // Order key: SECTION FIRST, then line within it. The two are not interchangeable and using
-  // the line alone breaks the outer level — a document that defines a claim early and files
-  // it under a later section (which the book map does throughout, by re-opening claims) would
-  // drag that whole section leftwards. Section order is authoritative for sections; the line
-  // only ever breaks ties among siblings of the same section, which is precisely the case the
-  // old outermost-only pass could not reach.
-  const byId = new Map(vis.nodes.map(n => [n.id, n]));
+  // The seating pass's canonical key, with a last-resort tie broken by the order the graph was
+  // built in -- which is fixed once per file, so ties resolve the same way in every state.
   const HI = Infinity;
+  const seq = new Map();
+  vis.nodes.forEach((n, i) => seq.set(n.id, i));
+  vis.groups.forEach((gr, i) => seq.set(gr.id, i));
   const keyCache = new Map();
   const keyOf = id => {
     if (keyCache.has(id)) return keyCache.get(id);
     let k = null;
     const n = byId.get(id);
     if (n) {
-      k = (n.order != null || n.docLine != null)
-        ? [n.order == null ? HI : n.order, n.docLine == null ? HI : n.docLine] : null;
+      k = [n.order == null ? HI : n.order, n.docLine == null ? HI : n.docLine];
     } else {
       for (const c of childrenOf.get(id) || []) {
         const ck = keyOf(c);
@@ -1428,131 +1628,97 @@ function seatInDocumentOrder(g, vis, documentOrder) {
       }
       const gr = visGroups.get(id);
       if (gr && gr.order != null) k = [gr.order, k ? k[1] : HI];
+      if (k == null) k = [HI, HI];
     }
     keyCache.set(id, k);
     return k;
   };
-  const before = (a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1];
-
-  const shift = new Map();      // node/group id -> total horizontal shift applied
-  const extent = id => {
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-    for (const c of cover(id)) {
-      const p = g.node(c);
-      if (!p || p.x == null || !p.width) continue;
-      x0 = Math.min(x0, p.x - p.width / 2); x1 = Math.max(x1, p.x + p.width / 2);
-      y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2);
-    }
-    return { x0, x1, y0, y1 };
+  const before = (a, b) => {
+    const ka = keyOf(a), kb = keyOf(b);
+    return ka[0] !== kb[0] ? ka[0] - kb[0]
+         : ka[1] !== kb[1] ? ka[1] - kb[1]
+         : (seq.get(a) || 0) - (seq.get(b) || 0);
   };
 
-  // Outermost first: shifting a group moves its descendants, so an inner level must be
-  // seated against coordinates its ancestors have already settled.
-  const depth = id => { let d = 0, gp = visGroups.get(id); const seen = new Set();
-    while (gp && gp.parent && !seen.has(gp.parent)) { seen.add(gp.parent); d++; gp = visGroups.get(gp.parent); }
-    return d; };
-  const parents = [...childrenOf.keys()].sort((a, b) =>
-    (a === "" ? -1 : b === "" ? 1 : depth(a) - depth(b)));
+  // A row is a rank: dagre gives every node of a rank the same y.
+  const rowKeys = [...new Set(vis.nodes.map(n => {
+    const p = g.node(n.id);
+    return p && p.y != null ? Math.round(p.y) : null;
+  }).filter(y => y != null))].sort((a, b) => a - b);
+  const rowIx = new Map(rowKeys.map((y, i) => [y, i]));
+  const rowOf = id => {
+    const p = g.node(id);
+    return p && p.y != null ? (rowIx.get(Math.round(p.y)) ?? 0) : 0;
+  };
 
-  for (const parent of parents) {
-    const kids = (childrenOf.get(parent) || [])
-      .map(id => Object.assign({ id: id, order: keyOf(id) }, extent(id)))
-      .filter(b => b.x0 < b.x1 && b.order != null);
-    if (kids.length < 2) continue;
+  const GAP = (typeof g.graph === "function" && g.graph() && g.graph().nodesep) || 22;
+  const PAD = 16;
 
-    // Band by vertical overlap: only blocks that sit side by side compete for horizontal
-    // order, and forcing document order on blocks in different rows would be meaningless.
-    kids.sort((a, b) => a.y0 - b.y0);
-    const bands = [];
-    for (const b of kids) {
-      const band = bands[bands.length - 1];
-      if (band && b.y0 < band.y1 - 1) { band.items.push(b); band.y1 = Math.max(band.y1, b.y1); }
-      else bands.push({ y1: b.y1, items: [b] });
-    }
-
-    for (const band of bands) {
-      if (band.items.length < 2) continue;
-      // Keep every slot dagre computed -- widths, gaps, total extent -- and only permute
-      // which block sits in which slot.
-      const slots = band.items.map(b => ({ x0: b.x0, w: b.x1 - b.x0 }))
-                              .sort((a, b) => a.x0 - b.x0);
-      const wanted = band.items.slice().sort((a, b) => before(a.order, b.order) || a.x0 - b.x0);
-      let cursor = slots[0].x0;
-      wanted.forEach((b, i) => {
-        b.dx = cursor - b.x0;
-        const gap = i + 1 < slots.length ? (slots[i + 1].x0 - (slots[i].x0 + slots[i].w)) : 0;
-        cursor += (b.x1 - b.x0) + gap;
-      });
-      // Try the move; keep it only if nothing ends up on top of anything else.
-      //
-      // Blocks are banded by VERTICAL overlap, so a block shifted within one band can land on
-      // a block from another band that happens to share part of its height. dagre's own
-      // ordering has no such hazard because it never moves anything after routing. On the
-      // Williams map, "by argument" fully expanded, this put 11 pairs of claims on top of
-      // each other. Reading order is worth having, but not at the price of an unreadable
-      // picture, so a band that cannot be re-seated cleanly keeps dagre's order.
-      const moved = band.items.filter(b => b.dx);
-      if (!moved.length) continue;
-      const undo = [];
-      for (const b of moved)
-        for (const id of cover(b.id)) {
+  // Measure, then place: relative x per block within its container, width per container.
+  const relX = new Map(), widthOf = new Map(), rowsOf = new Map();
+  const measure = container => {
+    const kids = (childrenOf.get(container) || []).slice().sort(before);
+    const cursor = new Map();
+    const rows = new Set();
+    let maxX = 0;
+    for (const id of kids) {
+      if (visGroups.has(id)) {
+        const w = measure(id);
+        let rs = [...(rowsOf.get(id) || [])];
+        if (!rs.length) {                       // an empty section still needs a shelf to sit on
           const p = g.node(id);
-          if (p && p.x != null) { undo.push([p, p.x, id, b.dx]); p.x += b.dx; }
+          rs = [p && p.y != null ? (rowIx.get(Math.round(p.y)) ?? 0) : 0];
         }
-      if (overlapsAnywhere(g, vis)) {
-        for (const [p, x] of undo) p.x = x;
+        // A section spans every row between its first and its last, occupied or not, so a
+        // claim from outside can never be dealt an x inside its box.
+        const lo = Math.min(...rs), hi = Math.max(...rs);
+        let x = 0;
+        for (let r = lo; r <= hi; r++) x = Math.max(x, cursor.get(r) || 0);
+        relX.set(id, x);
+        for (let r = lo; r <= hi; r++) { cursor.set(r, x + w + GAP); rows.add(r); }
+        maxX = Math.max(maxX, x + w);
       } else {
-        for (const [, , id, dx] of undo) shift.set(id, (shift.get(id) || 0) + dx);
+        const p = g.node(id);
+        if (!p || p.width == null) continue;
+        const r = rowOf(id);
+        const x = cursor.get(r) || 0;
+        relX.set(id, x);
+        cursor.set(r, x + p.width + GAP);
+        rows.add(r);
+        maxX = Math.max(maxX, x + p.width);
       }
     }
-  }
+    if (container !== "") {
+      rowsOf.set(container, rows);
+      widthOf.set(container, maxX + PAD * 2);
+      return maxX + PAD * 2;
+    }
+    return maxX;
+  };
+  measure("");
 
-  // Edges last, once every level has settled: shift each point by a blend of its endpoints'
-  // total shifts, so both ends stay on the boxes they were routed to.
-  //
-  // THE BLEND IS A SHEAR, NOT A RE-ROUTE, and on a block that moved a long way it produces the
-  // worst-looking paths on the map: a line that leaves its source, swings well out to one side,
-  // and curves all the way back. The interior points were positioned by dagre for the ARRANGEMENT
-  // BEFORE the re-seat; sliding them by a fraction of their endpoint's shift leaves them
-  // somewhere that was never on a route between anything. Measured across the three sample maps:
-  // dagre's own routing never exceeds 1.3x the straight-line distance, while the sheared paths
-  // reached 3.0x, 3.8x and 4.1x.
-  //
-  // So the shear is kept -- it is right when the two ends moved by similar amounts, which is most
-  // of the time -- and checked. Where it has produced a detour dagre would never have drawn, the
-  // interior x is rebuilt as a straight run between the new endpoints. That keeps every point on
-  // its own rank, because the y coordinates are untouched, and gives up dagre's horizontal
-  // crossing-avoidance only on the handful of edges whose route had already been invalidated.
-  const pathLen = p => p.slice(1).reduce((s, q, i) => s + Math.hypot(q.x - p[i].x, q.y - p[i].y), 0);
-  for (const e of g.edges()) {
-    const pts = g.edge(e).points;
-    if (!pts || pts.length < 2) continue;
-    const a = shift.get(e.v) || 0, c = shift.get(e.w) || 0;
-    if (!a && !c) continue;
-    const last = pts.length - 1;
-    pts.forEach((pt, i) => { pt.x += a + (c - a) * (i / last); });
-  }
-  straightenDetours(g, vis);
+  const shift = new Map();
+  const place = (container, base) => {
+    for (const id of childrenOf.get(container) || []) {
+      const rel = relX.get(id);
+      if (rel == null) continue;
+      if (visGroups.has(id)) {
+        place(id, base + rel + PAD);
+        const p = g.node(id);
+        if (p) { p.width = widthOf.get(id); p.x = base + rel + p.width / 2; }
+      } else {
+        const p = g.node(id);
+        if (!p || p.x == null) continue;
+        const nx = base + rel + p.width / 2;
+        if (nx !== p.x) shift.set(id, nx - p.x);
+        p.x = nx;
+        if (stats) stats.assigned = (stats.assigned || 0) + 1;
+      }
+    }
+  };
+  place("", 16);
 }
 
-
-/** Straighten edges that take a visibly longer route than they need to -- but only where doing
- *  so cannot push the line through a claim.
- *
- *  TWO SOURCES, and it is worth keeping them apart. The re-seat's shear is one, and the reason
- *  this started: it leaves interior points where no route ever went. But dagre produces its own,
- *  independently of any seating -- on the book map the single worst overshoot, 175 units, is
- *  identical before and after the re-seat, and is the one edge running between two different
- *  sections. dagre routes those around cluster borders, and the way out and back is the cost.
- *
- *  So the test is not whose fault the detour is, but whether the straight run is SAFE. A route
- *  that would cross a claim's box is dagre earning its keep and is left alone; one that crosses
- *  nothing was avoiding an obstacle that is no longer there, and is straightened. Only the y
- *  coordinates dagre assigned are preserved, so every point stays on its own rank.
- *
- *  Cluster rectangles are deliberately NOT obstacles: an edge between sections has to cross a
- *  section border, and treating that as a collision would veto every repair that matters.
- */
 /** Where each fold badge is drawn, in graph coordinates.
  *
  *  paintNode puts the circle at (width/2, height) inside a box translated to
@@ -2032,48 +2198,6 @@ function straightenIfSafe(pts, boxes, skip, bow) {
   return out;
 }
 
-function straightenDetours(g, vis) {
-  const boxes = boxesOf(g, vis);
-  const pathLen = p => p.slice(1).reduce((s, q, i) => s + Math.hypot(q.x - p[i].x, q.y - p[i].y), 0);
-  const hits = segmentHitsBox;
-
-  for (const e of g.edges()) {
-    const pts = g.edge(e).points;
-    if (!pts || pts.length < 3) continue;
-    const last = pts.length - 1;
-    // Length alone misses the shape people complain about: a path that leaves its source, bulges
-    // past its target and comes back can be 1.45x the direct distance and still look absurd. So
-    // measure the sideways wander too.
-    const straight = Math.hypot(pts[last].x - pts[0].x, pts[last].y - pts[0].y);
-    const lo = Math.min(pts[0].x, pts[last].x), hi = Math.max(pts[0].x, pts[last].x);
-    let overshoot = 0;
-    for (let i = 1; i < last; i++) overshoot = Math.max(overshoot, lo - pts[i].x, pts[i].x - hi);
-    if (!((straight > 1 && pathLen(pts) / straight > 1.6) || overshoot > 20)) continue;
-
-    const straightened = pts.map((p, i) => ({
-      x: pts[0].x + (pts[last].x - pts[0].x) * (i / last), y: p.y }));
-    let blocked = false;
-    for (let i = 0; i < last && !blocked; i++)
-      for (const b of boxes) {
-        if (b.id === e.v || b.id === e.w) continue;      // its own ends are not obstacles
-        if (hits(straightened[i], straightened[i + 1], b, 4)) { blocked = true; break; }
-      }
-    if (!blocked) {
-      for (let i = 1; i < last; i++) pts[i].x = straightened[i].x;
-      continue;
-    }
-    // BLOCKED IS NOT A REASON TO DO NOTHING, and treating it as one was a regression worth
-    // recording. On a dense map the straight run usually does cross something, so an all-or-
-    // nothing veto left the worst cases untouched: the book map's largest excursion went from
-    // 175 units to 15,330 the moment the safety test was added, because the repair that had been
-    // silently fixing them stopped firing. So where the line cannot be straightened it is CLAMPED
-    // instead -- interior points pulled back inside the span of their own two ends, and otherwise
-    // left where dagre put them. That removes the out-and-back without inventing a new route.
-    for (let i = 1; i < last; i++) pts[i].x = Math.min(hi, Math.max(lo, pts[i].x));
-  }
-}
-
-/** Does any pair of drawn node boxes overlap? Used to veto a re-seat that would cause one. */
 function overlapsAnywhere(g, vis) {
   const boxes = [];
   for (const n of vis.nodes) {
@@ -2570,9 +2694,6 @@ const DEFAULTS = {
   // already provides — the structure map has its own depth control and does not want two.
   controls: true,
   fitOnRender: true,
-  // Seat sections left-to-right in the order the argument was WRITTEN, rather than in whatever
-  // order dagre's crossing-minimisation happens to produce. Set false to let dagre decide.
-  documentOrder: true,
   // Opening a fold reveals ONE level, not the whole subtree beneath it. A section holding 34
   // claims dumped out at once is unreadable, and the reader has lost the structure they clicked
   // in order to see. Set false for the old reveal-everything behaviour.
@@ -2588,9 +2709,6 @@ function createLiveMap(container, graph, options) {
   if (cleaned.problems.length && typeof console !== "undefined" && console.warn)
     console.warn("argdown-live-map: the graph needed repair before it could be drawn:\n  - " +
                  cleaned.problems.join("\n  - "));
-  const dagre = opt.dagre || /** @type {any} */ (global).dagre;
-  if (!dagre) throw new Error("argdown-live-map: dagre not found (load vendor/dagre.min.js first)");
-
   let state = {
     collapsedGroups: new Set(options && options.collapsedGroups || []),
     collapsedNodes:  new Set(options && options.collapsedNodes  || []),
@@ -2876,53 +2994,7 @@ function createLiveMap(container, graph, options) {
     if (expo) {
       g = layoutByText(vis, sizes, 0, paneAspect);
     } else {
-      // dagre can THROW on shapes it cannot route -- "Not possible to find intersection inside
-      // of the rectangle" comes up on compound graphs where an edge's endpoints coincide. In a
-      // viewer that means a blank page, so there are two fallbacks: the same layout without
-      // clusters, which removes the compound case that provokes it, and failing that the
-      // text-ordered layout, which is ours and is held to never throwing by the geometry
-      // harness. A map drawn a little differently beats no map at all.
-      const build = clusters => {
-        const gg = new dagre.graphlib.Graph({ compound: true, multigraph: true });
-        gg.setGraph({ rankdir: "BT", ranksep: opt.ranksep, nodesep: opt.nodesep,
-                      marginx: 16, marginy: 16 });
-        gg.setDefaultEdgeLabel(() => ({}));
-        if (clusters)
-          for (const gr of vis.groups) gg.setNode(gr.id, { label: gr.label, clusterLabelPos: "top" });
-        for (const n of vis.nodes) {
-          const s = sizes.get(n.id);
-          gg.setNode(n.id, { width: s.width, height: s.height });
-        }
-        if (clusters) {
-          for (const gr of vis.groups) if (gr.parent) gg.setParent(gr.id, gr.parent);
-          for (const n of vis.nodes)   if (n.group)   gg.setParent(n.id, n.group);
-        }
-        // The inference step rides on the edge record: `planJoins` reads it back off the laid-out
-        // graph, and dagre keeps whatever object is handed to it here.
-        for (const e of vis.edges)
-          gg.setEdge(e.from, e.to,
-                     { step: e.step == null ? null : e.step, through: !!e.through,
-                       rule: e.rule || null }, e.type);
-        dagre.layout(gg);
-        return gg;
-      };
-      try {
-        g = build(true);
-        seatInDocumentOrder(g, vis, opt.documentOrder);
-      } catch (e) {
-        try {
-          g = build(false);
-          seatInDocumentOrder(g, vis, opt.documentOrder);
-          if (typeof console !== "undefined" && console.warn)
-            console.warn("argdown-live-map: dagre could not lay this map out with its sections " +
-                         "as clusters, so they are drawn without boxes. (" + e.message + ")");
-        } catch (e2) {
-          g = layoutByText(vis, sizes, 0, paneAspect);
-          if (typeof console !== "undefined" && console.warn)
-            console.warn("argdown-live-map: dagre failed on this map, so it is drawn in text " +
-                         "order instead. (" + e2.message + ")");
-        }
-      }
+      g = layoutByArgument(vis, sizes, opt);
     }
 
     drawGroups(g, vis);
@@ -4928,7 +5000,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
               junctionFeet, pcsRows, premiseHull,
-              seatInDocumentOrder, straightenDetours, clearOfBadge, offsetPastBadge,
+              layoutByArgument, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,
               directionFractions,
