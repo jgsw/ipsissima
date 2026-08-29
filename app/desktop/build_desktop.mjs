@@ -16,6 +16,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 import { execFileSync } from "child_process";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +37,39 @@ if (!stageOnly) {
 } else if (!fs.existsSync(PAGE)) {
   console.error("nothing staged yet — run without --stage first");
   process.exit(1);
+}
+
+// THE ICON SET IS GENERATED, and a fresh clone does not have it. Only icons/source.png is
+// tracked (see .gitignore); `tauri::generate_context!` opens icons/32x32.png at macro
+// expansion, so on a machine that has never run `tauri icon` the build dies inside a proc
+// macro — "failed to open icon" — before compiling a line of Rust. The release workflow found
+// this on the first tag ever cut; this is the same fix for everyone else's first build. Run
+// through tauri.mjs, which knows `icon` is image processing and demands no cargo for it.
+const ICONS = path.join(HERE, "src-tauri", "icons");
+if (!fs.existsSync(path.join(ICONS, "32x32.png"))) {
+  // NOT WHEN THE CLI ISN'T HERE. rebuild_viewers.mjs stages through this script on machines
+  // that never ran `npm install` in desktop/ — the web build's whole point is needing none of
+  // this — and staging must not start failing for them over an icon set only `tauri build`
+  // reads. Whoever lacks the CLI cannot reach the proc-macro panic either: tauri.mjs dies on
+  // the same missing module first, and its error names the fix.
+  let haveCli = true;
+  try { createRequire(import.meta.url).resolve("@tauri-apps/cli/tauri.js"); }
+  catch { haveCli = false; }
+  if (haveCli) {
+    console.error("  regenerating the platform icon set from icons/source.png…");
+    execFileSync(process.execPath,
+                 [path.join(HERE, "tauri.mjs"), "icon", "src-tauri/icons/source.png",
+                  "-o", "src-tauri/icons"],
+                 { stdio: ["ignore", "ignore", "inherit"] });
+    // The android/ and ios/ trees the CLI insists on writing go straight back out. There are no
+    // mobile targets, and they are the one output .gitignore does not cover — `icons/*.png` does
+    // not reach into subdirectories, so leaving them puts thirty-five untracked files in git status.
+    for (const mobile of ["android", "ios"])
+      fs.rmSync(path.join(ICONS, mobile), { recursive: true, force: true });
+  } else {
+    console.error("  icon set not regenerated — no @tauri-apps/cli here (`npm install` in " +
+                  "desktop/ first); only `tauri build` needs it");
+  }
 }
 
 // ONE VERSION NUMBER, kept in one file. The page reads `argdown-tools/VERSION` at build time
