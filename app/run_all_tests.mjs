@@ -43,6 +43,10 @@ const SUITES = [
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
   ["source pane cleanup",        "node", [path.join(HERE, "test_source_pane.mjs")]],
   ["folding the provenance",     "node", [path.join(HERE, "test_provenance_fold.mjs")]],
+  // The parser shipped inside the Python package, against the real CLI it stands in for.
+  ["the bundled Argdown parser", "node", [path.join(HERE, "test_argdown_shim.mjs")]],
+  // Five files state the version and nothing keeps them in step.
+  ["one release, one version", "node", [path.join(HERE, "test_versions.mjs")]],
   // The Reader and the page it EXPORTS must be the same program. They came apart once, by two
   // entries in a list that existed twice, and four separate faults were reported before the
   // one cause was found. See the header of test_page_parity.mjs.
@@ -62,6 +66,9 @@ const SUITES = [
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],
+  // That the server can be INSTALLED, not just run from here — every path that assumes a source
+  // checkout works fine for us and for nobody else.
+  ["the package carries what it serves", PY, [path.join(PYTESTS, "test_installable.py")]],
   ["reading Zotero safely",      PY, [path.join(PYTESTS, "test_zotero.py")]],
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),
                                                 "--self-test"]],

@@ -20,7 +20,7 @@ import { fileURLToPath } from "url";
 import { argdown } from "@argdown/core";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DOCS = path.resolve(HERE, "..", "ipsissima-mcp", "docs");
+const DOCS = path.resolve(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp", "docs");
 const RUN = { process: ["parse-input", "build-model"], logLevel: "error" };
 
 let fails = 0;

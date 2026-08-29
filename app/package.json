@@ -2,7 +2,7 @@
   "name": "ipsissima",
   "version": "0.1.0",
   "private": true,
-  "description": "Ipsissima \u2014 read an argument reconstruction beside the text it is a reading of. Builds the self-contained viewer and editor.",
+  "description": "Ipsissima — read an argument reconstruction beside the text itself. Builds the self-contained viewer and editor.",
   "license": "GPL-3.0-or-later",
   "author": "James Wilson",
   "type": "commonjs",
@@ -16,6 +16,7 @@
     "@argdown/pandoc-filter": "^2.0.1"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@codemirror/commands": "^6.11.0",
     "@codemirror/language": "^6.12.4",
     "@codemirror/lint": "^6.9.7",

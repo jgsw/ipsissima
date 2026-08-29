@@ -4,17 +4,32 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ipsissima-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Turn a document into a source an Argdown reconstruction can cite, and check the reconstruction against it."
 readme = "README.md"
-requires-python = ">=3.10"
+# 3.11, NOT 3.10, and the reason is onnxruntime rather than anything in this code. Current
+# onnxruntime publishes wheels for cp311 upwards only, so on 3.10 the install fails outright --
+# "doesn't have a source distribution or wheel for the current platform". Found by provisioning
+# the .mcpb bundle exactly as the host would, where uv picked 3.10 because this line let it.
+# Claiming 3.10 here does not make it work; it only moves the failure to the user.
+requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "James Wilson" }]
 keywords = ["argdown", "argument", "reconstruction", "pdf", "epub", "philosophy"]
 classifiers = [
+  # 4 - Beta rather than 5 - Production/Stable: the interface is settled and in daily use, and
+  # this is the first version anyone else can install.
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Education",
   "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Topic :: Text Processing :: Markup",
+  "Topic :: Scientific/Engineering",
 ]
 
 # pymupdf and pymupdf4llm do the PDF work; rapidocr is NOT optional in practice — without an OCR
@@ -33,6 +48,12 @@ dependencies = [
 [project.optional-dependencies]
 zotero = ["pyzotero>=1.5"]
 
+# The sidebar of the PyPI page, which is otherwise a summary with nowhere to go from it.
+[project.urls]
+Homepage = "https://jgsw.github.io/ipsissima/"
+Source = "https://github.com/jgsw/ipsissima"
+Issues = "https://github.com/jgsw/ipsissima/issues"
+
 [project.scripts]
 ipsissima-mcp = "ipsissima_mcp.server:main"
 ipsissima-ingest = "ipsissima_mcp.ingest:main"
@@ -42,3 +63,17 @@ ipsissima-paginate = "ipsissima_mcp.paginate:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# WHAT MAKES THE SERVER INSTALLABLE IS THAT THESE LIVE INSIDE THE PACKAGE. The prompts are its
+# actual content -- the extraction prompt and the reference documents are what it exists to hand
+# to a model -- and they sat BESIDE the package until now, found by walking up to a `docs/` only a
+# source checkout has. The parser was worse: it was in `app/node_modules`, a different project.
+#
+# This declaration is belt and braces rather than the thing that carries them. Measured: with it
+# removed, and again with `include-package-data = false` on top, the built wheel still contained
+# every file -- setuptools takes data inside a package directory either way. It is written out
+# anyway so that what ships is stated rather than inherited from a default that has changed
+# before. `tests/test_installable.py` checks the built wheel itself, which is the property that
+# actually matters and does not depend on knowing which mechanism provided it.
+[tool.setuptools.package-data]
+ipsissima_mcp = ["vendor/*.mjs", "docs/*.md"]

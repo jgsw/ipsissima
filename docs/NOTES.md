@@ -42,8 +42,10 @@ that way: the history is a chorus, and no single tradition is the frame.
 
 **The strapline is "The very words, and how far a reading stands from them."** It translates the
 name and states the product in the copy's own recurring measure ("how far it stands from its
-source"). The descriptive line — "Read an argument reconstruction beside the text it is a
-reading of" — is not a rival; it stays as the subtitle everywhere.
+source"). The descriptive line — "Read an argument reconstruction beside the text itself" — is
+not a rival; it stays as the subtitle everywhere. (Reworded 28 Aug 2026 from "…the text it is a
+reading of": the relative clause made a first-time visitor parse, and *itself* ends the line on
+the name's own root.)
 
 **Fidelity is pattern; relation is colour.** The mark is one claim box whose border enters solid
 (quotation) and leaves as dash-dot (imputation), quotation marks seated inside — the map's own
@@ -73,7 +75,7 @@ The flag is **`--outputDir`**. `--outDir` is accepted silently, ignored, and the
 the working directory instead.
 
 **Claude: never hand over a .argdown file without running the validator.** The `argdown` skill
-(`ipsissima-mcp/docs/`) carries the syntax and the failure modes; `reference.md` beside it is
+(`ipsissima-mcp/src/ipsissima_mcp/docs/`) carries the syntax and the failure modes; `reference.md` beside it is
 a full reference in which every rule was tested against the CLI rather than inferred.
 
 Why a skill and not a generator: the failure was Claude's knowledge of the syntax, not missing

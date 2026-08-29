@@ -3093,7 +3093,19 @@ function createLiveMap(container, graph, options) {
                        + (lit.has(n.id) || (n.members || []).some(m => lit.has(m)) ? " is-lit" : ""));
       paintNode(box, n, s, fresh);
       // Existing nodes glide (CSS transition on transform); new ones appear in place.
-      box.setAttribute("transform", `translate(${p.x - s.width / 2},${p.y - s.height / 2})`);
+      //
+      // THE STYLE PROPERTY, NOT THE `transform` ATTRIBUTE, and the difference is the whole
+      // animation. Blink maps the SVG presentation attribute onto the CSS property, so changing
+      // the attribute starts the transition and the map glides in a browser. WebKit does not:
+      // the attribute change takes effect at once and the node jumps. That is why folding felt
+      // smooth on the web page and snapped in the desktop app, which is WKWebView on macOS.
+      //
+      // Measured, in a real WKWebView, sampling halfway through a 600ms transition: by attribute
+      // the element had already moved the full 300px; by style it had moved 148. Chrome animates
+      // both. Setting the style property is therefore the spelling that works in both engines,
+      // and is geometrically identical to the attribute given `transform-origin: 0 0`.
+      box.style.transform =
+        `translate(${p.x - s.width / 2}px,${p.y - s.height / 2}px)`;
       if (fresh) {
         box.style.opacity = "0";
         requestAnimationFrame(() => { box.style.opacity = "1"; });
@@ -3529,7 +3541,7 @@ function createLiveMap(container, graph, options) {
       label.textContent = fitLabel(gr.label + (gr.fold === false ? "" : "  ▾"),
                                    p.width - 20 - (showWords ? wroom : 0) - (showSpark ? sroom : 0));
       box.querySelector("title").textContent = gr.title || gr.label;   // untruncated, on hover
-      box.setAttribute("transform", `translate(${x},${y})`);
+      box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
     for (const [id, box] of drawnGroup) {
       if (keep.has(id)) continue;
@@ -3869,7 +3881,18 @@ function createLiveMap(container, graph, options) {
   /* ------------------------------------------------------------ zoom / pan */
 
   function applyView() {
-    viewport.setAttribute("transform", `translate(${view.x},${view.y}) scale(${view.k})`);
+    // Style rather than attribute, for the reason given at the node glide above -- and it
+    // matters twice here, because the camera sets a `transition` on this element and in WebKit
+    // an attribute change ignored it, so every fit and zoom-to jumped.
+    //
+    // `transform-origin: 0 0` in the stylesheet is what makes this identical to the attribute.
+    // A CSS transform on an SVG element takes its origin from the reference box and defaults to
+    // the middle of it; the attribute always uses the local origin. Translation does not care,
+    // but this one carries a scale, and with the default origin the map would zoom about its
+    // own centre instead of the point under the pointer. Checked against the attribute in
+    // WKWebView: same x, y, width and height to the pixel.
+    viewport.style.transform =
+      `translate(${view.x}px,${view.y}px) scale(${view.k})`;
   }
   /** Is there still anything on screen? A fold removes nodes without moving the camera, so
    *  collapsing the root of a wide map AFTER panning leaves the one surviving node outside
@@ -4593,6 +4616,7 @@ function injectStyle() {
   font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 .alm-svg.is-panning{cursor:grabbing}
 .alm-measure{visibility:hidden;pointer-events:none}
+.alm-viewport,.alm-n,.alm-g{transform-origin:0 0}
 .alm-n{cursor:pointer;transition:transform var(--alm-dur,350ms) cubic-bezier(.4,0,.2,1),
   opacity 220ms ease}
 /* Nodes stay neutral and the RELATIONS carry the colour. Green-bordered boxes next to green

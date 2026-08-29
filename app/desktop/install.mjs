@@ -13,6 +13,7 @@
  *
  *   node install.mjs            build and install to ~/Applications
  *   node install.mjs --status   say what is registered, change nothing
+ *   node install.mjs --uninstall  remove every copy, and what the app left under ~/Library
  *
  * ~/Applications rather than /Applications: no administrator password, same behaviour, and it is
  * a per-user tool.
@@ -30,6 +31,10 @@ const LSR = "/System/Library/Frameworks/CoreServices.framework/Frameworks/Launch
 const BUILT = path.join(HERE, "src-tauri", "target", "release", "bundle", "macos", "Ipsissima.app");
 const DEST = path.join(os.homedir(), "Applications", "Ipsissima.app");
 const statusOnly = process.argv.includes("--status");
+const uninstall = process.argv.includes("--uninstall");
+// `--uninstall --dry-run` says what would go and touches nothing. Worth having for its own
+// sake -- this is the one mode here that destroys things -- and it is how the mode is tested.
+const dryRun = process.argv.includes("--dry-run");
 
 if (process.platform !== "darwin") {
   console.error("install.mjs is macOS-only. On Windows and Linux the installer produced by " +
@@ -56,6 +61,62 @@ function report(label) {
   for (const p of all)
     console.log(`   ${fs.existsSync(p) ? "  " : "!!"} ${p}${fs.existsSync(p) ? "" : "   (MISSING)"}`);
   return all;
+}
+
+/** Everything the app writes outside its own bundle. Not the reader's reconstructions: those are
+ *  ordinary files wherever they chose to keep them, and an uninstaller that went looking for
+ *  `.argdown` files to delete would be a different and much worse program. */
+const LEFTOVERS = [
+  path.join(os.homedir(), "Library", "Caches", "org.ipsissima.desktop"),
+  path.join(os.homedir(), "Library", "WebKit", "org.ipsissima.desktop"),
+  path.join(os.homedir(), "Library", "Preferences", "org.ipsissima.desktop.plist"),
+  path.join(os.homedir(), "Library", "Saved Application State",
+            "org.ipsissima.desktop.savedState"),
+  path.join(os.homedir(), "Library", "HTTPStorages", "org.ipsissima.desktop")
+];
+
+if (uninstall) {
+  // TO THE TRASH, NOT DELETED. An app removed by a script is an app the reader cannot get back
+  // if this was a mistake, and there is no version of "uninstall" urgent enough to justify that.
+  const trash = path.join(os.homedir(), ".Trash");
+  let moved = 0;
+  for (const app of registered()) {
+    if (!fs.existsSync(app)) continue;
+    // The build output is a build artifact and belongs in neither place; `tauri build` remakes it.
+    if (app === BUILT) {
+      console.log(`  ${dryRun ? "would delete (build artifact):" : "deleted (build artifact):"} ${app}`);
+      if (!dryRun) fs.rmSync(app, { recursive: true, force: true });
+      moved++; continue;
+    }
+    let dest = path.join(trash, path.basename(app));
+    for (let n = 2; fs.existsSync(dest); n++) dest = path.join(trash, `Ipsissima ${n}.app`);
+    try {
+      console.log(`  ${dryRun ? "would move to Trash:" : "to Trash:"} ${app}`);
+      if (!dryRun) fs.renameSync(app, dest);
+      moved++;
+    }
+    catch (e) {
+      // /Applications needs a password this script has no business asking for.
+      console.log(`  could NOT remove ${app}\n            ${e.code === "EACCES" || e.code === "EPERM"
+        ? "no permission — drag it to the Trash in Finder" : e.message}`);
+    }
+  }
+  for (const l of LEFTOVERS)
+    if (fs.existsSync(l)) {
+      console.log(`  ${dryRun ? "would remove:" : "removed: "} ${l.replace(os.homedir(), "~")}`);
+      if (!dryRun) fs.rmSync(l, { recursive: true, force: true });
+    }
+  if (!dryRun)
+    for (const p2 of registered())
+      try { execFileSync(LSR, ["-u", p2], { stdio: "ignore" }); } catch { /* already gone */ }
+
+  console.log(moved
+    ? `\n${dryRun ? "would remove" : "removed"} ${moved} cop${moved === 1 ? "y" : "ies"}.`
+      + (dryRun ? " Run again without --dry-run to do it." : "")
+    : "\nnothing to remove.");
+  console.log("Your reconstructions are untouched — they are ordinary files and were never " +
+              "kept inside the app.");
+  process.exit(0);
 }
 
 if (statusOnly) {

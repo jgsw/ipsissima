@@ -47,15 +47,25 @@ $brand-color: #2A5FB4;
 
 @import "minima";
 
-/* The wordmark: the name set as the phrase appears in scholarship — italic, cited. */
+/* The wordmark: the mark beside the name, the name set as the phrase appears in scholarship —
+ * italic, cited. The mark is inlined in _includes/header.html from brand/favicon.svg. */
 .site-title,
 .site-title:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: "EB Garamond", Garamond, Georgia, serif;
   font-style: italic;
   font-weight: 500;
   font-size: 28px;
   letter-spacing: 0.005em;
   color: #203A6A;
+}
+.site-mark {
+  width: 30px;
+  height: 30px;
+  display: block;
+  flex: none;
 }
 
 h1, h2, h3, h4 {
@@ -72,6 +82,26 @@ h3 { font-size: 1.2rem; }
 h1 + p {
   font-size: 1.12em;
   color: #6E6A5E;
+}
+
+/* Mono against Garamond, matched by x-height rather than by point size.
+ *
+ * Minima sets code at 0.9375em, which here is 16.9px against the body's 20.2px -- SMALLER by
+ * every number in the stylesheet, and plainly bigger on the page. Point size is not what the eye
+ * compares. EB Garamond has an unusually small x-height for its size (8.16px at 20.16px) and the
+ * monospace at 16.9px has one of 9.23px: 13% taller, so `.argdown` shouted every time it turned
+ * up mid-sentence. 0.76em brings the two x-heights within 3%, which reads as the same size.
+ *
+ * The stack is named rather than left as the bare `monospace` generic, which on some systems
+ * still resolves to Courier -- a face whose colour and x-height are different again. */
+code, kbd, samp, pre {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.76em;
+}
+
+/* A `code` inside a `pre` would otherwise take the reduction twice and come out at 0.58em. */
+pre code {
+  font-size: 1em;
 }
 
 /* A rule here is the fidelity ladder: solid to dash-dot, quotation to imputation. */

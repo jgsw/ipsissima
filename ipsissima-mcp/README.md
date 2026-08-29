@@ -9,30 +9,47 @@ page numbers intact, and checking a finished reconstruction against its sources 
 The judgement half, turning a paper into an argument, is done by the assistant you are already
 talking to; this server hands it the instructions and then checks its work.
 
-The result opens in [Ipsissima](../README.md), which shows the map, the passage each claim was
+The result opens in [Ipsissima](https://github.com/jgsw/ipsissima), which shows the map, the passage each claim was
 drawn from, and how far each claim stands from the source's own words.
 
 ---
 
 ## Install
 
-You need **Python 3.10+**, **Node** (for the Argdown parser), and ideally
+### The easy way: the Claude Desktop bundle
+
+Download **`ipsissima-mcp-0.1.0.mcpb`** from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and double-click it. Claude Desktop
+installs it, provisions Python and the dependencies itself, and there is nothing to configure —
+no terminal, no virtual environment, no path typed into a JSON file.
+
+**You still need [Node](https://nodejs.org) on the machine.** The Argdown parser is JavaScript
+and is carried inside the bundle, so there is nothing to install *for* it, but something has to
+run it. Nothing else is required: Claude ships a Node runtime for its own extensions but does not
+expose it, and Python it does not ship at all — which is why the bundle asks the host to provide
+one rather than carrying its own.
+
+If the checker later reports that it cannot find Node, install it and restart Claude Desktop.
+It looks in the usual places as well as on the `PATH`, because an application launched from the
+Dock does not get the `PATH` your terminal has.
+
+### The developer's way: from source
+
+You need **Python 3.11+**, **Node** (any current version — it reads the Argdown), and ideally
 [**pandoc**](https://pandoc.org/installing.html).
 
 ```bash
 git clone <this repository> && cd ipsissima
 python3 -m venv .venv && .venv/bin/pip install -e ipsissima-mcp
-cd app && npm install && cd ..
 ```
 
 A virtual environment is not fussiness: a Homebrew or system Python will refuse `pip install`
 outright ([PEP 668](https://peps.python.org/pep-0668/)).
 
-**With [uv](https://docs.astral.sh/uv/) instead**, which is the same two steps and faster:
+**With [uv](https://docs.astral.sh/uv/) instead**, which is the same thing and faster:
 
 ```bash
 uv venv && uv pip install -e ipsissima-mcp
-cd app && npm install && cd ..
 ```
 
 **A uv-made `.venv` has no `pip` in it.** That is uv working as designed, not a broken
@@ -42,14 +59,86 @@ the obvious reading of that message is that the virtual environment did not get 
 below are installed either way; `ls .venv/bin/ipsissima-mcp` is the quick way to tell whether the
 package is there.
 
-**`npm install` in `app/` is not optional for the server.** The checker shells out to the Argdown
-parser that lives there, so `check_reconstruction` fails without it even though nothing about it
-looks like a Node program.
+**Node is needed, `npm install` is not.** The checker uses the Argdown parser as ground truth for
+whether a file is valid, and a copy of it is bundled into this package as a single file that
+`node` runs — so there is nothing to install for it and nothing to keep in step. It used to reach
+into `app/node_modules` instead, which meant the server could only run from a source checkout and
+could not run on Windows at all, npm writing no shim of that name there. If `node` is missing the
+checker says so and names the download page, rather than reporting a missing CLI.
 
 `rapidocr` installs with it and is **not optional**. Without an OCR backend, a scanned paper
 converts silently to its cover page and nothing reports it — measured at 345 words of a
 1,220-word article, no error, a perfectly well-formed Markdown file. See
 `eval/CONVERTER-FINDINGS.md`.
+
+### Your assistant needs to be able to read and write files
+
+**This is the requirement most likely to catch you out, and it is not obvious from the tool
+list.** Ipsissima-MCP does not carry the whole job. Look at where the work actually happens:
+
+| step | who does it | needs disk access? |
+|---|---|---|
+| `plan_job`, `extract_text` | the server | no — the server writes to disk itself |
+| **read the extracted Markdown** | **the assistant** | **yes, read** |
+| **write the `.argdown`** | **the assistant** | **yes, write** |
+| `check_reconstruction` | the server | no — it reads the file from disk |
+
+`extract_text` writes `source/` and returns a *report* of what it wrote, not the text: the
+Markdown is deliberately stripped from the reply, because a book-length source would otherwise
+arrive in the conversation twice over. And no tool here writes the reconstruction — that is the
+model's judgement, and the model saves it with its own file-writing tool.
+
+So an assistant that cannot touch the filesystem gets as far as a folder full of Markdown it
+cannot read, and has nowhere to put the map it then cannot write.
+
+**What works:**
+
+- **Claude Code** — has its own file tools. Everything below works unmodified.
+- **Anything agentic with a workspace** (Claude's Cowork, an IDE assistant like VS Code or
+  Cursor) — same, provided it can reach the folder you are working in.
+- **Claude Desktop** — the `.mcpb` installs and every tool runs, but on its own the assistant has
+  no file access. Add a filesystem MCP server alongside this one, pointed at the folder you keep
+  reconstructions in, and the whole workflow works.
+
+**How to check yours in one line**, rather than trusting a list that will date: ask it to *write
+a file called `test.md` in this folder, then read it back to me*. If it can do both, it can drive
+Ipsissima-MCP end to end. If it cannot, you can still use the server for everything up to the
+reconstruction — extraction, page images, repair, the Zotero lookup — and then paste the map into
+a file yourself before asking for `check_reconstruction`. That works; it is just handwork the
+other clients do for you.
+
+### Which assistants can use this
+
+Two questions that get confused, and they have different answers.
+
+**The server works with any MCP client.** It is a plain MCP server — the official Python SDK,
+protocol `2024-11-05`, spoken over stdin and stdout — and there is nothing Anthropic-specific in
+it. Claude Code, Claude Desktop, VS Code, Cursor and anything else that talks MCP can run it.
+Point the client at the `ipsissima-mcp` command, in whatever way that client is configured.
+
+**The `.mcpb` bundle is Claude Desktop's install format, not a protocol.** No other client opens
+one. Elsewhere, install from source and configure the command yourself, as below. Nothing is lost
+by doing that; the bundle is a convenience, not a capability.
+
+**What genuinely varies is prompts and resources.** MCP has three kinds of thing, and clients
+support them unevenly: tools are universal, prompts and resources much less so. That matters more
+here than it would for most servers, because this one's *method* is not in its tools. The nine
+tools convert documents and check reconstructions; how to actually reconstruct an argument — the
+Assertibility Question, linked versus convergent support, what fidelity levels mean, what to do
+about what an author did not say — is served as a prompt (`reconstruct_argument`) and three
+reference documents served as resources. A client that offers only tools gives the model the
+machinery and none of the instructions, which is the exact situation the extraction prompt exists
+to prevent: there is very little Argdown in the world, and a model guessing at it confidently
+writes files that do not parse.
+
+If your client cannot reach prompts and resources, hand the model the documents directly — they
+are in `src/ipsissima_mcp/docs/`, and `extraction-prompt.md` opens by naming the three it needs.
+That is a documented fallback, not a workaround.
+
+**The model is a separate question from the client.** Ipsissima-MCP does not reconstruct
+arguments; it prepares sources and checks results, and the reading itself is the model's
+judgement. A weaker model behind a fully capable client will produce a weaker reconstruction, and
+`check_reconstruction` will report the difference rather than repair it.
 
 ### Tell your assistant about it
 
@@ -78,6 +167,27 @@ where it is installed, not to where the client happens to be running.
 is on the `PATH`. It is not available from inside every client that can talk to an MCP server, and
 `command not found: claude` there means you are in the wrong window rather than that anything is
 missing.
+
+### Updating and removing it
+
+**The bundle.** Claude Desktop's own extension settings install, update and remove it — a newer
+`.mcpb` from the [releases page](https://github.com/jgsw/ipsissima/releases) replaces the one you
+have. Removing it there is the whole uninstall: the dependencies live in an environment the host
+made and manages, not in your Python installation, so nothing is left behind in yours.
+
+**From source.** Update with `git pull` and re-run the install command; an editable install
+(`pip install -e`) needs nothing more than the pull, which is what editable means. To remove it:
+
+```bash
+claude mcp remove ipsissima      # or delete the entry from the client's config
+rm -rf .venv                     # the environment, and everything installed into it
+```
+
+Nothing is installed outside that virtual environment and the repository, and neither holds your
+reconstructions — those are ordinary files wherever you chose to keep them.
+
+**Neither version checks for updates.** Like the application, this makes no network request of
+its own accord. Watching the releases page on GitHub is the way to hear about a new one.
 
 ### Check it before you rely on it
 
@@ -131,6 +241,47 @@ from these chapters"* look identical from the files alone. So the server reports
 ambiguous rather than guessing, and refuses to convert several sources until the question is
 answered. If you are asked which of two drafts is current, or whether you want one map or six,
 that is the server declining to spend your money on a coin toss.
+
+### What a reconstruction costs
+
+Measured over nine runs, not estimated. Roughly:
+
+```
+tokens  ≈  147,000  +  0.9 × bytes of map  +  2.3 × words of source
+```
+
+Three things follow, and they are the whole of what you need to know before pressing go.
+
+**Most of it is fixed.** About 147,000 tokens go on the procedure itself — reading the
+instructions, reading the source, writing, checking, fixing — whatever the paper. That is **92% of
+the cost of mapping a 266-word passage** and still **60% of mapping a long one**. Reconstructing a
+short paper is not cheap, and there is no setting that makes it so.
+
+**A long source costs even when the map is small.** This is the part that surprises. Two maps of
+the same 68,695-word book — one of 88,029 bytes, one of 39,708 — came out only 58,000 tokens apart
+while both sat about 90,000 above what their map size alone predicted. The reading has to happen
+before there is anything to be brief about. **Budget on the length of the text, not on the size of
+the map you want.**
+
+**In practice**, at `max` effort: a journal article runs **200,000–250,000 tokens**, a short
+passage about **160,000**, and a book-length manuscript **280,000–350,000** — the last two figures
+being a whole book mapped once, not per chapter. *Doing a book chapter by chapter costs the fixed
+147,000 every time*, so eleven chapters is over 1.5 million tokens before a single claim is
+written. Map the book in one pass; go back for the chapters that turn out to matter.
+
+Two levers, and they are not equal:
+
+- **Effort** is the largest and the one with a real cost. `high` came in 16% cheaper than `max` on
+  the same paper — and made eight mechanical faults where `max` made none. Good for a draft you
+  will check yourself; poor for anything you intend to publish or show its author. See
+  `eval/effort-testing/`, which keeps both arms side by side.
+- **Round trips** are worth about 47,000 tokens and cost nothing at all. They are already applied:
+  the instructions carry four rules about them, and the same passage went from 41 tool calls to 6.
+
+**A caveat this file would rather state than bury.** The source term rests on two runs at one
+source size, so do not extrapolate it much past 70,000 words. The workings, the residuals and what
+would falsify the model are in `eval/COST-2026-08-27.md`; `eval/run_cost.py` measures any run of
+your own from its transcript.
 
 ---
 

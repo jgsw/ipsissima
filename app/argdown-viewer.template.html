@@ -487,11 +487,19 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 #drop.over .box{border-color:var(--accent);background:rgba(58,123,213,.05)}
 #drop h2{margin:.2rem 0 .5rem;font-size:1.05rem}
 #drop p{margin:.35rem 0;color:var(--fg-dim);font-size:13px}
-#err{position:absolute;left:1rem;right:1rem;top:1rem;z-index:9;padding:.7rem .9rem;
+#err{position:absolute;left:1rem;right:1rem;top:1rem;z-index:9;padding:.7rem 2.4rem .7rem .9rem;
   border:1px solid #d33;border-radius:8px;background:var(--panel);display:none;
   font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
   max-height:60%;overflow:auto}
 #err.show{display:block}
+/* NOT EVERY MESSAGE IS A FAILURE. "Up to date" arrived in a red-bordered box, which reads as
+   something having gone wrong, and the border is the loudest thing about it. */
+#err.note{border-color:var(--line)}
+/* AND IT HAD NO WAY OUT. It cleared only when a file was loaded or the walkthrough started, so a
+   message about anything else sat over the map until the reader opened something. */
+#errclose{position:absolute;top:.3rem;right:.4rem;border:0;background:none;cursor:pointer;
+  font:16px/1 system-ui,sans-serif;color:var(--fg-dim);padding:.2rem .4rem;border-radius:6px}
+#errclose:hover{color:var(--fg);background:var(--line)}
 /* The external-edit strip. Sits under the pane's own header, in the pane the news is about, and
    is the panel colour rather than a warning colour: an edit made in another editor is normal,
    and usually the reader's own doing. */
@@ -769,7 +777,7 @@ body.fs #fsexit{display:inline-flex}
       <div id="absbody"></div>
     </div>
   </div>
-  <div id="err"></div>
+  <div id="err"><button id="errclose" type="button" aria-label="Dismiss">×</button><span id="errmsg"></span></div>
   <button id="fsexit" title="Leave full screen (Esc)">
     <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor"
          stroke-width="1.6" stroke-linecap="round"><path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5"/></svg>
@@ -1002,8 +1010,48 @@ var HOST = window.ArgdownHost && window.ArgdownHost.available ? window.ArgdownHo
 var ABOUT_AUTHOR  = "James Wilson";
 var ABOUT_LICENCE = "GPL-3.0";
 
-function showErr(msg){ $("err").textContent = msg; $("err").classList.add("show"); }
-function clearErr(){ $("err").classList.remove("show"); }
+var ERR_TIMER = null;
+
+/** Say something over the map, and always leave a way to stop saying it.
+ *
+ *  `opts.note` styles it as information rather than a failure, and `opts.for` dismisses it after
+ *  that many milliseconds. Errors get neither: a parse failure should stay until the reader has
+ *  done something about it, which is what the original behaviour was right about.
+ */
+function showErr(msg, opts){
+  opts = opts || {};
+  clearTimeout(ERR_TIMER); ERR_TIMER = null;
+  $("errmsg").textContent = msg;
+  var box = $("err");
+  box.classList.toggle("note", !!opts.note);
+  box.classList.add("show");
+  if (opts.for) ERR_TIMER = setTimeout(clearErr, opts.for);
+}
+
+/** Information rather than a fault: neutral border, and it goes away by itself. */
+function showNote(msg, ms){ showErr(msg, { note: true, for: ms || 8000 }); }
+
+/* THREE WAYS OUT, because the one that is obvious to a reader is not the same one every time:
+ * the ×, a click anywhere on the message, and Escape. The click is on the box rather than only
+ * the button because the box is large, the button is small, and dismissing is safe -- nothing is
+ * lost by closing a message twice, and the alternative was a notice with no way out at all. */
+document.addEventListener("DOMContentLoaded", function(){
+  var box = $("err");
+  if (!box) return;
+  box.addEventListener("click", function(e){
+    // Not while selecting the text of it, which is the one reason to click and mean nothing.
+    if (String(document.getSelection())) return;
+    clearErr();
+  });
+});
+document.addEventListener("keydown", function(e){
+  if (e.key === "Escape" && $("err") && $("err").classList.contains("show")) clearErr();
+});
+
+function clearErr(){
+  clearTimeout(ERR_TIMER); ERR_TIMER = null;
+  $("err").classList.remove("show");
+}
 
 /* Syntax highlight just enough of the Argdown pane to navigate by: headings, comments, tags —
  * and CLAIM REFERENCES, which are made clickable.
@@ -1056,6 +1104,70 @@ function render(name, source, graph){
 
   if (LIVE) { LIVE.destroy(); LIVE = null; }
 
+/** The rung of the "how much" ladder a map should OPEN on.
+ *
+ *  TWO CONTROLS, AND ONLY ONE OF THEM WAS ADAPTING. A map with more than 25 claims opens with its
+ *  sections folded — the line below — and that is why a 191-claim reconstruction opens showing six
+ *  boxes rather than a wall. But `depth` was left at `null` on every map ever opened, so the
+ *  ladder sat permanently at its top rung and the section fold did all the work alone.
+ *
+ *  The two then interact badly, and the reader meets it on their first click. With depth at
+ *  "everything", unfolding ONE section of Prescott-Couch goes from 6 boxes to 73: the wall was
+ *  deferred, not avoided. Measured across the corpus, unfolding every section gives
+ *
+ *      depth 3   36 claims          depth "everything"   191 claims
+ *
+ *  on the same map. The ladder already does exactly what is wanted; nothing was ever setting it.
+ *
+ *  SO: open on the deepest rung that still fits, measured with the sections OPEN — because what
+ *  the rung has to survive is the reader unfolding things, not the folded view it starts from.
+ *  The reader raises it whenever they want more, and the button already tells them what each rung
+ *  costs.
+ *
+ *  BUDGET, and why this number. 40 claims is about what fits on a laptop screen at a readable
+ *  zoom, and it is above the largest sample that has no structural problem — Carroll's 36 — so
+ *  the small maps that were fine before are untouched and open whole. Chosen from the corpus
+ *  rather than from taste: at 40 the seven published samples open at all, all, d2, d2, d3, d3, d4,
+ *  which matches what a reader would pick by hand.
+ *
+ *  WHERE A MAP IS WIDE RATHER THAN DEEP THIS CANNOT HELP, and it does not pretend to. The book
+ *  skeleton has four apexes and eleven chapters hanging near the top, so even depth 1 draws 49
+ *  claims and every rung is over budget. It opens at 1 and the honest answer for that map was to
+ *  reconstruct it smaller. A control cannot fix a shape.
+ */
+var OPENING_BUDGET = 40;
+
+function openingDepth(graph){
+  var A = window.ArgdownLiveMap;
+  if (!A || !A.filterGraph || !graph || !graph.nodes) return null;
+  var at = function(d){
+    try {
+      return A.filterGraph(graph, {
+        collapsedGroups: new Set(), collapsedNodes: new Set(), expandedNodes: new Set(),
+        groupFolded: new Map(), collapsedLanes: new Set(), depth: d, facets: null
+      }).nodes.length;
+    } catch (e) { return null; }
+  };
+  // Everything fits: leave the ladder alone rather than imposing a limit that hides nothing.
+  var whole = at(null);
+  if (whole == null || whole <= OPENING_BUDGET) return null;
+  // ONLY WHAT THE LADDER CAN EXPRESS. The "how much" slider is built with rungs
+  // `0 … min(maxDepth, 2)` and then `all` — four rungs, never more. Opening on a depth that is
+  // not one of them puts the control OFF ITS LADDER: it falls back to the top rung and reads
+  // "everything" while the map is at something else, so the reader is told the wrong thing and
+  // cannot return to where they started by using the control. This was written with an
+  // unconstrained integer first and did exactly that on Prescott-Couch — slider at "everything",
+  // map at depth 3.
+  var top = Math.min(A.maxDepth ? (A.maxDepth(graph) || 0) : 0, 2);
+  var best = 0;
+  for (var d = 0; d <= top; d++) {
+    var n = at(d);
+    if (n == null) break;
+    if (n <= OPENING_BUDGET) best = d; else break;   // the counts only grow with depth
+  }
+  return best;
+}
+
   var groups = graph.groups || [];
   var top = groups.filter(function(g){ return !g.parent; });
   // A large map opened flat is a wall of boxes at unreadable zoom. Open on the spine with the
@@ -1065,6 +1177,7 @@ function render(name, source, graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true,
     collapsedGroups: collapsed,
+    depth: openingDepth(graph),
     onLocate: msLocate,
     onMenu: ctxShow,
     onMargin: openMargin
@@ -5149,6 +5262,60 @@ if (HOST) {
       "about":           openAbout,
       "help":            function(){ setHelp(!$("help").classList.contains("show")); },
       "walkthrough":     function(){ startWalkthrough(); },
+      /* THE ONLY MENU ITEM THAT IS NOT A SECOND DOORBELL FOR A BUTTON, because there is no
+       * button: the web page cannot check for updates and should not pretend it can. The
+       * request itself is made in Rust — see `check_for_updates` in src-tauri/src/lib.rs — so
+       * that this page, which is also the file people email to each other, still makes no
+       * network request of its own under any circumstances. */
+      "check-updates":   async function(){
+                           try {
+                             var u = await HOST.checkForUpdates();
+                             if (u.newer) {
+                               /* TELL THEM HOW, NOT ONLY THAT. "A new version exists" and a URL
+                                * they cannot click is a message that leaves the work undone —
+                                * and the two things a reader most needs to hear are that their
+                                * reconstructions are not involved, and that the security warning
+                                * they had to click past the first time will appear again. The
+                                * release page carries the per-platform detail; this offers to
+                                * open it, because the banner is text and a URL in text is
+                                * something you have to copy out by hand. */
+                               var go = confirm(
+                                 "Ipsissima " + u.latest + " is available. You have " +
+                                 u.current + ".\n\n" +
+                                 "To update: download the new version and install it over this " +
+                                 "one — on macOS drag it to Applications and replace, on Windows " +
+                                 "run the installer. Nothing needs uninstalling first.\n\n" +
+                                 "Your reconstructions are untouched: they are ordinary files " +
+                                 "where you keep them, and only the application changes.\n\n" +
+                                 "The download is unsigned, so your computer will warn you once " +
+                                 "more, as it did the first time. The download page says what to " +
+                                 "click.\n\n" +
+                                 "Open the download page now?");
+                               if (go) {
+                                 try { await HOST.openReleasesPage(); }
+                                 catch (e2) { showErr("Could not open a browser.\n\n" + u.url); }
+                               } else {
+                                 showNote("Ipsissima " + u.latest + " is available. The download " +
+                                        "page is " + u.url, 15000);
+                               }
+                             }
+                             else if (u.latest)
+                               showNote("Up to date. This is Ipsissima " + u.current + ".", 5000);
+                             else
+                               showNote("No release information came back.\n\n" + u.url, 10000);
+                           } catch (e) {
+                             /* Being offline is the ordinary case here, not a fault: the
+                              * application is built to work without a network and most of its
+                              * use is that way. Say what happened and leave it at that. */
+                             /* Being offline is ordinary, so this is a note too -- but a longer
+                              * one, because it is the case where the reader may want to read an
+                              * address off the screen. */
+                             showNote("Could not check for updates.\n\n" +
+                                      (e && e.message ? e.message : e) +
+                                      "\n\nThe releases page is github.com/jgsw/ipsissima/releases",
+                                      15000);
+                           }
+                         },
       "open":            function(){ $("openbtn").click(); },
       "open-folder":     async function(){
                            if (!confirmDiscard("Open that folder")) return;

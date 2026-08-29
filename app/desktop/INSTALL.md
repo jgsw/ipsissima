@@ -80,9 +80,14 @@ signed or not. It is a statement about how well known the file is, not about wha
 
 Worth stating plainly, since you are being asked to click past a security warning:
 
-- **It makes no network requests at all.** Not for updates, not for fonts, not for analytics.
-  Everything it needs is inside the application. You can disconnect from the internet and it
-  behaves identically.
+- **It makes one network request, and only when you ask for it.** Help ▸ Check for Updates asks
+  GitHub whether a newer release exists, and that is the whole of it: nothing about you or your
+  documents is sent, nothing is downloaded, and nothing is installed — if there is an update you
+  are told the version number and given the address. Never on startup, never on a timer, never in
+  the background. Everything else it needs is inside the application, and disconnected from the
+  internet it behaves identically except that the update check says it could not reach GitHub.
+  No fonts, no analytics, no telemetry, at any time.
+  *(The one-file `Ipsissima.html` has no update check at all and makes no request of any kind.)*
 - **It reads and writes only the files you open**, and only in your own home folder or on drives
   you have connected. It cannot reach system files, and it is refused by the operating system if
   it tries.
@@ -92,6 +97,68 @@ Worth stating plainly, since you are being asked to click past a security warnin
   can be built from it.
 
 ---
+
+## Updating
+
+**Help ▸ Check for Updates.** It asks GitHub whether a newer release exists and tells you the
+answer. That is all it does: it sends nothing about you or your documents, downloads nothing, and
+installs nothing — if there is a new version you get its number and the address to fetch it from.
+
+**It is a menu item rather than something that happens on startup**, and that is deliberate. An
+application that contacts a server every time it opens is a different kind of thing to keep on a
+machine holding unpublished work, whatever the request contains. The cost is that you have to
+remember to look; the benefit is that the application does nothing behind your back, and you can
+verify that by watching your network.
+
+To update, install the new version over the old one exactly as you installed the first: on macOS
+drag it to Applications and replace, on Windows run the new installer. Your reconstructions are
+ordinary files kept wherever you put them, and are not touched by any of this.
+
+**Which version have I got?** Help → About Ipsissima. Worth checking before reporting a bug: the
+first question will be which version, and the answer is not guessable from the app's appearance.
+
+## Uninstalling
+
+**macOS.** Drag `Ipsissima.app` to the Trash. That is genuinely all that is required for the app
+to stop working; if you want the few files it left behind as well:
+
+```bash
+rm -rf ~/Library/Caches/org.ipsissima.desktop \
+       ~/Library/WebKit/org.ipsissima.desktop \
+       ~/Library/Preferences/org.ipsissima.desktop.plist
+```
+
+If you built from source, the repository's own installer will do all of it, and say what it is
+about to do first:
+
+```bash
+node app/desktop/install.mjs --uninstall --dry-run
+```
+
+Drop `--dry-run` to carry it out. It moves applications to the Trash rather than deleting them,
+clears the files above, and unregisters the app so that double-clicking a `.argdown` stops
+offering it.
+
+**Windows.** Settings → Apps → Installed apps → Ipsissima → Uninstall.
+
+**Linux.** `sudo apt remove ipsissima` for the `.deb`; delete the file for the AppImage.
+
+**Your reconstructions are never removed by any of this.** They are `.argdown` and Markdown files
+in folders you chose, and no uninstaller should be going looking for them.
+
+### If you end up with more than one copy
+
+It is easier to do than it sounds — building from source leaves a copy in `target/`, building a
+`.dmg` mounts a disk image containing another, and macOS registers everything it sees. The
+symptom is a double-clicked `.argdown` opening the wrong version, or nothing at all.
+
+```bash
+node app/desktop/install.mjs --status
+```
+
+lists every copy the system knows about, marking any that no longer exist. `node
+app/desktop/install.mjs` rebuilds and collapses them to a single registered copy in
+`~/Applications`.
 
 ## Why it is not signed
 

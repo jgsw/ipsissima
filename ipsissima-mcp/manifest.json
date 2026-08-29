@@ -1,0 +1,54 @@
+{
+  "manifest_version": "0.4",
+  "name": "ipsissima-mcp",
+  "display_name": "Ipsissima",
+  "version": "0.1.1",
+  "description": "Turn a document into a source an Argdown reconstruction can cite, and check the reconstruction against it.",
+  "long_description": "Ipsissima-MCP turns a document \u2014 PDF, EPUB, .docx or an HTML article \u2014 into structured Markdown that keeps its paragraphs and page numbers, so that an argument reconstruction can cite the text it is a reading of. It then checks the finished reconstruction against those sources word for word: every quotation verified character by character, every claim's distance from the author's own words recorded and reported.\n\nIt does not reconstruct arguments itself. That judgement belongs to the model, and the instructions given to it are served as prompts read off disk, where anyone can read and change them.\n\nThe reconstructions it produces open in Ipsissima, a single-file viewer that shows the argument as a map beside the passage each claim was drawn from.",
+  "author": {
+    "name": "James Wilson",
+    "url": "https://github.com/jgsw"
+  },
+  "homepage": "https://jgsw.github.io/ipsissima/",
+  "documentation": "https://github.com/jgsw/ipsissima/blob/main/ipsissima-mcp/README.md",
+  "support": "https://github.com/jgsw/ipsissima/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jgsw/ipsissima"
+  },
+  "icon": "icon.png",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "argdown",
+    "argument",
+    "reconstruction",
+    "philosophy",
+    "pdf",
+    "epub",
+    "citation"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/ipsissima_mcp/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "python",
+        "src/ipsissima_mcp/server.py"
+      ]
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.11,<4.0"
+    }
+  }
+}

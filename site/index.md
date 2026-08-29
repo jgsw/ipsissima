@@ -16,7 +16,7 @@ title: Ipsissima
 
 # The very words, and how far a reading stands from them
 
-Read an argument reconstruction beside the text it is a reading of.
+Read an argument reconstruction beside the text itself.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write **these words**, or is this a faithful report of what they meant? Every
@@ -27,7 +27,8 @@ Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup lang
 Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
 drawn from, and the marks a reader writes in the margin. **It runs entirely in your browser and
-makes no network requests of any kind.**
+makes no network requests of any kind.** (The downloadable application adds one, and only when
+you choose Help ▸ Check for Updates; the page on this site has nothing of the sort.)
 
 ---
 
@@ -57,6 +58,7 @@ claim back to the passage it came from and see how far it stands from the author
 ### [{{ s.title }}]({{ '/try/' | append: s.slug | append: '.html' | relative_url }})
 
 {{ s.blurb }}
+{% if s.credit %}<p><small>{{ s.credit }}</small></p>{% endif %}
 {% endfor %}
 
 ## What it is for
@@ -82,6 +84,10 @@ It does not reconstruct arguments itself. That judgement belongs to the model, a
 instructions given to it are served as a prompt read off disk, where anyone can read and change
 them.
 
+**On Claude Desktop it installs by double-clicking**: take the `.mcpb` bundle from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and open it. You will need
+[Node](https://nodejs.org) on the machine; Claude Desktop provides the rest.
+
 ## Get the application
 
 The desktop application adds what a web page cannot do: open a `.argdown` by double-clicking it,
@@ -96,6 +102,6 @@ the Argdown team; the reconstruction method of Alec Fisher and Trudy Govier; and
 article on charity and quotation, which is why the checks do not stop at verbatim.
 <a href="https://github.com/jgsw/ipsissima/blob/main/CREDITS.md">CREDITS.md</a> says it properly.
 The source is on <a href="https://github.com/jgsw/ipsissima">GitHub</a>. The samples above are
-public domain (Darwin, Carroll) or Crown copyright reused under the
+public domain (Darwin, Carroll), Crown copyright reused under the
 <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open
-Government Licence</a> (Miller).</small>
+Government Licence</a> (Miller), or open access reproduced by their author (Wilson).</small>

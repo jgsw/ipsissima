@@ -69,18 +69,35 @@ jobs:
         with:
           targets: ${{ matrix.rust-targets }}
 
+      # THE SAME TRAP AS `projectPath` BELOW, and it was caught there and missed here.
+      # `defaults.run.working-directory` governs `run` steps only, never an ACTION'S INPUTS — so
+      # this path is resolved from the repository root, not from app/desktop. Written as
+      # `./src-tauri` it pointed at nothing, and the v0.1.0 build died before it compiled a line:
+      #
+      #     Error: The cwd: /Users/runner/work/ipsissima/ipsissima/src-tauri does not exist!
+      #
+      # A cache step is the last place anyone looks for a build failure, which is exactly why it
+      # is worth the comment: nothing here is about caching.
       - uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./src-tauri -> target"
+          workspaces: "app/desktop/src-tauri -> target"
 
       # The frontend is built by the Argdown toolchain, not by the desktop folder: the app IS
       # that page. So its dependencies (esbuild, @argdown/core, CodeMirror, docx, markdown-it)
       # have to be installed before anything can be staged.
+      #
+      # THE ICONS TOO, because the platform set is deliberately not committed — only the
+      # 1024px master is (see app/desktop/.gitignore and brand/README.md). Locally `tauri icon`
+      # is run by hand after the mark changes; a fresh checkout has only source.png, and
+      # tauri's generate_context! fails at MACRO EXPANSION on the missing 32x32.png. The first
+      # tag ever cut is what found this: every earlier build ran on a machine that had the
+      # generated set lying around.
       - name: Build the frontend
         run: |
           npm ci --prefix ../
           npm ci
           npm run frontend
+          node tauri.mjs icon src-tauri/icons/source.png -o src-tauri/icons
 
       # LEFT AT v0 DELIBERATELY. tauri-action reached v1 in 2026 and this workflow runs only on a
       # tag, so nothing here would exercise a major bump before a real release did. Worth doing —
@@ -102,16 +119,70 @@ jobs:
           projectPath: app/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Ipsissima ${{ github.ref_name }}"
+          # NO VERSION NUMBERS IN HERE. This text is reused verbatim for every tag, so a
+          # filename written out in full ("Ipsissima_0.1.0_universal.dmg") is wrong the next time
+          # and quietly tells the reader to download something that is not there.
           releaseBody: |
-            Ipsissima reads an Argdown reconstruction beside the manuscript it is a reading of.
+            Ipsissima reads an Argdown reconstruction beside the manuscript itself.
 
-            **No installation needed:** download `Ipsissima.html` below and double-click it. It
-            works offline in any browser and needs nothing else.
+            ## Nothing to install
 
-            **The app** adds what a page cannot do: double-click a `.argdown` file to open it,
-            save back in place on any platform, and reload the manuscript when it changes on
-            disk. macOS and Windows builds are unsigned — on macOS, right-click the app and
+            Download **`Ipsissima.html`** and double-click it. It works offline in any browser
+            and makes no network requests of any kind. Drop a `.argdown` file onto it — or a
+            whole folder, which brings the manuscript with it so claims can be laid out by where
+            they appear in the text.
+
+            **`Ipsissima.Reader.html`** is the same thing without the editor — the one to send to
+            somebody you want to *show* a reconstruction to.
+
+            New to argument maps? Take the walkthrough: it is the first entry under **How to
+            use**, runs on whatever you have open, and takes about two minutes.
+
+            ## Or start from a worked example
+
+            Three finished reconstructions, each opening **with the text it was drawn from**, so you
+            can follow a claim back to the passage it came from: a paragraph of Darwin, Carroll's
+            regress about rules of inference, and the Supreme Court on prorogation. They are at
+            [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example)
+            and need nothing installed. Four more, including three journal articles, are in
+            [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
+
+            ## The application
+
+            Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in
+            place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel
+            and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage`
+            are Linux.
+
+            The macOS and Windows builds are **unsigned**. On macOS, right-click the app and
             choose Open the first time; on Windows, choose "More info" then "Run anyway".
+
+            ## Ipsissima-MCP, for Claude Desktop
+
+            Download the **`.mcpb`** bundle and double-click it. Claude Desktop installs it and
+            provisions Python and the dependencies itself. There is nothing to configure: no
+            terminal, no virtual environment, no path typed into a JSON file.
+
+            **You also need [Node](https://nodejs.org)** on the machine — any current version.
+            The Argdown parser is JavaScript and travels inside the bundle, so there is nothing
+            to install *for* it, but something has to run it. If you install Node after the
+            bundle, restart Claude Desktop.
+
+            Then ask for what you want in ordinary words — *"turn this PDF into an argument
+            map"*. It gets the document into structured Markdown with its paragraphs and page
+            numbers intact, and checks the finished reconstruction against its sources word for
+            word: every quotation verified character by character, every claim's distance from
+            the author's own words recorded.
+
+            It does not reconstruct arguments itself. That judgement belongs to the model, and
+            the instructions given to it are served as prompts read off disk, where anyone can
+            read and change them.
+
+            **Not Claude-only.** The bundle is Claude Desktop's install format, but the server
+            underneath is plain MCP over stdio and any MCP client can run it — install from
+            source and point the client at the command. Full instructions, and the install from
+            source, are in
+            [ipsissima-mcp/README.md](https://github.com/jgsw/ipsissima/blob/main/ipsissima-mcp/README.md#install).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
@@ -124,5 +195,21 @@ jobs:
           node ../build_argdown_viewer.mjs --standalone --editor -o "Ipsissima.html"
           node ../build_argdown_viewer.mjs --standalone -o "Ipsissima Reader.html"
           gh release upload "${{ github.ref_name }}" "Ipsissima.html" "Ipsissima Reader.html" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # THE MCP BUNDLE, BUILT ONCE. It is a `uv` bundle -- it declares its dependencies rather
+      # than carrying them -- so there is nothing platform-specific in it and three copies would
+      # be three identical files racing to overwrite each other. It rides with the macOS job for
+      # the same reason the pages above do.
+      #
+      # This is the install for a reader who does not want a terminal: double-click, and Claude
+      # Desktop provisions Python and the dependencies itself.
+      - name: Attach the Claude Desktop bundle
+        if: matrix.platform == 'macos-latest'
+        run: |
+          node ../../ipsissima-mcp/build_mcpb.mjs
+          gh release upload "${{ github.ref_name }}" \
+            ../../ipsissima-mcp/build/ipsissima-mcp-*.mcpb --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

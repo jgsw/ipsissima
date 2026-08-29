@@ -2,7 +2,7 @@
 
 **The very words, and how far a reading stands from them.**
 
-Read an argument reconstruction beside the text it is a reading of.
+Read an argument reconstruction beside the text itself.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write **these words**, or is this a faithful report of what they meant? Every
@@ -12,8 +12,12 @@ whenever quotation marks are at stake. Ipsissima keeps the distinction, on every
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team —
 and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
-drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine and
-makes no network requests of any kind.
+drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine.
+
+**`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
+one file that works with the network cable out. **The desktop application makes exactly one, and
+only when you ask for it**: Help ▸ Check for Updates asks GitHub whether a newer release exists.
+It sends nothing about you or your documents, downloads nothing, and installs nothing.
 
 ---
 
@@ -32,9 +36,29 @@ checking the finished reconstruction against its sources word for word. It does 
 arguments itself; that judgement belongs to the model, and the instructions for it are served as
 a prompt read off disk. The command line is still there for a one-off.
 
-**`samples/`** — worked reconstructions of real arguments, with the texts they were drawn from.
+**`samples/`** — seven worked reconstructions of real arguments, each with the text it was drawn
+from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, and four
+journal articles. **Three are on the website ready to open, with the manuscript already in the
+page** — [Darwin](https://jgsw.github.io/ipsissima/try/darwin.html),
+[Carroll](https://jgsw.github.io/ipsissima/try/carroll.html) and
+[Miller](https://jgsw.github.io/ipsissima/try/miller.html) — and are the quickest way to see what
+a finished reconstruction looks like without building anything. The rest are in this folder, and
+open in the app or the viewer by dropping the sample's **folder** (not just the `.argdown`) onto
+it, which is what brings the manuscript along.
 
 ## Try it without installing anything
+
+Open it on the web: **[jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/)**. Nothing is
+installed and nothing is uploaded — the page carries the whole program and does the work in your
+browser. Drop a `.argdown` file onto it, or a whole folder, which brings the manuscript with it so
+the claims can be laid out by where they appear in the text.
+
+To keep a copy, download **`Ipsissima.html`** from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and double-click it. It is one file,
+it works offline, and `Ipsissima Reader.html` beside it is the read-only version — the one to send
+to somebody you want to *show* a reconstruction to.
+
+### Or build it from source
 
 ```bash
 cd app && npm install && node rebuild_viewers.mjs
@@ -63,6 +87,27 @@ things that fail silently.
 
 Builds are **unsigned**: macOS and Windows will both warn the first time. `app/desktop/INSTALL.md`
 is written for the download page and says exactly what a reader will see and what to click.
+
+## Ipsissima-MCP, the other half
+
+Ipsissima-MCP gets a PDF, EPUB, `.docx` or HTML article into structured Markdown with its
+paragraphs and page numbers intact, and then checks a finished reconstruction against its sources
+word for word. It is an MCP server, so you ask an assistant you are already talking to and it does
+the rest.
+
+**If you use Claude Desktop, it is a double-click.** Download the `.mcpb` bundle from the
+[releases page](https://github.com/jgsw/ipsissima/releases) and open it; Claude Desktop
+provisions Python and the dependencies itself. You need [Node](https://nodejs.org) on the machine
+— the Argdown parser is JavaScript, and travels inside the bundle — and nothing else.
+
+**It is not Claude-only.** The server is plain MCP over stdio, so any MCP client can run it —
+VS Code, Cursor, and the rest. Only the `.mcpb` bundle is Claude Desktop's; elsewhere you install
+from source and point the client at the command. The one thing worth checking is whether your
+client supports MCP *prompts and resources* as well as tools, because this server's method lives
+in those rather than in its tools.
+
+Everything else, including installing from source and the command line tools, is in
+[`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).
 
 ## What it does that other Argdown viewers do not
 

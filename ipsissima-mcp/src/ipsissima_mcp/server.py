@@ -37,8 +37,15 @@ from typing import Any
 from mcp.server import MCPServer
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[2]                      # the repository root
-DOCS = HERE.parents[1] / "docs"             # ipsissima-mcp/docs
+
+#: The prompts and reference documents, INSIDE the package rather than beside it.
+#:
+#: They used to be found by walking up from this file to `ipsissima-mcp/docs`, which is only
+#: where they live in a source checkout. Installed anywhere else, that walk arrives above
+#: site-packages and every prompt the server serves comes back as "(missing: ...)": a server that
+#: starts, registers, answers its handshake, and hands the model an apology instead of the
+#: instructions. Editable installs hide it completely, which is why it survived this long.
+DOCS = HERE / "docs"
 
 sys.path.insert(0, str(HERE))
 
@@ -68,25 +75,33 @@ have to be inferred. If a user offers a PDF of a document they also have as .doc
 ask for the .docx. `plan_job` detects this and reports it as advice.
 """
 
+def _version():
+    """The installed package's version, rather than a second copy of it written out here.
+
+    IT WAS HARDCODED, which made it the sixth place in this repository stating the version and
+    the only one nothing checked. A server that announces 0.1.0 while being 0.3.0 works perfectly
+    and misleads the one person trying to reproduce a fault. The fallback matters for the case
+    where the package is not installed at all -- running the file straight out of a checkout --
+    where metadata does not exist and guessing a number would be worse than admitting it.
+    """
+    from importlib.metadata import PackageNotFoundError, version
+    try:
+        return version("ipsissima-mcp")
+    except PackageNotFoundError:
+        return "0+unknown"
+
+
+VERSION = _version()
+
 server = MCPServer(
     name="ipsissima",
     title="Ipsissima — argument reconstruction",
-    version="0.1.0",
+    version=VERSION,
     instructions=INSTRUCTIONS,
 )
 
 
 # ------------------------------------------------------------------ helpers ---- #
-
-def _argdown_cli():
-    """The Argdown CLI, which is ground truth for whether a file is valid."""
-    for cand in (ROOT / "app" / "node_modules" / ".bin" / "argdown",
-                 Path.cwd() / "app" / "node_modules" / ".bin" / "argdown"):
-        if cand.exists():
-            return str(cand)
-    from shutil import which
-    return which("argdown")
-
 
 def _run_check(path, source_root=None, fmt="json", extra=()):
     """Run check_argdown as a subprocess.
@@ -96,13 +111,20 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
     faults into the second's report. A process boundary is the cheapest correct isolation, and
     the script is already the supported entry point for the viewer build.
     """
+    # NO `--cli`. Finding the Argdown parser is `check_argdown.find_cli`'s job and it now has a
+    # better answer than this did: the copy bundled into this package, run with `node`. What was
+    # here looked for `app/node_modules/.bin/argdown`, which tied the server to a source checkout
+    # -- and npm writes no extensionless shim of that name on Windows, so it could never have
+    # worked there at all.
+    # NO `cwd`. This used to run in what it took to be the repository root, so that the checker
+    # could find `app/node_modules/.bin/argdown` by looking there; the bundled parser made that
+    # unnecessary, and keeping it would now be actively wrong -- a relative path from the client
+    # would be resolved against a directory inside site-packages instead of against the one the
+    # caller is actually sitting in.
     cmd = [sys.executable, str(HERE / "check_argdown.py"), str(path), "--format", fmt, *extra]
-    cli = _argdown_cli()
-    if cli:
-        cmd += ["--cli", cli]
     if source_root:
         cmd += ["--source-root", str(source_root)]
-    r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    r = subprocess.run(cmd, capture_output=True, text=True)
     return r
 
 
@@ -564,6 +586,100 @@ def split_manuscript(path: str, out: str, title: str | None = None,
         cmd += ["--dry-run"]
     r = subprocess.run(cmd, capture_output=True, text=True)
     return dict(ok=r.returncode == 0, report=r.stdout, error=r.stderr[:800] or None)
+
+
+@server.tool(
+    structured_output=True,
+    title="Check for a newer Ipsissima-MCP",
+    description=(
+        "Is there a newer release of Ipsissima-MCP than the one running? Asks GitHub and "
+        "reports what it finds. **This is the only thing here that uses the network for its own "
+        "purposes, and it runs only when called.** It downloads and installs nothing; updating "
+        "is the reader's move, and the answer says how."),
+)
+def check_for_updates() -> dict[str, Any]:
+    """Compare this server's version against the latest release on GitHub.
+
+    ONLY WHEN ASKED, WHICH IS THE POINT. Nothing else in this server contacts the network on its
+    own account -- conversions, checks and the Zotero reader all work against files on disk -- and
+    that is worth keeping true for a tool people point at unpublished manuscripts. So there is no
+    check on startup and none folded into `plan_job`, where it would run every time somebody
+    began a reconstruction. A reader who wants to know asks, and a model can offer to ask.
+
+    Nothing about the machine is sent. A version goes nowhere; what comes back is a version.
+    """
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    current = VERSION
+    url = "https://github.com/jgsw/ipsissima/releases"
+    try:
+        req = urllib.request.Request(
+            "https://api.github.com/repos/jgsw/ipsissima/releases/latest",
+            headers={"User-Agent": f"ipsissima-mcp/{current}",
+                     "Accept": "application/vnd.github+json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            body = _json.load(r)
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        # Offline is ordinary here, not a fault. Say so plainly rather than raising.
+        return dict(ok=False, current=current, url=url,
+                    error=f"could not reach GitHub: {e}",
+                    next="check the releases page yourself when you next have a connection")
+
+    latest = (body.get("tag_name") or "").lstrip("v") or None
+    newer = _is_newer(latest, current) if latest else False
+    return dict(
+        ok=True, current=current, latest=latest, newer=newer, url=url,
+        how=_how_to_update(latest, url) if newer else None,
+        next=(f"Ipsissima-MCP {latest} is available (this is {current}). Tell the user how to "
+              f"update, using `how` — it depends on the way they installed it, and they may not "
+              f"know which that was. Nothing needs uninstalling first and their reconstructions "
+              f"are not involved." if newer
+              else "nothing to do — this is the current release"))
+
+
+def _how_to_update(latest, url):
+    """Route-by-route instructions, because "there is an update" is not an answer to "what do I do".
+
+    THE READER USUALLY DOES NOT KNOW WHICH ROUTE THEY TOOK. Somebody who double-clicked a file
+    months ago does not think of themselves as having "installed the .mcpb bundle", so all the
+    routes are given with the thing that identifies each one, rather than asking them to choose
+    from names only the person who wrote them would recognise.
+    """
+    return {
+        "if you double-clicked a file to install it (the .mcpb bundle)":
+            f"Download ipsissima-mcp-{latest}.mcpb from {url} and open it. Claude Desktop "
+            f"replaces the old one; there is nothing to remove first. Restart Claude Desktop.",
+        "if you cloned the repository and used a terminal":
+            "`git pull` in the repository. An editable install (`pip install -e`) needs nothing "
+            "more; otherwise re-run the install command afterwards.",
+        "either way":
+            "Your reconstructions and extracted sources are ordinary files where you put them. "
+            "Updating does not touch them, and no version of this has ever written to them.",
+        "the application is separate":
+            f"Ipsissima the viewer/editor is a different program in the same repository and "
+            f"updates on its own schedule — check Help ▸ Check for Updates there. A new "
+            f"Ipsissima-MCP does not mean a new Ipsissima, or the reverse. Both are at {url}."
+    }
+
+
+def _is_newer(a, b):
+    """Is version `a` later than `b`? Numeric, component by component.
+
+    NOT STRING COMPARISON. "0.10.0" sorts before "0.9.0" as text, so a tenth release would report
+    itself as older than the ninth -- once, months from now, and silently. Unparseable parts count
+    as zero and unparseable versions as "not newer": saying nothing beats sending somebody to a
+    download page for a release that is not there.
+    """
+    def parts(v):
+        return [int(n) if n.isdigit() else 0 for n in str(v).split("-")[0].split(".")]
+    x, y = parts(a), parts(b)
+    for i in range(max(len(x), len(y))):
+        p, q = (x[i] if i < len(x) else 0), (y[i] if i < len(y) else 0)
+        if p != q:
+            return p > q
+    return False
 
 
 # ---------------------------------------------------------- Zotero, if present ---- #

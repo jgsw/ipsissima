@@ -15,7 +15,7 @@
 
 *The very words, and how far a reading stands from them.*
 
-**Ipsissima** reads an argument reconstruction beside the text it is a reading of: the argument as
+**Ipsissima** reads an argument reconstruction beside the text itself: the argument as
 a map, the passage each claim was drawn from, and the marks a reader writes in the margin.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
