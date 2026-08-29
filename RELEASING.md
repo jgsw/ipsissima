@@ -29,22 +29,33 @@ agreement. It is covered now.
 
 **2. `cd app && npm test`.** Everything, including the wheel build and the bundled parser.
 
-**3. Create the draft, then tag and push.**
+**3. Write the Changes into the tag, compose the notes, create the draft, then push the tag.**
 
 ```bash
+git tag -a v0.2.0 -m "Ipsissima 0.2.0 — <one line a reader would know it by>" -m "- <what changed, as a reader meets it>
+- <and the next thing>"
+node app/desktop/release_notes.mjs v0.2.0 > /tmp/notes.md
 gh release create v0.2.0 --draft --title "Ipsissima v0.2.0" --notes-file /tmp/notes.md
-git tag -a v0.2.0 -m "Ipsissima 0.2.0" && git push origin v0.2.0
+git push origin v0.2.0
 ```
+
+**The tag's annotation is the Changes section.** Every release page reads as two headings —
+**Changes**, which is this release's own, and **What should I install?**, the standing guidance
+that lives once in `release.yml` — so the page stays readable as releases accumulate, and what
+changed is written where it cannot drift from the release it describes: `git tag -l` will
+answer forever. `release_notes.mjs` composes the two and refuses a tag whose annotation has no
+body, which is the check that the notes were actually written.
 
 The draft comes first because of something learned cutting v0.1.2: between the morning's
 v0.1.1 and the afternoon's v0.1.2, GitHub stopped letting the workflow token CREATE a release —
 "Resource not accessible by integration", with `contents: write` granted and printed in the
 job's own setup log, on the identical workflow that had succeeded hours earlier. Nothing in the
 repository changed; the account security log is empty for the day; no changelog entry announces
-it. Uploading assets to an existing draft still works, and `tauri-action` looks for one before
-creating — so a draft made here, with the notes copied from `releaseBody` below, turns the
-blocked path into the working one. If a later run creates its own draft again, GitHub has
-changed its mind back, and this step is merely redundant.
+it. Uploading assets to an existing draft still works, and `tauri-action` adopts a found draft
+without touching its body (verified in its `create-release.ts`) — so a draft made here turns
+the blocked path into the working one, and carries the real notes besides. If a later run
+creates its own draft again, GitHub has changed its mind back, and the workflow's fallback body
+now composes the same two headings from the tag message it fetches itself.
 
 `release.yml` builds on all three platforms, attaches the installers, the two HTML pages and the
 `.mcpb`, and opens the release as a **draft**. `pages.yml` rebuilds the website from the same

@@ -100,6 +100,20 @@ jobs:
           npm run frontend
           node tauri.mjs icon src-tauri/icons/source.png -o src-tauri/icons
 
+      # THE TAG'S OWN MESSAGE IS THE CHANGES SECTION. One source for what a release says
+      # about itself, written once at cut time in the annotation, readable forever with
+      # `git tag -l`. The checkout is shallow and tag-less, so the tag is fetched by name; a
+      # lightweight or empty annotation degrades to an empty section rather than a failure.
+      - name: Read the tag message
+        shell: bash
+        run: |
+          git fetch --force --depth=1 origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}" || true
+          {
+            echo "TAG_CHANGES<<IPSISSIMA_EOF"
+            git tag -l --format='%(contents:body)' "${GITHUB_REF_NAME}"
+            echo "IPSISSIMA_EOF"
+          } >> "$GITHUB_ENV"
+
       # LEFT AT v0 DELIBERATELY. tauri-action reached v1 in 2026 and this workflow runs only on a
       # tag, so nothing here would exercise a major bump before a real release did. Worth doing —
       # on a throwaway tag, watching all three platforms, rather than on the first one that
@@ -120,75 +134,53 @@ jobs:
           projectPath: app/desktop
           tagName: ${{ github.ref_name }}
           releaseName: "Ipsissima ${{ github.ref_name }}"
-          # NO VERSION NUMBERS IN HERE. This text is reused verbatim for every tag, so a
-          # filename written out in full ("Ipsissima_0.1.0_universal.dmg") is wrong the next time
-          # and quietly tells the reader to download something that is not there.
+          # NO VERSION NUMBERS IN HERE. This text is reused for every tag, so a filename
+          # written out in full ("Ipsissima_0.1.0_universal.dmg") is wrong the next time and
+          # quietly tells the reader to download something that is not there.
+          #
+          # TWO HEADINGS, AND ONLY THE FIRST CHANGES. "Changes" is per-release and comes from
+          # the tag's annotation (the step above); "What should I install?" is the standing
+          # guidance. This body is the FALLBACK — the cut in RELEASING.md pre-creates the draft
+          # with the same shape via release_notes.mjs, and on the found-draft path this action
+          # only uploads assets and never touches the body (verified in its create-release.ts:
+          # a found draft is adopted, not updated).
           releaseBody: |
             Ipsissima reads an Argdown reconstruction beside the manuscript itself.
 
-            ## Nothing to install
+            ## Changes
 
-            Download **`Ipsissima.html`** and double-click it. It works offline in any browser
-            and makes no network requests of any kind. Drop a `.argdown` file onto it — or a
-            whole folder, which brings the manuscript with it so claims can be laid out by where
-            they appear in the text.
+            ${{ env.TAG_CHANGES }}
 
-            **`Ipsissima.Reader.html`** is the same thing without the editor — the one to send to
-            somebody you want to *show* a reconstruction to.
+            ## What should I install?
 
-            New to argument maps? Take the walkthrough: it is the first entry under **How to
-            use**, runs on whatever you have open, and takes about two minutes.
+            **Nothing, to try it.** Download **`Ipsissima.html`** and double-click it: it works
+            offline in any browser and makes no network requests of any kind. Drop a `.argdown`
+            file onto it — or a whole folder, which brings the manuscript with it so claims can
+            be laid out by where they appear in the text. **`Ipsissima.Reader.html`** is the
+            same thing without the editor — the one to send to somebody you want to *show* a
+            reconstruction to. New to argument maps? The walkthrough is the first entry under
+            **How to use** and takes about two minutes.
 
-            ## Or start from a worked example
-
-            Four finished reconstructions, each opening **with the text it was drawn from**, so you
-            can follow a claim back to the passage it came from: a paragraph of Darwin, Carroll's
-            regress about rules of inference, the Supreme Court on prorogation, and a journal
-            article on Williams and Dewey, reproduced by its author. They are at
-            [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example)
-            and need nothing installed. Three more journal articles are in
+            **Nothing, to read the worked examples.** Four finished reconstructions, each
+            opening with the text it was drawn from, are at
+            [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example);
+            three more journal articles are in
             [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
 
-            ## The application
-
-            Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in
-            place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel
-            and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage`
-            are Linux.
-
-            The macOS and Windows builds are **unsigned**, so the first launch is blocked once.
-            On macOS, after dragging Ipsissima to Applications, allow it under **System
-            Settings → Privacy & Security → Open Anyway** (current macOS has no
-            right-click-Open shortcut any more); on Windows, choose "More info" then
-            "Run anyway". [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md)
+            **The desktop application.** Adds what a web page cannot do: open a `.argdown` by
+            double-clicking it, save back in place, and reload the manuscript when it changes
+            on disk. The `.dmg` is macOS (Intel and Apple Silicon both), the `-setup.exe` is
+            Windows, and the `.deb` and `.AppImage` are Linux. The builds are **unsigned**, so
+            the first launch is blocked once: on macOS, after dragging Ipsissima to
+            Applications, allow it under **System Settings → Privacy & Security → Open Anyway**;
+            on Windows, choose "More info" then "Run anyway".
+            [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md)
             shows every dialog before you meet it.
 
-            ## Ipsissima-MCP, for Claude Desktop
-
-            Download the **`.mcpb`** bundle and double-click it. Claude Desktop installs it and
-            provisions Python and the dependencies itself. There is nothing to configure: no
-            terminal, no virtual environment, no path typed into a JSON file.
-
-            **You also need [Node](https://nodejs.org)** on the machine — any current version.
-            The Argdown parser is JavaScript and travels inside the bundle, so there is nothing
-            to install *for* it, but something has to run it. If you install Node after the
-            bundle, restart Claude Desktop.
-
-            Then ask for what you want in ordinary words — *"turn this PDF into an argument
-            map"*. It gets the document into structured Markdown with its paragraphs and page
-            numbers intact, and checks the finished reconstruction against its sources word for
-            word: every quotation verified character by character, every claim's distance from
-            the author's own words recorded.
-
-            It does not reconstruct arguments itself. That judgement belongs to the model, and
-            the instructions given to it are served as prompts read off disk, where anyone can
-            read and change them.
-
-            **Not Claude-only.** The bundle is Claude Desktop's install format, but the server
-            underneath is plain MCP over stdio and any MCP client can run it — install from
-            source and point the client at the command. Full instructions, and the install from
-            source, are in
-            [ipsissima-mcp/README.md](https://github.com/jgsw/ipsissima/blob/main/ipsissima-mcp/README.md#install).
+            **Ipsissima-MCP, for Claude Desktop.** Download the **`.mcpb`** bundle and
+            double-click it; Claude Desktop installs it and provisions Python and the
+            dependencies itself. You also need [Node](https://nodejs.org) on the machine — any
+            current version.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
