@@ -56,7 +56,21 @@ const SAMPLES = [
     file: "miller-2019-uksc-41.argdown",
     title: "Miller v The Prime Minister [2019] UKSC 41",
     blurb: "The prorogation judgment. A hundred claims, cited by paragraph number, with the " +
-           "authorities the court rests on marked as authorities." }
+           "authorities the court rests on marked as authorities." },
+  // FOURTH, AND THE ONLY ONE HERE BY SOMEBODY STILL ALIVE TO MIND. Published open access, and by
+  // the author of Ipsissima, which is what makes putting a whole journal article on this site his
+  // decision to make rather than a licence question. The other CC-BY samples in `samples/` stay
+  // off the web on etiquette rather than law.
+  { slug: "wilson",
+    dir: "Wilson 2026 - Williams Dewey and the Nature of Value Inquiry",
+    file: "wilson-williams-dewey.argdown",
+    title: "Wilson, Williams, Dewey, and the Nature of Value Inquiry",
+    blurb: "A whole journal article, and the one that strains the method hardest: its argument " +
+           "moves like music rather than assertion, and the map ends in three contentions " +
+           "instead of one because forcing a single apex would mean inventing a claim the " +
+           "paper does not make.",
+    credit: "Wilson, J. (2026) 'Williams, Dewey, and the Nature of Value Inquiry', " +
+            "<em>Philosophy</em> 101, pp. 511–538. Open access, reproduced by the author." }
 ];
 
 const run = (args, cwd) =>
@@ -95,7 +109,8 @@ for (const s of SAMPLES) {
 const dataDir = path.join(OUT, "_data");
 fs.mkdirSync(dataDir, { recursive: true });
 fs.writeFileSync(path.join(dataDir, "samples.json"),
-  JSON.stringify(SAMPLES.map(s => ({ slug: s.slug, title: s.title, blurb: s.blurb })), null, 2) + "\n");
+  JSON.stringify(SAMPLES.map(s => ({ slug: s.slug, title: s.title, blurb: s.blurb,
+                                     credit: s.credit || null })), null, 2) + "\n");
 
 console.log(`  _data/samples.json      ${SAMPLES.length} sample(s)`);
 console.log("done. `jekyll build` over this folder produces the site.");
