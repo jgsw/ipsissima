@@ -1,12 +1,17 @@
 # Known issues
 
-**Two open items, both below and both bounded.** One fold case survives at a committed seed on
-the Akhlaghi map; one departure crossing on the Wilson map is accepted by measurement rather than
-fixed. Nothing else is outstanding.
+**One open item, below and measured.** Residual claim movement on fold clicks: reading order
+can no longer invert — the map draws in stable document order by construction — but positions
+still drift as neighbourhoods fold away, and the plan (`docs/STABILITY-PLAN.md`) holds the
+numbers and the direction. Nothing else is outstanding: the last fold case is closed, the
+Wilson departure crossing closed when the arrangement it lived in was retired, and both
+entries below record how honestly rather than triumphantly.
 
-The fold invariants hold at eight seeds and 1,200 steps on the published corpus and a private one,
-the every-badge pass included; and both exhaustive modes are clean — every reachable state of a
-five-claim map, and every constructed state of a five-claim map with sections.
+The fold invariants hold on the published corpus at seeds 1–8, at 1,200 and 3,000 steps alike,
+and at the committed defaults — re-measured 29 Aug 2026, with the `+N` badge invariant actually
+running for the first time (see Fixed 29 Aug 2026 below) — the every-badge pass included; and
+both exhaustive modes are clean — every reachable state of a five-claim map, and every
+constructed state of a five-claim map with sections.
 
 Three instruments now cover this, and `docs/FOLDING.md` says what each is for and why none of
 them replaces the others. The short version: the walk finds that something is wrong, delta-
@@ -14,60 +19,62 @@ debugging a dumped failure says what, and enumeration holds the ground afterward
 
 ---
 
-## A fold badge can be a promise the map does not keep
+## Claims cross the map when a fold is clicked — measured 29 Aug 2026, open
 
-A badge is a **contract**. It is drawn as `+N` or `−`, and its tooltip says "Show N claims". A
-click that changes nothing is the interface contradicting itself, and a reader cannot tell it
-from a dead control.
+A fold badge is a local request, and the claims that stay on screen should hold still enough
+that the reader's mental map survives the click. Measured — after a reader watched a claim
+glide across the whole Wilson map on one fold — they do not: **nearly half of all
+picture-changing local clicks send at least one surviving claim across the midline**, on one
+map 93 in 100 with a median worst move of two-thirds of the map's width, and the worst single
+jump is five and a half times the width. dagre recomputes its global order from scratch for
+every node set, so a one-node change can flip the whole arrangement; the document-order seating
+only restores order within bands whose membership just changed, and the glide animation was
+built on an assumption of small moves that nothing checked.
 
-```bash
-node app/test_fold_invariants.mjs --steps 800 --seed 1
-```
+Not a fold defect — the same walk on the engine before and after the badge fixes produces
+bit-identical crossing rates, and the badge defects themselves moved nothing at all (their
+pictures did not change, which is what was wrong with them). The two families are separate
+halves of the click contract: the fold suite checks a click changes what it promises,
+`map_quality.mjs`'s **`@ transitions` rows** (added the same day, baselined) check it changes
+it legibly.
 
-### The `+N` half — fixed 27 Aug 2026
+Open, with a plan: `docs/STABILITY-PLAN.md` — attribution first, then a canonical left-to-right
+order that filtered views project rather than re-derive, gated on the fold suite and the static
+quality baseline throughout.
 
-`filterGraph` **forces** claims onto the screen that the walk never reached, so that nothing is
-drawn floating. That happens on the line immediately before the badge count is computed, and the
-count then ran over every visible node, rescued ones included. A rescued claim is there to keep a
-connection honest, not because the reader has opened a path to it — the walk still does not
-proceed *from* it — so expanding one revealed nothing.
+**Phase 2a landed the same day**, and the numbers above are now history: the seating pass packs
+every band single-path in document order (its overlap veto had been silently handing 7% of
+bands back to dagre's per-state order, and those bands carried three-quarters of the crossing
+claims). Crossing claims on the attribution walk fell **13,490 → 5,325**, and order flips —
+claims swapping left-right in a surviving row — fell from a quarter of all crossings to **2%**.
+What remains is position drift with order intact (63%) and genuine re-ranking (25%), which is
+what the plan's Phase 2b home columns exist for. The price — 25 static rows worse, notably
+relic-route crossings and detours on the deep views — is written down per row in the plan and
+re-baselined deliberately; 2b re-routes those edges and re-opens every one of those numbers.
 
-Reported from use on the Akhlaghi map: collapse *The conditional answer* and its supporter *The
-answer meets the adequacy conditions* offers `+1` for a claim two stops away.
+**Phase 2b is built, routed and ON by default the same day** (`stableOrder: true`): every
+block's x is a function of the document and the visible membership alone, and every route is
+drawn for that arrangement rather than sheared from dagre's. Order flips and order-changing
+recompositions are **zero by construction — and zero in 292,252 measured assignments**;
+crossing claims fell 13,490 → 2,512 over the day, −81%. What keeps this item open is the
+remainder: compression drift (order intact, positions sliding as a claim's neighbourhood folds
+away) and genuine re-ranking still move claims past the midline on some clicks — worst on
+Darwin — against the plan's target of none. The plan holds the trade table, the flip record,
+and the engine question that follows from it.
 
-Found by sweeping **4,230 fold states** of that map and asking of every badge whether expanding it
-revealed anything: 6 did not, and all 6 were rescued claims. After the fix, **0 of 4,230**. The
-invariant `a badge offering N claims reveals at least one when clicked` now holds.
+**Phase 4 closed the reader's half of the residue — 29 Aug.** The camera now provably holds
+the clicked control still (the pin machinery existed but had never run in the single-map
+builds: its on-screen guard read the svg's own rect, which reports zero width there, and vetoed
+every pin — found by end-to-end verification, fixed by measuring the pane instead), and the
+glide clock scales with the size of the move so a big slide lands as one motion. The metric was
+re-aimed to match: `anchorCross` measures movement relative to the clicked control, which is
+what an anchored reader can actually feel. Re-baselined: wilson **0.00**, prescott 0.03,
+tooming 0.05; what remains above zero is honest compression on small maps (darwin 0.58 — on 23
+claims, folding any block moves neighbours by half the map, in formation) and the quiet-click
+rank shift (carroll 0.17), whose known future shape — canonical ranks from the full map — the
+plan records.
 
-### The `−` half — one case left
-
-**43 claims carried a minus on the Akhlaghi map's default view and 8 hid nothing**, *Revelatory
-Non-Interference* among them. Both halves of the badge are now measured against the **drawn
-picture** rather than the walk's raw set, and the connectivity rescue no longer overrides a hand
-fold — a claim left with nothing attached because the reader folded it is not adrift, which is the
-exemption depth limits already had.
-
-Measured after: **0 and 0 across 1,680 shapes and 322,560 fold states with sections**
-(`node app/test_fold_exhaustive.mjs 4 --groups`), and 0 on the published corpus at seeds 1 and 2.
-
-**One case remains**, at the committed seed: `n9` on Akhlaghi after nine successive hand folds,
-no section toggles. Since the exhaustive harness is clean at four claims with sections, reaching
-it needs a bigger generator rather than a longer hunt in the big map — N=5 with sections, then
-bands. `docs/FOLDING.md` says why that is the right direction.
-
-### A metric that was accidentally right
-
-Found while fixing the above, and worth its own note. `map_quality.mjs` computed a badge position
-for **every** node and counted an arrowhead near it as hidden. That was correct only while
-`expandable` meant "has children at all" and nearly every node had a badge. The moment badges were
-drawn only where they do something, the metric reported `hiddenArrowheads: 0 → 3` on maps whose
-drawing had not changed at all — a correctness regression that was not one.
-
-`badgeCentres` in the renderer has always filtered on `expandable`. The metric now says the same
-thing. **A measurement that agrees with the code only by coincidence will report the fix as the
-regression**, which is the most expensive kind of wrong.
-
-## A departure crossing accepted on Wilson — 28 Aug 2026
+## A departure crossing accepted on Wilson — 28 Aug 2026, closed under it 29 Aug
 
 `cross@out` counts pairs of edges that leave one node and cross each other just above it, and its
 target is zero. After the samples were rebuilt with the new extraction prompt it is **one**, on
@@ -95,7 +102,114 @@ The earlier note on the allowance ("the crossings buy nothing") was measured on 
 for those six. It is the first constant in this renderer that a *larger corpus* moved rather than a
 code change, which is worth remembering when the corpus grows again.
 
+**Closed 29 Aug 2026, and not by a fix.** The stability project retired dagre's arrangement —
+order, positions and routes are now the project's own (`docs/STABILITY-PLAN.md`) — and
+`cross@out` on `wilson @ detail` is **0** in the new layout: the crossing lived in an
+arrangement that no longer exists. That is the Akhlaghi lesson's shape again — the ground moved
+under the entry — so this records the change of ground, not a repair. The metric row and its
+baseline continue to guard the new arrangement, where the target is zero and zero is what it
+measures.
+
 ---
+
+## Fixed 29 Aug 2026
+
+### Expanding a claim the reader opened revealed nothing
+
+Reported from use, as the `.argdown` plus a fold state identifier — the first field report to
+arrive in the form the Tools section asks for, and the form worked: paste, restore, and the
+failure was on screen. On the Wilson map, nine hand folds deep at depth 2, `n96` wore a `+1`
+that did nothing when clicked. No delta-debugging was needed, because the class turned out to be
+one click wide: open one section on five of the seven published maps and some entry claim offers
+a `+N` that reveals nothing (`n9` on Carroll, `n1` on Miller among them).
+
+**The defect was the missing half of the 28 Aug exemption, and that exemption is what armed
+it.** The vanishing-claim fix taught the walk to *draw* a hand-opened claim whatever its section
+says — but not to stop *forwarding* the suppression chain the claim was reached under, so
+everything below a hand-opened claim stayed hidden as if the reader had never opened it. And the
+draw half set the trap for the rest: drawing on a suppressed arrival marks the claim visible,
+which deduplicates away the clean arrival that used to do the forwarding — so which parent
+reaches the claim first decided what a click did. Measured across the corpus in one-click
+states: **0** lying badges at the commit before the draw-exemption, **5** at every commit since,
+**0** after the fix. The fix is one line, beside the line it completes: a claim the reader
+opened by hand forwards no inherited suppression, for the same reason it is drawn.
+
+**And the walk's own check for this had never run.** The invariant `a badge offering N claims
+reveals at least one when clicked` was gated on `ctx.opening`, which `step` sets only for
+toggleGroup — for every toggleNode it was false, and the invariant had been dead since the day
+it was written. A dead check reads exactly like a passing one: eight seeds were called clean
+while five maps carried a dead `+1` one click from the opening view. Gated on `ctx.expanding`
+now, the resurrected check finds the old defect within 400 steps at seed 1 and prints the
+identifier to rebuild it. The exhaustive harness asks the same question without the gate, which
+is why its counts were honest all along — its generated shapes simply never armed the
+first-arrival race.
+
+Re-measured with the invariant alive: seeds 1–8 at 1,200 and 3,000 steps and the committed
+defaults clean, both exhaustive modes clean, every suite passing.
+
+## A fold badge can be a promise the map does not keep — fixed 27–28 Aug 2026
+
+A badge is a **contract**. It is drawn as `+N` or `−`, and its tooltip says "Show N claims". A
+click that changes nothing is the interface contradicting itself, and a reader cannot tell it
+from a dead control.
+
+```bash
+node app/test_fold_invariants.mjs --steps 800 --seed 1
+```
+
+### The `+N` half — fixed 27 Aug 2026
+
+`filterGraph` **forces** claims onto the screen that the walk never reached, so that nothing is
+drawn floating. That happens on the line immediately before the badge count is computed, and the
+count then ran over every visible node, rescued ones included. A rescued claim is there to keep a
+connection honest, not because the reader has opened a path to it — the walk still does not
+proceed *from* it — so expanding one revealed nothing.
+
+Reported from use on the Akhlaghi map: collapse *The conditional answer* and its supporter *The
+answer meets the adequacy conditions* offers `+1` for a claim two stops away.
+
+Found by sweeping **4,230 fold states** of that map and asking of every badge whether expanding it
+revealed anything: 6 did not, and all 6 were rescued claims. After the fix, **0 of 4,230**. The
+invariant `a badge offering N claims reveals at least one when clicked` now holds.
+
+### The `−` half — fixed 28 Aug 2026, in the commit that recorded it as open
+
+**43 claims carried a minus on the Akhlaghi map's default view and 8 hid nothing**, *Revelatory
+Non-Interference* among them. Both halves of the badge are now measured against the **drawn
+picture** rather than the walk's raw set, and the connectivity rescue no longer overrides a hand
+fold — a claim left with nothing attached because the reader folded it is not adrift, which is the
+exemption depth limits already had.
+
+Measured after: **0 and 0 across 1,680 shapes and 322,560 fold states with sections**
+(`node app/test_fold_exhaustive.mjs 4 --groups`), and 0 on the published corpus at seeds 1 and 2.
+
+**The last case** — `n9` on Akhlaghi after nine successive hand folds, no section toggles — is
+closed, and the record should be honest about how. The paragraph that stood here said "one case
+remains" **in the very commit whose other half fixed it**: delta-debugging the dump took the
+Akhlaghi map from 93 claims to five, and the defect was in the fix above — `drawnNow` was
+computed from `visible` *after* the connectivity rescue had added to it, while `runWalk` answers
+from *before* any rescue, so a fold that changed nothing read as a fold that removed something.
+The one-line correction landed alongside this text, and `docs/FOLDING.md` in the same commit
+already told the finished story while this file still said one case remained. Both badge
+invariants were themselves introduced in that commit, so **no committed build has ever failed
+them** — the failing state existed only in the working tree, mid-fix.
+
+Re-measured 29 Aug 2026 on the current samples: seeds 1–8 at 1,200 and 3,000 steps and the
+committed defaults are all clean, and the recording commit itself is clean at those defaults.
+The samples had been rebuilt with a new extraction prompt two days before, but that is not what
+closed it: the Akhlaghi `.argdown` has not changed since the stale paragraph was written.
+
+### A metric that was accidentally right
+
+Found while fixing the above, and worth its own note. `map_quality.mjs` computed a badge position
+for **every** node and counted an arrowhead near it as hidden. That was correct only while
+`expandable` meant "has children at all" and nearly every node had a badge. The moment badges were
+drawn only where they do something, the metric reported `hiddenArrowheads: 0 → 3` on maps whose
+drawing had not changed at all — a correctness regression that was not one.
+
+`badgeCentres` in the renderer has always filtered on `expandable`. The metric now says the same
+thing. **A measurement that agrees with the code only by coincidence will report the fix as the
+regression**, which is the most expensive kind of wrong.
 
 ## Fixed 27 Aug 2026
 

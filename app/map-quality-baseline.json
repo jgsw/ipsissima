@@ -6,10 +6,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 41,
+  "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 16,
+  "edgeCrossings": 13,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ reasons": {
@@ -19,10 +19,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 88,
-  "overshoot": 16,
-  "detourWorst": 1.1,
-  "edgeCrossings": 72,
+  "bendWorst": 54,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 53,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ detail": {
@@ -32,10 +32,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 82,
-  "overshoot": 132,
-  "detourWorst": 1.5,
-  "edgeCrossings": 96,
+  "bendWorst": 61,
+  "overshoot": 38,
+  "detourWorst": 1.1,
+  "edgeCrossings": 84,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ all": {
@@ -45,10 +45,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 347,
-  "overshoot": 132,
-  "detourWorst": 1.4,
-  "edgeCrossings": 143,
+  "bendWorst": 95,
+  "overshoot": 75,
+  "detourWorst": 1.1,
+  "edgeCrossings": 118,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ folded": {
@@ -61,8 +61,15 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 2,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
+ },
+ "akhlaghi-revelatory-autonomy @ transitions": {
+  "foldClicks": 45,
+  "anchorCross": 0.13,
+  "moveWorst": 1.99,
+  "moveMedian": 0.05,
+  "quietMove": 0
  },
  "carroll-tortoise-achilles @ main": {
   "edges": 1,
@@ -84,7 +91,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 4,
+  "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 0,
@@ -97,10 +104,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 86,
-  "overshoot": 8,
-  "detourWorst": 1.1,
-  "edgeCrossings": 10,
+  "bendWorst": 108,
+  "overshoot": 67,
+  "detourWorst": 1.3,
+  "edgeCrossings": 3,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ all": {
@@ -110,10 +117,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 152,
-  "overshoot": 146,
-  "detourWorst": 1.8,
-  "edgeCrossings": 40,
+  "bendWorst": 91,
+  "overshoot": 74,
+  "detourWorst": 1.3,
+  "edgeCrossings": 43,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ folded": {
@@ -123,11 +130,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 29,
-  "overshoot": 20,
-  "detourWorst": 1.2,
-  "edgeCrossings": 3,
+  "bendWorst": 31,
+  "overshoot": 23,
+  "detourWorst": 1.1,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
+ },
+ "carroll-tortoise-achilles @ transitions": {
+  "foldClicks": 30,
+  "anchorCross": 0.13,
+  "moveWorst": 0.6,
+  "moveMedian": 0.1,
+  "quietMove": 0.17
  },
  "darwin-natural-selection @ main": {
   "edges": 3,
@@ -136,7 +150,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 5,
+  "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 0,
@@ -149,9 +163,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 20,
-  "overshoot": 13,
-  "detourWorst": 1,
+  "bendWorst": 61,
+  "overshoot": 57,
+  "detourWorst": 1.1,
   "edgeCrossings": 1,
   "nodeOverlaps": 0
  },
@@ -162,10 +176,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 4,
-  "overshoot": 0,
-  "detourWorst": 1,
-  "edgeCrossings": 0,
+  "bendWorst": 61,
+  "overshoot": 57,
+  "detourWorst": 1.1,
+  "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ all": {
@@ -175,10 +189,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 149,
-  "overshoot": 0,
-  "detourWorst": 1.1,
-  "edgeCrossings": 6,
+  "bendWorst": 106,
+  "overshoot": 57,
+  "detourWorst": 1.2,
+  "edgeCrossings": 12,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ folded": {
@@ -188,11 +202,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 149,
-  "overshoot": 0,
-  "detourWorst": 1.1,
-  "edgeCrossings": 6,
+  "bendWorst": 106,
+  "overshoot": 57,
+  "detourWorst": 1.2,
+  "edgeCrossings": 12,
   "nodeOverlaps": 0
+ },
+ "darwin-natural-selection @ transitions": {
+  "foldClicks": 43,
+  "anchorCross": 0.58,
+  "moveWorst": 1.42,
+  "moveMedian": 0.46,
+  "quietMove": 0
  },
  "miller-2019-uksc-41 @ main": {
   "edges": 3,
@@ -227,10 +248,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 3,
+  "bendWorst": 81,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 0,
+  "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ all": {
@@ -240,10 +261,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 322,
-  "overshoot": 62,
+  "bendWorst": 165,
+  "overshoot": 75,
   "detourWorst": 1.6,
-  "edgeCrossings": 80,
+  "edgeCrossings": 54,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ folded": {
@@ -253,11 +274,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 128,
-  "overshoot": 134,
-  "detourWorst": 2.3,
+  "bendWorst": 109,
+  "overshoot": 91,
+  "detourWorst": 1.8,
   "edgeCrossings": 7,
   "nodeOverlaps": 0
+ },
+ "miller-2019-uksc-41 @ transitions": {
+  "foldClicks": 26,
+  "anchorCross": 0.19,
+  "moveWorst": 0.8,
+  "moveMedian": 0.04,
+  "quietMove": 0
  },
  "prescott-couch-reverse-engineer @ main": {
   "edges": 5,
@@ -282,7 +310,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 0,
+  "edgeCrossings": 25,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ detail": {
@@ -292,10 +320,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 236,
-  "overshoot": 53,
-  "detourWorst": 1.2,
-  "edgeCrossings": 26,
+  "bendWorst": 66,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 47,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ all": {
@@ -305,10 +333,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 496,
-  "overshoot": 121,
-  "detourWorst": 1.3,
-  "edgeCrossings": 99,
+  "bendWorst": 84,
+  "overshoot": 68,
+  "detourWorst": 1.2,
+  "edgeCrossings": 98,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ folded": {
@@ -318,11 +346,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 90,
-  "overshoot": 40,
+  "bendWorst": 123,
+  "overshoot": 72,
   "detourWorst": 1.4,
-  "edgeCrossings": 2,
+  "edgeCrossings": 6,
   "nodeOverlaps": 0
+ },
+ "prescott-couch-reverse-engineer @ transitions": {
+  "foldClicks": 32,
+  "anchorCross": 0.03,
+  "moveWorst": 0.28,
+  "moveMedian": 0.03,
+  "quietMove": 0
  },
  "tooming-jakapi-aphantasia @ main": {
   "edges": 6,
@@ -331,7 +366,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 11,
+  "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 0,
@@ -344,10 +379,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 47,
-  "overshoot": 116,
-  "detourWorst": 1.4,
-  "edgeCrossings": 14,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 11,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ detail": {
@@ -357,10 +392,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 47,
-  "overshoot": 117,
-  "detourWorst": 1.4,
-  "edgeCrossings": 35,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 24,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ all": {
@@ -370,10 +405,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 215,
-  "overshoot": 190,
-  "detourWorst": 1.8,
-  "edgeCrossings": 109,
+  "bendWorst": 109,
+  "overshoot": 54,
+  "detourWorst": 1.4,
+  "edgeCrossings": 102,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -383,11 +418,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 20,
-  "overshoot": 0,
-  "detourWorst": 1,
-  "edgeCrossings": 2,
+  "bendWorst": 88,
+  "overshoot": 76,
+  "detourWorst": 1.3,
+  "edgeCrossings": 4,
   "nodeOverlaps": 0
+ },
+ "tooming-jakapi-aphantasia @ transitions": {
+  "foldClicks": 40,
+  "anchorCross": 0.05,
+  "moveWorst": 0.64,
+  "moveMedian": 0.05,
+  "quietMove": 0
  },
  "wilson-williams-dewey @ main": {
   "edges": 7,
@@ -409,23 +451,23 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 6,
+  "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 35,
+  "edgeCrossings": 37,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
   "edges": 64,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 1,
+  "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 225,
-  "overshoot": 120,
-  "detourWorst": 1.6,
-  "edgeCrossings": 61,
+  "bendWorst": 81,
+  "overshoot": 72,
+  "detourWorst": 1.2,
+  "edgeCrossings": 53,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
@@ -435,10 +477,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 715,
-  "overshoot": 190,
-  "detourWorst": 2,
-  "edgeCrossings": 179,
+  "bendWorst": 116,
+  "overshoot": 74,
+  "detourWorst": 1.3,
+  "edgeCrossings": 147,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {
@@ -448,10 +490,17 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 144,
-  "overshoot": 0,
-  "detourWorst": 1.3,
-  "edgeCrossings": 26,
+  "bendWorst": 143,
+  "overshoot": 77,
+  "detourWorst": 1.5,
+  "edgeCrossings": 7,
   "nodeOverlaps": 0
+ },
+ "wilson-williams-dewey @ transitions": {
+  "foldClicks": 56,
+  "anchorCross": 0,
+  "moveWorst": 0.47,
+  "moveMedian": 0.03,
+  "quietMove": 0
  }
 }

@@ -63,7 +63,8 @@ Nine reasons to be hidden and two to be un-hidden, some of which are exemptions 
 **Visibility is not a predicate anywhere. It is the outcome of a traversal with interacting
 guards, followed by repairs that can undo them.**
 
-The already-open defect in `KNOWN-ISSUES.md` is precisely a seam between two of these:
+The defect open in `KNOWN-ISSUES.md` when this was written — *a claim can vanish when you expand
+another*, fixed later the same day — is precisely a seam between two of these:
 **walking through a suppressed claim reached further than drawing it**, so expanding a claim
 turned a pass-through into a stop and the reach of the walk *shrank*. That is not a mistake anyone
 makes reading one rule. It is what happens when nine rules are only ever read one at a time.
@@ -326,3 +327,56 @@ the identical string and the identical drawn picture, and damage, wrong-map, and
 fields-from-the-future are each refused with a sentence. The invariant harness prints the
 identifier with every failure and writes it into `--dump`, so a state the walk finds and a
 state a reader reports are now the same kind of object.
+
+## The identifier's first catch — 29 August 2026
+
+A reader's folding bug arrived exactly as asked: the Wilson `.argdown` plus one line. Restoring
+it put the failure on screen without a single guess — a hand-opened claim, nine folds deep at
+depth 2, wearing a `+1` that revealed nothing when clicked. The report format earned its keep on
+first contact, and what it caught teaches two lessons this document did not yet have.
+
+**A one-sided exemption is a defect with a delay.** The vanishing-claim fix of 28 August taught
+the walk to *draw* a hand-opened claim whatever its section says, and stopped there. But a walk
+node does two things — it is drawn, and it forwards — and the suppression chain the claim was
+reached under still went through to its children, so everything below a hand-opened claim stayed
+hidden as if it had never been opened. The half that was fixed armed the half that was not:
+drawing on a suppressed arrival marks the claim visible, which deduplicates away the clean
+arrival that used to do the forwarding, so *which parent reaches the claim first* decided what a
+click did. The class was not rare — one click wide on five of seven published maps (open a
+section; an entry claim with a second, within-section parent offers a dead `+1`) — and it was a
+regression: 0 lying badges at the commit before the exemption, 5 at every commit after, 0 now.
+The fix is one line beside the line it completes: an opened claim forwards no inherited
+suppression, for the same reason it is drawn.
+
+**A dead check reads exactly like a passing one.** The walk has carried the invariant `a badge
+offering N claims reveals at least one when clicked` since 28 August — gated on `ctx.opening`,
+which `step` sets only for section toggles, so for every claim click it was false and the check
+never ran once. Eight seeds were called clean with the question never asked. This is the fourth
+cause from the top of this document in a new costume: an invariant that cannot fire violates
+nothing, and nothing in a green run says which checks were actually reachable. The gate now
+reads `ctx.expanding`, and the resurrected check finds the old defect within 400 steps at seed 1
+— on the *first* map the walk visits that has the shape.
+
+The exhaustive harness was honest the whole time, because it asks the badge question without any
+gate — and it still could not have caught this, for a reason worth writing down. The race needs
+the suppressed route to the opened claim to be *strictly shorter* than every clean route, so
+that breadth-first order lets the suppressed arrival draw the claim and silence the clean one.
+With the generator's edges index-descending and its sections contiguous runs, that first fits at
+**six claims**:
+
+```
+n3->n0, n4->n3          the suppressed route: two hops, through section entry n3
+n1->n0, n2->n1, n4->n2  the clean route: three hops, outside the section
+n5->n4                  what the badge promises
+section {n3, n4, n5}    open it, then expand n4
+```
+
+Checked against both engines: the old one draws `n4` with a `+1` and the click reveals nothing;
+the fixed one reveals `n5` on the expansion itself and draws no badge at all. Exhausting N=6
+with sections is out of budget — the groupings alone put it in the millions of shape-runs — so
+this ground is held the other way: the resurrected walk invariant trips on five published maps
+one click from the opening view, which no regression of this class can slip past. The shape
+above is recorded for the day the generator reaches six.
+
+Re-measured with the check alive: corpus seeds 1–8 at 1,200 and 3,000 steps clean, both
+exhaustive modes clean, every suite passing.

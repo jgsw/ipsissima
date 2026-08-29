@@ -114,7 +114,13 @@ const INVARIANTS = [
     name: "a badge offering N claims reveals at least one when clicked",
     when: a => a.type === "toggleNode",
     check: (g, before, after, action, ctx) => {
-      if (!ctx.opening) return null;              // shutting one is not a promise to show
+      // GATED ON `ctx.expanding`, AND IT USED TO BE GATED ON `ctx.opening` -- which `step`
+      // only ever sets for toggleGroup, so for every toggleNode it was false and this
+      // invariant never ran. A dead check reads exactly like a passing one: eight seeds were
+      // called clean while five published maps carried a "+1" that did nothing, one click
+      // from the opening view. The exhaustive harness asks this question without the gate,
+      // which is why it stayed honest while this one slept.
+      if (!ctx.expanding) return null;            // shutting one is not a promise to show
       const was = before.nodes.find(n => n.id === action.id);
       if (!was || !(was.hidden > 0)) return null; // no badge, nothing promised
       const shownBefore = represented(g, before), shownAfter = represented(g, after);
@@ -128,8 +134,9 @@ const INVARIANTS = [
     // node with children and nothing hidden below it is drawn with a MINUS, and the tooltip
     // offers to fold them away. A click that hides nothing is the same broken contract.
     //
-    // OPEN DEFECT -- see KNOWN-ISSUES.md. On the Akhlaghi map's default view, 43 claims carry a
-    // minus and 8 of them hide nothing when clicked, "Revelatory Non-Interference" among them.
+    // FIXED 28 Aug 2026 -- see KNOWN-ISSUES.md. On the Akhlaghi map's default view, 43 claims
+    // carried a minus and 8 of them hid nothing when clicked, "Revelatory Non-Interference"
+    // among them.
     // The cause is that a reconstruction is a DAG rather than a tree: collapsing one parent
     // cannot remove a claim that another parent still holds up, and the badge is drawn from
     // `expandable` -- does this have children? -- rather than from "would folding change
@@ -137,7 +144,7 @@ const INVARIANTS = [
     name: "a minus badge hides at least one claim when clicked",
     when: a => a.type === "toggleNode",
     check: (g, before, after, action, ctx) => {
-      if (ctx.opening) return null;               // opening is the invariant above
+      if (ctx.expanding) return null;             // expanding is the invariant above
       const was = before.nodes.find(n => n.id === action.id);
       if (!was || was.kind === "group") return null;
       if (!was.expandable || was.hidden > 0) return null;   // no minus was drawn
