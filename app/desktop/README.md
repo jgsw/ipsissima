@@ -41,7 +41,8 @@ desktop/
   src-tauri/
     tauri.conf.json        window, bundle targets, and the .argdown file association
     capabilities/          what the window may ask the host for — fs and dialog, nothing else
-    icons/source.png       the 1024px master; the platform set is regenerated from it
+    icons/source.png       the 1024px master; build_desktop.mjs regenerates the
+                           platform set from it when the set is missing
     src/lib.rs             the window, and the open-file queue
 ```
 
@@ -61,6 +62,7 @@ export PATH="/opt/homebrew/opt/rustup/bin:$PATH"
 Then:
 
 ```bash
+npm install --prefix ../   # the page's toolchain — the application is that page
 npm install
 npm run dev      # a window, with the devtools available
 npm run build    # a .app and a .dmg in src-tauri/target/release/bundle/
@@ -68,6 +70,12 @@ npm run build    # a .app and a .dmg in src-tauri/target/release/bundle/
 
 `npm run build --no-bundle` compiles the binary without packaging it, which is much faster when
 what you are testing is the Rust.
+
+The platform icon set is generated, not committed: `icons/` holds only the 1024px master, and
+`tauri::generate_context!` opens `icons/32x32.png` at macro expansion — so a fresh clone used to
+die inside a proc macro before compiling anything. `build_desktop.mjs` now regenerates the set
+whenever `32x32.png` is missing, so the commands above work on a clone that has never run
+`tauri icon`. Changing the mark itself is `brand/README.md`'s business.
 
 ## Five things that fail silently
 
