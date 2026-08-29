@@ -121,11 +121,15 @@ an honest account of the one problem the project has not solved.
 Early. The tests run on every commit's worth of change and are meant to be read as much as run.
 
 **Green does not mean everything passes.** The suite runs one fixed seed, which makes it a
-regression gate rather than a proof. **One defect is open** and other seeds find it:
+regression gate rather than a proof. **No fold defect is open** — seeds 1–8 are clean at 1,200
+and 3,000 steps, re-measured 29 Aug 2026 with a badge invariant that had been silently dead now
+running (`KNOWN-ISSUES.md`, Fixed 29 Aug) — but two drawing items stand open: a single departure
+crossing on the Wilson map, accepted by measurement rather than fixed; and residual claim
+movement on fold clicks — reading order can no longer invert (the map now draws in stable
+document order by construction), but positions still drift as neighbourhoods fold away.
+`map_quality.mjs`'s `@ transitions` rows measure it; `docs/STABILITY-PLAN.md` has the plan,
+the day's record, and the dagre-versus-ELK engine assessment.
 
-```bash
-node app/test_fold_invariants.mjs --steps 1200 --seed 1
-```
-
-`KNOWN-ISSUES.md` has the diagnosis, and the tools — `--dump` writes the exact failing state,
-because a trail is not a reproducer.
+`KNOWN-ISSUES.md` has the account, and the tools for the next failure — `--dump` writes the exact
+failing state and every failure prints a fold state identifier, because a trail is not a
+reproducer.
