@@ -61,5 +61,4 @@ function unwrap(text) {
 }
 
 process.stdout.write(
-  "Ipsissima reads an Argdown reconstruction beside the manuscript itself.\n\n" +
   "## Changes\n\n" + unwrap(annotation) + "\n\n" + unwrap(standing) + "\n");
