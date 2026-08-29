@@ -87,13 +87,12 @@ function figure(graph, attrs, id) {
     `</div>${cap}</figure>`;
 }
 
-/** dagre + the map module + a boot script, inlined once per document.
+/** The map module + a boot script, inlined once per document.
  *
  *  Booting is deferred until the container actually has a size: on a reveal.js slide that is
  *  not the current one the div measures 0x0 at load, and fitting the map to a zero box would
  *  leave it invisible for the rest of the talk. */
 function runtime() {
-  const dagre = fs.readFileSync(path.join(HERE, "vendor", "dagre.min.js"), "utf8");
   const mod   = fs.readFileSync(path.join(BUILD, "argdown-live-map.js"), "utf8");
   const boot = `
 (function(){
@@ -135,7 +134,7 @@ function runtime() {
 .reveal .argdown-live{background:#fff}
 .reveal .argdown-live-caption{color:inherit}`;
   return { t: "RawBlock", c: ["html",
-    `<style>${css}</style>\n<script>${dagre}</script>\n<script>${mod}</script>\n<script>${boot}</script>`] };
+    `<style>${css}</style>\n<script>${mod}</script>\n<script>${boot}</script>`] };
 }
 
 /* ------------------------------------------------------------------ main */

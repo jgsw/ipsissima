@@ -27,12 +27,11 @@ import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { argdown } from "@argdown/node";
 import { toGraph, RUN } from "./argdown-graph.mjs";
-import dagre from "@dagrejs/dagre";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { filterGraph, layoutByText, membersOfGroup, reduceFold, sanitiseGraph,
-        seatInDocumentOrder, hiddenSpans, drawnPolyline, boxesOf, junctionGeometry,
+        hiddenSpans, drawnPolyline, boxesOf, junctionGeometry,
         junctionFeet, pcsRows, premiseHull } =
   require(path.join(HERE, "src", "argdown-live-map.js"));
 const POS = require(path.join(HERE, "src", "argdown-positions.js"));
@@ -350,32 +349,13 @@ function rng(seed) { let s = seed >>> 0; return () => (s = (s * 1664525 + 101390
  *  whole blocks sideways after dagre has finished and blocks are banded by vertical overlap.
  *  A harness that only knew about the exposition layout could not have found it.
  */
-function layoutByArgument(vis, sizes, documentOrder) {
-  const g = new dagre.graphlib.Graph({ compound: true, multigraph: true });
-  g.setGraph({ rankdir: "BT", ranksep: 46, nodesep: 22, marginx: 16, marginy: 16 });
-  g.setDefaultEdgeLabel(() => ({}));
-  for (const gr of vis.groups) g.setNode(gr.id, { label: gr.label, clusterLabelPos: "top" });
-  for (const n of vis.nodes) {
-    const s = sizes.get(n.id);
-    g.setNode(n.id, { width: s.width, height: s.height });
-  }
-  for (const gr of vis.groups) if (gr.parent) g.setParent(gr.id, gr.parent);
-  for (const n of vis.nodes) if (n.group) g.setParent(n.id, n.group);
-  for (const e of vis.edges) g.setEdge(e.from, e.to, {}, e.type);
-  dagre.layout(g);
-  seatInDocumentOrder(g, vis, documentOrder);
-  return g;
-}
-
-/** As the renderer does it: clusters first, then without them, then give up to the caller.
- *  The renderer's last resort is the text layout, which is checked separately. */
 function layoutByArgumentSafe(vis, sizes) {
-  try { return layoutByArgument(vis, sizes, true); }
-  catch (e) { return null; }              // the renderer falls back; nothing to check here
+  try { return API.layoutByArgument(vis, sizes, { ranksep: 46, nodesep: 22 }); }
+  catch (e) { return null; }              // nothing to check on a layout that refused
 }
 
 /** The geometry checks that apply to BOTH arrangements. The text-order ones (reading order,
- *  lanes, the no-position lane) are meaningless for a dagre layout, so they are skipped there. */
+ *  lanes, the no-position lane) are meaningless for the by-argument layout, so they are skipped there. */
 function checkShared(name, vis, g) {
   const boxes = [];
   for (const n of vis.nodes) {
@@ -753,7 +733,7 @@ for (const [name, file] of FILES) {
 }
 
 console.log(`\n${cases} graphs, ${layouts} layouts checked` +
-            (fellBack ? ` (${fellBack} shapes dagre refused; the renderer falls back)` : ""));
+            (fellBack ? ` (${fellBack} shapes the layout refused)` : ""));
 if (!layouts) { console.log("NOTHING WAS CHECKED — the harness is not exercising anything"); process.exit(1); }
 console.log(failures ? `${failures} geometry failure(s)\n` : "all geometry invariants held\n");
 process.exit(failures ? 1 : 0);

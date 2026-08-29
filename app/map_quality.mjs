@@ -26,6 +26,11 @@
  * EVERY DEPTH LEVEL, because the layout is rebuilt for each one and a fault can live in exactly
  * one. The detours the author noticed at "+ detail" were absent from the default view.
  *
+ * AND THE STEP BETWEEN PICTURES. A reader watched a claim glide across the whole map on one
+ * fold click. Every metric above is asked of a single picture and could not see it, so the
+ * `@ transitions` rows walk each map and measure how far the claims that stay on screen move
+ * per local click — see the note above `measureTransitions`.
+ *
  * AND IT CAN DRAW. `--render DIR` writes an SVG per map, cropped to its busiest node -- the one
  * with the most arrivals, which is where crowding shows first. Numbers are not enough on their
  * own: the crossing metric that reported zero on a visibly crossed map was caught by looking at
@@ -34,7 +39,6 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import dagre from "@dagrejs/dagre";
 import { argdown } from "@argdown/core";
 import { toGraph, RUN } from "./argdown-graph.mjs";
 import { createRequire } from "module";
@@ -68,25 +72,26 @@ function findMaps() {
 const size = n => ({ width: Math.max(90, Math.min(190, 8 + (n.label || "").length * 5.5)),
                      height: 54 + Math.floor((n.label || "").length / 34) * 12 });
 
+function layoutVis(vis) {
+  if (!vis.nodes.length) return null;
+  const sizes = new Map(vis.nodes.map(n => [n.id, size(n)]));
+  // The renderer's own layout, driven with estimated sizes -- one description of how a map is
+  // arranged, here as everywhere. dagre used to stand in this function; see the note in
+  // argdown-live-map.js above `layoutByArgument`.
+  let g;
+  try { g = API.layoutByArgument(vis, sizes, { ranksep: 46, nodesep: 22 }); }
+  catch { return null; }
+  return { g, vis, sizes };
+}
+
 function layoutAt(graph, depth, foldSections) {
   const S = { collapsedGroups: foldSections ? new Set((graph.groups || []).map(gr => gr.id))
                                             : new Set(),
               collapsedNodes: new Set(), expandedNodes: new Set(),
               depth, facets: null };
-  const vis = API.filterGraph(graph, S);
-  if (!vis.nodes.length) return null;
-  const sizes = new Map(vis.nodes.map(n => [n.id, size(n)]));
-  const g = new dagre.graphlib.Graph({ compound: true, multigraph: true });
-  g.setGraph({ rankdir: "BT", ranksep: 46, nodesep: 22, marginx: 16, marginy: 16 });
-  g.setDefaultEdgeLabel(() => ({}));
-  for (const n of vis.nodes) g.setNode(n.id, size(n));
-  for (const gr of vis.groups) g.setNode(gr.id, {});
-  for (const gr of vis.groups) if (gr.parent) g.setParent(gr.id, gr.parent);
-  for (const n of vis.nodes) if (n.group) g.setParent(n.id, n.group);
-  for (const e of vis.edges) g.setEdge(e.from, e.to, {}, e.type);
-  try { dagre.layout(g); } catch { return null; }
-  API.seatInDocumentOrder(g, vis, true);
-  return { g, vis, sizes, geometry: API.edgeGeometry(g, vis, sizes) };
+  const L = layoutVis(API.filterGraph(graph, S));
+  if (!L) return null;
+  return Object.assign(L, { geometry: API.edgeGeometry(L.g, L.vis, L.sizes) });
 }
 
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -198,11 +203,133 @@ function measure(L) {
   };
 }
 
+/* ------------------------------------------------------------------ transitions
+ *
+ * HOW FAR DO THE CLAIMS THAT STAY ON SCREEN MOVE when the reader clicks one thing? Every metric
+ * above is asked of one picture; these are asked of the step BETWEEN pictures, which no
+ * instrument measured until a reader watched a claim cross the whole map on a single fold.
+ * Measured before adding this: on a deep Wilson fold state, every available action moved claims
+ * 30--110% of the map's width, and nearly half of all picture-changing clicks corpus-wide sent
+ * at least one claim across the midline. The renderer glides nodes between layouts precisely so
+ * that moves read as continuity -- the animation assumes the moves are small, and nothing
+ * checked that they are.
+ *
+ * ONLY LOCAL CLICKS ARE MEASURED -- toggling one claim or one section. A depth change or
+ * expand-all is the reader asking for a different view, and wholesale movement is that control
+ * working; a fold badge is the reader asking for one thing more or less, and the rest of the
+ * map is expected to hold still. Global actions still happen in the walk, so the states visited
+ * are the states readers actually reach; they are just not scored.
+ *
+ * THE WALK IS THE HARNESS'S OWN: same action model, same seeded generator, so the numbers are
+ * identical run to run and a change in them is a change in the code. By-argument view only --
+ * the by-position view pins claims to text bands, which is its own stability story.
+ *
+ * NOT A FOLD-ERROR DETECTOR, and measured to prove it: the badge defects fixed 27--29 Aug all
+ * left the picture UNCHANGED, so they move nothing and no movement metric can see them. The
+ * fold suite checks that a click changes what it promises; this checks that it changes it
+ * LEGIBLY. Both halves of the same contract, neither implies the other.
+ */
+const WALK_STEPS = (() => {
+  const i = process.argv.indexOf("--walk");
+  return i > 0 ? Number(process.argv[i + 1]) : 140;
+})();
+const WALK_SEED = 1;
+
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
+}
+
+function measureTransitions(graph) {
+  const rand = rng(WALK_SEED);
+  const tops = (graph.groups || []).filter(gr => !gr.parent).map(gr => gr.id);
+  let state = { collapsedGroups: new Set(tops), collapsedNodes: new Set(),
+                expandedNodes: new Set(), groupFolded: new Map(),
+                collapsedLanes: new Set(), depth: null, facets: null, byText: false };
+  let vis = API.filterGraph(graph, state);
+  let L = layoutVis(vis);
+  const posOf = lay => {
+    const pos = new Map();
+    for (const n of lay.vis.nodes) { const p = lay.g.node(n.id); if (p) pos.set(n.id, p); }
+    return pos;
+  };
+  let pos = L ? posOf(L) : null;
+
+  let clicks = 0, crossed = 0, quietWorst = 0;
+  const worstOf = [];
+  for (let i = 0; i < WALK_STEPS; i++) {
+    /** @type {{type: string, id?: string, value?: number|null}[]} */
+    const acts = [{ type: "expandAll" }, { type: "collapseAll" },
+                  { type: "depth", value: null }, { type: "depth", value: 0 },
+                  { type: "depth", value: 1 }, { type: "depth", value: 2 }];
+    for (const gr of graph.groups || []) acts.push({ type: "toggleGroup", id: gr.id });
+    for (const n of vis.nodes) if (n.kind !== "group") acts.push({ type: "toggleNode", id: n.id });
+    const a = acts[Math.floor(rand() * acts.length)];
+
+    const next = API.reduceFold(graph, state, a, vis, {});
+    const after = API.filterGraph(graph, next);
+    const LA = layoutVis(after);
+    const posA = LA ? posOf(LA) : null;
+
+    if ((a.type === "toggleNode" || a.type === "toggleGroup") && pos && posA) {
+      // MEASURED FROM THE CLICK, NOT FROM THE MIDLINE. The first version of this metric
+      // compared every claim's position against the map's own midline -- which was the right
+      // proxy while claims could swap sides of EACH OTHER, and the wrong one once order became
+      // invariant: folding a wide section moves the midline itself by half that width, so a
+      // claim holding perfect formation was counted as "crossing" because the landmark ran
+      // past it (measured on Wilson: fold s3 and 115 claims slide by an identical 1,516 units,
+      // zero order inversions, midline moves 758). The camera now holds the clicked claim
+      // still on screen, so what a reader can actually experience is movement RELATIVE TO THE
+      // CLICK -- and that is what is measured: each surviving claim's offset from the clicked
+      // block, before against after. A section is looked up under both of its drawn identities
+      // (open box and folded block), the same pair the renderer's own hold uses.
+      const anchorOf = ps => {
+        if (a.type === "toggleNode") return ps.get(a.id) || null;
+        return ps.get(a.id) || ps.get("group:" + a.id) || null;
+      };
+      const anchB = anchorOf(pos), anchA = anchorOf(posA);
+      const common = [...pos.keys()].filter(id => posA.has(id));
+      if (anchB && anchA && common.length >= 4) {
+        const xs = [...pos.values()].map(p => p.x);
+        const W = Math.max(1, Math.max(...xs) - Math.min(...xs));
+        let worst = 0, cross = false;
+        for (const id of common) {
+          const relB = pos.get(id).x - anchB.x, relA = posA.get(id).x - anchA.x;
+          const f = Math.abs(relA - relB) / W;
+          worst = Math.max(worst, f);
+          if (f >= 0.5 || (f >= 0.25 && Math.sign(relB) !== Math.sign(relA))) cross = true;
+        }
+        const setB = new Set(vis.nodes.map(n => n.id));
+        const changed = after.nodes.some(n => !setB.has(n.id)) ||
+                        vis.nodes.some(n => !posA.has(n.id));
+        if (changed) {
+          clicks++;
+          worstOf.push(worst);
+          if (cross) crossed++;
+        } else quietWorst = Math.max(quietWorst, worst);
+      }
+    }
+    state = next; vis = after; pos = posA;
+  }
+  worstOf.sort((x, y) => x - y);
+  return {
+    foldClicks: clicks,
+    anchorCross: +(clicks ? crossed / clicks : 0).toFixed(2),
+    moveWorst: +(worstOf[worstOf.length - 1] || 0).toFixed(2),
+    moveMedian: +(worstOf[Math.floor(worstOf.length / 2)] || 0).toFixed(2),
+    quietMove: +quietWorst.toFixed(2)
+  };
+}
+
 // Metrics where a RISE is a regression, with how much slack is noise rather than news.
 const WORSE_IF_UP = { hiddenArrowheads: 0, arrivalInversions: 0, departureInversions: 0,
                       nodeOverlaps: 0,
                       avoidableBend: 2, bendMedian: 2, bendWorst: 40, overshoot: 15,
-                      detourWorst: 0.4, edgeCrossings: 0.08 };
+                      detourWorst: 0.4, edgeCrossings: 0.08,
+                      // Transition metrics are deterministic (seeded walk, estimated sizes), so
+                      // the slack is for legitimate small layout changes, not run noise. The
+                      // worst single jump is spiky by nature and gets the widest berth.
+                      anchorCross: 0.04, moveWorst: 0.5, moveMedian: 0.08, quietMove: 0.1 };
 // The last entry is THE STATE THE VIEWER OPENS IN -- folded to the section skeleton above 25
 // nodes. Sweeping only the depth levels missed it, and it was where two edges out of one node
 // crossed on the Gettier map. A state nobody measures is a state that stays broken.
@@ -215,6 +342,10 @@ const SHORT = { edges: "edges", hiddenArrowheads: "hidden", arrivalInversions: "
                 departureInversions: "cross@out", avoidableBend: "avoidBend", bendMedian: "bend~", bendWorst: "bendMax",
                 overshoot: "overshoot", detourWorst: "detour", edgeCrossings: "edgeX",
                 nodeOverlaps: "overlap" };
+// The transition columns. Fractions of the picture's own width, except the click count.
+const TCOLS = ["foldClicks", "anchorCross", "moveWorst", "moveMedian", "quietMove"];
+const TSHORT = { foldClicks: "clicks", anchorCross: "anchorCross", moveWorst: "moveMax",
+                 moveMedian: "move~", quietMove: "quietMove" };
 
 /** One map, cropped to its busiest node, as an SVG -- something to actually look at. */
 function render(L, file, title) {
@@ -288,17 +419,27 @@ for (const file of findMaps()) {
     if (renderDir && depth === null)
       render(L, path.join(renderDir, name.replace(/[^\w.-]+/g, "-") + ".svg"), `${name} — everything`);
   }
+  const t = measureTransitions(graph);
+  if (t.foldClicks || t.quietMove) results[`${name} @ transitions`] = t;
 }
 
 const rows = Object.keys(results);
 if (!rows.length) { console.error("no maps found"); process.exit(1); }
 
+const isT = r => r.endsWith("@ transitions");
 const label = Math.min(46, Math.max(...rows.map(r => r.length)));
 console.log("  " + "map @ level".padEnd(label) +
             COLS.map(c => SHORT[c].padStart(10)).join(""));
-for (const r of rows)
+for (const r of rows.filter(r => !isT(r)))
   console.log("  " + r.slice(0, label).padEnd(label) +
               COLS.map(c => String(results[r][c]).padStart(10)).join(""));
+
+// Movement between pictures, per map: a seeded walk, scored on the local clicks only.
+console.log("\n  " + "map @ transitions".padEnd(label) +
+            TCOLS.map(c => TSHORT[c].padStart(12)).join(""));
+for (const r of rows.filter(isT))
+  console.log("  " + r.slice(0, label).padEnd(label) +
+              TCOLS.map(c => String(results[r][c]).padStart(12)).join(""));
 
 if (renderDir) console.log(`\nwrote SVGs to ${renderDir} — open them and LOOK.`);
 if (writing) {
@@ -315,7 +456,7 @@ const base = JSON.parse(fs.readFileSync(BASELINE, "utf8"));
 const worse = [], better = [], missing = [];
 for (const r of rows) {
   if (!base[r]) { missing.push(r); continue; }
-  for (const c of COLS) {
+  for (const c of (isT(r) ? TCOLS : COLS)) {
     const was = base[r][c], now = results[r][c];
     if (typeof was !== "number") continue;
     const slack = WORSE_IF_UP[c];

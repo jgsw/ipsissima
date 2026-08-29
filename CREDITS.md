@@ -37,10 +37,12 @@ own licence — see `app/vendor/ArgVu/LICENSE.md` and `PROVENANCE.md` beside it.
 
 ## dagre — the dagre contributors
 
-Map layout is **[dagre](https://github.com/dagrejs/dagre)**, MIT licensed, vendored at
-`app/vendor/dagre.min.js` with its licence beside it. Ipsissima runs the layout in the browser so
-that folding a section makes the map re-flow rather than leaving a hole; everything above the
-layer that assigns ranks and orders is this project's, and everything at it is dagre's.
+Map layout was **[dagre](https://github.com/dagrejs/dagre)** (MIT) from the first render until
+29 August 2026, and the debt is real even though the code is gone: dagre drew every map this
+project learned on. The layout is now Ipsissima's own — the stability work in
+`docs/STABILITY-PLAN.md` replaced dagre's ordering and positions with document-order home
+columns, then its routes, and finally its ranking, at which point there was nothing left to
+vendor. The layered-layout ideas it rests on trace to the same literature dagre implemented.
 
 ## CodeMirror, docx, markdown-it
 

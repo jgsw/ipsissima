@@ -170,9 +170,7 @@ window.__MARKDOWN__ = function (text) {
 }
 
 function liveMapDeps() {
-  const dagre = fs.readFileSync(path.join(HERE, "vendor", "dagre.min.js"), "utf8");
-  return wrap("dagre", dagre, "LIVEMAP_DEPS") +
-         wrap("argdown-live-map.js", readScript("argdown-live-map.js"), "LIVEMAP_DEPS") +
+    return          wrap("argdown-live-map.js", readScript("argdown-live-map.js"), "LIVEMAP_DEPS") +
          // The SAME module the Node build uses to place claims in the manuscript. It already
          // publishes itself as `window.ArgdownPositions`, so inlining it is all that is needed
          // and the standalone can do its own locating from dropped source files instead of
@@ -322,7 +320,6 @@ function buildStamp() {
     // the build does not actually carry.
     deps: {
       "@argdown/core": at("@argdown/core"),
-      "@dagrejs/dagre": at("@dagrejs/dagre"),
       "codemirror": at("codemirror"),
       "markdown-it": at("markdown-it"),
       "docx": at("docx"),
