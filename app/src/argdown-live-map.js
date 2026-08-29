@@ -513,7 +513,21 @@ function filterOnce(graph, state, force) {
     // itself carries. A node can sit in several at once -- a subsection inside a Part -- so
     // this is a set, not one id. Keeping only the innermost lost the outer mark when the
     // subsection was closed again, and its claims came back unfolded.
-    const active = new Set(fold ? fold.split("\u0000") : []);
+    //
+    // A CLAIM THE READER OPENED BY HAND FORWARDS NO INHERITED SUPPRESSION -- the other half of
+    // the exemption above, and it was missing. The draw half says an opened claim is on screen
+    // whatever its section says; but the walk still forwarded the chain the claim was REACHED
+    // under, so everything below it stayed hidden as if the reader had never opened it, and the
+    // "+N" it was drawn with revealed nothing when clicked. Worse, the draw half is what armed
+    // it: drawing on a suppressed arrival marks the claim visible, so the clean arrival that
+    // used to do the forwarding is deduplicated away, and which parent reaches it first decides
+    // what a click does. Reported from use on the Wilson map (a fold state identifier, nine
+    // folds deep); then found one click deep on five published maps -- open a section, and an
+    // entry claim with a second, within-section parent offers a "+1" that does nothing.
+    // Expanding is the reader saying "proceed from here", so the walk now does: the claim's own
+    // marks still apply (reduceFold deletes them on expansion, so there are none to carry), and
+    // only the chain it was carried in under is dropped.
+    const active = new Set(fold && !S.expandedNodes.has(id) ? fold.split("\u0000") : []);
     for (const g of S.groupFolded.get(id) || EMPTY) active.add(g);
     for (const c of kids(id)) {
       const chain = chainOf.get(c) || EMPTY;
