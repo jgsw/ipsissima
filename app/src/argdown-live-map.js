@@ -2797,6 +2797,7 @@ function createLiveMap(container, graph, options) {
   // The fold control the reader last pressed, and where it was on the screen. Set by the
   // controls, consumed by the very next render. See `holdStill`.
   let pin = null;
+  let glideDur = (opt && opt.duration) || 350;  // this render's shared clock; see the --alm-dur note
   const drawn = new Map();     // node id -> <g>
   const drawnEdge = new Map();
   const drawnDir  = new Map();   // chevrons, keyed like drawnEdge // key    -> <path>
@@ -2997,6 +2998,28 @@ function createLiveMap(container, graph, options) {
       g = layoutByArgument(vis, sizes, opt);
     }
 
+    // MOTION THAT READS AS MOTION (stability plan, Phase 4). The glide duration was one fixed
+    // number, tuned for small adjustments — and under home columns a fold can slide a whole
+    // flank of the map a thousand units in formation, which at 350ms reads as a lurch. So the
+    // duration now scales with the largest move this render will make, shared by every node,
+    // box, edge fade and the camera alike through the `--alm-dur` custom property the styles
+    // already read: ONE clock, so the formation arrives together — per-node durations were
+    // considered and rejected, because a flank that slides as one must land as one. Set before
+    // any transform changes, or the browser would start the transition on the old clock.
+    let effDur = opt.duration;
+    if (lastG) {
+      let maxMove = 0;
+      for (const n of vis.nodes) {
+        const now = g.node(n.id), was = lastG.node ? lastG.node(n.id) : null;
+        if (now && was && was.x != null)
+          maxMove = Math.max(maxMove, Math.abs(now.x - was.x), Math.abs(now.y - was.y));
+      }
+      if (maxMove > 500)
+        effDur = Math.min(opt.duration * 2, Math.round(opt.duration * maxMove / 500));
+    }
+    svg.style.setProperty("--alm-dur", effDur + "ms");
+    glideDur = effDur;
+
     drawGroups(g, vis);
     drawEdges(g, vis, sizes);
     drawNodes(g, vis, sizes);
@@ -3080,7 +3103,7 @@ function createLiveMap(container, graph, options) {
       if (keep.has(id)) continue;
       drawn.delete(id);
       box.style.opacity = "0";
-      setTimeout(() => box.remove(), opt.duration);
+      setTimeout(() => box.remove(), glideDur);
     }
   }
 
@@ -3411,7 +3434,7 @@ function createLiveMap(container, graph, options) {
       if (keep.has(key)) continue;
       drawnEdge.delete(key);
       path.style.opacity = "0";
-      setTimeout(() => path.remove(), opt.duration);
+      setTimeout(() => path.remove(), glideDur);
     }
     for (const [key, holder] of drawnUnder) {
       if (keep.has(key)) continue;
@@ -3512,7 +3535,7 @@ function createLiveMap(container, graph, options) {
       if (keep.has(id)) continue;
       drawnGroup.delete(id);
       box.style.opacity = "0";
-      setTimeout(() => box.remove(), opt.duration);
+      setTimeout(() => box.remove(), glideDur);
     }
   }
 
@@ -3892,7 +3915,11 @@ function createLiveMap(container, graph, options) {
   function controlPoint(id, edge) {
     const p = lastG && lastG.node(id);
     if (!p || p.x == null || p.y == null || !p.height) return null;
-    const r = svg.getBoundingClientRect();
+    // The CONTAINER's rect, not the svg's. An SVG root can report a zero-width rect while its
+    // children draw perfectly well -- the single-map build does exactly that -- and the only
+    // use of this origin is to agree with the on-screen check and cancel out of applyPin's
+    // delta, so it must be the rect of the pane the reader is actually looking at.
+    const r = container.getBoundingClientRect();
     const gy = edge === "top" ? p.y - p.height / 2 : p.y + p.height / 2;
     return { x: r.left + view.x + p.x * view.k, y: r.top + view.y + gy * view.k };
   }
@@ -3906,7 +3933,14 @@ function createLiveMap(container, graph, options) {
    */
   function holdStill(ids, edge) {
     pin = null;
-    const r = svg.getBoundingClientRect();
+    const r = container.getBoundingClientRect();
+    // A DEGENERATE RECT MUST NOT VETO EVERY PIN. This read the svg's own rect, and an SVG root
+    // can report zero width while its children draw fine -- which the single-map build does, so
+    // its on-screen check failed every click, no pin was ever set, and every fold re-framed the
+    // whole map: the exact hunt-for-your-badge the pin exists to prevent, shipped for however
+    // long that build has had a zero-width rect. Found by the stability project's Phase 4
+    // verification, which is why verification is a phase and not a hope.
+    const measurable = r.right - r.left > 40 && r.bottom - r.top > 40;
     for (const id of ids) {
       const at = controlPoint(id, edge);
       if (!at) continue;
@@ -3915,7 +3949,8 @@ function createLiveMap(container, graph, options) {
       // here scrolls to follow, and Enter on a badge off the edge of the pane would otherwise
       // pin the view to a point nobody can see — and, because a pin overrides it, skip the
       // re-framing that used to rescue exactly that case.
-      if (at.x < r.left || at.x > r.right || at.y < r.top || at.y > r.bottom) return;
+      if (measurable &&
+          (at.x < r.left || at.x > r.right || at.y < r.top || at.y > r.bottom)) return;
       pin = { ids, edge, x: at.x, y: at.y };
       return;
     }
@@ -3934,9 +3969,9 @@ function createLiveMap(container, graph, options) {
    * had already begun to be four chances to change one and not the others.
    */
   function glide() {
-    viewport.style.transition = `transform ${opt.duration}ms cubic-bezier(.4,0,.2,1)`;
+    viewport.style.transition = `transform ${glideDur}ms cubic-bezier(.4,0,.2,1)`;
     clearTimeout(fitTimer);
-    fitTimer = setTimeout(() => { viewport.style.transition = ""; }, opt.duration + 40);
+    fitTimer = setTimeout(() => { viewport.style.transition = ""; }, glideDur + 40);
   }
 
   /** Put it back. Returns false if nothing it named survived the fold, so the caller can fall

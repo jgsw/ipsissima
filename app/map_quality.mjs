@@ -272,17 +272,32 @@ function measureTransitions(graph) {
     const posA = LA ? posOf(LA) : null;
 
     if ((a.type === "toggleNode" || a.type === "toggleGroup") && pos && posA) {
+      // MEASURED FROM THE CLICK, NOT FROM THE MIDLINE. The first version of this metric
+      // compared every claim's position against the map's own midline -- which was the right
+      // proxy while claims could swap sides of EACH OTHER, and the wrong one once order became
+      // invariant: folding a wide section moves the midline itself by half that width, so a
+      // claim holding perfect formation was counted as "crossing" because the landmark ran
+      // past it (measured on Wilson: fold s3 and 115 claims slide by an identical 1,516 units,
+      // zero order inversions, midline moves 758). The camera now holds the clicked claim
+      // still on screen, so what a reader can actually experience is movement RELATIVE TO THE
+      // CLICK -- and that is what is measured: each surviving claim's offset from the clicked
+      // block, before against after. A section is looked up under both of its drawn identities
+      // (open box and folded block), the same pair the renderer's own hold uses.
+      const anchorOf = ps => {
+        if (a.type === "toggleNode") return ps.get(a.id) || null;
+        return ps.get(a.id) || ps.get("group:" + a.id) || null;
+      };
+      const anchB = anchorOf(pos), anchA = anchorOf(posA);
       const common = [...pos.keys()].filter(id => posA.has(id));
-      if (common.length >= 4) {
+      if (anchB && anchA && common.length >= 4) {
         const xs = [...pos.values()].map(p => p.x);
         const W = Math.max(1, Math.max(...xs) - Math.min(...xs));
-        const mid = (Math.min(...xs) + Math.max(...xs)) / 2;
         let worst = 0, cross = false;
         for (const id of common) {
-          const dx = posA.get(id).x - pos.get(id).x, f = Math.abs(dx) / W;
+          const relB = pos.get(id).x - anchB.x, relA = posA.get(id).x - anchA.x;
+          const f = Math.abs(relA - relB) / W;
           worst = Math.max(worst, f);
-          if (f >= 0.25 && Math.sign(pos.get(id).x - mid) !== Math.sign(posA.get(id).x - mid))
-            cross = true;
+          if (f >= 0.5 || (f >= 0.25 && Math.sign(relB) !== Math.sign(relA))) cross = true;
         }
         const setB = new Set(vis.nodes.map(n => n.id));
         const changed = after.nodes.some(n => !setB.has(n.id)) ||
@@ -299,7 +314,7 @@ function measureTransitions(graph) {
   worstOf.sort((x, y) => x - y);
   return {
     foldClicks: clicks,
-    sideCrossFrac: +(clicks ? crossed / clicks : 0).toFixed(2),
+    anchorCross: +(clicks ? crossed / clicks : 0).toFixed(2),
     moveWorst: +(worstOf[worstOf.length - 1] || 0).toFixed(2),
     moveMedian: +(worstOf[Math.floor(worstOf.length / 2)] || 0).toFixed(2),
     quietMove: +quietWorst.toFixed(2)
@@ -314,7 +329,7 @@ const WORSE_IF_UP = { hiddenArrowheads: 0, arrivalInversions: 0, departureInvers
                       // Transition metrics are deterministic (seeded walk, estimated sizes), so
                       // the slack is for legitimate small layout changes, not run noise. The
                       // worst single jump is spiky by nature and gets the widest berth.
-                      sideCrossFrac: 0.04, moveWorst: 0.5, moveMedian: 0.08, quietMove: 0.1 };
+                      anchorCross: 0.04, moveWorst: 0.5, moveMedian: 0.08, quietMove: 0.1 };
 // The last entry is THE STATE THE VIEWER OPENS IN -- folded to the section skeleton above 25
 // nodes. Sweeping only the depth levels missed it, and it was where two edges out of one node
 // crossed on the Gettier map. A state nobody measures is a state that stays broken.
@@ -328,8 +343,8 @@ const SHORT = { edges: "edges", hiddenArrowheads: "hidden", arrivalInversions: "
                 overshoot: "overshoot", detourWorst: "detour", edgeCrossings: "edgeX",
                 nodeOverlaps: "overlap" };
 // The transition columns. Fractions of the picture's own width, except the click count.
-const TCOLS = ["foldClicks", "sideCrossFrac", "moveWorst", "moveMedian", "quietMove"];
-const TSHORT = { foldClicks: "clicks", sideCrossFrac: "sideCross", moveWorst: "moveMax",
+const TCOLS = ["foldClicks", "anchorCross", "moveWorst", "moveMedian", "quietMove"];
+const TSHORT = { foldClicks: "clicks", anchorCross: "anchorCross", moveWorst: "moveMax",
                  moveMedian: "move~", quietMove: "quietMove" };
 
 /** One map, cropped to its busiest node, as an SVG -- something to actually look at. */
