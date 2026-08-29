@@ -153,34 +153,13 @@ jobs:
 
             ## What should I install?
 
-            **Nothing, to try it.** Download **`Ipsissima.html`** and double-click it: it works
-            offline in any browser and makes no network requests of any kind. Drop a `.argdown`
-            file onto it — or a whole folder, which brings the manuscript with it so claims can
-            be laid out by where they appear in the text. **`Ipsissima.Reader.html`** is the
-            same thing without the editor — the one to send to somebody you want to *show* a
-            reconstruction to. New to argument maps? The walkthrough is the first entry under
-            **How to use** and takes about two minutes.
+            **Nothing, to try it.** Download **`Ipsissima.html`** and double-click it: it works offline in any browser and makes no network requests of any kind. Drop a `.argdown` file onto it — or a whole folder, which brings the manuscript with it so claims can be laid out by where they appear in the text. **`Ipsissima.Reader.html`** is the same thing without the editor — the one to send to somebody you want to *show* a reconstruction to. New to argument maps? The walkthrough is the first entry under **How to use** and takes about two minutes.
 
-            **Nothing, to read the worked examples.** Four finished reconstructions, each
-            opening with the text it was drawn from, are at
-            [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example);
-            three more journal articles are in
-            [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
+            **Nothing, to read the worked examples.** Four finished reconstructions, each opening with the text it was drawn from, are at [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example); three more journal articles are in [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
 
-            **The desktop application.** Adds what a web page cannot do: open a `.argdown` by
-            double-clicking it, save back in place, and reload the manuscript when it changes
-            on disk. The `.dmg` is macOS (Intel and Apple Silicon both), the `-setup.exe` is
-            Windows, and the `.deb` and `.AppImage` are Linux. The builds are **unsigned**, so
-            the first launch is blocked once: on macOS, after dragging Ipsissima to
-            Applications, allow it under **System Settings → Privacy & Security → Open Anyway**;
-            on Windows, choose "More info" then "Run anyway".
-            [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md)
-            shows every dialog before you meet it.
+            **The desktop application.** Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage` are Linux. The builds are **unsigned**, so the first launch is blocked once: on macOS, after dragging Ipsissima to Applications, allow it under **System Settings → Privacy & Security → Open Anyway**; on Windows, choose "More info" then "Run anyway". [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md) shows every dialog before you meet it.
 
-            **Ipsissima-MCP, for Claude Desktop.** Download the **`.mcpb`** bundle and
-            double-click it; Claude Desktop installs it and provisions Python and the
-            dependencies itself. You also need [Node](https://nodejs.org) on the machine — any
-            current version.
+            **Ipsissima-MCP, for Claude Desktop.** Download the **`.mcpb`** bundle and double-click it; Claude Desktop installs it and provisions Python and the dependencies itself. You also need [Node](https://nodejs.org) on the machine — any current version.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

@@ -44,6 +44,22 @@ for (const ln of yml.slice(start).split("\n")) {
 }
 const standing = lines.join("\n").trimEnd();
 
+/** GitHub renders a release body's single newlines as hard line breaks, so a paragraph wrapped
+ *  at source-code width comes out ragged on the page (reported from use). Continuation lines
+ *  join their paragraph or bullet; blank lines, headings and new bullets keep their own. */
+function unwrap(text) {
+  const out = [];
+  for (const raw of text.split("\n")) {
+    const s2 = raw.trim();
+    const startsBlock = s2 === "" || /^(#|>|\||[-*] )/.test(s2);
+    const prev = out.length ? out[out.length - 1] : "";
+    if (prev.trim() !== "" && !startsBlock && !prev.trim().startsWith("#"))
+      out[out.length - 1] = prev.replace(/\s+$/, "") + " " + s2;
+    else out.push(raw.replace(/\s+$/, ""));
+  }
+  return out.join("\n");
+}
+
 process.stdout.write(
   "Ipsissima reads an Argdown reconstruction beside the manuscript itself.\n\n" +
-  "## Changes\n\n" + annotation + "\n\n" + standing + "\n");
+  "## Changes\n\n" + unwrap(annotation) + "\n\n" + unwrap(standing) + "\n");
