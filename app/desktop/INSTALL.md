@@ -25,24 +25,28 @@ you edit your text in another program.
 
 ## macOS
 
-You will see:
+Installing is the ordinary drag: open the `.dmg` and drag **Ipsissima** into **Applications**.
+If an older copy is already there, Finder asks — choose **Replace**, so there is only ever one
+Ipsissima installed. Nothing warns at this stage.
 
-> **"Ipsissima" cannot be opened because it is from an unidentified developer.**
-> *or, on newer versions:* **Apple could not verify "Ipsissima" is free of malware.**
+Launch it **from Applications**, not from inside the installer window. The first launch is
+where the warning appears:
 
+> **Apple could not verify "Ipsissima" is free of malware that may harm your Mac or compromise
+> your privacy.**
+
+That dialog has no button past it — current macOS removed the old right-click-and-Open
+shortcut, from everywhere including the installer window — and this is expected.
 **What to do — once:**
 
-1. Drag **Ipsissima** into your **Applications** folder.
-2. **Right-click** (or Control-click) the app and choose **Open**.
-3. The same warning appears, but this time with an **Open** button. Click it.
+1. Click **Done** (not "Move to Trash").
+2. Open **System Settings → Privacy & Security** and scroll down.
+3. A line says Ipsissima was blocked. Click **Open Anyway** beside it, and confirm.
 
-That is the whole difference: double-clicking gives you a warning with no way past it,
-right-clicking and choosing Open gives you the same warning *with* a way past it. macOS then
-remembers, and Ipsissima opens normally from then on.
+macOS remembers, and Ipsissima opens normally from then on.
 
-If the second dialog still gives you no Open button, go to **System Settings → Privacy &
-Security**, scroll down, and there will be a line saying Ipsissima was blocked with an
-**Open Anyway** button beside it.
+*(On macOS 14 and earlier the old shortcut still works: right-click the app in Applications,
+choose **Open**, and the same warning appears with an **Open** button.)*
 
 ### Opening `.argdown` files by double-clicking
 

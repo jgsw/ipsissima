@@ -208,6 +208,7 @@ var API = {
   join: join, dirname: dirname, basename: basename,
   checkForUpdates: function () { return T.core.invoke("check_for_updates"); },
   openReleasesPage: function () { return T.core.invoke("open_releases_page"); },
+  openDownloadPage: function () { return T.core.invoke("open_download_page"); },
   pickDirectory: pickDirectory, pickFile: pickFile, pickSavePath: pickSavePath,
   readText: readText, writeText: writeText, writeBinary: writeBinary, readDirDeep: readDirDeep,
   watch: watch, onOpenPaths: onOpenPaths,

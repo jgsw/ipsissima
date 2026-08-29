@@ -156,8 +156,12 @@ jobs:
             and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage`
             are Linux.
 
-            The macOS and Windows builds are **unsigned**. On macOS, right-click the app and
-            choose Open the first time; on Windows, choose "More info" then "Run anyway".
+            The macOS and Windows builds are **unsigned**, so the first launch is blocked once.
+            On macOS, after dragging Ipsissima to Applications, allow it under **System
+            Settings → Privacy & Security → Open Anyway** (current macOS has no
+            right-click-Open shortcut any more); on Windows, choose "More info" then
+            "Run anyway". [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md)
+            shows every dialog before you meet it.
 
             ## Ipsissima-MCP, for Claude Desktop
 

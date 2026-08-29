@@ -11,12 +11,20 @@
  * So: build, remove every other registration, install one copy, register that. Afterwards the
  * app's own About page names the version it is, which is the other half of the same problem.
  *
- *   node install.mjs            build and install to ~/Applications
+ *   node install.mjs            build and install to /Applications
  *   node install.mjs --status   say what is registered, change nothing
  *   node install.mjs --uninstall  remove every copy, and what the app left under ~/Library
  *
- * ~/Applications rather than /Applications: no administrator password, same behaviour, and it is
- * a per-user tool.
+ * /APPLICATIONS, BECAUSE THAT IS WHERE THE .DMG INSTALLS. This used to prefer ~/Applications —
+ * no administrator password, per-user tool — and the price surfaced the day an update shipped:
+ * the reader installs the release build by dragging it to /Applications, the old copy sits on
+ * in ~/Applications, and Launchpad shows two Ipsissimas (reported from use, 29 Aug 2026). One
+ * home ends that, and it also makes Finder's own Replace prompt the upgrade path. /Applications
+ * is admin-group writable on a personal Mac, so no password is asked for; where it is not
+ * writable this falls back to ~/Applications exactly as before — it never prompts — and either
+ * way the copy in the OTHER home is moved to the Trash, because an unregistered app still on
+ * disk is re-registered by Spotlight at its leisure (the same race documented for target/
+ * below).
  */
 import fs from "fs";
 import os from "os";
@@ -29,7 +37,13 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const LSR = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework" +
             "/Support/lsregister";
 const BUILT = path.join(HERE, "src-tauri", "target", "release", "bundle", "macos", "Ipsissima.app");
-const DEST = path.join(os.homedir(), "Applications", "Ipsissima.app");
+const USER_DEST = path.join(os.homedir(), "Applications", "Ipsissima.app");
+const SYSTEM_DEST = "/Applications/Ipsissima.app";
+const systemWritable = (() => {
+  try { fs.accessSync("/Applications", fs.constants.W_OK); return true; } catch { return false; }
+})();
+const DEST = systemWritable ? SYSTEM_DEST : USER_DEST;
+const TWIN = systemWritable ? USER_DEST : SYSTEM_DEST;
 const statusOnly = process.argv.includes("--status");
 const uninstall = process.argv.includes("--uninstall");
 // `--uninstall --dry-run` says what would go and touches nothing. Worth having for its own
@@ -192,6 +206,26 @@ fs.rmSync(BUILT, { recursive: true, force: true });
 for (const p of registered()) {
   if (p === DEST) continue;
   try { execFileSync(LSR, ["-u", p], { stdio: "ignore" }); } catch { /* already gone */ }
+}
+
+// 4. The copy in the OTHER home goes to the Trash, not merely off the register — an app still
+//    on disk is re-registered by Spotlight at its leisure, which is how a reader ends up with
+//    two Ipsissimas in Launchpad after updating by .dmg. To the Trash rather than deleted, for
+//    the uninstall path's own reason: recoverable if this was a mistake.
+if (fs.existsSync(TWIN)) {
+  let dest = path.join(os.homedir(), ".Trash", "Ipsissima.app");
+  for (let n = 2; fs.existsSync(dest); n++)
+    dest = path.join(os.homedir(), ".Trash", `Ipsissima ${n}.app`);
+  try {
+    fs.renameSync(TWIN, dest);
+    try { execFileSync(LSR, ["-u", TWIN], { stdio: "ignore" }); } catch { /* already gone */ }
+    // And the copy now IN the Trash, which Spotlight registers the moment it lands there.
+    try { execFileSync(LSR, ["-u", dest], { stdio: "ignore" }); } catch { /* fine */ }
+    console.log(`moved the copy at ${TWIN.replace(os.homedir(), "~")} to the Trash — one home, one Ipsissima.`);
+  } catch (e) {
+    console.log(`could NOT remove the second copy at ${TWIN}\n  ${e.code === "EACCES" || e.code === "EPERM"
+      ? "no permission — drag it to the Trash in Finder" : e.message}`);
+  }
 }
 
 const version = JSON.parse(fs.readFileSync(path.join(HERE, "src-tauri", "tauri.conf.json"), "utf8")).version;
