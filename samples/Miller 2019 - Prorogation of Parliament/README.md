@@ -4,10 +4,15 @@
 words, seventy-one numbered paragraphs, decided unanimously by eleven justices.*
 
 **Crown copyright, re-usable under the Open Government Licence** — the Court's own terms page says
-material from that site may be re-used under the OGL provided it is reproduced accurately. The
-National Archives publishes the same judgment under the **Open Justice Licence v2**, which also
-permits reproduction and re-use of judgment text; either route is open. The PDF here came from
-`supremecourt.uk`.
+you may re-use Crown copyright material from that website under the terms of the OGL. **The PDF
+here came from `supremecourt.uk`**, and that is the licence it arrived under.
+
+**The National Archives route is a different licence, and not a substitute.** Find Case Law
+publishes the same judgment under the **Open Justice Licence v2.0**, which excludes "computational
+analysis of the Information" and tells you to apply for a separate licence to do it. Converting a
+judgment to Markdown and reconstructing it programmatically is on the wrong side of that line, so
+the OGL route is not merely the one this file took — it is the one that covers what is done with
+it here.
 
 ## Why a judgment is in a corpus of philosophy
 

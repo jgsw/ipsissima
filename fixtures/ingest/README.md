@@ -105,11 +105,13 @@ the Court's own terms page says you may re-use Crown copyright material from tha
 OGL provided it is reproduced accurately. Downloaded from `supremecourt.uk`, not from the
 National Archives — see the note below.
 
-**The National Archives route is also fine, and was checked.** That site publishes judgments under
-the **Open Justice Licence v2** rather than the OGL
-(<https://caselaw.nationalarchives.gov.uk/open-justice-licence/version/2>), which was flagged as a
-possible obstacle and is not one: it permits reproduction and re-use of judgment text, which is
-all a fixture or a reconstruction does. Its `robots.txt` disallows `ClaudeBot`, `anthropic-ai` and
+**The National Archives route is a different licence, and it is not a substitute.** That site
+publishes judgments under the **Open Justice Licence v2.0** rather than the OGL
+(<https://caselaw.nationalarchives.gov.uk/open-justice-licence/version/2>). It permits
+reproduction and re-use of judgment text, but it excludes "computational analysis of the
+Information" and asks you to apply separately for that — and converting a PDF and reconstructing
+it is more than reproduction. The OGL copy from `supremecourt.uk` carries no such carve-out, which
+is why it is the one here. Its `robots.txt` disallows `ClaudeBot`, `anthropic-ai` and
 `Claude-Web` by name, so the XML was not fetched from there — that is a crawling restriction, not
 a licensing one, and the two should not be confused.
 
@@ -174,7 +176,7 @@ answer here is "it is not private, it was unreachable". A person with a browser 
 
 | | licence, as verified | where it stands |
 |---|---|---|
-| *Miller* as **XML** (Akoma Ntoso), from `caselaw.nationalarchives.gov.uk/uksc/2019/41` | the site's API catalogue advertises the **Open Justice Licence v2**, *not* the OGL — check that before committing the XML | **Still wanted.** `robots.txt` there disallows `ClaudeBot`, `anthropic-ai` and `Claude-Web` by name. The PDF above is the same judgment from a publisher that permits fetching, so the *judgment* is covered and **the structured-XML route is not**. |
+| *Miller* as **XML** (Akoma Ntoso), from `caselaw.nationalarchives.gov.uk/uksc/2019/41` | the site's API catalogue advertises the **Open Justice Licence v2.0**, *not* the OGL — and that licence carves out computational analysis, so it is the wrong footing for this repo | **Still wanted.** `robots.txt` there disallows `ClaudeBot`, `anthropic-ai` and `Claude-Web` by name. The PDF above is the same judgment from a publisher that permits fetching, so the *judgment* is covered and **the structured-XML route is not**. |
 | Etiévant, Gail & Follmann, 'A causal framework for the self-controlled case series design', *J. Causal Inference* 14(1), doi:10.1515/jci-2024-0074 | **CC-BY 4.0**, confirmed in Crossref and DOAJ | **Here now**, as `etievant-2026-sccs-causal-framework.pdf`, added by hand. No script could fetch it: every De Gruyter host answers `HTTP 202` with an empty body and `x-amzn-waf-action: challenge`, and it is in neither Europe PMC, PMC nor arXiv. |
 | Robeyns as **XML** | CC-BY 4.0; Thoth's record lists an XML edition as one of the published formats | **Here now**, and better than asked for: the publisher's own **TEI** bundle, above, rather than a generic XML export. Same AWS WAF challenge on `books.openbookpublishers.com`. |
 

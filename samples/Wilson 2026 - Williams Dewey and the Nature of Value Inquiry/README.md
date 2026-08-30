@@ -39,7 +39,8 @@ They are connected, and by routes the map makes visible: contentions 1 and 2 sha
 from §1's disciplinary result by way of §7's denial that philosophy may criticise other
 disciplines while staying immune from their critique.
 
-161 nodes — 142 statements and 20 arguments, 173 edges, 8 groups.
+142 claims and 20 arguments, drawn as 161 nodes — one claim is an intermediate conclusion
+and sits inside its argument rather than beside it — with 173 edges and 8 groups.
 **91 quotation · 47 paraphrase · 18 compression · 5 interpretation.**
 139 of 139 quotations verify exactly. 142 of 142 claims are located, 139 pinned by a quotation and
 3 to a paragraph. Nothing is disconnected and nothing is inert: 98 claims support a contention,

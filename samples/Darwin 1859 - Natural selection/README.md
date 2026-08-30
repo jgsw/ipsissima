@@ -9,7 +9,7 @@
 
 Open **`darwin-natural-selection (map).html`**.
 
-A passage of about 260 words, supplied by the author with their own two elisions. 22 claims, 3
+A passage of about 260 words, supplied by the author with their own two elisions. 12 claims, 3
 arguments with premise-conclusion structures, 2 contentions. Every quotation verified verbatim
 against the transcribed passage; every claim placed in it.
 
@@ -72,7 +72,7 @@ is held here**, so:
   fidelity markers exist to prevent.
 
 What *can* be checked from here is the reconstruction against the passage, and that is checked:
-18 of 22 claims are quotations, and all 18 are exact.
+every one of the 12 claims is pinned by a quotation, and all 12 are exact.
 
 ## What changes when the argument is short
 
@@ -80,23 +80,24 @@ Three things, and they are the reason this folder exists.
 
 **1. The position tooling can only see as far as the source file's granularity.** Its finest unit
 is the line. The other converters here write one line per paragraph, which is right for a journal
-article with forty of them. This passage has two. Written that way, all fourteen quoted claims
+article with forty of them. This passage has two. Written that way, all twelve quoted claims
 would land on one of two lines and the Order view would have two columns. So `make_source.py`
 breaks the passage at **its own joints** — Darwin's semicolons and his *then* / *Therefore* /
 *Thus* hinges — inserting line breaks and altering nothing else. That is the general lesson:
 **for a short text, granularity is a conversion decision, and it is made before the
 reconstruction, not after.**
 
-**2. The Order view still finds a policy, and it is the same one Williams follows.** 19 support
-relations: 14 sit within 5 claims of what they support, 5 reach further, and **all 5 that reach
-lay the support down before the claim it serves.** Longest reach: 11 claims preparing against 2
+**2. The Order view still finds a policy, and it is the same one Williams follows.** 15 support
+relations: 12 sit within 5 claims of what they support, 3 reach further, and **all 3 that reach
+lay the support down before the claim it serves.** Longest reach: 10 claims preparing against 1
 anticipating. In two paragraphs Darwin builds to his conclusions rather than announcing them —
 the same architecture as a twelve-page paper, visible at a fiftieth of the length.
 
-The one anticipated edge is worth the look it takes: `principle-of-preservation` arrives
-**after** `more-diversified-fare-better`, the claim it supports. In the passage as supplied,
-the mechanism is named — *"This principle of preservation, I have called, for the sake of
-brevity, Natural Selection"* — only after it has already done its work.
+The three that reach furthest are worth the look they take, because they are the same two
+premises both times: `struggle-for-life` holds up the preservation argument 8 claims after it is
+stated and the divergence argument 10 after, and `diversity-is-advantageous` reaches 9. Each is
+stated once, in a subordinate clause, and then carries two structures — the double duty described
+above, here as a measurement rather than a reading.
 
 **3. The map stops being a navigation aid and becomes an argument about the argument.** Nobody
 needs help finding their way around 260 words. What the picture is for here is the two claims a
