@@ -2,6 +2,19 @@
 title: "R (Miller) v The Prime Minister"
 author: "The Supreme Court of the United Kingdom"
 source: "[2019] UKSC 41"
+facts: >-
+  On 31 October 2019 the United Kingdom is scheduled to leave the European Union, following the
+  notification of its intention to withdraw pursuant to Article 50 of the Treaty on European Union.
+  On 28 August 2019, on the advice of the Prime Minister, Her Majesty the Queen made an Order in
+  Council providing that Parliament be prorogued on a day no earlier than 9 September 2019 and no
+  later than 12 September 2019, until Monday 14 October 2019. The Prime Minister issued a press
+  release stating that the purpose of the prorogation was to introduce a new legislative programme
+  to Parliament at a Queen's Speech to take place on 14 October 2019. Parliament was subsequently
+  prorogued on 9 September 2019. The appellant issued proceedings for judicial review on the
+  grounds that the Prime Minister's decision to advise Her Majesty to prorogue Parliament was an
+  abuse of power and beyond the proper constitutional limits of the common law prerogative of
+  prorogation.
+facts_source: "the court's own case page, supremecourt.uk/cases/uksc-2019-0192"
 ---
 
 <!-- CONVERTED TEXT - NOT THE PUBLISHED ARTICLE.

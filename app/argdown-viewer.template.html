@@ -782,7 +782,7 @@ body.fs #fsexit{display:inline-flex}
   <div id="abs" hidden>
     <button class="plain icon" id="absbtn" aria-expanded="false" aria-controls="abspanel"
             title="The article's own abstract — what the paper says it argues, in its authors' words. Click again to fold it away.">
-      <svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg><span>Abstract</span></button>
+      <svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg><span id="abslabel">Abstract</span></button>
     <div id="abspanel" role="note" hidden>
       <div id="abshead">
         <span id="abswhere"></span>
@@ -3404,14 +3404,15 @@ function readableSource(text) {
  *  what folded scalars mean; literal (`|`) keeps every newline. Getting that wrong is visible —
  *  the 174-word Etiévant abstract came out as 17 one-line paragraphs the first time.
  */
-function frontMatterAbstract(text) {
+function frontMatterAbstract(text, key) {
+  key = key || "abstract";
   var lines = String(text == null ? "" : text).split("\n");
   if (!lines.length || !/^---\s*$/.test(lines[0])) return "";
   var i, head = null, body = [];
   for (i = 1; i < lines.length; i++) {
     if (/^(---|\.\.\.)\s*$/.test(lines[i])) break;             // end of the front matter
     if (head == null) {
-      var mo = /^abstract\s*:\s*(.*)$/.exec(lines[i]);
+      var mo = new RegExp("^" + key + "\\s*:\\s*(.*)$").exec(lines[i]);
       if (mo) { head = mo[1].trim(); }
       continue;
     }
@@ -3442,7 +3443,36 @@ function frontMatterAbstract(text) {
  * See the markup in #stage for why it is offered and why it is shut to begin with. This half is
  * only: find one, draw it, and keep the two ways of dismissing it agreeing with each other.
  */
-var ABSTRACT = null;        // { text, chapter } for the one being offered, or null
+var ABSTRACT = null;        // { text, chapter, kind, credit } for the one being offered, or null
+
+/* WHAT THE BOX IS CALLED, and what it says about itself.
+ *
+ * A paper summarises itself in an abstract. A judgment does not have one -- what stands in the
+ * same place, and does the same work for a reader arriving cold, is the FACTS OF THE CASE. They
+ * are a different kind of thing in one way that matters: an abstract is written by the authors of
+ * the text, while a summary of the facts is often written by somebody else -- a law report, or in
+ * Miller's case the court's own case page, which is not part of the judgment at all. So `facts:`
+ * takes an optional `facts_source:` beside it, and the caption names it. A box of somebody else's
+ * words that does not say whose is the thing this program exists to prevent.
+ */
+var SUMMARY_KINDS = [
+  { key: "abstract", label: "Abstract",
+    caption: "the article's own abstract, not part of the reconstruction" },
+  { key: "facts", label: "Facts of the case", credit: "facts_source",
+    caption: "the facts of the case, not part of the reconstruction" }
+];
+
+/** One scalar out of a chapter's front matter, for the short keys that never take a block. */
+function frontMatterValue(text, key) {
+  var lines = String(text == null ? "" : text).split("\n");
+  if (!lines.length || !/^---\s*$/.test(lines[0])) return "";
+  for (var i = 1; i < lines.length; i++) {
+    if (/^(---|\.\.\.)\s*$/.test(lines[i])) break;
+    var mo = new RegExp("^" + key + "\\s*:\\s*(.*)$").exec(lines[i]);
+    if (mo) return mo[1].trim().replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1");
+  }
+  return "";
+}
 
 /** The abstract to show, and the chapter it came from.
  *
@@ -3455,8 +3485,12 @@ var ABSTRACT = null;        // { text, chapter } for the one being offered, or n
 function manuscriptAbstract(){
   if (!msAvailable()) return null;
   for (var i = 0; i < MS.chapters.length; i++) {
-    var t = frontMatterAbstract(MS.chapters[i].text);
-    if (t) return { text: t, chapter: MS.chapters[i].path };
+    for (var k = 0; k < SUMMARY_KINDS.length; k++) {
+      var kind = SUMMARY_KINDS[k];
+      var t = frontMatterAbstract(MS.chapters[i].text, kind.key);
+      if (t) return { text: t, chapter: MS.chapters[i].path, kind: kind,
+                      credit: kind.credit ? frontMatterValue(MS.chapters[i].text, kind.credit) : "" };
+    }
   }
   return null;
 }
@@ -3485,7 +3519,11 @@ function syncAbstract(){
     });
     // The chapter is named only where there is more than one. On a single paper "paper.md" is
     // noise — there is nowhere else it could have come from.
-    $("abswhere").textContent = "the article's own abstract, not part of the reconstruction" +
+    var kind = ABSTRACT.kind || SUMMARY_KINDS[0];
+    $("abslabel").textContent = kind.label;
+    $("absbtn").title = kind.label + " — click again to fold it away.";
+    $("abswhere").textContent = kind.caption +
+      (ABSTRACT.credit ? " · " + ABSTRACT.credit : "") +
       (MS.chapters.length > 1 ? " · " + ABSTRACT.chapter.replace(/^.*\//, "") : "");
   }
   setAbstract(false);          // a file opens on its map, never on a panel over it
