@@ -123,6 +123,15 @@ Use `note:` alongside for the prose.
 The same map can be excellent as a report of what a text says and poor as a reading of what it
 *should* say. Until the aim is declared there is **no fact about which yours is**.
 
+This is an old distinction with a name. Betz and Brun ask a reconstruction to be both
+*systematically correct* — valid, non-circular, free of irrelevant premises — and *exegetically
+adequate*, meaning that it accounts for the text it came from; and they argue that the two pull
+against each other, which is why one text supports several legitimate reconstructions at once
+(Brun and Betz 2016; restated in [DeepA2](https://arxiv.org/abs/2110.01509) §3.1). **The four
+fields below are how a file declares where it sits on that trade-off.** Ipsissima checks only the
+exegetical half — whether the reading fits the words — and says nothing about whether the argument
+reconstructed is any good.
+
 ```argdown
 ===
 title: Author YEAR — short title

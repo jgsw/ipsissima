@@ -106,8 +106,9 @@ every dialog before you meet it.
 
 <small>Ipsissima is by James Wilson, and stands on other people's work: the
 <a href="https://argdown.org">Argdown</a> language, created by Christian Voigt and maintained by
-the Argdown team; the reconstruction method of Alec Fisher and Trudy Govier; and Tom Stern's
-article on charity and quotation, which is why the checks do not stop at verbatim.
+the Argdown team; the reconstruction method of Alec Fisher and Trudy Govier; Tom Stern's
+article on charity and quotation, which is why the checks do not stop at verbatim; and Gregor
+Betz and Georg Brun, who named the distinction this program draws before it drew it.
 <a href="https://github.com/jgsw/ipsissima/blob/main/CREDITS.md">CREDITS.md</a> says it properly.
 The source is on <a href="https://github.com/jgsw/ipsissima">GitHub</a>. The samples above are
 public domain (Darwin, Carroll), Crown copyright reused under the

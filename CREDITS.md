@@ -111,6 +111,37 @@ cases and named for them.
 
 ---
 
+## Arrived at independently — Gregor Betz and Georg Brun
+
+**This one is not a debt, and saying it were would be false.** Ipsissima was built, and this file
+first written, before anybody here had read a line of it. The work was found on **30 August 2026**,
+after the fact, and it turns out to have got to the central idea first.
+
+**[DeepA2](https://arxiv.org/abs/2110.01509)** (Gregor Betz and Kyle Richardson, 2021) sets out a
+data structure for argument analysis whose dimensions include *"verbatim reason statements in
+source text"* and *"verbatim conjectures in the source text"*, each carrying a reference into the
+reconstruction. That is the claim this program is built on — that a reading should quote the text
+it is a reading of, claim by claim — and it is five years older than anything here.
+
+**And the distinction the fidelity apparatus draws already had a name.** DeepA2 §3.1 asks a
+reconstruction to be both *systematically correct* — valid, non-circular, free of irrelevant
+premises — and *exegetically adequate*, that is, to account for the original text; and it names
+the trade-off between the two as a source of the underdetermination that makes several
+reconstructions of one text legitimate at once, citing **Brun and Betz (2016)**. The reading
+policy in `§4` of `ipsissima-conventions.md` is a way of declaring where a reconstruction sits on
+exactly that trade-off. It was arrived at from Stern and from practice, not from them, which is
+why this section sits apart from the ones above.
+
+What is this project's own is narrower than provenance, and worth stating precisely: a **gradation**
+where DeepA2 has a binary, including the two categories that record where the reconstructor has
+*departed* from the text; **mechanical verification** of every quotation against the source before
+the map is built; and a **reader**, so that a person can follow a claim back to its passage and
+disagree with it there.
+
+Independent arrival is not a claim to priority. It is evidence the distinction is real.
+
+---
+
 ## Deep Drafter — Simon Goldstein
 
 Ipsissima began as an addition to **[Deep Drafter](https://github.com/simondgoldstein/deep-drafter)**,
