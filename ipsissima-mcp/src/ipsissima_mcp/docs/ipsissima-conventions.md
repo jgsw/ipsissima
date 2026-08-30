@@ -194,6 +194,7 @@ from one they are attacking.
 | `#conceded` | **something the author grants tells against them** — Govier's *counterconsideration*, and the scope limits an author sets on their own thesis |
 | `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
 | `#authority` | **a proposition whose force comes from its source, not from its content** — a decided case, a statute, a constitutional instrument. Chiefly for legal texts |
+| `#obiter` | **said in a legal judgment, but not a necessary step to the disposal** — the court's own remarks *by the way*. The untagged steps on the route to the order the court made are its *ratio*; this marks what sits off that route |
 
 Each answers a question the structure cannot: nothing about the shape of a graph reveals that a
 claim is Hume's rather than the paper's.
