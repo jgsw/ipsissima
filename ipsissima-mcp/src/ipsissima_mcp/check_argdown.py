@@ -482,7 +482,7 @@ def pcs_shapes(doc):
     Returns {"thin": [...], "unfilled": [...], "repeated": [...]}, each a list of tuples ready
     to print.
     """
-    out = {"thin": [], "unfilled": [], "repeated": []}
+    out = {"thin": [], "unfilled": [], "repeated": [], "diverged": [], "undeclared": []}
     stmts = doc.get("statements") or {}
 
     def has_text(title):
@@ -494,23 +494,46 @@ def pcs_shapes(doc):
         if not pcs:
             continue
         run, first, step = [], True, 1
-        for entry in pcs:
+        prev_concl = None
+        declared_anywhere = False
+        for n, entry in enumerate(pcs, start=1):
             if entry.get("role") == "premise":
-                run.append(entry.get("title"))
+                run.append((n, entry.get("title")))
                 continue
             # A step's inputs are its own premises plus, after the first step, the conclusion
-            # the step before it reached.
-            inputs = len(run) + (0 if first else 1)
+            # the step before it reached -- UNLESS the file says otherwise. `-- {uses: [1,3]} --`
+            # names the lines outright, and a declaration beats a position: the map draws the
+            # declared set onto one bar, so the checker has to measure the same set the reader
+            # is shown. Position is still what fills in when nothing is declared.
+            positional = [x for x, _ in run] + ([prev_concl] if not first and prev_concl else [])
+            declared = ((entry.get("inference") or {}).get("data") or {}).get("uses")
+            declared = [int(u) for u in declared] if isinstance(declared, list) else None
+            if declared is not None:
+                declared_anywhere = True
+                if sorted(declared) != sorted(positional):
+                    # WHAT THE FILE SAYS AGAINST WHAT ITS SHAPE SAYS. Not an error -- reaching
+                    # back past the run is exactly what `uses` is for -- but the two readings
+                    # differ, and a premise the declaration drops keeps its positional step
+                    # rather than vanishing, so the reader should be told which lines moved.
+                    orphans = [x for x in positional if x not in declared]
+                    out["diverged"].append((title, step, entry.get("title"),
+                                            sorted(declared), sorted(positional), orphans))
+            inputs = len(declared) if declared is not None else len(positional)
             if inputs <= 1:
                 out["thin"].append((title, step, entry.get("title"), len(run), first))
             seen, dupes = set(), []
-            for t in run:
+            for _, t in run:
                 if t in seen and t not in dupes:
                     dupes.append(t)
                 seen.add(t)
             for t in dupes:
                 out["repeated"].append((title, step, t))
+            prev_concl = n
             run, first, step = [], False, step + 1
+        # A single-step structure has nothing to declare: everything above the bar feeds the
+        # conclusion below it. From two steps up, silence leaves the inputs to be guessed.
+        if step - 1 > 1 and not declared_anywhere:
+            out["undeclared"].append((title, step - 1))
         for entry in pcs:
             if entry.get("role") == "premise" and not has_text(entry.get("title")):
                 out["unfilled"].append((title, entry.get("title")))
@@ -637,6 +660,33 @@ def pcs_report(doc):
         print("      The same claim numbered twice among the premises of a single inference.")
         for title, step, prem in found["repeated"]:
             print(f"      ! <{title}> step {step} lists [{prem}] more than once")
+
+    if found["diverged"]:
+        print(f"\n   DECLARED INPUTS DIFFER FROM THE SHAPE ({len(found['diverged'])})")
+        print("      The step says `uses` one set of lines; its position in the structure says")
+        print("      another. The map follows what is declared, so this is a note rather than a")
+        print("      fault -- reaching back past the run is what `uses` is for. But a line the")
+        print("      declaration leaves out keeps the step its position gave it rather than")
+        print("      dropping off the map, so check that is what was meant.")
+        for title, step, concl, declared, positional, orphans in found["diverged"]:
+            finding("declared-inputs-differ", "?",
+                    f"inference step {step} declares lines {declared} but sits among "
+                    f"{positional} -- the map draws the declared set",
+                    title=title, conclusion=concl,
+                    fix="correct the `uses` list, or leave it if the step really does reach "
+                        "past its own run")
+            extra = f"; {orphans} left where position put them" if orphans else ""
+            print(f"      ? <{title}> step {step} -> [{concl}]: "
+                  f"uses {declared}, sits among {positional}{extra}")
+
+    if found["undeclared"]:
+        print(f"\n   MULTI-STEP ARGUMENTS THAT DECLARE NOTHING ({len(found['undeclared'])})")
+        print("      With one step there is nothing to say. With two or more, the inputs are")
+        print("      being read off the order of the lines, which is a guess -- and a wrong one")
+        print("      wherever a step reaches back to an earlier premise. Write")
+        print("      `-- {uses: [1, 3, 4]} --` so the bar the reader sees is the file's claim.")
+        for title, steps in found["undeclared"]:
+            print(f"      ? <{title}> has {steps} steps and no `uses` on any of them")
 
 
 def fidelity_report(cli, path):

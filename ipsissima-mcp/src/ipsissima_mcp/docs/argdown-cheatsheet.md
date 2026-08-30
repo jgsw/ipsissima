@@ -292,8 +292,19 @@ The four permitted shapes of that line: `-- Rule --`, `-- Rule, Another rule --`
 `-- Rule {uses: [1,2]} --`, `-- {uses: [1,2]} --`.
 
 The rule is a **comma-separated list of names**, optionally followed by one bracketed metadata
-block. A **trailing comma is a parse error**. Prefer the plain `-----` unless the rule genuinely
-informs the reader.
+block. A **trailing comma is a parse error**.
+
+**In an argument with more than one step, write `{uses: [...]}` on every inference line.** With
+one step there is nothing to say -- everything above the bar feeds the conclusion below it. With
+two or more, the reader and the tools are both left inferring the inputs from the ORDER of the
+lines, and that inference is wrong whenever a step reaches back to a premise from an earlier run
+or skips one that belongs to a sibling step. The map draws the premises of a step gathered onto
+a bar, which asserts they stand or fall together; `uses` is what makes that assertion the file's
+rather than the layout's. Ipsissima takes the declaration over the position, and reports any
+disagreement between the two.
+
+The rule name itself stays optional -- prefer the plain bar unless the rule genuinely informs
+the reader.
 
 ### Premises and conclusions can carry titles and relations
 

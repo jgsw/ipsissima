@@ -130,6 +130,13 @@ Use the **whole language**, not the part of it you are sure of:
 - two claims that cannot both be true are a **contradiction** (`><`)
 - reasons that work only together go in one premise-conclusion structure; reasons that each stand
   alone hang as siblings
+- **in a structure with more than one step, every inference line says what it uses** —
+  `-- {uses: [1, 3, 4]} --`, naming the lines by the numbers the file gives them. With a single
+  step there is nothing to declare. With two or more, leaving it out makes the map read the
+  inputs off the order of the lines, which is a guess, and a wrong one wherever a step reaches
+  back to an earlier premise or skips one belonging to a sibling step. The bar the map draws
+  asserts the claims gathered onto it stand or fall together — `uses` is what makes that
+  assertion yours rather than the layout's
 
 **And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
 jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,
