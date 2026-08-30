@@ -1,0 +1,259 @@
+===
+title: "Miller 2019 - R (Miller) v The Prime Minister [2019] UKSC 41"
+reconstruction:
+    generated: true
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/miller-2019-uksc-41.md"
+    reviewed: "2026-08-30"
+===
+
+// Reconstructed from the disposal backwards, per the legal-judgment rule in the extraction
+// prompt. The order the court made is at [70]-[71]; everything the court treated as a necessary
+// step to it is untagged and sits on the route; what it said by the way is #obiter.
+//
+// Paragraphs 1-26 are narrative and background -- what prorogation is, how the case arose. They
+// are not argued and are not reconstructed. The judgment's own four issues [27] give the spine.
+
+# The disposal {isGroup: true}
+
+[Parliament has not been prorogued]: It follows that Parliament has not been prorogued and that this court should make declarations to that effect. {fidelity: "quotation", pinpoint: "[70]", source: "\"It follows that Parliament has not been prorogued and that this court should make declarations to that effect.\""}
+
+[The appeals are disposed of]: The Advocate General's appeal in Cherry is dismissed and Mrs Miller's appeal is allowed, with the same declarations and orders in each case. {fidelity: "paraphrase", pinpoint: "[71]", source: "\"Thus the Advocate General's appeal in the case of Cherry is dismissed and Mrs Miller's appeal is allowed. The same declarations and orders should be made in each case.\"", note: "The order the court actually made. Everything above it on the map is what the court treated as necessary to reach it."}
+
+<The route to the order>: From the unlawfulness of the advice, through the nullity of each step that followed it, to the conclusion that Parliament was never prorogued. {fidelity: "compression", pinpoint: "[69]-[71]", note: "The court sets this chain out itself, in one paragraph, in this order."}
+
+(1) [The court may rule on the validity of the prorogation]
+(2) [The advice was unlawful]
+(3) [Advice outside the powers of the Prime Minister is null]
+-- {uses: [2, 3]} --
+(4) [The Order in Council was null]
+(5) [The prorogation was carried out under the Order]
+-- {uses: [4, 5]} --
+(6) [The prorogation was null]
+-- {uses: [1, 6]} --
+(7) [Parliament has not been prorogued]
+-- {uses: [7]} --
+(8) [The appeals are disposed of]
+
+[The court may rule on the validity of the prorogation]: This court is not, therefore, precluded by article 9 or by any wider Parliamentary privilege from considering the validity of the prorogation itself. {fidelity: "quotation", pinpoint: "[69]", source: "\"This court is not, therefore, precluded by article 9 or by any wider Parliamentary privilege from considering the validity of the prorogation itself.\"", note: "A JURISDICTIONAL PRECONDITION, and it conditions the step it is written against. The court reaches this at [69] and only then turns to the chain -- 'The logical approach to that question is to start at the beginning, with the advice that led to it.' So it licenses the move from the nullity of the prorogation to the declaration, not the earlier move from unlawful advice to a void Order in Council, which needs no privilege ruling at all. Distinct from the justiciability of the advice, settled at [52]."}
+
+[Advice outside the powers of the Prime Minister is null]: That advice was unlawful. It was outside the powers of the Prime Minister to give it. This means that it was null and of no effect. {fidelity: "quotation", pinpoint: "[69]", source: "\"That advice was unlawful. It was outside the powers of the Prime Minister to give it. This means that it was null and of no effect\""}
+    <+ [UNISON]
+
+[UNISON]: R (UNISON) v Lord Chancellor \[2017\] UKSC 51, para 119, cited for the proposition that an act outside a power is null and of no effect. #authority {fidelity: "compression", pinpoint: "[69]", source: "\"see, if authority were needed, R (UNISON) v Lord Chancellor [2017] UKSC 51, para 119\"", note: "The court cites it as a fallback -- 'if authority were needed' -- so it is doing confirmatory rather than load-bearing work."}
+
+[The Order in Council was null]: The Order in Council, being founded on unlawful advice, was likewise unlawful, null and of no effect and should be quashed. {fidelity: "paraphrase", pinpoint: "[69]", source: "\"It led to the Order in Council which, being founded on unlawful advice, was likewise unlawful, null and of no effect and should be quashed.\""}
+
+[The prorogation was carried out under the Order]: The Order in Council led to the actual prorogation, which was as if the Commissioners had walked into Parliament with a blank piece of paper. {fidelity: "paraphrase", pinpoint: "[69]", source: "\"This led to the actual prorogation, which was as if the Commissioners had walked into Parliament with a blank piece of paper.\""}
+
+[The prorogation was null]: The prorogation itself was unlawful, null and of no effect. {fidelity: "paraphrase", pinpoint: "[69]", source: "\"It too was unlawful, null and of no effect.\""}
+
+# Was the advice justiciable {isGroup: true}
+
+[The advice is justiciable]: The question whether the Prime Minister's advice to the Queen was lawful is justiciable. {fidelity: "paraphrase", pinpoint: "[52]", source: "\"we are firmly of the opinion that it is justiciable\"", note: "Issue (1) of the four the court sets itself at [27]. It conditions the whole judgment: without it the court reaches neither the standard nor its application."}
+
+<Justiciability turns on which question is asked>: The court distinguishes two questions about a prerogative power, and places this case in the one that is undoubtedly justiciable. {fidelity: "interpretation", warrant: "coherence", pinpoint: "[35]-[52]", note: "The three premises are assembled from paragraphs seventeen apart. The court never numbers them, but the argument does not hold together any other way: [35] draws the distinction, [52] places the case."}
+
+(1) [Two issues about prerogative power]
+(2) [The existence and extent of a power is justiciable]
+(3) [The standard determines the limits of the power]
+-- {uses: [1, 2, 3]} --
+(4) [The advice is justiciable]
+
+[Two issues about prerogative power]: In the case of prerogative powers it is necessary to distinguish whether a power exists and its extent, from whether an exercise of the power within its limits is open to legal challenge. {fidelity: "compression", pinpoint: "[35]", source: "\"The first is whether a prerogative power exists, and if it does exist, its extent.\"", note: "Two consecutive sentences joined. The second issue is the one that 'may raise questions of justiciability'; the first is not in doubt."}
+
+[The existence and extent of a power is justiciable]: The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept. {fidelity: "quotation", pinpoint: "[35]", source: "\"The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept.\""}
+    <+ [CCSU]
+
+[CCSU]: Council of Civil Service Unions v Minister for the Civil Service \[1985\] AC 374, cited as authority that the courts may rule on the existence and extent of prerogative powers. #authority {fidelity: "compression", pinpoint: "[35]", source: "\"If authority is required, it can be found in the decision of the House of Lords in the case of Council of Civil Service Unions v Minister for the Civil Service [1985] AC 374.\""}
+
+[The standard determines the limits of the power]: The standard the court applies is not concerned with the mode of exercise of the prerogative within its lawful limits; it determines the limits of the power, marking the boundary between the prerogative and the constitutional principles of Parliamentary sovereignty and responsible government. {fidelity: "compression", pinpoint: "[52]", source: "\"it is a standard which determines the limits of the power, marking the boundary between the prerogative on the one hand and the operation of the constitutional principles of the sovereignty of Parliament and responsible government on the other hand\"", note: "This is where the argument turns: the case is placed on the justiciable side of the [35] distinction by what the standard does, so the standard at [50] has to be settled before justiciability can be."}
+
+[The advice is justiciable]
+    <+ [Political context is no bar]
+    <+ [Political accountability does not oust legal accountability]
+    <+ [Deciding gives effect to the separation of powers]
+    <- [The matter is inherently political]
+    <- [Prorogation is an excluded category]
+
+[Political context is no bar]: The fact that a legal dispute concerns the conduct of politicians, or arises from a matter of political controversy, has never been sufficient reason for the courts to refuse to consider it. {fidelity: "quotation", pinpoint: "[31]", source: "\"the fact that a legal dispute concerns the conduct of politicians, or arises from a matter of political controversy, has never been sufficient reason for the courts to refuse to consider it\""}
+    <+ [Case of Proclamations]
+    <+ [Entick v Carrington]
+
+[Case of Proclamations]: The King hath no prerogative, but that which the law of the land allows him. #authority {fidelity: "quotation", pinpoint: "[32]", source: "\"the King hath no prerogative, but that which the law of the land allows him\"", note: "Case of Proclamations (1611) 12 Co Rep 74, at p 76. Cited twice -- here for judicial review in a politically charged age, and again at [49] for the proposition that a prerogative power exists only so far as the common law recognises it."}
+
+[Entick v Carrington]: Entick v Carrington (1765), holding that the Secretary of State could not order searches of private property without authority conferred by an Act of Parliament or the common law. #authority {fidelity: "paraphrase", pinpoint: "[32]", source: "\"the Secretary of State could not order searches of private property without authority conferred by an Act of Parliament or the common law\""}
+
+[Political accountability does not oust legal accountability]: The courts have a duty to give effect to the law, irrespective of the minister's political accountability to Parliament. {fidelity: "quotation", pinpoint: "[33]", source: "\"the courts have a duty to give effect to the law, irrespective of the minister's political accountability to Parliament\""}
+    <+ [Prorogation stops accountability working]
+    <+ [Fire Brigades Union]
+
+[Prorogation stops accountability working]: The effect of prorogation is to prevent the operation of ministerial accountability to Parliament during the period when Parliament stands prorogued. {fidelity: "quotation", pinpoint: "[33]", source: "\"the effect of prorogation is to prevent the operation of ministerial accountability to Parliament during the period when Parliament stands prorogued\""}
+
+[Fire Brigades Union]: Ministerial responsibility is no substitute for judicial review; ministers are accountable to Parliament for efficiency and policy, and responsible to a court of justice for the lawfulness of what they do. #authority {fidelity: "compression", pinpoint: "[33]", source: "\"they are responsible to a court of justice for the lawfulness of what they do, and of that the court is the only judge\"", note: "R v Secretary of State for the Home Department, Ex p Fire Brigades Union [1995] 2 AC 513, quoting Lord Diplock in Ex p National Federation of Self-Employed. The claim compresses Lord Lloyd's passage and Lord Diplock's within it."}
+
+[Deciding gives effect to the separation of powers]: By ensuring that the Government does not use the power of prorogation unlawfully with the effect of preventing Parliament from carrying out its proper functions, the court will be giving effect to the separation of powers. {fidelity: "quotation", pinpoint: "[34]", source: "\"by ensuring that the Government does not use the power of prorogation unlawfully with the effect of preventing Parliament from carrying out its proper functions, the court will be giving effect to the separation of powers\""}
+
+[The matter is inherently political]: The Prime Minister's decision that Parliament should be prorogued at the time and for the duration chosen, and his advice to Her Majesty to that effect, were inherently political in nature, and there were no legal standards against which to judge their legitimacy. #reported {fidelity: "quotation", pinpoint: "[29]", source: "\"the Prime Minister's decision that Parliament should be prorogued at the time and for the duration chosen, and his advice to Her Majesty to that effect, were inherently political in nature, and there were no legal standards against which to judge their legitimacy\"", note: "The Divisional Court's view, which the court records and rejects. Not the court's own."}
+
+[Prorogation is an excluded category]: Prorogation is analogous to the dissolution of Parliament, which Lord Roskill placed among the prerogative powers whose exercise is non-justiciable, and is in any event a matter of high policy. #reported {fidelity: "compression", pinpoint: "[36]", source: "\"They submit that prorogation is in any event another example of what Lord Roskill described as \\\"excluded categories\\\"\"", note: "Counsel for the Prime Minister. Answered at [36] not by denying the dictum but by denying that it is reached: the argument 'only arises if the issue in these proceedings is properly characterised as one concerning the lawfulness of the exercise of a prerogative power within its lawful limits'."}
+
+<The excluded-categories submission>: From Lord Roskill's list of non-justiciable prerogatives to the non-justiciability of prorogation. {fidelity: "compression", pinpoint: "[36]", note: "Counsel for the Prime Minister, reconstructed as an argument so the court's answer can be drawn as what it is. The court denies neither premise."}
+
+(1) [Roskill's dictum]
+(2) [Prorogation is an excluded category]
+-- {uses: [1, 2]} --
+(3) [The advice is not justiciable]
+
+[Roskill's dictum]: In the Council of Civil Service Unions case Lord Roskill mentioned the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable. #authority {fidelity: "paraphrase", pinpoint: "[35]", source: "\"Lord Roskill mentioned at p 418 the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable\""}
+
+[The advice is not justiciable]: The lawfulness of the Prime Minister's advice is not justiciable in a court of law. #reported {fidelity: "imputation", warrant: "enthymeme", pinpoint: "[28]", note: "The conclusion the Prime Minister's submissions are put to, stated by the court as their position at [28] rather than in these words by counsel."}
+
+<The excluded-categories submission>
+    <_ [The excluded-categories argument is never reached]
+
+[The advice is not justiciable]
+    >< [The advice is justiciable]
+
+[The excluded-categories argument is never reached]: The excluded-categories argument arises only if the issue concerns the exercise of a prerogative power within its lawful limits, and no question of justiciability can arise about the existence or legal limits of such a power, which are by definition questions of law. {fidelity: "compression", pinpoint: "[36]", source: "\"no question of justiciability, whether by reason of subject matter or otherwise, can arise in relation to whether the law recognises the existence of a prerogative power, or in relation to its legal limits. Those are by definition questions of law.\""}
+
+# By what standard {isGroup: true}
+
+[The standard]: A decision to prorogue Parliament, or to advise the monarch to prorogue Parliament, will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive. {fidelity: "quotation", pinpoint: "[50]", source: "\"a decision to prorogue Parliament (or to advise the monarch to prorogue Parliament) will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive\"", note: "Issue (2). The rule of law the case is usually cited for -- but the court states it 'for the purposes of the present case', and what it stands for as precedent is for later courts, not this map, to settle."}
+
+<Deriving the limit>: The limit on the prerogative is derived from the constitutional principles the power would otherwise defeat. {fidelity: "interpretation", warrant: "coherence", pinpoint: "[38]-[50]", note: "Assembled across thirteen paragraphs. The court argues each principle separately and states the limit at [50] without gathering the premises; the gathering is the reconstructor's."}
+
+(1) [Every prerogative power has limits]
+(2) [Constitutional principles determine the boundary]
+(3) [Parliamentary sovereignty]
+(4) [Parliamentary accountability]
+-- {uses: [1, 2, 3, 4]} --
+(5) [The power to prorogue cannot be unlimited]
+(6) [Short prorogations are lawful]
+-- {uses: [5, 6]} --
+(7) [The standard]
+
+[Every prerogative power has limits]: Every prerogative power has its limits, and it is the function of the court to determine, when necessary, where they lie. {fidelity: "quotation", pinpoint: "[38]", source: "\"every prerogative power has its limits, and it is the function of the court to determine, when necessary, where they lie\""}
+
+[Constitutional principles determine the boundary]: The boundaries of a prerogative power relating to the operation of Parliament are likely to be illuminated, and indeed determined, by the fundamental principles of our constitutional law. {fidelity: "quotation", pinpoint: "[38]", source: "\"the boundaries of a prerogative power relating to the operation of Parliament are likely to be illuminated, and indeed determined, by the fundamental principles of our constitutional law\""}
+    <+ [A prerogative power is limited by the common law]
+
+[A prerogative power is limited by the common law]: A prerogative power is only effective to the extent that it is recognised by the common law, and is therefore limited by statute and the common law, including the constitutional principles with which it would otherwise conflict. {fidelity: "compression", pinpoint: "[49]", source: "\"A prerogative power is therefore limited by statute and the common law, including, in the present context, the constitutional principles with which it would otherwise conflict.\"", note: "SPLICED: joins the recognition point to the limitation point 142 characters later in the same paragraph."}
+    <+ [Case of Proclamations]
+
+[Parliamentary sovereignty]: Laws enacted by the Crown in Parliament are the supreme form of law, and the courts have repeatedly protected Parliamentary sovereignty from threats posed to it by the use of prerogative powers. {fidelity: "compression", pinpoint: "[41]", source: "\"the courts have protected Parliamentary sovereignty from threats posed to it by the use of prerogative powers, and in doing so have demonstrated that prerogative powers are limited by the principle of Parliamentary sovereignty\"", note: "SPLICED: joins the statement of the principle at the head of [41] to the account of how the courts have enforced it 359 characters later. Both halves are the court's words; the join is the reconstructor's."}
+
+[Parliamentary accountability]: Ministers are accountable to Parliament, and by these means the executive is required to report, explain and defend its actions, and citizens are protected from the arbitrary exercise of executive power. {fidelity: "compression", pinpoint: "[46]", source: "\"the executive is required to report, explain and defend its actions, and citizens are protected from the arbitrary exercise of executive power\"", note: "Described by Lord Carnwath in the first Miller case as no less fundamental than Parliamentary sovereignty."}
+
+[The power to prorogue cannot be unlimited]: It must therefore follow, as a concomitant of Parliamentary sovereignty, that the power to prorogue cannot be unlimited. {fidelity: "quotation", pinpoint: "[44]", source: "\"It must therefore follow, as a concomitant of Parliamentary sovereignty, that the power to prorogue cannot be unlimited.\""}
+    <+ [An unlimited power would be incompatible with sovereignty]
+
+[An unlimited power would be incompatible with sovereignty]: An unlimited power of prorogation would be incompatible with the legal principle of Parliamentary sovereignty. {fidelity: "paraphrase", pinpoint: "[42]", source: "\"An unlimited power of prorogation would therefore be incompatible with the legal principle of Parliamentary sovereignty.\""}
+    <- [The sovereignty point should be set aside]
+
+[The court should not consider extreme hypotheticals]: The court should decline to consider extreme hypothetical examples of prorogation. #reported {fidelity: "paraphrase", pinpoint: "[43]", source: "\"it is no answer to these points to say, as counsel for the Prime Minister argued, that the court should decline to consider extreme hypothetical examples\""}
+
+<The hypotheticals submission>: That the sovereignty point should be set aside because it turns on extreme cases. {fidelity: "compression", pinpoint: "[43]", note: "Counsel for the Prime Minister, reconstructed as an argument so the court's answer can be drawn as an undercut."}
+
+(1) [The court should not consider extreme hypotheticals]
+(2) [There are practical constraints on prorogation]
+-- {uses: [1, 2]} --
+(3) [The sovereignty point should be set aside]
+
+[There are practical constraints on prorogation]: There are practical constraints on the length of time for which Parliament might stand prorogued, since the Government would eventually need Parliamentary authority to raise money and annual legislation to maintain a standing army. #reported {fidelity: "compression", pinpoint: "[43]", source: "\"there are practical constraints on the length of time for which Parliament might stand prorogued\""}
+
+[The sovereignty point should be set aside]: The incompatibility of an unlimited prorogation power with Parliamentary sovereignty does not need to be decided. #reported {fidelity: "imputation", warrant: "enthymeme", pinpoint: "[43]", note: "The conclusion the submission is put to. Counsel do not state it in these words; the court answers it as though they had, and the argument has no other point."}
+
+<The hypotheticals submission>
+    <_ [The implications must be considered]
+
+[The implications must be considered]: The court has to address the argument that there are no circumstances whatsoever in which it could review a prorogation decision, and in addressing it, considering the implications is appropriate and necessary. {fidelity: "compression", pinpoint: "[43]", source: "\"In addressing that argument, it is perfectly appropriate, and necessary, to consider its implications.\""}
+
+[Short prorogations are lawful]: Parliament does not remain permanently in session, and it is undoubtedly lawful to prorogue Parliament notwithstanding that, so long as it stands prorogued, Parliament cannot enact laws. #conceded {fidelity: "paraphrase", pinpoint: "[45]", source: "\"it is undoubtedly lawful to prorogue Parliament notwithstanding the fact that, so long as it stands prorogued, Parliament cannot enact laws\"", note: "The court's own concession, and it does real work: it is why the limit has to be defined by effect and justification rather than by prohibiting prorogation outright."}
+
+[The standard]
+    <+ [The standard can be applied in practice]
+
+[The standard can be applied in practice]: The extent to which prorogation frustrates Parliament's ability to perform its functions is a question of fact presenting no greater difficulty than many others routinely decided by the courts. {fidelity: "compression", pinpoint: "[51]", source: "\"is a question of fact which presents no greater difficulty than many other questions of fact which are routinely decided by the courts\""}
+
+# Was the advice lawful {isGroup: true}
+
+[The advice was unlawful]: It follows that the decision to advise Her Majesty to prorogue Parliament was unlawful. {fidelity: "paraphrase", pinpoint: "[61]", source: "\"It follows that the decision was unlawful.\""}
+
+<Applying the standard>: The two limbs of the standard, applied to the facts found. {fidelity: "compression", pinpoint: "[55]-[61]", note: "The court stages it as two questions -- did it frustrate Parliament, and was there a reasonable justification -- and answers them in turn."}
+
+(1) [The advice is justiciable]
+(2) [The standard]
+(3) [The prorogation frustrated Parliament]
+(4) [No reason was given]
+-- {uses: [1, 2, 3, 4]} --
+(5) [The advice was unlawful]
+
+[The prorogation frustrated Parliament]: The prorogation prevented Parliament from carrying out its constitutional role for five out of a possible eight weeks between the end of the summer recess and exit day on the 31st October. {fidelity: "paraphrase", pinpoint: "[56]", source: "\"It prevented Parliament from carrying out its constitutional role for five out of a possible eight weeks between the end of the summer recess and exit day on the 31st October.\""}
+    <+ [The circumstances were exceptional]
+
+[The circumstances were exceptional]: A fundamental change was due to take place in the Constitution of the United Kingdom on 31st October 2019, and Parliament has a right to have a voice in how that change comes about. {fidelity: "compression", pinpoint: "[57]", source: "\"A fundamental change was due to take place in the Constitution of the United Kingdom on 31st October 2019.\"", note: "SPLICED: joins the fact of the change to Parliament's right to a voice in it, 233 characters later."}
+
+[No reason was given]: It is impossible to conclude, on the evidence put before the court, that there was any reason, let alone a good reason, to advise Her Majesty to prorogue Parliament for five weeks. {fidelity: "paraphrase", pinpoint: "[61]", source: "\"It is impossible for us to conclude, on the evidence which has been put before us, that there was any reason - let alone a good reason - to advise Her Majesty to prorogue Parliament for five weeks, from 9th or 12th September until 14th October.\""}
+    <+ [Sir John Major's evidence]
+    <+ [The memorandum explains nothing]
+    <- [The Government must be accorded latitude]
+
+[Sir John Major's evidence]: Sir John Major's unchallenged evidence is that he has never known a Government to need as much as five weeks to put together its legislative agenda. {fidelity: "paraphrase", pinpoint: "[59]", source: "\"he has never known a Government to need as much as five weeks to put together its legislative agenda\""}
+
+[The memorandum explains nothing]: The da Costa memorandum has much to say about a new session and Queen's Speech but nothing about why so long was needed to prepare for it. {fidelity: "paraphrase", pinpoint: "[60]", source: "\"The memorandum has much to say about a new session and Queen's Speech but nothing about why so long was needed to prepare for it.\""}
+
+[The Government must be accorded latitude]: The Government must be accorded a great deal of latitude in making decisions of this nature. #conceded {fidelity: "quotation", pinpoint: "[58]", source: "\"the Government must be accorded a great deal of latitude in making decisions of this nature\""}
+
+[Motive is not in issue]: The court is not concerned with the Prime Minister's motive in doing what he did, but with whether there was a reason for him to do it. {fidelity: "paraphrase", pinpoint: "[58]", source: "\"We are not concerned with the Prime Minister's motive in doing what he did. We are concerned with whether there was a reason for him to do it.\""}
+
+[No reason was given]
+    <+ [Motive is not in issue]
+
+# Whether privilege bars the court {isGroup: true}
+
+<Prorogation is not a proceeding in Parliament>: Article 9 does not reach the prorogation, because the prorogation is not the kind of thing article 9 protects.
+
+(1) [Courts determine the scope of privilege]
+(2) [Article 9 protects the core business of Parliament]
+(3) [Prorogation is not a proceeding in Parliament]
+-- {uses: [1, 2, 3]} --
+(4) [The court may rule on the validity of the prorogation]
+
+[Courts determine the scope of privilege]: It is for the court and not for Parliament to determine the scope of Parliamentary privilege, whether under article 9 of the Bill of Rights or matters within the exclusive cognisance of Parliament. {fidelity: "quotation", pinpoint: "[66]", source: "\"that it is for the court and not for Parliament to determine the scope of Parliamentary privilege, whether under article 9 of the Bill of Rights or matters within the \\\"exclusive cognisance of Parliament\\\"\""}
+    <+ [Chaytor]
+    <+ [Article 9 is an Act of Parliament]
+
+[Chaytor]: R v Chaytor \[2010\] UKSC 52, in which an enlarged panel held unanimously that MPs' expenses claims were not proceedings in Parliament nor within its exclusive cognisance. #authority {fidelity: "paraphrase", pinpoint: "[65]", source: "\"An enlarged panel of nine Justices held unanimously that MPs' expenses claims were not \\\"proceedings in Parliament\\\" nor were they in the exclusive cognisance of Parliament.\""}
+
+[Article 9 is an Act of Parliament]: Article 9 of the Bill of Rights and the Claim of Right are Acts of Parliament, and it is one of the principal roles of the courts to interpret Acts of Parliament. {fidelity: "compression", pinpoint: "[65]", source: "\"The first point to note is that these are Acts of Parliament. It is one of the principal roles of the courts to interpret Acts of Parliament.\""}
+
+[Article 9]: That the Freedome of Speech and Debates or Proceedings in Parlyament ought not to be impeached or questioned in any Court or Place out of Parlyament. #authority {fidelity: "quotation", pinpoint: "[64]", source: "\"That the Freedome of Speech and Debates or Proceedings in\"", note: "Article 9 of the Bill of Rights 1688, in the spelling the judgment prints. The quotation is clipped at the page break the converted source carries; the sentence continues 'Parlyament ought not to be impeached or questioned in any Court or Place out of Parlyament.'"}
+
+[Article 9 protects the core business of Parliament]: The principal matter to which article 9 is directed is freedom of speech and debate in the Houses of Parliament and in parliamentary committees, which is where the core or essential business of Parliament takes place. {fidelity: "paraphrase", pinpoint: "[66]", source: "\"freedom of speech and debate in the Houses of Parliament and in parliamentary committees. This is where the core or essential business of Parliament takes place\""}
+    <+ [Article 9]
+    <+ [Erskine May on proceedings]
+
+[Erskine May on proceedings]: The primary meaning of proceedings is some formal action, usually a decision, taken by the House in its collective capacity. #authority {fidelity: "paraphrase", pinpoint: "[67]", source: "\"The primary meaning of proceedings, as a technical parliamentary term, which it had at least as early as the 17th century, is some formal action, usually a decision, taken by the House in its collective capacity.\"", note: "Erskine May, Parliamentary Practice, 25th ed 2019, para 13.12."}
+
+[Prorogation is not a proceeding in Parliament]: The prorogation cannot sensibly be described as a proceeding in Parliament: it is not a decision of either House, it is imposed upon them from outside, and it is not something on which Members can speak or vote. {fidelity: "compression", pinpoint: "[68]", source: "\"It is not a decision of either House of Parliament. Quite the contrary: it is something which is imposed upon them from outside.\""}
+    <+ [Prorogation ends the core business]
+    <- [The prorogation was a proceeding in Parliament]
+
+[Prorogation ends the core business]: Prorogation is not the core or essential business of Parliament; on the contrary, it brings that core or essential business to an end. {fidelity: "paraphrase", pinpoint: "[68]", source: "\"This is not the core or essential business of Parliament. Quite the contrary: it brings that core or essential business of Parliament to an end.\""}
+
+[The prorogation was a proceeding in Parliament]: The prorogation was a proceeding in Parliament which cannot be impugned or questioned in any court, and neither, reasoning back from that, can the Order in Council which led to it. #reported {fidelity: "compression", pinpoint: "[63]", source: "\"The prorogation itself, it is said, was \\\"a proceeding in Parliament\\\" which cannot be impugned or questioned in any court.\"", note: "The Government's argument on remedy. Rejected at [68]."}
+
+# What the court did not decide {isGroup: true}
+
+[No view on the Queen's position]: It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept the Prime Minister's advice, and the court expresses no view on that matter. #obiter {fidelity: "paraphrase", pinpoint: "[30]", source: "\"It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept that advice. In the circumstances, we express no view on that matter.\"", note: "Expressly reserved. Recorded because a reader looking for what the case decides needs to see what it declines to."}
+
+[The motive ground is not reached]: Whether the challenge based on the Prime Minister's motive is justiciable falls to be considered only if the advice was lawful, and since it was not, the question does not arise. #obiter {fidelity: "compression", pinpoint: "[54]", source: "\"It is only if it was, that the justiciability of the alternative ground of challenge will need to be considered.\"", note: "Mrs Miller and Ms Cherry also challenged the advice on the Prime Minister's motive [53]. The court sets that ground aside and never returns to it, so nothing about it is part of the route to the order."}
+
+[What Parliament does next is for Parliament]: As Parliament is not prorogued, it is for Parliament to decide what to do next, and the Speaker and the Lord Speaker can take immediate steps to enable each House to meet. #obiter {fidelity: "compression", pinpoint: "[70]", source: "\"it appears to us that, as Parliament is not prorogued, it is for Parliament to decide what to do next\"", note: "Said after the disposal and conditioned on it -- 'Unless there is some Parliamentary rule to the contrary of which we are unaware'. Nothing in the order rests on it."}
+
+[The court's constitutional responsibility]: The courts have the responsibility of upholding the values and principles of the constitution, and cannot shirk it merely on the ground that the question raised is political in tone or context. #obiter {fidelity: "compression", pinpoint: "[39]", source: "\"The courts cannot shirk that responsibility merely on the ground that the question raised is political in tone or context.\"", note: "A statement of principle in the section framing the standard. It restates [31] rather than adding a step, so it is drawn as a remark rather than as an input."}
