@@ -106,6 +106,16 @@ check verifies it. And a text of any length uses several: name the top-level mov
 a form for each `<Argument>` you build. A single label at the top describes none of the arguments
 inside it.
 
+**If the source is a legal judgment, the conclusion is the disposal** — the order the court
+actually made, not the most interesting proposition in it. Work back from there. The steps the
+court expressly or impliedly treated as necessary to reach that order are its *ratio*; everything
+else it said is `#obiter`, and belongs on the map, tagged, rather than left out. A step in a
+judgment usually has the shape *rule of law + facts found → legal conclusion*, so a step with no
+rule of law among its inputs is usually missing one. Do not try to state *the* ratio as a claim of
+its own: which rule a case stands for is settled by later courts, not by this one, and a map that
+records the route to the disposal lets a reader read it off without the reconstruction pretending
+to fix it.
+
 ### 2. Work backwards from the conclusion
 
 For the conclusion, ask what immediate reasons the text gives for it. Then ask the same of each
