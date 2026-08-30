@@ -452,13 +452,13 @@ defaults:
 (2) [The advice was unlawful]
 (3) [Advice outside the powers of the Prime Minister is null and of no effect]: It was outside the powers of the Prime Minister to give it. This means that it was null and of no effect.
     {fidelity: "quotation", pinpoint: "[69]"}
------
+-- {uses: [1, 2, 3]} --
 (4) [The Order in Council was null and of no effect]: The Order in Council, being founded on unlawful advice, was likewise unlawful, null and of no effect and should be quashed.
     {fidelity: "paraphrase", pinpoint: "[69]",
      source: "\"It led to the Order in Council which, being founded on unlawful advice, was likewise unlawful, null and of no effect and should be quashed.\""}
 (5) [The prorogation was carried out under the Order in Council]: This led to the actual prorogation, which was as if the Commissioners had walked into Parliament with a blank piece of paper.
     {fidelity: "quotation", pinpoint: "[69]"}
------
+-- {uses: [4, 5]} --
 (6) [The prorogation was null and of no effect]: The prorogation itself was unlawful, null and of no effect.
     {fidelity: "paraphrase", pinpoint: "[69]", source: "\"It too was unlawful, null and of no effect.\""}
     +> [Parliament has not been prorogued]

@@ -32,10 +32,10 @@ defaults:
 (1) [Revelatory Autonomy]
 (2) [Revelatory Non-Interference]
 (3) [Interference is impermissible while the duty binds]
------
+-- {uses: [1, 2, 3]} --
 (4) [Only if the right is outweighed]
 (5) [The duty is pro tanto]
------
+-- {uses: [4, 5]} --
 (6) [The conditional answer]
 
 [Only if the right is outweighed]: It is permissible to interfere in the transformative choices of others only if their right to revelatory autonomy is outweighed. {fidelity: "quotation", pinpoint: "sec. 3, p. 9", source: "\"Together, these suggest that it is permissible to interfere in the transformative choices of others *only if* their right to revelatory autonomy is outweighed.\""}
@@ -156,13 +156,13 @@ defaults:
 
 (1) [Interests and utilities knowable only after the choice]
 (2) [Both views depend on knowledge we cannot possess]
------
+-- {uses: [1, 2]} --
 (3) [Both views entail we can never know we may interfere]
 (4) [Minimal condition on permissible action]
------
+-- {uses: [3, 4]} --
 (5) [Both views entail we can never permissibly intervene]
 (6) [We can sometimes permissibly interfere]
------
+-- {uses: [5, 6]} --
 (7) [The interest and utility views are false]
 
 [Interests and utilities knowable only after the choice]: We can know what the interests of a future self are, whether one's present interests will be fulfilled, and what the expected utility of a transformative choice is, only after that choice has been made. {fidelity: "compression", pinpoint: "sec. 3, p. 7", source: "\"First, we can only know *what* the interests of the future selves are and *whether* one's present interests will be fulfilled *after* a transformative choice has been made.\""}

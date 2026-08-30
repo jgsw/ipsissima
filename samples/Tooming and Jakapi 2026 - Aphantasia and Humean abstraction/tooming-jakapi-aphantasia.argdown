@@ -274,10 +274,10 @@ defaults:
 (1) [The Copy Principle]: All simple ideas are copies of corresponding impressions. #reported {fidelity: "quotation", pinpoint: "§4.4, T 1.1.1.7", source: "\"the Copy Principle according to which all simple ideas are copies of corresponding impressions\""}
 (2) [The Copy Principle is universal]: The Copy Principle is supposed to be a universal thesis. #reported {fidelity: "quotation", pinpoint: "§4.4", source: "\"Because the Copy Principle is supposed to be a universal thesis, it is unclear what theoretical space there is for Hume to allow for mental operations that do not operate with individual ideas.\""}
 (3) [An exception needs non-imagistic operations]: Postulating a kind of abstractive process that does not presuppose imagistic operation with individual ideas implies that not all abstractive mental operations have individual ideas as their objects. {fidelity: "paraphrase", pinpoint: "§4.4", source: "\"By postulating that there is a kind of abstractive process that does not presuppose imagistic operation with individual ideas implies that not all abstractive mental operations have individual ideas as their objects.\"", note: "Quoted as printed; the converted sentence carries the source's own grammatical slip."}
------
+-- {uses: [1, 2, 3]} --
 (4) [The exception contradicts the Copy Principle]: An abstractive process that does not operate with individual ideas is inconsistent with the Copy Principle, because the latter implies that ideas inherit their particular nature from the impressions that they are copies of. {fidelity: "paraphrase", pinpoint: "§4.4", source: "\"This is inconsistent with the Copy Principle because the latter implies that ideas inherit their particular nature from the impressions that they are copies of.\""}
 (5) [Giving up the Copy Principle ends Hume's account]: By giving up the Copy Principle, the resulting account of the mind would cease to be Hume's account in any meaningful sense. {fidelity: "quotation", pinpoint: "§4.4", source: "\"By giving up the Copy Principle, the resulting account of the mind would cease to be Hume's account in any meaningful sense.\""}
------
+-- {uses: [4, 5]} --
 (6) [Hume cannot make room for the exception]: There is no theoretical space for Hume to allow for mental operations that do not operate with individual ideas. {fidelity: "paraphrase", pinpoint: "§4.4", source: "\"it is unclear what theoretical space there is for Hume to allow for mental operations that do not operate with individual ideas\""}
 
 <The cost of standing pat>
