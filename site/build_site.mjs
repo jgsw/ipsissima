@@ -55,8 +55,9 @@ const SAMPLES = [
     dir: "Miller 2019 - Prorogation of Parliament",
     file: "miller-2019-uksc-41.argdown",
     title: "Miller v The Prime Minister [2019] UKSC 41",
-    blurb: "The prorogation judgment. A hundred claims, cited by paragraph number, with the " +
-           "authorities the court rests on marked as authorities." },
+    blurb: "The prorogation judgment, mapped backwards from the order the court made. The steps " +
+           "the court needed to get there are its ratio; what it said by the way is marked " +
+           "obiter, and the authorities it rests on are marked as authorities." },
   // FOURTH, AND THE ONLY ONE HERE BY SOMEBODY STILL ALIVE TO MIND. Published open access, and by
   // the author of Ipsissima, which is what makes putting a whole journal article on this site his
   // decision to make rather than a licence question. The other CC-BY samples in `samples/` stay

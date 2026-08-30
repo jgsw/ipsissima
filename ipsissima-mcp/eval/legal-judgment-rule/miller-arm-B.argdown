@@ -250,7 +250,7 @@ defaults:
 
 # What the court did not decide {isGroup: true}
 
-[The Order in Council was null]
+[The advice was unlawful]
     <+ [No view on the Queen's position]
 
 [No view on the Queen's position]: It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept the Prime Minister's advice, and the court expresses no view on that matter. #obiter {fidelity: "paraphrase", pinpoint: "[30]", source: "\"It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept that advice. In the circumstances, we express no view on that matter.\"", note: "Expressly reserved. Recorded because a reader looking for what the case decides needs to see what it declines to."}

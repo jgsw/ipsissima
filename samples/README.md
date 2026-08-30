@@ -37,7 +37,7 @@ openly licensed instead.
 |---|---|---|
 | **Carroll**, "What the Tortoise Said to Achilles" (1895) | 36 nodes, 3 pages | public domain |
 | **Darwin**, natural selection (*Origin*, p. 168) | 13 nodes, 2 paragraphs | public domain |
-| **Miller**, *R (Miller) v The Prime Minister* [2019] UKSC 41 | 106 nodes, 25 pages | Open Government Licence |
+| **Miller**, *R (Miller) v The Prime Minister* [2019] UKSC 41 | 66 nodes, 25 pages | Open Government Licence |
 | **Prescott-Couch**, "The Philosopher as Reverse-Engineer" (2024) | 191 nodes, 17 pages | CC-BY 4.0 |
 | **Akhlaghi**, "Transformative experience and the right to revelatory autonomy" (2023) | 93 nodes, 10 pages | CC-BY 4.0 |
 | **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 127 nodes, 9 pages | CC-BY 4.0 |
@@ -61,8 +61,13 @@ clearest statement here of the distinction that decides how a reconstruction is 
 **Miller** is the one that is not philosophy, which is exactly what it is here to test. A judgment
 is cited by paragraph and not by page — *Miller (No 2)* at [50] is the whole address of a claim,
 and recovering those seventy-one numbers off the page is what four separate fixes in
-`pdf_to_source.py` were for. It reasons to a **holding** rather than to a thesis, and it is
-unanimous, so there is no dissent to reconstruct as an objection and no easy source of `<-`.
+`pdf_to_source.py` were for. It reasons to a **disposal** rather than to a thesis, so the map is built backwards from the
+order the court actually made: the steps the court treated as necessary to reach it are the
+*ratio* and carry no tag, and what it said by the way is `#obiter`. The judgment is unanimous, so
+the objections are not a dissent's — they are counsel's submissions, reconstructed as arguments
+so that the court's answers can be drawn as the **undercuts** they are. It was rebuilt on
+30 August 2026 under the legal-judgment rule; the map that stood here before is kept beside it in
+`ipsissima-mcp/eval/legal-judgment-rule/`, which is where the two are compared.
 
 **Akhlaghi** is the only map here that uses the whole language — undercuts, contradictions and
 explicit relation direction. It was the test arm in a controlled comparison of two sets of

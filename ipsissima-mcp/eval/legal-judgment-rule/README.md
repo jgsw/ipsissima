@@ -2,9 +2,13 @@
 
 On 30 August 2026 the extraction prompt gained four sentences about legal judgments, and
 `ipsissima-conventions.md` gained the `#obiter` tag. **`miller-arm-B.argdown` is the Miller
-judgment reconstructed from scratch under them**, from the same converted source as
-`samples/Miller 2019 - Prorogation of Parliament/`, without reference to the map already there.
-Both are kept so the rule can be measured rather than believed.
+judgment reconstructed from scratch under them**, from the same converted source, without
+reference to the map that stood in `samples/` at the time.
+
+**Arm B has since been promoted: it is now the Miller sample.** `miller-arm-A.argdown` is the map
+it replaced, frozen here as it stood on 30 August 2026. Both arms are snapshots and neither is
+maintained — the sample is what lives on, and will drift from arm B as it is worked on. Keep the
+pair for the comparison below, not for use.
 
 ## What the rule says
 
@@ -57,16 +61,16 @@ departs from what the layout implies, and a reader is told so rather than left t
 
 `compare_reconstructions.py`, both maps against the same source:
 
-| | before | after | |
+| | arm A | arm B | |
 |---|---|---|---|
 | claims and arguments titled | 92 | 67 | |
 | premise-conclusion structures | 17 | 11 | |
-| relation kinds used (of 4) | 3 | **4** | after |
-| has an undercut / a contradiction | yes / no | **yes / yes** | after |
-| **source quotations declared** | 17 | **58** | after |
-| warrants given | 0 | **4** | after |
-| tags used | authority, conceded, reported | + **obiter** | after |
-| checker findings | 0 | 9 (all `?`) | before |
+| relation kinds used (of 4) | 3 | **4** | B |
+| has an undercut / a contradiction | yes / no | **yes / yes** | B |
+| **source quotations declared** | 17 | **58** | B |
+| warrants given | 0 | **4** | B |
+| tags used | authority, conceded, reported | + **obiter** | B |
+| checker findings | 0 | 5 (all `?`) | A |
 
 **The gain is provenance.** Three and a half times as many claims carry a verified quotation, on a
 map with a quarter fewer nodes — 58 of 58 exact.
@@ -78,11 +82,16 @@ reconstruction of a judgment should is a real question, and this pair is the way
 
 **The nine `?` findings are all expected**, and each is worth reading once:
 
-- `inert` ×4 — the `#obiter` claims reach no contention. That is what obiter *means*; wiring them
-  in would be false. The check is right to raise it and the answer is no.
 - `declared-inputs-differ` ×2 — the two deliberate departures above.
 - `splice` ×2 — recorded in the claims' own notes.
 - `thin-step` ×1 — the disposal follows from the declaration alone.
+
+There were four more, `inert`, one for each `#obiter` claim, and they were a fault rather than a
+feature. The first draft tagged obiter and attached it to nothing, and a statement carrying no
+relation is not a map node in Argdown at all — so all four dropped out of the drawing, the tag
+chips and the reader's view. Obiter is not unrelated to the judgment; it bears on some claim and
+merely fails to hold up the order. Wired to what each actually bears on, the four findings go and
+the `obiter` chip appears. The prompt now says so.
 
 ## One defect the tooling caught
 
