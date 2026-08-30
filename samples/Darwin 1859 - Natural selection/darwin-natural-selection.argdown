@@ -71,12 +71,12 @@ defaults:
 (1) [Useful variations do occur]: Variations useful to organic beings do in fact occur.
     {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 168", source: "\"But if variations useful to any organic being do occur\"", note: "Darwin conditionalises: the words are the antecedent of an if, not an assertion, and the argument above establishes only that it would be a most extraordinary fact if none ever had. The reconstruction detaches the antecedent because the rest of the passage proceeds on it — Therefore, Thus, and the naming. The hedge is not lost by this: it survives entire in the claim that supports this one."}
 (2) [A severe struggle for life]
------
+-- {uses: [1, 2]} --
 (3) [Individuals with useful variations are best preserved]: Individuals thus characterised will have the best chance of being preserved in the struggle for life.
     {fidelity: "quotation", pinpoint: "p. 168", source: "\"assuredly individuals thus characterised will have the best chance of being preserved in the struggle for life\"", note: "Thus characterised means characterised by a variation useful to the individual; the title supplies the referent so that the claim can keep Darwin's own words. Best chance, not certainty. Darwin's assuredly sits just outside the quotation and strengthens the claim rather than qualifying it."}
 (4) [A strong principle of inheritance]: There is a strong principle of inheritance.
     {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"from the strong principle of inheritance\"", note: "Darwin invokes inheritance rather than arguing for it, so this premise records a commitment the passage presupposes and does not defend. Stated no more fully than he states it: nothing is added about how inheritance works."}
------
+-- {uses: [3, 4]} --
 (5) [Individuals with useful variations leave similarly characterised offspring]: Individuals preserved for a useful variation will tend to produce offspring similarly characterised.
     {fidelity: "paraphrase", pinpoint: "p. 168", source: "\"they will tend to produce offspring similarly characterised\"", note: "Paraphrased only to replace Darwin's they with what it refers to. Will tend to is his and is kept: the claim is about a tendency, not a rule without exception."}
 
@@ -88,11 +88,11 @@ defaults:
 
 (1) [Diversity is advantageous]
 (2) [A severe struggle for life]
------
+-- {uses: [1, 2]} --
 (3) [The more diversified the descendants, the better their chance]: During the modification of the descendants of any one species, and during the incessant struggle of all species to increase in numbers, the more diversified these descendants become, the better will be their chance of succeeding in the battle of life.
     {fidelity: "quotation", pinpoint: "p. 168", source: "\"Therefore during the modification of the descendants of any one species, and during the incessant struggle of all species to increase in numbers, the more diversified these descendants become, the better will be their chance of succeeding in the battle of life\"", note: "A comparative claim — the more diversified, the better the chance — and not the claim that diversification is bound to occur. Darwin restates the struggle here as the incessant struggle of all species to increase in numbers, which is why premise 2 is the same claim as premise 2 of the preceding argument rather than a new one."}
 (4) [Individuals with useful variations leave similarly characterised offspring]
------
+-- {uses: [3, 4]} --
 (5) [Small differences between varieties grow into the differences between species]: The small differences distinguishing varieties of the same species, will steadily tend to increase till they come to equal the greater differences between species of the same genus, or even of distinct genera.
     {fidelity: "quotation", pinpoint: "p. 168", source: "\"Thus the small differences distinguishing varieties of the same species, will steadily tend to increase till they come to equal the greater differences between species of the same genus, or even of distinct genera\"", note: "Will steadily tend to increase is Darwin's scope: a tendency, not a law without exception. So is the ceiling he puts on it — the differences between species of the same genus, or even of distinct genera — which is a limit and not the absence of one."}
 
