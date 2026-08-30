@@ -563,6 +563,31 @@ export function toGraph(res) {
       else { for (const t of run) where.set(t, step); run = []; step++; }
     }
     for (const t of run) where.set(t, step);          // a PCS with no closing conclusion
+
+    /* WHAT THE FILE DECLARES BEATS WHERE THE LINE SITS.
+     *
+     * The walk above reads a step's inputs off the ORDER of the structure: every run of
+     * premises ending at a conclusion is one step. That is an inference, and until a file says
+     * otherwise it is the only thing available. But `-- {uses: [1,2]} --` says outright which
+     * lines a step draws on, and a step may legitimately reach back past the run it sits in --
+     * a later step using premise (2) again, or skipping one that belongs to a sibling step.
+     *
+     * The bar the renderer draws asserts that the claims gathered onto it stand or fall
+     * together, so it must follow the declaration rather than the layout. Position still fills
+     * in every premise no declaration names: a `uses` list that forgets a line must not make
+     * that line vanish from the map, because a claim dropping silently out of a step is exactly
+     * the failure the bar was introduced to prevent. `check_argdown.py` reports the divergence
+     * instead, which is where a disagreement between the file and its own shape belongs.
+     */
+    const titleOfLine = new Map();
+    for (const l of lines) if (l.role === "premise" && l.title) titleOfLine.set(l.n, l.title);
+    for (const l of lines) {
+      if (!l.uses) continue;
+      for (const u of l.uses) {
+        const t = titleOfLine.get(Number(u));       // `uses: [1,2]` and `from: ["1","2"]` alike
+        if (t != null) where.set(t, l.step);
+      }
+    }
     stepOfPremise.set(title, where);
     stepCount.set(title, step);
     // THE RULE, INDEXED BY THE STEP IT LICENSES, so the bar that gathers a step's premises can
