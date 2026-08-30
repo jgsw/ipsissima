@@ -38,7 +38,7 @@ defaults:
 -----
 (6) [The conditional answer]
 
-[Only if the right is outweighed]: It is permissible to interfere in the transformative choices of others only if their right to revelatory autonomy is outweighed. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 9", source: "\"Together, these suggest that it is permissible to interfere in the transformative choices of others *only if* their right to revelatory autonomy is outweighed.\""}
+[Only if the right is outweighed]: It is permissible to interfere in the transformative choices of others only if their right to revelatory autonomy is outweighed. {fidelity: "quotation", pinpoint: "sec. 3, p. 9", source: "\"Together, these suggest that it is permissible to interfere in the transformative choices of others *only if* their right to revelatory autonomy is outweighed.\""}
 
 [Interference is impermissible while the duty binds]: Interfering in another's transformative choice is impermissible for as long as the duty of revelatory non-interference binds the would-be interferer. {fidelity: "imputation", warrant: "enthymeme", pinpoint: "sec. 3, p. 9", note: "The paper writes only 'Together, these suggest that...'. The step from a right and its correlative duty to a necessary condition on permissible interference needs this bridging claim, which Akhlaghi plainly assumes but nowhere states."}
 
@@ -85,7 +85,7 @@ defaults:
 
 # Why the rival answers fail {isGroup: true}
 
-[Valence view]: We may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience. #reported {fidelity: "paraphrase", pinpoint: "sec. 3, p. 5", source: "\"Perhaps, then, we may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience.\""}
+[Valence view]: We may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience. #reported {fidelity: "quotation", pinpoint: "sec. 3, p. 5", source: "\"Perhaps, then, we may permissibly interfere with another's transformative choice just when that experience will be a negative epistemically or personally transformative experience.\""}
     >< [The conditional answer]
     <- <The epistemic barrier objection>
     <- [Ambivalent experiences]
@@ -142,7 +142,7 @@ defaults:
 
 [We can sometimes permissibly interfere]: There are some conditions under which it is morally permissible to interfere in another's transformative choice. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 6", source: "\"So 'there are no conditions' is not a plausible answer to The Question.\""}
 
-[Best interests view]: It is permissible to interfere with another's transformative choice just when it is in the best interests of that person for you to do so. #reported {fidelity: "paraphrase", pinpoint: "sec. 3, p. 6", source: "\"it is permissible to interfere with another's transformative choice just when it is in the *best interests* of that person for you to do so\""}
+[Best interests view]: It is permissible to interfere with another's transformative choice just when it is in the best interests of that person for you to do so. #reported {fidelity: "quotation", pinpoint: "sec. 3, p. 6", source: "\"it is permissible to interfere with another's transformative choice just when it is in the *best interests* of that person for you to do so\""}
     >< [The conditional answer]
     <- <The unknowability objection>
     <- <The whose-interests objection>
@@ -200,7 +200,7 @@ defaults:
 
 ## The adequacy conditions
 
-[First adequacy condition]: The permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"First, the permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience.\""}
+[First adequacy condition]: The permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience. {fidelity: "quotation", pinpoint: "sec. 3, p. 7", source: "\"First, the permissibility of interference should not be taken to depend upon knowing the valence of the relevant experience.\""}
     <+ [The rivals fail because transformative]
 
 [Second adequacy condition]: An answer to The Question should avoid leaving it an open question to whom some relevant moral obligation is owed between a present or a future person. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"Second, it should avoid leaving it an open question to whom some relevant moral obligation is owed between a present or future person.\""}
@@ -232,7 +232,7 @@ defaults:
 
 [Mere choosing is not morally important]: Mere, sheer independence or choosing is not morally important (O'Neill 2003: 3). #reported {fidelity: "paraphrase", pinpoint: "sec. 3, p. 8", source: "\"as O'Neill (2003: 3) puts it, that 'mere, sheer independence or choosing is morally important'\"", note: "O'Neill's phrase is quoted by Akhlaghi as the denial he is entertaining: the objection is that mere choosing is NOT morally important."}
 
-[Nothing morally valuable about free choice as such]: There is nothing specifically morally valuable about being allowed to make a free choice in general. #contested {fidelity: "paraphrase", pinpoint: "sec. 3, p. 8", source: "\"Perhaps there is nothing specifically morally valuable about being allowed to make a free choice in general\"", note: "Raised as an objection and supported by a quotation from O'Neill 2003; Akhlaghi does not assert it."}
+[Nothing morally valuable about free choice as such]: There is nothing specifically morally valuable about being allowed to make a free choice in general. #contested {fidelity: "quotation", pinpoint: "sec. 3, p. 8", source: "\"Perhaps there is nothing specifically morally valuable about being allowed to make a free choice in general\"", note: "Raised as an objection and supported by a quotation from O'Neill 2003; Akhlaghi does not assert it."}
 
 [No moral right to make transformative choices]: There is no such moral value to autonomously making transformative choices that we have a moral right to make them. #contested {fidelity: "paraphrase", pinpoint: "sec. 3, p. 8", source: "\"then why think that there is such moral value to autonomously making transformative choices that we have a moral right to do so\""}
 
@@ -276,7 +276,7 @@ defaults:
 
 [Permissibility need not depend on valence]: On the conditional answer the grounds of permissibly interfering need not depend upon the valence of the transformative experience. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 9", source: "\"For the grounds of permissibly interfering need not depend upon the *valence* of the transformative experience.\""}
 
-[The right is the present person's]: The right to revelatory autonomy is a right of the present person and does not concern the interests or expected utility of some decision for a future person who does not face this choice. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 9", source: "\"For the right to revelatory autonomy is a right of the *present* person and does not concern the interests or expected utility of some decision for a future person who does not face this choice.\""}
+[The right is the present person's]: The right to revelatory autonomy is a right of the present person and does not concern the interests or expected utility of some decision for a future person who does not face this choice. {fidelity: "quotation", pinpoint: "sec. 3, p. 9", source: "\"For the right to revelatory autonomy is a right of the *present* person and does not concern the interests or expected utility of some decision for a future person who does not face this choice.\""}
     <+ [Not just a right to autonomy]
     <+ [A future person's right covers only their own future choices]
 
@@ -339,7 +339,7 @@ defaults:
 
 [Rational persuasion promotes rational decision-making]: Rational persuasion aims to promote, or at least not to undermine, rational decision-making. #conceded {fidelity: "paraphrase", pinpoint: "sec. 3, p. 10", source: "\"aims to promote (or at least not undermine) rational decision-making\""}
 
-[Rational persuasion always respects autonomy]: Rational persuasion always respects an agent's right to make autonomous decisions of any kind. #contested {fidelity: "paraphrase", pinpoint: "sec. 3, p. 10", source: "\"rational persuasion *always* respects an agent's right to make autonomous decisions of any kind\""}
+[Rational persuasion always respects autonomy]: Rational persuasion always respects an agent's right to make autonomous decisions of any kind. #contested {fidelity: "quotation", pinpoint: "sec. 3, p. 10", source: "\"rational persuasion *always* respects an agent's right to make autonomous decisions of any kind\""}
 
 [Rational persuasion cannot violate revelatory autonomy]: Rational persuasion cannot violate an agent's right to revelatory autonomy, though coercion, manipulation and force can. #contested {fidelity: "paraphrase", pinpoint: "sec. 3, p. 10", source: "\"whilst it seems plausible that coercion, manipulation and force can in principle violate an agent's right to revelatory autonomy, *rational persuasion* cannot\""}
 
