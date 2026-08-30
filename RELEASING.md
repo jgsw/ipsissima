@@ -29,15 +29,30 @@ agreement. It is covered now.
 
 **2. `cd app && npm test`.** Everything, including the wheel build and the bundled parser.
 
-**3. Write the Changes into the tag, compose the notes, create the draft, then push the tag.**
+**3. Write the Changes into the tag, compose the notes, push the tag, then create the draft.**
 
 ```bash
 git tag -a v0.2.0 -m "Ipsissima 0.2.0 — <one line a reader would know it by>" -m "- <what changed, as a reader meets it>
 - <and the next thing>"
 node app/desktop/release_notes.mjs v0.2.0 > /tmp/notes.md
-gh release create v0.2.0 --draft --title "Ipsissima v0.2.0" --notes-file /tmp/notes.md
 git push origin v0.2.0
+gh release create v0.2.0 --draft --title "Ipsissima v0.2.0" --notes-file /tmp/notes.md
 ```
+
+**Compose the notes before pushing, so the draft can be created in the next breath.** This is not
+the order this file gave until 0.1.4, and the change is forced: `gh release create` now **refuses
+a tag it cannot find on the remote** — *"tag v0.2.0 exists locally but has not been pushed to
+jgsw/ipsissima, please push it before continuing or specify the `--target` flag"*. The draft
+therefore comes second now; what it is still for is below.
+
+**Do not reach for `--target`.** It is what the error suggests and it is the wrong answer here:
+it has GitHub create the tag, which makes a **lightweight** tag and throws the annotation away —
+and the annotation is the Changes section. `git tag -l` would then answer nothing, forever, which
+is the one property the next paragraph exists to protect.
+
+**Each bullet is one line, however long.** A release body renders every newline, so a bullet
+wrapped across two lines arrives as two broken paragraphs. Write them long and unwrapped; nothing
+in the tooling will warn you.
 
 **The tag's annotation is the Changes section.** Every release page reads as two headings —
 **Changes**, which is this release's own, and **What should I install?**, the standing guidance
@@ -46,7 +61,7 @@ changed is written where it cannot drift from the release it describes: `git tag
 answer forever. `release_notes.mjs` composes the two and refuses a tag whose annotation has no
 body, which is the check that the notes were actually written.
 
-The draft comes first because of something learned cutting v0.1.2: between the morning's
+The draft still matters, and why is something learned cutting v0.1.2: between the morning's
 v0.1.1 and the afternoon's v0.1.2, GitHub stopped letting the workflow token CREATE a release —
 "Resource not accessible by integration", with `contents: write` granted and printed in the
 job's own setup log, on the identical workflow that had succeeded hours earlier. Nothing in the
@@ -56,6 +71,11 @@ without touching its body (verified in its `create-release.ts`) — so a draft m
 the blocked path into the working one, and carries the real notes besides. If a later run
 creates its own draft again, GitHub has changed its mind back, and the workflow's fallback body
 now composes the same two headings from the tag message it fetches itself.
+
+**The seconds between the push and the draft are not a race**, though they look like one. The
+three-platform matrix takes tens of minutes and each job uploads only when it finishes, so a
+draft created immediately after the push is in place long before any asset looks for it. What
+would be a race is going to make lunch in between.
 
 `release.yml` builds on all three platforms, attaches the installers, the two HTML pages and the
 `.mcpb`, and opens the release as a **draft**. `pages.yml` rebuilds the website from the same
