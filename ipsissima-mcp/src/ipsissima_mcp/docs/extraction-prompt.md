@@ -109,7 +109,12 @@ inside it.
 **If the source is a legal judgment, the conclusion is the disposal** — the order the court
 actually made, not the most interesting proposition in it. Work back from there. The steps the
 court expressly or impliedly treated as necessary to reach that order are its *ratio*; everything
-else it said is `#obiter`, and belongs on the map, tagged, rather than left out. A step in a
+else it said is `#obiter`, and belongs on the map, tagged, rather than left out. **Obiter still
+has to hang off something.** It is not unrelated to the judgment — it bears on some claim in it,
+and only fails to hold up the order — so give it the relation it really has. A statement carrying
+no relation at all is not a map node in Argdown, so tagging it `#obiter` and leaving it loose puts
+it nowhere: it drops out of the map, out of the tag chips, and out of the reader's view entirely,
+which is worse than not marking it. A step in a
 judgment usually has the shape *rule of law + facts found → legal conclusion*, so a step with no
 rule of law among its inputs is usually missing one. Do not try to state *the* ratio as a claim of
 its own: which rule a case stands for is settled by later courts, not by this one, and a map that

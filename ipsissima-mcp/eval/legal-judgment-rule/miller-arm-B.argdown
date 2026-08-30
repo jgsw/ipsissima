@@ -250,10 +250,22 @@ defaults:
 
 # What the court did not decide {isGroup: true}
 
+[The Order in Council was null]
+    <+ [No view on the Queen's position]
+
 [No view on the Queen's position]: It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept the Prime Minister's advice, and the court expresses no view on that matter. #obiter {fidelity: "paraphrase", pinpoint: "[30]", source: "\"It is not suggested in these appeals that Her Majesty was other than obliged by constitutional convention to accept that advice. In the circumstances, we express no view on that matter.\"", note: "Expressly reserved. Recorded because a reader looking for what the case decides needs to see what it declines to."}
+
+[Motive is not in issue]
+    <+ [The motive ground is not reached]
 
 [The motive ground is not reached]: Whether the challenge based on the Prime Minister's motive is justiciable falls to be considered only if the advice was lawful, and since it was not, the question does not arise. #obiter {fidelity: "compression", pinpoint: "[54]", source: "\"It is only if it was, that the justiciability of the alternative ground of challenge will need to be considered.\"", note: "Mrs Miller and Ms Cherry also challenged the advice on the Prime Minister's motive [53]. The court sets that ground aside and never returns to it, so nothing about it is part of the route to the order."}
 
+[Parliament has not been prorogued]
+    +> [What Parliament does next is for Parliament]
+
 [What Parliament does next is for Parliament]: As Parliament is not prorogued, it is for Parliament to decide what to do next, and the Speaker and the Lord Speaker can take immediate steps to enable each House to meet. #obiter {fidelity: "compression", pinpoint: "[70]", source: "\"it appears to us that, as Parliament is not prorogued, it is for Parliament to decide what to do next\"", note: "Said after the disposal and conditioned on it -- 'Unless there is some Parliamentary rule to the contrary of which we are unaware'. Nothing in the order rests on it."}
+
+[Political context is no bar]
+    <+ [The court's constitutional responsibility]
 
 [The court's constitutional responsibility]: The courts have the responsibility of upholding the values and principles of the constitution, and cannot shirk it merely on the ground that the question raised is political in tone or context. #obiter {fidelity: "compression", pinpoint: "[39]", source: "\"The courts cannot shirk that responsibility merely on the ground that the question raised is political in tone or context.\"", note: "A statement of principle in the section framing the standard. It restates [31] rather than adding a step, so it is drawn as a remark rather than as an input."}
