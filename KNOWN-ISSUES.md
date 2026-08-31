@@ -132,11 +132,17 @@ Cribb map alone, the book's central inference among them; Miller carried two and
 
 Two repairs, one per half. `toGraph` now synthesises the missing edge, argument → statement,
 exactly as Argdown draws the main conclusion, marked `concludes` with the step. And `pcsRows`
-draws a conclusion row even when its claim has a box — as the bracketed reference the file
-itself writes, `(6) [Its Title]` — so the bars return and the box reads as a structure again. A
-premise with a box is still a gap: its arrow into the bar is its drawing. The junction and hull
-tooltips now also count the step's premises rather than the fan's arrivals, which had a bar
-over a five-premise step announcing four.
+draws **every line as a row**, boxed claims as the bracketed reference the file itself writes —
+`(1) [Its Title]` — so the bars return and the structure reads complete and in order. The first
+cut of this kept titled premises as gaps in the numbering ("a gap says that line is a box"),
+and the gap doctrine did not survive its first reader: a structure whose early premises were
+all titled still *began* at line (5), and nothing tied the surrounding boxes to the numbers
+they were. So the numbering now closes the loop instead: every edge that embodies a line of a
+structure carries that line's number at the argument's end of it — at each member's foot on the
+junction bar, beside the arrow for an unjoined premise or a conclusion leaving the box — and
+hovering a reference row lights up the box it names. The junction and hull tooltips also count
+the step's premises rather than the fan's arrivals, which had a bar over a five-premise step
+announcing four.
 
 Synthesised edges change a map's structural fingerprint, so fold-state identifiers minted
 before this fix are refused against rebuilt maps — by design, since the ids would otherwise

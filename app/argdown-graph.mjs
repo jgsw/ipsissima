@@ -502,6 +502,7 @@ export function toGraph(res) {
   const stepOfPremise = new Map();     // argument title -> Map(premise title -> step index)
   const stepCount = new Map();
   const ruleOfStep = new Map();       // argument title -> Map(step index -> {rule, uses})
+  const lineOfPremise = new Map();    // argument title -> Map(premise title -> line number)
   const pcsOf = new Map();            // argument title -> { conclusion, members }
   for (const [title, a] of Object.entries(res.arguments || {})) {
     const pcs = a.pcs || [];
@@ -542,10 +543,10 @@ export function toGraph(res) {
     for (let i = 0; i < pcs.length; i++) {
       const p = pcs[i], inf = p.inference;
       lines.push({
-        // THE NUMBER AS WRITTEN, never the index of whatever survived. A reader checking the map
-        // against the file needs (4) to mean the line the file calls (4) -- and the renderer
-        // draws only the lines that have no box of their own, so numbering the drawn ones would
-        // renumber the argument silently and leave the map and the file disagreeing.
+        // THE NUMBER AS WRITTEN, never anything derived. A reader checking the map against the
+        // file needs (4) to mean the line the file calls (4) -- the renderer draws every line
+        // (boxed claims as bracketed references) and repeats these numbers on the edges, so a
+        // number invented here would disagree with the file in three places at once.
         n: i + 1,
         role: p.role,
         title: p.title || null,
@@ -590,6 +591,16 @@ export function toGraph(res) {
     }
     stepOfPremise.set(title, where);
     stepCount.set(title, step);
+    // THE LINE NUMBER, INDEXED BY PREMISE TITLE, so the edge a boxed premise arrives on can
+    // carry the number of the line it is. The box lists the whole structure and the arrows are
+    // its lines; without the number on the arrow the reader pairs them up by matching titles,
+    // which is the work the numbering exists to spare. First occurrence wins where a statement
+    // is reused across steps -- one edge cannot carry two numbers, and the first is where the
+    // reader meets it.
+    const lineNo = new Map();
+    for (const l of lines)
+      if (l.role === "premise" && l.title && !lineNo.has(l.title)) lineNo.set(l.title, l.n);
+    lineOfPremise.set(title, lineNo);
     // THE RULE, INDEXED BY THE STEP IT LICENSES, so the bar that gathers a step's premises can
     // name it. The rule is written on the conclusion's line, but what it describes is the whole
     // step -- and the step is the thing the reader sees, as a bar with several lines meeting it.
@@ -650,6 +661,8 @@ export function toGraph(res) {
       const k = stepOfPremise.get(target.label).get(source.label);
       if (k != null) {
         edge.step = k;
+        const ln = (lineOfPremise.get(target.label) || new Map()).get(source.label);
+        if (ln != null) edge.line = ln;
         // Carried on the EDGE because that is what the renderer has in hand when it plans the
         // bars: `planJoins` groups the arrivals by target and step, and would otherwise have to
         // find its way back to the argument's own record to ask what licenses the step.
@@ -657,6 +670,19 @@ export function toGraph(res) {
         if (inf && inf.rule) edge.rule = inf.rule;
         if (inf && inf.uses) edge.uses = inf.uses;
       }
+    }
+    // THE MAIN CONCLUSION'S NUMBER, on the edge Argdown itself made. The arrow from an
+    // argument to its concluded statement is a line of the structure leaving the box, exactly
+    // as a premise's arrow is a line arriving -- so it is numbered the same way, at the
+    // argument's end. Guarded to statement targets: when a conclusion is unselected Argdown
+    // wires the argument straight to the arguments it feeds, and those edges are no line of
+    // anything.
+    if (edge.type === "support" && source && target && target.kind === "statement" &&
+        pcsOf.has(source.label) && source.kind === "argument" &&
+        pcsOf.get(source.label).conclusion === target.label) {
+      const main = [...pcsOf.get(source.label).pcs].reverse()
+        .find(l => l.role === "main-conclusion");
+      if (main) edge.line = main.n;
     }
     edges.push(edge);
   }
@@ -690,7 +716,7 @@ export function toGraph(res) {
       const sid = stmtIdByLabel.get(l.title);
       if (sid == null || sid === n.id || supported.has(n.id + ">" + sid)) continue;
       supported.add(n.id + ">" + sid);
-      edges.push({ from: n.id, to: sid, type: "support", concludes: l.step });
+      edges.push({ from: n.id, to: sid, type: "support", concludes: l.step, line: l.n });
     }
   }
   return { nodes, groups, edges };

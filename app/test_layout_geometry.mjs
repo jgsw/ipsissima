@@ -643,11 +643,15 @@ console.log("\nthe premise-conclusion structure");
   const say = (ok, what) => { cases++; if (!ok) failures++;
     console.log(`   ${ok ? "ok  " : "FAIL"}  ${what}`); };
 
-  /* WHICH LINES THE ARGUMENT'S OWN BOX HAS TO DRAW.
+  /* THE ROWS THE ARGUMENT'S OWN BOX DRAWS: EVERY LINE, in order, under the file's numbers.
    *
-   * The defect: an untitled premise is not selected into the map, so it became no node, no arrow
-   * and no trace -- an argument on five premises of which one was bracketed drew with ONE arrow
-   * and the map said it had one reason. `pcsRows` is what puts the missing lines back.
+   * The doctrine has moved twice, each time because an omission made the box lie. First an
+   * untitled premise was nothing at all -- an argument on five premises of which one was
+   * bracketed drew with ONE arrow and the map said it had one reason. Then titled lines were
+   * left out as "already on the map", and the Cribb Master Argument's box read (5), (7) -- no
+   * bars, no conclusions, a structure apparently starting at line five. Now every line is a
+   * row, and a line whose claim has a box of its own is a bracketed REFERENCE -- `(1) [Title]`
+   * -- the way the file itself writes one.
    */
   const pcs = [
     { n: 1, role: "premise", title: "A", text: "titled premise", step: 0, drawn: true },
@@ -656,26 +660,22 @@ console.log("\nthe premise-conclusion structure");
       rule: "Modus ponens", uses: [1, 2] }
   ];
   const rows = pcsRows(pcs);
-  say(rows.length === 2, "a line with a box of its own is not drawn twice");
-  say(rows[0].n === 2 && rows[1].n === 3,
-      "the numbers are the FILE'S -- a drawn line leaves a gap, it does not renumber the rest");
-  say(rows[1].bar === true && rows[1].rule === "Modus ponens",
+  say(rows.length === 3 && rows[0].n === 1 && rows[1].n === 2 && rows[2].n === 3,
+      "every line is a row, numbered as the file numbers them");
+  say(rows[0].ref === true && rows[0].text === "[A]" && rows[0].refLabel === "A",
+      "a premise with a box of its own is a bracketed reference, naming the box it points at");
+  say(rows[1].ref === false && rows[1].text === "bare premise",
+      "a line that lives nowhere else keeps its own words and is no reference");
+  say(rows[2].bar === true && rows[2].rule === "Modus ponens",
       "a conclusion carries the inference bar and the rule that licenses it");
   say(rows[0].bar === false && rows[0].rule === null,
       "a premise carries neither");
   say(pcsRows(null).length === 0 && pcsRows([]).length === 0,
       "an argument with no structure asks for no rows");
-  say(pcsRows([{ n: 1, role: "premise", text: "x", step: 0, drawn: true }]).length === 0,
-      "and one whose every PREMISE is drawn asks for none either");
 
-  /* A CONCLUSION WITH A BOX IS A REFERENCE, NOT A GAP.
-   *
-   * The defect this guards: <Master Argument> on the Cribb map has titled conclusions at both
-   * steps, and suppressing them like premises removed every inference bar from the box -- two
-   * bare premise rows and no sign either step concluded anything. A titled intermediary
-   * conclusion also has no edge from Argdown (only the LAST line gets one), so the line was
-   * nowhere at all: not a row, not an arrow. The row comes back bracketed, the way the file
-   * itself writes a reference.
+  /* A CONCLUSION WITH A BOX, the case that was nowhere at all: no row, and -- for an
+   * intermediary conclusion -- no edge from Argdown either (only the LAST line gets one).
+   * The reference row is what carries the bar; the synthesised edge carries the number.
    */
   const titledConcl = [
     { n: 1, role: "premise", title: null, text: "bare premise", step: 0, drawn: false },
@@ -691,8 +691,6 @@ console.log("\nthe premise-conclusion structure");
       "and it is drawn as the bracketed reference the file itself writes");
   say(rr[1].bar === true && rr[1].rule === "Modus ponens",
       "carrying the inference bar and the rule exactly as an unboxed conclusion does");
-  say(rr[0].ref === false && rr[0].text === "bare premise",
-      "while an unboxed line keeps its own words and is no reference");
 
   /* THE ENCLOSURE, which must never gather a claim that is not a premise of the step. */
   const P = (x, y) => ({ x, y, width: 80, height: 40 });
