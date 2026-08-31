@@ -667,6 +667,122 @@ def precondition_report(doc):
         print(f"      ? [{src[:40]}] -> [{str(dst)[:40]}]  ({phrase})")
 
 
+def validity_checks(doc):
+    """Steps that NAME an inference rule, and whether the conclusion actually follows.
+
+    THE RULE NAME IS THE TRIGGER, and that is the whole design. `reconstruction-cheatsheet.md`
+    is emphatic that most philosophical argument is CONDUCTIVE -- independent considerations
+    weighed, premises that do not entail the conclusion -- so a validity check run over every
+    step would report most good reconstructions as invalid for failing to be something they
+    never claimed to be. A bare `-----` claims nothing. `-- Modus ponens --` claims deductive
+    validity, and is the only thing here that invites the test.
+
+    Decided by `validity.py`, whose JS twin decides the same thing in the page as somebody
+    edits. See `docs/VALIDITY-PLAN.md`.
+    """
+    # The same local import every other sibling here uses: this module is run as a script at
+    # least as often as it is imported, and `from .validity import` fails outright when it is.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from validity import check_step
+
+    out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": []}
+    for title, arg in (doc.get("arguments") or {}).items():
+        pcs = arg.get("pcs") or []
+        if not pcs:
+            continue
+        run, first, step, prev = [], True, 1, None
+        for n, entry in enumerate(pcs, start=1):
+            if entry.get("role") == "premise":
+                run.append(n)
+                continue
+            inf = entry.get("inference") or {}
+            rules = inf.get("inferenceRules") or []
+            declared = (inf.get("data") or {}).get("uses")
+            positional = list(run) + ([prev] if not first and prev else [])
+            inputs = ([int(u) for u in declared] if isinstance(declared, list) else positional)
+            if rules:
+                named = ", ".join(rules)
+                forms = {i: ((pcs[i - 1].get("data") or {}).get("formalization"))
+                         for i in inputs if 1 <= i <= len(pcs)}
+                concl = (entry.get("data") or {}).get("formalization")
+                missing = [str(i) for i in inputs if not forms.get(i)]
+                if not concl:
+                    missing.append("the conclusion")
+                if missing:
+                    out["unformalized"].append((title, step, named, missing))
+                else:
+                    r = check_step([forms[i] for i in inputs], concl)
+                    if not r["supported"]:
+                        out["undecided"].append((title, step, named, r.get("error")))
+                    elif not r["valid"]:
+                        out["invalid"].append((title, step, named, entry.get("title"),
+                                               r["countermodel"]))
+                    else:
+                        if r.get("irrelevant"):
+                            out["idle"].append((title, step,
+                                                [inputs[i - 1] for i in r["irrelevant"]]))
+                        if r.get("consistent") is False:
+                            out["inconsistent"].append((title, step))
+            prev = n
+            run, first, step = [], False, step + 1
+    return out
+
+
+def validity_report(doc):
+    """Print what `validity_checks` found. Silent when no step names a rule."""
+    found = validity_checks(doc)
+    if not any(found.values()):
+        return
+    print("\n== NAMED INFERENCE RULES ==")
+
+    if found["invalid"]:
+        print(f"\n   THE CONCLUSION DOES NOT FOLLOW ({len(found['invalid'])})")
+        print("      The step names a rule, every line carries a formalization, and there is a")
+        print("      way for the premises to hold while the conclusion fails. The countermodel")
+        print("      below is that way; it is a fact about the formalizations, so if it looks")
+        print("      wrong the formalization is where to look first.")
+        for title, step, named, concl, cm in found["invalid"]:
+            finding("invalid-step", "!",
+                    f"step {step} is named `{named}` but its conclusion does not follow from "
+                    f"its premises",
+                    title=title, conclusion=concl,
+                    fix="correct the formalizations, add the premise the step is missing, or "
+                        "drop the rule name if the step was never meant to be deductive")
+            print(f"      ! <{title}> step {step} (`{named}`) -> [{concl}]")
+            print(f"          countermodel: {cm}")
+
+    if found["idle"]:
+        print(f"\n   A PREMISE THE STEP DOES NOT NEED ({len(found['idle'])})")
+        print("      The step is valid without it. Sometimes that is right -- a premise kept for")
+        print("      the reader rather than for the inference -- and sometimes it means the")
+        print("      formalization has lost what the premise was actually doing.")
+        for title, step, lines in found["idle"]:
+            print(f"      ? <{title}> step {step} does not need line(s) {lines}")
+
+    if found["inconsistent"]:
+        print(f"\n   PREMISES THAT CANNOT ALL HOLD ({len(found['inconsistent'])})")
+        print("      Anything follows from them, so the step is valid for a reason that is not")
+        print("      the one the rule name claims.")
+        for title, step in found["inconsistent"]:
+            print(f"      ! <{title}> step {step}")
+
+    if found["unformalized"]:
+        print(f"\n   A RULE NAMED, AND NOTHING TO CHECK IT AGAINST ({len(found['unformalized'])})")
+        print("      Naming a rule claims the conclusion follows. Without `formalization:` on")
+        print("      every line of the step, that claim is exactly as checkable as the")
+        print("      `quotation` markers were before this program started deriving them.")
+        for title, step, named, missing in found["unformalized"]:
+            print(f"      ? <{title}> step {step} (`{named}`): no formalization on "
+                  f"{', '.join(missing)}")
+
+    if found["undecided"]:
+        print(f"\n   NAMED, FORMALIZED, AND NOT DECIDABLE HERE ({len(found['undecided'])})")
+        print("      Not a verdict about the argument. The formalization is outside the fragment")
+        print("      this decides -- see docs/VALIDITY-PLAN.md for what that fragment is.")
+        for title, step, named, why in found["undecided"]:
+            print(f"      ? <{title}> step {step} (`{named}`): {why}")
+
+
 def pcs_report(doc):
     """Print what `pcs_shapes` found. Silent when a file has no premise-conclusion structures."""
     found = pcs_shapes(doc)
@@ -1543,6 +1659,10 @@ def _report(cli, path, a):
     doc_for_pcs = export_json(cli, path)
     if doc_for_pcs:
         pcs_report(doc_for_pcs)
+        # The same export again, and the same subject: what this step claims. A named rule is
+        # the only place in a file that asserts a conclusion FOLLOWS, so it is the only place
+        # worth deciding.
+        validity_report(doc_for_pcs)
         # Same export, same question — what is this arrow actually claiming? — so it reads the
         # document already in hand rather than exporting it a second time.
         precondition_report(doc_for_pcs)
