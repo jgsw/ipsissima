@@ -150,6 +150,26 @@ name a different picture. Quality baseline re-recorded: Miller's `@ all` view im
 materially (edge crossings 54 → 23) at the cost of modest bend/overshoot on its near views,
 which is the price of drawing edges that ought to exist.
 
+### The bar took the premises in the order they arrived, not the order they are
+
+Same session, same argument: the feet on the master argument's junction bar read (3) (1) (2)
+(4), because they were assigned by where each member's line already was along the bar — the
+no-crossing rule, which is the right rule for a junction whose members carry no numbering and
+the wrong one for a numbered premise list a reader takes left to right. Premise (3) sat out of
+the row to begin with (its edge into the folded Part One block ranks it below the block, which
+ranks below its fellow premises), so no layout can seat it beside them; the bar's order is the
+one place the reading order can be honoured, and now it is: `junctionFeet` seats numbered
+members by line, left to right (top to bottom on a side face), and keeps arrival order for
+junctions with no numbering. A short braid below the bar is the cheaper falsehood — the numbers
+at the feet say which line is which, whereas a bar out of order says the structure is.
+
+Reordering a foot strands the member's ROUTE: premise (3)'s line had dodged LEFT round the
+Rigour Argument for a foot that was no longer there, then cut back across the very box it had
+dodged — the "weird unnecessary bend" of the same field report. `retargetTail` rebuilds a
+member's run when its foot lands far from where the route was heading: straight where nothing
+blocks, one elbow round the flank of whatever does, and the old route kept whenever no clean
+rebuild exists, because an honest detour beats a new lie.
+
 ### The words did not survive the label mode
 
 Found in the same reading session: on the same map, every box was a bare title — nothing on

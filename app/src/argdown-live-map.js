@@ -2092,15 +2092,34 @@ function junctionGeometry(target, arrivals, gap, avoidCentre) {
  *  Returns one { land, lift } per arrival IN THE ORDER GIVEN: `land` is the point on the bar,
  *  `lift` the point just outside it where the line turns.
  */
-function junctionFeet(geo, arrivals, approach) {
+function junctionFeet(geo, arrivals, approach, lines) {
   if (!geo || !arrivals || !arrivals.length) return [];
   const a = approach == null ? 12 : approach;
   const { j, dir, half } = geo;
-  // Ordered by where each arrival already is along the bar, so the members do not cross one
-  // another on the way in. A bar that visibly braided its own premises would say the drawing
-  // could not tell them apart -- the opposite of what it is there to assert.
-  const order = arrivals.map((p, i) => ({ i, t: (p.x - j.x) * dir.x + (p.y - j.y) * dir.y }))
-                        .sort((u, v) => u.t - v.t);
+  /* READING ORDER FIRST, ARRIVAL ORDER OTHERWISE.
+   *
+   * Where the members are numbered lines of one structure -- `lines` gives each arrival's line
+   * number -- the feet go in that order along the bar, left to right (top to bottom on a side
+   * face), because that is how a reader takes a premise list and it is the order the box lists
+   * them in. The first version ordered feet by where each arrival already was, so the members
+   * never crossed on the way in -- and on the Cribb master argument that put premise (3) left
+   * of premise (1), which reads as the map shuffling the argument (reported from use). A short
+   * braid below the bar is the cheaper falsehood: the numbers at the feet say which line is
+   * which, whereas a bar out of order says the structure is.
+   *
+   * Arrival order remains for junctions whose members carry no numbering, where there is no
+   * reading order to honour and the no-crossing rule is the only claim worth making.
+   */
+  const numbered = Array.isArray(lines) && lines.length === arrivals.length &&
+                   lines.every(l => l != null) && new Set(lines).size === lines.length;
+  // `dir` may point either way along the bar; reading order needs the axis-positive way round
+  // (rightwards, or downwards on a vertical bar -- junctionGeometry keeps dir axis-aligned).
+  const read = dir.x > 1e-9 || (Math.abs(dir.x) <= 1e-9 && dir.y > 0) ? 1 : -1;
+  const order = numbered
+    ? arrivals.map((p, i) => ({ i, t: lines[i] * read }))
+              .sort((u, v) => u.t - v.t)
+    : arrivals.map((p, i) => ({ i, t: (p.x - j.x) * dir.x + (p.y - j.y) * dir.y }))
+              .sort((u, v) => u.t - v.t);
   const n = order.length, out = new Array(n);
   for (let k = 0; k < n; k++) {
     // EVENLY SPACED across the bar. Keeping each member's own offset and clamping it to the bar
@@ -2119,6 +2138,55 @@ function junctionFeet(geo, arrivals, approach) {
                         lift: { x: land.x + geo.out.x * a, y: land.y + geo.out.y * a } };
   }
   return out;
+}
+
+/** PURE: a member's route rebuilt for the foot it was actually given, or null to keep its own.
+ *
+ *  Feet are assigned in READING ORDER (see junctionFeet), and the route was laid before anyone
+ *  knew that: dagre and the seat router aimed each member at the target's boundary, dodging
+ *  boxes for THAT destination. Move the endpoint two slots along the bar and the old dodge is
+ *  a fossil -- on the Cribb master argument, premise (3)'s line swung out LEFT around the
+ *  Rigour Argument to reach a foot that is no longer there, then cut back across the very box
+ *  it had dodged. So when the foot lands far from where the route was heading, the tail is
+ *  rebuilt from scratch: the straight run where nothing is in the way, otherwise one elbow
+ *  round the flank of whatever blocks it, and accepted ONLY when the result is clean. A
+ *  rebuild that still crosses something returns null and the original route stands, fossil
+ *  bend and all, because an honest detour beats a new lie.
+ */
+function retargetTail(pts, land, boxes, skip) {
+  if (!pts || pts.length < 2 || !boxes) return null;
+  const a = pts[0], M = 10;
+  const others = boxes.filter(b => !(skip && skip.has(b.id)));
+  const clean = route => {
+    for (let i = 0; i < route.length - 1; i++)
+      for (const b of others)
+        if (segmentHitsBox(route[i], route[i + 1], b, 4)) return false;
+    return true;
+  };
+  // The straight run first: most retargeted members have nothing in the way at all.
+  if (clean([a, land])) return [a, land];
+  // Something blocks. Go round the WHOLE STACK of blockers with one elbow: across at a height
+  // clear of them on the start's side, up (or down) their flank, across to the foot. Two
+  // candidate flanks, nearer one first -- "nearer" measured against where the straight run
+  // crosses the stack, which is the seat router's own tie-breaker.
+  const blockers = others.filter(b => segmentHitsBox(a, land, b, 4));
+  if (!blockers.length) return null;             // blocked only by its own elbows: give up
+  const lo = Math.max(...blockers.map(b => b.y1)) + M;
+  const hi = Math.min(...blockers.map(b => b.y0)) - M;
+  const up = a.y > land.y;
+  const nearY = Math.max(Math.min(up ? lo : hi, a.y), Math.min(a.y, land.y));
+  const farY  = Math.max(Math.min(up ? hi : lo, Math.max(a.y, land.y)), Math.min(a.y, land.y));
+  const midY = (Math.min(...blockers.map(b => b.y0)) + Math.max(...blockers.map(b => b.y1))) / 2;
+  const t = (midY - a.y) / ((land.y - a.y) || 1);
+  const ideal = a.x + (land.x - a.x) * Math.max(0, Math.min(1, t));
+  const flanks = [Math.min(...blockers.map(b => b.x0)) - M,
+                  Math.max(...blockers.map(b => b.x1)) + M]
+    .sort((u, v) => Math.abs(u - ideal) - Math.abs(v - ideal));
+  for (const side of flanks) {
+    const route = [a, { x: side, y: nearY }, { x: side, y: farY }, land];
+    if (clean(route)) return route;
+  }
+  return null;
 }
 
 /** PURE: the enclosure round the premises of one inference step, or null if it cannot be drawn.
@@ -3658,7 +3726,8 @@ function createLiveMap(container, graph, options) {
       if (!geo) continue;
       // Each member finishes on the bar rather than at the junction point; see `junctionFeet`.
       // Only the last few units of the edge change -- the long run stays whatever dagre routed.
-      const feet = junctionFeet(geo, list.map(m => m.pts[m.pts.length - 1]));
+      const feet = junctionFeet(geo, list.map(m => m.pts[m.pts.length - 1]), null,
+                                list.map(m => m.line));
       // WHERE EACH MEMBER LANDS, WITH THE LINE IT IS. The box lists the structure by number and
       // the members arrive as anonymous lines; the number at each foot is what lets a reader
       // stand at the bar and read off which arrival is which row. Collected here because the
@@ -3669,6 +3738,17 @@ function createLiveMap(container, graph, options) {
         const f = feet[i];
         const land = f ? f.land : geo.j;
         if (m.line != null) arrivals.push({ x: land.x, y: land.y, line: m.line });
+        // A FOOT FAR FROM WHERE THE ROUTE WAS HEADING invalidates the route's dodges -- see
+        // retargetTail. Rebuilt in place, because this array is the one the geometry map holds
+        // and the one the edge is drawn from. Vertical junctions only: the rebuild dodges by
+        // x-shift, which on a side-face junction would shove the line along its own length.
+        if (f && geo.out.y !== 0) {
+          const old = m.pts[m.pts.length - 1];
+          if (Math.hypot(old.x - f.land.x, old.y - f.land.y) > 15) {
+            const r = retargetTail(m.pts, f.land, allBoxes, new Set([m.from, id]));
+            if (r) m.pts.splice(0, m.pts.length, ...r);
+          }
+        }
         if (!f) { m.pts[m.pts.length - 1] = geo.j; return; }
         // ONLY WHERE THERE IS ROOM FOR THE STUB. A premise sitting directly under its argument
         // has a short, near-vertical route whose second-to-last point is already inside the
@@ -5193,7 +5273,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               encodeFoldState, decodeFoldState, mapFingerprint,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
-              junctionFeet, pcsRows, premiseHull,
+              junctionFeet, retargetTail, pcsRows, premiseHull,
               layoutByArgument, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,
