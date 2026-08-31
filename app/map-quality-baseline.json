@@ -216,75 +216,75 @@
   "quietMove": 0
  },
  "miller-2019-uksc-41 @ main": {
-  "edges": 3,
+  "edges": 5,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 0,
-  "overshoot": 0,
-  "detourWorst": 1,
-  "edgeCrossings": 0,
-  "nodeOverlaps": 0
- },
- "miller-2019-uksc-41 @ reasons": {
-  "edges": 6,
-  "hiddenArrowheads": 0,
-  "arrivalInversions": 0,
-  "departureInversions": 0,
-  "avoidableBend": 0,
-  "bendMedian": 0,
-  "bendWorst": 0,
-  "overshoot": 0,
-  "detourWorst": 1,
-  "edgeCrossings": 0,
-  "nodeOverlaps": 0
- },
- "miller-2019-uksc-41 @ detail": {
-  "edges": 12,
-  "hiddenArrowheads": 0,
-  "arrivalInversions": 0,
-  "departureInversions": 0,
-  "avoidableBend": 0,
-  "bendMedian": 0,
-  "bendWorst": 81,
-  "overshoot": 0,
-  "detourWorst": 1,
+  "bendWorst": 62,
+  "overshoot": 56,
+  "detourWorst": 1.2,
   "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
- "miller-2019-uksc-41 @ all": {
-  "edges": 113,
+ "miller-2019-uksc-41 @ reasons": {
+  "edges": 15,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 165,
-  "overshoot": 75,
-  "detourWorst": 1.6,
-  "edgeCrossings": 54,
+  "bendWorst": 61,
+  "overshoot": 55,
+  "detourWorst": 1.2,
+  "edgeCrossings": 2,
+  "nodeOverlaps": 0
+ },
+ "miller-2019-uksc-41 @ detail": {
+  "edges": 21,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 60,
+  "overshoot": 55,
+  "detourWorst": 1.2,
+  "edgeCrossings": 4,
+  "nodeOverlaps": 0
+ },
+ "miller-2019-uksc-41 @ all": {
+  "edges": 66,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 107,
+  "overshoot": 55,
+  "detourWorst": 1.2,
+  "edgeCrossings": 23,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ folded": {
-  "edges": 12,
+  "edges": 8,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 109,
-  "overshoot": 91,
-  "detourWorst": 1.8,
-  "edgeCrossings": 7,
+  "bendWorst": 69,
+  "overshoot": 46,
+  "detourWorst": 1.2,
+  "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ transitions": {
-  "foldClicks": 26,
-  "anchorCross": 0.19,
-  "moveWorst": 0.8,
-  "moveMedian": 0.04,
+  "foldClicks": 35,
+  "anchorCross": 0.11,
+  "moveWorst": 1.08,
+  "moveMedian": 0.11,
   "quietMove": 0
  },
  "prescott-couch-reverse-engineer @ main": {
@@ -458,7 +458,7 @@
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
-  "edges": 64,
+  "edges": 65,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -471,7 +471,7 @@
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
-  "edges": 173,
+  "edges": 174,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -497,7 +497,7 @@
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ transitions": {
-  "foldClicks": 56,
+  "foldClicks": 57,
   "anchorCross": 0,
   "moveWorst": 0.47,
   "moveMedian": 0.03,
