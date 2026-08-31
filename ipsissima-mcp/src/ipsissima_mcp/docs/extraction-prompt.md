@@ -199,6 +199,12 @@ a claim whose text is the author's words but which declares `paraphrase` is repo
 sometimes exactly right. `ok` is `true` when no `!` remains; the `?` findings come back beside
 it, so read them once before you stop and act on the ones you agree with.
 
+**`ok` alone is not the finish line — read `verified` beside it.** `ok` says nothing was wrong
+with what the run looked at. `verified` says whether the quotations were among what it looked at,
+and that is true only when you passed `source_root`. **`ok: true, verified: false` means no line
+of the map has been compared with any text**, which is not a checked reconstruction however clean
+the report reads. Pass the folder holding `source/` and run it again before you stop.
+
 ---
 
 ## If the text is a draft

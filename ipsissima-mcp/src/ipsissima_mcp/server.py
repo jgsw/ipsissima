@@ -151,7 +151,7 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
         out: where output should go. Proposed if omitted.
         recursive: walk subfolders of any folder given.
     """
-    from ipsissima_mcp import sources as srcmod
+    from ipsissima_mcp import ingest, sources as srcmod
 
     plan = srcmod.describe(sources, recursive=recursive)
 
@@ -161,9 +161,18 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
 
     # A DEFAULT THAT IS SAID OUT LOUD. Writing beside the source is what people expect; writing
     # somewhere clever is what they later cannot find.
+    #
+    # SLUGGED, BECAUSE THE STEM IS SOMEBODY ELSE'S FILENAME. It used to be `first.stem` verbatim,
+    # which is fine until the stem came from a reference manager: Zotero drops the colon out of a
+    # title and leaves the two spaces around it, so "Rethinking Healthcare Improvement:
+    # Philosophy…" arrives as a name with a double space in it. A folder-approval prompt refused
+    # that path as undisplayable and the extraction landed somewhere the caller could not reach
+    # -- a failure with no error in it, one directory above where anyone thought to look.
+    # `ingest.slug` is what the extracted FILENAMES already go through, so this is the folder
+    # agreeing with the files inside it rather than a new rule.
     first = Path(plan["sources"][0]["path"])
     plan["proposed_out"] = str(out or (first.parent if plan["count"] > 1 else
-                                       first.parent / first.stem))
+                                       first.parent / ingest.slug(first.stem)))
     plan["layout"] = ("<out>/source/*.md for the extracted text; the .argdown beside it, so the "
                       "reconstruction and the text it cites open together")
 
@@ -196,7 +205,12 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
         "comments, which is what lets Ipsissima's Manuscript view show page numbers.\n\n"
         "Call `plan_job` first. With more than one source this REFUSES to run until `grouping` "
         "is given, because 'one map from these chapters' and 'a map of each of these articles' "
-        "are different jobs and choosing wrongly wastes a whole reconstruction."),
+        "are different jobs and choosing wrongly wastes a whole reconstruction.\n\n"
+        "THE TEXT IS WRITTEN TO DISK, NOT RETURNED. The reply reports what was written and "
+        "carries only a short `head` of each file, so a book does not arrive in the "
+        "conversation twice. You must open the files at `written` to reconstruct from them — "
+        "and if those paths do not resolve for you, this server is on a different machine and "
+        "you should say so rather than working from the `head`."),
 )
 def extract_text(sources: list[str], out: str, grouping: str | None = None,
                  title: str | None = None, allow_ocr: bool = True,
@@ -263,13 +277,33 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
                     + "".join(f"  - source/{r['name']}\n" for r in results), encoding="utf-8")
                 written.append(str(proj))
 
+    # A HEAD OF THE TEXT, NOT THE TEXT. The Markdown is still kept out of the reply -- a
+    # book-length source arriving in the conversation twice over is what that was always for --
+    # but stripping it to nothing assumed the caller could open the file instead, and that holds
+    # only while the model and this server sit on the same disk. Bridged into a hosted assistant
+    # they do not: the server writes to the machine it runs on, the model reads a sandbox
+    # somewhere else, and `written` comes back as a list of paths that cannot be opened with
+    # nothing in the reply saying whether the conversion even worked. Six hundred characters is
+    # enough to see that the headings survived and the page markers are there, and nowhere near
+    # enough to reconstruct from. That asymmetry is the point: it diagnoses, it does not
+    # substitute, and `next` says so in as many words.
+    def _reply(r):
+        d = {k: v for k, v in r.items() if k != "md"}
+        d["head"] = r["md"][:600]
+        return d
+
     return dict(
         ok=True, dry_run=dry_run, grouping=grouping, out=str(out), written=written,
-        sources=[{k: v for k, v in r.items() if k != "md"} for r in results],
+        sources=[_reply(r) for r in results],
         failures=failures, unreadable=unreadable, skipped=skipped,
         next=("nothing written (dry run)" if dry_run else
-              "reconstruct with the `reconstruct_argument` prompt, then call "
-              "check_reconstruction until it reports ok"))
+              "the text is on disk at `written`; `head` is its first few lines and nothing more. "
+              "OPEN THOSE FILES and reconstruct from them. If the paths do not resolve for you, "
+              "this server is running on a different machine from you: say so and ask for the "
+              "folder to be shared. Do NOT reconstruct from `head`, and do NOT fall back to "
+              "reading the original document yourself -- a map built that way cites no text and "
+              "check_reconstruction cannot verify one word of it. Then reconstruct with the "
+              "`reconstruct_argument` prompt and call check_reconstruction until it reports ok"))
 
 
 @server.tool(
@@ -521,9 +555,15 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
         "APPLY THE FIXES; do not rewrite the map. A quotation reported as found verbatim in "
         "another chapter is a stale `chapter:` path, not a misquotation, and needs a one-line "
         "edit.\n\n"
-        "Without `source_root` this checks only what is true of the .argdown alone: that it "
-        "parses, that nothing is wired to nothing, and that departures from the text carry a "
-        "warrant. With it, every quotation is verified against the source word for word."),
+        "TWO BOOLEANS COME BACK, AND THEY MEAN DIFFERENT THINGS. `ok` says no fault was found "
+        "among what this run looked at. `verified` says whether the quotations were among them "
+        "— true only when `source_root` was given. **`ok: true, verified: false` is not a "
+        "finished reconstruction**: it is a map no line of which has been compared with any "
+        "text, which is the one thing Ipsissima exists to check.\n\n"
+        "Without `source_root` this checks what is true of the .argdown alone: that it parses, "
+        "that nothing is wired to nothing, that departures from the text carry a warrant, and "
+        "that every file a claim cites actually exists. With it, every quotation is verified "
+        "against the source word for word."),
 )
 def check_reconstruction(path: str, source_root: str | None = None,
                          full_report: bool = False) -> dict[str, Any]:
@@ -552,11 +592,20 @@ def check_reconstruction(path: str, source_root: str | None = None,
     except json.JSONDecodeError:
         return dict(ok=False, error="the checker did not return JSON",
                     stdout=r.stdout[:1500], stderr=r.stderr[:800])
-    if not source_root:
-        out["note"] = ("no source_root given, so quotations were NOT verified. Pass the folder "
-                       "holding `source/` to check them.")
-    out["next"] = ("nothing to fix" if out.get("ok") else
-                   "apply the fixes above and call this again")
+    # "NOTHING TO FIX" WAS SAID ABOUT FILES NOTHING HAD OPENED. `ok` reports that no fault was
+    # found among the things the run looked at; `verified` reports whether the quotations were
+    # among them, which is true only when a source_root was given. Both come back, and `next`
+    # now distinguishes a map that passed from one that was never examined -- because the second
+    # read exactly like the first, and a caller acting on it reports a finished reconstruction.
+    if not out.get("verified"):
+        out["note"] = ("no source_root given, so quotations were NOT verified against any text. "
+                       "Pass the folder holding `source/` to check them.")
+    out["next"] = ("apply the fixes above and call this again" if not out.get("ok") else
+                   "nothing to fix" if out.get("verified") else
+                   "no faults among what was checked — but NOT verified against the source: no "
+                   "quotation in this map has been compared with any text. Call this again with "
+                   "`source_root` set to the folder holding `source/` before treating the "
+                   "reconstruction as finished")
     return out
 
 

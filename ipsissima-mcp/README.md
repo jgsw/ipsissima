@@ -83,13 +83,33 @@ list.** Ipsissima-MCP does not carry the whole job. Look at where the work actua
 | **write the `.argdown`** | **the assistant** | **yes, write** |
 | `check_reconstruction` | the server | no — it reads the file from disk |
 
-`extract_text` writes `source/` and returns a *report* of what it wrote, not the text: the
-Markdown is deliberately stripped from the reply, because a book-length source would otherwise
-arrive in the conversation twice over. And no tool here writes the reconstruction — that is the
-model's judgement, and the model saves it with its own file-writing tool.
+`extract_text` writes `source/` and returns a *report* of what it wrote rather than the text: the
+reply carries a short `head` of each file and no more, because a book-length source would
+otherwise arrive in the conversation twice over. The head is there to show that the conversion
+worked — headings intact, page markers present — and is deliberately far too little to
+reconstruct from. And no tool here writes the reconstruction — that is the model's judgement, and
+the model saves it with its own file-writing tool.
 
 So an assistant that cannot touch the filesystem gets as far as a folder full of Markdown it
 cannot read, and has nowhere to put the map it then cannot write.
+
+**And it has to be the same filesystem, which is easier to lose than it sounds.** The table asks
+whether each party can reach *a* disk. What it does not ask is whether they reach the *same* one.
+An assistant that talks to this server across a device bridge — a hosted session reaching your
+Mac, and any arrangement like it — runs the server on your machine and the model in a sandbox
+somewhere else. Every tool then works perfectly and writes to a disk the model cannot open:
+`extract_text` reports a folder of Markdown that genuinely exists, at paths that resolve to
+nothing where the model is standing.
+
+Measured once, on a 321-page book. The model could not open the paths, and went back to reading
+the original PDF itself — producing a competent Argdown file with no `chapter` on any claim,
+which is to say a map that cites no text and that `check_reconstruction` cannot verify one word
+of. Nothing errored and nothing said anything was wrong, which is why it is worth naming here: a
+map that cannot be checked against its source is the one thing this project exists to prevent.
+
+Connect the folder before you start — hosted clients ask for one, and every bridge has an
+equivalent — and the arrangement works exactly as the table says. If you cannot, run the server
+from something sitting on the same machine as your files.
 
 **What works:**
 
@@ -134,6 +154,21 @@ writes files that do not parse.
 If your client cannot reach prompts and resources, hand the model the documents directly — they
 are in `src/ipsissima_mcp/docs/`, and `extraction-prompt.md` opens by naming the three it needs.
 That is a documented fallback, not a workaround.
+
+**A fourth thing can go missing, and it is the quietest of them.** An MCP server also ships
+*instructions* — prose the client is meant to put in front of the model beside the tool list.
+This server's says in its opening lines that "make an Argdown", "map the argument" and
+"reconstruct this paper" are one request, and then gives the order of work. A client that drops
+it leaves the model holding ten tool names with no reason to connect any of them to what was
+asked.
+
+Observed, in a hosted session reaching this server across a device bridge: the instructions of
+*every* connected server were dropped, the tools arrived as bare names in one alphabetised list
+with no descriptions attached, and a request opening with the words "Make an argdown file" never
+called a single tool of the server built to answer it. Nothing errored. If you are running
+through a bridge or a hosted client and maps come back with no provenance, check this before you
+look anywhere else — and the fallback is the one above: hand the model `extraction-prompt.md`
+yourself.
 
 **The model is a separate question from the client.** Ipsissima-MCP does not reconstruct
 arguments; it prepares sources and checks results, and the reading itself is the model's
@@ -210,11 +245,24 @@ harmless — the protocol is on stdout — and it is not a sign of a bad install
 
 ## Using it
 
-Ask in your own words. All of these work, and all mean the same thing:
+**It takes a path, not an attachment.** The server reads files from the disk it is running on:
+`sources` is a list of paths, and anything else comes back as *no such file or directory*. A
+document attached or pasted into the conversation is text in the conversation — the server never
+sees it and cannot be given it. Save it to a folder first and pass the path, which is one more
+instruction to the same assistant.
 
-> Make an Argdown from the attached article.
-> Make an Ipsissima diagram of this paper.
-> Map the argument in `~/papers/rawls-1971.pdf`.
+Within that, ask in your own words. All of these work, and all mean the same thing:
+
+> Use Ipsissima to map the argument in `~/papers/rawls-1971.pdf`.
+> Make an Ipsissima diagram of `~/papers/rawls-1971.pdf`.
+> Make an Argdown from `~/papers/rawls-1971.pdf`.
+
+**Say "Ipsissima" if nothing seems to happen.** The other phrasings are meant to work without it:
+the server ships instructions saying that all of them are one request, and a client that delivers
+those will route any of them here. Not every client does. When one drops them the model is left
+holding bare tool names with nothing to connect them to what you asked — and the literal word
+*Ipsissima* in your sentence is then the only thing that still matches, because it is in the tool
+names themselves. It costs nothing, so the first example says it.
 
 **One article.** The assistant extracts the text, reconstructs the argument, and checks it until
 the checker is satisfied. You get a folder with `source/the-paper.md` and a `.argdown` beside it.
