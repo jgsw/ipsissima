@@ -150,6 +150,22 @@ name a different picture. Quality baseline re-recorded: Miller's `@ all` view im
 materially (edge crossings 54 → 23) at the cost of modest bend/overshoot on its near views,
 which is the price of drawing edges that ought to exist.
 
+### The words did not survive the label mode
+
+Found in the same reading session: on the same map, every box was a bare title — nothing on
+screen or in a tooltip let a reader unpack what "Unsafe Without Philosophy" actually amounts
+to. The map's front matter sets `statementLabelMode: "title"` and `argumentLabelMode: "title"`
+(the only file in the corpus that does), which tells Argdown to put nothing but the title on a
+map node; the adapter read the words off `labelText` alone, so the box, its tooltip and the
+claims toggle all had nothing behind the title.
+
+A label mode is an export style for Argdown's own outputs. The adapter's contract is now that
+the claim's words are always carried — when `labelText` is empty, `toGraph` reads the
+definition, exactly where `wordsOf` reads it for a bare reference line — because a field that
+is carried can be drawn, and the viewer's claims toggle is what decides how much of it shows.
+A claim referred to but never defined stays empty: its title is already everything the file
+says. `test_label_modes.mjs` holds the contract, both modes on and off.
+
 ## Fixed 29 Aug 2026
 
 ### Expanding a claim the reader opened revealed nothing

@@ -55,6 +55,7 @@ const SUITES = [
   ["the one-file bundle",        "node", [path.join(HERE, "test_bundle.mjs")]],
   ["how the parser fails",       "node", [path.join(HERE, "test_parse_failure.mjs")]],
   ["relation colours",           "node", [path.join(HERE, "test_relation_colours.mjs")]],
+  ["the words survive the label mode", "node", [path.join(HERE, "test_label_modes.mjs")]],
   ["the private corpus",         "node", [path.join(HERE, "test_private_corpus.mjs")]],
   ["the documented examples",    "node", [path.join(HERE, "test_cheatsheet.mjs")]],
   ["the desktop host adapter",   "node", [path.join(HERE, "test_host.mjs")]],
