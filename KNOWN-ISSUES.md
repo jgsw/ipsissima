@@ -112,6 +112,38 @@ measures.
 
 ---
 
+## Fixed 31 Aug 2026
+
+### A titled intermediary conclusion was nowhere at all
+
+Reported from use, on the private Cribb map: the Master Argument's box listed premises (5) and
+(7) and nothing else — no inference bars, no conclusions, and the reader could not recover the
+two-step structure from the screen in any fold state, fully unfolded included.
+
+**The defect sat in the join of two halves that were each defensible alone.** Argdown's map
+maker connects an argument to a statement node in exactly two cases: the statement is the LAST
+line of its structure (the main conclusion), or it is a PREMISE of it. A titled intermediary
+conclusion is neither, so it got no edge in either direction. And `pcsRows` suppressed every
+titled line's row on the assumption it "arrives as an arrow" — true for premises and the main
+conclusion, false here. Net: the claim floated as its own box, held up by its *other*
+supporters, while the argument concluding it stood beside it unconnected, and the box's
+structure lost its bars because both bar-carrying rows were suppressed. Six arguments on the
+Cribb map alone, the book's central inference among them; Miller carried two and Wilson one.
+
+Two repairs, one per half. `toGraph` now synthesises the missing edge, argument → statement,
+exactly as Argdown draws the main conclusion, marked `concludes` with the step. And `pcsRows`
+draws a conclusion row even when its claim has a box — as the bracketed reference the file
+itself writes, `(6) [Its Title]` — so the bars return and the box reads as a structure again. A
+premise with a box is still a gap: its arrow into the bar is its drawing. The junction and hull
+tooltips now also count the step's premises rather than the fan's arrivals, which had a bar
+over a five-premise step announcing four.
+
+Synthesised edges change a map's structural fingerprint, so fold-state identifiers minted
+before this fix are refused against rebuilt maps — by design, since the ids would otherwise
+name a different picture. Quality baseline re-recorded: Miller's `@ all` view improved
+materially (edge crossings 54 → 23) at the cost of modest bend/overshoot on its near views,
+which is the price of drawing edges that ought to exist.
+
 ## Fixed 29 Aug 2026
 
 ### Expanding a claim the reader opened revealed nothing

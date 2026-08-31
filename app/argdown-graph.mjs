@@ -660,6 +660,39 @@ export function toGraph(res) {
     }
     edges.push(edge);
   }
+
+  /* A TITLED INTERMEDIARY CONCLUSION IS WIRED TO THE ARGUMENT THAT CONCLUDES IT.
+   *
+   * Argdown's map maker connects an argument to a statement node in exactly two cases: the
+   * statement is the argument's LAST pcs line (the main conclusion), or the statement is a
+   * PREMISE of it. An intermediary conclusion is neither, so when one carries a title that is
+   * selected into the map it arrived with no edge in either direction: on the Cribb map,
+   * <Master Argument> concludes [Deliberation Is Indispensable] at its first step, and the
+   * drawn map never said so -- the claim floated beside the argument, held up by its OTHER
+   * supporters, while the argument concluding it stood unconnected. Six arguments on that one
+   * map, and the book's central inference among them.
+   *
+   * The edge is synthesised here, argument to statement, exactly as Argdown draws the main
+   * conclusion -- because that is what an intermediary conclusion is: a conclusion, reached
+   * part-way. `concludes` carries the step so a renderer can tell it from a relation the file
+   * wrote. The step's REUSE of the conclusion further down the structure is deliberately not
+   * an edge back in: a two-cycle between a claim and its own argument is dagre bait, and the
+   * reference row the renderer now draws in the box (see pcsRows) is where that reading lives.
+   */
+  const stmtIdByLabel = new Map(nodes.filter(n => n.kind === "statement")
+                                     .map(n => [n.label, n.id]));
+  const supported = new Set(edges.filter(e => e.type === "support")
+                                 .map(e => e.from + ">" + e.to));
+  for (const n of nodes) {
+    if (n.kind !== "argument" || !pcsOf.has(n.label)) continue;
+    for (const l of pcsOf.get(n.label).pcs) {
+      if (l.role !== "intermediary-conclusion" || !l.drawn) continue;
+      const sid = stmtIdByLabel.get(l.title);
+      if (sid == null || sid === n.id || supported.has(n.id + ">" + sid)) continue;
+      supported.add(n.id + ">" + sid);
+      edges.push({ from: n.id, to: sid, type: "support", concludes: l.step });
+    }
+  }
   return { nodes, groups, edges };
 }
 

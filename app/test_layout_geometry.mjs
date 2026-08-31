@@ -666,7 +666,33 @@ console.log("\nthe premise-conclusion structure");
   say(pcsRows(null).length === 0 && pcsRows([]).length === 0,
       "an argument with no structure asks for no rows");
   say(pcsRows([{ n: 1, role: "premise", text: "x", step: 0, drawn: true }]).length === 0,
-      "and one whose every line is drawn asks for none either");
+      "and one whose every PREMISE is drawn asks for none either");
+
+  /* A CONCLUSION WITH A BOX IS A REFERENCE, NOT A GAP.
+   *
+   * The defect this guards: <Master Argument> on the Cribb map has titled conclusions at both
+   * steps, and suppressing them like premises removed every inference bar from the box -- two
+   * bare premise rows and no sign either step concluded anything. A titled intermediary
+   * conclusion also has no edge from Argdown (only the LAST line gets one), so the line was
+   * nowhere at all: not a row, not an arrow. The row comes back bracketed, the way the file
+   * itself writes a reference.
+   */
+  const titledConcl = [
+    { n: 1, role: "premise", title: null, text: "bare premise", step: 0, drawn: false },
+    { n: 2, role: "intermediary-conclusion", title: "Halfway", text: "the halfway claim",
+      step: 0, drawn: true, rule: "Modus ponens" },
+    { n: 3, role: "premise", title: null, text: "another", step: 1, drawn: false },
+    { n: 4, role: "main-conclusion", title: "The End", text: "the end", step: 1, drawn: true }
+  ];
+  const rr = pcsRows(titledConcl);
+  say(rr.length === 4 && rr[1].n === 2 && rr[3].n === 4,
+      "a conclusion with a box of its own is still a row -- the bar needs it");
+  say(rr[1].ref === true && rr[1].text === "[Halfway]" && rr[3].text === "[The End]",
+      "and it is drawn as the bracketed reference the file itself writes");
+  say(rr[1].bar === true && rr[1].rule === "Modus ponens",
+      "carrying the inference bar and the rule exactly as an unboxed conclusion does");
+  say(rr[0].ref === false && rr[0].text === "bare premise",
+      "while an unboxed line keeps its own words and is no reference");
 
   /* THE ENCLOSURE, which must never gather a claim that is not a premise of the step. */
   const P = (x, y) => ({ x, y, width: 80, height: 40 });

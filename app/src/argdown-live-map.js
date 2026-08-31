@@ -1953,7 +1953,7 @@ const PCS_GAP   = 7;     // between the argument's prose and the structure below
 
 /** PURE: which lines of a premise-conclusion structure the argument's own box has to draw.
  *
- *  THE ANSWER IS "THE ONES WITH NO BOX OF THEIR OWN", and both halves of that matter.
+ *  FOR A PREMISE THE ANSWER IS "THE ONES WITH NO BOX OF THEIR OWN", and both halves matter.
  *
  *  A TITLED premise is selected into the map, becomes a node, and arrives at its argument as an
  *  arrow. Drawing it here as well would put the same claim on screen twice with no way for the
@@ -1964,21 +1964,31 @@ const PCS_GAP   = 7;     // between the argument's prose and the structure below
  *  is bracketed drew with exactly ONE arrow into it and the map said it had one reason. That is
  *  the map asserting something false, and it is the reason this function exists.
  *
+ *  A CONCLUSION IS DRAWN EVEN WHEN IT HAS A BOX, as a bracketed REFERENCE -- `(6) [Title]` --
+ *  which is how the file itself writes one. Suppressing it like a premise took the inference
+ *  bar with it, and the bar is the structure: <Master Argument> on the Cribb map has titled
+ *  conclusions at both steps, so its box showed two bare premises with nothing between them
+ *  and no sign either step concluded anything. A reference is not a second drawing of the
+ *  claim; it is the box saying which box the step lands on.
+ *
  *  THE NUMBERS ARE THE FILE'S OWN. Renumbering the survivors 1..n would read more tidily and be
  *  a lie: a reader checking the map against the source needs (4) to mean the line the file calls
  *  (4). A gap in the numbering is INFORMATION -- it says that line is on the map as a box.
  *
  *  A conclusion carries `bar`, because an inference bar is what says the lines above it are
- *  premises rather than more assertions, and `rule` where the file named one.
+ *  premises rather than more assertions, and `rule` where the file named one; `ref` marks the
+ *  bracketed form so a renderer can say what the brackets mean.
  */
 function pcsRows(pcs) {
   if (!Array.isArray(pcs) || !pcs.length) return [];
   const rows = [];
   for (const l of pcs) {
-    if (!l || l.drawn) continue;
+    if (!l) continue;
     const concl = l.role === "intermediary-conclusion" || l.role === "main-conclusion";
-    rows.push({ n: l.n, role: l.role, concl, bar: concl,
-                text: String(l.text || ""), rule: concl ? (l.rule || null) : null });
+    if (l.drawn && !concl) continue;
+    rows.push({ n: l.n, role: l.role, concl, bar: concl, ref: !!l.drawn,
+                text: l.drawn ? "[" + String(l.title || "") + "]" : String(l.text || ""),
+                rule: concl ? (l.rule || null) : null });
   }
   return rows;
 }
@@ -3189,7 +3199,9 @@ function createLiveMap(container, graph, options) {
         rowTip.textContent = "(" + r.n + ") " +
           (r.role === "premise" ? "premise" :
            r.role === "main-conclusion" ? "conclusion" : "intermediate conclusion") +
-          " — " + r.text;
+          " — " + r.text +
+          (r.ref ? "\n\nA reference: this claim has its own box on the map, and the arrow " +
+                   "from this argument is the step concluding it." : "");
         g.appendChild(rowTip);
         const num = el("text", { class: "alm-pcs-num", x: x0, y: py + rowSize,
                                  "font-size": rowSize });
@@ -3648,8 +3660,11 @@ function createLiveMap(container, graph, options) {
        * has the premises going in.
        */
       const step = Number(k.slice(k.lastIndexOf("|") + 1));
+      // `!l.drawn` used to gate this, when a drawn conclusion had no row. pcsRows now draws
+      // every conclusion -- a titled one as a reference -- so the box always has the bar, and
+      // the junction always yields to it when the step's conclusion line exists at all.
       const inBox = node && Array.isArray(node.pcs) && node.pcs.some(l =>
-        l && !l.drawn && l.step === step &&
+        l && l.step === step &&
         (l.role === "main-conclusion" || l.role === "intermediary-conclusion"));
       const named = inBox ? null : list.find(m => m.rule);
       // The enclosure round this step's premises. `others` deliberately includes the ARGUMENT
@@ -3658,7 +3673,15 @@ function createLiveMap(container, graph, options) {
       const mine = new Set(list.map(m => m.from));
       const hull = premiseHull(list.map(m => g.node(m.from)),
                                (allBoxes || []).filter(b => !mine.has(b.id)));
-      bars.set(k, { geo, name: list[0].name, count: list.length, hull,
+      // THE COUNT IS THE STEP'S, NOT THE FAN'S. An untitled premise has no box and no arrow,
+      // so it never reaches this junction -- it is a row inside the argument. A bar announcing
+      // "4 premises" over a step that uses five is the map miscounting its own argument;
+      // `inside` is how many of the step's premises sit in the box, so the tooltip can say
+      // where the missing arrivals are.
+      const inside = node && Array.isArray(node.pcs)
+        ? node.pcs.filter(l => l && l.role === "premise" && l.step === step && !l.drawn).length
+        : 0;
+      bars.set(k, { geo, name: list[0].name, count: list.length + inside, inside, hull,
                     rule: named ? named.rule : null });
     }
     return { member, bars };
@@ -3691,6 +3714,8 @@ function createLiveMap(container, graph, options) {
       r.setAttribute("height", info.hull.height);
       const t = r.querySelector("title");
       if (t) t.textContent = info.count + " premises of one inference step" +
+                             (info.inside ? " (" + info.inside + " of them written inside the " +
+                                            "argument's box)" : "") +
                              (info.rule ? " — " + info.rule : "");
     }
     for (const [k, info] of joins.bars) {
@@ -3744,6 +3769,11 @@ function createLiveMap(container, graph, options) {
       } else if (rt) rt.remove();
       holder.querySelector("title").textContent =
         info.count + " premises of one inference step — linked, so all of them are needed" +
+        (info.inside ? "\n\n" + info.inside + " of them " +
+                       (info.inside === 1 ? "has" : "have") + " no box of " +
+                       (info.inside === 1 ? "its" : "their") + " own and " +
+                       (info.inside === 1 ? "is" : "are") +
+                       " written inside the argument's box instead" : "") +
         (info.rule ? "\n\nby " + info.rule : "");
     }
   }
