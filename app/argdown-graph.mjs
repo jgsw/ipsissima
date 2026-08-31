@@ -578,7 +578,14 @@ export function toGraph(res) {
         // here and not from the premises above.
         rule: inf && inf.inferenceRules && inf.inferenceRules.length
                 ? inf.inferenceRules.join(", ") : null,
-        uses: inf && inf.data && Array.isArray(inf.data.uses) ? inf.data.uses.slice() : null
+        uses: inf && inf.data && Array.isArray(inf.data.uses) ? inf.data.uses.slice() : null,
+        // THE FORMALIZATION, carried so the step can be decided. Only a step that NAMES a rule
+        // is ever decided -- see `docs/VALIDITY-PLAN.md` -- so on the overwhelming majority of
+        // maps this is null on every line and costs nothing.
+        form: p.data && typeof p.data.formalization === "string" ? p.data.formalization : null,
+        // Filled in below, once every line of the step is known. Declared here so the shape of
+        // a line is stated in one place rather than grown by assignment.
+        verdict: /** @type {any} */ (null)
       });
       if (p.role === "premise") run.push(p.title);
       else { for (const t of run) where.set(t, step); run = []; step++; }
@@ -624,8 +631,41 @@ export function toGraph(res) {
     // THE RULE, INDEXED BY THE STEP IT LICENSES, so the bar that gathers a step's premises can
     // name it. The rule is written on the conclusion's line, but what it describes is the whole
     // step -- and the step is the thing the reader sees, as a bar with several lines meeting it.
+    /* DOES THE STEP KEEP THE WORD ITS RULE NAME GIVES?
+     *
+     * `-- Modus ponens --` asserts the conclusion follows. `ArgdownValidity` decides it, and
+     * the bar says which of four things is true: decided and sound, decided and NOT sound,
+     * claimed but with nothing to check it against, or no claim made at all. The fourth is
+     * every step in every map that names no rule, and it draws exactly as it always has.
+     *
+     * The API is looked up rather than imported: in the page it is the inlined classic script,
+     * in Node it is a `require` the caller has already done. Absent, every step is simply
+     * undecided, which is the same as it was before this existed.
+     */
+    const V = (typeof globalThis !== "undefined" && globalThis.ArgdownValidity) || null;
+    const verdictOf = (l) => {
+      if (!l.rule) return null;
+      const inputs = l.uses ? l.uses.map(Number)
+                            : lines.filter(x => x.step === l.step && x.role === "premise")
+                                   .map(x => x.n)
+                                   .concat(l.step > 0 ? lines.filter(x => x.step === l.step - 1 &&
+                                                                     x.role !== "premise")
+                                                             .map(x => x.n) : []);
+      const byN = new Map(lines.map(x => [x.n, x]));
+      const prem = inputs.map(n => byN.get(n) && byN.get(n).form);
+      if (!V || !l.form || prem.some(f => !f)) return { state: "unformalized" };
+      const r = V.checkStep(prem, l.form);
+      if (!r.supported) return { state: "undecided", why: r.error };
+      return r.valid ? { state: "valid" }
+                     : { state: "invalid", countermodel: r.countermodel };
+    };
+    // Decided ONCE per step and hung on the line, because the rule name is drawn twice -- beside
+    // the join bar when the premises have boxes of their own, and on the inference line inside
+    // the argument's box when they do not. Both readings must say the same thing.
+    for (const l of lines) if (l.rule) l.verdict = verdictOf(l);
     ruleOfStep.set(title, new Map(lines.filter(l => l.rule || l.uses)
-                                       .map(l => [l.step, { rule: l.rule, uses: l.uses }])));
+                                       .map(l => [l.step, { rule: l.rule, uses: l.uses,
+                                                            verdict: l.verdict || null }])));
     // WHERE THE ARGUMENT LANDS, carried so that `argdown-positions` can place it in the
     // manuscript. An <Argument> has no words of its own, so nothing locates it: across this
     // corpus every argument either dropped out of the exposition view into an unnamed band or
@@ -689,6 +729,11 @@ export function toGraph(res) {
         const inf = (ruleOfStep.get(target.label) || new Map()).get(k);
         if (inf && inf.rule) edge.rule = inf.rule;
         if (inf && inf.uses) edge.uses = inf.uses;
+        if (inf && inf.verdict) {
+          edge.validity = inf.verdict.state;
+          if (inf.verdict.countermodel) edge.countermodel = inf.verdict.countermodel;
+          if (inf.verdict.why) edge.undecidedWhy = inf.verdict.why;
+        }
       }
     }
     // THE MAIN CONCLUSION'S NUMBER, on the edge Argdown itself made. The arrow from an

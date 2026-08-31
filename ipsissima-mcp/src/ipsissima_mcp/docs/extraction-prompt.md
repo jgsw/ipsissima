@@ -152,6 +152,14 @@ Use the **whole language**, not the part of it you are sure of:
   back to an earlier premise or skips one belonging to a sibling step. The bar the map draws
   asserts the claims gathered onto it stand or fall together — `uses` is what makes that
   assertion yours rather than the layout's
+- **where a step really is deductive, name the rule and formalize it** — `-- Modus ponens
+  {uses: [1, 2]} --`, with `{formalization: "p -> q"}` on every line of that step. Naming a rule
+  claims the conclusion *follows*, and that claim is now checked: an invalid step is reported as
+  a fault with a countermodel, and the map draws the rule name struck through. **Do not reach for
+  this by default.** Most philosophical argument is conductive — independent considerations
+  weighed, premises that do not entail the conclusion — and a rule name on such a step claims
+  something the author never did. Name a rule when the step would be *invalid if a premise were
+  removed*, not when it merely reads as tight
 
 **And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
 jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,
