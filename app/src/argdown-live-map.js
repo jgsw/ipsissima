@@ -781,13 +781,18 @@ function filterOnce(graph, state, force) {
     // The inference step survives only while BOTH ends are themselves. Once either is folded
     // into a block the edge no longer runs premise-to-argument, and joining it to its fellows
     // would draw a linkage between things that are not on screen.
-    const linked = a === e.from && b === e.to && e.step != null;
+    const own = a === e.from && b === e.to;
+    const linked = own && e.step != null;
     outEdges.push({ from: a, to: b, type: e.type || "support",
                     step: linked ? e.step : null,
                     // The rule travels with the step and dies with it. A bar that survives into
                     // a folded picture would be naming an inference whose premises are no longer
                     // on screen, which says more than the drawing can show.
-                    rule: linked ? (e.rule || null) : null });
+                    rule: linked ? (e.rule || null) : null,
+                    // The line number dies the same death, one condition earlier: it names a
+                    // line of one argument's structure, and once either end stands for a block
+                    // the edge is no line of anything.
+                    line: own && e.line != null ? e.line : null });
   }
 
   // 5b. NOTHING FLOATS, PART TWO: THE CONNECTION IS DRAWN, NOT THE MISSING CLAIMS.
@@ -1329,6 +1334,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     edgeData.set(e.from + " " + e.to + " " + key.name,
                  { points: [p0, mid, p1], debt: debt, span: span,
                    step: e.step == null ? null : e.step,
+                   line: e.line == null ? null : e.line,
                    far: span >= Math.max(5, cols.length * 0.1) });
   }
 
@@ -1561,6 +1567,7 @@ function layoutByArgument(vis, sizes, opt) {
     edgeList.push(key);
     edgeData.set(key.v + " " + key.w + " " + key.name,
                  { points: pts, step: e.step == null ? null : e.step,
+                   line: e.line == null ? null : e.line,
                    through: !!e.through, rule: e.rule || null });
   }
 
@@ -1951,33 +1958,30 @@ const PCS_NUM_W = 24;    // the gutter the line numbers sit in
 const PCS_BAR_H = 11;    // vertical room for an inference bar above a conclusion line
 const PCS_GAP   = 7;     // between the argument's prose and the structure below it
 
-/** PURE: which lines of a premise-conclusion structure the argument's own box has to draw.
+/** PURE: the rows of a premise-conclusion structure as the argument's own box draws them.
  *
- *  FOR A PREMISE THE ANSWER IS "THE ONES WITH NO BOX OF THEIR OWN", and both halves matter.
+ *  EVERY LINE IS A ROW. The box is the one place the whole numbered structure can be read in
+ *  order, and it earned that job the hard way, one omission at a time. An UNTITLED line is not
+ *  selected into the map at all -- under Argdown's default `statementSelectionMode` it becomes
+ *  no node, no arrow and no trace -- so an argument standing on five premises of which one was
+ *  bracketed once drew with exactly ONE arrow into it and the map said it had one reason. Then
+ *  titled lines were left out as "already on the map", and a structure whose premises were all
+ *  titled read as starting at line (5), with its titled conclusions -- and their inference
+ *  bars -- missing entirely (the Cribb Master Argument, reported from use, twice).
  *
- *  A TITLED premise is selected into the map, becomes a node, and arrives at its argument as an
- *  arrow. Drawing it here as well would put the same claim on screen twice with no way for the
- *  reader to tell it was one claim -- which is worse than the omission this repairs.
+ *  A LINE WHOSE CLAIM HAS A BOX IS A REFERENCE, drawn bracketed -- `(1) [Title]` -- which is
+ *  how the file itself writes one. The brackets are the account of the double appearance: this
+ *  row is not a second drawing of the claim, it is the structure naming which box plays this
+ *  line, and the claim's own arrow carries the same number (see `line` on the edges). An
+ *  unbracketed row is a claim that lives nowhere else.
  *
- *  An UNTITLED one is not selected at all. Under Argdown's default `statementSelectionMode` it
- *  becomes no node, no arrow and no trace, so an argument standing on five premises of which one
- *  is bracketed drew with exactly ONE arrow into it and the map said it had one reason. That is
- *  the map asserting something false, and it is the reason this function exists.
- *
- *  A CONCLUSION IS DRAWN EVEN WHEN IT HAS A BOX, as a bracketed REFERENCE -- `(6) [Title]` --
- *  which is how the file itself writes one. Suppressing it like a premise took the inference
- *  bar with it, and the bar is the structure: <Master Argument> on the Cribb map has titled
- *  conclusions at both steps, so its box showed two bare premises with nothing between them
- *  and no sign either step concluded anything. A reference is not a second drawing of the
- *  claim; it is the box saying which box the step lands on.
- *
- *  THE NUMBERS ARE THE FILE'S OWN. Renumbering the survivors 1..n would read more tidily and be
- *  a lie: a reader checking the map against the source needs (4) to mean the line the file calls
- *  (4). A gap in the numbering is INFORMATION -- it says that line is on the map as a box.
+ *  THE NUMBERS ARE THE FILE'S OWN, never derived: a reader checking the map against the source
+ *  needs (4) to mean the line the file calls (4), and the same numbers now appear on the
+ *  arrows, where an invented numbering would disagree in two places at once.
  *
  *  A conclusion carries `bar`, because an inference bar is what says the lines above it are
  *  premises rather than more assertions, and `rule` where the file named one; `ref` marks the
- *  bracketed form so a renderer can say what the brackets mean.
+ *  bracketed form, and `refLabel` names the box it points at so a renderer can light it up.
  */
 function pcsRows(pcs) {
   if (!Array.isArray(pcs) || !pcs.length) return [];
@@ -1985,8 +1989,8 @@ function pcsRows(pcs) {
   for (const l of pcs) {
     if (!l) continue;
     const concl = l.role === "intermediary-conclusion" || l.role === "main-conclusion";
-    if (l.drawn && !concl) continue;
     rows.push({ n: l.n, role: l.role, concl, bar: concl, ref: !!l.drawn,
+                refLabel: l.drawn ? String(l.title || "") : null,
                 text: l.drawn ? "[" + String(l.title || "") + "]" : String(l.text || ""),
                 rule: concl ? (l.rule || null) : null });
   }
@@ -2811,6 +2815,7 @@ function createLiveMap(container, graph, options) {
   const drawn = new Map();     // node id -> <g>
   const drawnEdge = new Map();
   const drawnDir  = new Map();   // chevrons, keyed like drawnEdge // key    -> <path>
+  const drawnLineNo = new Map(); // line numbers, keyed like drawnEdge // key -> <text>
   const drawnUnder = new Map();  // hidden-line stretches, keyed the same // key -> <g>
   const drawnJoin  = new Map();  // linked-premise junctions // "to|step" -> <g>
   const drawnHull  = new Map();  // the enclosure round one step's premises // "to|step" -> <rect>
@@ -3192,7 +3197,8 @@ function createLiveMap(container, graph, options) {
                                        d: `M${x0},${by}L${Math.max(x0 + 12, barEnd)},${by}` }));
           py += PCS_BAR_H;
         }
-        const g = el("g", { class: "alm-pcs-row" + (r.concl ? " is-conclusion" : "") });
+        const g = el("g", { class: "alm-pcs-row" + (r.concl ? " is-conclusion" : "") +
+                                   (r.ref ? " is-ref" : "") });
         // The whole line on hover, because a clipped premise is otherwise unreadable and the
         // reader should not have to open the box to find out what it says.
         const rowTip = el("title");
@@ -3200,8 +3206,27 @@ function createLiveMap(container, graph, options) {
           (r.role === "premise" ? "premise" :
            r.role === "main-conclusion" ? "conclusion" : "intermediate conclusion") +
           " — " + r.text +
-          (r.ref ? "\n\nA reference: this claim has its own box on the map, and the arrow " +
-                   "from this argument is the step concluding it." : "");
+          (r.ref ? "\n\nA reference: this claim has its own box on the map — " +
+                   (r.role === "premise"
+                     ? "its arrow into this argument carries this number."
+                     : "the arrow out to it carries this number.") : "");
+        // POINTING AT THE BOX A REFERENCE NAMES. The brackets say "this claim lives elsewhere";
+        // hovering the row shows WHERE, by lighting the claim's own box up. Resolved at hover
+        // time against what is currently drawn, because folds change both halves of the pairing.
+        // Any stale glow is swept first, so a repaint mid-hover cannot leave one stranded.
+        if (r.ref && r.refLabel) {
+          g.addEventListener("mouseenter", () => {
+            for (const s2 of svg.querySelectorAll(".is-ref-target"))
+              s2.classList.remove("is-ref-target");
+            const target = lastVis.nodes.find(x => x.label === r.refLabel);
+            const tb = target && drawn.get(target.id);
+            if (tb) tb.classList.add("is-ref-target");
+          });
+          g.addEventListener("mouseleave", () => {
+            for (const s2 of svg.querySelectorAll(".is-ref-target"))
+              s2.classList.remove("is-ref-target");
+          });
+        }
         g.appendChild(rowTip);
         const num = el("text", { class: "alm-pcs-num", x: x0, y: py + rowSize,
                                  "font-size": rowSize });
@@ -3443,6 +3468,7 @@ function createLiveMap(container, graph, options) {
       path.classList.toggle("is-prepared", info.debt === false);
       path.classList.toggle("is-far", info.far === true);
       drawDirectionMarks(key, path, rel, info);
+      drawLineNo(key, pts, rel, info, joins.member.has(key));
       drawUnder(key, pts, rel, e.v, e.w, allBoxes);
       // Paths cannot be CSS-interpolated, so instead of tweening the line we re-path at once
       // and fade it back in while the nodes are still gliding. Reads as a redraw, not a jump.
@@ -3453,6 +3479,11 @@ function createLiveMap(container, graph, options) {
       if (keep.has(key)) continue;
       drawnDir.delete(key);
       holder.remove();
+    }
+    for (const [key, t] of drawnLineNo) {
+      if (keep.has(key)) continue;
+      drawnLineNo.delete(key);
+      t.remove();
     }
     for (const [key, path] of drawnEdge) {
       if (keep.has(key)) continue;
@@ -3613,7 +3644,8 @@ function createLiveMap(container, graph, options) {
       const k = e.w + "|" + step;
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push({ key: e.v + " " + e.w + " " + e.name, pts, name: e.name,
-                           from: e.v, rule: (info && info.rule) || null });
+                           from: e.v, rule: (info && info.rule) || null,
+                           line: info && info.line != null ? info.line : null });
     }
     for (const [k, list] of groups) {
       if (list.length < 2) continue;
@@ -3627,9 +3659,16 @@ function createLiveMap(container, graph, options) {
       // Each member finishes on the bar rather than at the junction point; see `junctionFeet`.
       // Only the last few units of the edge change -- the long run stays whatever dagre routed.
       const feet = junctionFeet(geo, list.map(m => m.pts[m.pts.length - 1]));
+      // WHERE EACH MEMBER LANDS, WITH THE LINE IT IS. The box lists the structure by number and
+      // the members arrive as anonymous lines; the number at each foot is what lets a reader
+      // stand at the bar and read off which arrival is which row. Collected here because the
+      // foot is decided here, and drawn in drawJoins with the bar it belongs to.
+      const arrivals = [];
       list.forEach((m, i) => {
         member.add(m.key);
         const f = feet[i];
+        const land = f ? f.land : geo.j;
+        if (m.line != null) arrivals.push({ x: land.x, y: land.y, line: m.line });
         if (!f) { m.pts[m.pts.length - 1] = geo.j; return; }
         // ONLY WHERE THERE IS ROOM FOR THE STUB. A premise sitting directly under its argument
         // has a short, near-vertical route whose second-to-last point is already inside the
@@ -3682,7 +3721,7 @@ function createLiveMap(container, graph, options) {
         ? node.pcs.filter(l => l && l.role === "premise" && l.step === step && !l.drawn).length
         : 0;
       bars.set(k, { geo, name: list[0].name, count: list.length + inside, inside, hull,
-                    rule: named ? named.rule : null });
+                    arrivals, rule: named ? named.rule : null });
     }
     return { member, bars };
   }
@@ -3767,6 +3806,23 @@ function createLiveMap(container, graph, options) {
         rt.setAttribute("fill", rel.color);
         rt.textContent = info.rule;
       } else if (rt) rt.remove();
+      /* THE LINE NUMBER AT EACH FOOT. The box lists the structure as numbered rows and the
+       * members arrive as anonymous lines; this is the pairing, written where the pairing
+       * happens. Placed on the far side of the bar from the box (`out` points that way), and
+       * nudged along the bar so the digit sits beside the arriving line rather than on it.
+       * Rebuilt each pass because the membership of a junction changes as folds do.
+       */
+      for (const old of holder.querySelectorAll(".alm-join-no")) old.remove();
+      const { out: jOut, dir: jDir } = info.geo;
+      for (const a of info.arrivals || []) {
+        const nt = el("text", { class: "alm-join-no", "font-size": 8,
+                                x: a.x + jOut.x * 9 + jDir.x * 5,
+                                y: a.y + jOut.y * 9 + jDir.y * 5 + 2.5,
+                                "text-anchor": "middle" });
+        nt.setAttribute("fill", rel.color);
+        nt.textContent = "(" + a.line + ")";
+        holder.appendChild(nt);
+      }
       holder.querySelector("title").textContent =
         info.count + " premises of one inference step — linked, so all of them are needed" +
         (info.inside ? "\n\n" + info.inside + " of them " +
@@ -3776,6 +3832,43 @@ function createLiveMap(container, graph, options) {
                        " written inside the argument's box instead" : "") +
         (info.rule ? "\n\nby " + info.rule : "");
     }
+  }
+
+  /** The line number an edge is, written at the argument's end of it.
+   *
+   *  AN EDGE THAT EMBODIES A LINE OF A STRUCTURE SAYS WHICH. The argument's box lists its whole
+   *  premise-conclusion structure as numbered rows, boxed claims included (as bracketed
+   *  references); the arrows to and from those boxes are those same lines, and without the
+   *  number the reader pairs arrow with row by matching titles across the map -- the work the
+   *  numbering exists to spare. A premise's number sits at its ARRIVAL, a conclusion's at its
+   *  DEPARTURE: both are the argument's end of the line, which is where the box with the
+   *  matching row is.
+   *
+   *  Members of a junction are excluded here because their number is drawn at their foot on the
+   *  bar (see drawJoins), where the arrival actually happens; and a through-edge never carries
+   *  a number at all, because it is not the relation it looks like.
+   */
+  function drawLineNo(key, pts, rel, info, isMember) {
+    const want = info && info.line != null && !isMember && info.through !== true &&
+                 pts && pts.length >= 2;
+    let t = drawnLineNo.get(key);
+    if (!want) { if (t) { drawnLineNo.delete(key); t.remove(); } return; }
+    if (!t) {
+      t = el("text", { class: "alm-line-no", "font-size": 8, "text-anchor": "middle" });
+      gEdges.appendChild(t);
+      drawnLineNo.set(key, t);
+    }
+    // `step` is only ever set on edges INTO an argument, so it is what tells an arriving
+    // premise from a departing conclusion.
+    const arriving = info.step != null;
+    const p = arriving ? pts[pts.length - 1] : pts[0];
+    const q = arriving ? pts[pts.length - 2] : pts[1];
+    const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;         // along the edge, away from the box
+    t.setAttribute("x", p.x + ux * 14 - uy * 6);
+    t.setAttribute("y", p.y + uy * 14 + ux * 6 + 2.5);
+    t.setAttribute("fill", rel.color);
+    t.textContent = "(" + info.line + ")";
   }
 
   /** Draw the stretches of an edge that disappear behind a node, DASHED and over the top.
@@ -3856,7 +3949,7 @@ function createLiveMap(container, graph, options) {
   }
 
   function clearAll() {
-    for (const m of [drawn, drawnEdge, drawnGroup, drawnDir, drawnJoin, drawnHull]) {
+    for (const m of [drawn, drawnEdge, drawnGroup, drawnDir, drawnLineNo, drawnJoin, drawnHull]) {
       for (const [, e] of m) e.remove();
       m.clear();
     }
@@ -4692,6 +4785,14 @@ function injectStyle() {
    not an ornament. */
 .alm-n .alm-pcs-bar{stroke:var(--alm-fg-faint,#9a9a9a);stroke-width:1;fill:none}
 .alm-n .alm-pcs-rule{fill:var(--alm-fg-faint,#9a9a9a);font-style:italic}
+/* A REFERENCE ROW points at a box elsewhere on the map. Set in the numbers' quiet ink -- it is
+   apparatus, not assertion; the assertion lives in the box it names -- and hovering it lights
+   that box up (is-ref-target below), which is the whole account of the double appearance. */
+.alm-n .alm-pcs-row.is-ref .alm-pcs-text{fill:var(--alm-fg-faint,#9a9a9a)}
+.alm-n .alm-pcs-row.is-ref:hover .alm-pcs-text{fill:var(--alm-accent,#3a7bd5)}
+/* The line number an edge carries, at the argument's end of it and at each junction foot:
+   the same numerals as the rows they pair with, in the relation's own ink. */
+.alm-line-no,.alm-join-no{pointer-events:none;font-variant-numeric:tabular-nums;opacity:.9}
 .alm-n:hover .alm-box{stroke-width:2.5}
 /* The circle is the one control that says "show / hide what argues for this". A closed one is
    filled and inviting; an open one is quiet, because most of the time you leave it alone. */
@@ -4824,6 +4925,10 @@ function injectStyle() {
   outline:2.5px solid var(--alm-accent,#3a7bd5);outline-offset:3px;border-radius:3px}
 .alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5);stroke-width:2.4}
 .alm-n.is-lit{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
+/* The box a hovered reference row names. Same voice as is-lit -- both mean "this one, here" --
+   kept as its own class so a hover cannot fight the marks the reader has pinned. */
+.alm-n.is-ref-target .alm-box{stroke:var(--alm-accent,#3a7bd5);stroke-width:2.4}
+.alm-n.is-ref-target{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 .alm-glabel{fill:var(--alm-fg-dim,#6b6b6b);pointer-events:none}
 .alm-gwords{fill:var(--alm-fg-dim,#6b6b6b);opacity:.75;pointer-events:none;
   font-variant-numeric:tabular-nums}

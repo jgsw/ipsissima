@@ -112,12 +112,14 @@ A step whose other premise is an intermediate conclusion — internal to the arg
 drawn — arrives as a single line and keeps a plain arrow, because a bar gathering one line would
 claim a linkage you cannot see.
 
-Inside an argument's box, a line whose claim has a box of its own appears differently by role. A
-titled **premise** is left as a gap in the numbering: it arrives at the bar as an arrow, and
-drawing it again would put one claim on screen twice. A titled **conclusion** stays, as a
-bracketed reference — `(6) [Its Title]` — exactly as the file writes one, because the inference
-bar above it is what shows the step concluding; the argument also points at that claim's box
-with an arrow of its own.
+An argument's box lists its whole structure, every line under the file's own number. A line
+whose claim has a box of its own appears as a **bracketed reference** — `(1) [Its Title]` —
+exactly as the file writes one: the row is not a second copy of the claim but the structure
+naming which box plays that line, and hovering the row lights that box up. The claim's arrow
+carries the **same number**, written at the argument's end of it — at its foot on the bar for a
+linked premise, beside the arrow for a conclusion leaving the box — so the numbers on the map
+and the numbers in the box are one numbering. An unbracketed row is a claim that appears
+nowhere else.
 
 ## A line behind a claim
 
