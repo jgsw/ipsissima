@@ -506,6 +506,29 @@ def unmarked(doc):
     return [title for title, f in fidelity_of(doc).items() if f is None]
 
 
+def bad_fidelity(doc):
+    """Nodes whose `fidelity` is set to something that is not a level, with the value given.
+
+    SILENTLY DROPPED IS WORSE THAN UNMARKED, and this was silently dropped. `fidelity_of` maps an
+    unrecognised value to None, which is right for measuring a distribution and wrong as the
+    whole of the response: a claim marked `reported` then reads, everywhere downstream, exactly
+    like a claim marked nothing at all -- and `unmarked` duly names it as carrying no marker,
+    which is not what the file says.
+
+    The discoverability cost is the real one. `warrant` answers a wrong value with its
+    vocabulary; `fidelity` answered with nothing, so the only way to learn the levels was to
+    omit the field and read the complaint about omitting it. One reconstruction burned three
+    rounds guessing -- `reported`, `report`, `restatement` -- each failing in silence. Reported
+    once, with the list, it is a one-line edit.
+    """
+    out = []
+    for title, rec in merged_nodes(doc).items():
+        f = (rec.get("data") or {}).get("fidelity")
+        if f is not None and f not in FIDELITY_LEVELS:
+            out.append((title, f))
+    return out
+
+
 # A claim shorter than this is not tested for being verbatim: a six-word claim can coincide with
 # the source by accident, and calling that a quotation would be worse than asking.
 MIN_VERBATIM = 30

@@ -215,6 +215,27 @@ def main():
     print(f"== {os.path.basename(a.book)}")
     print(f"   {len(sections)} top-level sections, {len(parts)} part(s), "
           f"{len(defs)} footnote definition(s)")
+
+    # NOTHING TO SPLIT ON IS NOT THE SAME AS ONE LONG CHAPTER, and the report said the second.
+    # A bronze-tier PDF conversion that recovered no headings yields exactly one section -- the
+    # synthetic "Front matter" that catches prose before the first `#` -- and the count line
+    # above then announces "1 top-level sections" as though the book had one, which is a fact
+    # about this tool's input dressed up as a fact about the book.
+    #
+    # THE REMEDY IS THE POINT. The chapter titles are almost always sitting in the text as plain
+    # lines with nothing marking them as headings, so this is a `repair_source` call rather than
+    # a dead end -- and the parts warning is here because a run that promotes twelve chapter
+    # headings and no part headings splits correctly and then files every chapter under one
+    # implicit Part I, which looks like a bug in the part rule and is not.
+    if not any(s["raw"] for s in sections):
+        print("\n   ! NO HEADINGS IN THE SOURCE, so there is nothing to split on. The single")
+        print("     section above is the one that catches prose before the first `#`.")
+        print("     A PDF conversion often recovers no headings at all: the chapter titles are")
+        print("     in the text as ordinary lines, with nothing marking them as headings.")
+        print("     Promote them with `repair_source`, then run this again.")
+        print("     PROMOTE THE PART HEADINGS TOO. Parts are told from chapters by the heading")
+        print("     text, so a book whose `Part II` was never promoted comes back as one")
+        print("     implicit Part I with every chapter inside it.")
     for p in parts:
         tag = "  (implicit — no marker in the text)" if p.get("implicit") else ""
         print(f"\n   {p['name']}{tag}")

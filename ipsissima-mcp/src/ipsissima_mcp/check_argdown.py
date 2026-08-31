@@ -393,6 +393,52 @@ def coverage_report(cli, path, source_root=None):
         print("      quotation gives an exact line, everything else is located to a paragraph")
         print("      by matching the claim's own words against the source.")
 
+    # ---- and the cited files have to EXIST ------------------------------- #
+    # COUNTING THE STRING WAS NOT CHECKING THE PATH. Everything above asks whether a claim
+    # carries a `chapter`; nothing above asks whether that chapter is anywhere. The only code
+    # that ever opened a cited file was the quotation check, which runs on quoted spans only --
+    # so a map whose claims are all paraphrase and interpretation cited a file nobody opened,
+    # and came back `ok` with no findings at all. One `defaults:` line satisfies coverage for a
+    # whole map, and it is exactly the line new_reconstruction.py teaches people to write, so
+    # the cheapest way to pass was to write a path and never look at it.
+    #
+    # WHY IT RUNS WITHOUT --source-root. A missing file is a fault in the map whether or not
+    # anyone asked for the quotations to be verified, and refusing to look for it until a flag
+    # is passed makes the silence conditional on the caller remembering. With no root given,
+    # resolve against the .argdown's own directory -- the layout new_reconstruction.py builds
+    # and every sample in this repository uses.
+    #
+    # ONE STAT PER DISTINCT CHAPTER, not per claim: a map cites one or two files and a hundred
+    # claims, and a hundred identical findings is not a report.
+    if have_ch:
+        root = source_root or os.path.dirname(os.path.abspath(path))
+        cited = {}
+        for t, r in merged.items():
+            ch = r["data"].get("chapter")
+            if ch:
+                cited.setdefault(ch, []).append(t)
+        missing = {ch: ts for ch, ts in cited.items()
+                   if not os.path.isfile(os.path.join(root, ch))}
+        if missing:
+            for ch, ts in sorted(missing.items()):
+                finding("chapter-missing", "!",
+                        f"{len(ts)} claim(s) cite `{ch}`, which is not a file: nothing in this "
+                        f"map can be checked against the text it says it is a reading of",
+                        chapter=ch, resolved=os.path.join(root, ch),
+                        fix=("correct the `chapter:` path, or extract the source to where it "
+                             "points" if source_root else
+                             "pass --source-root DIR if the sources live outside the .argdown's "
+                             "own folder; otherwise correct the `chapter:` path, or extract the "
+                             "source to where it points"))
+            print(f"\n   CITED FILES: {len(missing)} of {len(cited)} cited chapter(s) do not "
+                  f"exist" + ("" if source_root else " (resolved beside the .argdown; pass "
+                                                      "--source-root if they live elsewhere)"))
+            for ch, ts in sorted(missing.items())[:6]:
+                print(f"      ! {ch} — cited by {len(ts)} claim(s), no such file")
+                print(f"           looked in {os.path.join(root, ch)}")
+        else:
+            print(f"\n   CITED FILES: all {len(cited)} exist.")
+
 
 def quotation_context_report(prov, doc, source_root, quotes):
     """What each verbatim quotation was taken away from.
@@ -710,6 +756,34 @@ def fidelity_report(cli, path):
     census = {k: v for k, v in il["census"].items() if v}
     policy, unknown = prov.reconstruction_policy(path)
 
+    # ---- a value that is not a level, named rather than dropped ----------- #
+    # BEFORE THE CENSUS, because a file whose every marker is misspelled has an empty census and
+    # returns below having said only "no node carries a marker" -- true of what was counted, and
+    # no help at all to the person who wrote `reported` five times.
+    #
+    # THE ASYMMETRY THIS FIXES. `warrant` answers a value it does not know by printing its
+    # vocabulary; `fidelity` answered by ignoring it. So the vocabulary was discoverable by
+    # leaving the field out and undiscoverable by guessing at it, which is the wrong way round --
+    # a guess is what someone makes when they do not know the list, and silence tells them
+    # nothing except that the guess was accepted. Measured cost of that asymmetry on one run:
+    # three probe rounds, all silent.
+    wrong = prov.bad_fidelity(doc) if hasattr(prov, "bad_fidelity") else []
+    if wrong:
+        VOCABULARY["fidelity"] = list(prov.FIDELITY_LEVELS)
+        print(f"\n   FIDELITY: {len(wrong)} node(s) declare a value that is not a level, so the "
+              f"marker is ignored and the claim counts as unmarked:")
+        for title, value in wrong:
+            finding("fidelity", "!",
+                    f"`fidelity: {value}` is not a fidelity level, so the marker is ignored and "
+                    f"the claim counts as unmarked",
+                    title=title, value=value,
+                    fix="use one of: " + ", ".join(prov.FIDELITY_LEVELS))
+        for title, value in wrong[:10]:
+            print(f"      ! {value:<18} {title[:50]}")
+        if len(wrong) > 10:
+            print(f"           \u2026 and {len(wrong) - 10} more")
+        print("        vocabulary: " + ", ".join(prov.FIDELITY_LEVELS))
+
     # ---- fidelity census first: it decides whether the rest applies ------- #
     if not census:
         print(f"\n   FIDELITY: no node of {il['total']} carries a marker.")
@@ -734,7 +808,12 @@ def fidelity_report(cli, path):
     # `?` and not `!`: an argument really can have no marker to give. But assembling premises
     # into a numbered structure is the reconstructor's work even where every step is the
     # author's, so an unmarked argument is far more often forgotten than judged.
-    bare = prov.unmarked(doc) if hasattr(prov, "unmarked") else []
+    # EXCLUDING THE ONES JUST NAMED. `unmarked` is built on `fidelity_of`, which maps a bad
+    # value to None, so without this filter a claim marked `reported` is reported as carrying no
+    # marker -- a statement about the file that is not true, and one that sends the reader to add
+    # a marker that is already there.
+    bare = [t for t in (prov.unmarked(doc) if hasattr(prov, "unmarked") else [])
+            if t not in {title for title, _ in wrong}]
     if bare:
         print(f"      {len(bare)} node(s) carry NO fidelity marker:")
         for title in bare[:10]:
@@ -1510,8 +1589,14 @@ def main():
         # `--only-problems` and that skips six process spawns worth 2.8s of a 4s run; pass
         # `--selection-modes` to buy it back.
         census = sink.getvalue().strip() if (a.census and sink is not None) else ""
+        # `verified` IS NOT `ok`, AND CONFLATING THEM WAS THE BUG. `ok` says no fault was found
+        # among the things this run looked at. Whether the quotations were among those things
+        # depends entirely on --source-root, and without it the answer was still `ok: true` with
+        # "nothing to fix" beside it -- a claim the checker is not entitled to make about files
+        # it never opened. Two booleans, so a caller can tell "clean" from "unexamined".
         print(json.dumps({"file": os.path.basename(path),
                           "ok": not any(f["severity"] == "!" for f in FINDINGS),
+                          "verified": bool(a.source_root),
                           "findings": FINDINGS,
                           **({"vocabulary": VOCABULARY} if VOCABULARY else {}),
                           **({"census": census} if census else {})},
