@@ -304,7 +304,46 @@ rather than the layout's. Ipsissima takes the declaration over the position, and
 disagreement between the two.
 
 The rule name itself stays optional -- prefer the plain bar unless the rule genuinely informs
-the reader.
+the reader. **But naming one is a claim, and it is now checked.**
+
+### Naming a rule, and `formalization:`
+
+`-- Modus ponens {uses: [1, 2]} --` says the conclusion *follows*. Give every line of that step a
+`formalization:` and the checker will decide whether it does:
+
+```argdown
+(1) [If crisis then maggots]: If the NHS were in crisis it would use maggots. {formalization: "q -> p"}
+(2) [Maggots are used]: The NHS uses maggots. {formalization: "p"}
+-- Modus ponens {uses: [1, 2]} --
+(3) [The NHS is in crisis]: The NHS is in crisis. {formalization: "q"}
+```
+
+That step is reported as a fault, with a countermodel: it is affirming the consequent, not modus
+ponens. **Only a step that names a rule is checked** -- a plain `-----` claims nothing, and most
+philosophical argument is conductive rather than deductive, so checking every step would report
+good reconstructions as invalid for failing to be something they never claimed to be.
+
+The syntax is **NLTK's**, which is what `debatelab/argdown-feedback` parses, so a formalization
+means the same thing in both tools:
+
+| | |
+|---|---|
+| negation | `-p` or `!p` |
+| and, or | `p & q`, `p \| q` |
+| implies, iff | `p -> q`, `p <-> q` |
+| quantifiers | `all x.(F(x) -> G(x))`, `exists x.(F(x) & G(x))` |
+| predicates | one place only: `F(x)`, `F(a)` |
+
+**`~` is not negation and is rejected.** NLTK reads `~p` as an atom *called* `~p`, so a step
+written with it is satisfiable for the wrong reason and an invalid argument passes silently.
+Accepting it here would be worse, because the same file would then mean two different things in
+the two tools.
+
+What is decided: propositional logic completely, and one-place predicate logic completely, so
+long as there is no equality and no function symbols. Anything else -- a two-place relation, more
+than four predicates -- is reported as *not decidable here*, which is a different answer from
+invalid and is never drawn as one. `docs/VALIDITY-PLAN.md` explains why this is decided in the
+project rather than by a solver.
 
 ### Premises and conclusions can carry titles and relations
 

@@ -41,6 +41,9 @@ const SUITES = [
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
+  // The SECOND py/js pair. One decision procedure written twice will drift, so both halves run
+  // the same hand-written vectors and any divergence fails here. See docs/VALIDITY-PLAN.md.
+  ["named rules: the js half",   "node", [path.join(HERE, "test_validity.mjs")]],
   ["source pane cleanup",        "node", [path.join(HERE, "test_source_pane.mjs")]],
   ["folding the provenance",     "node", [path.join(HERE, "test_provenance_fold.mjs")]],
   // The parser shipped inside the Python package, against the real CLI it stands in for.
@@ -64,6 +67,7 @@ const SUITES = [
   ["what holds the argument up", "node", [path.join(HERE, "test_spine.mjs")]],
   ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
   ["the publisher's own structure", PY, [path.join(PYTESTS, "test_structured_source.py")]],
+  ["named rules: the python half", PY, [path.join(PYTESTS, "test_validity.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],
