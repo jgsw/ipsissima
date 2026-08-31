@@ -170,6 +170,30 @@ member's run when its foot lands far from where the route was heading: straight 
 blocks, one elbow round the flank of whatever does, and the old route kept whenever no clean
 rebuild exists, because an honest detour beats a new lie.
 
+### A long climb came out as a slalom, and an arrival dived for a corner
+
+Reported from use after v0.1.5 shipped, on the published Miller sample: the conclusion edge
+from <Deriving the limit> to its intermediary conclusion — a box eleven hundred units up the
+map — wove left-right-left the whole way, six reversals, dodging each box in the column to
+whichever side was nearer *of that box*; and its main-conclusion edge dived 136 units left to
+land on [The standard]'s far corner, crossing its own departure fan. Two old habits of the
+router, both exposed by the synthesised conclusion edges, which are the first long vertical
+edges most maps have.
+
+Two repairs. `slalomFlips` counts a route's horizontal reversals — every individual dodge is
+locally sensible, so nothing short of the count can see the weave — and a route with two or
+more is relaid by `retargetTail`: straight where nothing blocks, otherwise one elbow round the
+flank of the whole stack, kept only when clean. And `arrivalPorts` now PERMUTES the landing
+points dagre already chose instead of re-spacing the fan evenly across the face — the same
+economy `departurePorts` has always used, and its comment already recorded why ("turned a
+1-unit bow into 78") — with the badge kept clear and an arrowhead's width enforced between
+neighbours, falling back to the even spread where the nudges cannot pay both debts.
+
+The `overshoot` rows of the quality baseline moved up on three maps and were re-recorded
+deliberately: a flank elbow overshoots its endpoints' span *by construction* — that is what
+going round a stack means — and one controlled excursion is the price of not weaving through
+it. Carroll's worst bend nearly halved and Wilson's folded crossings fell in the same change.
+
 ### The words did not survive the label mode
 
 Found in the same reading session: on the same map, every box was a bare title — nothing on

@@ -22,7 +22,7 @@
   "bendWorst": 54,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 53,
+  "edgeCrossings": 54,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ detail": {
@@ -32,10 +32,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 61,
+  "bendWorst": 60,
   "overshoot": 38,
   "detourWorst": 1.1,
-  "edgeCrossings": 84,
+  "edgeCrossings": 86,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ all": {
@@ -58,7 +58,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 0,
+  "bendWorst": 4,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 0,
@@ -104,9 +104,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 108,
-  "overshoot": 67,
-  "detourWorst": 1.3,
+  "bendWorst": 61,
+  "overshoot": 59,
+  "detourWorst": 1.1,
   "edgeCrossings": 3,
   "nodeOverlaps": 0
  },
@@ -118,8 +118,8 @@
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 91,
-  "overshoot": 74,
-  "detourWorst": 1.3,
+  "overshoot": 64,
+  "detourWorst": 1.2,
   "edgeCrossings": 43,
   "nodeOverlaps": 0
  },
@@ -133,7 +133,7 @@
   "bendWorst": 31,
   "overshoot": 23,
   "detourWorst": 1.1,
-  "edgeCrossings": 0,
+  "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ transitions": {
@@ -163,9 +163,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 61,
-  "overshoot": 57,
-  "detourWorst": 1.1,
+  "bendWorst": 86,
+  "overshoot": 62,
+  "detourWorst": 1.2,
   "edgeCrossings": 1,
   "nodeOverlaps": 0
  },
@@ -176,10 +176,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 61,
-  "overshoot": 57,
-  "detourWorst": 1.1,
-  "edgeCrossings": 2,
+  "bendWorst": 86,
+  "overshoot": 62,
+  "detourWorst": 1.2,
+  "edgeCrossings": 1,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ all": {
@@ -189,9 +189,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 106,
-  "overshoot": 57,
-  "detourWorst": 1.2,
+  "bendWorst": 109,
+  "overshoot": 97,
+  "detourWorst": 1.3,
   "edgeCrossings": 12,
   "nodeOverlaps": 0
  },
@@ -202,9 +202,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 106,
-  "overshoot": 57,
-  "detourWorst": 1.2,
+  "bendWorst": 109,
+  "overshoot": 97,
+  "detourWorst": 1.3,
   "edgeCrossings": 12,
   "nodeOverlaps": 0
  },
@@ -262,7 +262,7 @@
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 107,
-  "overshoot": 55,
+  "overshoot": 72,
   "detourWorst": 1.2,
   "edgeCrossings": 23,
   "nodeOverlaps": 0
@@ -274,8 +274,8 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 69,
-  "overshoot": 46,
+  "bendWorst": 76,
+  "overshoot": 67,
   "detourWorst": 1.2,
   "edgeCrossings": 2,
   "nodeOverlaps": 0
@@ -323,7 +323,7 @@
   "bendWorst": 66,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 47,
+  "edgeCrossings": 49,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ all": {
@@ -333,10 +333,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 84,
-  "overshoot": 68,
+  "bendWorst": 105,
+  "overshoot": 78,
   "detourWorst": 1.2,
-  "edgeCrossings": 98,
+  "edgeCrossings": 102,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ folded": {
@@ -346,7 +346,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 123,
+  "bendWorst": 101,
   "overshoot": 72,
   "detourWorst": 1.4,
   "edgeCrossings": 6,
@@ -382,7 +382,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 11,
+  "edgeCrossings": 10,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ detail": {
@@ -395,7 +395,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 24,
+  "edgeCrossings": 22,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ all": {
@@ -405,10 +405,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 109,
-  "overshoot": 54,
+  "bendWorst": 107,
+  "overshoot": 75,
   "detourWorst": 1.4,
-  "edgeCrossings": 102,
+  "edgeCrossings": 101,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -418,10 +418,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 88,
+  "bendWorst": 82,
   "overshoot": 76,
   "detourWorst": 1.3,
-  "edgeCrossings": 4,
+  "edgeCrossings": 5,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ transitions": {
@@ -454,7 +454,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 37,
+  "edgeCrossings": 38,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
@@ -464,10 +464,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 81,
-  "overshoot": 72,
-  "detourWorst": 1.2,
-  "edgeCrossings": 53,
+  "bendWorst": 107,
+  "overshoot": 77,
+  "detourWorst": 1.3,
+  "edgeCrossings": 54,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
@@ -478,9 +478,9 @@
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 116,
-  "overshoot": 74,
+  "overshoot": 75,
   "detourWorst": 1.3,
-  "edgeCrossings": 147,
+  "edgeCrossings": 144,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {
@@ -490,10 +490,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 143,
+  "bendWorst": 107,
   "overshoot": 77,
   "detourWorst": 1.5,
-  "edgeCrossings": 7,
+  "edgeCrossings": 4,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ transitions": {

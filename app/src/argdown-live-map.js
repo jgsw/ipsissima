@@ -2142,18 +2142,43 @@ function junctionFeet(geo, arrivals, approach, lines) {
   return out;
 }
 
-/** PURE: a member's route rebuilt for the foot it was actually given, or null to keep its own.
+/** PURE: how many times a route reverses horizontal direction — the measure of a slalom.
  *
- *  Feet are assigned in READING ORDER (see junctionFeet), and the route was laid before anyone
- *  knew that: dagre and the seat router aimed each member at the target's boundary, dodging
- *  boxes for THAT destination. Move the endpoint two slots along the bar and the old dodge is
- *  a fossil -- on the Cribb master argument, premise (3)'s line swung out LEFT around the
- *  Rigour Argument to reach a foot that is no longer there, then cut back across the very box
- *  it had dodged. So when the foot lands far from where the route was heading, the tail is
- *  rebuilt from scratch: the straight run where nothing is in the way, otherwise one elbow
- *  round the flank of whatever blocks it, and accepted ONLY when the result is clean. A
- *  rebuild that still crosses something returns null and the original route stands, fossil
- *  bend and all, because an honest detour beats a new lie.
+ *  The seat router dodges each box it crosses to the nearer side OF THAT BOX, decided box by
+ *  box. On a short hop that is the right economy; on a long climb through a column of stacked
+ *  claims the nearer side alternates, and the route comes out weaving left-right-left the
+ *  whole way up -- six reversals on the Miller map's <Deriving the limit> conclusion edge,
+ *  drawn as a slalom between the very boxes it was avoiding (reported from use). Nothing
+ *  short of a reversal count can see this: every individual dodge is locally sensible, and
+ *  the bend metrics score corners one at a time.
+ *
+ *  Reversals smaller than 8 units are ignored; those are the stub turns and port seats every
+ *  well-drawn edge has.
+ */
+function slalomFlips(pts) {
+  let flips = 0, last = 0;
+  for (let i = 1; i < (pts || []).length; i++) {
+    const dx = pts[i].x - pts[i - 1].x;
+    if (Math.abs(dx) < 8) continue;
+    const s = Math.sign(dx);
+    if (last && s !== last) flips++;
+    last = s;
+  }
+  return flips;
+}
+
+/** PURE: an edge's route rebuilt for where it actually ends, or null to keep its own.
+ *
+ *  Two callers, one shape of fault. A junction MEMBER's foot is assigned in reading order
+ *  (see junctionFeet) after its route was laid, so the old dodge can be a fossil -- on the
+ *  Cribb master argument, premise (3)'s line swung out LEFT around the Rigour Argument to
+ *  reach a foot that was no longer there, then cut back across the very box it had dodged.
+ *  And a long edge that SLALOMS (see slalomFlips) has a route whose every dodge was locally
+ *  sensible and collectively absurd. Both get the same repair: the straight run where nothing
+ *  is in the way, otherwise one elbow round the flank of the whole stack of blockers, and
+ *  accepted ONLY when the result is clean. A rebuild that still crosses something returns
+ *  null and the original route stands, fossil bends and all, because an honest detour beats
+ *  a new lie.
  */
 function retargetTail(pts, land, boxes, skip) {
   if (!pts || pts.length < 2 || !boxes) return null;
@@ -2464,13 +2489,44 @@ function arrivalPorts(g, vis, sizes, side) {
     const end = pts[pts.length - 1];
     if (end.y < box.y - 1 || Math.abs(end.x - box.x) > s.width / 2 + 2) continue;
     if (!byTarget.has(e.w)) byTarget.set(e.w, []);
-    byTarget.get(e.w).push({ key: e.v + " " + e.w + " " + e.name, fromX: src.x, box, s, bottom });
+    byTarget.get(e.w).push({ key: e.v + " " + e.w + " " + e.name, fromX: src.x, endX: end.x,
+                             box, s, bottom });
   }
   for (const [, list] of byTarget) {
     if (list.length < 2) continue;                       // one arrival: the badge rule handles it
+    /* PERMUTE THE POSITIONS DAGRE ALREADY CHOSE, rather than re-spacing the fan evenly.
+     *
+     * The mirror of departurePorts' own rule, learned late: spreading the slots across the
+     * whole face seats a nearly-vertical arrival at the box's far corner, which manufactures
+     * the very diagonal the seating exists to prevent -- on the Miller map, <Deriving the
+     * limit>'s conclusion dived 136 units left to reach a slot, across its own departure fan
+     * (reported from use). The EXISTING landing points, sorted and dealt out in source order,
+     * fix exactly the same crossings while moving as little as possible.
+     *
+     * What even spacing was quietly buying is still owed: an arrowhead's width between
+     * neighbours, and the fold badge's stretch of the face kept clear. The nudge passes below
+     * pay it where they can; where they cannot -- too many arrivals, or everything piled on
+     * the middle -- the even spread returns, because separated-and-clear beats
+     * faithful-and-unreadable.
+     */
+    const half = list[0].s.width / 2;
+    const edge = Math.max(side + 2, half - 8);
+    const GAP = 12;
+    let slots = list.map(a => Math.max(-edge, Math.min(edge, a.endX - a.box.x)))
+                    .sort((u, v) => u - v);
+    slots = slots.map(o => Math.abs(o) >= side ? o : (o >= 0 ? side : -side));
+    for (let i = 1; i < slots.length; i++)
+      if (slots[i] - slots[i - 1] < GAP) slots[i] = slots[i - 1] + GAP;
+    for (let i = slots.length - 1; i >= 0; i--) {
+      const cap = i === slots.length - 1 ? edge : slots[i + 1] - GAP;
+      if (slots[i] > cap) slots[i] = cap;
+    }
+    const bad = slots.some((o, i) => o < -edge - 1e-6 || o > edge + 1e-6 ||
+                                     Math.abs(o) < side - 1e-6 ||
+                                     (i > 0 && o - slots[i - 1] < GAP - 1e-6));
+    if (bad) slots = slotOffsets(list.length, half, side);
     list.sort((a, b) => a.fromX - b.fromX);
-    const offsets = slotOffsets(list.length, list[0].s.width / 2, side);
-    list.forEach((a, i) => out.set(a.key, { x: a.box.x + offsets[i], y: a.bottom }));
+    list.forEach((a, i) => out.set(a.key, { x: a.box.x + slots[i], y: a.bottom }));
   }
   return out;
 }
@@ -3513,6 +3569,17 @@ function createLiveMap(container, graph, options) {
         drawnEdge.set(key, path);
       }
       const rel = REL[e.name] || REL.support;
+      // A SLALOM IS RELAID BEFORE IT IS DRAWN. Members are exempt -- planJoins already relays
+      // the ones whose feet moved -- and so is travel that is mostly sideways, where the flank
+      // rebuild's left-or-right elbow has no meaning. Rebuilt in place: this array is the one
+      // the geometry map holds, and everything below (the number, the hidden spans) reads it.
+      if (!joins.member.has(key) && pts.length > 2 && slalomFlips(pts) >= 2) {
+        const a = pts[0], z = pts[pts.length - 1];
+        if (Math.abs(z.y - a.y) > Math.abs(z.x - a.x)) {
+          const r = retargetTail(pts, z, allBoxes, new Set([e.v, e.w]));
+          if (r) pts.splice(0, pts.length, ...r);
+        }
+      }
       path.setAttribute("d", smooth(pts));
       path.setAttribute("stroke", rel.color);
       if (rel.dash) path.setAttribute("stroke-dasharray", rel.dash);
@@ -5283,7 +5350,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               encodeFoldState, decodeFoldState, mapFingerprint,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
-              junctionFeet, retargetTail, pcsRows, premiseHull,
+              junctionFeet, retargetTail, slalomFlips, pcsRows, premiseHull,
               layoutByArgument, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,
