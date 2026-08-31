@@ -31,8 +31,8 @@ import { toGraph, RUN } from "./argdown-graph.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { filterGraph, layoutByText, membersOfGroup, reduceFold, sanitiseGraph,
-        hiddenSpans, drawnPolyline, boxesOf, junctionGeometry,
-        junctionFeet, pcsRows, premiseHull } =
+        hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
+        junctionFeet, retargetTail, pcsRows, premiseHull } =
   require(path.join(HERE, "src", "argdown-live-map.js"));
 const POS = require(path.join(HERE, "src", "argdown-positions.js"));
 
@@ -630,12 +630,50 @@ console.log("\nlinked-premise junctions");
   // Ordered: a member further along the bar's direction lands further along it. A bar that
   // braided its own premises would say the drawing could not tell them apart.
   say(feet[0].land.x < feet[1].land.x && feet[1].land.x < feet[2].land.x,
-      "the feet keep the order the premises arrive in -- the members do not cross");
+      "unnumbered members keep the order they arrive in -- the members do not cross");
   // The lift is outside the bar, square to it: that is what makes the approach perpendicular.
   say(feet.every(f => f.lift.y > f.land.y && Math.abs(f.lift.x - f.land.x) < 1e-6),
       "each member turns onto the bar SQUARE to it, from outside");
   say(junctionFeet(null, below) .length === 0 && junctionFeet(b, []).length === 0,
       "no junction, or no arrivals, is no feet");
+
+  /* READING ORDER. Where the members are numbered lines of one structure, the feet go in that
+   * order along the bar -- left to right -- however the premises happen to arrive. On the
+   * Cribb master argument the arrival order put premise (3) left of premise (1), which reads
+   * as the map shuffling the argument (reported from use); the numbers, not the geometry, are
+   * the order a reader takes them in.
+   */
+  const shuffled = junctionFeet(b, below, 12, [3, 1, 2]);
+  say(shuffled[1].land.x < shuffled[2].land.x && shuffled[2].land.x < shuffled[0].land.x,
+      "numbered members land in LINE order along the bar, wherever they arrive from");
+  const partial = junctionFeet(b, below, 12, [3, null, 2]);
+  say(partial[0].land.x < partial[1].land.x && partial[1].land.x < partial[2].land.x,
+      "a member without a number puts the whole junction back on arrival order");
+
+  /* THE REBUILT TAIL. Reading order can move a member's foot far from where its route was
+   * heading, leaving a dodge round a box that is no longer in the way -- and a line that then
+   * cuts across the very box it dodged. retargetTail rebuilds the run: straight where nothing
+   * blocks, one elbow round the flank where something does, and null -- keep the old route --
+   * where no clean rebuild exists.
+   */
+  const wall = { id: "wall", x0: 60, x1: 240, y0: 350, y1: 450 };
+  const straightR = retargetTail([{ x: 150, y: 600 }, { x: 150, y: 500 }], { x: 160, y: 520 },
+                                 [{ id: "far", x0: 500, x1: 600, y0: 0, y1: 900 }], new Set());
+  say(!!straightR && straightR.length === 2,
+      "a clear run to the new foot is rebuilt straight");
+  const elbowed = retargetTail([{ x: 150, y: 600 }, { x: 150, y: 500 }], { x: 150, y: 300 },
+                               [wall], new Set());
+  say(!!elbowed && elbowed.length === 4 &&
+      (elbowed[1].x <= wall.x0 - 10 + 1e-6 || elbowed[1].x >= wall.x1 + 10 - 1e-6),
+      "a blocked run goes round the flank of what blocks it");
+  say(elbowed && elbowed.every((p, i) => i === 0 || !segmentHitsBox(elbowed[i - 1], p, wall, 4)),
+      "and the elbowed route is CLEAN -- it no longer touches the box it rounds");
+  const boxedIn = retargetTail([{ x: 150, y: 600 }, { x: 150, y: 500 }], { x: 150, y: 300 },
+                               [wall, { id: "l", x0: -100, x1: 55, y0: 300, y1: 460 },
+                                      { id: "r", x0: 245, x1: 400, y0: 300, y1: 460 }],
+                               new Set());
+  say(boxedIn === null,
+      "and where no clean rebuild exists it returns null -- the old route stands");
 }
 
 console.log("\nthe premise-conclusion structure");
