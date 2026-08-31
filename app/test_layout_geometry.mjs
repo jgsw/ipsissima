@@ -674,6 +674,20 @@ console.log("\nlinked-premise junctions");
                                new Set());
   say(boxedIn === null,
       "and where no clean rebuild exists it returns null -- the old route stands");
+
+  /* THE SLALOM DETECTOR. Each dodge of a long route was decided box by box, so a climb through
+   * a column came out weaving left-right-left -- six reversals on the Miller conclusion edge
+   * that reported this. The count is what gates the relay; the stub turns and port seats every
+   * well-drawn edge has must not trip it.
+   */
+  const { slalomFlips } = require(path.join(HERE, "src", "argdown-live-map.js"));
+  say(slalomFlips([{ x: 0, y: 0 }, { x: 50, y: 100 }, { x: -50, y: 200 }, { x: 50, y: 300 },
+                   { x: -50, y: 400 }]) === 3,
+      "a weaving route counts one flip per reversal");
+  say(slalomFlips([{ x: 0, y: 0 }, { x: 40, y: 100 }, { x: 80, y: 200 }]) === 0,
+      "a route that keeps leaning one way has none");
+  say(slalomFlips([{ x: 0, y: 0 }, { x: 30, y: 100 }, { x: 25, y: 112 }, { x: 60, y: 200 }]) === 0,
+      "and the small turns of a stub or a port seat do not count");
 }
 
 console.log("\nthe premise-conclusion structure");

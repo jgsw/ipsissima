@@ -132,6 +132,31 @@ function twoArrivals(leftEndsRight) {
   check("one arrival is left alone", arrivalPorts(g, vis, sizes, BADGE_SIDE).size, 0);
 }
 {
+  /* THE CORNER DIVE. Seating used to re-space the fan evenly across the whole face, so a
+     nearly-vertical arrival was flung to the box's far corner to fill a slot -- on the Miller
+     map, <Deriving the limit>'s conclusion dived 136 units left, across its own departure fan
+     (reported from use). Ports now PERMUTE the landing points dagre already chose, the same
+     economy departurePorts has always used, so an edge already in its correct place barely
+     moves. The order and the badge clearance are still owed, and still paid. */
+  const { g, vis, sizes } = twoArrivals(false);        // already in order: L at 260, R at 340
+  const ports = arrivalPorts(g, vis, sizes, BADGE_SIDE);
+  const L = ports.get("L tgt support"), R = ports.get("R tgt support");
+  ok("an arrival already in its place stays close to it",
+     Math.abs(L.x - 260) <= BADGE_SIDE && Math.abs(R.x - 340) <= BADGE_SIDE,
+     `L moved to ${Math.round(L.x)}, R to ${Math.round(R.x)}`);
+  ok("  order and badge clearance still hold",
+     L.x < R.x && Math.abs(L.x - 300) >= BADGE_SIDE && Math.abs(R.x - 300) >= BADGE_SIDE);
+  // Both piled on one point: they must come apart, not share an arrowhead.
+  const piled = twoArrivals(false);
+  const pts = { L: [{ x: 100, y: 273 }, { x: 310, y: 127 }],
+                R: [{ x: 520, y: 273 }, { x: 312, y: 127 }] };
+  piled.g.edge = e => ({ points: pts[e.v] });
+  const p2 = arrivalPorts(piled.g, piled.vis, piled.sizes, BADGE_SIDE);
+  ok("two arrivals on one point are pulled apart",
+     Math.abs(p2.get("L tgt support").x - p2.get("R tgt support").x) >= 10,
+     `${Math.round(p2.get("L tgt support").x)} vs ${Math.round(p2.get("R tgt support").x)}`);
+}
+{
   // AN ARRIVAL NEED NOT BE EXACTLY ON THE BOTTOM EDGE. dagre clips a steeply-approaching edge to
   // the box boundary, so it meets the lower-left or lower-right SIDE instead. Requiring the edge
   // itself skipped five of the eight arrivals at the Gettier map's apex -- and left them crossing.
