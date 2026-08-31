@@ -1957,6 +1957,8 @@ function hiddenSpans(poly, boxes, minRun) {
 const PCS_NUM_W = 24;    // the gutter the line numbers sit in
 const PCS_BAR_H = 11;    // vertical room for an inference bar above a conclusion line
 const PCS_GAP   = 7;     // between the argument's prose and the structure below it
+const GROUP_LABEL_SIZE = 17.6;  // an open section's name: 1.6x the claim-title size, so the
+                                // heading stands out of the crowd it heads -- see drawGroups
 
 /** PURE: the rows of a premise-conclusion structure as the argument's own box draws them.
  *
@@ -3592,9 +3594,15 @@ function createLiveMap(container, graph, options) {
         // `data-id` for the same reason the claim boxes carry one: so a section's box can be
         // named from outside the renderer — by a test, and by anything that has to point at it.
         box = el("g", { class: "alm-g", "data-id": gr.id });
+        // THE NAME IS BIGGER THAN THE CLAIMS IT HEADS. At 11px -- the claim-title size -- an
+        // open section's name sat level with the statements inside it, and a reader scanning
+        // for where they were could not pick the heading out of the crowd (reported from use,
+        // tried at 1.6x and kept). 22px of strip holds it; fitLabel is told the size, or it
+        // would truncate against the old one and cut the name short of the room it has.
         box.append(el("rect", { class: "alm-gbox", rx: 10, ry: 10 }),
                    el("rect", { class: "alm-ghit" }),
-                   el("text", { class: "alm-glabel", "font-size": 11, "font-weight": "600" }),
+                   el("text", { class: "alm-glabel", "font-size": GROUP_LABEL_SIZE,
+                                "font-weight": "600" }),
                    el("g", { class: "alm-spark" }),
                    el("text", { class: "alm-gwords", "font-size": 10, "text-anchor": "end" }));
         box.appendChild(el("title"));
@@ -3630,8 +3638,9 @@ function createLiveMap(container, graph, options) {
       const wroom = wtext ? textWidth(wtext, 10, 400) + 14 : 0;
       const showWords = wtext && p.width - 20 - wroom > 60;
       words.textContent = showWords ? wtext : "";
-      words.setAttribute("x", p.width - 10); words.setAttribute("y", 16);
-      label.setAttribute("x", 10); label.setAttribute("y", 16);
+      // Baselines chosen so the big name and the small count sit on one optical line.
+      words.setAttribute("x", p.width - 10); words.setAttribute("y", 17);
+      label.setAttribute("x", 10); label.setAttribute("y", 20);
 
       // THE BAND'S SHAPE, between its name and its word count. Above the line is support that
       // arrives after the claim it holds up; below is support already given. Dropped, like the
@@ -3650,7 +3659,8 @@ function createLiveMap(container, graph, options) {
         spark.appendChild(el("polyline", { class: "alm-spark-line", points: gr.spark.line }));
       }
       label.textContent = fitLabel(gr.label + (gr.fold === false ? "" : "  ▾"),
-                                   p.width - 20 - (showWords ? wroom : 0) - (showSpark ? sroom : 0));
+                                   p.width - 20 - (showWords ? wroom : 0) - (showSpark ? sroom : 0),
+                                   GROUP_LABEL_SIZE);
       box.querySelector("title").textContent = gr.title || gr.label;   // untruncated, on hover
       box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
