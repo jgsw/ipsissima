@@ -77,6 +77,11 @@ const require = createRequire(import.meta.url);
 const yaml = require("js-yaml");
 // The one-file container, shared with the page so that "what a bundle is" is defined once.
 const BUNDLE = require(path.join(BUILD, "argdown-bundle.js"));
+// REQUIRED FOR ITS SIDE EFFECT. It publishes `globalThis.ArgdownValidity`, which
+// argdown-graph.mjs looks up to decide any step that names an inference rule. In the page the
+// inlined classic script does this; here nothing else would, and the first build made without
+// it reported every named step as `unformalized` -- the right answer to the wrong question.
+require(path.join(BUILD, "argdown-validity.js"));
 // And the section list, shared with the page for exactly the same reason -- see the header of
 // argdown-page.js for what having TWO of them cost. The marker vocabulary, the substitution and
 // the JSON escaping all live there now; nothing in this file may keep a second copy of any of
@@ -191,6 +196,11 @@ function liveMapDeps() {
          // The desktop host adapter. In a browser it detects no host and every existing path
          // runs unchanged, so the SAME single file is the web app and the app's frontend --
          // which is the property that stopped this becoming two codebases.
+         // Decides a step that NAMES an inference rule, so the bar can say whether the step
+         // keeps its word as somebody edits. Before argdown-live-map.js, which reads the
+         // verdict, and before the bundle carrying argdown-graph.mjs, which computes it off
+         // `globalThis.ArgdownValidity`. 7 KB, and inert on every map that names no rule.
+         wrap("argdown-validity.js", readScript("argdown-validity.js"), "LIVEMAP_DEPS") +
          wrap("argdown-host.js", readScript("argdown-host.js"), "LIVEMAP_DEPS") +
          markdownBundle();
 }

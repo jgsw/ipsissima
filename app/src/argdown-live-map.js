@@ -1568,7 +1568,8 @@ function layoutByArgument(vis, sizes, opt) {
     edgeData.set(key.v + " " + key.w + " " + key.name,
                  { points: pts, step: e.step == null ? null : e.step,
                    line: e.line == null ? null : e.line,
-                   through: !!e.through, rule: e.rule || null });
+                   through: !!e.through, rule: e.rule || null,
+                   validity: e.validity || null, countermodel: e.countermodel || null });
   }
 
   for (const p of nodeMap.values()) {
@@ -1994,7 +1995,8 @@ function pcsRows(pcs) {
     rows.push({ n: l.n, role: l.role, concl, bar: concl, ref: !!l.drawn,
                 refLabel: l.drawn ? String(l.title || "") : null,
                 text: l.drawn ? "[" + String(l.title || "") + "]" : String(l.text || ""),
-                rule: concl ? (l.rule || null) : null });
+                rule: concl ? (l.rule || null) : null,
+                verdict: concl ? (l.verdict || null) : null });
   }
   return rows;
 }
@@ -3312,12 +3314,34 @@ function createLiveMap(container, graph, options) {
           const by = py + PCS_BAR_H / 2;
           let barEnd = x1;
           if (r.rule) {
-            const label = fitLabel(r.rule, (x1 - x0) * 0.62, 8.5, "400");
-            const rt = el("text", { class: "alm-pcs-rule", x: x1, y: by + 3,
+            const v = r.verdict && r.verdict.state;
+            // ROOM FOR THE BADGE FIRST. The name is right-anchored at the box edge, so an
+            // invalid step has to give the badge its 15px before the label is fitted -- fitting
+            // first and shifting after would truncate a name that had room all along.
+            const pad = v === "invalid" ? 15 : 0;
+            const label = fitLabel(r.rule, (x1 - x0) * 0.62 - pad, 8.5, "400");
+            const rt = el("text", { class: "alm-pcs-rule" + (v ? " alm-v-" + v : ""),
+                                    x: x1 - pad, y: by + 3,
                                     "text-anchor": "end", "font-size": 8.5 });
             rt.textContent = label;
             box.appendChild(rt);
-            barEnd = x1 - textWidth(label, 8.5, "400") - 5;
+            if (v === "invalid") {
+              const g = el("g", { class: "alm-verdict" });
+              g.append(el("circle", { r: 6, cx: x1 - 6, cy: by }),
+                       el("text", { x: x1 - 6, y: by, dy: 3.2, "text-anchor": "middle",
+                                    "font-size": 8.5 }));
+              g.querySelector("text").textContent = "!";
+              const ttl = el("title");
+              ttl.textContent = "The conclusion does not follow from the premises, on the "
+                + "formalizations given."
+                + (r.verdict.countermodel
+                     ? "  Countermodel: " + Object.keys(r.verdict.countermodel)
+                         .map(k => k + " = " + JSON.stringify(r.verdict.countermodel[k])).join(", ")
+                     : "");
+              g.appendChild(ttl);
+              box.appendChild(g);
+            }
+            barEnd = x1 - pad - textWidth(label, 8.5, "400") - 5;
           }
           box.appendChild(el("path", { class: "alm-pcs-bar",
                                        d: `M${x0},${by}L${Math.max(x0 + 12, barEnd)},${by}` }));
@@ -3790,6 +3814,8 @@ function createLiveMap(container, graph, options) {
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push({ key: e.v + " " + e.w + " " + e.name, pts, name: e.name,
                            from: e.v, rule: (info && info.rule) || null,
+                           validity: (info && info.validity) || null,
+                           countermodel: (info && info.countermodel) || null,
                            line: info && info.line != null ? info.line : null });
     }
     for (const [k, list] of groups) {
@@ -3878,7 +3904,9 @@ function createLiveMap(container, graph, options) {
         ? node.pcs.filter(l => l && l.role === "premise" && l.step === step && !l.drawn).length
         : 0;
       bars.set(k, { geo, name: list[0].name, count: list.length + inside, inside, hull,
-                    arrivals, rule: named ? named.rule : null });
+                    arrivals, rule: named ? named.rule : null,
+                    validity: named ? named.validity : null,
+                    countermodel: named ? named.countermodel : null });
     }
     return { member, bars };
   }
@@ -3959,10 +3987,79 @@ function createLiveMap(container, graph, options) {
         const uy = half > 0 ? (far.y - j.y) / half : 0;
         rt.setAttribute("x", far.x + ux * 5 - out.x * 6);
         rt.setAttribute("y", far.y + uy * 5 - out.y * 6 + 3);
-        rt.setAttribute("text-anchor", (Math.sign(far.x - j.x) || 1) < 0 ? "end" : "start");
+        const anchorEnd = (Math.sign(far.x - j.x) || 1) < 0;
+        rt.setAttribute("text-anchor", anchorEnd ? "end" : "start");
         rt.setAttribute("fill", rel.color);
         rt.textContent = info.rule;
+
+        /* WHAT THE NAME'S CLAIM CAME TO -- and only one of the four states is loud.
+         *
+         * A rule name asserts the conclusion FOLLOWS. Three things can be true of that
+         * assertion and a fourth is the absence of it:
+         *   valid          decided, and it holds. The quietest possible positive mark.
+         *   invalid        decided, and it does not. The one state worth interrupting for.
+         *   unformalized   claimed, with nothing to check it against.
+         *   (no rule)      no claim made, so no mark at all -- every map today.
+         *
+         * The valid state is deliberately almost nothing. `#core` was removed from this
+         * project for marking 27%-65% of claims and thereby meaning nothing; if every sound
+         * step wore a tick, the ticks would be the noise and the one broken step would be
+         * harder to find rather than easier. Mark the exception.
+         */
+        const shift = info.validity === "invalid" ? 13 : 0;
+        rt.setAttribute("x", Number(rt.getAttribute("x")) + (anchorEnd ? -shift : shift));
+
+        let vb = holder.querySelector(".alm-verdict");
+        if (info.validity === "invalid") {
+          if (!vb) {
+            vb = el("g", { class: "alm-verdict" });
+            vb.append(el("circle", { r: 6.5 }), el("text", { "text-anchor": "middle",
+                                                             "font-size": 9, dy: 3.2 }));
+            vb.appendChild(el("title"));
+            holder.appendChild(vb);
+            // THE COUNTERMODEL NEEDS SOMEWHERE TO LIVE. It is the most useful thing the check
+            // produces -- the concrete way the premises hold while the conclusion fails -- and
+            // it is far too big for a bar. A click target is where it belongs.
+            vb.addEventListener("click", ev => {
+              ev.stopPropagation();
+              const open = holder.classList.toggle("alm-v-open");
+              const d = holder.querySelector(".alm-verdict-detail");
+              if (d) d.style.display = open ? "" : "none";
+            });
+          }
+          const bx = Number(rt.getAttribute("x")) + (anchorEnd ? 7 : -7);
+          const by = Number(rt.getAttribute("y")) - 3;
+          vb.querySelector("circle").setAttribute("cx", bx);
+          vb.querySelector("circle").setAttribute("cy", by);
+          const vt = vb.querySelector("text");
+          vt.setAttribute("x", bx); vt.setAttribute("y", by); vt.textContent = "!";
+          vb.querySelector("title").textContent =
+            "The conclusion does not follow from the premises, on the formalizations given. "
+            + "Click for the countermodel.";
+
+          let dt = holder.querySelector(".alm-verdict-detail");
+          if (!dt) {
+            dt = el("text", { class: "alm-verdict-detail", "font-size": 8.5 });
+            dt.style.display = "none";
+            holder.appendChild(dt);
+          }
+          dt.setAttribute("x", rt.getAttribute("x"));
+          dt.setAttribute("y", Number(rt.getAttribute("y")) + 11);
+          dt.setAttribute("text-anchor", anchorEnd ? "end" : "start");
+          dt.textContent = info.countermodel
+            ? Object.keys(info.countermodel).map(k =>
+                k + " = " + JSON.stringify(info.countermodel[k])).join(", ")
+            : "";
+        } else if (vb) {
+          vb.remove();
+          const d = holder.querySelector(".alm-verdict-detail");
+          if (d) d.remove();
+        }
       } else if (rt) rt.remove();
+      // The state rides on the holder so one CSS rule can style the name, and so a map can be
+      // asked how many of its named steps hold up without re-deciding any of them.
+      holder.setAttribute("class", "alm-join" + (info.validity ? " alm-v-" + info.validity : "")
+                          + (holder.classList.contains("alm-v-open") ? " alm-v-open" : ""));
       /* THE LINE NUMBER AT EACH FOOT. The box lists the structure as numbered rows and the
        * members arrive as anonymous lines; this is the pairing, written where the pairing
        * happens. Placed on the far side of the bar from the box (`out` points that way), and
@@ -5057,6 +5154,33 @@ function injectStyle() {
 /* The rule name beside the bar. Italic and small: it names the LICENCE for the step, which is a
    remark about the argument rather than a move in it. */
 .alm-join-rule{font-style:italic;opacity:.85;pointer-events:none}
+/* WHAT BECAME OF THE CLAIM THE RULE NAME MAKES. Four states, and only one is loud.
+
+   NO NEW COLOUR. All four of the relation colours are spoken for -- green support, red attack,
+   orange undercut, purple contradictory -- so a red "invalid" badge would read as an attack on
+   the step rather than a remark about it. The name keeps its relation colour and the DECORATION
+   carries the verdict; the badge takes --alm-accent, which is already this map's voice for
+   the program talking about the map rather than for anything in the argument. */
+.alm-pcs-rule.alm-v-valid{font-style:normal;opacity:1;text-decoration:underline;
+  text-decoration-thickness:.5px;text-underline-offset:2px}
+.alm-pcs-rule.alm-v-invalid{text-decoration:line-through;opacity:1;font-style:normal}
+.alm-pcs-rule.alm-v-unformalized{opacity:.5;text-decoration:underline;
+  text-decoration-style:dotted;text-underline-offset:2px}
+.alm-v-valid .alm-join-rule{font-style:normal;opacity:1;text-decoration:underline;
+  text-decoration-thickness:.5px;text-underline-offset:2px}
+.alm-v-invalid .alm-join-rule{text-decoration:line-through;opacity:1;font-style:normal}
+/* Claimed, and nothing to check it against -- the state the fidelity history says will be the
+   common one at first. Hollow rather than absent: it is a claim, it is simply unexamined. */
+.alm-v-unformalized .alm-join-rule{opacity:.5;text-decoration:underline;
+  text-decoration-style:dotted;text-underline-offset:2px}
+.alm-verdict{cursor:pointer}
+.alm-verdict circle{fill:var(--alm-accent,#3a7bd5)}
+.alm-verdict text{fill:#fff;font-weight:600;pointer-events:none}
+.alm-verdict:hover circle{fill:#2b5fa8}
+/* The countermodel, folded away until the badge is clicked. Monospace, because it is a list of
+   assignments and a reader compares them column-wise. */
+.alm-verdict-detail{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  fill:var(--alm-accent,#3a7bd5);opacity:.9;pointer-events:none}
 /* The enclosure round the premises of one inference step: the Rationale convention, which draws
    what works together as one thing. A WASH WITH NO BORDER, deliberately -- a section's group box
    is already a dashed rectangle, and a second bordered rectangle a few pixels away would read as
