@@ -460,7 +460,27 @@ export function toGraph(res) {
           // has to be recovered first.
           ...(() => {
             const r = resolveMentions(n.labelText || "", n.labelTextRanges || []);
-            return { detail: r.text.trim(), detailRanges: r.ranges };
+            if (r.text.trim()) return { detail: r.text.trim(), detailRanges: r.ranges };
+            /* THE WORDS SURVIVE THE LABEL MODE. `statementLabelMode: "title"` (and its
+             * argument twin) tells Argdown to put nothing but the title on a map node, and the
+             * words then arrived here as an empty labelText -- so the box, its tooltip and the
+             * claims toggle all had nothing to show, and a reader met "Unsafe Without
+             * Philosophy" with no way to unpack what it amounts to (reported from use, on the
+             * one map in the corpus that sets the mode). A label mode is an export style for
+             * Argdown's own outputs; this adapter's contract is that the claim's words are
+             * always carried, because a field that is carried can be drawn and the viewer's
+             * own claims toggle is what decides how much of it shows. The words live at the
+             * definition, exactly where wordsOf reads them for a bare reference line; a claim
+             * referred to but never defined keeps an empty detail, since its title is already
+             * the label.
+             */
+            const rec = (res.statements && res.statements[n.title]) ||
+                        (res.arguments && res.arguments[n.title]);
+            for (const m of (rec && rec.members) || []) {
+              const t = m.text == null ? "" : String(m.text).trim();
+              if (t) return { detail: stripMentionMarkup(t), detailRanges: [] };
+            }
+            return { detail: "", detailRanges: [] };
           })(),
           // WHAT THE NODE IS, not what it is tagged. The tag used to win here, so every
           // <Argument> that carried one — all 13 in the reference maps — arrived at the renderer
