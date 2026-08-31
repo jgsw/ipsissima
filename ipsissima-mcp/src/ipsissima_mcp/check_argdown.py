@@ -667,6 +667,27 @@ def precondition_report(doc):
         print(f"      ? [{src[:40]}] -> [{str(dst)[:40]}]  ({phrase})")
 
 
+def _formalization(doc, entry):
+    """A line's formalization, from the line or from the statement the line refers to.
+
+    `(2) [The advice was unlawful]` is a REFERENCE and carries no inline data of its own.
+    Ipsissima's house style defines a claim once and refers to it, so reading only the line
+    found nothing at all on the first real map this was pointed at.
+    """
+    own = (entry.get("data") or {}).get("formalization")
+    if isinstance(own, str) and own.strip():
+        return own
+    title = entry.get("title")
+    rec = ((doc.get("statements") or {}).get(title)
+           or (doc.get("arguments") or {}).get(title) or {})
+    for m in rec.get("members") or []:
+        f = (m.get("data") or {}).get("formalization")
+        if isinstance(f, str) and f.strip():
+            return f
+    f = (rec.get("data") or {}).get("formalization")
+    return f if isinstance(f, str) and f.strip() else None
+
+
 def validity_checks(doc):
     """Steps that NAME an inference rule, and whether the conclusion actually follows.
 
@@ -702,9 +723,9 @@ def validity_checks(doc):
             inputs = ([int(u) for u in declared] if isinstance(declared, list) else positional)
             if rules:
                 named = ", ".join(rules)
-                forms = {i: ((pcs[i - 1].get("data") or {}).get("formalization"))
+                forms = {i: _formalization(doc, pcs[i - 1])
                          for i in inputs if 1 <= i <= len(pcs)}
-                concl = (entry.get("data") or {}).get("formalization")
+                concl = _formalization(doc, entry)
                 missing = [str(i) for i in inputs if not forms.get(i)]
                 if not concl:
                     missing.append("the conclusion")

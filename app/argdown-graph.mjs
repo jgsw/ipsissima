@@ -341,6 +341,25 @@ export function toGraph(res) {
   // reaches the map. Colour is spent on role, so the renderer gives fidelity the border.
   const FIDELITY = new Set(["quotation", "paraphrase", "compression",
                             "interpretation", "imputation"]);
+  /* WHERE A FORMALIZATION ACTUALLY LIVES.
+   *
+   * `(2) [The advice was unlawful]` is a REFERENCE: the line carries no inline data at all, and
+   * the `formalization:` is on the statement it names. Ipsissima's house style defines claims
+   * once and refers to them, so that is the normal case and not the exception -- reading only
+   * the line found nothing on the first real map this was pointed at.
+   */
+  const formalizationOf = title => {
+    const rec = (res.statements && res.statements[title]) ||
+                (res.arguments  && res.arguments[title]);
+    for (const m of (rec && rec.members) || []) {
+      const f = m.data && m.data.formalization;
+      if (typeof f === "string" && f.trim()) return f;
+    }
+    const d = rec && rec.data;
+    return d && typeof d.formalization === "string" && d.formalization.trim()
+      ? d.formalization : null;
+  };
+
   const fidelityOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -582,7 +601,8 @@ export function toGraph(res) {
         // THE FORMALIZATION, carried so the step can be decided. Only a step that NAMES a rule
         // is ever decided -- see `docs/VALIDITY-PLAN.md` -- so on the overwhelming majority of
         // maps this is null on every line and costs nothing.
-        form: p.data && typeof p.data.formalization === "string" ? p.data.formalization : null,
+        form: (p.data && typeof p.data.formalization === "string" ? p.data.formalization : null)
+              || (p.title ? formalizationOf(p.title) : null),
         // Filled in below, once every line of the step is known. Declared here so the shape of
         // a line is stated in one place rather than grown by assignment.
         verdict: /** @type {any} */ (null)
