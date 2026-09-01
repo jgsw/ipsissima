@@ -11,7 +11,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
 
-from ipsissima_mcp.validity import check_step  # noqa: E402
+from ipsissima_mcp.validity import check_step, stamp  # noqa: E402
 
 VECTORS = json.loads((HERE / "validity-vectors.json").read_text())
 
@@ -44,8 +44,16 @@ for case in VECTORS["cases"]:
     else:
         print(f"  ok    {case['name']}")
 
+# BEFORE the exit, not after it. Written below `sys.exit(1)` these ran only when everything else
+# had already passed, and could never fail the suite on their own -- the same slip in both halves.
+for v in VECTORS.get("stamps", []):
+    got = stamp(v["text"])
+    if got != v["stamp"]:
+        print(f"  FAIL  stamp {v['name']}: expected {v['stamp']}, got {got}")
+        fails += 1
+
 print()
 if fails:
-    print(f"{fails} of {len(VECTORS['cases'])} failed")
+    print(f"{fails} check(s) failed")
     sys.exit(1)
-print(f"all {len(VECTORS['cases'])} vectors pass")
+print(f"all {len(VECTORS['cases'])} vectors and {len(VECTORS.get('stamps', []))} stamps pass")

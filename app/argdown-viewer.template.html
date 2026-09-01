@@ -4633,9 +4633,12 @@ function explStepBox(st, titlesOnly){
   if (st.verdict && st.verdict.state) {
     var v = document.createElement("div");
     v.className = "xrule " + (st.verdict.state === "invalid" ? "xbad" :
-                              st.verdict.state === "valid" ? "xgood" : "");
+                              st.verdict.state === "valid" ? "xgood" :
+                              st.verdict.state === "stale" ? "xbad" : "");
     v.textContent = st.verdict.state === "valid" ? "checked: the conclusion follows"
                   : st.verdict.state === "invalid" ? "checked: the conclusion does NOT follow"
+                  : st.verdict.state === "stale"
+                      ? "NOT checked: a claim here was edited after it was formalized"
                   : "a rule is named, but nothing checks it";
     box.appendChild(v);
   }

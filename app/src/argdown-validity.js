@@ -320,8 +320,45 @@ function checkStep(premises, conclusion) {
   return out;
 }
 
+/* ---- the stamp: does this formalization still belong to this claim? ----------------------
+ *
+ * A `formalization` is written BY HAND, once, by whoever reconstructed the argument, and nothing
+ * afterwards ties it to the sentence it stands for. Edit the claim and the formula stays put --
+ * and the checker will happily decide the step, correctly, about formulas that no longer say
+ * what the claim says. That is worse than an unchecked step, because it wears the badge of
+ * having been checked.
+ *
+ * So a claim may carry the stamp of the text it was formalized against:
+ *
+ *     [X]: If the advice was unlawful the Order is null.
+ *          {formalization: "u -> na", formalized: "3d2a90f1"}
+ *
+ * and a stamp that no longer matches is reported. FNV-1a, 32 bits, over the text lowercased and
+ * with its whitespace collapsed: a re-wrapped line or a capitalised first letter is not a change
+ * to what the claim SAYS, and warning about those would teach people to ignore the warning.
+ *
+ * WRITTEN IDENTICALLY IN PYTHON, and the two are checked against shared vectors, because a stamp
+ * that means one thing in the page and another in the checker is worse than no stamp at all. */
+function stampText(text) {
+  return String(text == null ? "" : text).toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function stamp(text) {
+  var t = stampText(text), h = 0x811c9dc5;
+  // Over UTF-8 BYTES, not code units, so the two halves agree on anything but ASCII -- and a
+  // reconstruction of a German or French text is full of such characters.
+  var bytes = typeof TextEncoder !== "undefined"
+    ? new TextEncoder().encode(t)
+    : Buffer.from(t, "utf8");
+  for (var i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return ("0000000" + h.toString(16)).slice(-8);
+}
+
 var API = { parse: parse, lex: lex, satisfiable: satisfiable, checkStep: checkStep,
-            survey: survey, describe: describe,
+            survey: survey, describe: describe, stamp: stamp,
             MAX_PREDICATES: MAX_PREDICATES, MAX_MODELS: MAX_MODELS };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownValidity = API;

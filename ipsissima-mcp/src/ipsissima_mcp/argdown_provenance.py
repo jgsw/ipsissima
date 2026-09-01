@@ -1796,3 +1796,74 @@ def dag_depth(doc):
 
 if __name__ == "__main__":
     _dump_positions()
+
+
+def stamp_rewrites(doc):
+    """Claim id -> the stamp its text should carry, for every claim carrying a formalization.
+
+    A `formalization` is written once, by hand, and nothing afterwards ties it to the sentence it
+    stands for. `formalized:` is the claim's record of the words it was written against, so that
+    editing the claim and leaving the formula can be NOTICED. It records agreement; it cannot
+    check it, which is why writing one is a deliberate act and not something a report does on its
+    own.
+
+    Only claims that HAVE a formalization: a stamp on anything else would be a fact about nothing.
+    """
+    import sys
+    import os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from validity import stamp
+
+    out = {}
+    for title, rec in (doc.get("statements") or {}).items():
+        form = None
+        for m in (rec.get("members") or []) + [rec]:
+            f = (m.get("data") or {}).get("formalization")
+            if isinstance(f, str) and f.strip():
+                form = f
+                break
+        if not form:
+            continue
+        # The first member with something in it: some carry a single space, and `rec["text"]` is
+        # None for every statement in the corpus. Same rule as `_claim_text_and_stamp`, and the
+        # two must agree or a stamp would be written against one string and checked against
+        # another.
+        text = next((m.get("text") for m in rec.get("members") or []
+                     if (m.get("text") or "").strip()), None) or rec.get("text")
+        if text:
+            out[title] = stamp(text)
+    return out
+
+
+def apply_stamp_rewrites(path, stamps):
+    """Write `formalized:` into each claim's own metadata block. Returns the ids changed.
+
+    THE SAME READ-MODIFY-WRITE AS `apply_fidelity_rewrites`, and for the same reason: a claim id
+    appears wherever the file refers to it, and only its DEFINITION carries metadata. Rewriting
+    the first match would stamp a reference and leave the definition alone.
+    """
+    text = open(path, encoding="utf-8").read()
+    done = []
+    for cid, want in stamps.items():
+        for m in re.finditer(r"\[" + re.escape(cid) + r"\]\s*:", text):
+            nxt = re.search(r"(?m)^\s*(?:[+\-]>?\s*)?(?:\(\d+\)\s*)?\[[^\]]+\]\s*:",
+                            text[m.end():])
+            end = m.end() + (nxt.start() if nxt else min(len(text) - m.end(), 4000))
+            seg = text[m.end():end]
+            if "formalization:" not in seg:
+                break                      # this occurrence is a reference, not the definition
+            got = re.search(r'formalized:\s*"([0-9a-f]{8})"', seg)
+            if got:
+                if got.group(1) == want:
+                    break                  # already agrees; leave the file alone
+                seg2 = seg[:got.start(1)] + want + seg[got.end(1):]
+            else:
+                seg2 = re.sub(r'(formalization:\s*"[^"]*")',
+                              r'\1, formalized: "%s"' % want, seg, count=1)
+            if seg2 != seg:
+                text = text[:m.end()] + seg2 + text[end:]
+                done.append(cid)
+            break
+    if done:
+        open(path, "w", encoding="utf-8").write(text)
+    return done

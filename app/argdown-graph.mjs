@@ -360,6 +360,33 @@ export function toGraph(res) {
       ? d.formalization : null;
   };
 
+  /* HAS THE CLAIM CHANGED SINCE ITS FORMULA WAS WRITTEN? A `formalization` is written once, by
+   * hand, and nothing afterwards ties it to the sentence it stands for: edit the claim, leave the
+   * formula, and the step is still decided -- correctly -- about formulas that no longer say what
+   * the claim says. The map would then draw `checked: the conclusion follows` over an argument
+   * the words no longer make, which is worse than drawing nothing.
+   *
+   * `formalized:` is the claim's record of the words it was written for. Read here beside the
+   * formula, and compared against the claim as it now stands; see `validity.stamp`, and
+   * `check_argdown.py --stamp`, which writes them. */
+  const stampedTextOf = title => {
+    const rec = (res.statements && res.statements[title]) ||
+                (res.arguments  && res.arguments[title]);
+    if (!rec) return { text: null, was: null };
+    // The text is on a MEMBER, not on the record, and some members carry only a space.
+    let text = null;
+    for (const m of rec.members || [])
+      if (m.text && m.text.trim()) { text = m.text; break; }
+    if (text == null && typeof rec.text === "string") text = rec.text;
+    let was = null;
+    for (const m of rec.members || []) {
+      const v = m.data && m.data.formalized;
+      if (typeof v === "string") { was = v; break; }
+    }
+    if (was == null && rec.data && typeof rec.data.formalized === "string") was = rec.data.formalized;
+    return { text, was };
+  };
+
   /* WHY the reconstructor departed from the text, where they did. `fidelity` says how far a
    * claim is from the author's words; `warrant` says what licensed going that far, and it is
    * the half a reader is entitled to see -- an `imputation` with a reason is a reading, and one
@@ -695,6 +722,21 @@ export function toGraph(res) {
       const byN = new Map(lines.map(x => [x.n, x]));
       const prem = inputs.map(n => byN.get(n) && byN.get(n).form);
       if (!V || !l.form || prem.some(f => !f)) return { state: "unformalized" };
+
+      /* STALE BEFORE VALID. Asked of every line of the step, and it outranks the verdict: a step
+       * whose claims have been edited since they were formalized has not been checked, whatever
+       * the formulas say about each other. */
+      if (typeof V.stamp === "function") {
+        const lines2 = inputs.concat([l.n]);
+        for (const n2 of lines2) {
+          const x = byN.get(n2);
+          if (!x || !x.title) continue;
+          const { text, was } = stampedTextOf(x.title);
+          if (was && text != null && V.stamp(text) !== was)
+            return { state: "stale", claim: x.title };
+        }
+      }
+
       const r = V.checkStep(prem, l.form);
       if (!r.supported) return { state: "undecided", why: r.error };
       return r.valid ? { state: "valid" }
