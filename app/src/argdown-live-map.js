@@ -3044,8 +3044,23 @@ function createLiveMap(container, graph, options) {
   /** A claim clipped mid-sentence is a claim you cannot read, so the box grows to fit its text.
    *  Beyond `maxLines` it is clipped and the node offers a control to see the rest — otherwise
    *  one long claim sets the height of its whole rank and pushes everything else off screen. */
+  /* `Untitled 3` IS THE PARSER'S PLACEHOLDER, not a name. Argdown gives one to every statement
+   * written without a title -- `(5) A domain that is normatively loaded...` -- and drawn as a
+   * heading it occupies the most prominent line of the box while telling the reader nothing, and
+   * looking exactly like a name somebody chose. On Argdown's own `welcome to argdown` demo a box
+   * is headed `Untitled 2` over the sentence it stands for.
+   *
+   * So a box whose label is a placeholder draws NO title line and lets its sentence stand, which
+   * is what the sentence was already doing the work of. Only where there IS a sentence: a claim
+   * with neither a name nor a text would otherwise be an empty box.
+   *
+   * The label itself is untouched. It is the identity the file's references resolve through and
+   * what the claim search matches on; this is about what is drawn. */
+  const drawsTitle = n => !(/^Untitled \d+$/.test(String(n.label || "")) && n.detail);
+
   function sizeOf(n) {
-    const title = measure(n.label, opt.titleSize, true);
+    const title = drawsTitle(n) ? measure(n.label, opt.titleSize, true)
+                                : { lines: [], width: 0 };
     const full  = n.detail ? measure(n.detail, opt.fontSize, false) : { lines: [], width: 0 };
     const open  = allText || textOpen.has(n.id);
     const clip  = !open && full.lines.length > opt.maxLines;

@@ -56,6 +56,7 @@ const BUILDER = path.join(HERE, "build_argdown_viewer.mjs");
 const argv = process.argv.slice(2);
 const LIMIT = Number((argv[argv.indexOf("--maps") + 1] || 0)) || 99;
 const KEEP = argv.includes("--keep");
+const CORPUS = argv.includes("--corpus") ? argv[argv.indexOf("--corpus") + 1] : null;
 const SELFTEST = !argv.includes("--no-selftest");
 let didSelftest = false, proved = 0;
 
@@ -69,16 +70,26 @@ function check(ok, what, detail) {
 /* ------------------------------------------------------------------ the maps under test */
 
 /** Every sample with a manuscript beside it, built fresh so the renderer under test is the one
- *  in the working tree rather than whatever was last committed to a `(map).html`. */
+ *  in the working tree rather than whatever was last committed to a `(map).html`.
+ *
+ *  `--corpus DIR` points this somewhere else. The public samples are seven careful maps and they
+ *  are not a sample of what people write: the private corpus has book-length reconstructions,
+ *  Argdown's own demo files, and maps made by other tools. Run against those before believing a
+ *  green suite means much. Any directory holding `.argdown` files, at any depth, will do. */
 function corpus() {
   const out = [];
-  const base = path.join(REPO, "samples");
-  for (const dir of fs.readdirSync(base)) {
-    const full = path.join(base, dir);
-    if (!fs.statSync(full).isDirectory()) continue;
-    const src = fs.readdirSync(full).find(f => f.endsWith(".argdown"));
-    if (src) out.push({ name: dir.split(" ")[0], argdown: path.join(full, src), root: full });
-  }
+  const base = CORPUS || path.join(REPO, "samples");
+  const walk = dir => {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (e.name.startsWith(".")) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (e.name.endsWith(".argdown"))
+        out.push({ name: path.basename(e.name, ".argdown").slice(0, 24),
+                   argdown: full, root: dir });
+    }
+  };
+  walk(base);
   return out.slice(0, LIMIT);
 }
 
@@ -144,7 +155,12 @@ const INVARIANTS = function () {
     const drawn = [...b.querySelectorAll("text")].map(x => x.textContent).join(" ")
       .replace(/\s+/g, " ").replace(/…/g, "").trim().toLowerCase();
     const blocks = tip.split("\n\n").map(s => s.trim()).filter(Boolean);
-    const adds = blocks.some(bl => !drawn.includes(bl.replace(/\s+/g, " ").slice(0, 40).toLowerCase()));
+    // WHOLE BLOCKS, not their first forty characters. A clipped claim's tooltip carries the FULL
+    // sentence while the box draws a PREFIX of it, so comparing openings called every one of
+    // those a repeat -- 78 failures across the private corpus, none of them real, and none
+    // visible on the public one because those maps carry provenance that added a second block.
+    // A block repeats the box only if the box already contains ALL of it.
+    const adds = blocks.some(bl => !drawn.includes(bl.replace(/\s+/g, " ").trim().toLowerCase()));
     if (!adds && drawn)
       say("a tooltip says something the box does not",
           `"${(b.querySelector(".alm-title") || {}).textContent}" repeats itself: ${tip.slice(0, 60)}`);
