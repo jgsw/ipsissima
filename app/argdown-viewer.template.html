@@ -613,12 +613,12 @@ body.fs #fsexit{display:inline-flex}
 #explbody.stair .xedges path{stroke:#3a9d5d;stroke-width:1.6;fill:none}
 /* What a one-input step becomes: a few words on the arrow instead of a box. */
 #explbody.stair .xedges text{fill:var(--fg-dim,#667);font-size:11px;font-style:italic}
-/* In the titles view a box holds short names, so it should not stretch its lines out to the
+/* In the compact view a box holds short names, so it should not stretch its lines out to the
    full width of a sentence. */
-#explbody.titles .xline{padding:.1rem .3rem}
-#explbody.titles .xstep,#explbody.titles .xconcl{padding:.4rem .55rem}
-#explbody.titles .xstep h4{margin-bottom:.25rem}
-#explbody.titles .xrule{margin-top:.25rem;font-size:.8em}
+#explbody.compact .xline{padding:.1rem .3rem}
+#explbody.compact .xstep,#explbody.compact .xconcl{padding:.4rem .55rem}
+#explbody.compact .xstep h4{margin-bottom:.25rem}
+#explbody.compact .xrule{margin-top:.25rem;font-size:.8em}
 .xmode{display:flex;gap:0;margin-left:auto}
 .xmode button{border:1px solid var(--line);background:transparent;font:inherit;font-size:.82em;
   padding:.12rem .6rem;cursor:pointer}
@@ -909,7 +909,7 @@ body.fs #fsexit{display:inline-flex}
         <!-- THROWAWAY, for choosing between the two layouts. One of them goes when the choice
              is made; neither is worth a persistent setting. -->
         <span class="xmode">
-          <button id="xmstair" class="on">Full text</button><button id="xmtitles">Titles</button>
+          <button id="xmstair" class="on">Full text</button><button id="xmcompact">Compact</button>
         </span>
         <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
       </header>
@@ -3602,7 +3602,7 @@ $("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
 $("absclose").onclick = function(){ setAbstract(false); };
 $("explclose").onclick = explHide;
 $("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
-$("xmtitles").onclick = function(){ EXPL_MODE = "titles"; explDraw(); };
+$("xmcompact").onclick = function(){ EXPL_MODE = "compact"; explDraw(); };
 // Clicking the dim surround dismisses it, as it does for the About card.
 $("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
 
@@ -4675,8 +4675,13 @@ function explEdgeLayer(wrap, w, h){
   return svg;
 }
 
-function explElbow(svg, x1, y1, x2, y2, label){
-  var mid = y1 + (y2 - y1) / 2;
+/* `via` is the y of the horizontal run. It defaults to halfway, which is right when the boxes
+ * are stacked; in the compact view a conclusion box is centred in a row that a taller step box
+ * sets the height of, so halfway between its bottom and the next row lands INSIDE that step box
+ * and the edge is drawn straight through the text. Callers that know the row's real bottom pass
+ * it, and the run clears both boxes. */
+function explElbow(svg, x1, y1, x2, y2, label, via){
+  var mid = via == null ? y1 + (y2 - y1) / 2 : via;
   var pth = document.createElementNS(XNS, "path");
   pth.setAttribute("d", "M" + x1 + "," + y1 + " L" + x1 + "," + mid +
                         " L" + x2 + "," + mid + " L" + x2 + "," + y2);
@@ -4732,15 +4737,15 @@ function explStair(steps, body){
   }
 }
 
-/* TITLES. The same chain drawn from the claims' short names rather than their sentences, which
+/* COMPACT. The same chain drawn from the claims' short names rather than their sentences, which
  * is what lets it be a flowchart: a step and the conclusion it reaches sit SIDE BY SIDE on one
  * row, and the rows descend to the right. Two columns, so the conclusions line up down the page
  * and the chain can be followed by running an eye down the right-hand side.
  *
  * The names are the reconstructor's, not the source's, so this is the view to think WITH and
  * the full-text one to check against. */
-function explTitles(steps, body){
-  body.className = "stair titles";
+function explCompact(steps, body){
+  body.className = "stair compact";
   var wrap = document.createElement("div");
   wrap.className = "xwrap";
   body.appendChild(wrap);
@@ -4771,15 +4776,20 @@ function explTitles(steps, body){
     wrap.appendChild(r.concl);
   });
 
+  // BOTH boxes are centred in their row, so the arrow between them runs level whichever of the
+  // two is the taller. Each box then records where its own edges ended up: the row's bounds are
+  // not the box's, and drawing the edges from the row left every downward arrow starting in
+  // mid-air below the conclusion it was meant to leave.
   var top = 0, gap = 30;
   rows.forEach(function(r){
-    var h = Math.max(r.step ? r.step.offsetHeight : 0, r.concl.offsetHeight);
-    r.top = top; r.h = h;
-    if (r.step) r.step.style.top = Math.round(top) + "px";
-    // A conclusion with no step beside it sits at the top of its row; one that has a step
-    // beside it is centred against it, so the arrow between them runs level.
-    r.concl.style.top = Math.round(r.step
-      ? top + (h - r.concl.offsetHeight) / 2 : top) + "px";
+    var sh = r.step ? r.step.offsetHeight : 0, ch = r.concl.offsetHeight;
+    var h = Math.max(sh, ch);
+    if (r.step) r.step.style.top = Math.round(top + (h - sh) / 2) + "px";
+    r.concl.style.top = Math.round(top + (h - ch) / 2) + "px";
+    r.mid = top + h / 2;
+    r.bottom = top + h;
+    r.leaves = top + (h - ch) / 2 + ch;              // the conclusion box's own bottom edge
+    r.enters = r.step ? top + (h - sh) / 2 : top + (h - ch) / 2;   // and the next box's own top
     top += h + gap;
   });
   wrap.style.height = Math.round(top - gap) + "px";
@@ -4787,15 +4797,16 @@ function explTitles(steps, body){
   var svg = explEdgeLayer(wrap, avail, top);
   rows.forEach(function(r, i){
     if (r.step) {           // across: the step reaches its conclusion
-      var y = r.top + r.h / 2;
       var pth = document.createElementNS(XNS, "path");
-      pth.setAttribute("d", "M" + (stepX(i) + colW) + "," + y + " L" + conclX(i) + "," + y);
+      pth.setAttribute("d", "M" + (stepX(i) + colW) + "," + r.mid +
+                            " L" + conclX(i) + "," + r.mid);
       pth.setAttribute("marker-end", "url(#xah)");
       svg.appendChild(pth);
     }
     if (i < rows.length - 1) {   // down: that conclusion feeds the next step
       var nx = rows[i + 1].step ? stepX(i + 1) + 26 : conclX(i + 1) + 26;
-      explElbow(svg, conclX(i) + 26, r.top + r.h, nx, rows[i + 1].top, rows[i + 1].label);
+      explElbow(svg, conclX(i) + 26, r.leaves, nx, rows[i + 1].enters, rows[i + 1].label,
+                r.bottom + gap / 2);
     }
   });
 }
@@ -4815,11 +4826,11 @@ function explDraw(){
   var body = $("explbody"), foot = $("explfoot");
   body.textContent = ""; foot.textContent = "";
   var steps = explSteps((EXPL_NODE && EXPL_NODE.pcs) || []);
-  (EXPL_MODE === "titles" ? explTitles : explStair)(steps, body);
+  (EXPL_MODE === "compact" ? explCompact : explStair)(steps, body);
   foot.textContent = steps.length + (steps.length === 1 ? " step" : " steps") +
     ". Click any claim to show it on the map. Esc closes.";
   $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
-  $("xmtitles").className = EXPL_MODE === "titles" ? "on" : "";
+  $("xmcompact").className = EXPL_MODE === "compact" ? "on" : "";
 }
 
 function ctxShow(n, ev){
