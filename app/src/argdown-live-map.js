@@ -5387,7 +5387,15 @@ function injectStyle() {
 .alm-more{cursor:pointer}
 .alm-more text{fill:var(--alm-accent,#3a7bd5);pointer-events:none}
 .alm-more:hover text{text-decoration:underline}
-.alm-e{fill:none;stroke-width:1.8;transition:opacity var(--alm-dur,350ms) ease}
+/* AN EDGE IS A LINE BETWEEN TWO BOXES, NOT A TARGET. Without this it sits in the hit-testing
+   stack like anything else, and wherever one crosses a section's 22px fold strip the click lands
+   on the line and the section does not fold. Found by test_rendered_dom.mjs on its first run
+   over the whole corpus, on Prescott-Couch and Tooming, at the exact centre of the strip.
+   Scoped to the edge itself and NOT to the edge layer, which also holds the join bars and the
+   verdict badges -- and those are controls. (No backticks here: this block is inside a template
+   literal, and one would end it. That is written at the top of injectStyle and I did it anyway.) */
+.alm-e{fill:none;stroke-width:1.8;pointer-events:none;
+  transition:opacity var(--alm-dur,350ms) ease}
 /* EXPOSITION VIEW. An edge whose support arrives after the claim it bears on is ANTICIPATED:
    the reader is told the claim and asked to hold it until the support lands. That is the
    announce-then-argue convention analytic philosophy actually teaches -- Pryor's guide tells

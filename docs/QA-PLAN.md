@@ -95,16 +95,35 @@ the action.
 
 ---
 
-## 4. Instrument A — invariants over the rendered map
+## 4. Instrument A — invariants over the rendered map — **BUILT 1 Sep 2026**
 
-A headless browser opens a built viewer, drives it into a state, and asserts against what is
-actually on the page. **[judgement] This is the item that pays for itself; if only one thing is
-built, build this.**
+`app/test_rendered_dom.mjs`, registered in the runner and in CI. A headless browser opens a built
+viewer, drives it into a state, and asserts against what is actually on the page.
 
-The states come free. `encodeFoldState` / `decodeFoldState` already exist, are already exported,
-and already have a generator behind them in `test_fold_invariants.mjs`. The same seeded walk that
-drives the fold logic can drive the renderer, so this instrument inherits a state space rather
-than inventing one.
+**As measured on the day it was built:** 7 maps, 8 explode panels, both colour schemes, 80 checks
+in **54.6s**, of which 9.0s is building the viewers fresh so the renderer under test is the working
+tree's [measured]. Playwright is a devDependency (Apache-2.0 [reported]); its Chromium is 554MB of
+cache [measured] and is never shipped.
+
+**It found a real defect on its first full run over the corpus.** `.alm-e` — an edge — carried no
+`pointer-events: none`, so wherever an edge crossed a section's 22px fold strip the click landed
+on the line and the section did not fold. Reported on Prescott-Couch and Tooming, in both colour
+schemes, at the exact centre of the strip. Fixed by scoping `pointer-events: none` to the edge and
+not to the edge layer, which also holds the join bars and verdict badges — those are controls.
+
+**And it produced six false positives before it found that one**, all from the same invariant:
+controls sitting under the map's own fixed chrome, which is by design and not a fault. Scoping the
+check to the map itself is the difference between an instrument and a thing everyone learns to
+ignore. **[judgement] Expect this of every new invariant; budget for the calibration.**
+
+**Three states per map, and NOT the fold state space** — the opening view, sections open, and
+claims full, each of them something a reader does with the bar. Walking the fold space is
+`test_fold_invariants.mjs`'s job and it does it far more cheaply without a browser; what is wanted
+here is a few real pictures, painted. **[judgement]**
+
+`encodeFoldState` / `decodeFoldState` are exported and could drive this from the seeded walk, so
+a deeper state space is available cheaply if a defect ever escapes into one. Not built, because
+nothing yet says it is needed.
 
 The invariants, each traceable to a defect above:
 
@@ -120,18 +139,42 @@ The invariants, each traceable to a defect above:
   rendered coordinates rather than layout ones (3, 4)
 - **every assertion runs in both colour schemes** (9)
 
-Cost: one dev dependency (Playwright, Apache-2.0 [reported], compatible with GPL-3.0 as a
-devDependency), a browser download in CI, and perhaps 60–90 seconds of CI time [judgement,
-unmeasured]. The corpus is 11 `.argdown` files [measured]; at a handful of fold states each this
-is not a large matrix.
+Of the nine listed, six are built. Not yet built: the section-name legibility check, the
+contention-on-screen check in rendered coordinates, and the overlap check is present but has only
+ever been exercised by its own mutation — no real map has yet overlapped.
 
 ---
 
-## 5. Instrument B — real gestures
+### The mutation self-test, which is part of the instrument
+
+**[judgement] The most valuable thing built here, and the least expected.** Rather than mutate by
+hand once and write "mutation-tested" in a comment, `--selftest` injects each defect into a real
+page and requires the matching invariant to report it. It runs on every invocation and prints
+`N invariants proved able to fail` beside the check count.
+
+It has already caught three faults **in itself**, which is three more than the invariants have
+caught in the renderer:
+
+- the overlap mutation moved nothing. Appending a second `translate` to an `.alm-n` changes the
+  style string and does not move the box, so the harness reported the invariant as broken when the
+  MUTATION was broken. A clone in the same place needs no arithmetic and cannot lie.
+- the panel-scroll mutation was too weak: +300px does not overflow the compact layout, whose boxes
+  are half the panel each. It now measures off the wrap.
+- the first version silently ran **two of seven** mutations, because it restored the page by
+  reloading and most mutations then had nothing to break. That is exactly the failure mode the
+  self-test exists to prevent, hiding inside the self-test. The printed count is what exposed it.
+
+Undoing in place rather than reloading took the self-test from **310 of the suite's 330 seconds to
+under one** [measured].
+
+## 5. Instrument B — real gestures — **one check built**
 
 A deliberately small, deliberately slow tier: a real pointer and a real keyboard, driven through
 the browser, for the handful of interactions where synthesis is known to lie.
 
+- **built:** a real `mouse.click` on a section's header strip folds it. This is the gesture that
+  has broken twice, and it is what proves the `pointer-events` fix above with a real press and
+  release rather than with `elementFromPoint`, which only asks what the pointer *would* hit
 - right-click inside a section → the menu appears → **Fold section** folds it
 - press and drag inside a section → the map pans and **no text is selected**
 - click a bracketed premise row → the map travels → the return pill appears → its **×** dismisses

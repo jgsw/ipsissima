@@ -41,6 +41,11 @@ const SUITES = [
   // The CAMERA on a fold, which every other fold test here is silent about: a section that ends
   // up off the top of the pane is a correct layout drawn from the wrong place.
   ["the camera holds what was pressed", "node", [path.join(HERE, "test_fold_camera.mjs")]],
+  // WHAT THE RENDERER ACTUALLY PAINTS, in a real browser. Every other suite here stops at the
+  // DOM, and a fortnight of defects lived on the far side of it -- see docs/QA-PLAN.md. Skipped
+  // with a word rather than a failure where Playwright is not installed, so a checkout that has
+  // not run `npx playwright install chromium` still runs everything else.
+  ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
