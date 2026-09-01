@@ -193,7 +193,6 @@ const INVARIANTS = function () {
   /* THE MAIN CLAIM IS ON SCREEN. Already an invariant of the fold suite, but in LAYOUT
    * coordinates; a correct layout framed from the wrong place puts it off the pane anyway, which
    * is what the camera defects did. Mutation: add 2000 to the y of `frameFor`'s translation. */
-  const apex = boxes.filter(b => !b.querySelector(".alm-toggle.is-closed"))[0];
   if (boxes.length) {
     const anyOn = boxes.some(b => {
       const r = rect(b);
@@ -201,7 +200,6 @@ const INVARIANTS = function () {
     });
     if (!anyOn) say("something is on screen", `${boxes.length} boxes, none within the pane`);
   }
-  void apex;
 
   return bad;
 };
@@ -389,6 +387,8 @@ async function selftest(page, where, evaluator) {
     await page.evaluate(() => {
       while (window.__undo.length) window.__undo.pop()();
     });
+    // A `tagged` mutation adds boxes the renderer did not draw; undoing removes them, and the
+    // page is already in the state this pass needs, so nothing else has to be rebuilt.
   }
 }
 
@@ -405,6 +405,17 @@ async function dismissWalkthrough(page) {
     try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
     const w = document.getElementById("walk");
     if (w && !w.hidden) w.hidden = true;
+  });
+}
+
+/** The untagged chip, which only exists on a map that uses hashtags at all. */
+async function clickUntagged(page) {
+  return page.evaluate(() => {
+    const b = /** @type {HTMLButtonElement|null} */ (
+      document.querySelector(".alm-bar button[data-untagged]"));
+    if (!b) return false;
+    b.click();
+    return true;
   });
 }
 
@@ -452,6 +463,98 @@ async function runPanel(page, map, scheme) {
   }
   await page.evaluate(() => { document.getElementById("explclose").click(); });
   return n;
+}
+
+/* ------------------------------------------------------------------ the facet filter
+ *
+ * NOTHING VARIED THE FACETS BEFORE THIS. The fold invariants pass `facets: null` throughout, so
+ * the whole filter -- and the empty-map path it can reach -- had no coverage at all, which is how
+ * `untagged` came to be built on top of a latent fault in `render`.
+ *
+ * ASSERTED AS A CHANGE, not as a property of one picture. The obvious form -- "with untagged off,
+ * everything drawn carries a hashtag" -- cannot be written honestly: the contention stays on
+ * screen deliberately, and the DOM cannot say which box is the contention, since nodes carry
+ * `data-id` and edges carry no identity at all. A first attempt guessed "at most one untagged box
+ * survives" and failed on Akhlaghi, which has two contentions. Guessing a threshold would have
+ * made an instrument nobody could trust.
+ *
+ * What IS exact: every claim it removes must be untagged, no untagged claim may appear, the
+ * untagged count never grows, and something must still be drawn. Those hold on any map. The one
+ * conditional -- that a map drawing three or more untagged claims must lose some -- is explained
+ * where it is written.
+ *
+ * PROVED AGAINST THE REAL DEFECT, not a synthetic one: replace the `S.untagged` term in
+ * `facetOk` with `true` -- which is the bug this control exists to fix, an untagged claim passing
+ * whatever is switched off -- and this reports "switching untagged off removes something" on
+ * every map that uses hashtags, in both colour schemes.
+ */
+async function facetFilter(page, map, scheme) {
+  /* ITS OWN STATE, established here rather than inherited. The first version measured whatever
+   * the map happened to be left in, which differed between the two colour passes -- the
+   * self-test reloads, and after a reload the sections are folded again -- so it compared five
+   * folded blocks in one pass and open claims in the other and disagreed with itself. A check
+   * that depends on what ran before it is a check that will report the order of the suite. */
+  await page.reload();
+  await settle(page);
+  await dismissWalkthrough(page);
+  if (!(await clickBarButton(page, "open"))) return;
+  await page.waitForTimeout(1200);
+
+  const drawn = () => page.evaluate(() => {
+    const kinds = b => (b.getAttribute("class") || "").match(/alm-k-[a-z-]+/g) || [];
+    return [...document.querySelectorAll(".alm-n")].map(b => ({
+      id: b.getAttribute("data-id"), tagged: kinds(b).length > 1 }));
+  });
+
+  const before = await drawn();
+  if (!(await clickUntagged(page))) return;      // this map uses no hashtags at all
+  await page.waitForTimeout(1000);
+  const after = await drawn();
+
+  const wasThere = new Set(before.map(x => x.id));
+  const stillThere = new Set(after.map(x => x.id));
+  const appeared = after.filter(x => !wasThere.has(x.id));
+  const gone = before.filter(x => !stillThere.has(x.id));
+
+  /* CLAIMS MAY APPEAR, and the first version of this check was wrong to forbid it. Removing the
+   * untagged claims shortens chains and unstrands components, so the walk seeds TAGGED claims
+   * that were buried below the depth limit -- nine of them on Akhlaghi. That is the control
+   * doing what it is for: showing the tagged claims, including the ones you could not see.
+   * What must never appear is an UNTAGGED claim, which would mean the filter let one back in. */
+  const bareAppeared = appeared.filter(x => !x.tagged);
+  check(bareAppeared.length === 0,
+        `no untagged claim appears when untagged is switched off — ${map} [${scheme}]`,
+        `${bareAppeared.length} untagged claim(s) appeared, e.g. ${
+          bareAppeared.length ? bareAppeared[0].id : ""}`);
+  /* IT REMOVES SOMETHING ONLY IF THERE WAS SOMETHING TO REMOVE, which the private corpus had to
+   * teach this check. Williams tags heavily -- 55 tagged claims across eight hashtags, seven
+   * untagged in the whole file and none of them drawn at this state -- so the switch correctly
+   * did nothing, and an unconditional assertion called that a defect on two maps.
+   *
+   * THE ONE THRESHOLD IN THIS FILE, and it is here because the contention is exempt and the DOM
+   * cannot say which box is the contention. Two untagged boxes surviving may be two contentions,
+   * which is the case on Miller and on Akhlaghi. More than that and the switch has plainly not
+   * done its work. A map drawing three or more untagged claims must lose some of them. */
+  const bareBefore = before.filter(x => !x.tagged).length;
+  const bareAfter = after.filter(x => !x.tagged).length;
+  check(bareAfter <= bareBefore, `the untagged count never grows — ${map} [${scheme}]`,
+        `${bareBefore} untagged drawn before, ${bareAfter} after`);
+  if (bareBefore > 2)
+    check(bareAfter < bareBefore, `switching untagged off removes something — ${map} [${scheme}]`,
+          `${bareBefore} untagged claims drawn, and the switch removed none of them`);
+  const taggedGone = gone.filter(x => x.tagged);
+  check(taggedGone.length === 0, `it removes only untagged claims — ${map} [${scheme}]`,
+        `${taggedGone.length} tagged claim(s) went too, e.g. ${
+          taggedGone.length ? taggedGone[0].id : ""}`);
+
+  /* AND THE APEX STAYS. Asked for after the first cut let it go: on Miller, whose contention
+   * carries no tag, that left twenty-two claims and nothing at their head, which reads as a
+   * fault rather than as a filter. A map that drew claims before must still draw some. */
+  check(after.length > 0, `the map is not emptied by the switch alone — ${map} [${scheme}]`,
+        "nothing is drawn with untagged off, so the contention did not survive");
+
+  await clickUntagged(page);
+  await page.waitForTimeout(800);
 }
 
 /* ------------------------------------------------------------------ one real gesture
@@ -530,10 +633,15 @@ for (const scheme of ["light", "dark"]) {
         didSelftest = true;
         await selftest(page, "map", INVARIANTS);
         if (await openPanel(page)) await selftest(page, "panel", PANEL_INVARIANTS);
+        await page.evaluate(() => {
+          const x = document.getElementById("explclose"); if (x) x.click();
+        });
         await page.reload(); await settle(page); await dismissWalkthrough(page);
       }
     }
     await foldByHeader(page, m.name, scheme);
+
+    await facetFilter(page, m.name, scheme);
 
     if (await clickBarButton(page, "full")) {
       await page.waitForTimeout(900);
