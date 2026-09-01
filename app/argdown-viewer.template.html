@@ -611,6 +611,14 @@ body.fs #fsexit{display:inline-flex}
 #explbody.stair .xstep,#explbody.stair .xconcl{position:absolute;box-sizing:border-box;margin:0}
 #explbody.stair .xedges{position:absolute;inset:0;overflow:visible;pointer-events:none}
 #explbody.stair .xedges path{stroke:#3a9d5d;stroke-width:1.6;fill:none}
+/* What a one-input step becomes: a few words on the arrow instead of a box. */
+#explbody.stair .xedges text{fill:var(--fg-dim,#667);font-size:11px;font-style:italic}
+/* In the titles view a box holds short names, so it should not stretch its lines out to the
+   full width of a sentence. */
+#explbody.titles .xline{padding:.1rem .3rem}
+#explbody.titles .xstep,#explbody.titles .xconcl{padding:.4rem .55rem}
+#explbody.titles .xstep h4{margin-bottom:.25rem}
+#explbody.titles .xrule{margin-top:.25rem;font-size:.8em}
 .xmode{display:flex;gap:0;margin-left:auto}
 .xmode button{border:1px solid var(--line);background:transparent;font:inherit;font-size:.82em;
   padding:.12rem .6rem;cursor:pointer}
@@ -901,7 +909,7 @@ body.fs #fsexit{display:inline-flex}
         <!-- THROWAWAY, for choosing between the two layouts. One of them goes when the choice
              is made; neither is worth a persistent setting. -->
         <span class="xmode">
-          <button id="xmcol" class="on">Column</button><button id="xmstair">Staircase</button>
+          <button id="xmstair" class="on">Full text</button><button id="xmtitles">Titles</button>
         </span>
         <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
       </header>
@@ -3593,8 +3601,8 @@ function syncAbstract(){
 $("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
 $("absclose").onclick = function(){ setAbstract(false); };
 $("explclose").onclick = explHide;
-$("xmcol").onclick = function(){ EXPL_MODE = "col"; explDraw(); };
 $("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
+$("xmtitles").onclick = function(){ EXPL_MODE = "titles"; explDraw(); };
 // Clicking the dim surround dismisses it, as it does for the About card.
 $("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
 
@@ -4564,18 +4572,27 @@ function explSteps(rows){
   return out;
 }
 
+/* A claim's SHORT NAME. The titles layout is compact because it draws these rather than the
+ * sentences they name; where a line has no title of its own, its text is cut to about the
+ * length one would have been. */
+function explTitleOf(r){
+  if (r.title) return r.title;
+  var t = r.text || "";
+  return t.length > 58 ? t.slice(0, 57).replace(/\s+\S*$/, "") + "…" : t;
+}
+
 /* One premise or conclusion. Clickable when the claim exists on the map in its own right --
  * an intermediate that lives only inside this argument has nowhere to travel to. */
-function explLine(r, into, carriedFrom){
+function explLine(r, into, carriedFrom, titlesOnly){
   var on = r.title && EXPL_ONMAP[r.title];
   var d = document.createElement("div");
   d.className = "xline" + (on ? " xclaim" : "") + (carriedFrom ? " xcarry" : "");
   var num = document.createElement("span");
   num.className = "num"; num.textContent = "(" + r.n + ")";
   var txt = document.createElement("span");
-  txt.textContent = r.text || r.title || "";
+  txt.textContent = titlesOnly ? explTitleOf(r) : (r.text || r.title || "");
   d.appendChild(num); d.appendChild(txt);
-  if (carriedFrom) {
+  if (carriedFrom && !titlesOnly) {
     var f = document.createElement("i");
     f.className = "xfrom";
     f.textContent = "from step " + carriedFrom;
@@ -4589,13 +4606,13 @@ function explLine(r, into, carriedFrom){
   return d;
 }
 
-function explStepBox(st){
+function explStepBox(st, titlesOnly){
   var box = document.createElement("div");
   box.className = "xstep";
   var h = document.createElement("h4");
   h.textContent = "Step " + st.n + (st.rule ? " · " + st.rule : "");
   box.appendChild(h);
-  st.inputs.forEach(function(i){ explLine(i.row, box, i.from); });
+  st.inputs.forEach(function(i){ explLine(i.row, box, i.from, titlesOnly); });
   if (st.verdict && st.verdict.state) {
     var v = document.createElement("div");
     v.className = "xrule " + (st.verdict.state === "invalid" ? "xbad" :
@@ -4608,32 +4625,76 @@ function explStepBox(st){
   return box;
 }
 
-function explConclBox(st){
+function explConclBox(st, titlesOnly){
   var c = document.createElement("div");
   c.className = "xconcl";
-  explLine(st.concl, c, 0);
+  explLine(st.concl, c, 0, titlesOnly);
   return c;
 }
 
-/* COLUMN. One step above the next, arrows between. Scrolls in one direction however long the
- * argument gets, and every line wraps at full width. */
-function explColumn(steps, body){
-  body.className = "";
-  steps.forEach(function(st, i){
-    body.appendChild(explStepBox(st));
-    var a = document.createElement("div"); a.className = "xarrow"; a.textContent = "↓";
-    body.appendChild(a);
-    body.appendChild(explConclBox(st));
-    if (i < steps.length - 1) {
-      var a2 = document.createElement("div"); a2.className = "xarrow"; a2.textContent = "↓";
-      body.appendChild(a2);
-    }
-  });
+/* A STEP WITH ONE INPUT IS NOT WORTH A BOX. Its only premise is the conclusion drawn directly
+ * above it, so the box restates that sentence, greys it out, and says nothing else -- correct,
+ * and no help at all to the reader this panel exists for. Such a step becomes the label on the
+ * arrow instead, which is what it is: `and therefore`. */
+function explCollapses(st){
+  return st.inputs.length === 1 && st.inputs[0].from > 0;
 }
 
-/* STAIRCASE. The same boxes travelling down and to the right, joined by drawn edges, so the
- * chain is a shape rather than a sequence. Down rather than up: a panel scrolls downward, and
- * the sketch's upward flight would have put the conclusion above the premises that reach it.
+function explEdgeLabel(st){
+  var t = "Step " + st.n + (st.rule ? " · " + st.rule : "");
+  if (st.verdict && st.verdict.state === "valid") t += " · checked";
+  else if (st.verdict && st.verdict.state === "invalid") t += " · does NOT follow";
+  return t;
+}
+
+/* The boxes of a layout, in order, each with whatever should be written on the edge arriving
+ * at it. Shared by both layouts so they cannot drift apart. */
+function explStages(steps, titlesOnly){
+  var out = [];
+  steps.forEach(function(st){
+    var fold = explCollapses(st);
+    if (!fold) out.push({ el: explStepBox(st, titlesOnly), label: "", kind: "step" });
+    out.push({ el: explConclBox(st, titlesOnly), kind: "concl",
+               label: fold ? explEdgeLabel(st) : "" });
+  });
+  return out;
+}
+
+var XNS = "http://www.w3.org/2000/svg";
+
+function explEdgeLayer(wrap, w, h){
+  var svg = document.createElementNS(XNS, "svg");
+  svg.setAttribute("class", "xedges");
+  svg.setAttribute("width", Math.round(w));
+  svg.setAttribute("height", Math.round(h));
+  var defs = document.createElementNS(XNS, "defs");
+  defs.innerHTML = '<marker id="xah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
+    'markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3a9d5d"/></marker>';
+  svg.appendChild(defs);
+  wrap.appendChild(svg);
+  return svg;
+}
+
+function explElbow(svg, x1, y1, x2, y2, label){
+  var mid = y1 + (y2 - y1) / 2;
+  var pth = document.createElementNS(XNS, "path");
+  pth.setAttribute("d", "M" + x1 + "," + y1 + " L" + x1 + "," + mid +
+                        " L" + x2 + "," + mid + " L" + x2 + "," + y2);
+  pth.setAttribute("marker-end", "url(#xah)");
+  svg.appendChild(pth);
+  if (label) {
+    var t = document.createElementNS(XNS, "text");
+    t.setAttribute("x", Math.max(x1, x2) + 10);
+    t.setAttribute("y", mid);
+    t.setAttribute("dominant-baseline", "middle");
+    t.textContent = label;
+    svg.appendChild(t);
+  }
+}
+
+/* STAIRCASE. The boxes travelling down and to the right, joined by drawn edges, so the chain is
+ * a shape rather than a sequence. Down rather than up: a panel scrolls downward, and rising
+ * would put each conclusion above the premises that reach it.
  *
  * Absolutely positioned HTML rather than SVG text, so every line still wraps for free; the
  * edges are an SVG overlay measured after layout rather than a guess at where the boxes went. */
@@ -4643,51 +4704,103 @@ function explStair(steps, body){
   wrap.className = "xwrap";
   body.appendChild(wrap);
 
-  var stages = [];
-  steps.forEach(function(st){ stages.push(explStepBox(st), explConclBox(st)); });
+  var stages = explStages(steps, false);
 
   // Indent enough to read as a stair, but never so much that the last box is a sliver.
   // MEASURED off the wrap rather than computed from the body: the body is padded, and guessing
   // that padding put every box 8px over and gave the panel a horizontal scrollbar.
   var avail = wrap.clientWidth;
-  var indent = Math.max(10, Math.min(34, (avail - 280) / Math.max(1, stages.length - 1)));
+  var indent = Math.max(8, Math.min(27, (avail - 280) / Math.max(1, stages.length - 1)));
   var w = avail - indent * (stages.length - 1);
 
-  stages.forEach(function(el, i){
-    el.style.left = Math.round(indent * i) + "px";
-    el.style.width = Math.round(w) + "px";
-    wrap.appendChild(el);
+  stages.forEach(function(st, i){
+    st.el.style.left = Math.round(indent * i) + "px";
+    st.el.style.width = Math.round(w) + "px";
+    wrap.appendChild(st.el);
   });
-  var top = 0, gap = 26, tops = [];
-  stages.forEach(function(el){
-    tops.push(top); el.style.top = Math.round(top) + "px";
-    top += el.offsetHeight + gap;
+  var top = 0, gap = 26;
+  stages.forEach(function(st){
+    st.top = top; st.el.style.top = Math.round(top) + "px";
+    top += st.el.offsetHeight + gap;
   });
   wrap.style.height = Math.round(top - gap) + "px";
 
-  var NS = "http://www.w3.org/2000/svg";
-  var svg = document.createElementNS(NS, "svg");
-  svg.setAttribute("class", "xedges");
-  svg.setAttribute("width", Math.round(avail));
-  svg.setAttribute("height", Math.round(top));
-  var defs = document.createElementNS(NS, "defs");
-  defs.innerHTML = '<marker id="xah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
-    'markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3a9d5d"/></marker>';
-  svg.appendChild(defs);
+  var svg = explEdgeLayer(wrap, avail, top);
   for (var i = 0; i < stages.length - 1; i++) {
-    var x1 = indent * i + 26, y1 = tops[i] + stages[i].offsetHeight;
-    var x2 = indent * (i + 1) + 26, y2 = tops[i + 1];
-    var mid = y1 + (y2 - y1) / 2;
-    var pth = document.createElementNS(NS, "path");
-    pth.setAttribute("d", "M" + x1 + "," + y1 + " L" + x1 + "," + mid +
-                          " L" + x2 + "," + mid + " L" + x2 + "," + y2);
-    pth.setAttribute("marker-end", "url(#xah)");
-    svg.appendChild(pth);
+    explElbow(svg, indent * i + 26, stages[i].top + stages[i].el.offsetHeight,
+                   indent * (i + 1) + 26, stages[i + 1].top, stages[i + 1].label);
   }
-  wrap.appendChild(svg);
 }
 
-var EXPL_NODE = null, EXPL_ONMAP = {}, EXPL_MODE = "col";
+/* TITLES. The same chain drawn from the claims' short names rather than their sentences, which
+ * is what lets it be a flowchart: a step and the conclusion it reaches sit SIDE BY SIDE on one
+ * row, and the rows descend to the right. Two columns, so the conclusions line up down the page
+ * and the chain can be followed by running an eye down the right-hand side.
+ *
+ * The names are the reconstructor's, not the source's, so this is the view to think WITH and
+ * the full-text one to check against. */
+function explTitles(steps, body){
+  body.className = "stair titles";
+  var wrap = document.createElement("div");
+  wrap.className = "xwrap";
+  body.appendChild(wrap);
+
+  var rows = [];
+  steps.forEach(function(st){
+    var fold = explCollapses(st);
+    rows.push({ step: fold ? null : explStepBox(st, true),
+                concl: explConclBox(st, true),
+                label: fold ? explEdgeLabel(st) : "" });
+  });
+
+  var avail = wrap.clientWidth;
+  // A longer stride than the full-text view takes, because here the travel IS the diagram:
+  // short boxes leave the width to spend, and spending it is what makes the chain a shape.
+  var rowIn = 40, gapX = 44;
+  var maxIn = rowIn * (rows.length - 1);
+  var colW = Math.min(300, Math.floor((avail - maxIn - gapX) / 2));
+  var stepX = function(i){ return rowIn * i; };
+  var conclX = function(i){ return rowIn * i + colW + gapX; };
+
+  rows.forEach(function(r, i){
+    if (r.step) {
+      r.step.style.left = stepX(i) + "px"; r.step.style.width = colW + "px";
+      wrap.appendChild(r.step);
+    }
+    r.concl.style.left = conclX(i) + "px"; r.concl.style.width = colW + "px";
+    wrap.appendChild(r.concl);
+  });
+
+  var top = 0, gap = 30;
+  rows.forEach(function(r){
+    var h = Math.max(r.step ? r.step.offsetHeight : 0, r.concl.offsetHeight);
+    r.top = top; r.h = h;
+    if (r.step) r.step.style.top = Math.round(top) + "px";
+    // A conclusion with no step beside it sits at the top of its row; one that has a step
+    // beside it is centred against it, so the arrow between them runs level.
+    r.concl.style.top = Math.round(r.step
+      ? top + (h - r.concl.offsetHeight) / 2 : top) + "px";
+    top += h + gap;
+  });
+  wrap.style.height = Math.round(top - gap) + "px";
+
+  var svg = explEdgeLayer(wrap, avail, top);
+  rows.forEach(function(r, i){
+    if (r.step) {           // across: the step reaches its conclusion
+      var y = r.top + r.h / 2;
+      var pth = document.createElementNS(XNS, "path");
+      pth.setAttribute("d", "M" + (stepX(i) + colW) + "," + y + " L" + conclX(i) + "," + y);
+      pth.setAttribute("marker-end", "url(#xah)");
+      svg.appendChild(pth);
+    }
+    if (i < rows.length - 1) {   // down: that conclusion feeds the next step
+      var nx = rows[i + 1].step ? stepX(i + 1) + 26 : conclX(i + 1) + 26;
+      explElbow(svg, conclX(i) + 26, r.top + r.h, nx, rows[i + 1].top, rows[i + 1].label);
+    }
+  });
+}
+
+var EXPL_NODE = null, EXPL_ONMAP = {}, EXPL_MODE = "stair";
 
 function explodeShow(n){
   EXPL_NODE = n;
@@ -4702,11 +4815,11 @@ function explDraw(){
   var body = $("explbody"), foot = $("explfoot");
   body.textContent = ""; foot.textContent = "";
   var steps = explSteps((EXPL_NODE && EXPL_NODE.pcs) || []);
-  (EXPL_MODE === "stair" ? explStair : explColumn)(steps, body);
+  (EXPL_MODE === "titles" ? explTitles : explStair)(steps, body);
   foot.textContent = steps.length + (steps.length === 1 ? " step" : " steps") +
     ". Click any claim to show it on the map. Esc closes.";
-  $("xmcol").className = EXPL_MODE === "col" ? "on" : "";
   $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
+  $("xmtitles").className = EXPL_MODE === "titles" ? "on" : "";
 }
 
 function ctxShow(n, ev){
