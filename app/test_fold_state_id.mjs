@@ -156,13 +156,23 @@ ok("an empty state is two fields and nothing else",
   // a spine threshold, and a groupFolded mark.
   const full = { collapsedGroups: new Set(["s1"]), collapsedNodes: new Set(["n2"]),
                  expandedNodes: new Set(["n3"]), groupFolded: new Map([["n1", new Set(["s1"])]]),
-                 collapsedLanes: new Set(), depth: 0, facets: new Set(), spine: 2, byText: false };
+                 collapsedLanes: new Set(), depth: 0, facets: new Set(), spine: 2, byText: false,
+                 untagged: false };
   const enc = encodeFoldState(tiny, full);
   const dec = decodeFoldState(tiny, enc);
   ok("depth 0, spine, an empty facet set and a gf mark all survive",
      encodeFoldState(tiny, dec) === enc, enc);
   ok("an empty facet set decodes as an empty set, not as null",
      dec.facets instanceof Set && dec.facets.size === 0);
+  /* UNTAGGED IS THE OTHER HALF OF THE FACET FILTER and it is a state a reader can be looking at,
+   * so an identifier that dropped it would send somebody a picture they were not looking at.
+   * Asserted in both directions: the token appears when the switch is off, and its ABSENCE is
+   * read as on rather than as unset. */
+  ok("the untagged switch survives, and says so in the id",
+     /\buntagged=0\b/.test(enc) && dec.untagged === false, enc);
+  ok("an id without the token means untagged is shown",
+     decodeFoldState(tiny, `ipsfold1 map=${mapFingerprint(tiny)} view=arg`).untagged === true);
+
   ok("a named facet round-trips",
      (() => { const f = Object.assign({}, full, { facets: new Set(["method"]) });
               return encodeFoldState(tiny, decodeFoldState(tiny, encodeFoldState(tiny, f)))

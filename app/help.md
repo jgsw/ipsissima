@@ -470,6 +470,14 @@ that cannot choose where to write, Save offers the file as a download instead an
   qualify.
 - **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
   carry it. This control appears only when the file uses hashtags at all.
+- **untagged**, at the end of the same row — every claim the file did not tag. **This is usually
+  the switch that changes the picture.** Most reconstructions tag sparingly, so switching the
+  hashtags off one by one leaves the bulk of the map exactly where it was; switching *untagged*
+  off leaves only the claims that carry a tag, which is how you see the authorities, or the
+  reported views, on their own. On the Miller map that is 22 claims out of 66.
+
+Switching everything off, hashtags and untagged alike, leaves the map empty. That is the filter
+doing what it was told rather than a fault, and the controls all read *off* so you can see why.
 
 **how much** and **spine** answer different questions and both are worth having. *how much* is
 distance: how far out from the contention a claim sits. *spine* is load: how much rests on it. A
