@@ -139,16 +139,38 @@ undoes one thing.
 | | |
 |---|---|
 | `how much` | levels of reasons showing, main claim outwards. **The number on each button is how many claims it puts on screen.** |
+| `claims` | `short` (first lines plus a "more" link) or `full` |
 | `sections` | folded into blocks, or opened out |
-| `kinds` | switch a kind off to take it off the map; the number is how many there are |
-| `full claims` | whole text per claim rather than the first lines plus a "more" link |
+| `spine` | `all`, or `load-bearing` — only claims that hold something up. The number is how many qualify |
+| `hashtags` | switch one off to take those claims off the map; the number is how many carry it. Absent when the file uses none |
 
 `expand all` and `fold all groups` are gone — they were the ends of those two scales wearing
 different clothes. So is `reach`, which never earned its place, and the second `fit`.
 
+`spine` sits with `hashtags` rather than with `how much` because it answers WHICH claims rather
+than how many levels of them: a claim deep in the argument can be spine, and a claim beside the
+contention need not be.
+
 **Fidelity is discoverable three ways**: the border style (as before), the level named in the
 tooltip on hover, and a key in How to use that draws the actual strokes — "long dash versus
 short dash" is not something anyone can hold in their head from prose.
+
+**Hover text carries only what the box does not.** Reworked 1 Sep 2026 after a census: at the
+folded default every one of Miller's four visible tooltips repeated its box verbatim, and opened,
+seven of eighteen did. A tooltip now gives the claim's text only where the box CLIPPED it, then
+the `source` quotation, the fidelity level and the `warrant`; a claim drawn in full with no
+provenance gets no tooltip at all. The quotation is dropped where it is effectively the same
+words as the claim, which is what `fidelity: quotation` means and was true of seven of the
+fourteen that carried one. Section headers and premise rows follow the same rule.
+
+**Two faults in that first cut, both found by a reader and both worth keeping written down.**
+`n.full` is read in three places in the renderer and set in NONE -- the claim's whole text is
+`n.detail`, which is what `sizeOf` measures and clips. The old tooltip read
+`n.full || (label + " — " + detail)`, so the dead half never showed; keeping only the dead half
+left seven claims on the Miller map cut off in the box and nowhere on hover. And the test for
+"this quotation says the same as the claim" used containment, which is wrong in the direction
+that matters: a claim CONTAINING its quotation has padded the author's words, which is the one
+thing a fidelity reader is looking for. It is near-equality now, not containment.
 
 Node and relation counts moved out of the footer into a disclosure inside How to use. They are a
 debugging aid, not something a reader needs while reading.

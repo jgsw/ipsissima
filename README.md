@@ -116,6 +116,15 @@ Everything else, including installing from source and the command line tools, is
 - **Whose words are these.** Each claim is marked for how far it stands from its source —
   quotation, paraphrase, compression, interpretation, imputation — and the map draws that as the
   box's border. Quotations are *checked* against the source rather than believed.
+- **A step that names a rule is asked to keep its word.** Write `-- Modus ponens {uses: [1, 2]} --`
+  on an inference line, give the claims a `formalization`, and Ipsissima decides whether the
+  conclusion follows — marking the bar quietly when it does, loudly when it does not, and offering
+  the countermodel when it does not. Formalising one step of the Miller judgment turned up a
+  premise the Supreme Court never states.
+- **A long argument can be walked down instead of held in the head.** A multi-step
+  premise-conclusion structure opens as a staircase — one small argument per step, each
+  intermediate conclusion in a box between them — in full text or drawn compactly from the claims'
+  short names.
 - **Two arrangements of the same claims.** By the order of reasons, or by the order of exposition.
 - **Justificatory debt.** In the exposition arrangement, a sparkline on every band and one for the
   whole piece: below the line, claims asserted here whose reasons come later; above, claims their
