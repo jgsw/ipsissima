@@ -599,6 +599,24 @@ body.fs #fsexit{display:inline-flex}
 .xconcl{border:1px solid #8fbf9f;background:rgba(143,191,159,.12);border-radius:9px;
   padding:.5rem .65rem;margin:0 0 .1rem}
 .xbad{color:#cc3b3b} .xgood{color:#3a9d5d}
+/* A line CARRIED DOWN from the step above is not a new premise, and drawing it like one made
+   the reader meet the same sentence twice with nothing to say they were the same sentence.
+   Subdued, with a turn-and-enter arrow, so the step still reads on its own. */
+.xline.xcarry{opacity:.62}
+.xline.xcarry .num::before{content:"\21b1";margin-right:.28rem;opacity:.8}
+.xcarry .xfrom{font-size:.78em;opacity:.75;font-style:italic;white-space:nowrap;margin-left:.35rem}
+/* ---- the staircase: the same steps travelling down and to the right ---- */
+#explbody.stair{position:relative}
+#explbody.stair .xwrap{position:relative}
+#explbody.stair .xstep,#explbody.stair .xconcl{position:absolute;box-sizing:border-box;margin:0}
+#explbody.stair .xedges{position:absolute;inset:0;overflow:visible;pointer-events:none}
+#explbody.stair .xedges path{stroke:#3a9d5d;stroke-width:1.6;fill:none}
+.xmode{display:flex;gap:0;margin-left:auto}
+.xmode button{border:1px solid var(--line);background:transparent;font:inherit;font-size:.82em;
+  padding:.12rem .6rem;cursor:pointer}
+.xmode button:first-child{border-radius:6px 0 0 6px}
+.xmode button:last-child{border-radius:0 6px 6px 0;border-left:0}
+.xmode button.on{background:var(--accent,#3a7bd5);color:#fff;border-color:var(--accent,#3a7bd5)}
 #about{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
   display:grid;place-items:center;padding:2rem}
 #about[hidden]{display:none}
@@ -880,6 +898,11 @@ body.fs #fsexit{display:inline-flex}
       <header>
         <b id="explhead"></b>
         <span class="grow"></span>
+        <!-- THROWAWAY, for choosing between the two layouts. One of them goes when the choice
+             is made; neither is worth a persistent setting. -->
+        <span class="xmode">
+          <button id="xmcol" class="on">Column</button><button id="xmstair">Staircase</button>
+        </span>
         <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
       </header>
       <div id="explbody"></div>
@@ -3570,6 +3593,8 @@ function syncAbstract(){
 $("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
 $("absclose").onclick = function(){ setAbstract(false); };
 $("explclose").onclick = explHide;
+$("xmcol").onclick = function(){ EXPL_MODE = "col"; explDraw(); };
+$("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
 // Clicking the dim surround dismisses it, as it does for the About card.
 $("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
 
@@ -4516,77 +4541,172 @@ function explGo(title){
   LIVE.markClaims([node.id]);
 }
 
-function explodeShow(n){
-  var rows = (n && n.pcs) || [];
-  var body = $("explbody"), foot = $("explfoot");
-  $("explhead").textContent = n.label || "";
-  body.textContent = ""; foot.textContent = "";
-
-  var onMap = {};
-  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ onMap[x.label] = true; });
-
-  var line = function(r, into){
-    var d = document.createElement("div");
-    d.className = "xline" + (r.title && onMap[r.title] ? " xclaim" : "");
-    var num = document.createElement("span");
-    num.className = "num"; num.textContent = "(" + r.n + ")";
-    var txt = document.createElement("span");
-    txt.textContent = r.text || r.title || "";
-    d.appendChild(num); d.appendChild(txt);
-    if (r.title && onMap[r.title]) {
-      d.title = "Show this claim on the map";
-      d.onclick = function(){ explGo(r.title); };
-    }
-    into.appendChild(d);
-  };
-
-  // Walk the structure: premises pile up, a conclusion closes a step.
-  var run = [], step = 0, prev = null, made = 0;
+/* THE WALK, done once and drawn twice. Premises pile up; a conclusion closes a step and becomes
+ * an input to the next. Everything either layout needs is settled here. */
+function explSteps(rows){
+  var out = [], run = [], concluded = {}, prev = null, step = 0;
   rows.forEach(function(r){
     if (r.role === "premise") { run.push(r); return; }
     step++;
     var inputs = r.uses ? r.uses.map(Number) : null;
-    var box = document.createElement("div");
-    box.className = "xstep";
-    var h = document.createElement("h4");
-    h.textContent = "Step " + step + (r.rule ? " · " + r.rule : "");
-    box.appendChild(h);
     var pool = run.concat(prev ? [prev] : []);
     var chosen = inputs ? pool.filter(function(x){ return inputs.indexOf(x.n) >= 0; }) : pool;
     // A declared `uses` may name a line from further back than this step's own run.
     if (inputs) rows.forEach(function(x){
       if (inputs.indexOf(x.n) >= 0 && chosen.indexOf(x) < 0 && x !== r) chosen.push(x); });
     chosen.sort(function(a, b){ return a.n - b.n; });
-    chosen.forEach(function(x){ line(x, box); });
-    if (r.verdict && r.verdict.state) {
-      var v = document.createElement("div");
-      v.className = "xrule " + (r.verdict.state === "invalid" ? "xbad" :
-                                r.verdict.state === "valid" ? "xgood" : "");
-      v.textContent = r.verdict.state === "valid" ? "checked: the conclusion follows"
-                    : r.verdict.state === "invalid" ? "checked: the conclusion does NOT follow"
-                    : "a rule is named, but nothing checks it";
-      box.appendChild(v);
-    }
-    body.appendChild(box);
-    var arrow = document.createElement("div");
-    arrow.className = "xarrow"; arrow.textContent = "\u2193";
-    body.appendChild(arrow);
-    var c = document.createElement("div");
-    c.className = "xconcl";
-    line(r, c);
-    body.appendChild(c);
-    if (r !== rows[rows.length - 1]) {
-      var a2 = document.createElement("div");
-      a2.className = "xarrow"; a2.textContent = "\u2193";
-      body.appendChild(a2);
-    }
-    made++;
+    out.push({ rule: r.rule, verdict: r.verdict, concl: r, n: step,
+               inputs: chosen.map(function(x){
+                 return { row: x, from: concluded[x.n] || 0 }; }) });
+    concluded[r.n] = step;
     run = []; prev = r;
   });
+  return out;
+}
 
-  foot.textContent = made + (made === 1 ? " step" : " steps") +
+/* One premise or conclusion. Clickable when the claim exists on the map in its own right --
+ * an intermediate that lives only inside this argument has nowhere to travel to. */
+function explLine(r, into, carriedFrom){
+  var on = r.title && EXPL_ONMAP[r.title];
+  var d = document.createElement("div");
+  d.className = "xline" + (on ? " xclaim" : "") + (carriedFrom ? " xcarry" : "");
+  var num = document.createElement("span");
+  num.className = "num"; num.textContent = "(" + r.n + ")";
+  var txt = document.createElement("span");
+  txt.textContent = r.text || r.title || "";
+  d.appendChild(num); d.appendChild(txt);
+  if (carriedFrom) {
+    var f = document.createElement("i");
+    f.className = "xfrom";
+    f.textContent = "from step " + carriedFrom;
+    txt.appendChild(f);
+  }
+  if (on) {
+    d.title = "Show this claim on the map";
+    d.onclick = function(){ explGo(r.title); };
+  }
+  into.appendChild(d);
+  return d;
+}
+
+function explStepBox(st){
+  var box = document.createElement("div");
+  box.className = "xstep";
+  var h = document.createElement("h4");
+  h.textContent = "Step " + st.n + (st.rule ? " · " + st.rule : "");
+  box.appendChild(h);
+  st.inputs.forEach(function(i){ explLine(i.row, box, i.from); });
+  if (st.verdict && st.verdict.state) {
+    var v = document.createElement("div");
+    v.className = "xrule " + (st.verdict.state === "invalid" ? "xbad" :
+                              st.verdict.state === "valid" ? "xgood" : "");
+    v.textContent = st.verdict.state === "valid" ? "checked: the conclusion follows"
+                  : st.verdict.state === "invalid" ? "checked: the conclusion does NOT follow"
+                  : "a rule is named, but nothing checks it";
+    box.appendChild(v);
+  }
+  return box;
+}
+
+function explConclBox(st){
+  var c = document.createElement("div");
+  c.className = "xconcl";
+  explLine(st.concl, c, 0);
+  return c;
+}
+
+/* COLUMN. One step above the next, arrows between. Scrolls in one direction however long the
+ * argument gets, and every line wraps at full width. */
+function explColumn(steps, body){
+  body.className = "";
+  steps.forEach(function(st, i){
+    body.appendChild(explStepBox(st));
+    var a = document.createElement("div"); a.className = "xarrow"; a.textContent = "↓";
+    body.appendChild(a);
+    body.appendChild(explConclBox(st));
+    if (i < steps.length - 1) {
+      var a2 = document.createElement("div"); a2.className = "xarrow"; a2.textContent = "↓";
+      body.appendChild(a2);
+    }
+  });
+}
+
+/* STAIRCASE. The same boxes travelling down and to the right, joined by drawn edges, so the
+ * chain is a shape rather than a sequence. Down rather than up: a panel scrolls downward, and
+ * the sketch's upward flight would have put the conclusion above the premises that reach it.
+ *
+ * Absolutely positioned HTML rather than SVG text, so every line still wraps for free; the
+ * edges are an SVG overlay measured after layout rather than a guess at where the boxes went. */
+function explStair(steps, body){
+  body.className = "stair";
+  var wrap = document.createElement("div");
+  wrap.className = "xwrap";
+  body.appendChild(wrap);
+
+  var stages = [];
+  steps.forEach(function(st){ stages.push(explStepBox(st), explConclBox(st)); });
+
+  // Indent enough to read as a stair, but never so much that the last box is a sliver.
+  // MEASURED off the wrap rather than computed from the body: the body is padded, and guessing
+  // that padding put every box 8px over and gave the panel a horizontal scrollbar.
+  var avail = wrap.clientWidth;
+  var indent = Math.max(10, Math.min(34, (avail - 280) / Math.max(1, stages.length - 1)));
+  var w = avail - indent * (stages.length - 1);
+
+  stages.forEach(function(el, i){
+    el.style.left = Math.round(indent * i) + "px";
+    el.style.width = Math.round(w) + "px";
+    wrap.appendChild(el);
+  });
+  var top = 0, gap = 26, tops = [];
+  stages.forEach(function(el){
+    tops.push(top); el.style.top = Math.round(top) + "px";
+    top += el.offsetHeight + gap;
+  });
+  wrap.style.height = Math.round(top - gap) + "px";
+
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "xedges");
+  svg.setAttribute("width", Math.round(avail));
+  svg.setAttribute("height", Math.round(top));
+  var defs = document.createElementNS(NS, "defs");
+  defs.innerHTML = '<marker id="xah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
+    'markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3a9d5d"/></marker>';
+  svg.appendChild(defs);
+  for (var i = 0; i < stages.length - 1; i++) {
+    var x1 = indent * i + 26, y1 = tops[i] + stages[i].offsetHeight;
+    var x2 = indent * (i + 1) + 26, y2 = tops[i + 1];
+    var mid = y1 + (y2 - y1) / 2;
+    var pth = document.createElementNS(NS, "path");
+    pth.setAttribute("d", "M" + x1 + "," + y1 + " L" + x1 + "," + mid +
+                          " L" + x2 + "," + mid + " L" + x2 + "," + y2);
+    pth.setAttribute("marker-end", "url(#xah)");
+    svg.appendChild(pth);
+  }
+  wrap.appendChild(svg);
+}
+
+var EXPL_NODE = null, EXPL_ONMAP = {}, EXPL_MODE = "col";
+
+function explodeShow(n){
+  EXPL_NODE = n;
+  EXPL_ONMAP = {};
+  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ EXPL_ONMAP[x.label] = true; });
+  $("explhead").textContent = n.label || "";
+  $("expl").hidden = false;      // before drawing: the staircase measures, and a hidden box is 0 wide
+  explDraw();
+}
+
+function explDraw(){
+  var body = $("explbody"), foot = $("explfoot");
+  body.textContent = ""; foot.textContent = "";
+  var steps = explSteps((EXPL_NODE && EXPL_NODE.pcs) || []);
+  (EXPL_MODE === "stair" ? explStair : explColumn)(steps, body);
+  foot.textContent = steps.length + (steps.length === 1 ? " step" : " steps") +
     ". Click any claim to show it on the map. Esc closes.";
-  $("expl").hidden = false;
+  $("xmcol").className = EXPL_MODE === "col" ? "on" : "";
+  $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
 }
 
 function ctxShow(n, ev){
