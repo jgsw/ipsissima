@@ -3415,6 +3415,29 @@ function createLiveMap(container, graph, options) {
             for (const s2 of svg.querySelectorAll(".is-ref-target"))
               s2.classList.remove("is-ref-target");
           });
+          /* GOING TO THE CLAIM, AND GETTING BACK.
+           *
+           * Lighting the box up says where the claim lives, which is no use at all when it
+           * lives off screen -- on Miller, premise (2) of `The route to the order` sits some
+           * two thousand pixels from the argument that numbers it. So the row travels there.
+           *
+           * The return trip is the half that matters. A reader who is moved somewhere they did
+           * not choose, with no way back, has been lost rather than helped, so the excursion
+           * leaves a control behind naming the argument it came from. Centring back on the
+           * ARGUMENT rather than restoring the old camera is deliberate: a fold or a relayout
+           * between the two clicks would make saved coordinates point at nothing, and "back to
+           * the argument" is the thing the reader actually means.
+           */
+          g.style.cursor = "pointer";
+          g.addEventListener("click", ev => {
+            const target = lastVis.nodes.find(x => x.label === r.refLabel);
+            if (!target) return;
+            ev.stopPropagation();
+            excursion = { id: n.id, label: n.label };
+            showReturn();
+            setLit([target.id]);
+            centreOn([target.id]);
+          });
         }
         g.appendChild(rowTip);
         const num = el("text", { class: "alm-pcs-num", x: x0, y: py + rowSize,
@@ -4948,6 +4971,36 @@ function createLiveMap(container, graph, options) {
   /** Slide the camera so `ids` sit in the middle, at the zoom the reader is already using.
    *  Deliberately does NOT re-fit: someone who has zoomed in to read has chosen that zoom, and
    *  changing it to frame a result takes away the thing they were looking at. */
+  /* WHERE THE READER CAME FROM, while they are away from it. Null when they are not. */
+  let excursion = null;
+  let returnEl = null;
+
+  function showReturn() {
+    if (!returnEl) {
+      returnEl = document.createElement("button");
+      returnEl.type = "button";
+      returnEl.className = "alm-return";
+      returnEl.addEventListener("click", ev => {
+        ev.stopPropagation();
+        const back = excursion;
+        hideReturn();
+        if (back) { setLit([back.id]); centreOn([back.id]); }
+      });
+      container.appendChild(returnEl);
+    }
+    // `destroy()` empties the container, so an instance reused for a second document would hold
+    // a reference to a node that is no longer in the page -- and setting text on a detached
+    // element fails silently, which is the worst way for a control to be missing.
+    if (returnEl.parentNode !== container) container.appendChild(returnEl);
+    returnEl.textContent = "\u2190 back to " + (excursion && excursion.label ? excursion.label : "the argument");
+    returnEl.hidden = false;
+  }
+
+  function hideReturn() {
+    excursion = null;
+    if (returnEl) returnEl.hidden = true;
+  }
+
   function centreOn(ids, onlyIfTheyFit) {
     if (!lastG) return false;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, found = 0;
@@ -5283,6 +5336,12 @@ function injectStyle() {
 /* The box is a backdrop; the hit rect is what takes the click, so a band that holds other bands
    can offer only its name strip without changing what it looks like. */
 .alm-gbox{pointer-events:none}
+.alm-return{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;
+  font:12px system-ui,sans-serif;padding:5px 12px;border-radius:14px;cursor:pointer;
+  border:1px solid var(--alm-accent,#3a7bd5);background:var(--alm-bar-bg,rgba(255,255,255,.95));
+  color:var(--alm-accent,#3a7bd5);box-shadow:0 1px 6px rgba(0,0,0,.13);max-width:60%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alm-return:hover{background:var(--alm-accent,#3a7bd5);color:#fff}
 .alm-ghit{fill:transparent}
 .alm-gfold{fill:transparent;cursor:pointer}
 .alm-g.is-fixed .alm-gfold{pointer-events:none}
