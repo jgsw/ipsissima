@@ -4580,13 +4580,22 @@ function explSteps(rows){
   return out;
 }
 
-/* A claim's SHORT NAME. The titles layout is compact because it draws these rather than the
- * sentences they name; where a line has no title of its own, its text is cut to about the
- * length one would have been. */
+/* A claim's SHORT NAME. The compact layout is compact because it draws these rather than the
+ * sentences they name.
+ *
+ * `Untitled 1` IS NOT A NAME. It is what the Argdown parser calls a statement written without
+ * one -- `(5) A domain that is normatively loaded...` in the Cribb map's Master Argument -- and
+ * drawing it tells the reader nothing whatever, while looking exactly like a name somebody
+ * chose. Reported from that map, where the compact view read "Untitled 1" and "Untitled 2".
+ *
+ * So an untitled line shows its SENTENCE, and shows all of it: the box wraps. Cutting it to the
+ * length a name would have been was the first version and it is the wrong trade -- a name can be
+ * short because it is a name, whereas half a sentence with an ellipsis is just half a sentence.
+ * A row like this is taller than its neighbours, and that is the honest shape of a map whose
+ * author did not name that claim. */
 function explTitleOf(r){
-  if (r.title) return r.title;
-  var t = r.text || "";
-  return t.length > 58 ? t.slice(0, 57).replace(/\s+\S*$/, "") + "…" : t;
+  if (r.title && !/^Untitled \d+$/.test(r.title)) return r.title;
+  return r.text || r.title || "";
 }
 
 /* One premise or conclusion. Clickable when the claim exists on the map in its own right --

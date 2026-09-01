@@ -145,6 +145,30 @@ ever been exercised by its own mutation — no real map has yet overlapped.
 
 ---
 
+### Run it against a corpus that is not the good one — 1 Sep 2026
+
+`--corpus DIR` points the harness at any tree of `.argdown` files. **[judgement] Do this before
+believing a green run means much.** The seven public samples are careful maps made by one person
+to one house style, and they are not a sample of what people write.
+
+Pointed at the private corpus — thirteen maps including Argdown's own demo files, two newspaper
+columns and a book-length reconstruction — it produced **78 failures, and every one was a fault
+in the invariant.** The hover check compared only the first forty characters of a tooltip block
+against the box; a clipped claim's tooltip carries the FULL sentence while the box draws a PREFIX
+of it, so the openings match and the extension reads as a repeat.
+
+**The public corpus could not have found this**, and the reason is worth keeping: every one of
+those seven maps carries `fidelity` or `source`, which puts a second block in the tooltip and
+makes the check pass — for the wrong reason. A corpus of careful maps hides the defects that only
+careless ones provoke. Fixed to compare whole blocks; the private corpus then ran clean at 13
+maps, 129 checks, 85s [measured].
+
+**And it found a real one the public corpus does not contain.** In `welcome to argdown` a box is
+drawn on the map titled `Untitled 2` — the Argdown parser's placeholder for a statement written
+without a name, standing where a heading the author chose should be. The same defect was reported
+independently in the compact panel and fixed there; on the map it is unfixed, because changing a
+node's drawn title touches layout, claim search and how references resolve.
+
 ### The mutation self-test, which is part of the instrument
 
 **[judgement] The most valuable thing built here, and the least expected.** Rather than mutate by
