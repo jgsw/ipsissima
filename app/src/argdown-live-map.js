@@ -2812,6 +2812,34 @@ const el = (name, attrs) => {
  * every relation in a strict map drew green, including its attacks. They take the colour of the
  * relation they are the strict form of: same meaning to a reader, so same colour.
  */
+/* HOW LOGIC TEXTS WRITE A RULE NAME ON AN INFERENCE LINE. "Hypothetical syllogism, Modus ponens"
+ * is 38 characters and the bar it sits on is rarely that wide, so it was arriving as
+ * "Hypothetical syllogism, Modu…" -- which names nothing. Abbreviated it is "HS, MP", which is
+ * what a logic text would print, and the full name is one hover away.
+ *
+ * An unknown name is reduced to its initials only if it has several words; a one-word rule
+ * (Barbara, Celarent) is already short and its initial would be nothing at all. */
+const RULE_SHORT = {
+  "modus ponens": "MP", "modus tollens": "MT",
+  "hypothetical syllogism": "HS", "disjunctive syllogism": "DS",
+  "constructive dilemma": "CD", "destructive dilemma": "DD",
+  "universal instantiation": "UI", "existential generalisation": "EG",
+  "existential generalization": "EG", "universal generalisation": "UG",
+  "universal generalization": "UG", "existential instantiation": "EI",
+  "double negation": "DN", "de morgan": "DeM", "de morgan's": "DeM",
+  "contraposition": "Contrap", "simplification": "Simp", "conjunction": "Conj",
+  "addition": "Add", "biconditional elimination": "BE", "reductio ad absurdum": "RAA"
+};
+function shortRule(name) {
+  return String(name).split(",").map(part => {
+    const t = part.trim();
+    const known = RULE_SHORT[t.toLowerCase().replace(/\.$/, "")];
+    if (known) return known;
+    const words = t.split(/\s+/).filter(Boolean);
+    return words.length > 1 ? words.map(w => w[0].toUpperCase()).join("") : t;
+  }).join(", ");
+}
+
 const REL = {
   support:       { color: "#3a9d5d", dash: null },
   attack:        { color: "#cc3b3b", dash: null },
@@ -3319,11 +3347,22 @@ function createLiveMap(container, graph, options) {
             // invalid step has to give the badge its 15px before the label is fitted -- fitting
             // first and shifting after would truncate a name that had room all along.
             const pad = v === "invalid" ? 15 : 0;
-            const label = fitLabel(r.rule, (x1 - x0) * 0.62 - pad, 8.5, "400");
+            const shortName = shortRule(r.rule);
+            const label = fitLabel(shortName, (x1 - x0) * 0.62 - pad, 8.5, "400");
             const rt = el("text", { class: "alm-pcs-rule" + (v ? " alm-v-" + v : ""),
                                     x: x1 - pad, y: by + 3,
                                     "text-anchor": "end", "font-size": 8.5 });
             rt.textContent = label;
+            // The expansion, and the verdict in words. Both are things the abbreviation does
+            // NOT show, which is the only reason a tooltip earns its place.
+            const rtip = el("title");
+            rtip.textContent = r.rule
+              + (v === "valid" ? "\n\nChecked: the conclusion follows from the premises."
+               : v === "invalid" ? "\n\nChecked: the conclusion does NOT follow."
+               : v === "unformalized" ? "\n\nNot checked: the lines of this step carry no "
+                                        + "`formalization:`, so the claim is unexamined."
+               : "");
+            rt.appendChild(rtip);
             box.appendChild(rt);
             if (v === "invalid") {
               const g = el("g", { class: "alm-verdict" });
@@ -3990,7 +4029,10 @@ function createLiveMap(container, graph, options) {
         const anchorEnd = (Math.sign(far.x - j.x) || 1) < 0;
         rt.setAttribute("text-anchor", anchorEnd ? "end" : "start");
         rt.setAttribute("fill", rel.color);
-        rt.textContent = info.rule;
+        rt.textContent = shortRule(info.rule);
+        let rtip = rt.querySelector("title");
+        if (!rtip) { rtip = el("title"); rt.appendChild(rtip); }
+        rtip.textContent = info.rule;
 
         /* WHAT THE NAME'S CLAIM CAME TO -- and only one of the four states is loud.
          *
