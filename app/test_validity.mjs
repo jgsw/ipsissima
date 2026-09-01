@@ -35,6 +35,19 @@ for (const c of VECTORS.cases) {
   else console.log(`  ok    ${c.name}`);
 }
 
+/* THE STAMP, which the Python half must spell the same way. A stamp that means one thing in the
+ * page and another in the checker would report every formalization as stale, or none.
+ *
+ * BEFORE the exit, not after it: written below the `process.exit(1)` these ran only when
+ * everything else had already passed, and could never fail the suite on their own. */
+for (const v of VECTORS.stamps || []) {
+  const got = V.stamp(v.text);
+  if (got !== v.stamp) {
+    console.log(`  FAIL  stamp ${v.name}: expected ${v.stamp}, got ${got}`);
+    fails++;
+  }
+}
+
 console.log();
-if (fails) { console.log(`${fails} of ${VECTORS.cases.length} failed`); process.exit(1); }
-console.log(`all ${VECTORS.cases.length} vectors pass`);
+if (fails) { console.log(`${fails} check(s) failed`); process.exit(1); }
+console.log(`all ${VECTORS.cases.length} vectors and ${(VECTORS.stamps || []).length} stamps pass`);

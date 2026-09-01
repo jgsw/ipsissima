@@ -323,3 +323,26 @@ def check_step(premises: list[str], conclusion: str) -> dict:
         c = satisfiable(asts)
         out["consistent"] = None if not c["supported"] else c["model"] is not None
     return out
+
+
+# ---- the stamp: does this formalization still belong to this claim? -------------------------
+#
+# A ``formalization`` is written BY HAND, once, and nothing afterwards ties it to the sentence it
+# stands for. Edit the claim and the formula stays put -- and the checker will decide the step,
+# correctly, about formulas that no longer say what the claim says. That is worse than an
+# unchecked step, because it wears the badge of having been checked.
+#
+# FNV-1a, 32 bits, over the text lowercased and with its whitespace collapsed: a re-wrapped line
+# or a capitalised first letter is not a change to what the claim SAYS.
+#
+# WRITTEN IDENTICALLY IN JAVASCRIPT, and both are checked against shared vectors, because a stamp
+# that means one thing in the page and another in the checker is worse than no stamp at all.
+
+def stamp(text: str) -> str:
+    """A short hash of what the claim says, for noticing that it no longer says it."""
+    t = " ".join(str(text or "").lower().split())
+    h = 0x811C9DC5
+    for b in t.encode("utf-8"):
+        h ^= b
+        h = (h * 0x01000193) & 0xFFFFFFFF
+    return f"{h:08x}"

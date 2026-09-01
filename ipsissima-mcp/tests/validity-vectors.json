@@ -1,42 +1,356 @@
 {
   "note": "The file that keeps app/src/argdown-validity.js and ipsissima_mcp/validity.py saying the same thing. Expectations are WRITTEN BY HAND, not generated from either implementation: vectors produced by the code they test only prove it agrees with itself. Run by ipsissima-mcp/tests/test_validity.py and app/test_validity.mjs.",
   "cases": [
-    {"name": "modus ponens",            "premises": ["p", "p -> q"],                        "conclusion": "q",              "supported": true, "valid": true, "irrelevant": [], "consistent": true},
-    {"name": "modus tollens",           "premises": ["p -> q", "-q"],                       "conclusion": "-p",             "supported": true, "valid": true},
-    {"name": "hypothetical syllogism",  "premises": ["p -> q", "q -> r"],                   "conclusion": "p -> r",         "supported": true, "valid": true},
-    {"name": "disjunctive syllogism",   "premises": ["p | q", "-p"],                        "conclusion": "q",              "supported": true, "valid": true},
-    {"name": "constructive dilemma",    "premises": ["(p -> q) & (r -> s)", "p | r"],       "conclusion": "q | s",          "supported": true, "valid": true},
-    {"name": "double negation",         "premises": ["--p"],                                "conclusion": "p",              "supported": true, "valid": true},
-    {"name": "De Morgan",               "premises": ["-(p & q)"],                           "conclusion": "-p | -q",        "supported": true, "valid": true},
-    {"name": "contraposition",          "premises": ["p -> q"],                             "conclusion": "-q -> -p",       "supported": true, "valid": true},
-    {"name": "simplification",          "premises": ["p & q"],                              "conclusion": "p",              "supported": true, "valid": true},
-    {"name": "addition",                "premises": ["p"],                                  "conclusion": "p | q",          "supported": true, "valid": true},
-    {"name": "biconditional both ways", "premises": ["p <-> q", "p"],                       "conclusion": "q",              "supported": true, "valid": true},
-
-    {"name": "affirming the consequent","premises": ["p -> q", "q"],                        "conclusion": "p",              "supported": true, "valid": false},
-    {"name": "denying the antecedent",  "premises": ["p -> q", "-p"],                       "conclusion": "-q",             "supported": true, "valid": false},
-    {"name": "a disjunct is not given", "premises": ["p | q"],                              "conclusion": "p",              "supported": true, "valid": false},
-    {"name": "the converse is not given","premises": ["p -> q"],                            "conclusion": "q -> p",         "supported": true, "valid": false},
-
-    {"name": "a premise doing no work", "premises": ["p", "p -> q", "r"],                   "conclusion": "q",              "supported": true, "valid": true, "irrelevant": [3]},
-    {"name": "two premises doing work", "premises": ["p", "p -> q"],                        "conclusion": "q",              "supported": true, "valid": true, "irrelevant": []},
-    {"name": "premises that cannot all hold", "premises": ["p", "-p"],                      "conclusion": "q",              "supported": true, "valid": true, "consistent": false},
-
-    {"name": "universal instantiation", "premises": ["all x.(H(x) -> M(x))", "H(s)"],       "conclusion": "M(s)",           "supported": true, "valid": true},
-    {"name": "Barbara",                 "premises": ["all x.(F(x) -> G(x))", "all x.(G(x) -> H(x))"], "conclusion": "all x.(F(x) -> H(x))", "supported": true, "valid": true},
-    {"name": "Celarent",                "premises": ["all x.(M(x) -> -P(x))", "all x.(S(x) -> M(x))"], "conclusion": "all x.(S(x) -> -P(x))", "supported": true, "valid": true},
-    {"name": "Darii",                   "premises": ["all x.(M(x) -> P(x))", "exists x.(S(x) & M(x))"], "conclusion": "exists x.(S(x) & P(x))", "supported": true, "valid": true},
-    {"name": "existential generalisation","premises": ["F(a)"],                             "conclusion": "exists x.F(x)",  "supported": true, "valid": true},
-
-    {"name": "undistributed middle",    "premises": ["all x.(P(x) -> M(x))", "all x.(S(x) -> M(x))"], "conclusion": "all x.(S(x) -> P(x))", "supported": true, "valid": false},
-    {"name": "illicit conversion",      "premises": ["all x.(F(x) -> G(x))"],               "conclusion": "all x.(G(x) -> F(x))", "supported": true, "valid": false},
-    {"name": "the existential fallacy",  "premises": ["all x.(F(x) -> G(x))"],              "conclusion": "exists x.(F(x) & G(x))", "supported": true, "valid": false},
-    {"name": "a constant is not everything", "premises": ["F(a)"],                          "conclusion": "all x.F(x)",     "supported": true, "valid": false},
-
-    {"name": "tilde is not negation",   "premises": ["~p", "p -> q"],                       "conclusion": "q",              "supported": false, "error_contains": "not negation"},
-    {"name": "a two-place predicate",   "premises": ["all x.(F(x) -> R(x, a))"],            "conclusion": "R(a, a)",        "supported": false, "error_contains": "one-place"},
-    {"name": "an unfinished formula",   "premises": ["p ->"],                               "conclusion": "q",              "supported": false, "error_contains": "premise 1"},
-    {"name": "an unbalanced bracket",   "premises": ["(p & q"],                             "conclusion": "p",              "supported": false, "error_contains": "expected `)`"},
-    {"name": "five predicates",         "premises": ["all x.(A(x) & B(x) & C(x) & D(x) & E(x))"], "conclusion": "exists x.A(x)", "supported": false, "error_contains": "beyond the bounded search"}
+    {
+      "name": "modus ponens",
+      "premises": [
+        "p",
+        "p -> q"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true,
+      "irrelevant": [],
+      "consistent": true
+    },
+    {
+      "name": "modus tollens",
+      "premises": [
+        "p -> q",
+        "-q"
+      ],
+      "conclusion": "-p",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "hypothetical syllogism",
+      "premises": [
+        "p -> q",
+        "q -> r"
+      ],
+      "conclusion": "p -> r",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "disjunctive syllogism",
+      "premises": [
+        "p | q",
+        "-p"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "constructive dilemma",
+      "premises": [
+        "(p -> q) & (r -> s)",
+        "p | r"
+      ],
+      "conclusion": "q | s",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "double negation",
+      "premises": [
+        "--p"
+      ],
+      "conclusion": "p",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "De Morgan",
+      "premises": [
+        "-(p & q)"
+      ],
+      "conclusion": "-p | -q",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "contraposition",
+      "premises": [
+        "p -> q"
+      ],
+      "conclusion": "-q -> -p",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "simplification",
+      "premises": [
+        "p & q"
+      ],
+      "conclusion": "p",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "addition",
+      "premises": [
+        "p"
+      ],
+      "conclusion": "p | q",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "biconditional both ways",
+      "premises": [
+        "p <-> q",
+        "p"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "affirming the consequent",
+      "premises": [
+        "p -> q",
+        "q"
+      ],
+      "conclusion": "p",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "denying the antecedent",
+      "premises": [
+        "p -> q",
+        "-p"
+      ],
+      "conclusion": "-q",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "a disjunct is not given",
+      "premises": [
+        "p | q"
+      ],
+      "conclusion": "p",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "the converse is not given",
+      "premises": [
+        "p -> q"
+      ],
+      "conclusion": "q -> p",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "a premise doing no work",
+      "premises": [
+        "p",
+        "p -> q",
+        "r"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true,
+      "irrelevant": [
+        3
+      ]
+    },
+    {
+      "name": "two premises doing work",
+      "premises": [
+        "p",
+        "p -> q"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true,
+      "irrelevant": []
+    },
+    {
+      "name": "premises that cannot all hold",
+      "premises": [
+        "p",
+        "-p"
+      ],
+      "conclusion": "q",
+      "supported": true,
+      "valid": true,
+      "consistent": false
+    },
+    {
+      "name": "universal instantiation",
+      "premises": [
+        "all x.(H(x) -> M(x))",
+        "H(s)"
+      ],
+      "conclusion": "M(s)",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "Barbara",
+      "premises": [
+        "all x.(F(x) -> G(x))",
+        "all x.(G(x) -> H(x))"
+      ],
+      "conclusion": "all x.(F(x) -> H(x))",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "Celarent",
+      "premises": [
+        "all x.(M(x) -> -P(x))",
+        "all x.(S(x) -> M(x))"
+      ],
+      "conclusion": "all x.(S(x) -> -P(x))",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "Darii",
+      "premises": [
+        "all x.(M(x) -> P(x))",
+        "exists x.(S(x) & M(x))"
+      ],
+      "conclusion": "exists x.(S(x) & P(x))",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "existential generalisation",
+      "premises": [
+        "F(a)"
+      ],
+      "conclusion": "exists x.F(x)",
+      "supported": true,
+      "valid": true
+    },
+    {
+      "name": "undistributed middle",
+      "premises": [
+        "all x.(P(x) -> M(x))",
+        "all x.(S(x) -> M(x))"
+      ],
+      "conclusion": "all x.(S(x) -> P(x))",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "illicit conversion",
+      "premises": [
+        "all x.(F(x) -> G(x))"
+      ],
+      "conclusion": "all x.(G(x) -> F(x))",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "the existential fallacy",
+      "premises": [
+        "all x.(F(x) -> G(x))"
+      ],
+      "conclusion": "exists x.(F(x) & G(x))",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "a constant is not everything",
+      "premises": [
+        "F(a)"
+      ],
+      "conclusion": "all x.F(x)",
+      "supported": true,
+      "valid": false
+    },
+    {
+      "name": "tilde is not negation",
+      "premises": [
+        "~p",
+        "p -> q"
+      ],
+      "conclusion": "q",
+      "supported": false,
+      "error_contains": "not negation"
+    },
+    {
+      "name": "a two-place predicate",
+      "premises": [
+        "all x.(F(x) -> R(x, a))"
+      ],
+      "conclusion": "R(a, a)",
+      "supported": false,
+      "error_contains": "one-place"
+    },
+    {
+      "name": "an unfinished formula",
+      "premises": [
+        "p ->"
+      ],
+      "conclusion": "q",
+      "supported": false,
+      "error_contains": "premise 1"
+    },
+    {
+      "name": "an unbalanced bracket",
+      "premises": [
+        "(p & q"
+      ],
+      "conclusion": "p",
+      "supported": false,
+      "error_contains": "expected `)`"
+    },
+    {
+      "name": "five predicates",
+      "premises": [
+        "all x.(A(x) & B(x) & C(x) & D(x) & E(x))"
+      ],
+      "conclusion": "exists x.A(x)",
+      "supported": false,
+      "error_contains": "beyond the bounded search"
+    }
+  ],
+  "stampNote": "Stamps for `formalized:`. FNV-1a/32 over the claim text lowercased with whitespace collapsed, eight hex digits. The three spellings of the same sentence must stamp identically -- re-wrapping a line or capitalising a word is not a change to what the claim says.",
+  "stamps": [
+    {
+      "name": "empty",
+      "text": "",
+      "stamp": "811c9dc5"
+    },
+    {
+      "name": "one letter",
+      "text": "a",
+      "stamp": "e40c292c"
+    },
+    {
+      "name": "a claim",
+      "text": "The advice was unlawful.",
+      "stamp": "81fa1f5f"
+    },
+    {
+      "name": "re-wrapped",
+      "text": "  The   advice was  unlawful.  ",
+      "stamp": "81fa1f5f"
+    },
+    {
+      "name": "recapitalised",
+      "text": "THE ADVICE WAS UNLAWFUL.",
+      "stamp": "81fa1f5f"
+    },
+    {
+      "name": "not ascii",
+      "text": "Ein Beispiel mit Umlauten: schön, größer, weiß",
+      "stamp": "bafd9a88"
+    },
+    {
+      "name": "a formula, not prose",
+      "text": "u -> na",
+      "stamp": "312f29d4"
+    }
   ]
 }

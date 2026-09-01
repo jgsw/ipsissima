@@ -688,6 +688,39 @@ def _formalization(doc, entry):
     return f if isinstance(f, str) and f.strip() else None
 
 
+def _claim_text_and_stamp(doc, entry):
+    """What the claim SAYS, and the stamp it was formalized against, from the same place the
+    formalization came from.
+
+    A `formalization` is written once, by hand, and nothing afterwards ties it to the sentence it
+    stands for. Edit the claim and the formula stays -- and the step is then decided, correctly,
+    about formulas that no longer say what the claim says. `formalized:` is the claim's own record
+    of the text it was written for; see `validity.stamp`.
+    """
+    title = entry.get("title")
+    rec = ((doc.get("statements") or {}).get(title)
+           or (doc.get("arguments") or {}).get(title) or {})
+    # THE TEXT IS ON A MEMBER, not on the record. `rec["text"]` is None for every statement in
+    # the corpus, and the first version read only that, found nothing, and skipped every claim in
+    # silence -- a check that cannot fire is worse than no check. Some members carry a single
+    # space, so it is the first member with something in it rather than the first truthy one.
+    text = entry.get("text")
+    if not (text or "").strip():
+        text = next((m.get("text") for m in rec.get("members") or []
+                     if (m.get("text") or "").strip()), None) or rec.get("text")
+    got = (entry.get("data") or {}).get("formalized")
+    if not isinstance(got, str):
+        for m in rec.get("members") or []:
+            v = (m.get("data") or {}).get("formalized")
+            if isinstance(v, str):
+                got = v
+                break
+        else:
+            v = (rec.get("data") or {}).get("formalized")
+            got = v if isinstance(v, str) else None
+    return text, (got or None)
+
+
 def validity_checks(doc):
     """Steps that NAME an inference rule, and whether the conclusion actually follows.
 
@@ -706,7 +739,13 @@ def validity_checks(doc):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from validity import check_step
 
-    out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": []}
+    from validity import stamp
+
+    out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": [],
+           # A formalization whose claim has been edited since. NOT the same as an unstamped one,
+           # which is merely the state every map was in before stamps existed and is reported as
+           # a count rather than as a fault.
+           "stale": [], "unstamped": []}
     for title, arg in (doc.get("arguments") or {}).items():
         pcs = arg.get("pcs") or []
         if not pcs:
@@ -729,6 +768,22 @@ def validity_checks(doc):
                 missing = [str(i) for i in inputs if not forms.get(i)]
                 if not concl:
                     missing.append("the conclusion")
+
+                # DOES EACH FORMULA STILL BELONG TO ITS CLAIM? Asked of every line of the step,
+                # premises and conclusion alike, and asked whether or not the step is decidable:
+                # a stale formalization is a fault even where the check could not run.
+                for i in list(inputs) + [n]:
+                    if not (1 <= i <= len(pcs)):
+                        continue
+                    line = pcs[i - 1]
+                    if not _formalization(doc, line):
+                        continue
+                    text, was = _claim_text_and_stamp(doc, line)
+                    if was is None:
+                        out["unstamped"].append((title, step, i, line.get("title")))
+                    elif text is not None and stamp(text) != was:
+                        out["stale"].append((title, step, i, line.get("title"), was,
+                                             stamp(text)))
                 if missing:
                     out["unformalized"].append((title, step, named, missing))
                 else:
@@ -786,6 +841,36 @@ def validity_report(doc):
         print("      the one the rule name claims.")
         for title, step in found["inconsistent"]:
             print(f"      ! <{title}> step {step}")
+
+    if found["stale"]:
+        print(f"\n   A FORMALIZATION FOR A CLAIM THAT HAS CHANGED ({len(found['stale'])})")
+        print("      The claim was formalized against different words. Nothing ties a formula to")
+        print("      the sentence it stands for, so the step below has been decided -- correctly")
+        print("      -- about formulas that may no longer say what the claim says. That is worse")
+        print("      than an unchecked step, because it carries the mark of having been checked.")
+        for title, step, line, name, was, now in found["stale"]:
+            finding("stale-formalization", "!",
+                    f"line {line} of step {step} was formalized against different words",
+                    title=title, conclusion=name,
+                    fix="re-read the formalization against the claim as it now stands, then "
+                        "run `--stamp` to record that you have")
+            print(f"      ! <{title}> step {step} line {line}"
+                  + (f" [{name}]" if name else ""))
+            print(f"          formalized against {was}, the claim now stamps {now}")
+
+    if found["unstamped"]:
+        # NOT A FAULT. Every map written before stamps existed is in this state, and reporting it
+        # as a fault would make the checker cry wolf on the whole corpus at once. A count and an
+        # invitation, which is what `--derive-fidelity` does for the same reason.
+        # DISTINCT CLAIMS, not line-occurrences. A claim used by two steps was counted twice, so
+        # the report said nine where `--stamp` then wrote eight, and two numbers disagreeing about
+        # the same thing is what makes a reader distrust both.
+        n = len({c for _t, _s, _i, c in found["unstamped"] if c})
+        print(f"\n   {n} formalization(s) carry no `formalized:` stamp")
+        print("      Nothing then notices when the claim is edited and the formula is not.")
+        print("      `--stamp` writes one for each, after you have satisfied yourself that the")
+        print("      formalizations say what the claims say -- it records agreement, it cannot")
+        print("      check it.")
 
     if found["unformalized"]:
         print(f"\n   A RULE NAMED, AND NOTHING TO CHECK IT AGAINST ({len(found['unformalized'])})")
@@ -1369,6 +1454,12 @@ def _parse_args():
                     help="print JSON of the DERIVED fidelity per claim and exit. The viewer "
                          "build calls this so the border it draws is checked rather than "
                          "believed, without a second implementation of the rule in JavaScript.")
+    ap.add_argument("--stamp", action="store_true",
+                    help="write `formalized:` beside every `formalization:`, recording the words "
+                         "the formula was written against, so that a later edit to the claim can "
+                         "be NOTICED. It records your agreement; it cannot check it, so run it "
+                         "when you have satisfied yourself the formalizations still say what the "
+                         "claims say. Writes the file and exits.")
     ap.add_argument("--source-root", metavar="DIR",
                     help="the manuscript folder. Enables the provenance checks: verifies every "
                          "quotation against the source it cites, and reports how far each "
@@ -1416,6 +1507,22 @@ def _parse_args():
     # open again, and it matters: this is the only place fidelity is ever derived, and only a
     # per-file build with --source-root calls it. The app, the standalone viewer and a bundle
     # build all draw the border the file declares.
+    if a.stamp:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import argdown_provenance as prov
+        with tempfile.TemporaryDirectory() as td:
+            r = run(cli, "json", path, "--outputDir", td)
+            files = [f for f in os.listdir(td) if f.endswith(".json")] if r.returncode == 0 else []
+            if not files:
+                print("could not export JSON; nothing stamped")
+                return None, None, None
+            doc = json.load(open(os.path.join(td, files[0]), encoding="utf-8"))
+        want = prov.stamp_rewrites(doc)
+        done = prov.apply_stamp_rewrites(path, want)
+        print(f"{len(done)} of {len(want)} formalized claim(s) stamped"
+              + (": " + ", ".join(done) if done else ""))
+        return None, None, None
+
     if a.derive_fidelity:
         if not a.source_root:
             print("{}")
