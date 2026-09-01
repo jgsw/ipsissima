@@ -101,6 +101,13 @@ SHAPE = {"parsed": True}
 VOCABULARY = {}
 
 
+# WHAT THE STAMPS LOOK LIKE, carried structurally so a CALLER can act on it. Unstamped is not a
+# fault and so is not in `findings`, but the reconstruct-and-check loop terminates on "nothing to
+# fix" -- and a run that ends there having stamped nothing leaves every formalization free to
+# drift the moment somebody edits a claim. The loop needs to be told.
+STAMPS: dict = {}
+
+
 def finding(check, severity, message, **where):
     """Record a fault. `where` carries whatever locates it: line, title, chapter, fix."""
     FINDINGS.append(dict(check=check, severity=severity, message=message,
@@ -807,6 +814,11 @@ def validity_checks(doc):
 def validity_report(doc):
     """Print what `validity_checks` found. Silent when no step names a rule."""
     found = validity_checks(doc)
+    # Recorded whether or not anything is printed: a caller asking "is this file finished" needs
+    # the answer even when there is nothing to say to a reader.
+    STAMPS.clear()
+    STAMPS.update(unstamped=len({c for _t, _s, _i, c in found["unstamped"] if c}),
+                  stale=len(found["stale"]))
     if not any(found.values()):
         return
     print("\n== NAMED INFERENCE RULES ==")
@@ -1847,6 +1859,7 @@ def main():
                           "verified": bool(a.source_root),
                           "findings": FINDINGS,
                           **({"vocabulary": VOCABULARY} if VOCABULARY else {}),
+                          **({"stamps": STAMPS} if any(STAMPS.values()) else {}),
                           **({"census": census} if census else {})},
                          indent=2, ensure_ascii=False))
     elif a.quiet:

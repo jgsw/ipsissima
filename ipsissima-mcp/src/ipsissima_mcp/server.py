@@ -65,6 +65,11 @@ THE ORDER OF WORK
   3. Reconstruct. Use the `reconstruct_argument` prompt. This is your judgement, not a tool.
   4. `check_reconstruction` — repeatedly, until it reports ok. It returns faults with locations
      and fixes; apply the fixes, do not rewrite the map.
+  5. Where the map names inference rules, `next` will say how many formalizations carry no
+     `formalized:` stamp. PUT THAT TO THE USER. The stamp records that a person has read the
+     formula against the claim and found it fair — you cannot do that reading for them, and a
+     value invented here would vouch for an agreement nobody made. They run
+     `check_argdown.py <file> --stamp` when they are satisfied.
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
@@ -600,12 +605,35 @@ def check_reconstruction(path: str, source_root: str | None = None,
     if not out.get("verified"):
         out["note"] = ("no source_root given, so quotations were NOT verified against any text. "
                        "Pass the folder holding `source/` to check them.")
+    # AND THE LOOP HAS TO BE TOLD ABOUT THE STAMPS. `formalized:` is not a fault when it is
+    # missing -- every map written before it existed lacks one -- so it never appears among the
+    # findings and `ok` stays true. But a run that stops at "nothing to fix" having stamped
+    # nothing leaves every formula free to drift the moment somebody edits its claim, which is
+    # the failure this whole feature exists to prevent. So the terminator says so.
+    #
+    # IT SAYS IT TO A PERSON, not to the model. A stamp records that somebody has read the
+    # formalization against the claim and found it fair, and nothing here can do that reading --
+    # so the instruction is to ASK, not to run the command.
+    st = out.get("stamps") or {}
+    stamp_note = ""
+    if st.get("stale"):
+        stamp_note = (f"  {st['stale']} formalization(s) were written against words the claim no "
+                      "longer uses: re-read those, then have the user run "
+                      "`check_argdown.py <file> --stamp`.")
+    elif st.get("unstamped"):
+        stamp_note = (f"  {st['unstamped']} formalization(s) carry no `formalized:` stamp, so "
+                      "nothing will notice if a claim is later edited and its formula is not. "
+                      "Once the user has satisfied themselves the formulas say what the claims "
+                      "say, they can run `check_argdown.py <file> --stamp`. Do not write the "
+                      "stamps yourself: the value is a hash, and inventing one would vouch for "
+                      "an agreement nobody made.")
+
     out["next"] = ("apply the fixes above and call this again" if not out.get("ok") else
-                   "nothing to fix" if out.get("verified") else
+                   "nothing to fix" + stamp_note if out.get("verified") else
                    "no faults among what was checked — but NOT verified against the source: no "
                    "quotation in this map has been compared with any text. Call this again with "
                    "`source_root` set to the folder holding `source/` before treating the "
-                   "reconstruction as finished")
+                   "reconstruction as finished" + stamp_note)
     return out
 
 
