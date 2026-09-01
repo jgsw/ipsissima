@@ -41,9 +41,22 @@ jobs:
           .venv/bin/pip install --upgrade pip
           .venv/bin/pip install -e ipsissima-mcp
 
+      # THE BROWSER THE RENDERED-DOM SUITE NEEDS. Without it that suite SKIPS rather than fails,
+      # which is right for a developer's checkout and wrong here: on CI a silent skip would mean
+      # the one instrument that watches the painted map quietly stopped running.
+      - name: Chromium for the rendered-DOM suite
+        run: npx --prefix app playwright install --with-deps chromium
+
+
+
       - name: Everything
         id: suite
         continue-on-error: true
+        # A MISSING BROWSER MUST BE A FAILURE HERE, not the skip a developer's checkout gets. The
+        # skip exists so that `npm test` is useful before `playwright install`; on CI it would
+        # mean the one instrument watching the painted map had quietly stopped running.
+        env:
+          IPS_REQUIRE_BROWSER: "1"
         run: node app/run_all_tests.mjs | tee /tmp/suite.txt
 
       - name: Only the known failure

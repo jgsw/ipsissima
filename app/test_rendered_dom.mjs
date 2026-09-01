@@ -1,0 +1,544 @@
+/* What the renderer actually PAINTS, checked in a real browser.
+ *
+ * WHY THIS EXISTS. Between 31 August and 1 September 2026 eighteen defects were introduced and
+ * fixed in the renderer and this suite's other twenty three instruments caught none of them.
+ * Eight reached the author, who found them by clicking around a map. They were not subtle:
+ * arrows starting in mid-air, an edge drawn through the middle of a box, seven claims whose text
+ * was cut off in the box and available nowhere, a control that could not be clicked.
+ *
+ * None of them were reachable from here before, because every other instrument stops at the DOM.
+ * `reduceFold` is pure and exhausted; `layoutByText` is pure and adversarially fuzzed; `frameFor`
+ * is pure and unit-tested. All three can be right while the picture is wrong, and on this project
+ * they repeatedly were. `test_layout_geometry.mjs` says so in its own header: "Two things it does
+ * not cover, honestly: real font metrics, and the visual result. Those still want a browser."
+ *
+ * This is that browser. It asserts about RENDERED geometry -- `getBoundingClientRect`, not the
+ * layout's own numbers -- and about what a pointer would actually hit, which is the class of
+ * fault that synthesised events are blind to.
+ *
+ *   node app/test_rendered_dom.mjs [--maps N] [--keep]
+ *
+ * See docs/QA-PLAN.md for the defect-by-defect case, and for what is deliberately not here.
+ *
+ * EVERY INVARIANT HERE HAS BEEN MUTATION-TESTED: break the thing it checks, watch it fail,
+ * restore it. The note beside each one names the mutation. That rule exists because the first
+ * `test_fold_camera.mjs` passed on the day it was written while asserting nothing at all.
+ */
+/* SKIPPED, NOT FAILED, where the browser is not installed. A checkout that has run `npm ci` but
+ * not `npx playwright install chromium` should still get the other twenty three suites rather
+ * than one red line it cannot act on. Anything else that goes wrong is a failure. */
+let chromium;
+try {
+  ({ chromium } = await import("playwright"));
+  await chromium.executablePath();
+} catch (e) {
+  const why = String((e && e.message) || e).split("\n")[0];
+  if (process.env.IPS_REQUIRE_BROWSER) {
+    console.log("FAIL — Playwright's Chromium is required here and is not installed.");
+    console.log("  " + why);
+    process.exit(1);
+  }
+  console.log("SKIPPED — Playwright's Chromium is not installed here.");
+  console.log("  npx playwright install chromium     (once, ~150MB)");
+  console.log("  " + why);
+  process.exit(0);
+}
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const REPO = path.resolve(HERE, "..");
+const BUILDER = path.join(HERE, "build_argdown_viewer.mjs");
+
+const argv = process.argv.slice(2);
+const LIMIT = Number((argv[argv.indexOf("--maps") + 1] || 0)) || 99;
+const KEEP = argv.includes("--keep");
+const SELFTEST = !argv.includes("--no-selftest");
+let didSelftest = false, proved = 0;
+
+let fails = 0, checks = 0;
+const failures = [];
+function check(ok, what, detail) {
+  checks++;
+  if (!ok) { fails++; failures.push(detail ? `${what}\n         ${detail}` : what); }
+}
+
+/* ------------------------------------------------------------------ the maps under test */
+
+/** Every sample with a manuscript beside it, built fresh so the renderer under test is the one
+ *  in the working tree rather than whatever was last committed to a `(map).html`. */
+function corpus() {
+  const out = [];
+  const base = path.join(REPO, "samples");
+  for (const dir of fs.readdirSync(base)) {
+    const full = path.join(base, dir);
+    if (!fs.statSync(full).isDirectory()) continue;
+    const src = fs.readdirSync(full).find(f => f.endsWith(".argdown"));
+    if (src) out.push({ name: dir.split(" ")[0], argdown: path.join(full, src), root: full });
+  }
+  return out.slice(0, LIMIT);
+}
+
+/* ------------------------------------------------------------------ the invariants
+ *
+ * Written as one function evaluated in the page, returning a list of complaints. In the page
+ * rather than out here because every one of them is a question about rendered geometry, and
+ * shipping rectangles across the bridge one element at a time is both slower and easier to get
+ * subtly wrong than asking the page.
+ */
+const INVARIANTS = function () {
+  const bad = [];
+  const say = (rule, detail) => bad.push({ rule, detail });
+  const rect = el => el.getBoundingClientRect();
+  const area = r => Math.max(0, r.width) * Math.max(0, r.height);
+
+  const boxes = [...document.querySelectorAll(".alm-n")];
+
+  /* NO TWO CLAIMS OVERLAP. Mutation: subtract 40 from the row gap in `layoutByText`.
+   * Overlap is measured on the drawn rectangles, so it catches a box that grew after layout --
+   * which is exactly what a font metric does and what the pure geometry suite cannot see. */
+  for (let i = 0; i < boxes.length; i++) {
+    for (let j = i + 1; j < boxes.length; j++) {
+      const a = rect(boxes[i]), b = rect(boxes[j]);
+      const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (ox > 1 && oy > 1 && area(a) && area(b)) {
+        const nm = e => (e.querySelector(".alm-title") || {}).textContent || "?";
+        say("no two claims overlap",
+            `"${nm(boxes[i])}" and "${nm(boxes[j])}" overlap by ${Math.round(ox)}x${Math.round(oy)}px`);
+        i = boxes.length; break;                 // one report per state is enough to act on
+      }
+    }
+  }
+
+  /* A CLAIM CUT OFF IN THE BOX CAN BE READ SOMEWHERE. Defect: `n.full` was read in three places
+   * and set in none, so seven claims on the Miller map were clipped mid-sentence with the rest
+   * available nowhere. Mutation: delete the `s.clipped` branch of the tooltip. */
+  for (const b of boxes) {
+    const more = b.querySelector(".alm-more");
+    if (!more) continue;                        // not clipped, or a structure control
+    const drawn = [...b.querySelectorAll(".alm-text")].map(t => t.textContent).join(" ").trim();
+    if (!drawn) continue;
+    const t = [...b.children].find(c => c.tagName === "title");
+    const tip = t ? t.textContent : "";
+    const openable = getComputedStyle(more).pointerEvents !== "none";
+    // Clipped is: the tooltip's first block extends the drawn text. If it does not, the "more"
+    // control must be there to open it, or the words are simply unreachable.
+    const carried = tip && tip.split("\n\n")[0].startsWith(drawn.slice(0, 25));
+    if (!carried && !openable)
+      say("a clipped claim can be read",
+          `"${(b.querySelector(".alm-title") || {}).textContent}" is cut off with no way to the rest`);
+  }
+
+  /* HOVER TEXT ADDS SOMETHING. The design rule, made executable: a tooltip that repeats the box
+   * under the pointer teaches the reader that tooltips are not worth opening. Mutation: put
+   * `n.detail` back at the front of the tooltip unconditionally. */
+  for (const b of boxes) {
+    const t = [...b.children].find(c => c.tagName === "title");
+    if (!t) continue;
+    const tip = (t.textContent || "").trim();
+    if (!tip) continue;
+    const drawn = [...b.querySelectorAll("text")].map(x => x.textContent).join(" ")
+      .replace(/\s+/g, " ").replace(/…/g, "").trim().toLowerCase();
+    const blocks = tip.split("\n\n").map(s => s.trim()).filter(Boolean);
+    const adds = blocks.some(bl => !drawn.includes(bl.replace(/\s+/g, " ").slice(0, 40).toLowerCase()));
+    if (!adds && drawn)
+      say("a tooltip says something the box does not",
+          `"${(b.querySelector(".alm-title") || {}).textContent}" repeats itself: ${tip.slice(0, 60)}`);
+  }
+
+  /* A DRAWN CONTROL CAN BE PRESSED. Two defects: shrinking a band's hit rectangle to free the
+   * drag silently took the right-click with it, and the ⊞ control did nothing when clicked.
+   * `elementFromPoint` is the only honest test -- it asks what the pointer would actually land
+   * on, through whatever is stacked above. Mutation: add `pointer-events:none` to `.alm-explode`. */
+  const CONTROLS = [".alm-toggle", ".alm-explode", ".alm-verdict", ".alm-more", ".alm-gfold"];
+  for (const sel of CONTROLS) {
+    for (const c of document.querySelectorAll(sel)) {
+      const r = rect(c);
+      if (!area(r)) continue;
+      if (r.left < 0 || r.top < 0 || r.right > innerWidth || r.bottom > innerHeight) continue;
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (!hit || hit === c || c.contains(hit) || hit.closest(sel) === c) continue;
+      // THE APP'S OWN CHROME IS ALLOWED TO SIT OVER THE MAP. The bar, the footer and the panels
+      // are fixed to the pane and the map slides under them; a control beneath one is not
+      // unreachable, it is scrolled. Six findings on the first run were all this, and scoping it
+      // out is the difference between an instrument and a thing everyone learns to ignore.
+      if (hit.closest(".alm-bar, header, footer, #expl, #about, #ctx, #help, .panel, #walk"))
+        continue;
+      say("a drawn control is the thing under its own centre",
+          `${sel} is covered by <${hit.tagName.toLowerCase()} class="${
+            hit.getAttribute("class")}">`);
+    }
+  }
+
+  /* THE MAIN CLAIM IS ON SCREEN. Already an invariant of the fold suite, but in LAYOUT
+   * coordinates; a correct layout framed from the wrong place puts it off the pane anyway, which
+   * is what the camera defects did. Mutation: add 2000 to the y of `frameFor`'s translation. */
+  const apex = boxes.filter(b => !b.querySelector(".alm-toggle.is-closed"))[0];
+  if (boxes.length) {
+    const anyOn = boxes.some(b => {
+      const r = rect(b);
+      return r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+    });
+    if (!anyOn) say("something is on screen", `${boxes.length} boxes, none within the pane`);
+  }
+  void apex;
+
+  return bad;
+};
+
+/* ------------------------------------------------------------------ the explode panel */
+
+const PANEL_INVARIANTS = function () {
+  const bad = [];
+  const say = (rule, detail) => bad.push({ rule, detail });
+  const wrap = document.querySelector("#explbody .xwrap");
+  if (!wrap) return bad;
+  const wr = wrap.getBoundingClientRect();
+  const boxes = [...wrap.querySelectorAll(".xstep,.xconcl")].map(b => {
+    const r = b.getBoundingClientRect();
+    return { t: r.top - wr.top, b: r.bottom - wr.top, l: r.left - wr.left, r: r.right - wr.left };
+  });
+  const segs = [];
+  for (const p of wrap.querySelectorAll(".xedges path")) {
+    if (p.closest("defs")) continue;
+    const n = (p.getAttribute("d") || "").match(/-?[\d.]+/g);
+    if (!n || n.length < 4) continue;
+    const v = n.map(Number);
+    for (let i = 0; i + 3 < v.length; i += 2) segs.push([v[i], v[i + 1], v[i + 2], v[i + 3]]);
+  }
+
+  /* EVERY EDGE STARTS AND ENDS ON A BOX. Defect: the compact view drew its edges from the ROW's
+   * bounds while a conclusion box is centred in a row a taller step box sizes, so every downward
+   * arrow began in mid-air. Mutation: add 12 to `r.leaves`. */
+  const near = (v, xs) => Math.min(...xs.map(x => Math.abs(x - v)));
+  const tops = boxes.map(b => b.t), bots = boxes.map(b => b.b),
+        lefts = boxes.map(b => b.l), rights = boxes.map(b => b.r);
+  if (boxes.length && segs.length) {
+    const first = segs[0], last = segs[segs.length - 1];
+    void first; void last;
+    for (const p of wrap.querySelectorAll(".xedges path")) {
+      if (p.closest("defs")) continue;
+      const v = ((p.getAttribute("d") || "").match(/-?[\d.]+/g) || []).map(Number);
+      if (v.length < 4) continue;
+      const horiz = Math.abs(v[1] - v[v.length - 1]) < 0.5;
+      const startGap = horiz ? near(v[0], rights) : near(v[1], bots);
+      const endGap = horiz ? near(v[v.length - 2], lefts) : near(v[v.length - 1], tops);
+      if (startGap > 1.5 || endGap > 1.5)
+        say("an edge starts and ends on a box",
+            `gaps ${startGap.toFixed(1)}px / ${endGap.toFixed(1)}px on ${p.getAttribute("d")}`);
+    }
+  }
+
+  /* AND PASSES THROUGH NONE. Defect: the elbow's horizontal run defaulted to halfway between the
+   * boxes, which in the compact view is INSIDE the step box beside it -- the edge was drawn
+   * straight through "checked: the conclusion follows" as a strikethrough. The endpoint check
+   * above was green while this was wrong, which is why both exist.
+   * Mutation: restore the `via == null` default in `explElbow`. */
+  for (const [x1, y1, x2, y2] of segs) {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    for (const b of boxes)
+      if (mx > b.l + 1 && mx < b.r - 1 && my > b.t + 1 && my < b.b - 1)
+        say("no edge is drawn through a box", `segment (${x1},${y1})-(${x2},${y2})`);
+  }
+
+  /* A PANEL SCROLLS ONE WAY. Defect: the available width was computed as the body's clientWidth
+   * minus a GUESSED 24px of padding when the padding is 32, so every box was 8px over.
+   * Mutation: subtract 24 from the body's clientWidth again instead of measuring the wrap. */
+  const body = document.getElementById("explbody");
+  if (body.scrollWidth > body.clientWidth + 1)
+    say("the panel does not scroll sideways",
+        `scrollWidth ${body.scrollWidth} > clientWidth ${body.clientWidth}`);
+
+  return bad;
+};
+
+/* ------------------------------------------------------------------ proving the instrument
+ *
+ * A HARNESS THAT HAS NEVER FAILED IS WORTH NOTHING, and this project has already paid for that
+ * lesson once: the first `test_fold_camera.mjs` passed on the day it was written because it
+ * looked its sections up in `vis.nodes`, where an open section is not, so every assertion was
+ * about `undefined` and every one of them held.
+ *
+ * So the mutations are not a thing somebody did once and wrote down. `--selftest` injects each
+ * defect into a real page and requires the matching invariant to report it. An invariant that
+ * cannot be made to fail is a bug in this file, and says so in the same output as everything
+ * else.
+ */
+const MUTATIONS = [
+  /* A CLONE IN THE SAME PLACE, rather than moving a box on top of another: appending a second
+   * translate to an `.alm-n` changes the style string and moves nothing, so the first version of
+   * this mutation reported the invariant as broken when the MUTATION was. Measured with a probe
+   * before believing it -- which is the same rule as everything else here. */
+  { rule: "no two claims overlap", where: "map", how: () => {
+      const b = [...document.querySelectorAll(".alm-n")];
+      if (!b.length) return false;
+      const twin = b[0].cloneNode(true);
+      twin.classList.add("mutant");
+      b[0].parentNode.appendChild(twin);
+      window.__undo.push(() => twin.remove());
+      return true; } },
+
+  { rule: "a clipped claim can be read", where: "map", how: () => {
+      const b = [...document.querySelectorAll(".alm-n")].find(x => x.querySelector(".alm-more"));
+      if (!b) return false;
+      const t = [...b.children].find(c => c.tagName === "title");
+      const was = t ? t.textContent : null;
+      if (t) t.textContent = "";                       // the dead `n.full`, in one line
+      const m = b.querySelector(".alm-more");
+      m.style.pointerEvents = "none";
+      window.__undo.push(() => { if (t) t.textContent = was; m.style.pointerEvents = ""; });
+      return true; } },
+
+  { rule: "a tooltip says something the box does not", where: "map", how: () => {
+      const b = [...document.querySelectorAll(".alm-n")]
+        .find(x => [...x.children].some(c => c.tagName === "title"));
+      if (!b) return false;
+      const t = [...b.children].find(c => c.tagName === "title");
+      const was = t.textContent;
+      t.textContent = [...b.querySelectorAll("text")].map(x => x.textContent).join(" ");
+      window.__undo.push(() => { t.textContent = was; });
+      return true; } },
+
+  { rule: "a drawn control is the thing under its own centre", where: "map", how: () => {
+      const c = document.querySelector(".alm-toggle, .alm-explode, .alm-more");
+      if (!c) return false;
+      const r = c.getBoundingClientRect();
+      const d = document.createElement("div");
+      d.className = "mutant";
+      d.style.cssText = `position:fixed;left:${r.left - 4}px;top:${r.top - 4}px;` +
+                        `width:${r.width + 8}px;height:${r.height + 8}px;z-index:99999`;
+      document.body.appendChild(d);
+      window.__undo.push(() => d.remove());
+      return true; } },
+
+  { rule: "an edge starts and ends on a box", where: "panel", how: () => {
+      const p = document.querySelector("#explbody .xedges path:not(defs path)");
+      if (!p) return false;
+      const v = (p.getAttribute("d").match(/-?[\d.]+/g) || []).map(Number);
+      if (v.length < 4) return false;
+      const was = p.getAttribute("d");
+      v[1] += 14;                                       // the arrow starts in mid-air again
+      p.setAttribute("d", "M" + v[0] + "," + v[1] +
+        v.slice(2).reduce((a, n, i) => a + (i % 2 ? "," + n : " L" + n), ""));
+      window.__undo.push(() => p.setAttribute("d", was));
+      return true; } },
+
+  { rule: "no edge is drawn through a box", where: "panel", how: () => {
+      const p = document.querySelector("#explbody .xedges path:not(defs path)");
+      const b = document.querySelector("#explbody .xstep");
+      if (!p || !b) return false;
+      const w = document.querySelector("#explbody .xwrap").getBoundingClientRect();
+      const r = b.getBoundingClientRect();
+      const cx = r.left - w.left + r.width / 2, cy = r.top - w.top + r.height / 2;
+      const was = p.getAttribute("d");
+      p.setAttribute("d", `M${cx - 40},${cy} L${cx + 40},${cy}`);
+      window.__undo.push(() => p.setAttribute("d", was));
+      return true; } },
+
+  { rule: "the panel does not scroll sideways", where: "panel", how: () => {
+      const b = document.querySelector("#explbody .xstep");
+      if (!b) return false;
+      // WIDE ENOUGH TO BE SURE. +300px did not overflow the compact layout, whose boxes are half
+      // the panel each, so the mutation passed and the invariant looked untested. Measured off
+      // the wrap so it overflows whatever the layout is.
+      const was = b.style.width;
+      const w = document.querySelector("#explbody .xwrap").clientWidth;
+      b.style.width = (w + 400) + "px";
+      window.__undo.push(() => { b.style.width = was; });
+      return true; } },
+];
+
+/* UNDONE IN PLACE, NOT RELOADED. The first version put the page back by reloading it and then
+ * rebuilding the state each mutation needed -- correct, and it took 310 of the suite's 330
+ * seconds [measured]. Every mutation here is a small, recorded DOM change, so each one carries
+ * its own inverse and the page never has to be built twice. 310s -> under a second.
+ *
+ * The state rebuilding is what the reload was really for: after a reload the map is back at its
+ * opening view, where most of these have nothing to break, and the first version silently ran
+ * two of seven and reported itself satisfied. That is why `proved` is counted and printed. */
+async function selftest(page, where, evaluator) {
+  await page.evaluate(() => { window.__undo = []; });
+  for (const m of MUTATIONS.filter(x => x.where === where)) {
+    const applied = await page.evaluate(m.how);
+    if (!applied) continue;                    // this page has nothing to break; try the next
+    const found = await page.evaluate(evaluator);
+    const caught = found.some(f => f.rule === m.rule);
+    proved++;
+    check(caught, `MUTATION caught: ${m.rule}`,
+          caught ? "" : "the invariant held with the defect present, so it is not testing it");
+    await page.evaluate(() => {
+      while (window.__undo.length) window.__undo.pop()();
+    });
+  }
+}
+
+/* ------------------------------------------------------------------ driving a page */
+
+async function settle(page) {
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  await page.waitForTimeout(400);
+}
+
+/** The walkthrough offers itself on a first visit and would sit over everything. */
+async function dismissWalkthrough(page) {
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
+    const w = document.getElementById("walk");
+    if (w && !w.hidden) w.hidden = true;
+  });
+}
+
+async function clickBarButton(page, label) {
+  return page.evaluate(t => {
+    const b = [...document.querySelectorAll(".alm-bar button")]
+      .find(x => x.textContent.trim() === t);
+    if (b) { b.click(); return true; }
+    return false;
+  }, label);
+}
+
+async function runState(page, map, state, scheme) {
+  const found = await page.evaluate(INVARIANTS);
+  for (const f of found)
+    check(false, `${f.rule} — ${map} [${state}, ${scheme}]`, f.detail);
+  if (!found.length) check(true, `${map} [${state}, ${scheme}]`);
+}
+
+async function openPanel(page) {
+  const ok = await page.evaluate(() => {
+    const c = [...document.querySelectorAll(".alm-explode")][0];
+    if (!c) return false;
+    c.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    return true;
+  });
+  if (ok) await page.waitForTimeout(250);
+  return ok;
+}
+
+async function runPanel(page, map, scheme) {
+  const opened = await openPanel(page);
+  if (!opened) return 0;
+  let n = 0;
+  for (const mode of ["stair", "compact"]) {
+    await page.evaluate(m => {
+      document.getElementById(m === "compact" ? "xmcompact" : "xmstair").click();
+    }, mode);
+    await page.waitForTimeout(250);
+    const found = await page.evaluate(PANEL_INVARIANTS);
+    for (const f of found)
+      check(false, `${f.rule} — ${map} [panel/${mode}, ${scheme}]`, f.detail);
+    if (!found.length) check(true, `${map} [panel/${mode}, ${scheme}]`);
+    n++;
+  }
+  await page.evaluate(() => { document.getElementById("explclose").click(); });
+  return n;
+}
+
+/* ------------------------------------------------------------------ one real gesture
+ *
+ * `elementFromPoint` asks what the pointer WOULD hit. This asks the browser to actually send the
+ * events, which is a different question and the one that four of the fortnight's defects turned
+ * on: a dispatched `contextmenu` never passes through `pointerdown`, and a dispatched `click`
+ * never passes through a drag.
+ *
+ * Deliberately one check, on the gesture that has broken twice. The rest of instrument B is in
+ * docs/QA-PLAN.md and can wait until a gesture defect escapes again.
+ */
+async function foldByHeader(page, map, scheme) {
+  const before = await page.evaluate(() => document.querySelectorAll(".alm-n").length);
+  const strip = await page.evaluate(() => {
+    const f = [...document.querySelectorAll(".alm-gfold")]
+      .find(x => { const r = x.getBoundingClientRect();
+                   return r.width > 40 && r.top > 60 && r.bottom < innerHeight - 120; });
+    if (!f) return null;
+    const r = f.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  });
+  if (!strip) return;
+  await page.mouse.click(strip.x, strip.y);          // a real press and release
+  await page.waitForTimeout(900);
+  const after = await page.evaluate(() => document.querySelectorAll(".alm-n").length);
+  check(after !== before,
+        `a real click on a section header folds it — ${map} [${scheme}]`,
+        `claims on screen unchanged at ${before}; the click reached something else`);
+}
+
+/* ------------------------------------------------------------------ main */
+
+const maps = corpus();
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ips-qa-"));
+const t0 = Date.now();
+
+console.log(`building ${maps.length} viewers`);
+const built = [];
+for (const m of maps) {
+  const out = path.join(tmp, m.name + ".html");
+  try {
+    execFileSync("node", [BUILDER, m.argdown, "-o", out, "--source-root", m.root], { stdio: "pipe" });
+    built.push({ ...m, html: out });
+  } catch (e) {
+    check(false, `${m.name}: the viewer builds`, String(e.message || e).slice(0, 200));
+  }
+}
+const tBuild = Date.now() - t0;
+
+const browser = await chromium.launch();
+let panels = 0;
+for (const scheme of ["light", "dark"]) {
+  const ctx = await browser.newContext({ colorScheme: scheme, viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on("pageerror", e => errors.push(String(e.message || e)));
+  for (const m of built) {
+    errors.length = 0;
+    await page.goto("file://" + m.html);
+    await settle(page);
+    await dismissWalkthrough(page);
+
+    // THREE STATES, all of them things a reader does with the bar. Deliberately not the whole
+    // fold space: that is `test_fold_invariants.mjs`'s job and it does it far more cheaply
+    // without a browser. What is wanted here is a few real pictures, painted.
+    await runState(page, m.name, "opening", scheme);
+
+    if (await clickBarButton(page, "open")) {
+      await page.waitForTimeout(900);
+      await runState(page, m.name, "sections open", scheme);
+      panels += await runPanel(page, m.name, scheme);
+
+      // ONCE, on the first map that can host it: prove every invariant can fail.
+      if (SELFTEST && !didSelftest) {
+        didSelftest = true;
+        await selftest(page, "map", INVARIANTS);
+        if (await openPanel(page)) await selftest(page, "panel", PANEL_INVARIANTS);
+        await page.reload(); await settle(page); await dismissWalkthrough(page);
+      }
+    }
+    await foldByHeader(page, m.name, scheme);
+
+    if (await clickBarButton(page, "full")) {
+      await page.waitForTimeout(900);
+      await runState(page, m.name, "claims full", scheme);
+    }
+
+    // A PAGE THAT THREW IS NOT A PAGE THAT PASSED, however green its geometry.
+    check(errors.length === 0, `${m.name} raises no error [${scheme}]`, errors.join(" | "));
+  }
+  await ctx.close();
+}
+await browser.close();
+if (!KEEP) fs.rmSync(tmp, { recursive: true, force: true });
+
+const secs = ((Date.now() - t0) / 1000).toFixed(1);
+console.log(`\n${built.length} maps, ${panels} panels, both colour schemes, ` +
+            `${proved} invariants proved able to fail — ${checks} checks in ${secs}s ` +
+            `(${(tBuild / 1000).toFixed(1)}s of it building)`);
+if (fails) {
+  console.log(`\n${fails} FAILED:`);
+  for (const f of failures) console.log("  FAIL  " + f);
+  process.exit(1);
+}
+console.log("all rendered invariants held");
