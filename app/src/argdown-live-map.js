@@ -710,7 +710,6 @@ function filterOnce(graph, state, force) {
         order: n.order == null ? null : n.order,
         docLine: n.docLine == null ? null : n.docLine,   // line in the .argdown, for seating
         pos: n.pos || null,            // where in the manuscript; see argdown-positions.js
-        full: n.full || null,          // untruncated text, for the tooltip
         group: firstVisibleGroup(ix, n.group, S),
         hidden: hiddenBelow.get(id) || 0,
         collapsed: S.collapsedNodes.has(id),
@@ -3359,16 +3358,14 @@ function createLiveMap(container, graph, options) {
       return union > 0 && shared / union >= 0.92;
     };
     const bits = [];
-    // `n.detail` IS the claim's whole text -- `sizeOf` measures that and clips it, and nothing in
-    // this program has ever set `n.full`, which is a field read in three places and written in
-    // none. The old tooltip hid that: it read `n.full || (label + " — " + detail)`, so the dead
-    // half never showed. Keeping only the dead half turned it into nine claims on the Miller map
-    // whose text was cut off in the box and nowhere on hover -- exactly the reader who hovers
-    // BECAUSE the sentence stopped mid-air. `n.full` stays first in case a host does set it.
-    const whole = n.full || n.detail;
-    if (s.clipped && whole) bits.push(whole);
+    // `n.detail` IS the claim's whole text: `sizeOf` measures that and clips it. There used to be
+    // an `n.full` here, carried from the workspace this program was extracted from and set by
+    // nothing in it -- measured across the corpus, 714 nodes of 714 lacked it. Reading it first
+    // cost seven claims their hover text for a day, because a dead field looks exactly like a
+    // live one until something depends on it alone.
+    if (s.clipped && n.detail) bits.push(n.detail);
     // The author's exact words, which the map never draws -- it draws the reconstructor's claim.
-    if (n.source && !saysTheSame(n.full || n.detail, n.source))
+    if (n.source && !saysTheSame(n.detail, n.source))
       bits.push("\u201c" + String(n.source).replace(/^["\u201c]|["\u201d]$/g, "") + "\u201d");
     if (n.fidelity && FID[n.fidelity]) bits.push("[" + FID[n.fidelity] + "]");
     if (n.warrant)
