@@ -3453,6 +3453,35 @@ function createLiveMap(container, graph, options) {
         }
         box.appendChild(g);
       }
+
+      /* EXPLODE. A four-step structure asks the reader to hold four numbered cross-references in
+       * their head at once; drawn as a staircase -- one small argument per step, each
+       * intermediate conclusion a box between them -- it can simply be followed. That is the
+       * form this program exists to give people who do not read numbered premises fluently.
+       *
+       * IT OPENS A PANEL RATHER THAN REDRAWING THE MAP. Exploding in place would need a
+       * per-argument state living beside the fold state, encoded in the `ipsfold1` string,
+       * surviving relayout, and a camera rule for a region that doubles in width. A panel needs
+       * none of that -- and, free of the map's density budget, it can carry what the map has to
+       * leave out: every line in full, the rule unabbreviated, the verdict and its countermodel.
+       *
+       * `⊞` and not `+`: the map already uses `+3` for "three hidden claims here", and this
+       * hides nothing -- the same claims are drawn another way.
+       */
+      const steps = s.pcs.filter(r => r.bar).length;
+      if (steps > 1 && opt.onExplode) {
+        const w = 26, h = 13, bx = s.width - opt.padX - w, by = s.height - h - 5;
+        const ex = el("g", { class: "alm-explode" });
+        ex.append(el("rect", { x: bx, y: by, width: w, height: h, rx: 6.5 }),
+                  el("text", { x: bx + w / 2, y: by + 9.5, "text-anchor": "middle",
+                               "font-size": 9 }));
+        ex.querySelector("text").textContent = "\u229e " + steps;
+        const et = el("title");
+        et.textContent = "Show these " + steps + " steps as separate arguments";
+        ex.appendChild(et);
+        ex.addEventListener("click", ev => { ev.stopPropagation(); opt.onExplode(n, ev); });
+        box.appendChild(ex);
+      }
     }
 
     // "show more / show less" for the claim text itself, at the foot of the text block.
@@ -5351,6 +5380,11 @@ function injectStyle() {
    common one at first. Hollow rather than absent: it is a claim, it is simply unexamined. */
 .alm-v-unformalized .alm-join-rule{opacity:.5;text-decoration:underline;
   text-decoration-style:dotted;text-underline-offset:2px}
+.alm-explode{cursor:pointer}
+.alm-explode rect{fill:var(--alm-node-bg,#fff);stroke:var(--alm-accent,#3a7bd5)}
+.alm-explode text{fill:var(--alm-accent,#3a7bd5);font-weight:600;pointer-events:none}
+.alm-explode:hover rect{fill:var(--alm-accent,#3a7bd5)}
+.alm-explode:hover text{fill:#fff}
 .alm-verdict{cursor:pointer}
 .alm-verdict circle{fill:var(--alm-accent,#3a7bd5)}
 .alm-verdict text{fill:#fff;font-weight:600;pointer-events:none}
@@ -5473,6 +5507,7 @@ function injectStyle() {
 @media (prefers-color-scheme:dark){
   .alm-n .alm-box{fill:var(--alm-node-bg,#23262b)}
   .alm-toggle circle{fill:var(--alm-node-bg,#23262b)}
+  .alm-explode rect{fill:var(--alm-node-bg,#23262b)}
   .alm-n .alm-title{fill:var(--alm-fg,#e8e8e8)}
   .alm-n .alm-text{fill:var(--alm-fg-dim,#aaa)}
   .alm-n .alm-pcs-text{fill:var(--alm-fg-dim,#aaa)}

@@ -577,6 +577,28 @@ body.fs #fsexit{display:inline-flex}
 #help summary{cursor:pointer;color:var(--fg-dim);font-size:12px}
 /* ---- the contents list, and the topic pages it leads to ---- */
 /* ---- the About window ---- */
+#expl{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);
+  display:grid;place-items:center;padding:2rem}
+#expl[hidden]{display:none}
+#expl .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  width:min(58rem,95vw);max-height:min(44rem,90vh);display:flex;flex-direction:column;
+  box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
+#expl header{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;
+  border-bottom:1px solid var(--line)}
+#explbody{overflow:auto;padding:.9rem 1rem}
+#explfoot{padding:.45rem .8rem;border-top:1px solid var(--line);font-size:.82em;opacity:.75}
+.xstep{border:1px solid var(--line);border-radius:9px;padding:.5rem .65rem;margin:0 0 .1rem}
+.xstep h4{margin:0 0 .35rem;font-size:.85em;font-weight:600;opacity:.72;
+  text-transform:uppercase;letter-spacing:.04em}
+.xline{display:flex;gap:.5rem;align-items:baseline;padding:.18rem .3rem;border-radius:5px}
+.xline .num{opacity:.55;font-variant-numeric:tabular-nums;flex:none}
+.xclaim{cursor:pointer}
+.xclaim:hover{background:rgba(58,123,213,.11)}
+.xrule{font-style:italic;opacity:.8;font-size:.85em;margin-top:.3rem}
+.xarrow{text-align:center;color:#3a9d5d;font-size:1.05em;margin:.15rem 0}
+.xconcl{border:1px solid #8fbf9f;background:rgba(143,191,159,.12);border-radius:9px;
+  padding:.5rem .65rem;margin:0 0 .1rem}
+.xbad{color:#cc3b3b} .xgood{color:#3a9d5d}
 #about{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
   display:grid;place-items:center;padding:2rem}
 #about[hidden]{display:none}
@@ -847,6 +869,21 @@ body.fs #fsexit{display:inline-flex}
         <button class="plain x" id="aboutclose" title="Close (Esc)">&times;</button>
       </header>
       <div id="aboutbody"></div>
+    </div>
+  </div>
+
+  <!-- The ⊞ control on a multi-step argument puts this up: the same steps drawn as a staircase,
+       one small argument each, with the intermediate conclusions between them. A panel rather
+       than a redrawn map -- see the note beside `alm-explode` for why. -->
+  <div id="expl" hidden role="dialog" aria-modal="true" aria-labelledby="explhead">
+    <div class="card">
+      <header>
+        <b id="explhead"></b>
+        <span class="grow"></span>
+        <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
+      </header>
+      <div id="explbody"></div>
+      <footer id="explfoot"></footer>
     </div>
   </div>
 
@@ -1203,7 +1240,7 @@ function openingDepth(graph){
     collapsedGroups: collapsed,
     depth: openingDepth(graph),
     onLocate: msLocate,
-    onMenu: ctxShow,
+    onMenu: ctxShow, onExplode: explodeShow,
     onMargin: openMargin
   });
 
@@ -3207,6 +3244,7 @@ document.addEventListener("keydown", function(e){
   // Esc should undo one thing. The
   // open panel is dismissable only when there IS a map to go back to — on a cold start it is
   // the whole page and closing it would leave nothing.
+  if (!$("expl").hidden) return explHide();
   if (!$("about").hidden) return closeAbout();
   if (!$("cdlg").hidden) return closeCommentDialog();
   if (!$("ctx").hidden) return ctxHide();
@@ -3531,6 +3569,9 @@ function syncAbstract(){
 
 $("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
 $("absclose").onclick = function(){ setAbstract(false); };
+$("explclose").onclick = explHide;
+// Clicking the dim surround dismisses it, as it does for the About card.
+$("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
 
 function msIndexParagraphs(lines){
   MSPARA = new Array(lines.length + 1);
@@ -3761,6 +3802,7 @@ function redrawFrom(graph){
   if (LIVE) { LIVE.destroy(); LIVE = null; }
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
+    onExplode: explodeShow,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
     depth: keep ? keep.depth : null,
@@ -4456,6 +4498,97 @@ function msClearSpan(){
 
 /* ---- the right-click menu ---------------------------------------------------------- */
 function ctxHide(){ $("ctx").hidden = true; }
+/* THE STAIRCASE. One small argument per inference step, with each intermediate conclusion drawn
+ * between them, so a four-step structure can be followed instead of held in the head.
+ *
+ * Built from `n.pcs` alone -- the lines the graph already carries, each with its number, role,
+ * text, step, rule and verdict. Nothing is recomputed and nothing is stored: the panel is
+ * transient, which is the whole reason it is a panel. */
+function explHide(){ $("expl").hidden = true; }
+
+function explGo(title){
+  var node = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).filter(function(x){
+    return x.label === title; })[0];
+  if (!node || !LIVE) return;
+  // Dismiss FIRST, then travel: markClaims unfolds and moves the camera, and doing that behind a
+  // panel would leave the reader looking at the panel while the answer happened out of sight.
+  explHide();
+  LIVE.markClaims([node.id]);
+}
+
+function explodeShow(n){
+  var rows = (n && n.pcs) || [];
+  var body = $("explbody"), foot = $("explfoot");
+  $("explhead").textContent = n.label || "";
+  body.textContent = ""; foot.textContent = "";
+
+  var onMap = {};
+  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ onMap[x.label] = true; });
+
+  var line = function(r, into){
+    var d = document.createElement("div");
+    d.className = "xline" + (r.title && onMap[r.title] ? " xclaim" : "");
+    var num = document.createElement("span");
+    num.className = "num"; num.textContent = "(" + r.n + ")";
+    var txt = document.createElement("span");
+    txt.textContent = r.text || r.title || "";
+    d.appendChild(num); d.appendChild(txt);
+    if (r.title && onMap[r.title]) {
+      d.title = "Show this claim on the map";
+      d.onclick = function(){ explGo(r.title); };
+    }
+    into.appendChild(d);
+  };
+
+  // Walk the structure: premises pile up, a conclusion closes a step.
+  var run = [], step = 0, prev = null, made = 0;
+  rows.forEach(function(r){
+    if (r.role === "premise") { run.push(r); return; }
+    step++;
+    var inputs = r.uses ? r.uses.map(Number) : null;
+    var box = document.createElement("div");
+    box.className = "xstep";
+    var h = document.createElement("h4");
+    h.textContent = "Step " + step + (r.rule ? " · " + r.rule : "");
+    box.appendChild(h);
+    var pool = run.concat(prev ? [prev] : []);
+    var chosen = inputs ? pool.filter(function(x){ return inputs.indexOf(x.n) >= 0; }) : pool;
+    // A declared `uses` may name a line from further back than this step's own run.
+    if (inputs) rows.forEach(function(x){
+      if (inputs.indexOf(x.n) >= 0 && chosen.indexOf(x) < 0 && x !== r) chosen.push(x); });
+    chosen.sort(function(a, b){ return a.n - b.n; });
+    chosen.forEach(function(x){ line(x, box); });
+    if (r.verdict && r.verdict.state) {
+      var v = document.createElement("div");
+      v.className = "xrule " + (r.verdict.state === "invalid" ? "xbad" :
+                                r.verdict.state === "valid" ? "xgood" : "");
+      v.textContent = r.verdict.state === "valid" ? "checked: the conclusion follows"
+                    : r.verdict.state === "invalid" ? "checked: the conclusion does NOT follow"
+                    : "a rule is named, but nothing checks it";
+      box.appendChild(v);
+    }
+    body.appendChild(box);
+    var arrow = document.createElement("div");
+    arrow.className = "xarrow"; arrow.textContent = "\u2193";
+    body.appendChild(arrow);
+    var c = document.createElement("div");
+    c.className = "xconcl";
+    line(r, c);
+    body.appendChild(c);
+    if (r !== rows[rows.length - 1]) {
+      var a2 = document.createElement("div");
+      a2.className = "xarrow"; a2.textContent = "\u2193";
+      body.appendChild(a2);
+    }
+    made++;
+    run = []; prev = r;
+  });
+
+  foot.textContent = made + (made === 1 ? " step" : " steps") +
+    ". Click any claim to show it on the map. Esc closes.";
+  $("expl").hidden = false;
+}
+
 function ctxShow(n, ev){
   var m = $("ctx");
   m.textContent = "";
