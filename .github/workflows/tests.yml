@@ -31,8 +31,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Pandoc
-        run: sudo apt-get update && sudo apt-get install -y pandoc
+      - name: Pandoc, and librsvg for the export checks
+        # librsvg is deliberately NOT the engine that writes the SVG. An export checked only by
+        # the browser that produced it passed while being malformed XML.
+        run: sudo apt-get update && sudo apt-get install -y pandoc librsvg2-bin
 
       - name: Install
         run: |

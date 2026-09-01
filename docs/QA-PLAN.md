@@ -189,7 +189,7 @@ instead.
 
 ---
 
-## 6. Instrument C — the export as a checked artifact
+## 6. Instrument C — the export as a checked artifact — **BUILT 1 Sep 2026**
 
 Anything the program writes out is a file someone else's software will read, and this fortnight
 produced four defects in one afternoon of writing one. Each export gets:
@@ -206,6 +206,26 @@ produced four defects in one afternoon of writing one. Each export gets:
 
 The round-trip is the important one. **[judgement]** It is cheap, it needs no baseline, and it
 states the actual contract of an export: *the same words, no more and no fewer.*
+
+`app/test_export_artifacts.mjs`, registered in the runner and in CI, with `librsvg2-bin` added to
+the CI image. **18 checks**, five of them mutations, on both panel layouts and the PNG [measured].
+
+**The organising idea, which is worth stating separately from the checks:** *the engine that wrote
+the file is the wrong engine to check it with.* Three of the four export defects were invisible in
+the browser that produced them — the malformed XML rendered perfectly under `innerHTML`, and the
+`rgba()` fills render perfectly in every browser there is. So the file is read back through a
+strict XML parse, and through **librsvg in another process** — an independent implementation of
+the kind of renderer the file will actually meet.
+
+The round-trip needed one calibration, the same species as instrument A's six: stripping tags and
+comparing raw left `General&apos;s` against `General's`, so the check reported the export as both
+writing a word too often and failing to write it. Entities are the file's spelling of a character,
+not a different word. **[judgement] Two instruments, two rounds of false positives before either
+found anything — that ratio is the honest cost of a new invariant and should be planned for.**
+
+Not built from this section: the ink-coverage baseline. librsvg either renders the file or does
+not, and "does not" has been the only failure mode so far; a size-and-coverage baseline can wait
+until something renders successfully but wrongly.
 
 ---
 
@@ -259,8 +279,8 @@ quietly become untrue is the same species of bug as `n.full`.
 
 | | build | catches (of 18) | cost |
 |---|---|---|---|
-| 1 | rendered invariants | 6 | one dependency, ~60–90s CI [judgement] |
-| 2 | export artifact checks | 5 | no new dependency; `rsvg-convert` in CI |
+| 1 | rendered invariants | 6 | **built** — Playwright, 54.6s [measured] |
+| 2 | export artifact checks | 5 | **built** — `librsvg2-bin` in CI |
 | 3 | the dead-field lint | 1, and the class | an afternoon |
 | 4 | real gestures | 4 | slow, brittle, keep small |
 | 5 | mutation as a merge rule | 1, and every future instrument | a note per test |

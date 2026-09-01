@@ -46,6 +46,9 @@ const SUITES = [
   // with a word rather than a failure where Playwright is not installed, so a checkout that has
   // not run `npx playwright install chromium` still runs everything else.
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
+  // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
+  // the four export defects were invisible in the browser that made the file.
+  ["the exports, read back", "node", [path.join(HERE, "test_export_artifacts.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
