@@ -4471,6 +4471,18 @@ function ctxShow(n, ev){
   b.onclick = function(){ ctxHide(); msLocate(n); };
   m.appendChild(b);
 
+  // FOLDING, for a section. The band's background no longer folds on a plain click -- that was
+  // taken away so a section can be dragged from the inside -- so this is where the gesture went.
+  // The header strip still folds, and this says the same thing for anyone who reaches for the
+  // right button first.
+  if (n.kind === "group" && LIVE) {
+    var f = document.createElement("button");
+    f.type = "button";
+    f.textContent = n.hidden ? "Unfold section" : "Fold section";
+    f.onclick = function(){ ctxHide(); LIVE.toggleGroup(n.groupId || n.id); };
+    m.appendChild(f);
+  }
+
   // Commenting is only offered where it can actually be done — the Viewer has no editor, and a
   // folded block stands for several claims and so has no one place for a comment to go.
   if (ED && n.kind !== "group") {

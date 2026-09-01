@@ -3731,13 +3731,24 @@ function createLiveMap(container, graph, options) {
         // would truncate against the old one and cut the name short of the room it has.
         box.append(el("rect", { class: "alm-gbox", rx: 10, ry: 10 }),
                    el("rect", { class: "alm-ghit" }),
+                   el("rect", { class: "alm-gfold" }),
                    el("text", { class: "alm-glabel", "font-size": GROUP_LABEL_SIZE,
                                 "font-weight": "600" }),
                    el("g", { class: "alm-spark" }),
                    el("text", { class: "alm-gwords", "font-size": 10, "text-anchor": "end" }));
         box.appendChild(el("title"));
+        // AND THE BAND KEEPS A WAY TO FOLD ITSELF, because taking the click away would
+        // otherwise make a section harder to shut than it was. Right-click is the gesture that
+        // offers choices rather than acting, which is the rule the claim boxes already follow.
         if (gr.fold !== false)
-          box.addEventListener("click", ev => {
+          box.addEventListener("contextmenu", ev => {
+            if (!opt.onMenu) return;
+            ev.preventDefault(); ev.stopPropagation();
+            opt.onMenu({ id: gr.id, groupId: gr.id, kind: "group",
+                         label: gr.label, hidden: gr.hidden }, ev);
+          });
+        if (gr.fold !== false)
+          box.querySelector(".alm-gfold").addEventListener("click", ev => {
             ev.stopPropagation(); setLit([]);
             // The section's box is about to become a block. Hold the box's bottom edge, which is
             // where the block's own badge will land, so the control that undoes this click is
@@ -3759,6 +3770,15 @@ function createLiveMap(container, graph, options) {
       rect.setAttribute("width", p.width); rect.setAttribute("height", p.height);
       hit.setAttribute("width", p.width);
       hit.setAttribute("height", strip ? Math.min(22, p.height) : p.height);
+      // THE HEADER IS THE FOLD CONTROL; THE BAND IS CANVAS. Folding used to be a click anywhere
+      // in the band, which meant there was nowhere inside a section to start a drag -- and on a
+      // map with everything open there is very little else left, so panning became a hunt for a
+      // gap. The 22px strip that already carries the name and the chevron does the folding now.
+      // The band-wide hit stays, because it is what a right-click has to land on, and because a
+      // pointerdown on it must still reach the pan handler underneath.
+      const fold = box.querySelector(".alm-gfold");
+      fold.setAttribute("width", p.width);
+      fold.setAttribute("height", Math.min(22, p.height));
       // HOW LONG THIS PART OF THE MANUSCRIPT IS, at the other end of the same strip. Written
       // first, because the space it takes is space the name cannot have: a name truncated to
       // make room reads as a long name, whereas a count overlapping a name reads as a fault.
@@ -4548,7 +4568,11 @@ function createLiveMap(container, graph, options) {
       view.k = k; userMoved = true; viewport.style.transition = ""; applyView();
     }, { passive: false });
     svg.addEventListener("pointerdown", ev => {
-      if (ev.target.closest(".alm-n, .alm-toggle, .alm-g")) return;
+      // A SECTION'S BACKGROUND IS CANVAS. `.alm-g` was in this list, so a pointerdown anywhere
+      // inside a section refused to pan -- which on a fully unfolded map left almost nowhere to
+      // drag from. Only the things that DO something on a press are excluded now: the boxes,
+      // the fold toggles, and the section's own 22px fold strip.
+      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold")) return;
       dragging = true; sx = ev.clientX - view.x; sy = ev.clientY - view.y;
       down = { x: ev.clientX, y: ev.clientY };
       userMoved = true; viewport.style.transition = "";
@@ -5260,6 +5284,8 @@ function injectStyle() {
    can offer only its name strip without changing what it looks like. */
 .alm-gbox{pointer-events:none}
 .alm-ghit{fill:transparent}
+.alm-gfold{fill:transparent;cursor:pointer}
+.alm-g.is-fixed .alm-gfold{pointer-events:none}
 .alm-g.is-fixed .alm-ghit{pointer-events:none}
 .alm-bar{position:absolute;left:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:.5rem;
   align-items:center;font:11px system-ui,sans-serif;background:var(--alm-bar-bg,rgba(255,255,255,.92));
