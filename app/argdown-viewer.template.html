@@ -4846,6 +4846,22 @@ function explEffectiveOpacity(el, stop){
  * because HTML parsing forgives it, and it was only the PNG path -- which loads the same bytes
  * through an XML parser -- that refused. A .svg written to disk would have failed the same way,
  * in a viewer the reader could not debug. */
+/* SVG 1.1 HAS NO `rgba()`. A browser takes it, because CSS Color 4 says so and the same string
+ * came out of `getComputedStyle`; a standalone renderer parses the presentation attribute
+ * strictly, fails, and falls back to BLACK. Reported from Inkscape as "it comes out black" --
+ * and that is exactly what it was: `.xstep` has no background, so its computed fill is
+ * `rgba(0, 0, 0, 0)`, which every box in the file carried.
+ *
+ * So the alpha comes out of the colour and goes where SVG keeps it, in its own attribute. */
+function explPaint(css){
+  var m = String(css == null ? "" : css).match(/rgba?\(([^)]+)\)/);
+  if (!m) return { paint: css || "none", alpha: 1 };
+  var p = m[1].split(/[,\s/]+/).filter(function(x){ return x.length; }).map(Number);
+  var a = p.length > 3 ? p[3] : 1;
+  if (!(a > 0)) return { paint: "none", alpha: 0 };
+  return { paint: "rgb(" + p[0] + "," + p[1] + "," + p[2] + ")", alpha: a };
+}
+
 function explEsc(t){
   return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
                   .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
@@ -4857,6 +4873,7 @@ function explEsc(t){
 function explPseudoRuns(root, ox, oy){
   var out = [];
   root.querySelectorAll("*").forEach(function(el){
+    if (el.closest(".xedges")) return;          // copied wholesale, like its text
     ["::before", "::after"].forEach(function(which){
       var cs = getComputedStyle(el, which);
       var c = cs.content;
@@ -4882,6 +4899,10 @@ function explTextRuns(root, ox, oy){
     if (!/\S/.test(raw)) continue;
     var el = n.parentElement, cs = getComputedStyle(el);
     if (cs.display === "none" || cs.visibility === "hidden") continue;
+    // THE EDGE LAYER IS INSIDE THE WRAP, and its labels are copied wholesale further down. Left
+    // in, this walk found them again and wrote every one twice -- reported as "Step 4 appears
+    // twice", in both layouts, because both draw their edges the same way.
+    if (el.closest(".xedges")) continue;
     // The DRAWN text, not the source text: a step heading is uppercased by CSS, and exporting
     // the node's own value put it back into sentence case in the file.
     if (cs.textTransform === "uppercase") raw = raw.toUpperCase();
@@ -4927,17 +4948,23 @@ function explBuildSVG(){
   var panel = getComputedStyle(document.querySelector("#expl .card")).backgroundColor;
   var parts = [];
 
-  parts.push('<rect width="' + W + '" height="' + H + '" fill="' + explEsc(panel) + '"/>');
+  var bg = explPaint(panel);
+  parts.push('<rect width="' + W + '" height="' + H + '" fill="' + explEsc(bg.paint) + '"' +
+             (bg.alpha < 1 ? ' fill-opacity="' + bg.alpha + '"' : "") + '/>');
 
   // The boxes, with the corners and colours they are drawn with on screen.
   wrap.querySelectorAll(".xstep,.xconcl").forEach(function(b){
     var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    var f = explPaint(cs.backgroundColor), k = explPaint(cs.borderTopColor);
     parts.push('<rect x="' + (r.left - wr.left + pad).toFixed(1) +
                '" y="' + (r.top - wr.top + pad).toFixed(1) +
                '" width="' + r.width.toFixed(1) + '" height="' + r.height.toFixed(1) +
                '" rx="' + (parseFloat(cs.borderTopLeftRadius) || 0) +
-               '" fill="' + explEsc(cs.backgroundColor) + '" stroke="' + explEsc(cs.borderTopColor) +
-               '" stroke-width="' + (parseFloat(cs.borderTopWidth) || 1) + '"/>');
+               '" fill="' + explEsc(f.paint) + '"' +
+               (f.alpha < 1 ? ' fill-opacity="' + f.alpha + '"' : "") +
+               ' stroke="' + explEsc(k.paint) + '"' +
+               (k.alpha < 1 ? ' stroke-opacity="' + k.alpha + '"' : "") +
+               ' stroke-width="' + (parseFloat(cs.borderTopWidth) || 1) + '"/>');
   });
 
   // The edges are already SVG in the wrap's own coordinates, so they only need shifting.
@@ -4959,11 +4986,12 @@ function explBuildSVG(){
 
   explTextRuns(wrap, wr.left - pad, wr.top - pad)
     .concat(explPseudoRuns(wrap, wr.left - pad, wr.top - pad)).forEach(function(l){
+    var c = explPaint(l.fill), op = l.opacity * c.alpha;
     parts.push('<text x="' + l.x.toFixed(1) + '" y="' + l.y.toFixed(1) +
                '" font-family="' + explEsc(l.family) + '" font-size="' + l.size +
                '" font-weight="' + explEsc(l.weight) + '" font-style="' + explEsc(l.style) +
-               '" fill="' + explEsc(l.fill) + '"' +
-               (l.opacity < 0.995 ? ' opacity="' + l.opacity.toFixed(2) + '"' : "") +
+               '" fill="' + explEsc(c.paint) + '"' +
+               (op < 0.995 ? ' opacity="' + op.toFixed(2) + '"' : "") +
                '>' + explEsc(l.text) + '</text>');
   });
 

@@ -4166,10 +4166,11 @@ function createLiveMap(container, graph, options) {
       r.setAttribute("width", info.hull.width);
       r.setAttribute("height", info.hull.height);
       const t = r.querySelector("title");
+      // NOT the rule, for the reason the join bar does not carry it either: it is drawn beside
+      // this very enclosure, and its own label gives the unabbreviated name on hover.
       if (t) t.textContent = info.count + " premises of one inference step" +
                              (info.inside ? " (" + info.inside + " of them written inside the " +
-                                            "argument's box)" : "") +
-                             (info.rule ? " — " + info.rule : "");
+                                            "argument's box)" : "");
     }
     for (const [k, info] of joins.bars) {
       let holder = drawnJoin.get(k);
