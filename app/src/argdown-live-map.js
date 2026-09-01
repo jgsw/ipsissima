@@ -3564,7 +3564,17 @@ function createLiveMap(container, graph, options) {
         // section's own box, so that box is named as the stand-in; a claim's badge survives its
         // own fold and needs none. A band's block and its band share an id, so one name covers
         // both ends there.
-        holdStill(n.kind === "group" && n.groupId ? [n.id, n.groupId] : [n.id]);
+        //
+        // A SECTION HOLDS ITS TOP, AND HOLDS IT WHERE THE READER PRESSED. Opening a block turns
+        // it into a band that may be a thousand pixels tall, and the default here -- hold the
+        // bottom, hold the node's centre -- then pushed the band's header clean off the top of
+        // the pane: measured on Miller, opening "By what standard" from a depth-2 state put the
+        // header at y = -231 and slid the map 314px sideways and 288px up. The top edge is what
+        // the reader is looking at in both directions, and their pointer is on it.
+        if (n.kind === "group")
+          holdStillAt([n.id, n.groupId || n.id], "top", ev);
+        else
+          holdStill([n.id]);
         // A folded band carries no groupId — its own id IS the handle (`lane:ch:2|3. Method`),
         // and reduceFold routes on the prefix.
         if (n.kind === "group") toggleGroup(n.groupId || n.id);
@@ -3776,7 +3786,7 @@ function createLiveMap(container, graph, options) {
             // The section's box is about to become a block. Hold the box's bottom edge, which is
             // where the block's own badge will land, so the control that undoes this click is
             // under the pointer that made it.
-            holdStill([gr.id, "group:" + gr.id], "top");
+            holdStillAt([gr.id, "group:" + gr.id], "top", ev);
             toggleGroup(gr.id);
           });
         drawnGroup.set(gr.id, box);
@@ -4435,6 +4445,25 @@ function createLiveMap(container, graph, options) {
    *  opened, and the other way round when it is shut. The first id that resolves wins, at each
    *  end independently, so one list covers both directions.
    */
+  /** As `holdStill`, but the point held is WHERE THE READER PRESSED rather than the control's
+   *  own centre.
+   *
+   *  WHY THE DIFFERENCE MATTERS. A section's header runs the whole width of its band, so a
+   *  press near one end can be hundreds of pixels from the band's centre. Holding the centre
+   *  then keeps the wrong thing still: the block lands where the CENTRE was, the reader's
+   *  pointer is somewhere else entirely, and the camera slides the length of the band to make
+   *  it so. Measured on Miller folding "By what standard" from a depth-2 state: the block came
+   *  to rest 64px from the pointer and the whole map moved 314px sideways to put it there.
+   *
+   *  Anchoring on the press costs nothing when the two coincide -- a badge is small, and its
+   *  centre IS where you pressed -- so this is the general rule and `holdStill` is the case
+   *  with no pointer to consult, such as the keyboard.
+   */
+  function holdStillAt(ids, edge, at) {
+    holdStill(ids, edge);
+    if (pin && at && typeof at.clientX === "number") { pin.x = at.clientX; pin.y = at.clientY; }
+  }
+
   function holdStill(ids, edge) {
     pin = null;
     const r = container.getBoundingClientRect();
