@@ -169,6 +169,35 @@ without a name, standing where a heading the author chose should be. The same de
 independently in the compact panel and fixed there; on the map it is unfixed, because changing a
 node's drawn title touches layout, claim search and how references resolve.
 
+### The facet filter, which had no coverage at all — 1 Sep 2026
+
+The fold invariants pass `facets: null` throughout, so the hashtag filter — and the empty-map
+state it can reach — was never exercised by anything. That is how the `untagged` switch came to be
+built on top of a latent fault in `render`, which returned before `syncToolbar` when nothing
+passed and left the bar lit over a blank map.
+
+The harness now drives the filter. **Asserted as a CHANGE rather than as a property of one
+picture**, and the reason is worth keeping: the obvious form — *with untagged off, everything
+drawn carries a hashtag* — cannot be written honestly, because the contention stays on screen
+deliberately and the DOM cannot say which box is the contention (nodes carry `data-id`; edges
+carry no identity at all). A first attempt guessed *at most one untagged box survives* and failed
+on Akhlaghi, which has two contentions.
+
+What is exact, and holds on any map without a threshold: switching the tag off must remove
+something, everything it removes must be untagged, no untagged claim may appear, and something
+must still be drawn.
+
+**Two of my own assertions were wrong before the code was.** The check first ran in whatever state
+the map was left in, which differs between the colour passes because the self-test reloads — so it
+compared folded blocks in one and open claims in the other and disagreed with itself. And it
+forbade claims from *appearing*, which they do and should: removing the untagged claims shortens
+chains and unstrands components, so the walk surfaces tagged claims that were buried below the
+depth limit — nine of them on Akhlaghi. That is the control doing exactly what it is for.
+
+Proved against the real defect rather than a synthetic one: replacing the `S.untagged` term in
+`facetOk` with `true` — the bug the control exists to fix — fails this on every map that uses
+hashtags, in both schemes [measured].
+
 ### The mutation self-test, which is part of the instrument
 
 **[judgement] The most valuable thing built here, and the least expected.** Rather than mutate by
