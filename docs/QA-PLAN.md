@@ -242,16 +242,29 @@ auditable later.
 
 ---
 
-## 8. What is not a test: the visual diff report
+## 8. What is not a test: the visual diff report — **BUILT 1 Sep 2026**
 
 The author's question was partly about his own time — *"testing all these as a human clicking
 around on maps will be time consuming and unlikely to pull out all problems"*. None of the above
 answers that directly. This does.
 
-`npm run qa:diff` renders every corpus map, in both arrangements, at a fixed size, on `main` and
-on the branch, and prints **which maps changed and by how much**. Not a gate; not a baseline to
-approve. A reading list, so that the clicking-around is aimed at the four maps a change actually
-touched instead of spread thinly over eleven.
+`npm run qa:diff` renders every corpus map on `main` and on the branch and prints **which maps
+changed and by how much**. Not a gate; not a baseline to approve. A reading list, so that the
+clicking-around is aimed at the four maps a change actually touched instead of spread thinly over
+eleven. The comparison ref goes into a git WORKTREE, so nothing in the working copy is touched and
+it is safe to run with edits in progress; the pixels are counted in a canvas, so there is no image
+dependency.
+
+**It found its own worst flaw on the first run.** Photographing only the opening view reported
+**0.00% across twelve commits of real renderer work** — rule names, verdict marks and everything
+inside a section are simply not on screen when the sections are folded. A tool that says nothing
+changed about a fortnight of changes is worse than no tool, because it tells the reader not to
+look. It now shoots two states per map and reports the worse of them, naming which.
+
+Verified against `4077a1d~1`, the commit that set section names larger: 7 of 7 maps changed,
+attributed to the OPEN state for six of them, and Darwin — which has no sections at all — moved
+least and not in that state [measured]. That internal consistency is the evidence the numbers
+mean something.
 
 **[judgement] Explicitly not a pass/fail visual regression gate.** Screenshot gates on a
 force-directed map with real fonts will produce false failures on every machine that is not the one
@@ -261,7 +274,20 @@ that recorded them, and the cost of that is the whole team learning to ignore a 
 
 ## 9. Two smaller things, both cheap
 
-**A dead-field lint at the graph → renderer boundary.** `n.full` was read three times and written
+**A dead-field lint at the graph → renderer boundary — BUILT 1 Sep 2026.**
+`app/test_dead_fields.mjs`, in the runner. One side measured (`toGraph` run over the corpus, its
+actual keys collected), the other read out of the projection where a graph node becomes a drawn
+one. **And it catches the real thing:** `n.full` put back into the projection is reported as
+`read but never written: full` — the first counterfactual in this document demonstrated against
+an actual historical defect rather than a synthetic mutation.
+
+It needed the same calibration as the other two. Its first run reported `comment` and `pos` as
+dead, and both are alive: `comment` is optional and no corpus map carries one, and `pos` is
+written by a LATER STAGE, `build_argdown_viewer.mjs`, after `toGraph` has returned. So the rule
+is not "does this corpus show it" but "does anything write it" — measured keys, or an assignment
+anywhere in `app/`. **Three instruments, three rounds of false positives.**
+
+The original argument, for the record: `n.full` was read three times and written
 never, from the first commit of the repository, and looked alive for as long as something stood
 behind it in an `||`. One script comparing the keys `toGraph` emits against the keys the renderer
 reads would have found it in a second, and would find the next one. Measured cost of not having
@@ -281,10 +307,10 @@ quietly become untrue is the same species of bug as `n.full`.
 |---|---|---|---|
 | 1 | rendered invariants | 6 | **built** — Playwright, 54.6s [measured] |
 | 2 | export artifact checks | 5 | **built** — `librsvg2-bin` in CI |
-| 3 | the dead-field lint | 1, and the class | an afternoon |
+| 3 | the dead-field lint | 1, and the class | **built** — catches the real `n.full` |
 | 4 | real gestures | 4 | slow, brittle, keep small |
 | 5 | mutation as a merge rule | 1, and every future instrument | a note per test |
-| 6 | the visual diff report | 0 — it saves time, it does not find bugs | a script and a baseline render |
+| 6 | the visual diff report | 0 — it saves time, it does not find bugs | **built** — `npm run qa:diff` |
 
 **[judgement] Items 1 and 2 together would have caught eleven of the eighteen**, including six of
 the eight the author had to find himself. That is the case for doing them first and letting the

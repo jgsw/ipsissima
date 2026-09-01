@@ -49,6 +49,9 @@ const SUITES = [
   // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
   // the four export defects were invisible in the browser that made the file.
   ["the exports, read back", "node", [path.join(HERE, "test_export_artifacts.mjs")]],
+  // A FIELD READ BY THE RENDERER AND WRITTEN BY NOTHING. `n.full` was one for eleven months and
+  // cost seven claims their hover text the day something depended on it alone.
+  ["the two sides agree about names", "node", [path.join(HERE, "test_dead_fields.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
