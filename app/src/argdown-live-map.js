@@ -325,6 +325,10 @@ function filterOnce(graph, state, force) {
     // the section seeds below.
     byText:          !!state.byText,
     facets:          state.facets || null,
+    // UNTAGGED. Its own switch and not a member of `facets`, because a file may perfectly well
+    // use a tag called `untagged` and a sentinel sharing that namespace would collide with it.
+    // Default true: a map opens showing everything.
+    untagged:        state.untagged !== false,
     // SPINE. When set, only claims holding up at least this many others are drawn — plus the
     // contentions, which are what "holding up" is measured towards. See `loadOf`.
     spine:           state.spine == null ? null : state.spine
@@ -343,7 +347,16 @@ function filterOnce(graph, state, force) {
   // 1. Facet filter first — it changes what counts as a root.
   //    The spine filter rides with it, for the same reason: both answer "which claims", not
   //    "how much", so both have to be settled before anything asks what the roots are.
-  const facetOk = n => !S.facets || !n.facet || S.facets.has(n.facet);
+  /* AN UNTAGGED CLAIM USED TO PASS WHATEVER WAS SWITCHED OFF, which is why the hashtag control
+   * felt inert: most maps tag sparingly, so switching every tag off still left the great bulk of
+   * the map on screen and the filter looked broken. `untagged` is the other half of the control
+   * -- switch it off and what remains is exactly the claims carrying a tag.
+   *
+   * NO EXEMPTION FOR THE CONTENTION, unlike `spine` below. Spine exempts it because "holding up"
+   * is measured TOWARDS the contention, so a contention that failed the test would make nonsense
+   * of the measure. Here the reader has said which claims they want to see, and an untagged
+   * contention forced back on screen would be the control declining to do what it says. */
+  const facetOk = n => n.facet ? (!S.facets || S.facets.has(n.facet)) : S.untagged;
   const load    = S.spine == null ? null : loadOf(ix);
   const spineOk = n => S.spine == null
     || (load.get(n.id) || 0) >= S.spine
@@ -2659,7 +2672,8 @@ function reduceFold(graph, state, action, vis, opt) {
     collapsedLanes:  new Set(state.collapsedLanes || []),
     depth:           state.depth == null ? null : state.depth,
     byText:          !!state.byText,
-    facets:          state.facets ? new Set(state.facets) : null
+    facets:          state.facets ? new Set(state.facets) : null,
+    untagged:        state.untagged !== false
   };
   const childrenOf = id => (graph.edges || []).filter(e => e.to === id).map(e => e.from);
 
@@ -2891,7 +2905,8 @@ function createLiveMap(container, graph, options) {
     groupFolded:     new Map(options && options.groupFolded     || []),
     collapsedLanes:  new Set(options && options.collapsedLanes  || []),
     depth:           options && options.depth != null ? options.depth : null,
-    facets:          options && options.facets ? new Set(options.facets) : null
+    facets:          options && options.facets ? new Set(options.facets) : null,
+    untagged:        !(options && options.untagged === false)
   };
   let textOpen = new Set();          // nodes showing their claim in full
   let allText = !!(options && options.allText);
@@ -3155,7 +3170,19 @@ function createLiveMap(container, graph, options) {
   function render(fit) {
     const vis = filterGraph(graph, state);
     lastVis = vis;                 // toggleNode reads this to decide show-vs-hide
-    if (!vis.nodes.length) { clearAll(); return; }
+    /* NOTHING PASSES THE FILTERS, and the controls must still say so. This returned before
+     * `syncToolbar` at the foot of the function, so the bar kept whatever it last showed -- and
+     * the reader was left looking at a blank map with a chip still lit, which reads as the map
+     * being broken rather than as their own filter being total.
+     *
+     * Unreachable until the `untagged` switch existed: an untagged claim used to pass every
+     * filter, so something was always drawn. A latent fault that a new control walked into. */
+    if (!vis.nodes.length) {
+      clearAll();
+      if (toolbar) syncToolbar(vis, null);
+      if (opt.onStateChange) opt.onStateChange(getState(), vis);
+      return;
+    }
 
     // A folded block sits at the position of its EARLIEST claim, which is the only honest
     // single point for it — but a block whose claims run across five chapters then looks as
@@ -4876,6 +4903,7 @@ function createLiveMap(container, graph, options) {
         const d = b.dataset.depth === "all" ? null : +b.dataset.depth;
         return apply({ type: "depth", value: d });
       }
+      if (b.dataset.untagged != null) return setState({ untagged: state.untagged === false });
       if (b.dataset.facet != null) {
         const all = facetValues();
         const cur = state.facets ? new Set(state.facets) : new Set(all);
@@ -4993,12 +5021,22 @@ function createLiveMap(container, graph, options) {
         // HASHTAGS, NOT "KINDS". Testers did not know what a "kind" was, and the word named
         // nothing in the file: what the buttons list is whatever `#tags` the .argdown actually
         // carries. The control already appears only when there are some -- `vals.length` above.
+        // UNTAGGED IS LAST, and after a gap. It is not a hashtag the file uses -- it is everything
+        // the file did not tag -- so it sits at the end of the row rather than among them, where
+        // it would read as one more tag somebody had written.
+        const bare = (graph.nodes || []).filter(n => !n.facet).length;
         fBox.innerHTML = '<b title="Hashtags the file uses. Switch one off to take those claims '
           + 'off the map. See Help for what #reported, #conceded and #contested mean.">hashtags</b>'
-          + vals.map(v => `<button data-facet="${v}" data-count="${total[v] || 0}">${v}</button>`).join("");
+          + vals.map(v => `<button data-facet="${v}" data-count="${total[v] || 0}">${v}</button>`).join("")
+          + (bare ? `<button class="alm-bare" data-untagged="1" data-count="${bare}" `
+              + `title="Claims carrying no hashtag at all. Switch it off to see only the tagged `
+              + `ones — most files tag sparingly, so this is usually the switch that changes the `
+              + `picture.">untagged</button>` : "");
       }
       fBox.querySelectorAll("button").forEach(b =>
-        b.classList.toggle("on", !state.facets || state.facets.has(b.dataset.facet)));
+        b.classList.toggle("on", b.dataset.untagged
+          ? state.untagged !== false
+          : (!state.facets || state.facets.has(b.dataset.facet))));
     }
 
     // Both halves are lit or unlit together, like `sections`: a radio pair says which of the two
@@ -5070,7 +5108,8 @@ function createLiveMap(container, graph, options) {
     return { collapsedGroups: [...state.collapsedGroups], collapsedNodes: [...state.collapsedNodes],
              expandedNodes: [...state.expandedNodes], groupFolded: [...state.groupFolded],
              collapsedLanes: [...state.collapsedLanes],
-             depth: state.depth, facets: state.facets ? [...state.facets] : null, allText,
+             depth: state.depth, facets: state.facets ? [...state.facets] : null,
+             untagged: state.untagged, allText,
              // `spine` and `byText` were missing from this snapshot, which meant a host that
              // rebuilt the map — the live editor, after a keystroke — silently lost the spine
              // setting: exactly the dropped-in-silence failure setState's own comment warns
@@ -5090,6 +5129,7 @@ function createLiveMap(container, graph, options) {
     if ("groupFolded"     in patch) state.groupFolded     = new Map(patch.groupFolded);
     if ("collapsedLanes"  in patch) state.collapsedLanes  = new Set(patch.collapsedLanes);
     if ("facets"          in patch) state.facets          = patch.facets ? new Set(patch.facets) : null;
+    if ("untagged"        in patch) state.untagged        = patch.untagged !== false;
     // SPINE. `setState` copies an explicit list rather than merging the patch, so a key missing
     // from it is dropped in silence — which is what happened when the control was first wired:
     // the button changed nothing and said nothing.
@@ -5649,6 +5689,8 @@ function injectStyle() {
 .alm-bar .alm-seg button.on{background:var(--alm-accent,#3a7bd5);color:#fff;box-shadow:none}
 .alm-bar .alm-seg button.on[data-count]::after{opacity:.8}
 .alm-bar .alm-seg button:hover:not(.on){background:rgba(0,0,0,.05)}
+/* Set apart from the tags themselves: this one names what the file did NOT say. */
+.alm-bar button.alm-bare{margin-left:.5rem}
 @media (prefers-color-scheme:dark){
   .alm-n .alm-box{fill:var(--alm-node-bg,#23262b)}
   .alm-toggle circle{fill:var(--alm-node-bg,#23262b)}
@@ -5754,6 +5796,8 @@ function encodeFoldState(graph, state) {
   // `facets` is three-valued: null means every facet (omitted), a set means only those, and an
   // EMPTY set really does hide every faceted claim — so it encodes as `facets=` with no value.
   if (state.facets != null) out.push("facets=" + sorted(state.facets));
+  // Only when OFF: on is the default and every id would otherwise carry a token saying so.
+  if (state.untagged === false) out.push("untagged=0");
   return out.join(" ");
 }
 
@@ -5819,7 +5863,8 @@ function decodeFoldState(graph, text) {
       return g;
     })]);
   }
-  const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes", "facets"];
+  const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
+                 "facets", "untagged"];
   for (const key of seen) if (!known.includes(key))
     throw new Error('unknown field "' + key + '" — this identifier may come from a newer build');
   return {
@@ -5831,7 +5876,8 @@ function decodeFoldState(graph, text) {
     depth:           num("depth", 0),
     spine:           num("spine", 0),
     byText:          fields.view === "pos",
-    facets:          "facets" in fields ? new Set(ids("facets", facetIds, "a facet")) : null
+    facets:          "facets" in fields ? new Set(ids("facets", facetIds, "a facet")) : null,
+    untagged:        !("untagged" in fields && fields.untagged === "0")
   };
 }
 

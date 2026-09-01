@@ -143,6 +143,15 @@ undoes one thing.
 | `sections` | folded into blocks, or opened out |
 | `spine` | `all`, or `load-bearing` — only claims that hold something up. The number is how many qualify |
 | `hashtags` | switch one off to take those claims off the map; the number is how many carry it. Absent when the file uses none |
+| `untagged` | last in that row, and set apart: every claim the file did NOT tag. Its own state, not a member of `facets` — a file may use a tag called `untagged` and a sentinel sharing that namespace would collide |
+
+**`untagged` is the switch that makes the hashtag filter work.** Added 1 Sep 2026 after the author
+observed that switching hashtags off changed the picture very little: an untagged claim passed
+every filter, and most maps tag sparingly, so the bulk of the map stayed put whatever was
+switched off. Miller is 22 tagged claims out of 66. It carries NO exemption for the contention,
+unlike `spine` — spine exempts it because "holding up" is measured towards the contention, whereas
+here the reader has said which claims they want and an untagged contention forced back would be
+the control declining to do what it says.
 
 `expand all` and `fold all groups` are gone — they were the ends of those two scales wearing
 different clothes. So is `reach`, which never earned its place, and the second `fit`.
