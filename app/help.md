@@ -185,9 +185,26 @@ that the conclusion **follows**. Ipsissima checks that claim where it can.
 (3) [order-is-null]
 ```
 
-The rule name is drawn beside the bar, abbreviated the way a logic text abbreviates it —
-`MP`, `MT`, `HS`, `DS`, `RAA` and the rest; an unrecognised multi-word name is reduced to its
-initials, and a one-word name is left alone. The full name is on the label's hover.
+The rule name is drawn beside the bar, abbreviated the way a logic text abbreviates it. The full
+name is on the label's hover. These abbreviate:
+
+| | | | |
+|---|---|---|---|
+| `MP` modus ponens | `MT` modus tollens | `HS` hypothetical syllogism | `DS` disjunctive syllogism |
+| `CD` constructive dilemma | `DD` destructive dilemma | `Simp` simplification | `Conj` conjunction |
+| `Add` addition | `DN` double negation | `DeM` de Morgan | `Contrap` contraposition |
+| `UI` universal instantiation | `UG` universal generalisation | `EI` existential instantiation | `EG` existential generalisation |
+| `BE` biconditional elimination | `RAA` reductio ad absurdum | | |
+
+**That list is a convenience, not a vocabulary.** Any name at all may be written: an unrecognised
+name of several words is reduced to its initials, and a one-word name is drawn as it stands.
+
+**And the name is not what is checked.** The verdict comes from the `formalization` lines alone —
+the checker is never told what the rule is called, and would reach the same answer if the line
+said `-- Banana --`. What the name does is *ask the question*: a step with no rule named is not
+checked at all. So a step labelled `Modus tollens` that is in fact a valid *modus ponens* passes
+quietly. The map is reporting that the conclusion follows, which is true, and saying nothing about
+the label, which nothing has examined.
 
 Checking needs the claims to say what they *are*, which they do with `formalization`:
 
@@ -213,6 +230,34 @@ the conclusion fails. It is the most useful thing the check produces and far too
 This is a check on **validity**, not on truth and not on whether the step really is the rule it
 names. A step can be perfectly valid and still misread the author entirely; that is what the
 fidelity border and the `warrant` are for.
+
+### And whether the formula still belongs to the claim
+
+A `formalization` is written once, by hand, and nothing afterwards ties it to the sentence it
+stands for. Edit the claim, leave the formula, and the step is still decided — correctly — about
+formulas that no longer say what the claim says. The map would then mark it *checked* over an
+argument the words no longer make, which is worse than marking nothing.
+
+So a claim may record the words it was formalized against:
+
+```argdown
+[a-claim]: If the advice was unlawful the Order is null.
+    {formalization: "u -> na", formalized: "3d2a90f1"}
+```
+
+`formalized` is a short hash of the claim's text. Edit the claim and it no longer matches, and
+the rule name is drawn with a **wavy underline** — *not checked: a claim of this step has been
+edited since it was formalized*. Re-read the formalization against the claim as it now stands,
+then record that you have:
+
+```bash
+ipsissima-check my-map.argdown --stamp
+```
+
+**It records your agreement; it cannot check it.** Nothing can tell whether `u -> na` is a fair
+rendering of an English sentence — that is the judgement the whole design leaves to you. What the
+stamp does is make sure the judgement is not quietly inherited by a sentence you have since
+rewritten. Capitalisation and line-wrapping are ignored, so re-flowing a file raises nothing.
 
 ## A line behind a claim
 
