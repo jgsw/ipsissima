@@ -352,11 +352,18 @@ function filterOnce(graph, state, force) {
    * the map on screen and the filter looked broken. `untagged` is the other half of the control
    * -- switch it off and what remains is exactly the claims carrying a tag.
    *
-   * NO EXEMPTION FOR THE CONTENTION, unlike `spine` below. Spine exempts it because "holding up"
-   * is measured TOWARDS the contention, so a contention that failed the test would make nonsense
-   * of the measure. Here the reader has said which claims they want to see, and an untagged
-   * contention forced back on screen would be the control declining to do what it says. */
-  const facetOk = n => n.facet ? (!S.facets || S.facets.has(n.facet)) : S.untagged;
+   * THE CONTENTION STAYS, as it does under `spine`. The first cut let it go, on the reasoning
+   * that the reader had said which claims they wanted; tried on Miller, whose contention carries
+   * no tag, that leaves twenty-two claims and no apex, and a map with nothing at its head reads
+   * as a fault rather than as a filter. Every other control here keeps the thing the argument is
+   * FOR on screen, and a reader who has never seen the map without one has no way to tell the
+   * two apart.
+   *
+   * Only the untagged branch is exempt. A contention whose OWN tag has been switched off goes,
+   * because there the reader has named the very thing they are hiding. */
+  const facetOk = n => n.facet
+    ? (!S.facets || S.facets.has(n.facet))
+    : (S.untagged || (ix.outCount.get(n.id) || 0) === 0);
   const load    = S.spine == null ? null : loadOf(ix);
   const spineOk = n => S.spine == null
     || (load.get(n.id) || 0) >= S.spine
@@ -3472,6 +3479,9 @@ function createLiveMap(container, graph, options) {
                : v === "invalid" ? "\n\nChecked: the conclusion does NOT follow."
                : v === "unformalized" ? "\n\nNot checked: the lines of this step carry no "
                                         + "`formalization:`, so the claim is unexamined."
+               : v === "stale" ? "\n\nNOT checked: a claim of this step has been edited since it "
+                                 + "was formalized, so the formulas may no longer say what the "
+                                 + "claims say. Re-read them, then run `--stamp`."
                : "");
             rt.appendChild(rtip);
             box.appendChild(rt);
@@ -5550,6 +5560,13 @@ function injectStyle() {
 .alm-pcs-rule.alm-v-invalid{text-decoration:line-through;opacity:1;font-style:normal}
 .alm-pcs-rule.alm-v-unformalized{opacity:.5;text-decoration:underline;
   text-decoration-style:dotted;text-underline-offset:2px}
+/* STALE. A claim was edited after it was formalized, so the step has not been checked, whatever
+   the formulas say about each other. Wavy rather than dotted: the unformalized state is a claim
+   nobody has examined, which is quiet, whereas this is a check that WAS made and can no longer be
+   relied on -- the reader has to be told the mark they may remember is now worth nothing.
+   (No backticks: this block lives inside a template literal. Third time this session.) */
+.alm-pcs-rule.alm-v-stale{opacity:.85;text-decoration:underline;
+  text-decoration-style:wavy;text-decoration-thickness:.5px;text-underline-offset:2px}
 .alm-v-valid .alm-join-rule{font-style:normal;opacity:1;text-decoration:underline;
   text-decoration-thickness:.5px;text-underline-offset:2px}
 .alm-v-invalid .alm-join-rule{text-decoration:line-through;opacity:1;font-style:normal}
@@ -5557,6 +5574,8 @@ function injectStyle() {
    common one at first. Hollow rather than absent: it is a claim, it is simply unexamined. */
 .alm-v-unformalized .alm-join-rule{opacity:.5;text-decoration:underline;
   text-decoration-style:dotted;text-underline-offset:2px}
+.alm-v-stale .alm-join-rule{opacity:.85;text-decoration:underline;
+  text-decoration-style:wavy;text-decoration-thickness:.5px;text-underline-offset:2px}
 .alm-explode{cursor:pointer}
 .alm-explode rect{fill:var(--alm-node-bg,#fff);stroke:var(--alm-accent,#3a7bd5)}
 .alm-explode text{fill:var(--alm-accent,#3a7bd5);font-weight:600;pointer-events:none}
