@@ -620,6 +620,9 @@ body.fs #fsexit{display:inline-flex}
 #explbody.compact .xstep h4{margin-bottom:.25rem}
 #explbody.compact .xrule{margin-top:.25rem;font-size:.8em}
 .xmode{display:flex;gap:0;margin-left:auto}
+/* The two saves sit apart from the two views: one pair chooses what you are looking at, the
+   other takes it away with you, and a single run of four buttons would say they were one kind. */
+.xmode.xsave{margin-left:.5rem}
 .xmode button{border:1px solid var(--line);background:transparent;font:inherit;font-size:.82em;
   padding:.12rem .6rem;cursor:pointer}
 .xmode button:first-child{border-radius:6px 0 0 6px}
@@ -910,6 +913,9 @@ body.fs #fsexit{display:inline-flex}
              is made; neither is worth a persistent setting. -->
         <span class="xmode">
           <button id="xmstair" class="on">Full text</button><button id="xmcompact">Compact</button>
+        </span>
+        <span class="xmode xsave">
+          <button id="xsvg" title="Save the staircase as an SVG">SVG</button><button id="xpng" title="Save the staircase as a PNG">PNG</button>
         </span>
         <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
       </header>
@@ -3603,6 +3609,8 @@ $("absclose").onclick = function(){ setAbstract(false); };
 $("explclose").onclick = explHide;
 $("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
 $("xmcompact").onclick = function(){ EXPL_MODE = "compact"; explDraw(); };
+$("xsvg").onclick = explExportSVG;
+$("xpng").onclick = explExportPNG;
 // Clicking the dim surround dismisses it, as it does for the About card.
 $("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
 
@@ -3999,7 +4007,7 @@ function exportMarks(chapterPath, want){
 async function saveBlob(blob, name){
   var ext = (name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || "";
   var kind = { docx: "Word document", md: "Markdown", html: "Web page",
-               argdown: "Argdown" }[ext.toLowerCase()] || "File";
+               argdown: "Argdown", svg: "SVG image", png: "PNG image" }[ext.toLowerCase()] || "File";
   try {
     if (HOST && HOST.writeBinary) {
       var target = await HOST.pickSavePath(name, [{ name: kind, extensions: [ext] }]);
@@ -4809,6 +4817,207 @@ function explCompact(steps, body){
                 r.bottom + gap / 2);
     }
   });
+}
+
+/* ---------------------------------------------------------------- exporting the staircase
+ *
+ * SERIALISED FROM WHAT IS ON SCREEN, not laid out a second time. The panel has already measured
+ * every box and wrapped every line at the width it actually has; re-deriving that for the export
+ * would be a second implementation of the same arithmetic, free to disagree with the first, and
+ * the reader would find out only by comparing the file with the panel.
+ *
+ * So the boxes come from their own bounding rectangles, and each line of text from
+ * `Range.getClientRects()` -- one rectangle per rendered line, which is the browser reporting
+ * where it put the words rather than this code guessing.
+ */
+function explEffectiveOpacity(el, stop){
+  var o = 1;
+  for (var n = el; n && n !== stop; n = n.parentElement) {
+    var v = parseFloat(getComputedStyle(n).opacity);
+    if (!isNaN(v)) o *= v;
+  }
+  return o;
+}
+
+/* QUOTES INCLUDED, and that is the whole reason this is a function rather than three replaces.
+ * A computed `font-family` is `-apple-system, "system-ui", "Segoe UI", ...` -- double quotes and
+ * all -- and writing that into a double-quoted XML attribute ends the attribute early and makes
+ * the file unparseable. The browser hid it: injected with innerHTML the SVG rendered perfectly,
+ * because HTML parsing forgives it, and it was only the PNG path -- which loads the same bytes
+ * through an XML parser -- that refused. A .svg written to disk would have failed the same way,
+ * in a viewer the reader could not debug. */
+function explEsc(t){
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                  .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+/** CSS can put text on the page that is in no text node at all. `::before` carries the
+ *  turn-and-enter arrow on a carried line, and a walker over text nodes cannot see it -- the
+ *  first export dropped it silently, which is the failure mode an export must not have. */
+function explPseudoRuns(root, ox, oy){
+  var out = [];
+  root.querySelectorAll("*").forEach(function(el){
+    ["::before", "::after"].forEach(function(which){
+      var cs = getComputedStyle(el, which);
+      var c = cs.content;
+      if (!c || c === "none" || c === "normal") return;
+      var txt = c.replace(/^["']|["']$/g, "");
+      if (!txt.trim()) return;
+      var r = el.getBoundingClientRect();
+      var size = parseFloat(cs.fontSize) || 12;
+      out.push({ x: r.left - ox, y: r.top - oy + (r.height + size * 0.72) / 2,
+                 size: size, weight: cs.fontWeight, style: cs.fontStyle, fill: cs.color,
+                 opacity: explEffectiveOpacity(el, root.parentElement),
+                 family: cs.fontFamily, text: txt });
+    });
+  });
+  return out;
+}
+
+/** Every rendered line under `root`, as {x, y, size, weight, style, fill, opacity, text}. */
+function explTextRuns(root, ox, oy){
+  var out = [], walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), n;
+  while ((n = walk.nextNode())) {
+    var raw = n.nodeValue;
+    if (!/\S/.test(raw)) continue;
+    var el = n.parentElement, cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") continue;
+    // The DRAWN text, not the source text: a step heading is uppercased by CSS, and exporting
+    // the node's own value put it back into sentence case in the file.
+    if (cs.textTransform === "uppercase") raw = raw.toUpperCase();
+    else if (cs.textTransform === "lowercase") raw = raw.toLowerCase();
+    var size = parseFloat(cs.fontSize) || 12;
+    var op = explEffectiveOpacity(el, root.parentElement);
+    // Group the characters into the lines the browser actually drew them on. A range over one
+    // character reports the line box it landed in; consecutive characters sharing a top are one
+    // line. Cheap enough at panel size, and exact, which guessing at wrap points is not.
+    var r = document.createRange(), line = null;
+    for (var i = 0; i < raw.length; i++) {
+      r.setStart(n, i); r.setEnd(n, i + 1);
+      var rects = r.getClientRects();
+      if (!rects.length) { if (line) line.text += raw[i]; continue; }
+      var b = rects[0];
+      if (!line || Math.abs(b.top - line.top) > 1) {
+        if (line) out.push(line);
+        line = { top: b.top, left: b.left, size: size, weight: cs.fontWeight,
+                 style: cs.fontStyle, fill: cs.color, opacity: op, height: b.height,
+                 family: cs.fontFamily, text: raw[i] };
+      } else {
+        line.text += raw[i];
+      }
+    }
+    if (line) out.push(line);
+  }
+  return out.map(function(l){
+    return { x: l.left - ox,
+             // The baseline, from the line box the browser reported. Centring the em within the
+             // line box is what a line box IS, so this lands where the text did.
+             y: l.top - oy + (l.height + l.size * 0.72) / 2,
+             size: l.size, weight: l.weight, style: l.style, fill: l.fill,
+             opacity: l.opacity, family: l.family, text: l.text.replace(/\s+$/, "") };
+  }).filter(function(l){ return l.text.length; });
+}
+
+function explBuildSVG(){
+  var wrap = document.querySelector("#explbody .xwrap");
+  if (!wrap) return null;
+  var wr = wrap.getBoundingClientRect();
+  var pad = 16;
+  var W = Math.ceil(wr.width) + pad * 2, H = Math.ceil(wrap.offsetHeight) + pad * 2;
+  var panel = getComputedStyle(document.querySelector("#expl .card")).backgroundColor;
+  var parts = [];
+
+  parts.push('<rect width="' + W + '" height="' + H + '" fill="' + explEsc(panel) + '"/>');
+
+  // The boxes, with the corners and colours they are drawn with on screen.
+  wrap.querySelectorAll(".xstep,.xconcl").forEach(function(b){
+    var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
+    parts.push('<rect x="' + (r.left - wr.left + pad).toFixed(1) +
+               '" y="' + (r.top - wr.top + pad).toFixed(1) +
+               '" width="' + r.width.toFixed(1) + '" height="' + r.height.toFixed(1) +
+               '" rx="' + (parseFloat(cs.borderTopLeftRadius) || 0) +
+               '" fill="' + explEsc(cs.backgroundColor) + '" stroke="' + explEsc(cs.borderTopColor) +
+               '" stroke-width="' + (parseFloat(cs.borderTopWidth) || 1) + '"/>');
+  });
+
+  // The edges are already SVG in the wrap's own coordinates, so they only need shifting.
+  var edges = wrap.querySelector(".xedges");
+  if (edges) {
+    var inner = [];
+    edges.querySelectorAll("path").forEach(function(p){
+      if (p.closest("defs")) return;
+      inner.push('<path d="' + p.getAttribute("d") + '" fill="none" stroke="#3a9d5d" ' +
+                 'stroke-width="1.6" marker-end="url(#xah)"/>');
+    });
+    edges.querySelectorAll("text").forEach(function(t){
+      inner.push('<text x="' + t.getAttribute("x") + '" y="' + t.getAttribute("y") +
+                 '" font-size="11" font-style="italic" fill="#667" ' +
+                 'dominant-baseline="middle">' + explEsc(t.textContent) + '</text>');
+    });
+    parts.push('<g transform="translate(' + pad + ',' + pad + ')">' + inner.join("") + '</g>');
+  }
+
+  explTextRuns(wrap, wr.left - pad, wr.top - pad)
+    .concat(explPseudoRuns(wrap, wr.left - pad, wr.top - pad)).forEach(function(l){
+    parts.push('<text x="' + l.x.toFixed(1) + '" y="' + l.y.toFixed(1) +
+               '" font-family="' + explEsc(l.family) + '" font-size="' + l.size +
+               '" font-weight="' + explEsc(l.weight) + '" font-style="' + explEsc(l.style) +
+               '" fill="' + explEsc(l.fill) + '"' +
+               (l.opacity < 0.995 ? ' opacity="' + l.opacity.toFixed(2) + '"' : "") +
+               '>' + explEsc(l.text) + '</text>');
+  });
+
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H +
+         '" viewBox="0 0 ' + W + ' ' + H + '">' +
+         '<defs><marker id="xah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" ' +
+         'markerHeight="7" orient="auto-start-reverse">' +
+         '<path d="M0,0 L10,5 L0,10 z" fill="#3a9d5d"/></marker></defs>' +
+         parts.join("") + "</svg>";
+}
+
+function explFileName(ext){
+  var base = (EXPL_NODE && EXPL_NODE.label ? EXPL_NODE.label : "argument")
+    .replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  return base + (EXPL_MODE === "compact" ? " (compact)" : "") + "." + ext;
+}
+
+function explExportSVG(){
+  var svg = explBuildSVG();
+  if (!svg) return;
+  saveBlob(new Blob([svg], { type: "image/svg+xml" }), explFileName("svg"));
+}
+
+/* PNG at twice the size, because the panel's type is small and a screenshot of it is the thing
+ * this exists to be better than. A DATA url rather than a blob: an SVG drawn from a blob URL
+ * taints the canvas in some engines, and a tainted canvas fails at `toBlob` with a security
+ * error rather than anywhere a reader could act on. */
+function explExportPNG(){
+  var svg = explBuildSVG();
+  if (!svg) return;
+  var m = svg.match(/width="(\d+)" height="(\d+)"/);
+  var w = m ? +m[1] : 900, h = m ? +m[2] : 700, k = 2;
+  var img = new Image();
+  img.onload = function(){
+    var c = document.createElement("canvas");
+    c.width = w * k; c.height = h * k;
+    var g = c.getContext("2d");
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.drawImage(img, 0, 0, w, h);
+    try {
+      c.toBlob(function(b){
+        if (b) saveBlob(b, explFileName("png"));
+        else showErr("The image could not be encoded, so nothing was saved.");
+      }, "image/png");
+    } catch (e) {
+      showErr("This browser would not let the picture be read back out of the canvas (" +
+              ((e && e.message) || e) + "). The SVG export does not have this limit.");
+    }
+  };
+  img.onerror = function(){
+    showErr("The picture could not be drawn for export. The SVG export writes the same thing " +
+            "without going through an image.");
+  };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
 var EXPL_NODE = null, EXPL_ONMAP = {}, EXPL_MODE = "stair";
