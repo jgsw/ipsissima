@@ -3776,7 +3776,7 @@ function createLiveMap(container, graph, options) {
             // The section's box is about to become a block. Hold the box's bottom edge, which is
             // where the block's own badge will land, so the control that undoes this click is
             // under the pointer that made it.
-            holdStill([gr.id, "group:" + gr.id]);
+            holdStill([gr.id, "group:" + gr.id], "top");
             toggleGroup(gr.id);
           });
         drawnGroup.set(gr.id, box);
@@ -3809,7 +3809,12 @@ function createLiveMap(container, graph, options) {
       const words = box.querySelector(".alm-gwords");
       const wtext = gr.words ? gr.words.toLocaleString() + " words" : "";
       const wroom = wtext ? textWidth(wtext, 10, 400) + 14 : 0;
-      const showWords = wtext && p.width - 20 - wroom > 60;
+      // WHAT THE NAME ACTUALLY NEEDS, measured rather than assumed. The old rule kept a 60px
+      // floor for the name and gave the rest away, which truncated "What the court did not
+      // decide" to make room for a word count nobody had asked for. The extras yield instead.
+      const nameText = gr.label + (gr.fold === false ? "" : "  \u25be");
+      const nameRoom = textWidth(nameText, GROUP_LABEL_SIZE, "600") + 12;
+      const showWords = !!wtext && p.width - 20 - wroom >= nameRoom;
       words.textContent = showWords ? wtext : "";
       // Baselines chosen so the big name and the small count sit on one optical line.
       words.setAttribute("x", p.width - 10); words.setAttribute("y", 17);
@@ -3822,7 +3827,8 @@ function createLiveMap(container, graph, options) {
       const spark = box.querySelector(".alm-spark");
       spark.textContent = "";
       const sroom = gr.spark ? gr.spark.width + 16 : 0;
-      const showSpark = gr.spark && p.width - 20 - (showWords ? wroom : 0) - sroom > 90;
+      const showSpark = !!gr.spark &&
+                        p.width - 20 - (showWords ? wroom : 0) - sroom >= nameRoom;
       if (showSpark) {
         const sx = p.width - 10 - (showWords ? wroom : 0) - gr.spark.width;
         spark.setAttribute("transform", `translate(${sx},${(22 - gr.spark.height) / 2})`);
@@ -3831,9 +3837,22 @@ function createLiveMap(container, graph, options) {
         spark.appendChild(el("polygon", { class: "alm-spark-fill", points: gr.spark.area }));
         spark.appendChild(el("polyline", { class: "alm-spark-line", points: gr.spark.line }));
       }
-      label.textContent = fitLabel(gr.label + (gr.fold === false ? "" : "  ▾"),
-                                   p.width - 20 - (showWords ? wroom : 0) - (showSpark ? sroom : 0),
-                                   GROUP_LABEL_SIZE);
+      // AND IF IT STILL DOES NOT FIT, SHRINK RATHER THAN CUT. Suppressing the extras is not
+      // always enough: a band is only as wide as what it holds, and "What the court did not
+      // decide" is a longer name than its one claim is wide. A name cut to "What the court did
+      // not d…" has stopped naming anything, whereas the same name a few points smaller still
+      // reads. The floor is 11px, below which shrinking would be its own kind of illegible, and
+      // only then does it truncate.
+      const labelRoom = p.width - 20 - (showWords ? wroom : 0) - (showSpark ? sroom : 0);
+      const natural = textWidth(nameText, GROUP_LABEL_SIZE, "600");
+      // Scaled to 96% of the exact ratio: at exactly the ratio the fitted width lands on the
+      // boundary, and fitLabel rounds against it and cuts the last letter anyway -- which is how
+      // "…did not decide" first came back as "…did not decid…" after being shrunk to fit it.
+      const labelSize = natural > labelRoom && natural > 0
+        ? Math.max(11, GROUP_LABEL_SIZE * (labelRoom / natural) * 0.96)
+        : GROUP_LABEL_SIZE;
+      label.setAttribute("font-size", labelSize);
+      label.textContent = fitLabel(nameText, labelRoom, labelSize);
       box.querySelector("title").textContent = gr.title || gr.label;   // untruncated, on hover
       box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
@@ -4596,6 +4615,17 @@ function createLiveMap(container, graph, options) {
       // drag from. Only the things that DO something on a press are excluded now: the boxes,
       // the fold toggles, and the section's own 22px fold strip.
       if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold")) return;
+      // THE LEFT BUTTON ONLY. Without this a right-click started a pan -- and, worse, the
+      // preventDefault below suppressed the contextmenu event that was supposed to follow it,
+      // so "Fold section" could never appear. A dispatched contextmenu event still worked,
+      // which is exactly why dispatching one was not a test of anything.
+      if (ev.button !== 0) return;
+      // The pointer now goes down on top of a section's words rather than on bare background,
+      // so the browser starts selecting them and the map fills with blue. Cancelling the
+      // default here stops the selection without making the map unselectable everywhere --
+      // a blanket user-select:none would also take away copying a claim, which is not this
+      // gesture's business to remove.
+      ev.preventDefault();
       dragging = true; sx = ev.clientX - view.x; sy = ev.clientY - view.y;
       down = { x: ev.clientX, y: ev.clientY };
       userMoved = true; viewport.style.transition = "";
