@@ -3342,17 +3342,31 @@ function createLiveMap(container, graph, options) {
      * make it a different claim. */
     const norm = t => String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ")
                         .replace(/\s+/g, " ").trim();
+    // SYMMETRIC, and that is the whole of it. Containment was the first test and it was wrong in
+    // the direction that matters: a reconstruction whose claim CONTAINS its quotation has padded
+    // the author's words, and `[61]` of Miller is exactly that -- the court wrote "the decision
+    // was unlawful" and the claim says "the decision to advise Her Majesty to prorogue Parliament
+    // was unlawful". Suppressing the quotation there hides the padding, which is the one thing a
+    // reader checking fidelity is looking for. Only near-EQUALITY is silence worth keeping.
     const saysTheSame = (a, b) => {
       const A = norm(a), B = norm(b);
       if (!A || !B) return false;
-      if (A.includes(B) || B.includes(A)) return true;
-      const aw = new Set(A.split(" ")), bw = B.split(" ");
-      let hit = 0;
-      for (const w of bw) if (aw.has(w)) hit++;
-      return bw.length > 0 && hit / bw.length >= 0.92;
+      if (A === B) return true;
+      const aw = new Set(A.split(" ")), bw = new Set(B.split(" "));
+      let shared = 0;
+      for (const w of bw) if (aw.has(w)) shared++;
+      const union = aw.size + bw.size - shared;
+      return union > 0 && shared / union >= 0.92;
     };
     const bits = [];
-    if (s.clipped && n.full) bits.push(n.full);
+    // `n.detail` IS the claim's whole text -- `sizeOf` measures that and clips it, and nothing in
+    // this program has ever set `n.full`, which is a field read in three places and written in
+    // none. The old tooltip hid that: it read `n.full || (label + " — " + detail)`, so the dead
+    // half never showed. Keeping only the dead half turned it into nine claims on the Miller map
+    // whose text was cut off in the box and nowhere on hover -- exactly the reader who hovers
+    // BECAUSE the sentence stopped mid-air. `n.full` stays first in case a host does set it.
+    const whole = n.full || n.detail;
+    if (s.clipped && whole) bits.push(whole);
     // The author's exact words, which the map never draws -- it draws the reconstructor's claim.
     if (n.source && !saysTheSame(n.full || n.detail, n.source))
       bits.push("\u201c" + String(n.source).replace(/^["\u201c]|["\u201d]$/g, "") + "\u201d");
