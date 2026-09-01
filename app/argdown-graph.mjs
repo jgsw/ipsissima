@@ -360,6 +360,26 @@ export function toGraph(res) {
       ? d.formalization : null;
   };
 
+  /* WHY the reconstructor departed from the text, where they did. `fidelity` says how far a
+   * claim is from the author's words; `warrant` says what licensed going that far, and it is
+   * the half a reader is entitled to see -- an `imputation` with a reason is a reading, and one
+   * without is a guess. It never reached the map at all until now: the Python checker read it
+   * out of the file and this adapter dropped it, so the renderer had no way to show it.
+   *
+   * NOT filtered against a vocabulary, unlike fidelity. `WARRANTS` in the Python half is
+   * explicitly "a prompt, not a jail" -- any other value is accepted and simply reported -- and
+   * a filter here would silently delete exactly the unusual reason most worth reading. */
+  const warrantOf = title => {
+    const rec = (res.statements && res.statements[title]) ||
+                (res.arguments  && res.arguments[title]);
+    for (const m of (rec && rec.members) || []) {
+      const w = m.data && m.data.warrant;
+      if (typeof w === "string" && w.trim()) return w.trim();
+    }
+    const d = rec && rec.data;
+    return d && typeof d.warrant === "string" && d.warrant.trim() ? d.warrant.trim() : null;
+  };
+
   const fidelityOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -510,6 +530,7 @@ export function toGraph(res) {
           facet: tag,
           color: n.color || null,
           fidelity: fidelityOf(n.title),
+          warrant: warrantOf(n.title),
           ...marginOf(n.title),
           docLine: lineOf(n.title),
           ...provenanceOf(n.title),

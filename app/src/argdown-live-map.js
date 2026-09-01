@@ -701,6 +701,12 @@ function filterOnce(graph, state, force) {
         note: n.note || null,          // the reconstructor's marginalia
         comment: n.comment || null,    // someone else's, on the argument
         fidelity: n.fidelity || null,
+        // THE TWO HALVES OF FIDELITY'S ANSWER, and both were dropped here. `fidelity` says how
+        // far the claim is from the author's words, which is only half a report: `source` is the
+        // words themselves and `warrant` is what licensed the distance. The graph carried them
+        // and this projection did not, so the map had no way to show either.
+        source: n.source || null,      // the author's exact words, which no box draws
+        warrant: n.warrant || null,    // why a departure from them was taken
         order: n.order == null ? null : n.order,
         docLine: n.docLine == null ? null : n.docLine,   // line in the .argdown, for seating
         pos: n.pos || null,            // where in the manuscript; see argdown-positions.js
@@ -3292,18 +3298,70 @@ function createLiveMap(container, graph, options) {
 
   function paintNode(box, n, s, fresh) {
     box.innerHTML = "";
-    // The tooltip goes in FIRST. As the last child it was unreliable: browsers take the first
-    // <title> child of the hovered element, and the fold badge appended before it carries one
-    // of its own, so the fidelity note was shadowed rather than shown.
+    /* HOVER TEXT MUST ADD SOMETHING. The tooltip used to open with the claim's own text --
+     * which is what the box directly under the pointer is already drawing. Measured on the
+     * Miller map: at the folded default every one of its four visible tooltips was a verbatim
+     * repeat of the box, and opened, seven of eighteen still were. A tooltip that says what the
+     * reader can already see teaches them that tooltips are not worth reading, which costs the
+     * ones that do carry something.
+     *
+     * So the text appears only when the box CLIPPED it, and what the box can never show goes in
+     * regardless: the author's own words, how far the claim is from them, and what licensed the
+     * distance. A claim drawn in full with no provenance gets no tooltip at all, which is the
+     * honest outcome -- there is nothing to add.
+     *
+     * The tooltip goes in FIRST. As the last child it was unreliable: browsers take the first
+     * <title> child of the hovered element, and the fold badge appended before it carries one
+     * of its own, so the fidelity note was shadowed rather than shown.
+     */
     const title = el("title");
     const FID = { quotation: "the source's own words",
                   paraphrase: "paraphrase — close restatement, the reconstructor's words",
                   compression: "compression — several sentences reduced to one claim",
                   interpretation: "interpretation — a reading the text supports but does not state",
                   imputation: "imputation — a premise the argument needs but the author never states" };
-    title.textContent = (n.full || (n.label + (n.detail ? " — " + n.detail : ""))) +
-                        (n.fidelity && FID[n.fidelity] ? "\n\n[" + FID[n.fidelity] + "]" : "");
-    box.appendChild(title);
+    // Stern's dimensions, glossed. Unknown values are shown as written rather than dropped:
+    // the field is a prompt, not a vocabulary, and an unusual reason is the one worth reading.
+    const WARRANT = { enthymeme: "the argument is invalid without it and plainly relies on it",
+                      hyperbole: "read as overstatement rather than as the position",
+                      "sloppy-phrasing": "read as imprecise expression of a different claim",
+                      "secret-sign": "read as a signal to knowing readers rather than at face value",
+                      "other-texts": "supported by what the author says elsewhere",
+                      coherence: "chosen because it makes the surrounding text hang together",
+                      convention: "the field's standard reading of this passage" };
+    /* WHEN A QUOTATION IS NOT NEWS. The author's exact words are worth a tooltip because the box
+     * draws the reconstructor's claim instead -- except where the claim IS the quotation, which
+     * is the whole point of `fidelity: quotation` and true of half the claims on this map.
+     * Measured before this test existed: of fourteen tooltips carrying a quotation, seven shared
+     * more than 92% of their words with the box under the pointer. So the quotation is dropped
+     * when it says the same thing, and the fidelity line -- "the source's own words" -- is left
+     * to make the point, which it makes more briefly than the words themselves can.
+     *
+     * Word overlap rather than string equality: a claim ends its sentence where the quotation
+     * runs on, drops a citation, or closes a bracket the source left open, and none of those
+     * make it a different claim. */
+    const norm = t => String(t || "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ")
+                        .replace(/\s+/g, " ").trim();
+    const saysTheSame = (a, b) => {
+      const A = norm(a), B = norm(b);
+      if (!A || !B) return false;
+      if (A.includes(B) || B.includes(A)) return true;
+      const aw = new Set(A.split(" ")), bw = B.split(" ");
+      let hit = 0;
+      for (const w of bw) if (aw.has(w)) hit++;
+      return bw.length > 0 && hit / bw.length >= 0.92;
+    };
+    const bits = [];
+    if (s.clipped && n.full) bits.push(n.full);
+    // The author's exact words, which the map never draws -- it draws the reconstructor's claim.
+    if (n.source && !saysTheSame(n.full || n.detail, n.source))
+      bits.push("\u201c" + String(n.source).replace(/^["\u201c]|["\u201d]$/g, "") + "\u201d");
+    if (n.fidelity && FID[n.fidelity]) bits.push("[" + FID[n.fidelity] + "]");
+    if (n.warrant)
+      bits.push("warranted as " + n.warrant +
+                (WARRANT[n.warrant] ? " — " + WARRANT[n.warrant] : ""));
+    title.textContent = bits.join("\n\n");
+    if (bits.length) box.appendChild(title);
     const r = el("rect", { class: "alm-box", width: s.width, height: s.height, rx: 7, ry: 7 });
     if (n.color) r.setAttribute("stroke", n.color);   // adapter may colour per node
     box.appendChild(r);
@@ -3388,17 +3446,22 @@ function createLiveMap(container, graph, options) {
         }
         const g = el("g", { class: "alm-pcs-row" + (r.concl ? " is-conclusion" : "") +
                                    (r.ref ? " is-ref" : "") });
-        // The whole line on hover, because a clipped premise is otherwise unreadable and the
-        // reader should not have to open the box to find out what it says.
+        /* The whole line on hover WHEN IT WAS CUT, because a clipped premise is otherwise
+         * unreadable and the reader should not have to open the box to find out what it says.
+         * Open, the rows wrap in full and repeating them adds nothing -- so what stays is the
+         * one thing the row cannot say about itself, that it is a reference to a claim with a
+         * box of its own. Filled in after the lines are drawn, since only then is it known
+         * whether anything was actually cut. */
         const rowTip = el("title");
-        rowTip.textContent = "(" + r.n + ") " +
+        const refNote = r.ref
+          ? "A reference: this claim has its own box on the map — " +
+            (r.role === "premise" ? "its arrow into this argument carries this number."
+                                  : "the arrow out to it carries this number.")
+          : "";
+        const rowFull = "(" + r.n + ") " +
           (r.role === "premise" ? "premise" :
            r.role === "main-conclusion" ? "conclusion" : "intermediate conclusion") +
-          " — " + r.text +
-          (r.ref ? "\n\nA reference: this claim has its own box on the map — " +
-                   (r.role === "premise"
-                     ? "its arrow into this argument carries this number."
-                     : "the arrow out to it carries this number.") : "");
+          " — " + r.text;
         // POINTING AT THE BOX A REFERENCE NAMES. The brackets say "this claim lives elsewhere";
         // hovering the row shows WHERE, by lighting the claim's own box up. Resolved at hover
         // time against what is currently drawn, because folds change both halves of the pairing.
@@ -3444,13 +3507,17 @@ function createLiveMap(container, graph, options) {
                                  "font-size": rowSize });
         num.textContent = "(" + r.n + ")";
         g.appendChild(num);
+        let rowCut = false;
         for (const l of r.lines) {
           const t = el("text", { class: "alm-pcs-text", x: x0 + PCS_NUM_W, y: py + rowSize,
                                  "font-size": rowSize });
           t.textContent = open ? l : fitLabel(l, x1 - x0 - PCS_NUM_W, rowSize, "400");
+          if (t.textContent !== l) rowCut = true;
           g.appendChild(t);
           py += rowLh;
         }
+        rowTip.textContent = [rowCut ? rowFull : "", refNote].filter(Boolean).join("\n\n");
+        if (!rowTip.textContent) rowTip.remove();
         box.appendChild(g);
       }
 
@@ -3892,7 +3959,18 @@ function createLiveMap(container, graph, options) {
         : GROUP_LABEL_SIZE;
       label.setAttribute("font-size", labelSize);
       label.textContent = fitLabel(nameText, labelRoom, labelSize);
-      box.querySelector("title").textContent = gr.title || gr.label;   // untruncated, on hover
+      /* THE SAME RULE AS EVERY OTHER TOOLTIP: say what the band could not. The name went on
+       * hover unconditionally, which on the great majority of bands -- the ones wide enough for
+       * their own name -- was the header repeating itself to anyone who paused over it.
+       *
+       * The word count is the half that was actually going missing. The comment above says it
+       * is "still on the tooltip" when a narrow band drops it, and it was not: the tooltip held
+       * the name alone, so on exactly the bands where the count could not be drawn there was
+       * nowhere left to read it. */
+      const gbits = [];
+      if (label.textContent !== nameText) gbits.push(gr.title || gr.label);
+      if (wtext && !showWords) gbits.push(wtext);
+      box.querySelector("title").textContent = gbits.join(" — ");
       box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
     for (const [id, box] of drawnGroup) {
@@ -4226,8 +4304,10 @@ function createLiveMap(container, graph, options) {
                        (info.inside === 1 ? "has" : "have") + " no box of " +
                        (info.inside === 1 ? "its" : "their") + " own and " +
                        (info.inside === 1 ? "is" : "are") +
-                       " written inside the argument's box instead" : "") +
-        (info.rule ? "\n\nby " + info.rule : "");
+                       " written inside the argument's box instead" : "");
+      // NOT the rule. It is drawn beside this very bar, and the label carries the unabbreviated
+      // name on its own hover -- which is where a reader who wants to know what `HS` stands for
+      // will already be pointing.
     }
   }
 
