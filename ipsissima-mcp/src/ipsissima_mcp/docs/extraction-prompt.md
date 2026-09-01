@@ -160,6 +160,18 @@ Use the **whole language**, not the part of it you are sure of:
   weighed, premises that do not entail the conclusion — and a rule name on such a step claims
   something the author never did. Name a rule when the step would be *invalid if a premise were
   removed*, not when it merely reads as tight
+- **never write `formalized:` yourself.** It is a hash of the claim's own text, written by
+  `check_argdown.py --stamp` once a human has satisfied themselves that the formulas say what the
+  claims say. A value invented here would either mark every step of the file as stale or, worse,
+  vouch for an agreement nobody made
+- **any rule name is accepted, and these eighteen are abbreviated on the map** — modus ponens,
+  modus tollens, hypothetical syllogism, disjunctive syllogism, constructive dilemma, destructive
+  dilemma, simplification, conjunction, addition, double negation, de Morgan, contraposition,
+  universal instantiation, universal generalisation, existential instantiation, existential
+  generalisation, biconditional elimination, reductio ad absurdum. Prefer one of these where it
+  is the right name; write whatever is right where it is not, and the map reduces it to initials.
+  **The name is not checked against the step** — the verdict comes from the `formalization` lines
+  alone — so a wrong name is a silent wrong name, and is worth getting right for the reader
 
 **And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
 jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,
