@@ -5157,24 +5157,46 @@ function createLiveMap(container, graph, options) {
   let excursion = null;
   let returnEl = null;
 
+  /* TWO THINGS A READER MIGHT WANT, and until now only one of them was offered. Having travelled
+   * to a claim, they may want to go back -- or they may have arrived where they meant to be and
+   * simply want the offer to stop following them around. A control that can only be accepted is
+   * a control the reader cannot answer, so the pill carries its own dismissal.
+   *
+   * The two halves highlight separately on hover, because a single pill that does one of two
+   * things depending on which end you press must say so before you press it. */
+  let returnGo = null;
   function showReturn() {
     if (!returnEl) {
-      returnEl = document.createElement("button");
-      returnEl.type = "button";
+      returnEl = document.createElement("div");
       returnEl.className = "alm-return";
-      returnEl.addEventListener("click", ev => {
+
+      returnGo = document.createElement("button");
+      returnGo.type = "button";
+      returnGo.className = "alm-return-go";
+      returnGo.addEventListener("click", ev => {
         ev.stopPropagation();
         const back = excursion;
         hideReturn();
         if (back) { setLit([back.id]); centreOn([back.id]); }
       });
+
+      const x = document.createElement("button");
+      x.type = "button";
+      x.className = "alm-return-x";
+      x.textContent = "\u00d7";
+      x.title = "Dismiss — stay where you are";
+      x.setAttribute("aria-label", "Dismiss, and stay where you are");
+      x.addEventListener("click", ev => { ev.stopPropagation(); hideReturn(); });
+
+      returnEl.append(returnGo, x);
       container.appendChild(returnEl);
     }
     // `destroy()` empties the container, so an instance reused for a second document would hold
     // a reference to a node that is no longer in the page -- and setting text on a detached
     // element fails silently, which is the worst way for a control to be missing.
     if (returnEl.parentNode !== container) container.appendChild(returnEl);
-    returnEl.textContent = "\u2190 back to " + (excursion && excursion.label ? excursion.label : "the argument");
+    returnGo.textContent = "\u2190 back to " +
+      (excursion && excursion.label ? excursion.label : "the argument");
     returnEl.hidden = false;
   }
 
@@ -5524,11 +5546,19 @@ function injectStyle() {
    can offer only its name strip without changing what it looks like. */
 .alm-gbox{pointer-events:none}
 .alm-return{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:6;
-  font:12px system-ui,sans-serif;padding:5px 12px;border-radius:14px;cursor:pointer;
+  display:flex;align-items:stretch;border-radius:14px;max-width:60%;overflow:hidden;
   border:1px solid var(--alm-accent,#3a7bd5);background:var(--alm-bar-bg,rgba(255,255,255,.95));
-  color:var(--alm-accent,#3a7bd5);box-shadow:0 1px 6px rgba(0,0,0,.13);max-width:60%;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.alm-return:hover{background:var(--alm-accent,#3a7bd5);color:#fff}
+  box-shadow:0 1px 6px rgba(0,0,0,.13)}
+.alm-return[hidden]{display:none}
+.alm-return button{font:12px system-ui,sans-serif;cursor:pointer;border:0;background:transparent;
+  color:var(--alm-accent,#3a7bd5)}
+.alm-return-go{padding:5px 10px 5px 12px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;min-width:0}
+/* The dismissal is smaller and quieter than the offer: it is the second thing a reader wants. */
+.alm-return-x{padding:5px 10px 5px 8px;font-size:13px;line-height:1;opacity:.62;
+  border-left:1px solid rgba(58,123,213,.35)}
+.alm-return-go:hover,.alm-return-x:hover{background:var(--alm-accent,#3a7bd5);color:#fff}
+.alm-return-x:hover{opacity:1}
 .alm-ghit{fill:transparent}
 .alm-gfold{fill:transparent;cursor:pointer}
 .alm-g.is-fixed .alm-gfold{pointer-events:none}
