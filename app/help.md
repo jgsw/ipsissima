@@ -48,13 +48,24 @@ claim it is about.
 
 
 - **Scroll** — zoom in and out
-- **Drag** — pan across the map
+- **Drag** — pan across the map, from anywhere including the inside of a section
 - **Click a box** — nothing is hidden; click its **⊕** to show or hide the reasons for it
-- **Click a section** — fold it into a single block, or open it again
+- **Click a section's header** — the named strip along its top: fold the section into a single
+  block, or open it again
+- **Right-click inside a section** — **Fold section**, from a menu
 - <kbd>Esc</kbd> — leave full screen, or close this panel
 
 Opening a section shows the claims it starts from, each still folded — one level per click, so a
 section of forty claims never lands on you at once.
+
+The header folds and the *background does not*, which is not a distinction for its own sake. A
+map with everything open is nearly all section background, so when a click anywhere in a section
+folded it there was almost nowhere left to start a drag from, and panning became a hunt for a
+gap. The header is the control; the rest is canvas.
+
+Folding and unfolding **hold still**: whatever you pressed stays where it was under the pointer
+while the rest of the map moves around it. A section that opens does not throw the map somewhere
+else and leave you to find your place again.
 
 ## The two arrangements
 
@@ -121,6 +132,88 @@ linked premise, beside the arrow for a conclusion leaving the box — so the num
 and the numbers in the box are one numbering. An unbracketed row is a claim that appears
 nowhere else.
 
+**Clicking a bracketed row travels to that claim**, unfolding whatever hides it and moving the
+map. Lighting a box up says where a claim lives, which is no use when it lives off screen — on
+the Miller map premise (2) of *The route to the order* sits some two thousand pixels from the
+argument that numbers it.
+
+The return trip is the half that matters. A reader moved somewhere they did not choose, with no
+way back, has been lost rather than helped, so the excursion leaves a control naming the argument
+it came from. It centres back on that **argument**, not on the camera position you left: a fold
+between the two clicks would make saved coordinates point at nothing, and *back to the argument*
+is what a reader actually means.
+
+## Following a long argument
+
+
+An argument that reaches its conclusion in several steps is drawn as one box of numbered lines.
+That is the compact form and the right default — it is what the map is for — but it asks the
+reader to hold several cross-references at once: that (2)(3)(4) give (5), that (5) with (6) give
+(7), and so on. Readers who do not read numbered premises fluently are exactly the readers
+Ipsissima is for.
+
+So a multi-step argument carries a **⊞** control at the foot of its box, with the number of steps
+beside it. It opens the same argument as a **staircase**: one small argument per step, each
+intermediate conclusion in a box of its own between them, the rule spelled out and the verdict
+beside it.
+
+- **Full text** — every line as the file writes it. What the source actually says
+- **Compact** — the same chain drawn from the claims' short names, so a step and the conclusion
+  it reaches sit side by side and the whole shape fits on a screen
+
+The short names are the *reconstructor's*, not the source's, so **Compact** is the view to think
+with and **Full text** the one to check against — which is the distinction the whole program is
+about.
+
+A step whose only input is the conclusion above it gets no box; it becomes a label on the arrow,
+which is what such a step is: *and therefore*.
+
+**Click any claim in the panel** to dismiss it and go to that claim on the map. Claims that exist
+only inside the argument are not clickable — there is nowhere to go. <kbd>Esc</kbd>, the **×**,
+or a click outside the panel all close it.
+
+## Does the step actually work?
+
+
+A premise-conclusion structure can name the rule its step relies on, and naming one is a claim
+that the conclusion **follows**. Ipsissima checks that claim where it can.
+
+```argdown
+(1) [advice-unlawful]
+(2) [founded-on-null-is-null]
+-- Modus ponens {uses: [1, 2]} --
+(3) [order-is-null]
+```
+
+The rule name is drawn beside the bar, abbreviated the way a logic text abbreviates it —
+`MP`, `MT`, `HS`, `DS`, `RAA` and the rest; an unrecognised multi-word name is reduced to its
+initials, and a one-word name is left alone. The full name is on the label's hover.
+
+Checking needs the claims to say what they *are*, which they do with `formalization`:
+
+```argdown
+[advice-unlawful]: That advice was null and of no effect. {formalization: "u -> na"}
+```
+
+Given those, the step is decided and the bar says which of four things is true:
+
+| the mark | what it means |
+|---|---|
+| the rule name, plain | **checked, and the conclusion follows.** The quietest possible positive mark |
+| a red **!** badge | **checked, and it does not follow.** The one state worth interrupting for |
+| the rule name, hollow | **a rule is named but nothing checks it** — the lines carry no `formalization`, so the claim is unexamined |
+| no rule name | **nothing was claimed.** Not a fault: most steps name no rule |
+
+Named-but-unchecked is drawn differently from nothing-claimed on purpose. A step that asserts
+*modus ponens* and has never been tested is not in the same position as one that asserts nothing.
+
+**Click the red badge** for the countermodel — the concrete way the premises can all hold while
+the conclusion fails. It is the most useful thing the check produces and far too big for a bar.
+
+This is a check on **validity**, not on truth and not on whether the step really is the rule it
+names. A step can be perfectly valid and still misread the author entirely; that is what the
+fidelity border and the `warrant` are for.
+
 ## A line behind a claim
 
 
@@ -179,7 +272,23 @@ border of each box says which:
 
 <div class="key" id="fidkey"></div>
 
-Hover any box to see its level named. Unmarked claims are drawn plain.
+Unmarked claims are drawn plain.
+
+**Hover text says what the box could not.** A claim drawn in full, with nothing recorded about
+where it came from, has no tooltip at all — the box is already saying everything there is to say,
+and a tooltip repeating it would only teach you that tooltips are not worth opening. What a
+tooltip does carry:
+
+- the claim's own text, **only where the box clipped it**
+- the author's **exact words**, which the map never draws — it draws the reconstructor's claim.
+  Suppressed only where the two say the *same* thing, which is what `fidelity: quotation` means.
+  Where the claim is longer than the quotation it is shown, because that is the reconstruction
+  putting words in the author's mouth and it is exactly what you would want to see
+- the **fidelity** level, named
+- the **warrant** — why a departure from the author's words was licensed
+
+The same rule everywhere: a section header gives its full name on hover only when the band was
+too narrow to draw it; a premise row gives its full text only when the row was cut.
 
 ## Whose claim is this
 
@@ -230,6 +339,21 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
   to them.
 - **Click a `[claim]` in the Argdown** — lights it on the map and shows its passage
 
+A panel at the top-left of the map carries whatever the manuscript's own front matter offers as
+an orientation to the text — the article's **abstract**, or for a judgment its **facts of the
+case**, which somebody else usually wrote and which the panel credits:
+
+```yaml
+---
+facts: |
+  What happened, before any of it was argued about.
+facts_source: "Headnote, [2019] UKSC 41"
+---
+```
+
+Neither is part of the reconstruction, and the panel says so. A file offering neither has no
+panel.
+
 The note above the passage says how precisely the claim was placed — *found by its quotation* is
 exact, *the paragraph it came from* is as close as an unquoted claim can be pinned. A claim
 located only to its file has no line to highlight, and says so.
@@ -258,6 +382,30 @@ Metadata in braces records where a claim came from and whose words it is. It is 
 `fidelity` says whose words these are — `quotation`, `paraphrase`, `compression`,
 `interpretation`, `imputation` — and the map draws it as the box's border. Press **{…}** in the
 Argdown pane to fold all of it away and see the argument's shape.
+
+Two of the levels are departures from the text and owe a reason, which `warrant` gives:
+
+```argdown
+[a-claim]: A premise the argument needs.
+    {fidelity: "imputation", warrant: "enthymeme"}
+```
+
+| `warrant` | the reading is taken because |
+|---|---|
+| `enthymeme` | the argument is invalid without it and plainly relies on it |
+| `hyperbole` | it reads as overstatement rather than as the position |
+| `sloppy-phrasing` | it reads as imprecise expression of a different claim |
+| `secret-sign` | it reads as a signal to knowing readers rather than at face value |
+| `other-texts` | the author says so elsewhere |
+| `coherence` | it makes the surrounding text hang together |
+| `convention` | it is the field's standard reading of this passage |
+
+The list is a **prompt, not a vocabulary**. Any other value is accepted and shown as written: the
+point is that a reason was recorded, not that it fell into a taxonomy. An `imputation` with a
+warrant is a reading; one without is a guess.
+
+`formalization` says what a claim *is*, in the notation the validity check reads — see **Does the
+step actually work?** above.
 
 # Working with a reconstruction
 
@@ -314,11 +462,19 @@ that cannot choose where to write, Save offers the file as a download instead an
 
 - **how much** — how many levels of reasons are showing, from the main claim outwards. The number
   on each button is how many claims it puts on screen.
+- **claims** — *short* gives the first few lines with a "more" link; *full* gives every claim's
+  whole text.
 - **sections** — whether the argument's sections are folded into blocks or opened out
+- **spine** — *all* shows every claim; *load-bearing* shows only those the argument rests on —
+  remove one and part of the argument loses its route to a contention. The number is how many
+  qualify.
 - **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
   carry it. This control appears only when the file uses hashtags at all.
-- **full claims** — show every claim's whole text, rather than the first few lines with a "more"
-  link
+
+**how much** and **spine** answer different questions and both are worth having. *how much* is
+distance: how far out from the contention a claim sits. *spine* is load: how much rests on it. A
+claim five steps out that holds up twenty others is the spine of the argument and the distance
+ladder reveals it last.
 
 ## Writing in the margins
 
@@ -412,6 +568,27 @@ needed — which is why the map gathers them onto a bar:
 -----
 (3) [conclusion]
 ```
+
+An inference line can also name the rule it relies on and say **which lines it uses**:
+
+```argdown
+(1) [jurisdiction]
+(2) [advice-unlawful]
+(3) [founded-on-null-is-null]
+-- Modus ponens {uses: [2, 3]} --
+(4) [order-is-null]
+-- {uses: [1, 4]} --
+(5) [not-prorogued]
+```
+
+`uses` matters because a premise is written where the text reaches it, which need not be where
+the argument needs it. Here (1) is stated first and used *third*. Without `uses` the map assigns
+each step the premises standing immediately above it, which would make (1) an input to the first
+step, where it does no work at all. Declared, `uses` wins; whatever it leaves unclaimed is filled
+in by position.
+
+A rule name is a claim that the conclusion follows, and Ipsissima checks it — see **Does the step
+actually work?**
 
 ### What breaks a file without saying so
 

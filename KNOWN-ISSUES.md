@@ -3,7 +3,9 @@
 **One open item, below and measured.** Residual claim movement on fold clicks: reading order
 can no longer invert — the map draws in stable document order by construction — but positions
 still drift as neighbourhoods fold away, and the plan (`docs/STABILITY-PLAN.md`) holds the
-numbers and the direction. Nothing else is outstanding: the last fold case is closed, the
+numbers and the direction. The **camera's** half of that complaint is closed (1 Sep 2026, below):
+what the reader pressed now stays under the pointer. What remains is the claims moving, not the
+view moving. Nothing else is outstanding: the last fold case is closed, the
 Wilson departure crossing closed when the arrangement it lived in was retired, and both
 entries below record how honestly rather than triumphantly.
 
@@ -111,6 +113,35 @@ baseline continue to guard the new arrangement, where the target is zero and zer
 measures.
 
 ---
+
+## Fixed 1 September 2026
+
+### The camera moved when a section folded, and the section's own control could not be clicked
+
+Reported by the author with a fold-state string, which is what made it reproducible. Four faults,
+and only one of them was in the fold logic — the rest were in the gesture and the camera, which
+no headless instrument can see. `docs/FOLDING.md` has the full account under *A fifth cause*.
+
+**The camera.** Two causes stacked. The pin held the **centre of the node** rather than the point
+the reader pressed, and then held the node's **bottom** rather than its **top**. Measured after
+the fix: drift 64px → **0**, the camera's own movement 314px → **7px**, and on unfolding, a
+header that had been landing at y = **−231** landed at **88**.
+
+**The gesture.** Folding on a click anywhere in the band left almost nowhere inside a section to
+start a drag from; the 22px header strip is now the control and the band is canvas, with
+right-click offering **Fold section**. The right-click did not work at first because
+`pointerdown` called `preventDefault()` without checking the button, cancelling the very default
+action that raises `contextmenu`; and shrinking the band's hit rectangle to free the drag then
+took the right-click away with it, since the menu needs something to land on.
+
+**And a test that passed while asserting nothing.** The first `test_fold_camera.mjs` looked its
+sections up in `vis.nodes`, where an open section is not — it is a band in `vis.groups` — so
+every lookup returned `undefined` and every assertion was vacuously true. It now makes 21 real
+checks on the pin arithmetic, and is pure, so it runs without a browser.
+
+The standing consequence: **UI work here is verified on screen with the real gesture.** A
+dispatched `contextmenu` bypasses `pointerdown` altogether and would have reported the first of
+these as fixed.
 
 ## Fixed 31 Aug 2026
 

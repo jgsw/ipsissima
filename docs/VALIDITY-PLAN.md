@@ -14,6 +14,22 @@ Numbers below are marked. **[measured]** was taken on this machine on the date a
 **[reported]** comes from a project's own documentation or package registry; **[judgement]** is a
 design call and is where to argue.
 
+> **BUILT, 31 August 2026.** The plan below was carried out. `app/src/argdown-validity.js` and
+> `ipsissima-mcp/src/ipsissima_mcp/validity.py` are the two halves, run against the shared cases
+> in `ipsissima-mcp/tests/validity-vectors.json`, with `ipsissima-mcp/eval/validity/difftest_z3.py`
+> as the Z3 differential test the verdict calls for. No solver ships.
+>
+> What was deliberately NOT built, and remains unbuilt: a check that a step **is** the rule it
+> names. Validity is decided; the name is taken on trust.
+>
+> The first real use found something. Formalising the four steps of `The route to the order` in
+> the Miller judgment returned a countermodel on step one — the advice unlawful and null while the
+> Order in Council stood — which is a premise the Supreme Court applies (`likewise unlawful`) and
+> never states. It is now in the map as an `imputation`, warranted `enthymeme`.
+>
+> How the result is drawn, and what the four bar states mean, is in **How to use** under *Does the
+> step actually work?*
+
 ---
 
 ## 1. The verdict

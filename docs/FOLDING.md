@@ -380,3 +380,47 @@ above is recorded for the day the generator reaches six.
 
 Re-measured with the check alive: corpus seeds 1–8 at 1,200 and 3,000 steps clean, both
 exhaustive modes clean, every suite passing.
+
+## A fifth cause, which was never fold logic at all — 1 September 2026
+
+Everything above is about *which claims are visible*. Three of the four faults reported next were
+about something the invariants cannot see: **where the camera is pointing afterwards**, and
+**whether the control can be pressed at all**. A fold can be perfectly correct and still lose the
+reader.
+
+### The gesture
+
+The whole band used to fold on a click, and on a map with everything open the band is nearly all
+there is — so there was almost nowhere inside a section to start a drag from, and panning became
+a hunt for a gap. The 22px header strip that already carries the name and the chevron is now the
+control; the rest of the band is canvas. A right-click anywhere inside a section offers **Fold
+section**, because taking the band-wide click away would otherwise make a section harder to shut
+than it was.
+
+Three things went wrong doing that, and the pattern in all three is the same: **each fix moved
+the fault somewhere the previous check was not looking.**
+
+- The right-click menu never appeared. Diagnosed as event ordering and it was not: `pointerdown`
+  called `preventDefault()` with no button check, so the secondary button's default action —
+  which is what raises `contextmenu` — was cancelled before it happened.
+- Shrinking the band's hit rectangle to free the drag then took the right-click away with it,
+  since the menu needs something to land on. The band-wide hit stays; a separate `.alm-gfold`
+  strip does the folding.
+- **My first test passed while asserting nothing.** An open section is a band in `vis.groups`,
+  not a node, so every lookup returned `undefined` and every comparison was vacuously true.
+
+### The camera
+
+Reported with a fold-state string: folding a section threw the map somewhere else. Two distinct
+causes, one behind the other.
+
+The pin held the **centre of the node** rather than the point the reader pressed, and then held
+the node's **bottom** rather than its top. Fixed, drift went 64px → 0 and the camera's own
+movement 314px → 7px; on unfold, the header that had been landing at y = −231 landed at 88.
+
+`app/test_fold_camera.mjs` now checks the pin arithmetic directly — 21 assertions, and it is
+pure, so it needs no browser. But the reason this class of fault reached a reader at all is that
+**no headless instrument can see it**: the fold logic was right, the geometry was right, and the
+picture was still wrong. That is why UI work here is verified on screen with the real gesture,
+not with a synthesised event — a dispatched `contextmenu` bypasses `pointerdown` entirely and
+would have reported the first fault as fixed.
