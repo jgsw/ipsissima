@@ -59,8 +59,9 @@ of them late and by luck.
 | 17 R | `Step 4` written twice, the edge layer being walked as well as copied | artifacts |
 | 18 R | `rgba()` fills, which SVG 1.1 has no colour for | artifacts |
 | 19 R | the exported picture cut off down its right-hand edge: a classic scrollbar took fifteen pixels out of the column *after* the layout had measured it, and the canvas was sized from that column | artifacts (added 2 Sep — see below) |
+| 20 | the export test had begun picking the *smallest* panel on the map, having sorted the ⊞ controls by `textContent` length: a one-step control's tooltip is longer than a four-step one's | — |
 
-Counting by instrument: **invariants 6, artifacts 6, gestures 4, mutation 1, unit 1, one
+Counting by instrument: **invariants 6, artifacts 6, gestures 4, mutation 1, unit 1, two
 unclassified** [measured, by the author of the table — the counterfactual is a judgement in each
 case].
 
@@ -70,7 +71,9 @@ file rather than looking at it.** Every check there asked what the SVG *said*: d
 its colours legal, does it carry the panel's words. None asked whether the drawing fitted on its
 canvas, so a file that was correct in every particular and sliced down one edge passed cleanly.
 The check added for it renders the file and measures the ink's distance from each edge, which is
-a question about the picture rather than about the text of it.
+a question about the picture rather than about the text of it. **Defect 20 is the cost of a
+selector that encoded an assumption about lengths**: it turned green while testing something
+smaller than it was meant to.
 
 Two things that table says out loud:
 
@@ -113,6 +116,11 @@ viewer, drives it into a state, and asserts against what is actually on the page
 in **54.6s**, of which 9.0s is building the viewers fresh so the renderer under test is the working
 tree's [measured]. Playwright is a devDependency (Apache-2.0 [reported]); its Chromium is 554MB of
 cache [measured] and is never shipped.
+
+**Since 2 Sep: 24 panels and 156 checks in 104.5s [measured].** Nothing was added to the harness;
+giving one-step arguments a ⊞ control tripled the number of panels it has to open, and two maps in
+the corpus — Carroll and Prescott-Couch — went from having no explode panel to test at all to
+having one. An instrument's reach grows with the feature it happens to be pointed at.
 
 **It found a real defect on its first full run over the corpus.** `.alm-e` — an edge — carried no
 `pointer-events: none`, so wherever an edge crossed a section's 22px fold strip the click landed
@@ -277,8 +285,8 @@ The round-trip is the important one. **[judgement]** It is cheap, it needs no ba
 states the actual contract of an export: *the same words, no more and no fewer.*
 
 `app/test_export_artifacts.mjs`, registered in the runner and in CI, with `librsvg2-bin` added to
-the CI image. **24 checks**, six of them mutations, on both panel layouts, the staged narrowing
-and the PNG [measured, 2 Sep].
+the CI image. **31 checks**, six of them mutations, on both panel layouts, the one-step layout,
+the staged narrowing and the PNG [measured, 2 Sep].
 
 **The organising idea, which is worth stating separately from the checks:** *the engine that wrote
 the file is the wrong engine to check it with.* Three of the four export defects were invisible in

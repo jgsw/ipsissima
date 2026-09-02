@@ -152,10 +152,16 @@ reader to hold several cross-references at once: that (2)(3)(4) give (5), that (
 (7), and so on. Readers who do not read numbered premises fluently are exactly the readers
 Ipsissima is for.
 
-So a multi-step argument carries a **⊞** control at the foot of its box, with the number of steps
-beside it. It opens the same argument as a **staircase**: one small argument per step, each
-intermediate conclusion in a box of its own between them, the rule spelled out and the verdict
-beside it.
+So an argument with a premise-conclusion structure carries a **⊞** control at the foot of its
+box, with the number of steps beside it. It opens the same argument as a **staircase**: one small
+argument per step, each intermediate conclusion in a box of its own between them, the rule
+spelled out and the verdict beside it.
+
+A **one-step** argument has the control too, and it offers something different: there is no chain
+to follow, so what the panel adds is what the box has no room for. On the map a premise is
+clipped to a single line; here every one of them is written out in full, with the rule named and
+the verdict in words. The stair is dropped for a single step — the two boxes square up, with the
+arrow running straight down, which is the shape a single inference has always had.
 
 - **Full text** — every line as the file writes it. What the source actually says
 - **Compact** — the same chain drawn from the claims' short names, so a step and the conclusion

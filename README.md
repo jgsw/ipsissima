@@ -124,7 +124,9 @@ Everything else, including installing from source and the command line tools, is
 - **A long argument can be walked down instead of held in the head.** A multi-step
   premise-conclusion structure opens as a staircase — one small argument per step, each
   intermediate conclusion in a box between them — in full text or drawn compactly from the claims'
-  short names.
+  short names. A single-step argument opens too, squared up rather than stepped, which is where
+  its premises can be read in full rather than clipped to a line. Either can be saved as PNG or
+  SVG.
 - **Two arrangements of the same claims.** By the order of reasons, or by the order of exposition.
 - **Justificatory debt.** In the exposition arrangement, a sparkline on every band and one for the
   whole piece: below the line, claims asserted here whose reasons come later; above, claims their

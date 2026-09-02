@@ -901,9 +901,10 @@ body.fs #fsexit{display:inline-flex}
     </div>
   </div>
 
-  <!-- The ⊞ control on a multi-step argument puts this up: the same steps drawn as a staircase,
-       one small argument each, with the intermediate conclusions between them. A panel rather
-       than a redrawn map -- see the note beside `alm-explode` for why. -->
+  <!-- The ⊞ control on an argument puts this up: its steps drawn as a staircase, one small
+       argument each, with the intermediate conclusions between them -- or, for a single step,
+       the two boxes squared up with every premise written out in full. A panel rather than a
+       redrawn map -- see the note beside `alm-explode` for why. -->
   <div id="expl" hidden role="dialog" aria-modal="true" aria-labelledby="explhead">
     <div class="card">
       <header>
@@ -4623,11 +4624,14 @@ function explLine(r, into, carriedFrom, titlesOnly){
   return d;
 }
 
-function explStepBox(st, titlesOnly){
+/* `lone` when this step is the whole argument. "STEP 1" then promises a step 2 that does not
+ * exist, and the box is not one stage of anything -- it is the argument. */
+function explStepBox(st, titlesOnly, lone){
   var box = document.createElement("div");
   box.className = "xstep";
   var h = document.createElement("h4");
-  h.textContent = "Step " + st.n + (st.rule ? " · " + st.rule : "");
+  h.textContent = (lone ? "The argument" : "Step " + st.n) +
+                  (st.rule ? " · " + st.rule : "");
   box.appendChild(h);
   st.inputs.forEach(function(i){ explLine(i.row, box, i.from, titlesOnly); });
   if (st.verdict && st.verdict.state) {
@@ -4670,10 +4674,10 @@ function explEdgeLabel(st){
 /* The boxes of a layout, in order, each with whatever should be written on the edge arriving
  * at it. Shared by both layouts so they cannot drift apart. */
 function explStages(steps, titlesOnly){
-  var out = [];
+  var out = [], lone = steps.length === 1;
   steps.forEach(function(st){
     var fold = explCollapses(st);
-    if (!fold) out.push({ el: explStepBox(st, titlesOnly), label: "", kind: "step" });
+    if (!fold) out.push({ el: explStepBox(st, titlesOnly, lone), label: "", kind: "step" });
     out.push({ el: explConclBox(st, titlesOnly), kind: "concl",
                label: fold ? explEdgeLabel(st) : "" });
   });
@@ -4737,7 +4741,12 @@ function explStair(steps, body, width){
   // given, is a column already known to survive a scrollbar -- see `explDraw`.
   var avail = width || wrap.clientWidth;
   wrap.dataset.avail = String(avail);
-  var indent = Math.max(8, Math.min(27, (avail - 280) / Math.max(1, stages.length - 1)));
+  /* NO STAIR FOR A SINGLE STEP. The offset is there to show progression, and between two boxes
+   * there is none to show -- indented, it reads as a wonky column rather than a descent. Squared
+   * up, with the arrow running straight down, it is the shape a single inference has had for as
+   * long as premises have been written above a line. */
+  var indent = steps.length === 1 ? 0
+    : Math.max(8, Math.min(27, (avail - 280) / Math.max(1, stages.length - 1)));
   var w = avail - indent * (stages.length - 1);
 
   stages.forEach(function(st, i){
@@ -4772,10 +4781,10 @@ function explCompact(steps, body, width){
   wrap.className = "xwrap";
   body.appendChild(wrap);
 
-  var rows = [];
+  var rows = [], lone = steps.length === 1;
   steps.forEach(function(st){
     var fold = explCollapses(st);
-    rows.push({ step: fold ? null : explStepBox(st, true),
+    rows.push({ step: fold ? null : explStepBox(st, true, lone),
                 concl: explConclBox(st, true),
                 label: fold ? explEdgeLabel(st) : "" });
   });
@@ -5150,7 +5159,8 @@ function explDraw(){
     draw(steps, body, have);
   }
 
-  foot.textContent = steps.length + (steps.length === 1 ? " step" : " steps") +
+  foot.textContent = (steps.length === 1 ? "One step, with every line in full"
+                                         : steps.length + " steps") +
     ". Click any claim to show it on the map. Esc closes.";
   $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
   $("xmcompact").className = EXPL_MODE === "compact" ? "on" : "";

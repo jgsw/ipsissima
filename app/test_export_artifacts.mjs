@@ -179,10 +179,13 @@ await page.evaluate(() => {
   if (b) b.click();
 });
 await page.waitForTimeout(1200);
+/* BY THE COUNT ON THE PILL. Sorting on `textContent` picked the longest string, which stopped
+ * being the longest argument the moment a one-step control arrived: its tooltip is longer than a
+ * four-step one's, so this quietly began testing the smallest panel on the map. */
 const opened = await page.evaluate(() => {
-  const c = [...document.querySelectorAll(".alm-explode")].sort(
-    (a, b) => b.textContent.length - a.textContent.length)[0];
-  if (!c) return false;
+  const n = c => Number(((c.querySelector("text") || {}).textContent || "").replace(/\D+/g, "")) || 0;
+  const c = [...document.querySelectorAll(".alm-explode")].sort((a, b) => n(b) - n(a))[0];
+  if (!c || n(c) < 2) return false;
   c.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   return true;
 });
@@ -288,7 +291,6 @@ check(png && sameSize && png.w === sameSize.w && png.h === sameSize.h,
       "the PNG is the whole of the SVG, at twice the size",
       png && sameSize ? `PNG ${png.w}x${png.h}, SVG x2 ${sameSize.w}x${sameSize.h}` : "");
 
-
 /* ------------------------------------------------------------------ the column that moves
  *
  * THE DEFECT ITSELF, reproduced. Both layouts must measure their column before they have given
@@ -329,6 +331,59 @@ await page.waitForTimeout(600);
 const narrowed = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
 const narrowEdge = await margin(narrowed);
 check(!narrowEdge, "the export survives the column narrowing under the layout", narrowEdge);
+
+/* ------------------------------------------------------------------ a one-step argument
+ *
+ * There is no chain to unfold in a single step, so the panel drops the stair and squares the two
+ * boxes up. That is a different code path through the same layout -- an indent of zero, a
+ * straight arrow -- and the export has to come out of it whole like any other.
+ */
+await page.evaluate(() => { document.getElementById("expl").hidden = true; });
+// The one-step arguments on this map sit below the opening depth, so the map has to be shown in
+// full before there is a ⊞ 1 anywhere to click.
+await page.evaluate(() => {
+  const r = document.querySelector(".alm-range");
+  if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); }
+});
+await page.waitForTimeout(1500);
+const lone = await page.evaluate(() => {
+  const n = c => Number(((c.querySelector("text") || {}).textContent || "").replace(/\D+/g, "")) || 0;
+  const c = [...document.querySelectorAll(".alm-explode")].filter(x => n(x) === 1)[0];
+  if (!c) return null;
+  c.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  return document.getElementById("explhead").textContent;
+});
+check(!!lone, "a one-step argument opens a panel", "no ⊞ 1 control was drawn on this map");
+
+if (lone) {
+  await page.waitForTimeout(500);
+  const shape = await page.evaluate(() => {
+    const wrap = document.querySelector("#explbody .xwrap");
+    const b = [...wrap.querySelectorAll(".xstep,.xconcl")];
+    const h4 = wrap.querySelector(".xstep h4");
+    return { boxes: b.length, lefts: b.map(x => Math.round(x.getBoundingClientRect().left)),
+             heading: h4 ? h4.textContent : "" };
+  });
+  check(shape.boxes === 2 && new Set(shape.lefts).size === 1,
+        "a single step is squared up rather than stepped",
+        `${shape.boxes} boxes at ${shape.lefts.join(", ")}`);
+  check(!/^Step /.test(shape.heading),
+        "a single step is not called Step 1", `the heading reads "${shape.heading}"`);
+
+  for (const mode of ["stair", "compact"]) {
+    await page.evaluate(m => {
+      document.getElementById(m === "compact" ? "xmcompact" : "xmstair").click();
+      window.__cap.length = 0;
+    }, mode);
+    await page.waitForTimeout(400);
+    await page.evaluate(() => document.getElementById("xsvg").click());
+    await page.waitForTimeout(600);
+    const one = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
+    check(one.length > 300, `one step, ${mode}: the export produces an SVG`, `${one.length} bytes`);
+    const oneEdge = await margin(one);
+    check(!oneEdge, `one step, ${mode}: nothing is cut off at the edge of the file`, oneEdge);
+  }
+}
 
 /* ------------------------------------------------------------------ proving the checks */
 

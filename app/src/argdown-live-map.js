@@ -3597,9 +3597,16 @@ function createLiveMap(container, graph, options) {
        *
        * `⊞` and not `+`: the map already uses `+3` for "three hidden claims here", and this
        * hides nothing -- the same claims are drawn another way.
+       *
+       * A ONE-STEP ARGUMENT GETS THE CONTROL TOO, and it is not the same offer. There is no
+       * chain to unfold and nothing to follow: what the panel adds is what the map has no room
+       * for -- every premise in full rather than clipped to a line, the rule spelled out, and
+       * the verdict in words. The pill still carries its count, since a `1` beside a `4` says
+       * at a glance which boxes hold compound reasoning, but the tooltip offers what is really
+       * on offer, and the panel drops the stair for a single step.
        */
       const steps = s.pcs.filter(r => r.bar).length;
-      if (steps > 1 && opt.onExplode) {
+      if (steps >= 1 && opt.onExplode) {
         const w = 26, h = 13, bx = s.width - opt.padX - w, by = s.height - h - 5;
         const ex = el("g", { class: "alm-explode" });
         ex.append(el("rect", { x: bx, y: by, width: w, height: h, rx: 6.5 }),
@@ -3607,7 +3614,9 @@ function createLiveMap(container, graph, options) {
                                "font-size": 9 }));
         ex.querySelector("text").textContent = "\u229e " + steps;
         const et = el("title");
-        et.textContent = "Show these " + steps + " steps as separate arguments";
+        et.textContent = steps > 1
+          ? "Show these " + steps + " steps as separate arguments"
+          : "Show this step on its own, with every premise in full";
         ex.appendChild(et);
         ex.addEventListener("click", ev => { ev.stopPropagation(); opt.onExplode(n, ev); });
         box.appendChild(ex);
