@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* argdown-graph.mjs — the one adapter from Argdown's own output to the live map's graph.
  *
  * Three hosts need this conversion: the pandoc filter (argdown-live-filter.mjs), the per-file

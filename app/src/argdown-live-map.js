@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* argdown-live-map.js — a reflowing, foldable argument map.
  *
  * Argdown's own exports bake the layout in at export time: hiding a node leaves a hole where

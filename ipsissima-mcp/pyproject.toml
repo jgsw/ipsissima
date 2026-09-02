@@ -13,6 +13,10 @@ readme = "README.md"
 # the .mcpb bundle exactly as the host would, where uv picked 3.10 because this line let it.
 # Claiming 3.10 here does not make it work; it only moves the failure to the user.
 requires-python = ">=3.11"
+# GPL-3.0-or-later ON PURPOSE, while the repository root is MIT. This is not drift: the PDF
+# machinery is built on PyMuPDF, which is AGPL-3.0-or-commercial, and a permissive declaration
+# here would promise what that dependency does not allow. docs/LICENCE-AUDIT.md at the
+# repository root is the full account; its own LICENSE file sits beside this one.
 license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "James Wilson" }]
 keywords = ["argdown", "argument", "reconstruction", "pdf", "epub", "philosophy"]

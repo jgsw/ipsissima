@@ -85,8 +85,11 @@ see [app/tsconfig.json](app/tsconfig.json) for why even the typechecker does not
 
 ## Licence
 
-Ipsissima is GPL-3.0-or-later. By contributing you agree your contribution is licensed the same
-way. If you add a sample, the text it carries must be redistributable and its licence must be
+Ipsissima is MIT licensed, with one exception: `ipsissima-mcp/` is GPL-3.0-or-later, because its
+PDF dependencies leave no honest alternative — `docs/LICENCE-AUDIT.md` has the full account. By
+contributing you agree your contribution is licensed the same way as the directory it lands in:
+MIT anywhere in the repository, GPL-3.0-or-later inside `ipsissima-mcp/`. If you add a sample,
+the text it carries must be redistributable and its licence must be
 named in the folder's README **and in the source file itself** — a reconstruction can be sent as
 a single file, at which point the source file is the only thing carrying the attribution.
 

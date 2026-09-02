@@ -125,13 +125,17 @@ account of every debt above.
 
 ## Licence
 
-Ipsissima is free software, licensed under the **GNU General Public License, version 3**.
+Ipsissima is free software, licensed under the **MIT License**.
 
 You may use it for anything, study how it works, change it, and share it — including changed
-versions. The one condition is that a version you pass on carries the same freedoms: it must be
-distributed under the GPL, with its source available.
+versions, under terms of your own choosing. The one condition is that the copyright and
+permission notice travels with every copy of the software.
 
-The full text ships with the source as `LICENSE`, and is at **gnu.org/licenses/gpl-3.0**.
+The full text ships with the source as `LICENSE`. Two things this file carries are not covered
+by it and keep their own licences: the **ArgVu** typeface, under the Bitstream Vera Fonts
+licence, and the bundled packages, each under its own — all reproduced in the notices below.
+The companion MCP server that prepares sources, `ipsissima-mcp`, is distributed separately
+under the GNU General Public License v3 or later.
 
 This program is distributed in the hope that it will be useful, but **without any warranty**;
 without even the implied warranty of merchantability or fitness for a particular purpose.

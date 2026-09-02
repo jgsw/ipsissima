@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* SPDX-License-Identifier: MIT */
 /* map_quality.mjs — measure how a map LOOKS, on every real map, at every depth level.
  *
  *   node app/map_quality.mjs            # table + baseline check

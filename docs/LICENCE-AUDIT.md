@@ -1,12 +1,20 @@
 # Can Ipsissima move from GPL-3.0 to MIT?
 
-Written 27 August 2026, against the tree at `faadf52`. Line numbers are against that commit; other
-work was landing in the working tree while this was written, so check a citation before quoting it
-in anything binding. The question came from one place: **Argdown
+> **It did. Option B was implemented on 2 September 2026**: the repository root is MIT,
+> `ipsissima-mcp/` keeps GPL-3.0-or-later with its own `LICENSE` file, the four attribution
+> gaps of §8 are closed, and the Deep Drafter comparison of §5 has been re-run and recorded.
+> §11 lists exactly what was changed. The analysis below is kept as the record of why.
+
+Written 27 August 2026 against the tree at `faadf52`; **revised 2 September 2026 against
+`a0d8b3f`**, re-running the mechanical checks — §10 lists what changed in between. Line numbers
+are against the revision commit; check a citation before quoting it in anything binding. The
+question came from one place: **Argdown
 is MIT, and a GPL-3.0 Ipsissima is a one-way valve.** Code can come in and nothing can go back —
-so the dagre layout work done here, which is the piece most obviously useful to the project it was
-built on top of, cannot be returned. The goal is outbound permissiveness, and the answer turns
-entirely on what comes *in*.
+so the layout work done here, which is the piece most obviously useful to the project it was
+built on top of, cannot be returned. (When first written, that layout sat on dagre; since
+`a79576d`, 29 August, the layout engine is wholly this project's own code, which only sharpens
+the point — what Argdown could take back is now entirely first-party.) The goal is outbound
+permissiveness, and the answer turns entirely on what comes *in*.
 
 **Neither the author of this document nor the owner of this project is a lawyer.** That is not a
 disclaimer bolted on at the end; it is the reason for the convention below, which is used
@@ -26,7 +34,8 @@ needed `app/`.**
 
 ## 1. The verdict
 
-**Conditional — and the condition is a boundary, not a blocker.**
+**Conditional — and the condition is a boundary, not a blocker.** *(The boundary was drawn on
+2 September 2026 — see §11.)*
 
 | | |
 |---|---|
@@ -34,8 +43,9 @@ needed `app/`.**
 | **`ipsissima-mcp/`** — the Python ingest half | **Blocked.** `pymupdf` and `pymupdf4llm` are AGPL-3.0-or-commercial and are hard dependencies. |
 | **`samples/`** | Not affected. Each text carries its own licence already and is not covered by the repository's. |
 
-The dagre layout code Argdown would want is in `app/src/argdown-live-map.js`,
-`app/argdown-graph.mjs` and `app/map_quality.mjs`. **None of it is anywhere near the Python.** The
+The layout code Argdown would want is in `app/src/argdown-live-map.js`,
+`app/argdown-graph.mjs` and `app/map_quality.mjs` — since 29 August wholly first-party, with no
+dagre underneath it. **None of it is anywhere near the Python.** The
 motivating goal is reachable by relicensing `app/` alone and leaving `ipsissima-mcp/` where it is.
 
 ---
@@ -54,6 +64,13 @@ never distributed, and its licence constrains nothing about the artifact. `app/p
 reading the manifest. **41 distinct npm packages** reach the page — plus JSZip, which the metafile
 cannot see because `docx` ships it already inlined in its own prebundled ESM, and which was found
 by grepping the built bundle instead.
+
+**[verified, 2 Sept]** The bundled set is unchanged since 27 August except that dagre is gone:
+the lockfile diff `faadf52..a0d8b3f` removes only `@dagrejs/dagre` and `@dagrejs/graphlib`, adds
+only packages in build-tool trees (`@anthropic-ai/mcpb`, `playwright`, and their dependencies,
+none of which reach the page), and bumps no version of any bundled package — `markdown-it`
+15.0.0, `entities` 8.0.0 and `js-yaml` 5.3.0 were re-read from `node_modules` and match the table
+below.
 
 ### Bundled into the built HTML
 
@@ -76,11 +93,11 @@ by grepping the built bundle instead.
 | ↳ `jszip` 3.10.1, inlined inside docx's own bundle | **MIT *or* GPL-3.0-or-later, at your choice** | both | yes — see §2.4 |
 | `@codemirror/*` ×6, `@lezer/{common,highlight}`, `codemirror` | MIT | editor only | yes |
 | `crelt`, `style-mod`, `w3c-keyname`, `@marijn/find-cluster-break` | MIT | editor only | yes |
-| `dagre` + `graphlib`, vendored at `app/vendor/dagre.min.js` | MIT | both | yes |
+| ~~`dagre` + `graphlib`, vendored at `app/vendor/dagre.min.js`~~ | MIT | — | **retired 29 August** (`a79576d`): the bundle carries no layout engine, the vendored file and `dagre.LICENSE` are deleted, and the debt is recorded in `CREDITS.md` |
 | **ArgVu**, embedded as a base64 WOFF2 data URI | **Bitstream Vera Fonts licence** | both | **stays under its own licence** — see §2.5 |
 
 "both" means `Ipsissima.html` and `Ipsissima Reader.html` alike. **[verified]** at
-`build_argdown_viewer.mjs:525–540`: only the CodeMirror bundle is gated on `--editor`; the docx
+`build_argdown_viewer.mjs:576–651`: only the CodeMirror bundle is gated on `--editor`; the docx
 exporter is in every standalone build, because "a standalone viewer can be handed any file,
 including one full of comments".
 
@@ -136,7 +153,7 @@ domain. It is permissive, but it is **not MIT**, and it carries two conditions M
 - the Font Software may be sold as part of a larger package but **no copy of a typeface may be
   sold by itself**.
 
-**[verified]** `build_argdown_viewer.mjs:473–476` embeds the WOFF2 as base64. Every built page
+**[verified]** `build_argdown_viewer.mjs:517–520` embeds the WOFF2 as base64. Every built page
 therefore *contains a copy of the Font Software*, and the licence says its permission notice
 "shall be included in all copies".
 
@@ -148,12 +165,32 @@ carve-out has to be said out loud. `app/vendor/ArgVu/PROVENANCE.md:12` currently
 
 For the motivating goal this is a non-issue: **Argdown ships ArgVu itself.**
 
+### 2.6 The Argdown shim, vendored into the Python package *(new since 27 August)*
+
+**[verified]** The Python package now ships a JavaScript file:
+`ipsissima-mcp/src/ipsissima_mcp/vendor/argdown-cli.mjs`, a 2.7 MB esbuild bundle of the two
+Argdown CLI commands the checker uses. It is committed to the tree, and
+`[tool.setuptools.package-data]` puts it inside the wheel — so it now travels in every PyPI
+install and in the `.mcpb` bundle attached to releases. Re-running its build
+(`app/build_argdown_shim.mjs`) with `--metafile` on 2 September: **91 npm packages reach the
+bundle**, every one permissive — MIT for the bulk (`@argdown/node`, `pdfkit`, `fontkit`, `axios`,
+the lodash family, …), Apache-2.0 for `chevrotain`, `@hpcc-js/wasm-graphviz` and `@swc/helpers`,
+BSD-3-Clause for `highlight.js` and `ieee754`, BlueOak-1.0.0 for `glob`, 0BSD for `tslib`, and
+`png-js` with no `license` field but a plain MIT `LICENSE` file. **No copyleft.**
+
+**[judgement]** Permissive JavaScript inside a GPL-3.0 wheel is the easy direction, and this
+changes nothing about §4's blocker. Two things are worth writing down anyway. First, the bundle
+is minified with `legalComments: "none"` (`build_argdown_shim.mjs:46`), so the attribution gap of
+§8 now applies to the PyPI wheel and the `.mcpb` as well as to the built HTML. Second, if
+`ipsissima-mcp/` is ever relicensed, this vendored bundle is not what stands in the way —
+PyMuPDF is.
+
 ---
 
 ## 3. The desktop application — Rust
 
-**[verified]** `app/desktop/src-tauri/Cargo.lock` resolves **490 entries** (489 crates plus
-`ipsissima` itself). 263 are present in the local registry cache and were read directly for their
+**[verified]** As of 27 August, `app/desktop/src-tauri/Cargo.lock` resolved **490 entries** (489
+crates plus `ipsissima` itself). 263 were present in the local registry cache and were read directly for their
 `license` field. The other 227 are simply not in this Mac's cache — a set dominated by Linux,
 Windows, Android and wasm targets that were never built here, but not exclusively so, and **their
 licences are unverified rather than known-good**. `cargo` is not on this machine's `PATH`, so
@@ -169,6 +206,18 @@ The five MPL-2.0 crates are `cssparser`, `cssparser-macros`, `dtoa-short`, `opti
 `selectors`. **[judgement]** MPL-2.0 is file-level copyleft: those files stay MPL, and a larger
 work that merely links them may be distributed under other terms. This is the same position they
 already occupy in the GPL build and MIT does not change it.
+
+**[verified, 2 Sept]** The lock now resolves **532 entries**, and the growth is one feature:
+`reqwest` 0.13 (`rustls`, `json`, `system-proxy`) was added for Help ▸ Check for Updates
+(`Cargo.toml` says why), bringing the rustls TLS stack with it. The new crates readable from the
+local cache: `ring` is `Apache-2.0 AND ISC`; `aws-lc-rs` is `ISC AND (Apache-2.0 OR ISC)` and
+`aws-lc-sys` a longer compound of the same permissive parts; `rustls` is
+`Apache-2.0 OR ISC OR MIT`; `rustls-webpki` and `untrusted` are ISC; `subtle` is BSD-3-Clause;
+the `quinn` / `zeroize` / `rand` group is `MIT OR Apache-2.0`. `webpki-root-certs` 1.0.9 is not
+in the cache; crates.io reports **CDLA-Permissive-2.0** — the Mozilla/CCADB root store shipped as
+data. **Still zero copyleft** among everything readable. Incidentally, the update checker is the
+first code in the desktop binary that touches the network at all — worth knowing next to the
+AGPL §13 discussion, even though nothing on the Rust side is AGPL.
 
 **[judgement]** The one thing worth a second look is the **Linux** build, which is not covered by
 the 263 verified crates. Tauri on Linux draws through WebKitGTK and GTK3 via the `webkit2gtk`,
@@ -187,7 +236,9 @@ should be known rather than discovered.
 
 **This is the blocker, and it is a real one.**
 
-**[verified]** `ipsissima-mcp/pyproject.toml` declares seven hard dependencies. Read from the
+**[verified]** `ipsissima-mcp/pyproject.toml` declares seven hard dependencies — unchanged on
+2 September, though the `.venv` these versions were read from has since been removed, so the
+installed-version column is as of 27 August. Read from the
 installed distributions in `.venv`:
 
 | dependency | installed | licence | outbound MIT? |
@@ -205,11 +256,14 @@ installed distributions in `.venv`:
 (MPL-2.0) and `tqdm` (`MPL-2.0 AND MIT`) — file-level, and not an obstacle. `pyzotero`, the one
 optional extra, is not installed and was not checked.
 
-**[verified]** PyMuPDF is not a corner of the codebase. Five of the fourteen modules reach it:
+**[verified]** PyMuPDF is not a corner of the codebase. Five of the seventeen modules reach it
+(re-checked 2 Sept — the three modules added since, `validity.py`, `tei_to_source.py` and
+`from_zotero.py`, import none of it; `validity.py` is standard library only, and the z3 in
+`eval/validity/difftest_z3.py` is an eval-only manual install, not a dependency):
 
-- `pdf_to_source.py:46` — a **top-level, unconditional** `import pymupdf`, in the 1,263-line module
+- `pdf_to_source.py:47` — a **top-level, unconditional** `import pymupdf`, in the module
   that recovers paragraph structure from ink positions;
-- `ingest.py:173,239`, `server.py:276,375`, `paginate.py:65`, `sources.py:90` — function-local
+- `ingest.py:173,276`, `server.py:337,436`, `paginate.py:65`, `sources.py:90` — function-local
   imports, deferred but not optional: the code path fails without them.
 
 **[judgement]** The AGPL's reach over a Python program that imports an AGPL library is the whole
@@ -227,9 +281,15 @@ combination with AGPLv3 code — but the AGPL portion keeps its network-interact
 For a tool that runs an **MCP server**, that clause is not hypothetical. Whether the current
 declaration understates the position is a question for the same lawyer, and it exists today.
 
+**[verified, 2 Sept]** And it is more pressing than it was: distribution has stopped being
+hypothetical. `.github/workflows/publish-pypi.yml` now publishes the wheel and sdist to PyPI by
+trusted publishing, and `release.yml` attaches a `.mcpb` bundle to every GitHub release. The
+distribution the AGPL question attaches to is public and versioned, which moves §9's question 2
+up the list.
+
 ### `pandoc` is a different situation, and the difference is decisive
 
-**[verified]** pandoc is **never linked**. `ingest.py:55–70` and `epub_to_source.py:92–93` locate a
+**[verified]** pandoc is **never linked**. `ingest.py:55` and `epub_to_source.py:101–103` locate a
 `pandoc` binary via `shutil.which` (falling back to a Zettlr-bundled copy) and run it as a
 **separate process**, exchanging bytes. It is not in `pyproject.toml`'s dependencies at all — the
 user is expected to already have it.
@@ -240,7 +300,7 @@ the same relationship a Makefile has with `gcc`. This is the most settled judgem
 document, and pandoc does not constrain Ipsissima's licence in either direction.
 
 **[verified]** The same is true of the one call in the other direction:
-`build_argdown_viewer.mjs:406` spawns `check_argdown.py` as a subprocess to derive fidelity
+`build_argdown_viewer.mjs:456` spawns `check_argdown.py` as a subprocess to derive fidelity
 borders. `check_argdown.py` and `argdown_provenance.py` import **only the Python standard
 library** — no PyMuPDF anywhere in that path — and the call is wrapped in a `try` that degrades to
 "the borders are as declared". So `app/` does not reach the AGPL surface even indirectly, and does
@@ -265,9 +325,10 @@ What can be verified from this repository:
 - **[verified]** No first-party source file — `.mjs`, `.js`, `.py`, `.rs` — contains a third-party
   copyright line, an `@license` annotation, or an SPDX identifier. A grep for
   `Copyright (c)` / `Copyright ©` across the whole tree, excluding `node_modules`, `.venv` and
-  `app/vendor`, returns **nothing**.
+  `app/vendor`, returns **nothing**. Re-run 2 September over the ~90 files added since, including
+  the new `site/`: still nothing.
 - **[verified]** The only "ported from" note in first-party code is
-  `app/src/argdown-positions.js:142`, and it points at `argdown_provenance.py` — this project's own
+  `app/src/argdown-positions.js:170`, and it points at `argdown_provenance.py` — this project's own
   Python.
 - **[verified]** Deep Drafter is MIT, per `CREDITS.md`. Even a shared line would not block MIT; it
   would only require attribution.
@@ -279,6 +340,32 @@ comparison is not reproducible from this repository** — the other tree is not 
 owner's own testimony, it is specific enough to be falsifiable, and it points the right way, but
 this audit did not independently verify it. If certainty is wanted before relicensing, re-running
 that diff and recording the command and its output is an hour's work.
+
+**[verified, 2 Sept] The comparison was re-run before relicensing, against the owner's local
+copy of the Deep Drafter workspace** (a `deep-drafter-main` tree outside this repository).
+Method, so the run is reproducible: every `.py` line in each tree (Ipsissima excluding `.venv`,
+`node_modules` and `.claude`), stripped of surrounding whitespace, keeping lines of ten or more
+characters that are not bare boilerplate (a lone `return`, a stdlib import, a closing bracket);
+the two sets intersected, and every shared line located in both trees. The workspace's Python
+splits into Deep Drafter's own code (`Behind the scenes (Claude)/Build scripts/`, 5,650
+distinctive lines) and the Ipsissima-ancestor sample scripts that were growing in it
+(`Argdown samples/`, 437). Results, against Ipsissima's 8,417 distinctive Python lines today:
+
+- **Shared with Deep Drafter's own code: 22 lines, every one a commonplace idiom** —
+  `def main():`, `except Exception:`, `sys.exit(1)`, `HERE = Path(__file__).resolve().parent`,
+  `sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))`, and the like. Nothing that
+  carries expression; nothing distinctive to either project.
+- **Shared with the ancestor files: 211 lines — and they are the same files**: the
+  `make_source.py` / `convert_source.py` scripts in `samples/` sat in that workspace because it
+  is where Ipsissima grew, exactly as `CREDITS.md` says. (The count is higher than the "five"
+  recorded at extraction because those sample scripts still exist, whole, in both trees, and
+  because the distinctiveness filter differs; the *category* is the same.)
+- **JavaScript/TypeScript files in Deep Drafter: zero.** The claim that matters most for the
+  relicensed `app/` — that the JavaScript half can owe Deep Drafter nothing — holds trivially.
+
+The substance of the `CREDITS.md` claim is confirmed: **no Deep Drafter code is used in
+Ipsissima**, and even under a dual-licence-free reading nothing shared rises above stock idiom.
+(Deep Drafter is MIT in any case, so the stakes were attribution, not permission.)
 
 ---
 
@@ -292,13 +379,15 @@ that diff and recording the command and its output is an hour's work.
 James Wilson <4345358+jgsw@users.noreply.github.com>
 ```
 
-37 commits, all of them authored *and* committed by the same identity. `CONTRIBUTING.md` exists
+161 commits as of 2 September (37 when first written), all of them authored *and* committed by
+the same identity. `CONTRIBUTING.md` exists
 but has attracted no outside contribution. There is no CLA to chase and no second rights-holder
 whose agreement is needed. **A sole copyright holder may relicense his own work at will**, and
 that is what makes everything above a question about *dependencies* rather than about *consent*.
 
-**[verified]** 34 of the 37 commits carry a `Co-Authored-By: Claude Opus 5
-<noreply@anthropic.com>` trailer.
+**[verified]** 135 of the 161 commits carry a `Co-Authored-By` trailer naming a Claude model
+(`Claude Opus 5` in the earlier commits, `Claude Fable 5` in the later ones, both
+`<noreply@anthropic.com>`).
 
 **[judgement]** That trailer records how the work was done, not a second human rights-holder. Under
 Anthropic's terms the user holds whatever rights subsist in the output, and current US Copyright
@@ -313,7 +402,8 @@ nothing.
 ## 7. If the answer is yes: what actually changes
 
 The recommendation is **option B**, which reaches the goal with the least work and the fewest
-judgement calls.
+judgement calls. *(Implemented 2 September 2026 — §11 records what was actually done, including
+the two places the implementation improved on this table.)*
 
 ### Option A — MIT the whole repository
 **Blocked** by PyMuPDF, unless it is removed. Not available today.
@@ -329,24 +419,25 @@ dependencies require.
 |---|---|---|
 | `LICENSE` | GPL-3.0 text, 674 lines | MIT text, `Copyright (c) 2026 James Wilson` |
 | `ipsissima-mcp/LICENSE` | *(does not exist — inherits the root)* | **new**: the GPL-3.0 text, moved here so the boundary is explicit |
-| `README.md:80–83` | "free software under the **GNU General Public License v3**" | MIT for `app/`, GPL-3.0-or-later for `ipsissima-mcp/`, and why |
-| `CONTRIBUTING.md:86–89` | "Ipsissima is GPL-3.0-or-later. By contributing you agree…" | the same inbound=outbound clause, per-directory |
+| `README.md:142` | "free software under the **GNU General Public License v3**" | MIT for `app/`, GPL-3.0-or-later for `ipsissima-mcp/`, and why |
+| `CONTRIBUTING.md:86–91` | "Ipsissima is GPL-3.0-or-later. By contributing you agree…" | the same inbound=outbound clause, per-directory |
 | `app/package.json:6` | `"license": "GPL-3.0-or-later"` | `"license": "MIT"` |
-| `app/about.md:84–93` | the Licence tab, GPL wording | MIT wording, with the ArgVu carve-out named |
-| `app/about.md:74` | **"All MIT licensed."** | **factually wrong today** — see §8 |
-| `app/argdown-viewer.template.html:715` | `var ABOUT_LICENCE = "GPL-3.0";` | `"MIT"` |
-| `app/vendor/ArgVu/PROVENANCE.md:12` | "compatible with GPL-3.0" | keep, and add that the font stays under its own licence regardless |
-| `ipsissima-mcp/pyproject.toml:11,15` | `GPL-3.0-or-later` | **unchanged** — and worth a comment saying it is deliberate, because a reader who sees MIT at the root will assume drift |
-| `Ipsissima.html`, `Ipsissima Reader.html` | built artifacts | rebuild: `node app/rebuild_viewers.mjs` |
+| `app/about.md:122–128` | the Licence section, GPL wording | MIT wording, with the ArgVu carve-out named |
+| `app/about.md:112` | **"All MIT licensed."** | **factually wrong today** — see §8 |
+| `app/argdown-viewer.template.html:1114` | `var ABOUT_LICENCE = "GPL-3.0";` | `"MIT"` |
+| `app/vendor/ArgVu/PROVENANCE.md:11–14` | "compatible with GPL-3.0" | keep, and add that the font stays under its own licence regardless |
+| `ipsissima-mcp/pyproject.toml` | `GPL-3.0-or-later` (the `license` line and the Trove classifier) | **unchanged** — and worth a comment saying it is deliberate, because a reader who sees MIT at the root will assume drift |
+| `Ipsissima.html`, `Ipsissima Reader.html` | built artifacts — **no longer tracked in git**: since the audit was written they are gitignored and built at release time by `release.yml`, and for the site by `pages.yml` | rebuild locally with `node app/rebuild_viewers.mjs`; the first *release* after the change is what puts relicensed pages in front of anyone |
 
 **No dependency has to be swapped, and nothing has to move from bundled to build-time.**
 
 **A `NOTICE` file is needed**, and would have been needed under GPL-3.0 too — see §8. It should
-carry: the Bitstream Vera / Arev / AMSFonts text for ArgVu, the Chris Pettitt notice for dagre
-(one copy covers both dagre and graphlib — **[verified]** their `LICENSE` files are byte-identical
-and `app/vendor/dagre.LICENSE` matches the npm original exactly), the Apache-2.0 notices for
+carry: the Bitstream Vera / Arev / AMSFonts text for ArgVu, the Apache-2.0 notices for
 chevrotain and `@hpcc-js/wasm-graphviz`, the BSD notices for `highlight.js` and `entities`, JSZip's
-dual-licence notice with the MIT arm elected, and the MIT notices for the rest.
+dual-licence notice with the MIT arm elected, and the MIT notices for the rest. (The first
+version of this list included the Chris Pettitt notice for dagre; dagre is no longer bundled, so
+no notice is owed — `CREDITS.md` keeps the acknowledgement as a debt of influence rather than of
+licence.) The same exercise is owed by the **Python distribution** for the shim bundle of §2.6.
 
 **Worth doing while in here:** the project has no per-file licence headers at all. Argdown taking
 the layout code would be a cleaner transaction if `app/src/argdown-live-map.js`,
@@ -363,31 +454,58 @@ licensing grounds already — but it lost on the thing that matters, which was q
 
 ---
 
-## 8. Three attribution gaps found on the way
+## 8. Four attribution gaps found on the way
 
-None of these is caused by the licence question. All three exist **today, under GPL-3.0**, and the
-relicensing pass is the natural moment to fix them.
+None of these is caused by the licence question. All of them existed under GPL-3.0, and the
+relicensing pass was the natural moment to fix them. **All four were closed on 2 September
+2026** — each bullet below ends with how.
 
-- **[verified] The bundles are built with `--legal-comments=none`.** All four esbuild invocations
-  in `build_argdown_viewer.mjs` pass it. It strips every `@license` and copyright banner out of the
+- **[verified] The bundles are built with `legalComments: "none"`.** All four esbuild invocations
+  in `build_argdown_viewer.mjs` share it (`build_argdown_viewer.mjs:68`), and so does the shim
+  build (`build_argdown_shim.mjs:46`) — so the gap now extends to the PyPI wheel and the `.mcpb`.
+  It strips every `@license` and copyright banner out of the
   minified output. Grepping the built `Ipsissima.html` for "Permission is hereby granted", "shall
-  be included in all copies" and "WITHOUT WARRANTY OF ANY KIND" returns **zero** in each case.
+  be included in all copies" and "WITHOUT WARRANTY OF ANY KIND" returns **zero** in each case
+  (re-checked 2 Sept).
   MIT, BSD and Apache-2.0 all ask for their notice to travel with the copy. **[judgement]** A
   `NOTICE` section reachable from the About window, or an HTML comment in the page, would discharge
   this; `--legal-comments=eof` would too, at a cost in bytes. This one is worth taking seriously,
   because the single self-contained HTML file *is* the distribution — there is no accompanying
   `node_modules` for a recipient to consult.
+  **Fixed**: every build now assembles the licence text of everything it actually bundled — read
+  from the esbuild metafiles, deduplicated by byte-identical text, ArgVu and JSZip added
+  explicitly — into a `NOTICES` page section (`app/notices.mjs`, `noticesPart` in the builder),
+  shown under About ▸ Licence and, because it is not on the export drop-list, carried into every
+  copy a page exports of itself. The shim build writes the same notices to
+  `vendor/argdown-cli.NOTICE.md`, committed beside the bundle and shipped in the wheel and
+  `.mcpb` by `package-data`. The greps above now return 24 matches each on the built Reader.
 
-- **[verified] `app/about.md:74` says "All MIT licensed."** of the bundled dependency list. It is
+- **[verified] `app/about.md:112` says "All MIT licensed."** of the bundled dependency list. It is
   not accurate: chevrotain and `@hpcc-js/wasm-graphviz` are Apache-2.0, `highlight.js` is
   BSD-3-Clause, `entities` is BSD-2-Clause, and ArgVu is under the Bitstream Vera licence. The
   sentence sits directly beneath a `<dl>` whose whole point, per the paragraph above it, is that
   "this list cannot claim what it does not carry".
+  **Fixed**: the sentence now names the Apache, BSD, dual-licence and Bitstream Vera exceptions
+  and points at the notices in the Licence tab.
 
 - **[verified] The ArgVu permission notice does not travel with the font.** The built page embeds
   the WOFF2 and mentions "Bitstream" exactly once, in the About prose. The licence text itself is
   in the repository at `app/vendor/ArgVu/LICENSE.md` — which is exactly right for a source
   checkout, and reaches nobody who is handed the HTML file.
+  **Fixed**: the builder writes `vendor/ArgVu/LICENSE.md` into the `NOTICES` section of every
+  built page, first in the list, so the permission notice is inside the same file as the
+  embedded WOFF2 — and inside every copy that page exports.
+
+- **[verified] The site self-hosts EB Garamond with no licence text beside it** *(new since
+  27 August)*. `site/assets/fonts/` carries four EB Garamond WOFF2 files, served by the GitHub
+  Pages site. EB Garamond is under the **SIL Open Font License 1.1**, whose notices are expected
+  to accompany the Font Software. **[judgement]** The copyright and licence declaration embedded
+  in the font files' own metadata is commonly taken to satisfy this for web serving, and the OFL
+  imposes nothing on the site's code either way — but an `OFL.txt` dropped next to the fonts
+  costs one file and removes the question. Same shape as the ArgVu gap, smaller stakes.
+  **Fixed**: `site/assets/fonts/OFL.txt` now carries the EB Garamond project's own copyright
+  line and the OFL 1.1 text, fetched verbatim from the Google Fonts repository, and
+  `main.scss`'s font comment points at it.
 
 ---
 
@@ -415,15 +533,85 @@ Compressed, so it can be sent as-is. Everything below is **[judgement]**.
 
 ---
 
+## 10. What changed between `faadf52` (27 Aug) and `a0d8b3f` (2 Sept)
+
+124 commits landed between the two audits. **None of them changes the verdict**: `app/` is still
+clear for MIT, `ipsissima-mcp/` is still blocked by PyMuPDF, and there is still exactly one
+copyright holder. What did change:
+
+- **dagre was retired** (`a79576d`, 29 August). The bundle carries no layout engine; the
+  vendored `dagre.min.js` and `dagre.LICENSE` are deleted, and layout is wholly first-party code.
+  This *strengthens* the motivating case — the code Argdown would want back now has no
+  third-party engine underneath it — and removes dagre from the NOTICE list (§7).
+- **The Python package now distributes JavaScript**: the Argdown shim bundle of §2.6, committed
+  at `ipsissima-mcp/src/ipsissima_mcp/vendor/argdown-cli.mjs` and shipped in the wheel and the
+  `.mcpb`. All 91 bundled packages are permissive; the `legalComments: "none"` attribution gap of
+  §8 now applies to the Python distribution too.
+- **Distribution went public.** The built viewers are no longer tracked in git; they are built at
+  release time by `release.yml` and for the GitHub Pages site by `pages.yml`, and
+  `publish-pypi.yml` publishes `ipsissima-mcp` to PyPI by trusted publishing. The AGPL question
+  of §4 now attaches to a real, public, versioned distribution rather than a hypothetical one.
+- **The desktop app gained a network feature**: `reqwest` with the rustls stack, for
+  Help ▸ Check for Updates. `Cargo.lock` grew from 490 to 532 entries; everything readable is
+  permissive (§3).
+- **A public site appeared** (`site/`), self-hosting EB Garamond under the SIL OFL — the fourth
+  gap in §8.
+- **`fixtures/ingest/` now redistributes third-party documents** — public domain
+  (Russell, Dewey, Ramsey), Open Government Licence (Miller), CC-BY 4.0 (Robeyns) — under the
+  same stated rule as `samples/`, with each item's licence named in its README. Per-item
+  provenance was not independently confirmed, same as `samples/`.
+- Housekeeping: the repository is at 0.2.1, the commit count is 161, the Co-Authored-By trailers
+  now name two Claude models, and `requires-python` rose to 3.11 (an onnxruntime wheel matter,
+  nothing to do with licensing).
+
+## 11. The relicensing, as carried out — 2 September 2026
+
+Option B, per §7's table, with every row done and two improvements on it:
+
+- **`LICENSE`** is now the MIT text, `Copyright (c) 2026 James Wilson`. The GPL-3.0 text it
+  replaced moved, byte for byte, to **`ipsissima-mcp/LICENSE`**, so the boundary is a file a
+  reader trips over rather than a footnote.
+- **`README.md`** states the split and the reason (PyMuPDF), points at this document, and names
+  the two carve-outs an MIT badge might otherwise seem to claim: ArgVu, and the sample texts.
+- **`CONTRIBUTING.md`** now carries the per-directory inbound=outbound clause.
+- **`app/package.json`** declares `MIT`; **`app/about.md`**'s Licence tab has the MIT wording
+  with the ArgVu carve-out and the MCP server's GPL named; the template's `ABOUT_LICENCE` says
+  `MIT`.
+- **`ipsissima-mcp/pyproject.toml`** is unchanged, and now says so in a comment — GPL-3.0-or-later
+  on purpose, not drift — with this document cited.
+- **`app/vendor/ArgVu/PROVENANCE.md`** adds that the font stays under its own licence whatever
+  the surrounding code's is, and that the builder now writes its licence into every page.
+- **SPDX headers** (`SPDX-License-Identifier: MIT`) went onto the three files Argdown would lift:
+  `app/src/argdown-live-map.js`, `app/argdown-graph.mjs`, `app/map_quality.mjs`.
+- Both standalone viewers were rebuilt and the full test suite passes.
+
+The two improvements over §7's plan. First, the planned repository `NOTICE` file became
+something better: the **`NOTICES` section built into every page** (§8), which reaches every
+recipient of the actual distribution rather than only readers of the source tree — and the
+Python distribution got its own, `vendor/argdown-cli.NOTICE.md`. Second, §7 asked for the
+notices "while in here"; they were done first, so no MIT-labelled artifact was ever built
+without its notices in it.
+
+Still true after the switch, and worth restating: the §9 questions remain questions for a
+lawyer — what changed is that the sole copyright holder exercised the relicensing §6 said he
+could, not that any judgement in this document became a fact. And `ipsissima-mcp/`'s own
+position (GPL-3.0-or-later over an AGPL dependency, distributed on PyPI) is exactly as §4 left
+it: unresolved, and now the most important open item in this document.
+
 ## What this document did not check
 
 Said plainly, because an audit that does not name its own gaps is worse than none:
 
-- **227 of the 490 Rust lock entries** were not read, because they are not in this machine's cargo
-  registry cache and `cargo` is not installed here. Mostly other platforms' targets, but not
+- **The Rust lock entries not in this machine's cargo registry cache** were not read — 227 of 490
+  on 27 August, and the gap persists proportionally at 532, since `cargo` is still not installed
+  here (the new TLS tree was spot-verified from the cache, and `webpki-root-certs` from
+  crates.io). Mostly other platforms' targets, but not
   entirely. Running `cargo license` — on Linux and Windows as well as macOS, since the dependency
   graph differs by target — would close it.
-- **`pyzotero`**, the one optional Python extra, is not installed and was not read.
+- **`pyzotero`**, the one optional Python extra, was not installed when its licence would have
+  been read (it is BSD-3-Clause by reputation, which is not a verification). The venv the 27
+  August versions came from has since been removed, so the §4 installed-version column cannot
+  currently be re-derived on this machine.
 - **Transitive bundled binaries.** `opencv-python`, pulled in by `rapidocr`, is Apache-2.0 as a
   package, but its PyPI wheels have historically bundled FFmpeg under LGPL terms. Not verified.
   It is in the Python half, which is not moving to MIT under option B, so it does not bear on the
@@ -433,4 +621,7 @@ Said plainly, because an audit that does not name its own gaps is worse than non
   the author's own, with each folder's README naming the licence and each reconstruction released
   under the repository's own terms. **[judgement]** CC-BY imposes attribution but not share-alike,
   so a reconstruction of a CC-BY text can be released under MIT. The provenance of each individual
-  text was not independently confirmed against its publisher.
+  text was not independently confirmed against its publisher. (Re-checked 2 Sept: the sample
+  texts added since — Akhlaghi, Prescott-Couch, Tooming & Jakapi, Wilson — each name CC-BY 4.0 or
+  the author's own permission in their READMEs, so the policy is being followed; the same
+  per-item caveat applies.)

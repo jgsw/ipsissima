@@ -9,8 +9,12 @@ relation symbols, so `<+`, `<-`, `<_`, `+>`, `->`, `_>` and `><` are drawn as si
   `LICENSE.md` (upstream, unmodified), `README.md` (upstream), and
   `ArgVuSansMono-Regular.woff2`, generated from the .otf by `make.mjs`.
 - **Licence** Bitstream Vera Fonts Copyright, plus public-domain DejaVu and ArgVu changes. It
-  permits redistribution and inclusion in a larger package, and is compatible with GPL-3.0. The
-  licence text must travel with the font, which is why `LICENSE.md` is kept here unmodified.
+  permits redistribution and inclusion in a larger package, and is compatible with GPL-3.0 and
+  with MIT alike — but the font stays under its own licence whatever the surrounding code's is:
+  "Ipsissima is MIT" is a claim about the code, never about this typeface. The
+  licence text must travel with the font, which is why `LICENSE.md` is kept here unmodified —
+  and why the builder writes it into every built page's notices, so it travels with the
+  embedded WOFF2 too.
 
 The build embeds the .woff2 as a data URI, so no network request is ever made for it and the
 single-file page keeps working offline and from `file://`.
