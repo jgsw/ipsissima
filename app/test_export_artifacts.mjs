@@ -103,6 +103,49 @@ function wordRoundTrip(svgText, panelText) {
     .filter(Boolean).join("; ");
 }
 
+/** NOTHING IS CUT OFF, measured on the picture rather than on the arithmetic that made it.
+ *
+ * WHY. The canvas used to be sized from the panel's scrolling column, on the assumption that
+ * every box was inside it. A classic scrollbar appearing after the layout had measured that
+ * column made the assumption false: the last box hung fifteen pixels past its right edge, hidden
+ * on screen by the panel's own padding, and the exported file was sliced down that edge. It was
+ * reported from a PNG, by eye, because nothing here looked.
+ *
+ * The background rect is stripped and the rest drawn on a transparent canvas, so what is
+ * measured is the ALPHA -- every stroke, letter and arrowhead, and nothing about what colour the
+ * panel happens to be. That is what makes this work in the dark scheme too.
+ */
+function drawnMargin(page) {
+  return svg => page.evaluate(async s => {
+    const m = s.match(/width="(\d+)" height="(\d+)"/);
+    if (!m) return "the file declares no size";
+    const w = +m[1], h = +m[2];
+    const bare = s.replace(/<rect width="\d+" height="\d+"[^>]*\/>/, "");
+    const img = new Image();
+    const drew = await new Promise(res => {
+      img.onload = () => res(true); img.onerror = () => res(false);
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(bare);
+    });
+    if (!drew) return "the file could not be drawn";
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    c.getContext("2d").drawImage(img, 0, 0);
+    const d = c.getContext("2d").getImageData(0, 0, w, h).data;
+    let x0 = w, x1 = -1, y0 = h, y1 = -1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 12) {
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    if (x1 < 0) return "the file draws nothing";
+    const edge = Math.min(x0, y0, w - 1 - x1, h - 1 - y1);
+    return edge >= 4 ? null
+      : `ink ${edge}px from the edge of a ${w}x${h} file ` +
+        `(left ${x0}, top ${y0}, right ${w - 1 - x1}, bottom ${h - 1 - y1})`;
+  }, svg);
+}
+
 /* ------------------------------------------------------------------ driving the export */
 
 const MILLER = path.join(REPO, "samples", "Miller 2019 - Prorogation of Parliament");
@@ -114,6 +157,7 @@ execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"),
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+const margin = drawnMargin(page);
 await page.goto("file://" + viewer);
 await page.waitForSelector(".alm-n", { timeout: 20000 });
 await page.evaluate(() => {
@@ -198,6 +242,10 @@ for (const mode of ["stair", "compact"]) {
   const trip = wordRoundTrip(svgWords, captured[mode].panelText);
   check(!trip, `${mode}: the file says exactly what the panel says`, trip);
 
+  /* Mutation: shift the drawing sideways so it runs off its own canvas. */
+  const edge = await margin(svg);
+  check(!edge, `${mode}: nothing is cut off at the edge of the file`, edge);
+
   /* AN INDEPENDENT RENDERER, in another process. The browser that wrote the file is the wrong
    * engine to judge it with -- that is the whole lesson of the malformed XML, which rendered
    * perfectly in the page that produced it. Mutation: hand rsvg a truncated document. */
@@ -228,6 +276,60 @@ check(png && png.sig === "137,80,78,71,13,10,26,10", "the PNG export is a PNG",
 check(png && png.w > 400 && png.h > 300, "the PNG has the panel's dimensions",
       png ? `${png.w}x${png.h}` : "");
 
+/* AND IT IS THE SAME PICTURE. The PNG is the SVG drawn onto a canvas at twice the size, so a
+ * complete SVG is a complete PNG -- but only if the canvas is the size the file says. Checked
+ * rather than assumed, since "the exported PNG always includes the whole panel" is the promise
+ * and this is the last link in it. */
+const sameSize = await page.evaluate(s => {
+  const m = s.match(/width="(\d+)" height="(\d+)"/);
+  return m ? { w: +m[1] * 2, h: +m[2] * 2 } : null;
+}, captured.compact.svg);
+check(png && sameSize && png.w === sameSize.w && png.h === sameSize.h,
+      "the PNG is the whole of the SVG, at twice the size",
+      png && sameSize ? `PNG ${png.w}x${png.h}, SVG x2 ${sameSize.w}x${sameSize.h}` : "");
+
+
+/* ------------------------------------------------------------------ the column that moves
+ *
+ * THE DEFECT ITSELF, reproduced. Both layouts must measure their column before they have given
+ * the wrap a height -- the boxes are absolutely positioned, so until they are placed nothing has
+ * one. Where scrollbars take space rather than floating over the content, that measurement is
+ * read off a panel which is not yet scrolling, and the fifteen pixels the scrollbar then claims
+ * come out of a column every box has already been sized against.
+ *
+ * Headless Chromium draws overlay scrollbars and will not do this on request, so the narrowing
+ * is staged instead: the padding grows the moment `.xwrap` is given an inline height, which is
+ * exactly when a real scrollbar appears and exactly too late for the layout that measured it.
+ * Against the code before the fix this puts the last box 15px past the wrap and takes the
+ * export's right-hand margin to nothing, which is what was reported from the Cribb map.
+ */
+await page.addStyleTag({ content:
+  '#explbody:has(.xwrap[style*="height"]){padding-right:calc(1rem + 15px)}' });
+await page.evaluate(() => { window.__cap.length = 0; document.getElementById("xmstair").click(); });
+await page.waitForTimeout(500);
+
+const overhang = await page.evaluate(() => {
+  const wrap = document.querySelector("#explbody .xwrap");
+  if (!wrap) return null;
+  const wr = wrap.getBoundingClientRect();
+  let over = -1e9;
+  for (const b of wrap.querySelectorAll(".xstep,.xconcl"))
+    over = Math.max(over, b.getBoundingClientRect().right - wr.right);
+  return { over: Math.round(over), width: Math.round(wr.width),
+           measured: Number(wrap.dataset.avail) };
+});
+check(overhang && overhang.over <= 1,
+      "no box hangs past the column when a scrollbar takes it after the layout",
+      overhang ? `the widest box overhangs by ${overhang.over}px ` +
+                 `(laid out against ${overhang.measured}, column is now ${overhang.width})`
+               : "the panel drew no wrap");
+
+await page.evaluate(() => { window.__cap.length = 0; document.getElementById("xsvg").click(); });
+await page.waitForTimeout(600);
+const narrowed = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
+const narrowEdge = await margin(narrowed);
+check(!narrowEdge, "the export survives the column narrowing under the layout", narrowEdge);
+
 /* ------------------------------------------------------------------ proving the checks */
 
 console.log("\n  mutations");
@@ -251,6 +353,13 @@ const MUTANTS = [
   ["the file says exactly what the panel says (a label missing)",
    good.replace(/<text[^>]*>[^<]{4,}<\/text>/, ""),
    async s => !!wordRoundTrip(s.replace(/<[^>]*>/g, " "), panel)],
+  /* THE REPORTED DEFECT, in the shape it actually had: everything shifted sideways until the
+   * right-hand edge of the last box is off the canvas. 30px against a 16px margin leaves 14px
+   * of the drawing outside the file. */
+  ["nothing is cut off at the edge of the file",
+   good.replace(/(<rect width="\d+" height="\d+"[^>]*\/>)/, '$1<g transform="translate(30,0)">')
+       .replace("</svg>", "</g></svg>"),
+   async s => !!(await margin(s))],
 ];
 for (const [name, mutated, fires] of MUTANTS) {
   const changed = mutated !== good;

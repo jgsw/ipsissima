@@ -58,10 +58,19 @@ of them late and by luck.
 | 16 | the `::before` arrow on carried lines vanished from the export | artifacts |
 | 17 R | `Step 4` written twice, the edge layer being walked as well as copied | artifacts |
 | 18 R | `rgba()` fills, which SVG 1.1 has no colour for | artifacts |
+| 19 R | the exported picture cut off down its right-hand edge: a classic scrollbar took fifteen pixels out of the column *after* the layout had measured it, and the canvas was sized from that column | artifacts (added 2 Sep — see below) |
 
-Counting by instrument: **invariants 6, artifacts 5, gestures 4, mutation 1, unit 1, one
+Counting by instrument: **invariants 6, artifacts 6, gestures 4, mutation 1, unit 1, one
 unclassified** [measured, by the author of the table — the counterfactual is a judgement in each
 case].
+
+**Defect 19 is the same lesson as 3, 4, 10 and 11 — a number computed against the wrong
+rectangle — and it got through the artifacts instrument because that instrument was reading the
+file rather than looking at it.** Every check there asked what the SVG *said*: does it parse, are
+its colours legal, does it carry the panel's words. None asked whether the drawing fitted on its
+canvas, so a file that was correct in every particular and sliced down one edge passed cleanly.
+The check added for it renders the file and measures the ink's distance from each edge, which is
+a question about the picture rather than about the text of it.
 
 Two things that table says out loud:
 
@@ -256,12 +265,20 @@ produced four defects in one afternoon of writing one. Each export gets:
 - **a text round-trip**: the multiset of strings in the file equals the multiset the panel draws.
   This single assertion catches 15, 16 and 17 — a lost uppercase, a dropped glyph and a duplicated
   label are all multiset differences.
+- **a look at the picture, not the text of it** — the file is rendered and the ink's distance from
+  each of the four edges measured. Added 2 September for defect 19, which every check above passed
+  cleanly: the SVG was well-formed, legally painted and said exactly what the panel said, and was
+  sliced down its right-hand edge. The background rect is stripped and the alpha channel measured,
+  so this reads the same in either colour scheme. The condition that produced 19 — a scrollbar
+  claiming the column *after* the layout measured it — is staged in the browser rather than waited
+  for, since headless Chromium draws overlay scrollbars and will not do it on request.
 
 The round-trip is the important one. **[judgement]** It is cheap, it needs no baseline, and it
 states the actual contract of an export: *the same words, no more and no fewer.*
 
 `app/test_export_artifacts.mjs`, registered in the runner and in CI, with `librsvg2-bin` added to
-the CI image. **18 checks**, five of them mutations, on both panel layouts and the PNG [measured].
+the CI image. **24 checks**, six of them mutations, on both panel layouts, the staged narrowing
+and the PNG [measured, 2 Sep].
 
 **The organising idea, which is worth stating separately from the checks:** *the engine that wrote
 the file is the wrong engine to check it with.* Three of the four export defects were invisible in

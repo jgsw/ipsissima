@@ -4723,7 +4723,7 @@ function explElbow(svg, x1, y1, x2, y2, label, via){
  *
  * Absolutely positioned HTML rather than SVG text, so every line still wraps for free; the
  * edges are an SVG overlay measured after layout rather than a guess at where the boxes went. */
-function explStair(steps, body){
+function explStair(steps, body, width){
   body.className = "stair";
   var wrap = document.createElement("div");
   wrap.className = "xwrap";
@@ -4733,8 +4733,10 @@ function explStair(steps, body){
 
   // Indent enough to read as a stair, but never so much that the last box is a sliver.
   // MEASURED off the wrap rather than computed from the body: the body is padded, and guessing
-  // that padding put every box 8px over and gave the panel a horizontal scrollbar.
-  var avail = wrap.clientWidth;
+  // that padding put every box 8px over and gave the panel a horizontal scrollbar. `width`, when
+  // given, is a column already known to survive a scrollbar -- see `explDraw`.
+  var avail = width || wrap.clientWidth;
+  wrap.dataset.avail = String(avail);
   var indent = Math.max(8, Math.min(27, (avail - 280) / Math.max(1, stages.length - 1)));
   var w = avail - indent * (stages.length - 1);
 
@@ -4764,7 +4766,7 @@ function explStair(steps, body){
  *
  * The names are the reconstructor's, not the source's, so this is the view to think WITH and
  * the full-text one to check against. */
-function explCompact(steps, body){
+function explCompact(steps, body, width){
   body.className = "stair compact";
   var wrap = document.createElement("div");
   wrap.className = "xwrap";
@@ -4778,7 +4780,9 @@ function explCompact(steps, body){
                 label: fold ? explEdgeLabel(st) : "" });
   });
 
-  var avail = wrap.clientWidth;
+  // `width`, when given, is a column already known to survive a scrollbar -- see `explDraw`.
+  var avail = width || wrap.clientWidth;
+  wrap.dataset.avail = String(avail);
   // A longer stride than the full-text view takes, because here the travel IS the diagram:
   // short boxes leave the width to spend, and spending it is what makes the chain a shape.
   var rowIn = 40, gapX = 44;
@@ -4894,7 +4898,7 @@ function explPseudoRuns(root, ox, oy){
       if (!txt.trim()) return;
       var r = el.getBoundingClientRect();
       var size = parseFloat(cs.fontSize) || 12;
-      out.push({ x: r.left - ox, y: r.top - oy + (r.height + size * 0.72) / 2,
+      out.push({ x: r.left - ox, y: r.top - oy + (r.height + size * 0.72) / 2, w: r.width,
                  size: size, weight: cs.fontWeight, style: cs.fontStyle, fill: cs.color,
                  opacity: explEffectiveOpacity(el, root.parentElement),
                  family: cs.fontFamily, text: txt });
@@ -4932,11 +4936,12 @@ function explTextRuns(root, ox, oy){
       var b = rects[0];
       if (!line || Math.abs(b.top - line.top) > 1) {
         if (line) out.push(line);
-        line = { top: b.top, left: b.left, size: size, weight: cs.fontWeight,
+        line = { top: b.top, left: b.left, right: b.right, size: size, weight: cs.fontWeight,
                  style: cs.fontStyle, fill: cs.color, opacity: op, height: b.height,
                  family: cs.fontFamily, text: raw[i] };
       } else {
         line.text += raw[i];
+        line.right = b.right;
       }
     }
     if (line) out.push(line);
@@ -4946,6 +4951,7 @@ function explTextRuns(root, ox, oy){
              // The baseline, from the line box the browser reported. Centring the em within the
              // line box is what a line box IS, so this lands where the text did.
              y: l.top - oy + (l.height + l.size * 0.72) / 2,
+             w: Math.max(0, l.right - l.left),
              size: l.size, weight: l.weight, style: l.style, fill: l.fill,
              opacity: l.opacity, family: l.family, text: l.text.replace(/\s+$/, "") };
   }).filter(function(l){ return l.text.length; });
@@ -4956,33 +4962,42 @@ function explBuildSVG(){
   if (!wrap) return null;
   var wr = wrap.getBoundingClientRect();
   var pad = 16;
-  var W = Math.ceil(wr.width) + pad * 2, H = Math.ceil(wrap.offsetHeight) + pad * 2;
-  var panel = getComputedStyle(document.querySelector("#expl .card")).backgroundColor;
-  var parts = [];
 
-  var bg = explPaint(panel);
-  parts.push('<rect width="' + W + '" height="' + H + '" fill="' + explEsc(bg.paint) + '"' +
-             (bg.alpha < 1 ? ' fill-opacity="' + bg.alpha + '"' : "") + '/>');
+  /* THE PICTURE IS AS BIG AS WHAT IS IN IT, and that is a correction.
+   *
+   * Sizing the canvas from the wrap's own rectangle assumed every box was inside it. A classic
+   * scrollbar appearing after the layout had measured its column made that false -- the last box
+   * hung fifteen pixels past the wrap's right edge, hidden on screen by the panel's padding, and
+   * the exported file was cut off down that edge with nothing in the browser to show it.
+   *
+   * Measuring what is actually drawn cannot be wrong in that way, whatever the layout did. It
+   * also trims the dead column the compact view leaves at the right, which the wrap's width kept
+   * and which no reader wanted in a picture.
+   */
+  var lo = { x: Infinity, y: Infinity }, hi = { x: -Infinity, y: -Infinity };
+  function grow(x0, y0, x1, y1){
+    if (x0 < lo.x) lo.x = x0;
+    if (y0 < lo.y) lo.y = y0;
+    if (x1 > hi.x) hi.x = x1;
+    if (y1 > hi.y) hi.y = y1;
+  }
 
   // The boxes, with the corners and colours they are drawn with on screen.
+  var boxes = [];
   wrap.querySelectorAll(".xstep,.xconcl").forEach(function(b){
     var r = b.getBoundingClientRect(), cs = getComputedStyle(b);
-    var f = explPaint(cs.backgroundColor), k = explPaint(cs.borderTopColor);
-    parts.push('<rect x="' + (r.left - wr.left + pad).toFixed(1) +
-               '" y="' + (r.top - wr.top + pad).toFixed(1) +
-               '" width="' + r.width.toFixed(1) + '" height="' + r.height.toFixed(1) +
-               '" rx="' + (parseFloat(cs.borderTopLeftRadius) || 0) +
-               '" fill="' + explEsc(f.paint) + '"' +
-               (f.alpha < 1 ? ' fill-opacity="' + f.alpha + '"' : "") +
-               ' stroke="' + explEsc(k.paint) + '"' +
-               (k.alpha < 1 ? ' stroke-opacity="' + k.alpha + '"' : "") +
-               ' stroke-width="' + (parseFloat(cs.borderTopWidth) || 1) + '"/>');
+    var o = { x: r.left - wr.left, y: r.top - wr.top, w: r.width, h: r.height,
+              rx: parseFloat(cs.borderTopLeftRadius) || 0,
+              sw: parseFloat(cs.borderTopWidth) || 1,
+              fill: explPaint(cs.backgroundColor), stroke: explPaint(cs.borderTopColor) };
+    boxes.push(o);
+    // The stroke straddles the edge, so half of it is outside the rectangle it is drawn on.
+    grow(o.x - o.sw / 2, o.y - o.sw / 2, o.x + o.w + o.sw / 2, o.y + o.h + o.sw / 2);
   });
 
   // The edges are already SVG in the wrap's own coordinates, so they only need shifting.
-  var edges = wrap.querySelector(".xedges");
+  var edges = wrap.querySelector(".xedges"), inner = [];
   if (edges) {
-    var inner = [];
     edges.querySelectorAll("path").forEach(function(p){
       if (p.closest("defs")) return;
       inner.push('<path d="' + p.getAttribute("d") + '" fill="none" stroke="#3a9d5d" ' +
@@ -4993,13 +5008,50 @@ function explBuildSVG(){
                  '" font-size="11" font-style="italic" fill="#667" ' +
                  'dominant-baseline="middle">' + explEsc(t.textContent) + '</text>');
     });
-    parts.push('<g transform="translate(' + pad + ',' + pad + ')">' + inner.join("") + '</g>');
+    /* THE ARROWHEAD AND THE LABEL BOTH OVERHANG. `getBBox` reports a path's geometry without its
+     * marker, and the label on a collapsed step is set beyond the turn of the elbow, where no box
+     * reaches. So the geometry gets a few pixels of slack for the head, and each label is
+     * measured from the rectangle it was actually laid out in. */
+    if (inner.length) {
+      var gb = edges.getBBox();
+      grow(gb.x - 6, gb.y - 6, gb.x + gb.width + 6, gb.y + gb.height + 6);
+      edges.querySelectorAll("text").forEach(function(t){
+        var q = t.getBoundingClientRect();
+        grow(q.left - wr.left, q.top - wr.top, q.right - wr.left, q.bottom - wr.top);
+      });
+    }
   }
 
-  explTextRuns(wrap, wr.left - pad, wr.top - pad)
-    .concat(explPseudoRuns(wrap, wr.left - pad, wr.top - pad)).forEach(function(l){
+  var runs = explTextRuns(wrap, wr.left, wr.top).concat(explPseudoRuns(wrap, wr.left, wr.top));
+  runs.forEach(function(l){ grow(l.x, l.y - l.size, l.x + (l.w || 0), l.y + l.size * 0.3); });
+
+  if (!isFinite(lo.x) || !isFinite(lo.y)) return null;
+  var W = Math.ceil(hi.x - lo.x) + pad * 2, H = Math.ceil(hi.y - lo.y) + pad * 2;
+  var ox = pad - lo.x, oy = pad - lo.y;
+  var parts = [];
+
+  var bg = explPaint(getComputedStyle(document.querySelector("#expl .card")).backgroundColor);
+  parts.push('<rect width="' + W + '" height="' + H + '" fill="' + explEsc(bg.paint) + '"' +
+             (bg.alpha < 1 ? ' fill-opacity="' + bg.alpha + '"' : "") + '/>');
+
+  boxes.forEach(function(o){
+    parts.push('<rect x="' + (o.x + ox).toFixed(1) + '" y="' + (o.y + oy).toFixed(1) +
+               '" width="' + o.w.toFixed(1) + '" height="' + o.h.toFixed(1) +
+               '" rx="' + o.rx +
+               '" fill="' + explEsc(o.fill.paint) + '"' +
+               (o.fill.alpha < 1 ? ' fill-opacity="' + o.fill.alpha + '"' : "") +
+               ' stroke="' + explEsc(o.stroke.paint) + '"' +
+               (o.stroke.alpha < 1 ? ' stroke-opacity="' + o.stroke.alpha + '"' : "") +
+               ' stroke-width="' + o.sw + '"/>');
+  });
+
+  if (inner.length)
+    parts.push('<g transform="translate(' + ox.toFixed(1) + ',' + oy.toFixed(1) + ')">' +
+               inner.join("") + '</g>');
+
+  runs.forEach(function(l){
     var c = explPaint(l.fill), op = l.opacity * c.alpha;
-    parts.push('<text x="' + l.x.toFixed(1) + '" y="' + l.y.toFixed(1) +
+    parts.push('<text x="' + (l.x + ox).toFixed(1) + '" y="' + (l.y + oy).toFixed(1) +
                '" font-family="' + explEsc(l.family) + '" font-size="' + l.size +
                '" font-weight="' + explEsc(l.weight) + '" font-style="' + explEsc(l.style) +
                '" fill="' + explEsc(c.paint) + '"' +
@@ -5073,9 +5125,31 @@ function explodeShow(n){
 
 function explDraw(){
   var body = $("explbody"), foot = $("explfoot");
-  body.textContent = ""; foot.textContent = "";
+  foot.textContent = "";
   var steps = explSteps((EXPL_NODE && EXPL_NODE.pcs) || []);
-  (EXPL_MODE === "compact" ? explCompact : explStair)(steps, body);
+  var draw = EXPL_MODE === "compact" ? explCompact : explStair;
+
+  /* TWICE, WHEN THE COLUMN MOVES UNDER THE LAYOUT. Both layouts must measure the width they have
+   * before they have given the wrap a height: the boxes are absolutely positioned, so until they
+   * are placed nothing has one. On a machine with classic scrollbars that measurement is taken
+   * from a panel which is not yet scrolling -- and the moment the wrap gets its height the
+   * scrollbar appears and takes fifteen pixels out of the column every box was just sized
+   * against. On screen the overhang hides in the panel's right padding; in the export it was the
+   * right-hand edge of the bottom box, cut off. Reported from the Cribb map.
+   *
+   * So the width that survived is read off the finished layout and HANDED to a second pass.
+   * Handed, not measured again: emptying the panel takes the content away, the scrollbar goes
+   * with it, and a fresh measurement would report the same too-wide column that caused the
+   * trouble. Twice is enough -- the second pass is told, so there is nothing left to discover. */
+  body.textContent = "";
+  draw(steps, body);
+  var wrap = body.querySelector(".xwrap");
+  var have = wrap ? wrap.clientWidth : 0;
+  if (wrap && have > 0 && Math.abs(Number(wrap.dataset.avail) - have) >= 1) {
+    body.textContent = "";
+    draw(steps, body, have);
+  }
+
   foot.textContent = steps.length + (steps.length === 1 ? " step" : " steps") +
     ". Click any claim to show it on the map. Esc closes.";
   $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
