@@ -44,6 +44,7 @@ import { createRequire } from "module";
 import * as esbuild from "esbuild";
 import { argdown } from "@argdown/node";
 import { toGraph, RUN, metadataProblems, parseProblems } from "./argdown-graph.mjs";
+import { packagesFromMetafile, noticesText } from "./notices.mjs";
 
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -63,11 +64,16 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
  *  on macOS is then the same code Windows runs, which the subprocess route could never be.
  */
 function bundle(opts) {
-  esbuild.buildSync(Object.assign({
+  const r = esbuild.buildSync(Object.assign({
+    // `metafile` because `legalComments: "none"` strips every licence banner out of the
+    // output: the metafile is how the build knows what it owes notices for. See noticesPart.
     bundle: true, format: "iife", platform: "browser", target: "es2019",
-    minify: true, legalComments: "none", absWorkingDir: HERE
+    minify: true, legalComments: "none", metafile: true, absWorkingDir: HERE
   }, opts));
+  packagesFromMetafile(r.metafile, BUNDLED_PACKAGES);
 }
+/** Every npm package that reached any bundle of THIS build — the measured basis for NOTICES. */
+const BUNDLED_PACKAGES = new Set();
 const BUILD = path.resolve(HERE, "src");
 const TEMPLATE = path.join(HERE, "argdown-viewer.template.html");
 const require = createRequire(import.meta.url);
@@ -339,6 +345,53 @@ function buildStamp() {
   return wrap("build stamp", `window.__IPSISSIMA__ = ${safeJSON(stamp)};`, "STAMP");
 }
 
+/** The licences of everything bundled, carried IN the page and shown on the About panel.
+ *
+ *  Assembled from the metafiles of this build's own esbuild runs (see `bundle`), plus the two
+ *  things a metafile cannot see: the ArgVu typeface, embedded as WOFF2 rather than imported,
+ *  and JSZip, which `docx` ships already inlined in its own prebundled ESM. Called LAST, after
+ *  every bundle has run, because it reports what the build did rather than what it intended.
+ *
+ *  As a section not on the export drop-list, the notices travel into every copy this page
+ *  exports of itself — which is the point: an exported copy is a distribution too.
+ */
+function noticesPart() {
+  const extras = [{
+    label: "ArgVu Sans Mono (the typeface embedded in this file as WOFF2)",
+    declared: "Bitstream Vera Fonts licence, with Arev and AMSFonts additions",
+    text: fs.readFileSync(path.join(HERE, "vendor", "ArgVu", "LICENSE.md"), "utf8")
+  }];
+  // Only where docx actually rode along: the Reader and Workbench always, a per-file build
+  // only when it carries the exporter.
+  if (BUNDLED_PACKAGES.has("docx")) extras.push({
+    label: "jszip 3.10.1 (inlined inside docx's own prebundled ESM, so no metafile lists it)",
+    declared: "dual-licensed MIT OR GPL-3.0-or-later; taken here under the MIT licence",
+    text: "Copyright (c) 2009-2016 Stuart Knightley, David Duponchel, " +
+          "Franz Buchinger, António Afonso\n\n" + MIT_TEXT
+  });
+  const text = noticesText(BUNDLED_PACKAGES, path.join(HERE, "node_modules"), extras,
+    "Ipsissima bundles the work below into this single file. Each piece remains under its " +
+    "own licence, reproduced here so that the notice travels with every copy — " +
+    "including the copies this page exports of itself.");
+  return wrap("third-party licence notices",
+              `window.__NOTICES__ = ${safeJSON(text)};`, "NOTICES");
+}
+
+const MIT_TEXT =
+  "Permission is hereby granted, free of charge, to any person obtaining a copy of this " +
+  "software and associated documentation files (the \"Software\"), to deal in the Software " +
+  "without restriction, including without limitation the rights to use, copy, modify, merge, " +
+  "publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons " +
+  "to whom the Software is furnished to do so, subject to the following conditions:\n\n" +
+  "The above copyright notice and this permission notice shall be included in all copies or " +
+  "substantial portions of the Software.\n\n" +
+  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, " +
+  "INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR " +
+  "PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE " +
+  "FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR " +
+  "OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER " +
+  "DEALINGS IN THE SOFTWARE.";
+
 /** The page's own template, carried as text so that a BROWSER can build one of these.
  *
  *  THE REASON IS THE STUDENT. A tutor's comments are no use to someone who has to be talked
@@ -572,7 +625,8 @@ async function main() {
   }
 
   const parts = { LIVEMAP_DEPS: liveMapDeps(), PARSER: "", EDITOR: "", EXPORTER: "",
-                  PAYLOAD: "", SHELL: "", STAMP: buildStamp(), HELP: helpPart() };
+                  PAYLOAD: "", SHELL: "", STAMP: buildStamp(), HELP: helpPart(),
+                  NOTICES: "" };
   // The editor needs a parser to draw anything from what is typed, so it implies one.
   const wantsEditor = argv.includes("--editor");
   let outPath;
@@ -678,6 +732,9 @@ async function main() {
                       `${Math.round(located.bytes / 1024)} KB`);
     }
   }
+
+  // Last, after every bundle has run: the notices report what was actually bundled.
+  parts.NOTICES = noticesPart();
 
   fs.writeFileSync(outPath, fill(parts), "utf8");
   const kb = Math.round(fs.statSync(outPath).size / 1024);

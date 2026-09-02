@@ -76,4 +76,6 @@ where = ["src"]
 # before. `tests/test_installable.py` checks the built wheel itself, which is the property that
 # actually matters and does not depend on knowing which mechanism provided it.
 [tool.setuptools.package-data]
-ipsissima_mcp = ["vendor/*.mjs", "docs/*.md"]
+# vendor/*.md is the licence NOTICE for the bundled parser -- it must travel wherever the
+# bundle does, which is the wheel and the .mcpb.
+ipsissima_mcp = ["vendor/*.mjs", "vendor/*.md", "docs/*.md"]

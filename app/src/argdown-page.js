@@ -40,7 +40,11 @@
  *  added to the HTML and not added here stops the build rather than going quietly missing from
  *  every exported page. That is the check this file was written after wishing for.
  */
-var PARTS = ["LIVEMAP_DEPS", "PARSER", "EDITOR", "EXPORTER", "PAYLOAD", "SHELL", "STAMP", "HELP"];
+var PARTS = ["LIVEMAP_DEPS", "PARSER", "EDITOR", "EXPORTER", "PAYLOAD", "SHELL", "STAMP", "HELP",
+             // The third-party licence texts. NOT on the drop-list, deliberately: an exported
+             // copy carries the same bundled work as the page that exported it, so the notices
+             // are part of what makes the copy distributable at all.
+             "NOTICES"];
 
 /** What a self-contained copy LEAVES OUT, and why each one earns its place here.
  *

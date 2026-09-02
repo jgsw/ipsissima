@@ -718,6 +718,8 @@ body.fs #fsexit{display:inline-flex}
   letter-spacing:.06em;color:var(--fg-dim)}
 #aboutmeta dt,#aboutdeps dt{font-weight:600}
 #aboutdeps dd{font-variant-numeric:tabular-nums}
+#aboutnotices{white-space:pre-wrap;font-size:11px;line-height:1.45;max-height:20em;
+  overflow:auto;border:1px solid var(--line,#ccc);border-radius:4px;padding:8px 10px;margin:0}
 /* The fold state identifier: one long token, so it wraps anywhere and a click selects the
    whole of it — the point is to be copied. */
 #foldstateid{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;
@@ -1087,6 +1089,7 @@ body.fs #fsexit{display:inline-flex}
 <!-- INLINE:SHELL -->
 <!-- INLINE:STAMP -->
 <!-- INLINE:HELP -->
+<!-- INLINE:NOTICES -->
 
 <script>
 (function(){
@@ -1665,6 +1668,12 @@ function fillAbout(){
       dl.append(dt, dd);
     });
   }
+
+  // The third-party licence texts, written by the builder from what it actually bundled.
+  // textContent, never innerHTML: these are other people's files.
+  var notices = $("aboutnotices");
+  if (notices && !notices.childNodes.length && window.__NOTICES__)
+    notices.textContent = window.__NOTICES__;
 
   // The debug tab: what somebody would be asked for if they reported a problem.
   var dbg = $("aboutdebug");

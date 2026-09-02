@@ -109,7 +109,11 @@ build itself rather than written by hand, so this list cannot claim what it does
 
 <dl id="aboutdeps"></dl>
 
-All MIT licensed.
+These credits are MIT licensed, but the build carries more than it names: some forty packages
+reach this page — MIT for the most part, with the chevrotain parser engine and the Graphviz
+attribute tables under Apache-2.0, highlight.js and entities under BSD, JSZip dual-licensed and
+taken under its MIT arm, and the ArgVu typeface under the Bitstream Vera Fonts licence. The full
+text of every one of those licences travels inside this file: they are under **Licence**.
 
 The desktop application additionally uses **Tauri** (MIT / Apache-2.0), which supplies the window
 and the file access. On macOS and Linux the page is drawn by the system WebView rather than by a
@@ -131,6 +135,14 @@ The full text ships with the source as `LICENSE`, and is at **gnu.org/licenses/g
 
 This program is distributed in the hope that it will be useful, but **without any warranty**;
 without even the implied warranty of merchantability or fitness for a particular purpose.
+
+### Third-party notices
+
+The work this program bundles stays under its own licences. The notices below are written by the
+build from what it actually bundled — the same rule as the dependency list — and they travel in
+every copy this page exports, because an exported copy is a distribution too.
+
+<pre id="aboutnotices"></pre>
 
 ## Debug
 

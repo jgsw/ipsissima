@@ -15,13 +15,15 @@ import * as esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { packagesFromMetafile, noticesText } from "./notices.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp",
                       "vendor", "argdown-cli.mjs");
+const NOTICE = path.join(path.dirname(OUT), "argdown-cli.NOTICE.md");
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
-esbuild.buildSync({
+const result = esbuild.buildSync({
   entryPoints: [path.join(HERE, "argdown-shim.src.mjs")],
   outfile: OUT,
   bundle: true,
@@ -44,8 +46,27 @@ esbuild.buildSync({
   // 5.4 MB to 2.7 MB.
   minify: true,
   legalComments: "none",
+  // The metafile is what pays for `legalComments: "none"`: the licence notices stripped from
+  // the minified output are reassembled from it into the NOTICE file beside the bundle.
+  metafile: true,
   absWorkingDir: HERE
 });
 
+// THE NOTICE TRAVELS WITH THE BUNDLE, in the wheel and the .mcpb alike (pyproject's
+// package-data ships vendor/*.md). MIT, BSD and Apache-2.0 all ask for their notice to
+// accompany the copy, and a minified vendor file is a copy of 91 packages with every notice
+// stripped. Committed for the same reason the bundle is: a wheel built from a source checkout
+// must not need npm to be complete.
+const packages = packagesFromMetafile(result.metafile);
+fs.writeFileSync(NOTICE,
+  noticesText(packages, path.join(HERE, "node_modules"), [],
+    "`argdown-cli.mjs` beside this file is a single-file bundle of the npm packages below, " +
+    "made by `app/build_argdown_shim.mjs`, which also writes this notice from the bundle's " +
+    "own metafile. Each package remains under its own licence, reproduced here because " +
+    "minification strips the notices out of the bundle itself."),
+  "utf8");
+
 const kb = Math.round(fs.statSync(OUT).size / 1024);
 console.error(`wrote ${path.relative(path.join(HERE, ".."), OUT)} (${kb} KB)`);
+console.error(`wrote ${path.relative(path.join(HERE, ".."), NOTICE)} ` +
+              `(${packages.size} packages)`);
