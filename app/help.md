@@ -174,6 +174,11 @@ about.
 A step whose only input is the conclusion above it gets no box; it becomes a label on the arrow,
 which is what such a step is: *and therefore*.
 
+The window is **as wide as the argument needs**, not a fixed size: a box gets one comfortable
+measure and keeps it, and what makes the window wider is the *travel* — how far the chain has to
+step to the right. A one-step argument travels nowhere and opens in the narrowest window; a long
+staircase opens in the widest.
+
 **Click any claim in the panel** to dismiss it and go to that claim on the map. Claims that exist
 only inside the argument are not clickable — there is nowhere to go. <kbd>Esc</kbd>, the **×**,
 or a click outside the panel all close it.

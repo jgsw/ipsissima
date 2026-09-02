@@ -580,8 +580,12 @@ body.fs #fsexit{display:inline-flex}
 #expl{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);
   display:grid;place-items:center;padding:2rem}
 #expl[hidden]{display:none}
+/* The width is SET PER ARGUMENT, in `explSizeCard` -- see the note there. These two are the
+   bounds it works between: never wider than the window, never so narrow that the header's four
+   buttons crowd the title. */
 #expl .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  width:min(58rem,95vw);max-height:min(44rem,90vh);display:flex;flex-direction:column;
+  width:min(58rem,95vw);max-width:min(58rem,95vw);min-width:min(34rem,95vw);
+  max-height:min(44rem,90vh);display:flex;flex-direction:column;
   box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
 #expl header{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;
   border-bottom:1px solid var(--line)}
@@ -4684,6 +4688,44 @@ function explStages(steps, titlesOnly){
   return out;
 }
 
+/* THE MEASUREMENTS BOTH LAYOUTS WORK FROM, in one place so the panel and the window it opens in
+ * cannot disagree about them. */
+var EXPL_MEASURE = 680;   // one box of full sentences -- about a hundred characters at 14px
+var EXPL_INDENT  = 27;    // the staircase's tread
+var EXPL_COL     = 300;   // a compact box, which holds a short name rather than a sentence
+var EXPL_GAPX    = 44;    // between the compact view's two columns
+var EXPL_ROWIN   = 40;    // its own, longer, tread
+var EXPL_CHROME  = 34;    // what the panel takes around the diagram: body padding and border
+
+/* HOW WIDE THE WINDOW ASKS TO BE.
+ *
+ * The card was a flat `min(58rem, 95vw)` whatever it held, and both layouts spend whatever they
+ * are given -- so a one-step argument, which travels nowhere, got the same column a seven-box
+ * staircase needs and set its premises in lines of a hundred and thirty characters, the longest
+ * lines in the feature. Reported that way: wider than it needs to be, and it ought to vary with
+ * the travel.
+ *
+ * So a box gets ONE MEASURE and keeps it, and what varies is the TRAVEL -- the offset that makes
+ * the chain a shape rather than a stack. A long staircase asks for about what it asked for
+ * before; everything shorter asks for less, in proportion to how far it has to go.
+ *
+ * THE WIDER OF THE TWO LAYOUTS, not the one showing. Those two buttons are for comparing the
+ * views, which means pressing them one after the other, and a card that resized underneath them
+ * would move them out from under the cursor doing it.
+ */
+function explSizeCard(steps){
+  var card = document.querySelector("#expl .card");
+  if (!card) return;
+  var boxes = 0;
+  steps.forEach(function(st){ boxes += explCollapses(st) ? 1 : 2; });
+  // A single step is squared up rather than stepped, so it travels nowhere and asks for the
+  // measure alone -- which is the case that was reported.
+  var stair = EXPL_MEASURE +
+    (steps.length === 1 ? 0 : EXPL_INDENT * Math.max(0, boxes - 1));
+  var compact = EXPL_COL * 2 + EXPL_GAPX + EXPL_ROWIN * Math.max(0, steps.length - 1);
+  card.style.width = (Math.max(stair, compact) + EXPL_CHROME) + "px";
+}
+
 var XNS = "http://www.w3.org/2000/svg";
 
 function explEdgeLayer(wrap, w, h){
@@ -4746,7 +4788,7 @@ function explStair(steps, body, width){
    * up, with the arrow running straight down, it is the shape a single inference has had for as
    * long as premises have been written above a line. */
   var indent = steps.length === 1 ? 0
-    : Math.max(8, Math.min(27, (avail - 280) / Math.max(1, stages.length - 1)));
+    : Math.max(8, Math.min(EXPL_INDENT, (avail - 280) / Math.max(1, stages.length - 1)));
   var w = avail - indent * (stages.length - 1);
 
   stages.forEach(function(st, i){
@@ -4794,11 +4836,16 @@ function explCompact(steps, body, width){
   wrap.dataset.avail = String(avail);
   // A longer stride than the full-text view takes, because here the travel IS the diagram:
   // short boxes leave the width to spend, and spending it is what makes the chain a shape.
-  var rowIn = 40, gapX = 44;
+  var rowIn = EXPL_ROWIN, gapX = EXPL_GAPX;
   var maxIn = rowIn * (rows.length - 1);
-  var colW = Math.min(300, Math.floor((avail - maxIn - gapX) / 2));
-  var stepX = function(i){ return rowIn * i; };
-  var conclX = function(i){ return rowIn * i + colW + gapX; };
+  var colW = Math.min(EXPL_COL, Math.floor((avail - maxIn - gapX) / 2));
+  /* CENTRED IN WHATEVER IT WAS GIVEN. The card is sized to the wider of the two layouts, so that
+   * pressing one mode button does not move the other out from under the cursor; the cost is that
+   * the compact view, which is the narrower, has room left over. Spent as a margin on both sides
+   * it reads as a centred diagram rather than as one that has come up short on the right. */
+  var slack = Math.max(0, Math.round((avail - (colW * 2 + gapX + maxIn)) / 2));
+  var stepX = function(i){ return slack + rowIn * i; };
+  var conclX = function(i){ return slack + rowIn * i + colW + gapX; };
 
   rows.forEach(function(r, i){
     if (r.step) {
@@ -5137,6 +5184,7 @@ function explDraw(){
   foot.textContent = "";
   var steps = explSteps((EXPL_NODE && EXPL_NODE.pcs) || []);
   var draw = EXPL_MODE === "compact" ? explCompact : explStair;
+  explSizeCard(steps);          // before anything measures the column it is about to fill
 
   /* TWICE, WHEN THE COLUMN MOVES UNDER THE LAYOUT. Both layouts must measure the width they have
    * before they have given the wrap a height: the boxes are absolutely positioned, so until they
