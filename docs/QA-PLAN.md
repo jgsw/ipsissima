@@ -60,8 +60,9 @@ of them late and by luck.
 | 18 R | `rgba()` fills, which SVG 1.1 has no colour for | artifacts |
 | 19 R | the exported picture cut off down its right-hand edge: a classic scrollbar took fifteen pixels out of the column *after* the layout had measured it, and the canvas was sized from that column | artifacts (added 2 Sep — see below) |
 | 20 | the export test had begun picking the *smallest* panel on the map, having sorted the ⊞ controls by `textContent` length: a one-step control's tooltip is longer than a four-step one's | — |
+| 21 | *every* explode panel scrolled, including ones that plainly fitted: the edge layer carried an inline `height` of the accumulated `top`, which still held the 26px gap below the last box | measurement, while sizing the panel |
 
-Counting by instrument: **invariants 6, artifacts 6, gestures 4, mutation 1, unit 1, two
+Counting by instrument: **invariants 6, artifacts 6, gestures 4, mutation 1, unit 1, three
 unclassified** [measured, by the author of the table — the counterfactual is a judgement in each
 case].
 
@@ -74,6 +75,16 @@ The check added for it renders the file and measures the ink's distance from eac
 a question about the picture rather than about the text of it. **Defect 20 is the cost of a
 selector that encoded an assumption about lengths**: it turned green while testing something
 smaller than it was meant to.
+
+**Defect 21 is where 19 actually began, and it was found by measuring rather than by any
+instrument.** 19 needed a scrollbar to appear after the layout had measured its column; 21 is why
+one appeared at all. Sizing the panel to its argument meant asking how tall each panel was, and
+the answer — *every* one of them overflows, by eleven pixels, including a two-box panel with
+three hundred pixels of room to spare — was obviously wrong before any check had to say so.
+**[judgement]** No invariant here would have caught it: nothing looked wrong and nothing was
+mis-drawn. What found it was a number that did not make sense, noticed while it was being read
+for another purpose. That is an argument for reporting measurements even where nothing asserts
+on them.
 
 Two things that table says out loud:
 

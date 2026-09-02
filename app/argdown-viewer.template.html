@@ -4728,6 +4728,16 @@ function explSizeCard(steps){
 
 var XNS = "http://www.w3.org/2000/svg";
 
+/* `h` IS THE WRAP'S OWN HEIGHT, and getting that wrong is what made every panel scroll.
+ *
+ * The layer is `position:absolute;inset:0` but carries a `height` attribute, so the attribute
+ * wins and the element is exactly that tall whatever the wrap is. Both layouts were handing it
+ * the accumulated `top`, which still carried the trailing gap below the last box -- 26 pixels of
+ * transparent nothing hanging past the bottom of the diagram, and enough to put `#explbody` into
+ * overflow on panels that fitted perfectly well.
+ *
+ * That is where the reported clipping actually began: a scrollbar nobody needed, appearing after
+ * the layout had measured its column, taking fifteen pixels out of it. */
 function explEdgeLayer(wrap, w, h){
   var svg = document.createElementNS(XNS, "svg");
   svg.setAttribute("class", "xedges");
@@ -4801,9 +4811,10 @@ function explStair(steps, body, width){
     st.top = top; st.el.style.top = Math.round(top) + "px";
     top += st.el.offsetHeight + gap;
   });
-  wrap.style.height = Math.round(top - gap) + "px";
+  var tall = Math.round(top - gap);
+  wrap.style.height = tall + "px";
 
-  var svg = explEdgeLayer(wrap, avail, top);
+  var svg = explEdgeLayer(wrap, avail, tall);
   for (var i = 0; i < stages.length - 1; i++) {
     explElbow(svg, indent * i + 26, stages[i].top + stages[i].el.offsetHeight,
                    indent * (i + 1) + 26, stages[i + 1].top, stages[i + 1].label);
@@ -4872,9 +4883,10 @@ function explCompact(steps, body, width){
     r.enters = r.step ? top + (h - sh) / 2 : top + (h - ch) / 2;   // and the next box's own top
     top += h + gap;
   });
-  wrap.style.height = Math.round(top - gap) + "px";
+  var tall = Math.round(top - gap);
+  wrap.style.height = tall + "px";
 
-  var svg = explEdgeLayer(wrap, avail, top);
+  var svg = explEdgeLayer(wrap, avail, tall);
   rows.forEach(function(r, i){
     if (r.step) {           // across: the step reaches its conclusion
       var pth = document.createElementNS(XNS, "path");
