@@ -3249,8 +3249,10 @@ function openExportMenu(){
   var items = [];
   // The .docx writer is 350 KB and is not carried by every build -- a read-only page exported
   // for a student has no use for it. Where it is absent the menu simply does not claim to offer
-  // it, rather than offering an item that fails when clicked.
-  if (window.__EXPORT__) {
+  // it, rather than offering an item that fails when clicked. And it annotates the ESSAY, so on
+  // a map with no manuscript there is nothing for it to write into -- the button no longer
+  // guarantees a manuscript exists, so that is checked here too.
+  if (window.__EXPORT__ && msAvailable()) {
     if (nc && nn) items.push({ label: "Everything", hint: n(nc, "comment", "comments") + " and " +
                                       n(nn, "note", "notes"), on: EXPORT_WANT === "both",
                                run: function(){ EXPORT_WANT = "both"; openExportMenu(); } });
@@ -3282,9 +3284,18 @@ function openExportMenu(){
    * page with the whole reconstruction inside it, for someone who has nothing.
    */
   if (items.length) items.push(null);
-  items.push({ label: "Reconstruction + essay (.argdown)",
-               hint: "one file \u00b7 opens here, and stays editable",
-               run: exportBundleFile });
+  // Disabled-with-remedy rather than absent when there is nothing to attach, on the Manuscript
+  // tab's precedent: this lack is the READER's to fix -- open the folder rather than the file
+  // alone -- and an entry that vanishes teaches nothing. The .docx rule above hides what the
+  // BUILD lacks, which no reader can mend; the two rules differ because the situations do.
+  if (window.ArgdownBundle) {
+    var bundleable = bundleFiles().length > 0;
+    items.push({ label: "Reconstruction + essay (.argdown)",
+                 hint: bundleable ? "one file \u00b7 opens here, and stays editable"
+                                  : "nothing to attach \u2014 open the folder, or a bundle",
+                 disabled: !bundleable,
+                 run: exportBundleFile });
+  }
   // ONE KIND OF PAGE, NOT TWO. There used to be a second entry here that shipped CodeMirror and
   // the parser inside the copy -- 1.5 MB -- "so they can reply". It was withdrawn on 27 Aug 2026,
   // and the argument is about where an editor comes from rather than about the weight. Ipsissima
@@ -4436,9 +4447,14 @@ function renderNotes(){
   // Offered only where it can be done, and what can be done has grown. The .docx writer is not
   // carried by every build and needs marks to be worth running; a bundle or a self-contained
   // page needs neither -- a reconstruction with no comments on it yet is still the thing
-  // somebody wants to send. What all of them need is a manuscript, which is the real gate.
-  $("expbtn").hidden = !(msAvailable() &&
-                         ((window.__EXPORT__ && items.length) || window.ArgdownBundle));
+  // somebody wants to send. A manuscript used to be the gate for ALL of them, and that was a
+  // fault: a map that cites no manuscript (Betz's censorship example is one -- its `source:`
+  // fields are the Argdown guide's labels, not files) renders fine and can still go out as a
+  // self-contained page, but File > Export did nothing on it, silently. Each export answers to
+  // what IT needs; the page export needs only the shell and a drawn graph.
+  $("expbtn").hidden = !((window.__ARGDOWN_SHELL__ && CURRENT_GRAPH) ||
+                         (msAvailable() &&
+                          ((window.__EXPORT__ && items.length) || window.ArgdownBundle)));
   if (!items.length) {
     var none = document.createElement("div");
     none.className = "none";
@@ -6536,7 +6552,12 @@ if (HOST) {
       "new":             function(){ if (newReconstruction) newReconstruction(); },
       "save":            function(){ saveArgdown(false); },
       "save-as":         function(){ saveArgdown(true); },
-      "export":          function(){ if (!$("expbtn").hidden) $("expbtn").click(); },
+      // A menu item that can do nothing says why, rather than saying nothing: the silent
+      // no-op here is how a map with no manuscript "didn't export" for a day without anyone
+      // being told what was missing.
+      "export":          function(){ if (!$("expbtn").hidden) $("expbtn").click();
+                                     else showNote("Nothing to export yet — open a " +
+                                                   "reconstruction first."); },
       "undo":            function(){ if (ED) ED.undo(); },
       "redo":            function(){ if (ED) ED.redo(); },
       "find":            function(){ if (ED) ED.openSearch(); },

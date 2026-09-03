@@ -753,6 +753,104 @@ async function keyChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ export without a manuscript
+ *
+ * A reconstruction that cites no manuscript at all still draws a map, and a self-contained copy
+ * of that map is still the thing somebody wants to send — but until 4 Sep 2026 the Export button
+ * answered only to `msAvailable()`, so File ▸ Export did nothing on such a map, silently (found
+ * on Betz's censorship example, whose `source:` fields are the Argdown guide's labels, not
+ * files). The fixture is synthetic for the same reason the private corpus is private. What is
+ * promised: the button shows, the page export is live, the bundle entry is disabled with its
+ * remedy rather than absent, and the exported page renders on its own.
+ *
+ * SHOWN ABLE TO FAIL, 4 Sep 2026: reverting the gate to its old `msAvailable()`-only form fails
+ * the button check (and the two after it, guardedly); hard-coding the menu's `bundleable` to
+ * true fails the disabled-entry check. The download is driven with `showSaveFilePicker` removed,
+ * so `saveBlob` takes the <a download> route a headless browser can witness.
+ */
+const NO_MS_FIXTURE = [
+  "===", "title: A map with no manuscript", "===", "",
+  "[Alpha]: The first claim, standing on its own without any manuscript behind it.", "",
+  "<One>: An argument for Alpha.", "",
+  "(1) The first premise of the only argument here.",
+  "(2) If the first premise holds, Alpha holds.",
+  "----",
+  "(3) [Alpha]", "",
+].join("\n");
+
+async function exportChecks(browser) {
+  const out = path.join(tmp, "export-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "export: the standalone builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  const pageErrors = [];
+  page.on("pageerror", e => pageErrors.push(String(e.message || e)));
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
+    delete window.showSaveFilePicker;
+  });
+  await page.evaluate(text => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([text], "no-manuscript.argdown"));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, NO_MS_FIXTURE);
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  const nodesHere = await page.evaluate(() => document.querySelectorAll(".alm-n").length);
+
+  const offered = await page.evaluate(() => !document.getElementById("expbtn").hidden);
+  check(offered, "a map with no manuscript still offers Export");
+
+  if (offered) {
+    // The desktop menu's own gesture: a JS click on the button, seen or not.
+    await page.evaluate(() => document.getElementById("expbtn").click());
+    await page.waitForSelector("#ctx:not([hidden])", { timeout: 4000 }).catch(() => {});
+    const entries = await page.evaluate(() =>
+      [...document.querySelectorAll("#ctx button")].map(b =>
+        ({ text: b.textContent, disabled: b.disabled })));
+    const pageEntry = entries.find(e => /web page/i.test(e.text));
+    const bundleEntry = entries.find(e => /\.argdown/i.test(e.text));
+    check(!!pageEntry && !pageEntry.disabled, "its menu offers the page export, live",
+          JSON.stringify(entries).slice(0, 200));
+    check(!!bundleEntry && bundleEntry.disabled && /open the folder/i.test(bundleEntry.text),
+          "while the bundle entry is disabled with its remedy, not absent",
+          JSON.stringify(bundleEntry));
+
+    if (pageEntry && !pageEntry.disabled) {
+      const dl = page.waitForEvent("download", { timeout: 15000 }).catch(() => null);
+      await page.click("#ctx button:not([disabled])");
+      const got = await dl;
+      check(!!got, "clicking it produces the file", "no download arrived");
+      if (got) {
+        const saved = path.join(tmp, "no-manuscript-export.html");
+        await got.saveAs(saved);
+        const p2 = await ctx.newPage();
+        const errs2 = [];
+        p2.on("pageerror", e => errs2.push(String(e.message || e)));
+        await p2.goto("file://" + saved);
+        let nodesThere = 0;
+        try {
+          await p2.waitForSelector(".alm-n", { timeout: 20000 });
+          nodesThere = await p2.evaluate(() => document.querySelectorAll(".alm-n").length);
+        } catch (e) { void e; }
+        check(nodesThere === nodesHere && errs2.length === 0,
+              "and the exported page renders the same map on its own",
+              `nodes ${nodesThere}/${nodesHere} errors=${errs2.join(" | ")}`);
+      }
+    }
+  }
+  check(pageErrors.length === 0, "the export session raises no error", pageErrors.join(" | "));
+  await ctx.close();
+}
+
 /* ------------------------------------------------------------------ main */
 
 const maps = corpus();
@@ -833,6 +931,7 @@ for (const scheme of ["light", "dark"]) {
   await ctx.close();
 }
 await keyChecks(browser);
+await exportChecks(browser);
 await browser.close();
 if (!KEEP) fs.rmSync(tmp, { recursive: true, force: true });
 
