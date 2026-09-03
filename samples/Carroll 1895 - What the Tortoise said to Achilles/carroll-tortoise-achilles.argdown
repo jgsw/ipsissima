@@ -96,10 +96,10 @@ defaults:
 
 <Euclid's step>
 
-(1) [Proposition A]: Things that are equal to the same are equal to each other. {fidelity: "quotation", pinpoint: "p. 691", source: "\"Things that are equal to the same are equal to each other.\""}
-(2) [Proposition B]: The two sides of this Triangle are things that are equal to the same. {fidelity: "quotation", pinpoint: "p. 691", source: "\"The two sides of this Triangle are things that are equal to the same.\""}
------
-(3) [Proposition Z]: The two sides of this Triangle are equal to each other. {fidelity: "quotation", pinpoint: "p. 691", source: "\"The two sides of this Triangle are equal to each other.\""}
+(1) [Proposition A]: Things that are equal to the same are equal to each other. {formalization: "all x. (E(x) -> Q(x))", formalized: "4c4e8441", fidelity: "quotation", pinpoint: "p. 691", source: "\"Things that are equal to the same are equal to each other.\"", note: "E(x): x are things equal to the same; Q(x): x are equal to each other. The universal is what makes the step go: formalized as a bare letter instead, A and B would not yield Z — which is the Tortoise's reading, and not the map's."}
+(2) [Proposition B]: The two sides of this Triangle are things that are equal to the same. {formalization: "E(t)", formalized: "b6901821", fidelity: "quotation", pinpoint: "p. 691", source: "\"The two sides of this Triangle are things that are equal to the same.\"", note: "t: the two sides of this Triangle."}
+-- Universal instantiation, Modus ponens {uses: [1, 2]} --
+(3) [Proposition Z]: The two sides of this Triangle are equal to each other. {formalization: "Q(t)", formalized: "9f596f69", fidelity: "quotation", pinpoint: "p. 691", source: "\"The two sides of this Triangle are equal to each other.\""}
 
 <The Tortoise's first refusal>: The Tortoise accepts A and B, does not accept the Hypothetical, and so stands under no necessity to accept Z. #reported {fidelity: "compression", pinpoint: "p. 692", note: "An undercut and not an attack: nothing in it denies A, denies B, or denies that Z follows. It denies that the step binds this reader."}
 
@@ -124,10 +124,10 @@ defaults:
 
 (1) [Proposition A]
 (2) [Proposition B]
-(3) [Hypothetical C]: If A and B are true, Z must be true. {fidelity: "quotation", pinpoint: "p. 692", source: "\"If A and B are true, Z must be true.\"", note: "Named C by the Tortoise, and entered in the note-book on his condition that nothing counts until it is written down."}
-(4) [Hypothetical D]: If A and B and C are true, Z must be true. {fidelity: "quotation", pinpoint: "p. 692", source: "\"If A and B and C are true, Z must be true.\"", note: "Achilles offers this first as his reason for saying that A and B and C compel Z, and the Tortoise at once has it entered as a further premise. The conversion of a reason into a premise is the whole mechanism of the piece."}
------
-(5) [The Tortoise must now accept Z]: Now that the Tortoise has accepted A and B and C and D, he must accept Z. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"Now that you accept A and B and C and D, of course you accept Z.\""}
+(3) [Hypothetical C]: If A and B are true, Z must be true. {formalization: "(all x. (E(x) -> Q(x)) & E(t)) -> Q(t)", formalized: "94e7794e", fidelity: "quotation", pinpoint: "p. 692", source: "\"If A and B are true, Z must be true.\"", note: "Named C by the Tortoise, and entered in the note-book on his condition that nothing counts until it is written down. The formula spells A, B and Z out as their own contents, which is what the Hypothetical asserts."}
+(4) [Hypothetical D]: If A and B and C are true, Z must be true. {formalization: "((all x. (E(x) -> Q(x)) & E(t)) & ((all x. (E(x) -> Q(x)) & E(t)) -> Q(t))) -> Q(t)", formalized: "2ebf6906", fidelity: "quotation", pinpoint: "p. 692", source: "\"If A and B and C are true, Z must be true.\"", note: "Achilles offers this first as his reason for saying that A and B and C compel Z, and the Tortoise at once has it entered as a further premise. The conversion of a reason into a premise is the whole mechanism of the piece — and the checker, given the formalizations, reports C and D alike as premises the step does not need: with A a genuine universal, A and B already yield Z, and nothing entered in the note-book afterwards adds anything. That finding is the map's apex arrived at mechanically — what licenses the step was never going to be one more premise."}
+-- Conjunction, Modus ponens {uses: [1, 2, 3, 4]} --
+(5) [The Tortoise must now accept Z]: Now that the Tortoise has accepted A and B and C and D, he must accept Z. #reported {formalization: "Q(t)", formalized: "c57799c4", fidelity: "paraphrase", pinpoint: "p. 692", source: "\"Now that you accept A and B and C and D, of course you accept Z.\"", note: "The formula is Z's own content: what Achilles claims must now be accepted. The step is valid — his premises do yield Z — and his error was never validity, but the belief that adding D was what made it so, and that the list could ever be long enough to do the compelling."}
     -> [Z is never compelled]
 
 [The Tortoise must now accept Z]

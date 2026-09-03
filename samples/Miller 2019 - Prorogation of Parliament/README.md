@@ -41,7 +41,8 @@ The **Exposition** arrangement, and whether the bands land on the judgment's own
 paragraphs rather than cutting across them. If a legal reconstruction is going to work in
 Ipsissima at all, that is where it will show.
 
-One quiet duty this folder also performs: its formalized steps are **deliberately left without
-`formalized:` stamps**, so that a future re-run of the samples exercises the whole
-stamp-and-drift loop end to end rather than finding it already satisfied. A shipped exemplar
-doing test duty should say so, which is what this sentence is for.
+One quiet duty this folder performed for a while: its formalized steps were **deliberately left
+without `formalized:` stamps**, so that a future re-run of the samples would exercise the whole
+stamp-and-drift loop end to end rather than find it already satisfied. That re-run happened on
+3 September 2026 — the loop ran clean and the stamps were written — so the steps here now carry
+`formalized:` like the rest of the corpus, and this note records the test rather than the gap.

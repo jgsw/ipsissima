@@ -140,7 +140,7 @@ defaults:
 
 [We may prevent these choices]: We clearly are permitted to prevent someone from making those two choices, regardless of not knowing what the experiences would be like for them. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 6", source: "\"Regardless of not knowing what this will be like for them, we clearly *are* permitted to prevent them from making *these* choices.\""}
 
-[We can sometimes permissibly interfere]: There are some conditions under which it is morally permissible to interfere in another's transformative choice. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 6", source: "\"So 'there are no conditions' is not a plausible answer to The Question.\""}
+[We can sometimes permissibly interfere]: There are some conditions under which it is morally permissible to interfere in another's transformative choice. {formalization: "-ni", formalized: "b6863d9d", fidelity: "paraphrase", pinpoint: "sec. 3, p. 6", source: "\"So 'there are no conditions' is not a plausible answer to The Question.\"", note: "Sometimes is the negation of never, which is what the formula says; the source states it by rejecting 'there are no conditions'."}
 
 [Best interests view]: It is permissible to interfere with another's transformative choice just when it is in the best interests of that person for you to do so. #reported {fidelity: "quotation", pinpoint: "sec. 3, p. 6", source: "\"it is permissible to interfere with another's transformative choice just when it is in the *best interests* of that person for you to do so\""}
     >< [The conditional answer]
@@ -159,23 +159,23 @@ defaults:
 -- {uses: [1, 2]} --
 (3) [Both views entail we can never know we may interfere]
 (4) [Minimal condition on permissible action]
--- {uses: [3, 4]} --
+-- Hypothetical syllogism {uses: [3, 4]} --
 (5) [Both views entail we can never permissibly intervene]
 (6) [We can sometimes permissibly interfere]
--- {uses: [5, 6]} --
+-- Modus tollens {uses: [5, 6]} --
 (7) [The interest and utility views are false]
 
 [Interests and utilities knowable only after the choice]: We can know what the interests of a future self are, whether one's present interests will be fulfilled, and what the expected utility of a transformative choice is, only after that choice has been made. {fidelity: "compression", pinpoint: "sec. 3, p. 7", source: "\"First, we can only know *what* the interests of the future selves are and *whether* one's present interests will be fulfilled *after* a transformative choice has been made.\""}
 
 [Both views depend on knowledge we cannot possess]: The best interests view and the expected utility view make the permissibility of interference depend upon knowledge, or reasons for belief, that we cannot possess at the time of choosing. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"by making the permissibility of interference dependent upon knowledge or reasons for belief we cannot possess at the time of choosing\""}
 
-[Both views entail we can never know we may interfere]: The best interests view and the expected utility view entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"both views entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice\""}
+[Both views entail we can never know we may interfere]: The best interests view and the expected utility view entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice. {formalization: "v -> nk", formalized: "58162975", fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"both views entail that we can never know or have good reason to believe that we can permissibly interfere in a transformative choice\"", note: "In the formulas of this chain: v — the best interests and expected utility views are true; nk — we can never know, or have good reason to believe, that we can permissibly interfere; ni — we can never permissibly intervene."}
 
-[Minimal condition on permissible action]: There is a minimal condition on acting permissibly that one has good reason to believe that the conditions which make one's action permissible are met. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"there is a minimal condition on acting permissibly that one has good reason to believe the conditions that make your action permissible are met\""}
+[Minimal condition on permissible action]: There is a minimal condition on acting permissibly that one has good reason to believe that the conditions which make one's action permissible are met. {formalization: "nk -> ni", formalized: "b312fe91", fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"there is a minimal condition on acting permissibly that one has good reason to believe the conditions that make your action permissible are met\"", note: "The formula is the claim as it bears on this step: a minimal condition on acting permissibly is good reason to believe the permissibility conditions met, so if we can never have that reason (nk), we can never permissibly intervene (ni). The general principle is instantiated to interference, which is the use the text makes of it in the same sentence."}
 
-[Both views entail we can never permissibly intervene]: The best interests view and the expected utility view entail that we can never permissibly intervene in a transformative choice. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"they also entail that we can *never* permissibly intervene in a transformative choice\""}
+[Both views entail we can never permissibly intervene]: The best interests view and the expected utility view entail that we can never permissibly intervene in a transformative choice. {formalization: "v -> ni", formalized: "1982f4e2", fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"they also entail that we can *never* permissibly intervene in a transformative choice\""}
 
-[The interest and utility views are false]: The best interests view and the expected utility view are false. {fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"Since we can, these views are false.\""}
+[The interest and utility views are false]: The best interests view and the expected utility view are false. {formalization: "-v", formalized: "b2b0c762", fidelity: "paraphrase", pinpoint: "sec. 3, p. 7", source: "\"Since we can, these views are false.\""}
     <+ [Rejecting the minimal condition is no escape]
 
 [Rejecting the minimal condition is no escape]: Someone who rejects the minimal condition on permissible action and holds one of these two views must accept that we can permissibly interfere in transformative choices but cannot know when we may, which is implausible given the would-be killer and self-mutilation cases. {fidelity: "compression", pinpoint: "n. 5", source: "\"they are forced to accept that we can permissibly interfere in transformative choices but we cannot know when we can do so. This, I suggest, is implausible given the would-be killer and self-mutilation cases.\""}
