@@ -181,7 +181,9 @@ far away** — temporal and positional facts, carried in the project's own neutr
 (*anticipated* / *prepared*) — with the verdict channels (the colours that mean support and
 attack, the fault marks) never borrowed. Reader-facing surfaces were reworded accordingly;
 "justificatory debt" survives as an internal term of art in the code and the documents of
-record, and whether to retire it there too is an open question for the author.
+record — settled, not merely open: the author ruled the same day that the internal
+documentation keeps it. The boundary is the reader: the metaphor may organise the code and the
+records, and what a reader is shown stays temporal and neutral.
 
 ### A8. Exegetical adequacy is this project's half of the bargain
 
@@ -552,7 +554,7 @@ would be false" — Betz and Brun are credited for priority, exactly, the day th
 place to economise"); the courtesy letters to sample authors (30 Aug).
 
 **Provenance.** **compression** — origin: author-directed ("It will be particularly important
-to give adequate credit to Argdown", 22 Aug.
+to give adequate credit to Argdown", 22 Aug).
 
 **Generality.** The whole project.
 
