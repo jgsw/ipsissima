@@ -16,6 +16,7 @@ toolchain treats as unacceptable, because there is nothing for a reader to notic
     carry argument, are referred to from the body, and are exactly what a claim may need to cite.
 """
 import re
+import shutil
 import sys
 import tempfile
 from xml.etree import ElementTree as ET
@@ -204,6 +205,42 @@ with tempfile.TemporaryDirectory() as td:
 check("a level-3 heading is not matched at level 2",
       bool(heading_re(2).match("### Deeper")), False)
 check("  and a level-2 heading is", bool(heading_re(2).match("## Chapter")), True)
+
+# ------------------------------------------------- the whole route, over the real book ---- #
+# THE FIXTURES ABOVE PROVE THE RULES; ONLY THE REAL FILE PROVES THE ROUTE. REVIEW.md 4 said it
+# plainly -- "the EPUB route has no sample" and "a book is the case split_manuscript exists for,
+# and the corpus has no book" -- and the values audit carried it forward as the last confessed
+# E2 gap (docs/values/TENSIONS.md, T8). The Russell fixture is that book: EPUB in, a folder of
+# Markdown out, one file split into its fifteen chapters. Skipped with a notice when the
+# fixture or pandoc is missing, so a bare checkout still runs everything above.
+#
+# SHOWN ABLE TO FAIL, 3 Sep 2026: pointing the licence assertion at a phrase the book does
+# contain fails it, and splitting at level 1 instead of 2 fails the chapter count with 1.
+print("\nthe EPUB route, end to end over the Russell fixture")
+RUSSELL = HERE.parent.parent / "fixtures" / "ingest" / "russell-1912-problems-of-philosophy.epub"
+if not RUSSELL.exists() or not shutil.which("pandoc"):
+    print("  skip  fixture or pandoc not on this machine")
+else:
+    from epub_to_source import convert as epub_convert                       # noqa: E402
+    with tempfile.TemporaryDirectory() as td:
+        meta, docs, skipped = epub_convert(str(RUSSELL), out_dir=td)
+        whole = "\n\n".join(d["markdown"] for d in docs)
+        words = sum(d["words"] for d in docs)
+        check("the book arrives, whole", words > 20000, True)
+        check("  and Gutenberg's licence does not",
+              "FULL PROJECT GUTENBERG" in whole.upper(), False)
+        check("  because the furniture was skipped, visibly", len(skipped) > 0, True)
+        check("the famous first sentence survives conversion",
+              "so certain that no reasonable man could doubt it" in whole, True)
+        book = Path(td) / "book.md"
+        book.write_text(whole, encoding="utf-8")
+        secs = split(str(book), 2)[1]
+        chapters = [s["title"] for s in secs if s["title"].upper().startswith("CHAPTER")]
+        check("split at level 2 finds all fifteen chapters", len(chapters), 15)
+        check("  in order, Appearance and Reality first",
+              chapters[0].upper().endswith("APPEARANCE AND REALITY"), True)
+        check("  and the Value of Philosophy last",
+              chapters[-1].upper().endswith("THE VALUE OF PHILOSOPHY"), True)
 
 # ------------------------------------------------------------------------- TEI ---- #
 # PANDOC WRITES TEI AND DOES NOT READ IT (`--list-input-formats` offers docbook, jats and

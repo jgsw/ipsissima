@@ -158,11 +158,13 @@ produced a second reproducer for a bug that had only ever had one.
 - **The desktop shell's Rust.** No tests. The host *adapter* is tested headlessly against a fake
   Tauri, which is the right 80%, but the queue that holds a double-clicked file until the webview
   exists — the one genuinely hard thing in `lib.rs` — is verified by hand.
-- **The EPUB route has no sample.** `epub_to_source.py` is 313 lines and the corpus exercises
-  none of it. Its shared tidier had two silent bugs found only when the HTML route was tried on a
-  real page.
-- **`split_manuscript.py` has no sample.** A book is the case it exists for and the corpus has no
-  book.
+- **[fixed]** The EPUB route had no sample — `epub_to_source.py` was 313 lines the corpus never
+  exercised. The Russell fixture (`fixtures/ingest/`) now runs the route end to end in
+  `test_structured_source.py`: the book arrives whole, Gutenberg's licence does not, and the
+  famous first sentence survives. *(The whole route, over the real book)*
+- **[fixed]** `split_manuscript.py` had no sample; a book is the case it exists for. The same
+  end-to-end section splits the converted Russell into its fifteen chapters, in order, and both
+  assertions were shown able to fail before being trusted.
 - **The escalation path for a damaged PDF is untested end to end.** Of 398 CC-licensed candidates
   triaged from a real library, **none** was hard enough to need it: modern open-licensed articles
   are all born-digital. The hard case needs an old scan, which by its nature is not CC-BY. This
