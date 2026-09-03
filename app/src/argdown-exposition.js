@@ -203,8 +203,10 @@ function verdict(rs, n) {
   var where = centre > 0.62 ? "settles late"
             : centre < 0.42 ? "settles early" : "settles throughout";
   // `lean` is positive when the weight is DEBT — claims asserted ahead of their justification.
-  var how = lean > 0.2 ? "asserts, then argues — the reader carries the promise"
-          : lean < -0.2 ? "argues, then asserts — the claims are earned before they are made"
+  // The reader-facing words stay temporal and neutral (INVENTORY A7, as re-amended): both
+  // conventions ask something of a reader, and neither direction is graded.
+  var how = lean > 0.2 ? "asserts, then argues — most reasons arrive after their claims"
+          : lean < -0.2 ? "argues, then asserts — most reasons are given before their claims"
           : "some of each";
   return { centre: centre, lean: lean, where: where, how: how,
            text: where + " · " + how + " · the justifying is done by " +

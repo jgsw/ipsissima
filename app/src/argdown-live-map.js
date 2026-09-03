@@ -1308,7 +1308,13 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
       });
       /** @type {any} */ (gr).spark = EXP.sparkPaths(mine, rk.n);
       const v = EXP.verdict(mine, rk.n);
-      if (v.centre != null) gr.title = (gr.title || gr.label) + "\n" + v.text;
+      // CARRIED APART FROM THE NAME, because the two reach the tooltip under different rules:
+      // the name goes on hover only when the header could not draw it in full, while the
+      // verdict-in-words goes on hover ALWAYS — the header draws the sparkline's picture and
+      // never its reading. Glued into `title`, the verdict was hostage to the name fitting,
+      // which on every band with a short name meant an empty tooltip (reported by the author,
+      // 3 Sep 2026: "tooltips for sections don't seem to be working on Exposition").
+      if (v.centre != null) /** @type {any} */ (gr).verdict = v.text;
     }
   }
 
@@ -4035,18 +4041,18 @@ function createLiveMap(container, graph, options) {
         : GROUP_LABEL_SIZE;
       label.setAttribute("font-size", labelSize);
       label.textContent = fitLabel(nameText, labelRoom, labelSize);
-      /* THE SAME RULE AS EVERY OTHER TOOLTIP: say what the band could not. The name went on
-       * hover unconditionally, which on the great majority of bands -- the ones wide enough for
-       * their own name -- was the header repeating itself to anyone who paused over it.
-       *
-       * The word count is the half that was actually going missing. The comment above says it
-       * is "still on the tooltip" when a narrow band drops it, and it was not: the tooltip held
-       * the name alone, so on exactly the bands where the count could not be drawn there was
-       * nowhere left to read it. */
+      /* THE SAME RULE AS EVERY OTHER TOOLTIP: say what the band could not. The name goes on
+       * hover only when the header truncated it; the word count only when the header dropped
+       * it; and the VERDICT IN WORDS always, when the band has one — the header draws the
+       * sparkline's picture and never its reading, so "settles late · asserts, then argues"
+       * is additional to what is visible on every band that has it. It used to ride inside
+       * `gr.title` and so appeared only when the NAME failed to fit, which left most
+       * Exposition bands hovering empty (found by the author, 3 Sep 2026). */
       const gbits = [];
       if (label.textContent !== nameText) gbits.push(gr.title || gr.label);
       if (wtext && !showWords) gbits.push(wtext);
-      box.querySelector("title").textContent = gbits.join(" — ");
+      if (/** @type {any} */ (gr).verdict) gbits.push(/** @type {any} */ (gr).verdict);
+      box.querySelector("title").textContent = gbits.join("\n");
       box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
     for (const [id, box] of drawnGroup) {
