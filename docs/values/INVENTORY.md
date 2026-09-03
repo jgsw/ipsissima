@@ -878,9 +878,13 @@ viewer's interface"); `REVIEW.md` §3.
 
 **Generality.** The App; extends in spirit to every reader-facing surface.
 
-**Weight.** Heavy. Case law: the Order scatter retired as "a curiosity"; counts demoted;
-full-screen implemented as hiding chrome rather than an API call because that is what the value
-actually wanted.
+**Weight.** Very heavy — by the author's own ruling at the Step One checkpoint (3 Sep: "It's
+often in my mind when I make suggestions, but I don't often state it explicitly"), raised from
+the Heavy that its case law alone supported. Case law: the Order scatter retired as "a
+curiosity"; counts demoted; full-screen implemented as hiding chrome rather than an API call
+because that is what the value actually wanted. The correction is itself a finding about
+method: case-law weighting undercounts values that operate silently inside the author's
+suggestions rather than in recorded collisions — see `TENSIONS.md` §1.
 
 ### F5. One meaning per channel, and every encoding earns its place
 
