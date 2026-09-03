@@ -746,13 +746,16 @@ def validity_checks(doc):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from validity import check_step
 
-    from validity import stamp
+    from validity import matches_rule, stamp
 
     out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": [],
            # A formalization whose claim has been edited since. NOT the same as an unstamped one,
            # which is merely the state every map was in before stamps existed and is reported as
            # a count rather than as a fault.
-           "stale": [], "unstamped": []}
+           "stale": [], "unstamped": [],
+           # Valid, but not the rule it names. The verdict never reads the name, so this was the
+           # one self-claim the map drew in the checked style without anything examining it.
+           "misnamed": []}
     for title, arg in (doc.get("arguments") or {}).items():
         pcs = arg.get("pcs") or []
         if not pcs:
@@ -806,6 +809,22 @@ def validity_checks(doc):
                                                 [inputs[i - 1] for i in r["irrelevant"]]))
                         if r.get("consistent") is False:
                             out["inconsistent"].append((title, step))
+                        # VALID, AND IS IT THE RULE IT NAMES? Asked only of steps that are
+                        # already valid -- an invalid step has its own louder finding -- and
+                        # only of single canonical names, whose schemas are known. A name of
+                        # the reconstructor's own is a label, never a claim to a known form,
+                        # and `matches_rule` answers None for it, which asks nothing. A line
+                        # naming SEVERAL rules claims a compound derivation -- Miller's route
+                        # to the order runs `Hypothetical syllogism, Modus ponens` over three
+                        # premises -- and a compound is not an instance of either schema, so
+                        # it is exempt for the same reason an own-words name is: the schemas
+                        # below represent single rules, and matching a composition is a
+                        # different and larger job this deliberately is not.
+                        if len(rules) == 1 \
+                                and matches_rule(rules[0],
+                                                 [forms[i] for i in inputs], concl) is False:
+                            out["misnamed"].append((title, step, named,
+                                                    entry.get("title")))
             prev = n
             run, first, step = [], False, step + 1
     return out
@@ -883,6 +902,23 @@ def validity_report(doc):
         print("      `--stamp` writes one for each, after you have satisfied yourself that the")
         print("      formalizations say what the claims say -- it records agreement, it cannot")
         print("      check it.")
+
+    if found["misnamed"]:
+        print(f"\n   VALID, AND NOT THE RULE IT NAMES ({len(found['misnamed'])})")
+        print("      The verdict comes from the formalizations alone -- the name was never what")
+        print("      was checked -- but the map prints the name beside the checked mark, and a")
+        print("      reader who knows the rule will read the step by it. The step IS valid;")
+        print("      the label is not the licence it claims. Sometimes the right fix is a")
+        print("      different canonical name, and sometimes the step is a valid inference that")
+        print("      has no textbook name, in which case name nothing or name it in your own")
+        print("      words -- an unrecognised name is a label, and is not checked or flagged.")
+        for title, step, named, concl in found["misnamed"]:
+            finding("misnamed-rule", "?",
+                    f"step {step} is valid, but its shape is not `{named}`",
+                    title=title, conclusion=concl,
+                    fix="rename the step to the rule it actually instantiates, or to a wording "
+                        "of your own; the validity verdict stands either way")
+            print(f"      ? <{title}> step {step} is valid, but its shape is not `{named}`")
 
     if found["unformalized"]:
         print(f"\n   A RULE NAMED, AND NOTHING TO CHECK IT AGAINST ({len(found['unformalized'])})")

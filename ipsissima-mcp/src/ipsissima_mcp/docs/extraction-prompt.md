@@ -170,8 +170,11 @@ Use the **whole language**, not the part of it you are sure of:
   universal instantiation, universal generalisation, existential instantiation, existential
   generalisation, biconditional elimination, reductio ad absurdum. Prefer one of these where it
   is the right name; write whatever is right where it is not, and the map reduces it to initials.
-  **The name is not checked against the step** — the verdict comes from the `formalization` lines
-  alone — so a wrong name is a silent wrong name, and is worth getting right for the reader
+  **The validity verdict never reads the name** — it comes from the `formalization` lines alone —
+  but a single canonical name is checked against its own schema: a valid step wearing the wrong
+  textbook name comes back from the checker as a `?`. A name of your own, and a line naming two
+  rules at once (a compound step), are labels rather than claims to a known form, and are not
+  examined — so get those right for the reader, because nothing else will
 
 **And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
 jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,

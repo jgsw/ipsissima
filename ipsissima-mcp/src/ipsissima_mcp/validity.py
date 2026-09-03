@@ -26,6 +26,7 @@ The last case is the point. An honest "I cannot decide this" is a different thin
 
 from __future__ import annotations
 
+import itertools
 import re
 from itertools import product
 from typing import Any
@@ -346,3 +347,117 @@ def stamp(text: str) -> str:
         h ^= b
         h = (h * 0x01000193) & 0xFFFFFFFF
     return f"{h:08x}"
+
+
+# ---- is the step the rule it names? ---------------------------------------------------------
+#
+# THE VERDICT NEVER READS THE NAME -- `check_step` decides from the formalizations alone, and
+# would reach the same answer if the line said `-- Banana --`. So a valid step wearing the wrong
+# canonical name passed quietly, and the map then printed the name in the checked style: the one
+# self-claim in the system that was drawn as vouched-for without being examined. The fidelity
+# markers already taught what happens to labels that feel checked -- wrong 38 times in 126,
+# always in the same direction, and instruction alone did not fix them
+# (docs/values/INVENTORY.md, A11; ALIGNMENT-PLAN item 5).
+#
+# WHAT THIS IS AND IS NOT. Matching a schema is bounded second-order pattern matching -- each
+# schema letter binds one sub-formula, consistently across the rule -- which is a different and
+# far smaller job than the "is it the rule" form-recognition VALIDITY-PLAN.md 6 declined, because
+# it only ever runs against the fixed schemas below. It answers for the CANONICAL names alone: a
+# name of the reconstructor's own is a label, not a claim to a known form, and is never matched.
+# The quantifier rules and reductio are recognised and exempt -- UI/UG/EI/EG turn on variable
+# binding this file's fragment does not represent schematically, and a reductio's shape is a
+# discharged supposition, not a premise list.
+
+_UNMATCHABLE = frozenset([
+    "universal instantiation", "universal generalisation", "universal generalization",
+    "existential instantiation", "existential generalisation", "existential generalization",
+    "reductio ad absurdum",
+])
+
+#: Schemas as (premises, conclusion), several variants where the textbooks state several.
+#: `&`, `|` and `<->` match commutatively (see `_match`), so one variant covers both orders.
+_RULE_SCHEMAS: dict[str, list[tuple[list[str], str]]] = {
+    "modus ponens": [(["P -> Q", "P"], "Q")],
+    "modus tollens": [(["P -> Q", "-Q"], "-P")],
+    "hypothetical syllogism": [(["P -> Q", "Q -> R"], "P -> R")],
+    "disjunctive syllogism": [(["P | Q", "-P"], "Q")],
+    "constructive dilemma": [(["P -> Q", "R -> S", "P | R"], "Q | S"),
+                             (["(P -> Q) & (R -> S)", "P | R"], "Q | S")],
+    "destructive dilemma": [(["P -> Q", "R -> S", "-Q | -S"], "-P | -R"),
+                            (["(P -> Q) & (R -> S)", "-Q | -S"], "-P | -R")],
+    "simplification": [(["P & Q"], "P")],
+    "conjunction": [(["P", "Q"], "P & Q")],
+    "addition": [(["P"], "P | Q")],
+    "double negation": [(["--P"], "P"), (["P"], "--P")],
+    "de morgan": [(["-(P & Q)"], "-P | -Q"), (["-P | -Q"], "-(P & Q)"),
+                  (["-(P | Q)"], "-P & -Q"), (["-P & -Q"], "-(P | Q)")],
+    "contraposition": [(["P -> Q"], "-Q -> -P"), (["-Q -> -P"], "P -> Q")],
+    "biconditional elimination": [(["P <-> Q"], "P -> Q"), (["P <-> Q"], "Q -> P"),
+                                  (["P <-> Q", "P"], "Q"), (["P <-> Q", "Q"], "P")],
+}
+
+_ALIASES = {"demorgan": "de morgan", "de morgans": "de morgan",
+            "de morgan s": "de morgan", "de morgan s law": "de morgan",
+            "de morgan s laws": "de morgan", "demorgans": "de morgan"}
+
+_COMMUTES = frozenset(["and", "or", "iff"])
+
+
+def _canon(name: str) -> str:
+    key = " ".join(re.sub(r"[^a-z]+", " ", str(name or "").lower()).split())
+    return _ALIASES.get(key, key)
+
+
+def _match(schema: dict, node: dict, env: dict):
+    """Every consistent binding of the schema's letters to sub-formulas of `node`."""
+    t = schema["t"]
+    if t == "atom":
+        name = schema["name"]
+        if name in env:
+            if env[name] == node:
+                yield env
+        else:
+            yield {**env, name: node}
+        return
+    if node.get("t") != t:
+        return
+    if t == "not":
+        yield from _match(schema["a"], node["a"], env)
+        return
+    for got in _match(schema["a"], node["a"], env):
+        yield from _match(schema["b"], node["b"], got)
+    if t in _COMMUTES:
+        for got in _match(schema["a"], node["b"], env):
+            yield from _match(schema["b"], node["a"], got)
+
+
+def _match_all(schemas: list[dict], nodes: list[dict], env: dict):
+    if not schemas:
+        yield env
+        return
+    for got in _match(schemas[0], nodes[0], env):
+        yield from _match_all(schemas[1:], nodes[1:], got)
+
+
+def matches_rule(name: str, premises: list[str], conclusion: str):
+    """True when the step instantiates the named rule's schema, False when the name is canonical
+    and the step does not, None when the question cannot be put -- an unrecognised name, a rule
+    this file exempts, or a formalization it cannot read. Premise order never matters."""
+    key = _canon(name)
+    if key in _UNMATCHABLE or key not in _RULE_SCHEMAS:
+        return None
+    try:
+        ps = [parse(p) for p in premises]
+        c = parse(conclusion)
+    except FormulaError:
+        return None
+    for want_ps, want_c in _RULE_SCHEMAS[key]:
+        if len(want_ps) != len(ps):
+            continue
+        sp = [parse(s) for s in want_ps]
+        sc = parse(want_c)
+        for perm in itertools.permutations(ps):
+            for env in _match_all(sp, list(perm), {}):
+                if any(True for _ in _match(sc, c, env)):
+                    return True
+    return False

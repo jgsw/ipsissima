@@ -210,12 +210,14 @@ name is on the label's hover. These abbreviate:
 **That list is a convenience, not a vocabulary.** Any name at all may be written: an unrecognised
 name of several words is reduced to its initials, and a one-word name is drawn as it stands.
 
-**And the name is not what is checked.** The verdict comes from the `formalization` lines alone —
-the checker is never told what the rule is called, and would reach the same answer if the line
-said `-- Banana --`. What the name does is *ask the question*: a step with no rule named is not
-checked at all. So a step labelled `Modus tollens` that is in fact a valid *modus ponens* passes
-quietly. The map is reporting that the conclusion follows, which is true, and saying nothing about
-the label, which nothing has examined.
+**And the name is not what the map's mark vouches for.** The verdict comes from the
+`formalization` lines alone — the map would reach the same answer if the line said `-- Banana --`.
+What the name does on the map is *ask the question*: a step with no rule named is not checked at
+all. The label itself is examined elsewhere: `check_reconstruction` matches a single textbook
+name against that rule's actual schema and reports a valid step wearing the wrong one — a
+*modus ponens* labelled `Modus tollens` comes back flagged. A name of your own, and a line
+naming two rules at once (a compound step), are labels rather than claims to a known form, and
+are not examined by anything.
 
 Checking needs the claims to say what they *are*, which they do with `formalization`:
 
