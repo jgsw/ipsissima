@@ -33,11 +33,17 @@ through it.
   framework, in search of reflective equilibrium (Rawls, "Outline of a Decision Procedure for
   Ethics"): where a choice and a principle disagree, a recommendation, with a stated
   confidence, about which of the two should move. `TENSIONS.md`.
-- **Step Three — in progress.** The framework revised in the light of Step Two and the
+- **Step Three — done, 3 Sep.** The framework revised in the light of Step Two and the
   author's checkpoint rulings (A11 added; A7 amended; F4 respecified and elevated to a sixth
   apex; B6 added; the keystone restated as distinctive rather than supreme), and
-  `ALIGNMENT-PLAN.md` — the plan for bringing the codebase into line, held as a proposal for
-  the author's prioritisation.
+  `ALIGNMENT-PLAN.md` — the plan for bringing the codebase into line, carried out on the
+  author's instruction the same day, its record kept in the plan's own header.
+
+A fourth document followed at the author's direction: `AUTOMATION.md`, the framework applied
+to its own automation — whether an automated test for overall improvement against the values
+should exist (it should not, and the framework says why), which checkable slice should be
+automated (a promises lint), and how the framework reaches contributors and the author by
+different routes, deliberately.
 
 ## Whose values are these
 
