@@ -4,7 +4,20 @@ Step Three's second half, drafted 3 September 2026. What has to change for the c
 match the revised framework, item by item — each with the principles that demand it, what
 done looks like, and a cost. Held as a **proposal**: the author said his Step Three
 instructions were likely to become more detailed, so the ordering below is a recommendation
-built to be reordered, not a schedule. Nothing here has been implemented.
+built to be reordered, not a schedule.
+
+> **Carried out the same day, on the author's instruction to start at item 1 and move
+> forward.** Items 1–6 and 8–10 are done as specified, each with its verification run and its
+> commit; item 7 stands at its own first stage — the design note is written into `viewer.md`,
+> the feature deliberately not built. Two departures from the letter of the plan, both
+> recorded where they happened: item 5's schema check exempts a line naming *several* rules (a
+> compound derivation is not an instance of either schema), and item 8's wording went further
+> than an audit after the author showed "reader's burden" is loaded the other way — the
+> reader-facing surfaces now use the anticipated/prepared pair and temporal phrasing, and
+> A7's amendment was re-amended to match. Item 10's second half concluded *verified, no
+> change*: the DOI lookup is parameterised and named in `assess_pdf`'s own signature. The
+> item-5 check's first pass over the corpus left one standing `?` on Miller for the
+> reconstructor to judge.
 
 Two standing rules govern every item. Per E6, any new check or instrument must be **shown to
 fail** before it is trusted — the mutation that breaks it named in the test file. Per the
