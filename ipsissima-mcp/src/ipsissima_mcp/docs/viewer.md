@@ -160,6 +160,41 @@ different clothes. So is `reach`, which never earned its place, and the second `
 than how many levels of them: a claim deep in the argument can be spine, and a claim beside the
 contention need not be.
 
+**Hidden or disabled: the policy, per control.** Decided 3 Sep 2026 (`docs/values/TENSIONS.md`
+T5), because the interface had both patterns and no rule saying which applies where. The
+criterion comes from the respecified F4: everything visible serves a useful purpose, so a
+control kept on screen disabled earns its pixels only where it **teaches a capability the
+reader would want and can obtain** — otherwise a control that cannot work is clutter, and it
+hides. `.seg button:disabled` draws at 0.4 opacity with `cursor:help`, which is the affordance
+doing the teaching.
+
+| control | when it does not apply | why |
+|---|---|---|
+| Exposition (view) | **disabled, remedy in the tooltip** when claims cite a manuscript this viewer has no copy of; hidden when nothing cites text | the folder-brings-the-text rule is the one thing a new reader most needs to learn |
+| Manuscript (tab) | the same policy, same reason | the clearest teaching case of all |
+| Notes (tab) | hidden until a note exists | commenting is taught by the context menu and help; a permanently grey tab teaches nothing new |
+| Undo / Redo | hidden until there is something to take back | they appear at the first edit, which is its own teaching; a grey pair on every fresh page is clutter |
+| Save | hidden where the host cannot write back | not obtainable by any reader action in that host — structural, and Save as… still offers the download |
+| Find, line numbers, fold (editor bar) | hidden until the editor is live | tools of a pane that is itself the visible control |
+| start a new one | hidden where the host cannot create a file | structural |
+
+**The key: designed 3 Sep 2026, not yet built.** The map asks a reader to hold four encodings —
+border pattern (fidelity), edge colour and style (relation kind), tag chips, the sparkline —
+each explained in help and none reminded on screen; `REVIEW.md` suggested a dismissible legend
+and the flat no-clutter reading refused it. The respecified F4 permits one, on its own terms,
+and the walkthrough is the named exemplar. The design, for whoever builds it:
+
+- **What it draws**: the four encodings in miniature, with the real strokes and colours — the
+  existing `relkey`/`fidkey` content is the base — never prose descriptions of strokes.
+- **When it appears**: once, on the first map that uses at least three of the encodings, and
+  never alongside the walkthrough — one teacher at a time, so it waits until the walkthrough
+  has been taken or declined.
+- **How it leaves**: one click, or Esc; the dismissal is remembered in the same store as the
+  walkthrough's.
+- **How it returns**: from How to use, where the keys already live — no standing chrome, no
+  toolbar button. F4(a) is the test every element of it must pass: it floats over a corner of
+  the map, reflows nothing, and when dismissed is gone without residue.
+
 **Fidelity is discoverable three ways**: the border style (as before), the level named in the
 tooltip on hover, and a key in How to use that draws the actual strokes — "long dash versus
 short dash" is not something anyone can hold in their head from prose.

@@ -1308,8 +1308,6 @@ function openingDepth(graph){
   // Offered from the same manuscript the chapter list was just built from, so a file opened into
   // this page cannot leave the previous one's abstract behind it.
   syncAbstract();
-  // The Text toggle is offered only once there is a manuscript to show.
-  $("panes").querySelector('[data-p="text"]').hidden = !msAvailable();
   PANES.text = false;
   // A viewer OPENED on a phone never fires a change event, so the state is settled here too.
   wasNarrow = isNarrow();
@@ -1333,6 +1331,23 @@ function openingDepth(graph){
     : "These claims cite a manuscript, but this viewer has no copy of it, so they cannot be " +
       "placed in the text. Drop the folder rather than the file — or rebuild with " +
       "build_argdown_viewer.mjs FILE.argdown --source-root <manuscript folder>";
+
+  // THE MANUSCRIPT TAB FOLLOWS THE SAME POLICY, decided per control and recorded in
+  // viewer.md's table (3 Sep 2026): a disabled control earns its pixels only where it teaches
+  // a capability the reader would want and can obtain. This is the clearest such case — the
+  // one thing a first-time reader most needs to learn is that the FOLDER brings the text —
+  // so a map that cites a manuscript this viewer has no copy of shows the tab disabled with
+  // the remedy attached, where a tab simply missing leaves them wondering whether they have
+  // the wrong file. A map citing no text at all keeps the tab hidden: there is nothing to
+  // obtain, and a control that can never work is clutter, not teaching.
+  var mtab = $("panes").querySelector('[data-p="text"]');
+  mtab.hidden = !msAvailable() && !citesText;
+  mtab.disabled = !msAvailable();
+  mtab.title = msAvailable()
+    ? "Show or hide the manuscript. Shift-click (or right-click) any claim to jump to the " +
+      "passage it came from."
+    : "The claims cite a manuscript this viewer has no copy of. Drop the folder rather than " +
+      "the file, and the text appears here.";
 
   statsLine(graph);
   buildKeys(graph);
@@ -1396,11 +1411,11 @@ function statsLine(graph){
       t.className = "shapetext";
       t.textContent = v.where + " · " + v.how;
       shape.appendChild(t);
-      shape.title = v.text + "\n\nA ledger of justificatory debt, read left to right through " +
-        "the text.\n\n" +
-        "BELOW the line — claims asserted here whose reasons come later. The reader is being " +
-        "asked to carry a promise.\n" +
-        "ABOVE — claims made here that their reasons have already earned.\n\n" +
+      shape.title = v.text + "\n\nHow the text places its reasons, read left to right.\n\n" +
+        "BELOW the line — support anticipated: claims stated here whose reasons are still to " +
+        "come.\n" +
+        "ABOVE — support prepared: claims whose reasons were already given.\n" +
+        "Neither direction is a fault; each is an ordinary way to write.\n\n" +
         "Weighted by how far each relation reaches, so a claim argued for in the next sentence " +
         "barely registers and one argued for twenty pages later dominates.";
     } else shape.hidden = true;
@@ -2443,9 +2458,9 @@ function walkSteps(){
       title: "Exposition: the same claims, in reading order",
       body: "<p>The same claims, laid out where the reader meets them in the text — section " +
             "by section, left to right.</p>" +
-            "<p>The line on each section header is its <b>justificatory debt</b>: below the " +
-            "axis, claims asserted before their reasons arrive; above, claims their reasons " +
-            "have already earned.</p>",
+            "<p>The line on each section header says which side of its claims their reasons " +
+            "fall: below the axis, claims stated before their reasons arrive; above, claims " +
+            "whose reasons were already given. Neither direction is a fault.</p>",
       before: function(){ setArrangement("exposition"); },
       target: function(){
         // The header strip, not the band: a section is hundreds of units tall and the name and
