@@ -399,12 +399,18 @@ async function settle(page) {
   await page.waitForTimeout(400);
 }
 
-/** The walkthrough offers itself on a first visit and would sit over everything. */
+/** The walkthrough offers itself on a first visit and would sit over everything — and the key
+ *  card would sit over a corner. Neither self-offers in the payload pages this harness builds,
+ *  but a fresh headless profile is exactly the state in which they would if that ever changed,
+ *  so both flags are seeded and both overlays hidden: the invariants below are about the map. */
 async function dismissWalkthrough(page) {
   await page.evaluate(() => {
     try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.key.v1", "seen"); } catch (e) { void e; }
     const w = document.getElementById("walk");
     if (w && !w.hidden) w.hidden = true;
+    const k = document.getElementById("keycard");
+    if (k && !k.hidden) k.hidden = true;
   });
 }
 
@@ -586,6 +592,93 @@ async function foldByHeader(page, map, scheme) {
         `claims on screen unchanged at ${before}; the click reached something else`);
 }
 
+/* ------------------------------------------------------------------ the key card
+ *
+ * The key self-offers only in the WORKBENCH (the payload pages above never show it), so it is
+ * checked in a standalone build with a qualifying map dropped in — Miller, whose fidelity
+ * borders, undercuts and tags clear the three-encodings gate without a manuscript. The three
+ * promises come straight from its design (ipsissima-mcp docs/viewer.md): it appears once,
+ * dismissing it moves nothing and is remembered, and the assembled key lives on under How to
+ * use. The drop is dispatched as a real DataTransfer through the page's own drop handler —
+ * the data path, which is what these checks are about; the drop gesture itself is the OS's.
+ *
+ * SHOWN ABLE TO FAIL, 3 Sep 2026: raising the encodings gate to `< 9` fails the first check
+ * (the card never appears); stubbing `keyRemember` to a no-op fails the remembered-dismissal
+ * check and the never-again check after it. A harness that has never failed is worth nothing.
+ */
+async function keyChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  if (!miller) { check(false, "the key: a qualifying map exists", "no Miller sample built"); return; }
+  const out = path.join(tmp, "key-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "the key: the standalone builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ad = fs.readFileSync(miller.argdown, "utf8");
+  const srcDir = path.join(miller.root, "source");
+  const srcName = fs.readdirSync(srcDir).find(f => f.endsWith(".md"));
+  const src = srcName ? fs.readFileSync(path.join(srcDir, srcName), "utf8") : "";
+
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  // The walkthrough is settled and the key unseen — the exact state the offer waits for.
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.removeItem("ipsissima.key.v1"); } catch (e) { void e; }
+  });
+  const drop = () => page.evaluate(({ a, aName, s, sName }) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([a], aName));
+    if (s) dt.items.add(new File([s], sName));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, { a: ad, aName: path.basename(miller.argdown), s: src, sName: srcName || "" });
+
+  await drop();
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  let appeared = true;
+  try { await page.waitForSelector("#keycard:not([hidden])", { timeout: 4000 }); }
+  catch { appeared = false; }
+  check(appeared, "the key offers itself on a qualifying map, once the walkthrough is settled");
+
+  if (appeared) {
+    const rectOf = () => page.evaluate(() => {
+      const n = document.querySelector(".alm-n");
+      const r = n ? n.getBoundingClientRect() : null;
+      return r ? [r.left, r.top, r.width, r.height].join(",") : "none";
+    });
+    const withCard = await rectOf();
+    const pos = await page.evaluate(() =>
+      getComputedStyle(document.getElementById("keycard")).position);
+    await page.click("#keyclose");
+    const dismissed = await page.evaluate(() => document.getElementById("keycard").hidden);
+    check(pos === "absolute" && dismissed && await rectOf() === withCard,
+          "the key floats, and one click removes it without moving anything",
+          `position=${pos}`);
+    const stored = await page.evaluate(() => {
+      try { return localStorage.getItem("ipsissima.key.v1"); } catch (e) { return null; }
+    });
+    check(stored === "seen", "the dismissal is remembered", String(stored));
+
+    await page.reload();
+    await drop();
+    await page.waitForSelector(".alm-n", { timeout: 20000 });
+    await page.waitForTimeout(1400);
+    const again = await page.evaluate(() => document.getElementById("keycard").hidden);
+    check(again === true, "and it never offers itself again");
+    const inHelp = await page.evaluate(() => {
+      const k = document.getElementById("helpkeypane");
+      return !!(k && k.innerHTML.length > 80);
+    });
+    check(inHelp, "while the assembled key lives on under How to use");
+  }
+  await ctx.close();
+}
+
 /* ------------------------------------------------------------------ main */
 
 const maps = corpus();
@@ -653,6 +746,7 @@ for (const scheme of ["light", "dark"]) {
   }
   await ctx.close();
 }
+await keyChecks(browser);
 await browser.close();
 if (!KEEP) fs.rmSync(tmp, { recursive: true, force: true });
 

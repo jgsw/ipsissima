@@ -160,6 +160,30 @@ main.swapped{flex-direction:row-reverse}
    would matter. */
 #abswhere{font-size:10.5px;font-style:italic;color:var(--fg-dim);line-height:1.4}
 #absbody{font:13px/1.65 Georgia,"Times New Roman",serif;color:var(--fg)}
+/* THE KEY — a floating, dismissible reminder of the encodings this map uses. Its whole shape is
+   the respecified F4 (docs/values/INVENTORY.md): absolutely positioned over a corner of the map
+   so it reflows nothing, gone in one action, remembered gone, and permanently findable under
+   How to use instead of in any standing chrome. */
+#keycard{position:absolute;right:14px;bottom:14px;z-index:5;max-width:270px;
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  padding:.45rem .7rem .6rem;box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
+#keycard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.1rem}
+#keycard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
+#keycard h4{font-size:10px;line-height:1.6;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--fg-dim);margin:.5rem 0 .1rem}
+#keycard .krow{display:flex;align-items:center;gap:.45rem;line-height:1.55}
+#keycard .krow svg{width:38px;height:14px;flex:none}
+#keycard .kchip{display:inline-block;border:1px solid var(--line);border-radius:9px;
+  padding:0 .5em;margin:.1em .25em .1em 0;font-size:11px;color:var(--fg-dim)}
+#keycard .kfoot{margin-top:.45rem;font-size:10.5px;font-style:italic;color:var(--fg-dim);
+  line-height:1.45}
+/* The same assembled key, sitting as prose in the help panel. */
+#helpkeypane .krow{display:flex;align-items:center;gap:.45rem;line-height:1.6}
+#helpkeypane .krow svg{width:38px;height:14px;flex:none}
+#helpkeypane .kchip{display:inline-block;border:1px solid var(--line);border-radius:9px;
+  padding:0 .5em;margin:.1em .25em .1em 0;font-size:12px;color:var(--fg-dim)}
+#helpkeypane h4{margin:.6rem 0 .15rem}
+#helpkeypane .kfoot{font-style:italic;color:var(--fg-dim)}
 #absbody p{margin:0 0 .5rem}
 #absbody p:last-child{margin-bottom:0}
 
@@ -821,6 +845,16 @@ body.fs #fsexit{display:inline-flex}
        the passage it came from at the same time. -->
   <div id="stage">
   <div id="map"></div>
+  <!-- THE KEY. Offered once, in the workbench only, on a map that uses several encodings at
+       once; dismissed in one action and remembered dismissed; always under How to use. The
+       card's body is written by keyContent() from the open reconstruction, so it shows only
+       the markings this map actually uses. -->
+  <div id="keycard" hidden role="note" aria-label="Key to the map's markings">
+    <header><b>Key</b><span>what the markings mean</span>
+      <button class="plain" id="keyclose"
+              title="Close. The key stays under How to use — it will not offer itself again.">&#215;</button></header>
+    <div id="keybody"></div>
+  </div>
   <!-- THE ABSTRACT, FOR SOMEONE MEETING THIS MAP COLD. A reconstruction says what a paper
        argues; the abstract says what the paper says it argues, in the author's own words, and
        those are the two things a reader wants side by side in the first minute. The ingest
@@ -1361,6 +1395,13 @@ function openingDepth(graph){
   // is anything for a walkthrough to point at; every later `render` is a file they chose while
   // already knowing what this is.
   maybeStartWalkthrough();
+  // THE KEY'S CHANCE, scheduled past the walkthrough's own 450ms start so the
+  // one-teacher-at-a-time guard can read WALK truthfully; a tour in progress hands the turn to
+  // `stopWalkthrough`, which offers again when it ends. A new file replacing the view is not a
+  // dismissal, so the card is hidden here without remembering anything.
+  KEY_GRAPH = graph;
+  dismissKeyCard(false);
+  setTimeout(offerKeyCard, 700);
 }
 
 /** The footer line and the debugging block. Its own function because a live edit redraws the
@@ -1457,34 +1498,42 @@ function boxSwatch(attrs){
   return '<svg viewBox="0 0 52 20" aria-hidden="true">' +
          '<rect x="3" y="3" width="46" height="14" rx="3" fill="none" ' + attrs + '/></svg>';
 }
+/* THE TWO KEY TABLES, hoisted so the help panel's keys and the floating key card draw their
+   strokes from one definition. A second copy of a stroke table is the same species of hazard
+   as the band rule that drifted between the build and the template. */
+var REL_KEY = [
+  ["support", "#3a9d5d", "", "supports", "this claim is a reason for the one it points at"],
+  ["attack", "#cc3b3b", "", "objects to", "this claim tells against the one it points at"],
+  ["undercut", "#d08018", 'stroke-dasharray="5 3"', "undercuts", "the step does not go through, whatever the premises"],
+  ["contradictory", "#8b5cc7", 'stroke-dasharray="2 3"', "contradicts", "the two cannot both be true"]
+];
+var FID_KEY = [
+  ['stroke="currentColor" stroke-width="2.6"', "quotation", "the source's own words, checked against the text"],
+  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 2"', "paraphrase", "close restatement, the reconstructor's words"],
+  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"', "compression", "several sentences reduced to one claim"],
+  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 3"', "interpretation", "a reading the text supports but does not state"],
+  ['stroke="currentColor" stroke-width="1.2" stroke-dasharray="7 2 1.5 2"', "imputation", "a premise the argument needs but the author never states"]
+];
+
 function buildKeys(graph){
-  var rel = [
-    ["#3a9d5d", "", "supports", "this claim is a reason for the one it points at"],
-    ["#cc3b3b", "", "objects to", "this claim tells against the one it points at"],
-    ["#d08018", 'stroke-dasharray="5 3"', "undercuts", "the step does not go through, whatever the premises"],
-    ["#8b5cc7", 'stroke-dasharray="2 3"', "contradicts", "the two cannot both be true"]
-  ];
-  $("relkey").innerHTML = rel.map(function(r){
-    return swatch('stroke="'+r[0]+'" stroke-width="2" '+r[1]) +
-           '<span class="lab"><b>'+r[2]+'</b> — '+r[3]+'</span>';
+  $("relkey").innerHTML = REL_KEY.map(function(r){
+    return swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]) +
+           '<span class="lab"><b>'+r[3]+'</b> — '+r[4]+'</span>';
   }).join("");
 
-  var fid = [
-    ['stroke="currentColor" stroke-width="2.6"', "quotation", "the source's own words, checked against the text"],
-    ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 2"', "paraphrase", "close restatement, the reconstructor's words"],
-    ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"', "compression", "several sentences reduced to one claim"],
-    ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 3"', "interpretation", "a reading the text supports but does not state"],
-    ['stroke="currentColor" stroke-width="1.2" stroke-dasharray="7 2 1.5 2"', "imputation", "a premise the argument needs but the author never states"]
-  ];
   var present = {};
   (graph.nodes||[]).forEach(function(n){ if (n.fidelity) present[n.fidelity] = true; });
   var any = Object.keys(present).length;
-  $("fidkey").innerHTML = fid.map(function(f){
+  $("fidkey").innerHTML = FID_KEY.map(function(f){
     var here = !any || present[f[1]];
     return boxSwatch(f[0] + (here ? "" : ' opacity=".35"')) +
            '<span class="lab"' + (here ? "" : ' style="opacity:.5"') + '><b>'+f[1]+'</b> — '+f[2]+
            (here ? "" : " (none in this map)") + '</span>';
   }).join("");
+
+  // THE ASSEMBLED KEY under How to use — the same builder the floating card uses, so the help
+  // and the offer can never disagree about what a marking means.
+  if ($("helpkeypane")) $("helpkeypane").innerHTML = keyContent(graph);
 }
 
 /* FULL SCREEN — the page's own chrome, not the Fullscreen API. See the CSS note. */
@@ -2181,23 +2230,24 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function
  * store that would silently forget the reader's answer. Anything that throws leaves `ok` false
  * and the page opens exactly as before -- this runs at load and must never be able to stop it.
  */
-var WALK_KEY = "ipsissima.walkthrough.v1";
-var WALK_STORE = (function(){
+function makeChoiceStore(key){
   try {
     var s = window.localStorage;
     if (!s) return { ok: false };
-    var probe = WALK_KEY + ".probe";
+    var probe = key + ".probe";
     s.setItem(probe, "1");
     var back = s.getItem(probe);
     s.removeItem(probe);
     if (back !== "1") return { ok: false };
     return {
       ok: true,
-      get: function(){ try { return s.getItem(WALK_KEY); } catch (e) { return null; } },
-      set: function(v){ try { s.setItem(WALK_KEY, v); } catch (e) {} }
+      get: function(){ try { return s.getItem(key); } catch (e) { return null; } },
+      set: function(v){ try { s.setItem(key, v); } catch (e) {} }
     };
   } catch (e) { return { ok: false }; }
-})();
+}
+var WALK_KEY = "ipsissima.walkthrough.v1";
+var WALK_STORE = makeChoiceStore(WALK_KEY);
 
 function walkSeen(){ return WALK_STORE.ok ? WALK_STORE.get() === "seen" : false; }
 function walkRemember(v){ if (WALK_STORE.ok) WALK_STORE.set(v); }
@@ -2905,6 +2955,9 @@ function stopWalkthrough(){
   // Rewire, because the offer card replaced both handlers with its own answers.
   $("walknext").onclick = function(){ if (WALK) walkGo(WALK.i + 1); };
   $("walknext").textContent = "Next";
+  // ONE TEACHER AT A TIME, second teacher next: the tour has just been taken or declined,
+  // which is exactly the moment the key's design says it may speak.
+  setTimeout(offerKeyCard, 400);
 }
 
 /* ESCAPE ASKS RATHER THAN VANISHES. Leaving early is one of the two moments the brief wants the
@@ -2976,6 +3029,134 @@ function maybeStartWalkthrough(){
   // renderer: a map framed blind has boxes of the wrong size, not merely the wrong position.
   setTimeout(startWalkthrough, 450);
 }
+
+/* ================= THE KEY =============================================================
+ *
+ * WHAT IT IS FOR. The map asks a reader to hold four encodings at once — border pattern
+ * (fidelity), edge colour and style (relation kind), tag chips, the sparkline — each explained
+ * under How to use and none reminded on screen. REVIEW.md named the cost and suggested a
+ * dismissible legend; the flat no-clutter reading refused it, and the respecified F4 permits
+ * it on exactly these terms (docs/values/INVENTORY.md F4; ipsissima-mcp docs/viewer.md holds
+ * the design): everything visible serves a purpose, and an orientation aid can be turned off.
+ * The walkthrough is the named exemplar, and every rule below is borrowed from it.
+ *
+ * ONCE, IN THE WORKBENCH ONLY. The tour's own reasoning transfers whole: a built map or an
+ * exported page is a document somebody was SENT, and furniture that offers itself there is the
+ * software talking about itself. So the card self-offers only where the tour would
+ * (`__ARGDOWN_PAYLOAD__` absent), only where the choice can be remembered, and only on a map
+ * that actually uses three or more of the encodings — a map of plain support arrows has
+ * nothing for a key to say. Everywhere, including sent pages, the assembled key lives under
+ * How to use ▸ The key, which is the durable home; the card is one showing of it.
+ *
+ * IT DRAWS ONLY WHAT THIS MAP USES. A key listing markings the map does not contain is a
+ * lesson nobody asked for; `keyContent` reads the graph and shows the levels, kinds and chips
+ * that are actually on screen. The same builder fills the help topic, so the two cannot
+ * disagree.
+ */
+var KEY_KEY = "ipsissima.key.v1";
+var KEY_STORE = makeChoiceStore(KEY_KEY);
+function keySeen(){ return KEY_STORE.ok ? KEY_STORE.get() === "seen" : false; }
+function keyRemember(){ if (KEY_STORE.ok) KEY_STORE.set("seen"); }
+var KEY_GRAPH = null;
+
+/** The footer sparkline's own inputs, or null where the exposition mark cannot be drawn —
+ *  the same guards `statsLine` applies, asked without drawing anything. */
+function sparkFor(graph){
+  if (!window.ArgdownExposition || !msAvailable()) return null;
+  var EXP = window.ArgdownExposition;
+  var rk = EXP.ranks(graph.nodes || []);
+  var rs = EXP.reaches(graph.edges || [], rk.rank);
+  var v = EXP.verdict(rs, rk.n);
+  return v.centre != null ? { rs: rs, n: rk.n } : null;
+}
+
+/* Strict mode emits `entails` and `contrary` where loose mode says `support` and `attack`, and
+   the renderer draws each pair identically (see REL in argdown-live-map.js). The key follows
+   the drawing: same stroke, same row. */
+var KEY_KIND = { support: "support", entails: "support", attack: "attack", contrary: "attack",
+                 undercut: "undercut", contradictory: "contradictory" };
+
+/** How many of the four encodings this map actually uses. The offer's gate. */
+function encodingsInUse(graph){
+  var n = 0;
+  if ((graph.nodes || []).some(function(x){ return x.fidelity; })) n++;
+  if ((graph.edges || []).some(function(e){
+        return e.type && KEY_KIND[e.type] !== "support"; })) n++;
+  if ((graph.nodes || []).some(function(x){ return x.facet; })) n++;
+  if (sparkFor(graph)) n++;
+  return n;
+}
+
+/** The assembled key, in miniature: real strokes, names only — the full explanations are one
+ *  button away and the card must not try to be them. Sections the map does not use are simply
+ *  absent. Facet names come from the reconstruction, which is somebody's file: escaped. */
+function keyContent(graph){
+  var nodes = graph.nodes || [], edges = graph.edges || [];
+  var out = [];
+
+  var present = {};
+  nodes.forEach(function(n){ if (n.fidelity) present[n.fidelity] = true; });
+  if (Object.keys(present).length) {
+    out.push('<h4>Borders — whose words</h4>');
+    FID_KEY.forEach(function(f){
+      if (!present[f[1]]) return;
+      out.push('<div class="krow">' + boxSwatch(f[0]) + '<b>' + f[1] + '</b></div>');
+    });
+  }
+
+  var kinds = {};
+  edges.forEach(function(e){ if (e.type && KEY_KIND[e.type]) kinds[KEY_KIND[e.type]] = true; });
+  if (Object.keys(kinds).length) {
+    out.push('<h4>Lines — how claims bear</h4>');
+    REL_KEY.forEach(function(r){
+      if (!kinds[r[0]]) return;
+      out.push('<div class="krow">' + swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]) +
+               '<b>' + r[3] + '</b></div>');
+    });
+  }
+
+  var facets = [];
+  nodes.forEach(function(n){ if (n.facet && facets.indexOf(n.facet) < 0) facets.push(n.facet); });
+  if (facets.length) {
+    out.push('<h4>Chips — whose claim</h4><div>');
+    facets.slice(0, 6).forEach(function(f){
+      out.push('<span class="kchip">#' + explEsc(f) + '</span>');
+    });
+    if (facets.length > 6) out.push('<span class="kchip">+' + (facets.length - 6) + ' more</span>');
+    out.push('</div><div class="kfoot" style="margin-top:.1rem">switch one off in the bar to ' +
+             'set those claims aside</div>');
+  }
+
+  var sp = sparkFor(graph);
+  if (sp) {
+    out.push('<h4>Sparkline — where the reasons fall</h4>');
+    out.push('<div>' + window.ArgdownExposition.sparkline(sp.rs, sp.n,
+                                                          { width: 170, height: 16 }) + '</div>');
+    out.push('<div class="kfoot" style="margin-top:0">below — reasons still to come · ' +
+             'above — already given</div>');
+  }
+
+  out.push('<div class="kfoot">Each of these is explained in full under <b>How to use</b>.</div>');
+  return out.join("");
+}
+
+function offerKeyCard(){
+  if (!KEY_GRAPH || WALK) return;
+  if (window.__ARGDOWN_PAYLOAD__) return;
+  if (!KEY_STORE.ok || keySeen()) return;
+  if (encodingsInUse(KEY_GRAPH) < 3) return;
+  $("keybody").innerHTML = keyContent(KEY_GRAPH);
+  $("keycard").hidden = false;
+}
+/** `remember: false` hides the card without recording anything — for a new file replacing the
+ *  view, which is not the reader's dismissal. Everything else is, and is remembered. */
+function dismissKeyCard(remember){
+  if ($("keycard").hidden) return false;
+  $("keycard").hidden = true;
+  if (remember !== false) keyRemember();
+  return true;
+}
+$("keyclose").onclick = function(){ dismissKeyCard(); };
 
 // What the next export will carry. Remembered between openings, because someone marking a stack
 // of essays chooses once and then repeats.
@@ -3331,6 +3512,9 @@ document.addEventListener("keydown", function(e){
   if (!$("about").hidden) return closeAbout();
   if (!$("cdlg").hidden) return closeCommentDialog();
   if (!$("ctx").hidden) return ctxHide();
+  // The key sits over the map like the menus do, so Escape sends it away next — and an Escape
+  // is a dismissal like any other: remembered, per the card's own contract.
+  if (!$("keycard").hidden) return dismissKeyCard();
   if ($("help").classList.contains("show")) return setHelp(false);
   // The abstract sits with the panels rather than with full screen: it is a thing the reader
   // opened over the map, and one Escape should put it back before it touches anything else.

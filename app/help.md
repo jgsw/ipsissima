@@ -19,10 +19,10 @@
   rather than that the topic needs one of its own — seventeen topics in a flat list is what these
   four groups were introduced to fix, and it will happen again if they are allowed to multiply.
 
-  Raw HTML is allowed here (this is our own text, unlike a manuscript), and four ids are filled
-  in by the program at runtime and must survive any rewrite: `relkey`, `fidkey`, `helpstats`,
-  and the `about*` ids in the last topic. Deleting one of those does not break the page, but the
-  thing it was showing silently stops appearing.
+  Raw HTML is allowed here (this is our own text, unlike a manuscript), and five ids are filled
+  in by the program at runtime and must survive any rewrite: `relkey`, `fidkey`, `helpkeypane`,
+  `helpstats`, and the `about*` ids in the last topic. Deleting one of those does not break the
+  page, but the thing it was showing silently stops appearing.
 
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
@@ -84,6 +84,17 @@ there is a claim and its support far apart in the text.</p>
 
 The **Map**, **Argdown**, **Notes** and **Manuscript** buttons beside them are something else
 again — those are panes, and any combination of them can be open at once.
+
+## The key
+
+
+Everything the map draws with, in one place — assembled from the reconstruction you have open,
+so it shows only the markings this map actually uses:
+
+<div id="helpkeypane"></div>
+
+When a map uses several of these at once, this key also offers itself once, floating over a
+corner of the map. Closing it there is remembered; this page is its permanent home.
 
 ## What the lines mean
 
