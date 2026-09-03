@@ -163,6 +163,9 @@ The absolute claim was in three files and all three now distinguish the two case
 - `site/index.md` — the same, noting the site's own copy has nothing of the sort
 - `app/desktop/INSTALL.md` — the full statement, since that is the page somebody reads while being
   asked to click past a security warning
+- `ipsissima-mcp/README.md` §Updating — the tool described; it was a fourth place carrying the
+  claim and was missed by the original pass precisely because this list did not name it
+  (noticed 3 Sep 2026, `docs/values/TENSIONS.md` T3)
 
 **If an automatic updater is ever added**, these are the files to revisit again, and the condition
 to hold to is that it be opt-in, asked once, and default to off. A privacy claim that is true of

@@ -221,8 +221,17 @@ rm -rf .venv                     # the environment, and everything installed int
 Nothing is installed outside that virtual environment and the repository, and neither holds your
 reconstructions — those are ordinary files wherever you chose to keep them.
 
-**Neither version checks for updates.** Like the application, this makes no network request of
-its own accord. Watching the releases page on GitHub is the way to hear about a new one.
+**Nothing checks for updates on its own — but you can ask.** The server makes no network
+request of its own accord, ever: no startup check, no timer. What it has is a
+`check_for_updates` **tool**, the server's equivalent of the application's Help ▸ Check for
+Updates menu item — ask your assistant *"is there a new version of Ipsissima?"* and one
+request goes to the GitHub releases API, only then. It sends nothing about you or your
+documents, downloads nothing, installs nothing: it names both versions and says how to update
+by the route you actually installed. For bundle users it matters more than the menu item does
+in the app, because the `.mcpb` format has no update feed of its own — this tool, or watching
+the [releases page](https://github.com/jgsw/ipsissima/releases), is how you hear a new one
+exists. It also tells you that the desktop application is a separate program on its own
+schedule: a new Ipsissima-MCP does not mean a new Ipsissima.
 
 ### Check it before you rely on it
 
