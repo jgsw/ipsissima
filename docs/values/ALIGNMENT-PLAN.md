@@ -17,7 +17,9 @@ built to be reordered, not a schedule.
 > A7's amendment was re-amended to match. Item 10's second half concluded *verified, no
 > change*: the DOI lookup is parameterised and named in `assess_pdf`'s own signature. The
 > item-5 check's first pass over the corpus left one standing `?` on Miller for the
-> reconstructor to judge.
+> reconstructor to judge. The author ruled on both open questions the same day: the internal
+> documentation keeps the debt vocabulary (the boundary is the reader), and the Miller `?`
+> stands for now — which is what a `?` is for.
 
 Two standing rules govern every item. Per E6, any new check or instrument must be **shown to
 fail** before it is trusted — the mutation that breaks it named in the test file. Per the
