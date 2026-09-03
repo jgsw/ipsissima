@@ -64,6 +64,7 @@ const SUITES = [
   ["the bundled Argdown parser", "node", [path.join(HERE, "test_argdown_shim.mjs")]],
   // Five files state the version and nothing keeps them in step.
   ["one release, one version", "node", [path.join(HERE, "test_versions.mjs")]],
+  ["the promises hold",        "node", [path.join(HERE, "test_promises.mjs")]],
   // The Reader and the page it EXPORTS must be the same program. They came apart once, by two
   // entries in a list that existed twice, and four separate faults were reported before the
   // one cause was found. See the header of test_page_parity.mjs.

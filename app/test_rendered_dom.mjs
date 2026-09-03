@@ -624,6 +624,9 @@ async function keyChecks(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
+  // The workbench session is held to the same no-network promise as the built maps above.
+  const leaks = [];
+  page.on("request", r => { if (!r.url().startsWith("file:")) leaks.push(r.url()); });
   await page.goto("file://" + out);
   // The walkthrough is settled and the key unseen — the exact state the offer waits for.
   await page.evaluate(() => {
@@ -676,6 +679,8 @@ async function keyChecks(browser) {
     });
     check(inHelp, "while the assembled key lives on under How to use");
   }
+  check(leaks.length === 0, "the workbench session makes no network request",
+        leaks.slice(0, 3).join(" | "));
   await ctx.close();
 }
 
@@ -705,8 +710,18 @@ for (const scheme of ["light", "dark"]) {
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", e => errors.push(String(e.message || e)));
+  // THE FLATTEST PROMISE IN THE README, asserted at runtime rather than by grep: the page
+  // "makes no network request of any kind, ever, under any circumstances". A real browser
+  // records every request a session attempts, so a whole driven session — folds, panels,
+  // filters, exports — is held to leaving nothing but file: requests. This is the promises
+  // lint's first row (docs/values/AUTOMATION.md 4.1), living here because it needs the
+  // browser. SHOWN ABLE TO FAIL, 3 Sep 2026: an in-page fetch("https://example.com/x")
+  // lands in `leaks` and fails the map it ran on.
+  const leaks = [];
+  page.on("request", r => { if (!r.url().startsWith("file:")) leaks.push(r.url()); });
   for (const m of built) {
     errors.length = 0;
+    leaks.length = 0;
     await page.goto("file://" + m.html);
     await settle(page);
     await dismissWalkthrough(page);
@@ -743,6 +758,8 @@ for (const scheme of ["light", "dark"]) {
 
     // A PAGE THAT THREW IS NOT A PAGE THAT PASSED, however green its geometry.
     check(errors.length === 0, `${m.name} raises no error [${scheme}]`, errors.join(" | "));
+    check(leaks.length === 0, `${m.name} makes no network request [${scheme}]`,
+          leaks.slice(0, 3).join(" | "));
   }
   await ctx.close();
 }

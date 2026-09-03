@@ -13,6 +13,7 @@ skipped, rather than failing and being ignored ever after.
 """
 import asyncio
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -149,6 +150,21 @@ def test_server(d):
         res = {str(r.uri) for r in (await s.list_resources()).resources}
         check_true("the Argdown syntax reference is a resource",
                    "ipsissima://argdown/syntax" in res)
+
+        # THE README'S PROBE SENTENCE IS A PROMISE, held here against the live server. "A
+        # working install answers 9 tools, 2 prompts and 8 resources" is what a reader uses to
+        # tell a broken install from a broken client, and a count that has drifted sends them
+        # debugging the wrong side. The T3 drift — the same README denying a tool this server
+        # ships — is the pedigree (docs/values/AUTOMATION.md 4.1, row 4). Shown able to fail:
+        # bump any number in the sentence and the matching check goes red.
+        readme = (REPO / "ipsissima-mcp" / "README.md").read_text(encoding="utf-8")
+        m = re.search(r"answers (\d+)\s+tools,\s+(\d+)\s+prompts\s+and\s+(\d+)\s+resources",
+                      readme)
+        check_true("the README still makes its probe promise", bool(m))
+        if m:
+            check("the README's tool count is the server's", int(m.group(1)), len(tools))
+            check("its prompt count too", int(m.group(2)), len(prompts))
+            check("and its resource count", int(m.group(3)), len(res))
 
         # The prompt is the file on disk, not a copy compiled into the server.
         p = await s.get_prompt("reconstruct_argument", {"source_path": "source/x.md"})

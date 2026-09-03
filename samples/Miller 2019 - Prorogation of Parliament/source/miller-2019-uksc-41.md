@@ -2,6 +2,7 @@
 title: "R (Miller) v The Prime Minister"
 author: "The Supreme Court of the United Kingdom"
 source: "[2019] UKSC 41"
+rights: "Crown copyright, re-used under the Open Government Licence v3.0"
 facts: >-
   On 31 October 2019 the United Kingdom is scheduled to leave the European Union, following the
   notification of its intention to withdraw pursuant to Article 50 of the Treaty on European Union.
@@ -16,6 +17,17 @@ facts: >-
   prorogation.
 facts_source: "the court's own case page, supremecourt.uk/cases/uksc-2019-0192"
 ---
+
+<!-- CROWN COPYRIGHT, re-used under the Open Government Licence v3.0
+     (nationalarchives.gov.uk/doc/open-government-licence/version/3/). The PDF this was
+     converted from came from supremecourt.uk, whose terms page offers Crown copyright material
+     under the OGL; the National Archives' Find Case Law route carries a DIFFERENT licence and
+     is not the source used here — the folder's README has the full account.
+
+     THE NOTE TRAVELS WITH THE TEXT. Ipsissima can save a reconstruction and its manuscript as
+     one file and send it to somebody, at which point this file is the only thing saying what
+     the judgment may be re-used under. Found absent on 3 Sep 2026 by the promises lint's first
+     calibration run — the samples README had required it all along. -->
 
 <!-- CONVERTED TEXT - NOT THE PUBLISHED ARTICLE.
      Made by pdf_to_source.py from miller-2019-uksc-41.pdf.

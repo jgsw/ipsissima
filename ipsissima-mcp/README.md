@@ -142,7 +142,7 @@ by doing that; the bundle is a convenience, not a capability.
 
 **What genuinely varies is prompts and resources.** MCP has three kinds of thing, and clients
 support them unevenly: tools are universal, prompts and resources much less so. That matters more
-here than it would for most servers, because this one's *method* is not in its tools. The nine
+here than it would for most servers, because this one's *method* is not in its tools. The ten
 tools convert documents and check reconstructions; how to actually reconstruct an argument — the
 Assertibility Question, linked versus convergent support, what fidelity levels mean, what to do
 about what an author did not say — is served as a prompt (`reconstruct_argument`) and three
@@ -244,8 +244,10 @@ a client that finds no tools will usually say nothing about why. This asks it di
 EOF
 ```
 
-One line of JSON comes back naming the server and its version. **A working install answers 9
+One line of JSON comes back naming the server and its version. **A working install answers 10
 tools, 2 prompts and 8 resources**; if the count is lower, the client is not the problem.
+(That sentence is held against the live server by the test suite, so it cannot quietly drift
+the way it once did — it said 9 for five days after `check_for_updates` made it 10.)
 
 Note that `pymupdf` prints a deprecation notice on startup. It goes to stderr, where it is
 harmless — the protocol is on stdout — and it is not a sign of a bad install.
@@ -428,6 +430,7 @@ Nothing is ever written into your Zotero storage.
 | `check_reconstruction` | validity, provenance and fidelity — faults with fixes, not a report |
 | `split_manuscript` | a one-file book into chapters plus a project file |
 | `zotero_lookup` | only when a library is present |
+| `check_for_updates` | only when asked — see *Updating and removing it* above |
 
 **Prompts** — `reconstruct_argument` (the full instructions, read off disk every run) and
 `extract_text_only`. **Resources** — the Argdown reference, the map semantics, the order views,
