@@ -177,6 +177,12 @@ main.swapped{flex-direction:row-reverse}
   padding:0 .5em;margin:.1em .25em .1em 0;font-size:11px;color:var(--fg-dim)}
 #keycard .kfoot{margin-top:.45rem;font-size:10.5px;font-style:italic;color:var(--fg-dim);
   line-height:1.45}
+/* Folded to its header: a pill that stays out of the way but keeps the key one click near.
+   The subtitle goes; the name and the two controls stay. */
+#keycard.min{padding:.25rem .55rem .3rem}
+#keycard.min header{margin:0}
+#keycard.min header span{display:none}
+#keycard.min header{cursor:pointer}
 /* The same assembled key, sitting as prose in the help panel. */
 #helpkeypane .krow{display:flex;align-items:center;gap:.45rem;line-height:1.6}
 #helpkeypane .krow svg{width:38px;height:14px;flex:none}
@@ -851,8 +857,10 @@ body.fs #fsexit{display:inline-flex}
        the markings this map actually uses. -->
   <div id="keycard" hidden role="note" aria-label="Key to the map's markings">
     <header><b>Key</b><span>what the markings mean</span>
+      <button class="plain" id="keymin"
+              title="Fold the key to its header — it stays on screen, across maps, until closed">&#8211;</button>
       <button class="plain" id="keyclose"
-              title="Close. The key stays under How to use — it will not offer itself again.">&#215;</button></header>
+              title="Close. The key stays under How to use and Help &#9656; Show the Key.">&#215;</button></header>
     <div id="keybody"></div>
   </div>
   <!-- THE ABSTRACT, FOR SOMEONE MEETING THIS MAP COLD. A reconstruction says what a paper
@@ -3140,16 +3148,54 @@ function keyContent(graph){
   return out.join("");
 }
 
+/** THE STORE'S THIRD STATE. Unset — the one self-offer is still to come. "seen" — dismissed,
+ *  never self-shown again. "kept" — the reader folded the card and asked for it to STAY: it
+ *  comes back, folded, on every map they open, until the × retires it to "seen". Kept is the
+ *  reader's own standing choice, so unlike the self-offer it is honoured in sent pages too. */
+function keyKept(){ return KEY_STORE.ok && KEY_STORE.get() === "kept"; }
+
+/** Folded to its header, or opened out. The fold is what "keep it onscreen" means: present,
+ *  one click near, and out of the way. */
+function keySetMin(min){
+  $("keycard").classList.toggle("min", !!min);
+  $("keybody").hidden = !!min;
+  $("keymin").textContent = min ? "▸" : "–";
+  $("keymin").title = min
+    ? "Open the key out"
+    : "Fold the key to its header — it stays on screen, across maps, until closed";
+}
+
 function offerKeyCard(){
   if (!KEY_GRAPH || WALK) return;
+  // KEPT WINS FIRST, and skips every gate below: the reader has already chosen. The content is
+  // rebuilt for the map now open, and the card arrives folded, which is what was kept.
+  if (keyKept()) {
+    $("keybody").innerHTML = keyContent(KEY_GRAPH);
+    keySetMin(true);
+    $("keycard").hidden = false;
+    return;
+  }
   if (window.__ARGDOWN_PAYLOAD__) return;
   if (!KEY_STORE.ok || keySeen()) return;
   if (encodingsInUse(KEY_GRAPH) < 3) return;
   $("keybody").innerHTML = keyContent(KEY_GRAPH);
+  keySetMin(false);
   $("keycard").hidden = false;
 }
+
+/** The deliberate opening — Help ▸ Show the Key. An explicit ask bypasses the offer's gates
+ *  (any map, any number of encodings, seen or kept or neither) and touches no store: asking to
+ *  see the key is neither a dismissal nor a standing choice. */
+function openKeyCard(){
+  if (!KEY_GRAPH) return;
+  $("keybody").innerHTML = keyContent(KEY_GRAPH);
+  keySetMin(false);
+  $("keycard").hidden = false;
+}
+
 /** `remember: false` hides the card without recording anything — for a new file replacing the
- *  view, which is not the reader's dismissal. Everything else is, and is remembered. */
+ *  view, which is not the reader's dismissal. Everything else is, and is remembered — the ×
+ *  retires a kept card too, which is how "keep it onscreen" is switched back off. */
 function dismissKeyCard(remember){
   if ($("keycard").hidden) return false;
   $("keycard").hidden = true;
@@ -3157,6 +3203,19 @@ function dismissKeyCard(remember){
   return true;
 }
 $("keyclose").onclick = function(){ dismissKeyCard(); };
+$("keymin").onclick = function(){
+  var toMin = !$("keycard").classList.contains("min");
+  keySetMin(toMin);
+  // Folding is the standing choice; opening back out does not un-choose it — the card still
+  // returns folded next time, until the × says otherwise.
+  if (toMin && KEY_STORE.ok) KEY_STORE.set("kept");
+};
+// A folded card is mostly header, so the header is the open-out control too — except on its
+// own buttons, which keep their own meanings.
+$("keycard").querySelector("header").onclick = function(e){
+  if ($("keycard").classList.contains("min") &&
+      !(e.target && e.target.closest && e.target.closest("button"))) keySetMin(false);
+};
 
 // What the next export will carry. Remembered between openings, because someone marking a stack
 // of essays chooses once and then repeats.
@@ -3513,8 +3572,11 @@ document.addEventListener("keydown", function(e){
   if (!$("cdlg").hidden) return closeCommentDialog();
   if (!$("ctx").hidden) return ctxHide();
   // The key sits over the map like the menus do, so Escape sends it away next — and an Escape
-  // is a dismissal like any other: remembered, per the card's own contract.
-  if (!$("keycard").hidden) return dismissKeyCard();
+  // is a dismissal like any other: remembered, per the card's own contract. A card the reader
+  // FOLDED is different: they parked it there on purpose, it is not in anyone's way, and an
+  // Escape aimed at whatever is on top should not retire a standing choice — so a minimised
+  // card lets the Escape pass through to the next thing.
+  if (!$("keycard").hidden && !$("keycard").classList.contains("min")) return dismissKeyCard();
   if ($("help").classList.contains("show")) return setHelp(false);
   // The abstract sits with the panels rather than with full screen: it is a thing the reader
   // opened over the map, and one Escape should put it back before it touches anything else.
@@ -6382,6 +6444,7 @@ if (HOST) {
       "about":           openAbout,
       "help":            function(){ setHelp(!$("help").classList.contains("show")); },
       "walkthrough":     function(){ startWalkthrough(); },
+      "key":             openKeyCard,
       /* THE ONLY MENU ITEM THAT IS NOT A SECOND DOORBELL FOR A BUTTON, because there is no
        * button: the web page cannot check for updates and should not pretend it can. The
        * request itself is made in Rust — see `check_for_updates` in src-tauri/src/lib.rs — so

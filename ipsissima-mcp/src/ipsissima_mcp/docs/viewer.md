@@ -200,6 +200,13 @@ under How to use.
   toolbar button. F4(a) is the test every element of it must pass: it floats over a corner of
   the map, reflows nothing, and when dismissed is gone without residue.
 
+Amended later the same day, at the author's direction: **Help ▸ Show the Key** opens it
+deliberately in the application (bypassing the offer's gates, touching no store — asking is
+neither a dismissal nor a standing choice), and a **minimise** control folds it to its header.
+The fold is the store's third state, `kept`: a folded key returns, folded, on every map opened
+— the reader's own standing choice, so honoured in sent pages too — until the × retires it.
+An Escape passes a folded card by: it was parked there on purpose and is in nobody's way.
+
 **Fidelity is discoverable three ways**: the border style (as before), the level named in the
 tooltip on hover, and a key in How to use that draws the actual strokes — "long dash versus
 short dash" is not something anyone can hold in their head from prose.

@@ -94,7 +94,10 @@ so it shows only the markings this map actually uses:
 <div id="helpkeypane"></div>
 
 When a map uses several of these at once, this key also offers itself once, floating over a
-corner of the map. Closing it there is remembered; this page is its permanent home.
+corner of the map — and in the application it can be opened any time from **Help ▸ Show the
+Key**. The **–** in its corner folds it to just its header, and that choice stands: a folded
+key stays on screen, across maps and reopenings, until the **×** closes it for good. Closing
+it is remembered too; this page is its permanent home either way.
 
 ## What the lines mean
 

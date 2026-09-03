@@ -604,7 +604,8 @@ async function foldByHeader(page, map, scheme) {
  *
  * SHOWN ABLE TO FAIL, 3 Sep 2026: raising the encodings gate to `< 9` fails the first check
  * (the card never appears); stubbing `keyRemember` to a no-op fails the remembered-dismissal
- * check and the never-again check after it. A harness that has never failed is worth nothing.
+ * check and the never-again check after it; stubbing `keyKept` to false fails the
+ * kept-card-returns-folded check. A harness that has never failed is worth nothing.
  */
 async function keyChecks(browser) {
   const miller = built.find(m => /miller/i.test(m.name));
@@ -654,6 +655,38 @@ async function keyChecks(browser) {
       const r = n ? n.getBoundingClientRect() : null;
       return r ? [r.left, r.top, r.width, r.height].join(",") : "none";
     });
+    const stored = () => page.evaluate(() => {
+      try { return localStorage.getItem("ipsissima.key.v1"); } catch (e) { return null; }
+    });
+
+    // THE FOLD IS A STANDING CHOICE. Minimise folds the card to its header and records
+    // "kept"; a kept card returns, folded, on the next map opened; its header opens it back
+    // out; and the × retires the whole arrangement to "seen".
+    await page.click("#keymin");
+    const min = await page.evaluate(() => ({
+      hidden: document.getElementById("keycard").hidden,
+      folded: document.getElementById("keycard").classList.contains("min"),
+      body: document.getElementById("keybody").hidden,
+    }));
+    check(!min.hidden && min.folded && min.body && await stored() === "kept",
+          "minimise folds the card to its header and records the choice",
+          JSON.stringify(min) + " store=" + await stored());
+    await page.reload();
+    await drop();
+    await page.waitForSelector(".alm-n", { timeout: 20000 });
+    await page.waitForSelector("#keycard:not([hidden])", { timeout: 4000 })
+      .catch(() => {});
+    const kept = await page.evaluate(() => ({
+      hidden: document.getElementById("keycard").hidden,
+      folded: document.getElementById("keycard").classList.contains("min"),
+    }));
+    check(!kept.hidden && kept.folded, "a kept card returns folded on the next map",
+          JSON.stringify(kept));
+    await page.click("#keycard header b");
+    const opened = await page.evaluate(() =>
+      !document.getElementById("keycard").classList.contains("min"));
+    check(opened, "and its header opens it back out");
+
     const withCard = await rectOf();
     const pos = await page.evaluate(() =>
       getComputedStyle(document.getElementById("keycard")).position);
@@ -662,10 +695,8 @@ async function keyChecks(browser) {
     check(pos === "absolute" && dismissed && await rectOf() === withCard,
           "the key floats, and one click removes it without moving anything",
           `position=${pos}`);
-    const stored = await page.evaluate(() => {
-      try { return localStorage.getItem("ipsissima.key.v1"); } catch (e) { return null; }
-    });
-    check(stored === "seen", "the dismissal is remembered", String(stored));
+    check(await stored() === "seen", "the dismissal is remembered — kept retired too",
+          String(await stored()));
 
     await page.reload();
     await drop();

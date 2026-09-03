@@ -130,6 +130,9 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
     // itself says it will be found when somebody turns it off, so the two have to agree.
     let help_menu = SubmenuBuilder::new(app, "Help")
         .item(&item("walkthrough", "Take the Walkthrough", None)?)
+        // The key sits beside the walkthrough because they are the two teachers: the tour for
+        // the first meeting, the key for every "what did dash-dot mean again" after it.
+        .item(&item("key", "Show the Key", None)?)
         .separator()
         .item(&item("help", "How to Use Ipsissima", Some("CmdOrCtrl+/"))?)
         .item(&item("about", "About Ipsissima", None)?)
