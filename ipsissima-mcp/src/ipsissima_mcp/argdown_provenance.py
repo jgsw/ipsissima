@@ -1812,7 +1812,7 @@ def stamp_rewrites(doc):
     import sys
     import os
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from validity import stamp
+    from validity import stamp_of_claim as stamp
 
     out = {}
     for title, rec in (doc.get("statements") or {}).items():

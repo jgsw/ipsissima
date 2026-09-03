@@ -11,7 +11,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
 
-from ipsissima_mcp.validity import check_step, matches_rule, stamp  # noqa: E402
+from ipsissima_mcp.validity import check_step, matches_rule, stamp, stamp_of_claim  # noqa: E402
 
 VECTORS = json.loads((HERE / "validity-vectors.json").read_text())
 
@@ -107,6 +107,22 @@ for name, rule, ps, c, want in SCHEMA_CASES:
         print(f"  FAIL  {name}: matches_rule={got!r}, expected {want!r}")
     else:
         print(f"  ok    {name}")
+
+# THE STAMP OF A CLAIM IGNORES ITS TAGS. The browser's parse hands the page tag-less member
+# text while the Python JSON can keep a trailing tag, and the first tagged claim ever stamped
+# (Carroll's, 3 Sep 2026) was stamped against one string and checked against the other — a
+# wavy NOT-checked bar over an unedited step. Shown able to fail: route either caller back to
+# bare `stamp` and this disagrees.
+if stamp_of_claim("He must accept Z. #reported") == stamp("He must accept Z."):
+    print("  ok    a tag is attribution, not content: the stamp ignores it")
+else:
+    fails += 1
+    print("  FAIL  a tag is attribution, not content: the stamp ignores it")
+if stamp_of_claim("Plain words with no tag at all here") == stamp("Plain words with no tag at all here"):
+    print("  ok      and an untagged claim stamps exactly as before")
+else:
+    fails += 1
+    print("  FAIL    and an untagged claim stamps exactly as before")
 
 print()
 if fails:

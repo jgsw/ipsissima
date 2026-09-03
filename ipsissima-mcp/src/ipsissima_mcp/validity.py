@@ -349,6 +349,22 @@ def stamp(text: str) -> str:
     return f"{h:08x}"
 
 
+#: A tag says WHOSE claim it is, not what the words are — and the two halves of the pair see
+#: different texts: the browser's parse hands the page tag-less member text, while the Python
+#: JSON can carry a trailing `#reported` in the line a formalization sits on. Found the day the
+#: first tagged claim was stamped: Carroll's `[The Tortoise must now accept Z]` was stamped
+#: against "… accept Z. #reported" and checked in the page against "… accept Z." — one rule,
+#: two texts, and a wavy NOT-checked bar over a step nobody had edited. So every Python caller
+#: stamps through this wrapper, which strips inline hashtags exactly as `derived_quotation`
+#: does for the verbatim test; the JavaScript needs no twin because tags never reach its text.
+_TAG = re.compile(r"(?<!\S)\#[A-Za-z][\w-]*")
+
+
+def stamp_of_claim(text: str) -> str:
+    """`stamp`, of the claim's words alone — hashtags are attribution, not content."""
+    return stamp(_TAG.sub(" ", str(text or "")))
+
+
 # ---- is the step the rule it names? ---------------------------------------------------------
 #
 # THE VERDICT NEVER READS THE NAME -- `check_step` decides from the formalizations alone, and

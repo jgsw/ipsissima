@@ -746,7 +746,7 @@ def validity_checks(doc):
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from validity import check_step
 
-    from validity import matches_rule, stamp
+    from validity import matches_rule, stamp_of_claim as stamp
 
     out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": [],
            # A formalization whose claim has been edited since. NOT the same as an unstamped one,
