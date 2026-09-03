@@ -605,7 +605,9 @@ async function foldByHeader(page, map, scheme) {
  * SHOWN ABLE TO FAIL, 3 Sep 2026: raising the encodings gate to `< 9` fails the first check
  * (the card never appears); stubbing `keyRemember` to a no-op fails the remembered-dismissal
  * check and the never-again check after it; stubbing `keyKept` to false fails the
- * kept-card-returns-folded check. A harness that has never failed is worth nothing.
+ * kept-card-returns-folded check; stubbing `openKeyCard` to a bare return fails both doorbell
+ * checks — and on its first run crashed the harness instead, which is why those two clicks
+ * are guarded. A harness that has never failed is worth nothing.
  */
 async function keyChecks(browser) {
   const miller = built.find(m => /miller/i.test(m.name));
@@ -709,6 +711,42 @@ async function keyChecks(browser) {
       return !!(k && k.innerHTML.length > 80);
     });
     check(inHelp, "while the assembled key lives on under How to use");
+
+    // THE PAGE'S OWN DOORBELLS (docs/PARITY-PLAN.md): a dismissed key can be refloated from
+    // its help topic, and from the map's right-click menu — so the card's reopenable form is
+    // not a desktop privilege. Both are driven as the reader would drive them.
+    await page.click("#helpbtn");
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll("#helptoc button")]
+        .find(x => x.textContent.trim() === "The key");
+      if (b) b.click();
+    });
+    // Short timeouts and a guarded dismissal, so a broken doorbell is REPORTED as the two
+    // failures it is rather than crashing the harness on the follow-up click — which is what
+    // the openKeyCard-stub mutation did on its first run.
+    await page.click("#keyfloat", { timeout: 4000 }).catch(() => {});
+    let floated = await page.evaluate(() => ({
+      card: !document.getElementById("keycard").hidden,
+      help: document.getElementById("help").classList.contains("show"),
+    }));
+    check(floated.card && !floated.help,
+          "the help topic's button floats a dismissed key, and closes the panel",
+          JSON.stringify(floated));
+    if (floated.card) await page.click("#keyclose");
+    else await page.evaluate(() => {
+      const h = document.getElementById("help");
+      if (h) h.classList.remove("show");
+    });
+
+    await page.click(".alm-n", { button: "right" });
+    await page.waitForSelector("#ctx:not([hidden])", { timeout: 4000 }).catch(() => {});
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll("#ctx button")]
+        .find(x => x.textContent.trim() === "Show the key");
+      if (b) b.click();
+    });
+    const viaCtx = await page.evaluate(() => !document.getElementById("keycard").hidden);
+    check(viaCtx, "and so does the map's right-click menu");
   }
   check(leaks.length === 0, "the workbench session makes no network request",
         leaks.slice(0, 3).join(" | "));

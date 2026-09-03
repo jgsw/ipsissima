@@ -91,3 +91,11 @@ constituency. Revisit if a reader ever reports hunting for it.
 Costs: item 1 is minutes; item 3 is under an hour with its mutation; item 2 is minutes if
 wanted. None requires a desktop rebuild to benefit HTML users, though the next desktop build
 inherits the help-topic button harmlessly.
+
+> **All three built the same day, on the author's instruction.** The key's help topic carries
+> *Float this key over the map*, wired to the same `openKeyCard` the menu rings; the map's
+> right-click menu gained *Show the key*; and `test_promises.mjs` holds the menu ids and
+> handler ids equal both ways, with `check-updates` the one documented exception and every
+> exception required to be a real menu id. Two rendered-DOM checks drive both doorbells as a
+> reader would, and the openKeyCard-stub mutation failed them — after first crashing the
+> harness's follow-up click, a lesson now guarded against and recorded where it lives.

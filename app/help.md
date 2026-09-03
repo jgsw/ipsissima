@@ -21,8 +21,9 @@
 
   Raw HTML is allowed here (this is our own text, unlike a manuscript), and five ids are filled
   in by the program at runtime and must survive any rewrite: `relkey`, `fidkey`, `helpkeypane`,
-  `helpstats`, and the `about*` ids in the last topic. Deleting one of those does not break the
-  page, but the thing it was showing silently stops appearing.
+  `helpstats`, and the `about*` ids in the last topic. A sixth, `keyfloat`, is WIRED rather
+  than filled — the program attaches its click. Deleting one of those does not break the
+  page, but the thing it was showing (or doing) silently stops.
 
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
@@ -93,11 +94,14 @@ with the markings this map actually uses drawn bright and the rest dimmed:
 
 <div id="helpkeypane"></div>
 
+<p><button class="plain" id="keyfloat" type="button">Float this key over the map</button></p>
+
 When a map uses several of these at once, this key also offers itself once, floating over a
-corner of the map — and in the application it can be opened any time from **Help ▸ Show the
-Key**. The **–** in its corner folds it to just its header, and that choice stands: a folded
-key stays on screen, across maps and reopenings, until the **×** closes it for good. Closing
-it is remembered too; this page is its permanent home either way.
+corner of the map. The button above floats it again whenever you want it — in any build — and
+in the application **Help ▸ Show the Key** and the map's right-click menu do the same. The
+**–** in its corner folds it to just its header, and that choice stands: a folded key stays on
+screen, across maps and reopenings, until the **×** closes it for good. Closing it is
+remembered too; this page is its permanent home either way.
 
 ## What the lines mean
 

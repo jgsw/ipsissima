@@ -100,5 +100,44 @@ console.log("\nthe samples name their licences");
   }
 }
 
+/* ---- every menu id and every handler id name each other -------------------------------
+ * The doctrine, stated where the menu is wired: the menu rings the same doorbells as the
+ * buttons, and no menu item has behaviour of its own. `Show the Key` shipped menu-only on
+ * 3 Sep and the author met the gap in the HTML version (docs/PARITY-PLAN.md) — the pedigree.
+ * The mechanical half held here: the menu ids in lib.rs and the handler ids in the template's
+ * onMenu map are the same set, both ways. The judgement half — that each handler's control is
+ * actually VISIBLE on the page — stays with people (docs/values/AUTOMATION.md §2).
+ *
+ * NO_PAGE_DOORBELL documents the ids allowed to lack an on-page control; adding an id there
+ * is how a menu-only function argues for itself in this file rather than shipping by drift,
+ * and each entry must still be a real menu id, so the list cannot quietly rot.
+ *
+ * SHOWN ABLE TO FAIL, 3 Sep 2026: a phantom `item("phantom", …)` appended to lib.rs fails the
+ * has-a-handler direction, and deleting the `"key"` handler line from the template fails it
+ * the other way round. */
+console.log("\nthe menus ring doorbells the page has");
+{
+  const NO_PAGE_DOORBELL = new Set([
+    "check-updates",   // deliberate: the request lives in Rust so the page's no-network
+                       // claim stays absolute (C1); the onMenu block names it as the one
+                       // menu item that is not a second doorbell
+  ]);
+  const rust = read("app/desktop/src-tauri/src/lib.rs");
+  const menuIds = new Set([...rust.matchAll(/item\("([a-z][a-z-]*)",/g)].map(m => m[1]));
+  const tpl = read("app/argdown-viewer.template.html");
+  const start = tpl.indexOf("HOST.onMenu(function");
+  const mapSrc = tpl.slice(start, tpl.indexOf("})[id]", start));
+  const handlerIds = new Set([...mapSrc.matchAll(/^\s*"([a-z][a-z-]*)":/gm)].map(m => m[1]));
+  ok("both lists were found and are not trivial",
+     menuIds.size > 10 && handlerIds.size > 10 && start > 0,
+     `menu ${menuIds.size}, handlers ${handlerIds.size}`);
+  const unhandled = [...menuIds].filter(id => !handlerIds.has(id));
+  const unrung = [...handlerIds].filter(id => !menuIds.has(id));
+  ok("every menu id has a handler in the page", unhandled.length === 0, unhandled.join(", "));
+  ok("  and every handler answers a menu id", unrung.length === 0, unrung.join(", "));
+  const rotted = [...NO_PAGE_DOORBELL].filter(id => !menuIds.has(id));
+  ok("  the exception list names only real menu ids", rotted.length === 0, rotted.join(", "));
+}
+
 console.log(`\n${fail ? "FAILED" : "all promises hold"} — ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

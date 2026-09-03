@@ -1666,6 +1666,11 @@ function buildHelpPages(){
   ab.textContent = "About Ipsissima";
   ab.onclick = function(){ setHelp(false); openAbout(); };
   toc.appendChild(ab);
+  // THE KEY'S OWN DOORBELL, in its own topic — the page-side twin of Help ▸ Show the Key, so
+  // the card's reopenable, foldable form is not a desktop privilege (docs/PARITY-PLAN.md).
+  // The walkthrough set the pattern: help is where a dismissed teacher is found again.
+  var kf = $("keyfloat");
+  if (kf) kf.onclick = function(){ if (!KEY_GRAPH) return; setHelp(false); openKeyCard(); };
   HELP_PAGES = pages;
   return pages;
 }
@@ -5572,6 +5577,15 @@ function ctxShow(n, ev){
       m.appendChild(del);
     }
   }
+  // THE KEY, from the moment of puzzlement: somebody staring at a border, a coloured line or
+  // a chip is exactly who the card is for, and the context menu is in-context rather than
+  // standing chrome, which is what F4 permits (docs/PARITY-PLAN.md, item 2).
+  var kb = document.createElement("button");
+  kb.type = "button";
+  kb.textContent = "Show the key";
+  kb.onclick = function(){ ctxHide(); openKeyCard(); };
+  m.appendChild(kb);
+
   if (b.disabled) {
     var why = document.createElement("div");
     why.className = "why";
