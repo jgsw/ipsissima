@@ -5602,6 +5602,26 @@ function ctxShow(n, ev){
   kb.onclick = function(){ ctxHide(); openKeyCard(); };
   m.appendChild(kb);
 
+  // EXPORT, from the same menu. The button lives in the Notes pane's header, and the Notes tab
+  // hides on a map with no marks — so in a browser tab such a map had no visible door to Export
+  // at all (the desktop reaches it through File ▸ Export regardless). In-context rather than
+  // standing chrome, like the key above. Offered only while the button itself is offered: a
+  // hidden button means the BUILD cannot export, which no reader can mend. The same doorbell is
+  // rung, and the menu then stays where the reader right-clicked rather than leaping to the
+  // button's corner of the page.
+  if (!$("expbtn").hidden) {
+    var xb = document.createElement("button");
+    xb.type = "button";
+    xb.textContent = "Export…";
+    xb.onclick = function(){
+      var r = m.getBoundingClientRect();
+      ctxHide();
+      $("expbtn").click();
+      ctxPlace(r.left, r.top);
+    };
+    m.appendChild(xb);
+  }
+
   if (b.disabled) {
     var why = document.createElement("div");
     why.className = "why";

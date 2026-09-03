@@ -846,6 +846,37 @@ async function exportChecks(browser) {
               `nodes ${nodesThere}/${nodesHere} errors=${errs2.join(" | ")}`);
       }
     }
+
+    // THE MAP'S OWN DOOR (4 Sep 2026): the Notes tab hides on a map with no marks, so the
+    // browser page reaches Export from the right-click menu instead — and the export menu
+    // stays where the reader right-clicked rather than leaping to the hidden button's corner.
+    // SHOWN ABLE TO FAIL: dropping the entry's `$("expbtn").click()` fails the opens-check
+    // (and the stays-put check after it, guardedly); dropping its `ctxPlace(...)` re-place
+    // sends the menu to the clamped corner and fails the stays-put check alone.
+    await page.click(".alm-n", { button: "right" });
+    await page.waitForSelector("#ctx:not([hidden])", { timeout: 4000 }).catch(() => {});
+    const before = await page.evaluate(() => {
+      const c = document.getElementById("ctx");
+      const b = [...c.querySelectorAll("button")].find(x => /^Export…$/.test(x.textContent));
+      const pos = { left: c.style.left, top: c.style.top, entry: !!b };
+      if (b) b.click();
+      return pos;
+    });
+    const after = await page.evaluate(() => {
+      const c = document.getElementById("ctx");
+      return { open: !c.hidden,
+               title: (c.querySelector(".ctxhead") || {}).textContent || "",
+               page: [...c.querySelectorAll("button")].some(x => /web page/i.test(x.textContent)),
+               left: c.style.left, top: c.style.top };
+    });
+    check(before.entry && after.open && after.title === "Export" && after.page,
+          "the map's right-click menu opens the export menu",
+          JSON.stringify({ before, after }).slice(0, 200));
+    if (before.entry && after.open)
+      check(after.left === before.left && after.top === before.top,
+            "which stays where the reader right-clicked",
+            `${before.left},${before.top} -> ${after.left},${after.top}`);
+    await page.keyboard.press("Escape").catch(() => {});
   }
   check(pageErrors.length === 0, "the export session raises no error", pageErrors.join(" | "));
   await ctx.close();
