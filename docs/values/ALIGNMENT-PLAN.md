@@ -8,8 +8,9 @@ built to be reordered, not a schedule.
 
 > **Carried out the same day, on the author's instruction to start at item 1 and move
 > forward.** Items 1–6 and 8–10 are done as specified, each with its verification run and its
-> commit; item 7 stands at its own first stage — the design note is written into `viewer.md`,
-> the feature deliberately not built. Two departures from the letter of the plan, both
+> commit; item 7's design note went in the same day, and the card itself was built on the
+> author's instruction at the next checkpoint — workbench-only, by the walkthrough's own
+> reasoning — with five rendered-DOM checks holding its promises. Two departures from the letter of the plan, both
 > recorded where they happened: item 5's schema check exempts a line naming *several* rules (a
 > compound derivation is not an instance of either schema), and item 8's wording went further
 > than an audit after the author showed "reader's burden" is loaded the other way — the

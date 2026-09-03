@@ -178,11 +178,16 @@ doing the teaching.
 | Find, line numbers, fold (editor bar) | hidden until the editor is live | tools of a pane that is itself the visible control |
 | start a new one | hidden where the host cannot create a file | structural |
 
-**The key: designed 3 Sep 2026, not yet built.** The map asks a reader to hold four encodings —
-border pattern (fidelity), edge colour and style (relation kind), tag chips, the sparkline —
-each explained in help and none reminded on screen; `REVIEW.md` suggested a dismissible legend
-and the flat no-clutter reading refused it. The respecified F4 permits one, on its own terms,
-and the walkthrough is the named exemplar. The design, for whoever builds it:
+**The key: designed and built 3 Sep 2026, on the author's instruction.** The map asks a reader
+to hold four encodings — border pattern (fidelity), edge colour and style (relation kind), tag
+chips, the sparkline — each explained in help and none reminded on screen; `REVIEW.md`
+suggested a dismissible legend and the flat no-clutter reading refused it. The respecified F4
+permits one, on its own terms, and the walkthrough is the named exemplar. The design below is
+what was built (`#keycard` and `keyContent` in the template; five checks in
+`test_rendered_dom.mjs` hold its three promises), with one addition the build settled: the
+card self-offers in the **workbench only**, because the walkthrough's reasoning transfers
+whole — a built or exported page is a document somebody was sent, and there the key waits
+under How to use.
 
 - **What it draws**: the four encodings in miniature, with the real strokes and colours — the
   existing `relkey`/`fidkey` content is the base — never prose descriptions of strokes.
