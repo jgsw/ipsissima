@@ -89,7 +89,7 @@ again — those are panes, and any combination of them can be open at once.
 
 
 Everything the map draws with, in one place — assembled from the reconstruction you have open,
-so it shows only the markings this map actually uses:
+with the markings this map actually uses drawn bright and the rest dimmed:
 
 <div id="helpkeypane"></div>
 

@@ -190,7 +190,9 @@ whole — a built or exported page is a document somebody was sent, and there th
 under How to use.
 
 - **What it draws**: the four encodings in miniature, with the real strokes and colours — the
-  existing `relkey`/`fidkey` content is the base — never prose descriptions of strokes.
+  existing `relkey`/`fidkey` content is the base — never prose descriptions of strokes. The
+  whole vocabulary is drawn, this map's usage bright and the rest dimmed (amended 3 Sep, after
+  a present-only first cut made a plain map's key read as broken).
 - **When it appears**: once, on the first map that uses at least three of the encodings, and
   never alongside the walkthrough — one teacher at a time, so it waits until the walkthrough
   has been taken or declined.

@@ -169,6 +169,11 @@ main.swapped{flex-direction:row-reverse}
   padding:.45rem .7rem .6rem;box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
 #keycard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.1rem}
 #keycard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
+/* The two header controls are furniture, not features: small, quiet, and still an easy
+   target. Sized down at the author's request, 3 Sep 2026. */
+#keycard header button.plain{font-size:11px;line-height:1.3;padding:0 4px;
+  color:var(--fg-dim)}
+#keycard header button.plain:hover{color:var(--fg)}
 #keycard h4{font-size:10px;line-height:1.6;font-weight:600;letter-spacing:.06em;
   text-transform:uppercase;color:var(--fg-dim);margin:.5rem 0 .1rem}
 #keycard .krow{display:flex;align-items:center;gap:.45rem;line-height:1.55}
@@ -3056,9 +3061,10 @@ function maybeStartWalkthrough(){
  * nothing for a key to say. Everywhere, including sent pages, the assembled key lives under
  * How to use ▸ The key, which is the durable home; the card is one showing of it.
  *
- * IT DRAWS ONLY WHAT THIS MAP USES. A key listing markings the map does not contain is a
- * lesson nobody asked for; `keyContent` reads the graph and shows the levels, kinds and chips
- * that are actually on screen. The same builder fills the help topic, so the two cannot
+ * IT MARKS WHAT THIS MAP USES. The first cut drew only the rows in use, and a map of plain
+ * support arrows then showed a one-row key that read as broken. The rule is now the help
+ * fidelity key's own: the whole vocabulary, with this map's usage bright and the rest dimmed —
+ * a dimmed row still teaches. The same builder fills the help topic, so the two cannot
  * disagree.
  */
 var KEY_KEY = "ipsissima.key.v1";
@@ -3096,32 +3102,38 @@ function encodingsInUse(graph){
 }
 
 /** The assembled key, in miniature: real strokes, names only — the full explanations are one
- *  button away and the card must not try to be them. Sections the map does not use are simply
- *  absent. Facet names come from the reconstruction, which is somebody's file: escaped. */
+ *  button away and the card must not try to be them.
+ *
+ *  THE WHOLE VOCABULARY, WITH THIS MAP'S USAGE BRIGHT AND THE REST DIMMED — the same rule the
+ *  help's fidelity key has always used, adopted here after the first cut showed present-only
+ *  rows and earned exactly the report it deserved (the author, 3 Sep 2026: "under lines, only
+ *  the green for support is being shown"). A key that hides most of its rows on a plain map
+ *  reads as a key that is broken, and a dimmed row still teaches: this marking exists, and
+ *  this map does not use it. Sections with nothing at all to mark (no chips, no sparkline)
+ *  stay absent — there is no vocabulary to dim, only emptiness.
+ *  Facet names come from the reconstruction, which is somebody's file: escaped. */
 function keyContent(graph){
   var nodes = graph.nodes || [], edges = graph.edges || [];
   var out = [];
+  var dim = function(here, swatchHtml, name){
+    return '<div class="krow"' + (here ? '' : ' style="opacity:.42"') + '>' + swatchHtml +
+           '<b>' + name + '</b></div>';
+  };
 
   var present = {};
   nodes.forEach(function(n){ if (n.fidelity) present[n.fidelity] = true; });
-  if (Object.keys(present).length) {
-    out.push('<h4>Borders — whose words</h4>');
-    FID_KEY.forEach(function(f){
-      if (!present[f[1]]) return;
-      out.push('<div class="krow">' + boxSwatch(f[0]) + '<b>' + f[1] + '</b></div>');
-    });
-  }
+  out.push('<h4>Borders — whose words</h4>');
+  FID_KEY.forEach(function(f){
+    out.push(dim(!!present[f[1]], boxSwatch(f[0]), f[1]));
+  });
 
   var kinds = {};
   edges.forEach(function(e){ if (e.type && KEY_KIND[e.type]) kinds[KEY_KIND[e.type]] = true; });
-  if (Object.keys(kinds).length) {
-    out.push('<h4>Lines — how claims bear</h4>');
-    REL_KEY.forEach(function(r){
-      if (!kinds[r[0]]) return;
-      out.push('<div class="krow">' + swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]) +
-               '<b>' + r[3] + '</b></div>');
-    });
-  }
+  out.push('<h4>Lines — how claims bear</h4>');
+  REL_KEY.forEach(function(r){
+    out.push(dim(!!kinds[r[0]],
+                 swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]), r[3]));
+  });
 
   var facets = [];
   nodes.forEach(function(n){ if (n.facet && facets.indexOf(n.facet) < 0) facets.push(n.facet); });
