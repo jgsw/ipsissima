@@ -86,6 +86,26 @@ file that opens by double-clicking and makes no network requests. Anything that 
 bundler, a CDN or a server between the source and the reader is a bigger change than it looks —
 see [app/tsconfig.json](app/tsconfig.json) for why even the typechecker does not emit.
 
+## The values, written down
+
+`docs/values/` is the project's values and principles framework: an inventory of what
+Ipsissima holds itself to, each principle with its provenance and its weight as case law, and
+the theory that orders them. It exists for exactly the position a new contributor is in. The
+author applies these principles intuitively, because they are his; the inventory is the
+*explication* — the thing that lets someone without those intuitions reach the same verdicts
+by applying it consciously. Read `INVENTORY.md` before a change that touches anything
+reader-facing, licence-shaped, or promise-shaped, and `THEORY.md` for how the principles
+relate; `AUTOMATION.md` says which slice of all this the test suite holds mechanically (the
+"promises" suites) and why the rest is deliberately left to people.
+
+Two conventions follow from it. **A change that trades against a principle says so** — with a
+measurement where the trade is measurable, and as a recorded judgement where it is not; the
+framework's own case law is made of exactly such records, and a trade written down can be
+reopened where a silent one cannot. And **the commit subject is the per-change values check**:
+a subject here must say what the change *means*, not what it touches, which is why the log
+reads the way it does. If a change resists that sentence, that is usually the change asking to
+be reconsidered.
+
 ## Licence
 
 Ipsissima is MIT licensed, with one exception: `ipsissima-mcp/` is GPL-3.0-or-later, because its

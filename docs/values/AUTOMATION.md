@@ -153,6 +153,17 @@ made in *prose*, whose breakage no test notices because prose is nobody's fixtur
 
 ## 4. What to build now
 
+> **Built the same day, on the author's instruction — and the calibration runs made the
+> section's own argument.** Row 5's first pass found the Miller source file carrying no
+> licence note at all, against the samples README's standing rule; row 4's first live run
+> found the README's probe sentence still saying 9 tools five days after `check_for_updates`
+> made it 10. Two real prose-promise drifts, caught before the lint was an hour old — the
+> files were fixed, the rows were not weakened, and every row's mutation is named where it
+> lives (`app/test_promises.mjs`, the runtime no-network row in `test_rendered_dom.mjs`, the
+> probe-count row in `tests/test_server.py`). The CONTRIBUTING section of §4.2 went in with
+> them; the release-cadence audit is a standing practice rather than a file, and its first
+> occasion is the next release.
+
 ### 4.1 A promises lint — the T2/T3 class, held
 
 One suite, `!`-severity facts only, every row carrying the pedigree of a real drift and its
