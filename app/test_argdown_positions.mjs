@@ -411,7 +411,13 @@ if (!fs.existsSync(argdownFile)) {
  * positions rule above is.
  *
  * Measured when this was written: 251 adjudicated claims across the published corpus, 251
- * agreements, 0 disagreements. */
+ * agreements, 0 disagreements. Re-measured 3 Sep 2026, when the page began adjudicating
+ * borders itself: 512 and 512.
+ *
+ * SHOWN ABLE TO FAIL, 3 Sep 2026: replacing foldPunctuation's " " with "X" (punctuation no
+ * longer folds away) fails four checks here, including the corpus cross-check with
+ * `py=quotation js=paraphrase` disagreements. A harness that has never failed is worth
+ * nothing. */
 {
   const fold = P.foldPunctuation, verb = P.isVerbatim;
   ok("punctuation and case fold away", verb("The cat sat", "the cat, sat on the mat"));

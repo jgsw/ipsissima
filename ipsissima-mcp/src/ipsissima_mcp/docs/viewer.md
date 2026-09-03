@@ -440,25 +440,30 @@ The consequence worth stating plainly: **the picture is now right even when the 
 The checker still reports the discrepancy so the file can be corrected, but a reader of the map
 is no longer misled while it waits.
 
-### How far that actually reaches — measured 27 Aug 2026
+### How far that actually reaches — re-measured 3 Sep 2026, and the answer changed
 
-Less far than the paragraph above implies, and the gap has grown as the tool has. `--derive-fidelity`
-has exactly one caller in the program: `attachPositions` in `build_argdown_viewer.mjs`, guarded by
-`if (argdownPath && root)`. So:
+It used to reach one path: `--derive-fidelity` had exactly one caller, the builder given
+`--source-root`, and every other way of opening a map drew borders **as declared** — which were
+the ordinary ways to read a reconstruction, showing an unchecked border on the very axis the
+program is named for (6 claims in 251 on this corpus, and 38 of 126 on the reference maps).
+That stood, with its expired excuse recorded beside it, until the values audit called it the
+sharpest tension in the codebase (`docs/values/TENSIONS.md`, T1). The page now adjudicates for
+itself — `locateInPage`, through `ArgdownPositions` — with the same rule and the same
+restraint, and `test_argdown_positions.mjs` pins the two languages over the whole corpus:
 
 | how a map is opened | borders |
 |---|---|
-| `build_argdown_viewer.mjs FILE.argdown --source-root DIR` | **checked** |
-| `build_argdown_viewer.mjs BUNDLE.argdown` (no folder) | as declared |
-| `--standalone` build, folder dropped on it | as declared |
-| the desktop app, folder opened | as declared |
-| a page exported from any of the above | as declared |
+| `build_argdown_viewer.mjs FILE.argdown --source-root DIR` | **checked** (Python, at build time) |
+| `--standalone` build, folder dropped on it | **checked** (in the page) |
+| the desktop app, folder opened | **checked** (in the page) |
+| a bundle — its manuscript travels inside it | **checked** (in the page) |
+| any of the above with no manuscript present | as declared, and the status line says so |
 
-The three "as declared" rows are now the ordinary way to read a reconstruction, and the first row
-is a step taken to publish a sample. The page is honest about it — the status line reads
-*borders as declared, not checked* whenever positions were worked out in the page — but a reader
-who has been told the border says whose words these are is being shown an unchecked one most of
-the time. On this corpus that is 6 claims in 251.
+The status line now states which of the two conditions holds — *borders checked against the
+manuscript*, or *borders as declared, not checked* — and its hover says how many were
+corrected. The adjudication is the same everywhere: only `quotation` and `paraphrase` are ever
+touched, nothing is written back to the `.argdown`, and the checker remains where a
+discrepancy is reported so the file itself can be fixed.
 
 A claim shorter than 30 characters gets no verdict either way. A short claim can coincide with
 its source by accident, and calling that a quotation would be worse than asking.

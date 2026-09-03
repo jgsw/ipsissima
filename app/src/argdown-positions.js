@@ -29,6 +29,7 @@
 
 var MIN_SCORE = 0.30;
 var MIN_PARA  = 120;   // characters; shorter lines are headings, list stubs and stray notes
+var MIN_VERBATIM = 30; // mirrors argdown_provenance.MIN_VERBATIM — below it, no verdict
 
 /* Four letters and up drops the articles and prepositions any two sentences of English share;
  * the list then catches the long function words that survive that cut. */
@@ -372,24 +373,27 @@ function positions(nodes, sources, quarto) {
     }
     // ---- IS THE BORDER TRUE? -----------------------------------------------------------
     // THE MAP DRAWS A SOLID BORDER FOR `quotation`, which is a claim that these are the
-    // author's own words — and until now the app drew it AS DECLARED. `--derive-fidelity`
-    // checks it, but it has exactly one caller: the builder, and only when given
-    // `--source-root`. A folder opened in the app, a folder dropped on the standalone, a
-    // bundle, and every exported page never asked. Those are the ordinary ways to read a
-    // reconstruction now, so the border was believed rather than checked almost everywhere.
+    // author's own words — and until 3 Sep 2026 the app drew it AS DECLARED. This is the seam
+    // to check it at, because the manuscript is already here: `positions` is handed the source
+    // text of every chapter in order to place the claim in it. Nothing new is loaded.
     //
-    // This is the seam to do it at because the manuscript is already here: `positions` is
-    // handed the source text of every chapter in order to place the claim in it. Nothing
-    // new is loaded and nothing new is parsed.
-    //
-    // COMPUTED, NOT ADJUDICATED. This records what the words are; it does not decide what
-    // the border should be. `interpretation`, `imputation` and `compression` are judgements
-    // about the reading and nothing here is entitled to touch them — the same line
-    // `check_argdown.py` draws. The renderer reads `verbatim` and may say that a claim
-    // declaring `quotation` is not one; it must not silently redraw it as something else.
+    // COMPUTED HERE, ADJUDICATED BY THE HOST. This records the fact — are the claim's words a
+    // contiguous run of its source — and mirrors `derived_quotation` in argdown_provenance.py
+    // exactly, because the host applies the same two-level adjudication the build gets from
+    // `--derive-fidelity` and the two must not drift (test_argdown_positions.mjs pins them):
+    //   * inline hashtags are chips, not words, and are stripped before testing;
+    //   * a claim under 30 characters gets no verdict either way (`null`) — a short claim can
+    //     coincide with its source by accident, and calling that a quotation would be worse
+    //     than staying silent. MIN_VERBATIM, one value in two languages.
+    // `interpretation`, `imputation` and `compression` are judgements about the reading; the
+    // adjudicating host leaves them alone, writes nothing back to the .argdown, and says on
+    // the status line which state the page is in — the checker stays where a discrepancy is
+    // REPORTED so the file itself can be corrected.
     var chapterText = sources[n.chapter];
-    place.verbatim = chapterText == null ? null
-                   : isVerbatim(n.detail || n.label || "", chapterText);
+    var vtext = String(n.detail || n.label || "")
+      .replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim();
+    place.verbatim = (chapterText == null || vtext.length < MIN_VERBATIM) ? null
+                   : isVerbatim(vtext, chapterText);
     byId[n.id] = place;
   }
 
@@ -561,7 +565,7 @@ var API = { positions: positions, readingOrder: readingOrder, headingIndex: head
             bandLevel: bandLevel, sectionOfLine: sectionOfLine,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
-            MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA };
+            MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA, MIN_VERBATIM: MIN_VERBATIM };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownPositions = API;
 

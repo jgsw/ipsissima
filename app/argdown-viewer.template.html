@@ -1366,10 +1366,15 @@ function statsLine(graph){
   var w = graph.words && graph.words.total;
   $("stats").textContent = graph.nodes.length + " claims · " + groups.length + " sections" +
     (w ? " · " + w.toLocaleString() + " words of manuscript" : "") +
-    // Said plainly rather than left to be assumed: a map located in the page has NOT had its
-    // quotation borders checked against the source, and on the reference maps 38 of 126 declared
-    // quotations turned out not to be verbatim. A reader should know which of the two they have.
-    (DERIVED_IN_PAGE ? " · borders as declared, not checked" : "");
+    // Said plainly rather than left to be assumed. A map located in the page now checks its
+    // quotation borders against the manuscript too (see locateInPage), so the suffix reports
+    // which state the page is actually in: checked, or — when nothing was long enough or
+    // factual enough to test — as declared. On the reference maps 38 of 126 declared
+    // quotations were not verbatim, which is why a reader should know which they have.
+    (DERIVED_IN_PAGE
+       ? (BORDERS_TESTED ? " · borders checked against the manuscript"
+                         : " · borders as declared, not checked")
+       : "");
 
   /* THE SHAPE OF THE WHOLE PIECE, in a sentence and a mark, beside the counts.
    *
@@ -1401,9 +1406,21 @@ function statsLine(graph){
     } else shape.hidden = true;
   } else if (shape) shape.hidden = true;
   $("stats").title = DERIVED_IN_PAGE
-    ? "Positions were worked out in this page from the folder you dropped. Fidelity borders " +
-      "are as the .argdown declares them — checking them against the source needs " +
-      "check_argdown.py, so a built map may show different borders."
+    ? (BORDERS_TESTED
+        ? "Positions and borders were worked out in this page from the folder you dropped. " +
+          "Every claim long enough to test was checked against the manuscript: a claim " +
+          "declaring quotation whose words are not in the source is drawn as paraphrase" +
+          (BORDERS_CORRECTED
+             ? " — " + BORDERS_CORRECTED + " border" + (BORDERS_CORRECTED === 1 ? "" : "s") +
+               " corrected here."
+             : " — every border held.") +
+          " Interpretation, imputation and compression are the reconstructor's judgements " +
+          "and are never touched, and nothing is written back to the .argdown — " +
+          "check_argdown.py reports any discrepancy so the file itself can be corrected."
+        : "Positions were worked out in this page from the folder you dropped. Fidelity " +
+          "borders are as the .argdown declares them: no claim here was long enough to " +
+          "check against the source (the floor is 30 characters), or none carried a " +
+          "checkable level.")
     : "";
   $("helpstats").textContent =
     graph.nodes.length + " claims\n" + (graph.edges||[]).length + " relations\n" +
@@ -5418,23 +5435,26 @@ $("mschapter").onchange = function(){ msRender(this.value); $("msnote").textCont
  *  is not duplicated here: `argdown-positions.js` is the same module the build uses and is
  *  inlined into this page, so a map drawn from a dropped folder is laid out by the same rule.
  *
- *  The one thing this cannot do is DERIVE fidelity. That check lives in check_argdown.py, so
- *  borders here are as the file declares them and the status line says so -- which on the
- *  published corpus means 6 borders in 251 shown as the file has them rather than as the source
- *  has them.
- *
- *  THE REASON GIVEN FOR THAT NO LONGER HOLDS, and it is written down here because this is where
- *  someone will next wonder. It used to read "it leans on difflib's near-match, which has no
- *  clean JavaScript equivalent"; that was true of the rule `_is_verbatim` replaced. The rule now
- *  is a contiguous-substring test over normalised text, and `ArgdownPositions.normalise` -- the
- *  script immediately above this one -- already does the normalising, in this very page.
- *  Measured 27 Aug 2026: four lines on top of it agreed with the Python service on 251 of 251
- *  adjudicated claims across the corpus. See the note in build_argdown_viewer.mjs.
+ *  FIDELITY IS DERIVED HERE TOO, since 3 Sep 2026. It was not, for a while, and the history is
+ *  worth a paragraph because this is where someone will next wonder. The original reason —
+ *  "the rule leans on difflib's near-match, which has no clean JavaScript equivalent" — was
+ *  true of the rule `_is_verbatim` replaced and expired when it did: the rule became a
+ *  contiguous-substring test over normalised text, which `ArgdownPositions` already does in
+ *  this very page (measured 27 Aug 2026: 251 of 251 agreements with the Python service across
+ *  the corpus). The expiry sat recorded here while the borders stayed unchecked on exactly the
+ *  paths readers use most, until the values audit named that the sharpest tension in the
+ *  codebase (docs/values/TENSIONS.md, T1). `locateInPage` now applies the same two-level
+ *  adjudication the build gets, and test_argdown_positions.mjs pins the two languages.
  */
 var SOURCE_EXT = /\.(md|qmd|markdown|txt|tex|rmd|rst|org)$/i;
 var PROJECT_FILES = ["argdown-project.yml", "argdown_project.yml", "argdown-project.yaml",
                      "argdown_project.yaml", "_quarto.yml"];
 var DERIVED_IN_PAGE = false;
+// The border adjudication's two counters: how many claims were long enough (and factual
+// enough) to test against the manuscript, and how many drawn borders that test corrected.
+// Zero TESTED with DERIVED_IN_PAGE true means the borders really are only as declared, and
+// the status line says which of the two states the page is in.
+var BORDERS_TESTED = 0, BORDERS_CORRECTED = 0;
 var MAX_SOURCE_BYTES = 8 * 1024 * 1024;      // a manuscript, not a media folder
 
 function dirOf(p){ var i = p.lastIndexOf("/"); return i < 0 ? "" : p.slice(0, i + 1); }
@@ -5476,8 +5496,8 @@ function walkEntry(entry, prefix, out){
   return drain();
 }
 
-/** Locate every claim in the manuscript, in the page. A direct port of the build's
- *  `attachPositions`, minus the fidelity step, which is Python's. */
+/** Locate every claim in the manuscript, in the page — a direct port of the build's
+ *  `attachPositions`, the fidelity adjudication included since 3 Sep 2026. */
 function locateInPage(graph, byPath){
   var P = window.ArgdownPositions;
   if (!P) return 0;
@@ -5522,6 +5542,28 @@ function locateInPage(graph, byPath){
     if (!pos) continue;
     graph.nodes[i].pos = pos;
     placed++;
+  }
+  // THE BORDER, CHECKED WHERE THE MANUSCRIPT IS PRESENT — the same two-level adjudication
+  // `build_argdown_viewer.mjs` gets from `--derive-fidelity`, applied on the paths readers
+  // actually use: a folder opened in the app, a folder dropped here, a bundle. Declared by
+  // hand the `quotation` marker was wrong 38 times in 126 across the reference maps, always
+  // in the flattering direction, and a solid border then tells a reader they are looking at
+  // the author's words when they are looking at a summary. Only the two factual levels are
+  // ever touched — `interpretation`, `imputation` and `compression` are judgements about the
+  // reading — and nothing is written back to the .argdown: the file keeps its declaration,
+  // `check_argdown.py` keeps reporting the discrepancy, and only the DRAWN border is
+  // corrected, exactly as a built map's is. `positions` computes the fact (hashtags stripped,
+  // a 30-character floor, mirroring the Python — test_argdown_positions.mjs pins the two);
+  // this loop applies it, and runs again on every live-edit relocate, which keeps it honest
+  // as the file is edited.
+  var JUDGEMENT_LEVELS = { interpretation: 1, imputation: 1, compression: 1 };
+  BORDERS_TESTED = 0; BORDERS_CORRECTED = 0;
+  for (i = 0; i < graph.nodes.length; i++) {
+    var nd = graph.nodes[i], vps = located.byId[nd.id];
+    if (!vps || vps.verbatim == null || JUDGEMENT_LEVELS[nd.fidelity]) continue;
+    BORDERS_TESTED++;
+    var should = vps.verbatim ? "quotation" : "paraphrase";
+    if (nd.fidelity !== should) { nd.fidelity = should; BORDERS_CORRECTED++; }
   }
   graph.words = P.wordCounts(sources);
   // Keep the text, not just the positions — the source pane shows the passage, and the files
@@ -5625,6 +5667,7 @@ function loadDropped(items, prefer){
         });
       }
       DERIVED_IN_PAGE = false;
+      BORDERS_TESTED = 0; BORDERS_CORRECTED = 0;
       MS = null;
       ALL_SOURCES = byPath;
       BUNDLE = bnd ? { meta: bnd.meta || {} } : null;
@@ -5929,6 +5972,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     // two that say where Save writes. Leaving `HOST_PATH` behind would make the first Save of a
     // brand-new reconstruction silently overwrite the file it replaced.
     DERIVED_IN_PAGE = false;
+    BORDERS_TESTED = 0; BORDERS_CORRECTED = 0;
     MS = null;
     ALL_SOURCES = {};
     BUNDLE = null;

@@ -492,12 +492,13 @@ function attachPositions(graph, root, argdownPath, attached) {
   // corpus it agreed with this checker on 251 of 251 adjudicated claims — 79 quotation, 172
   // paraphrase, no disagreements.
   //
-  // Why that matters more than the tidiness: this call is the ONLY place fidelity is ever
-  // derived, and it runs only for a per-file build given `--source-root`. A folder opened in the
-  // app, a folder dropped on the standalone, and a bundle built without a folder all draw
-  // borders exactly as the file declares them — which on this corpus was wrong 6 times. The
-  // status line says "borders as declared, not checked" in those cases, honestly, but honesty
-  // about an unchecked border is not the same as a checked one.
+  // This call is no longer the only place fidelity is derived — since 3 Sep 2026 the page
+  // applies the same two-level adjudication itself, through `ArgdownPositions` and
+  // `locateInPage`, so a folder opened in the app, a folder dropped on the standalone and a
+  // bundle are checked too (docs/values/TENSIONS.md, T1). This Python call stays for the
+  // built path: the build has the checker on hand, the page does not, and
+  // test_argdown_positions.mjs pins the two implementations against each other so neither
+  // can drift from the other's answer.
   //
   // Only `quotation` and `paraphrase` are ever adjudicated. `interpretation` and `imputation`
   // are judgements about the READING, not facts about the words, and nothing here may touch
