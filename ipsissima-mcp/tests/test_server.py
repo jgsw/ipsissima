@@ -105,12 +105,13 @@ def test_sources(d):
 
 # --------------------------------------------------- the contract with a client ---- #
 
-async def _session(fn):
+async def _session(fn, env=None):
     from mcp import ClientSession, StdioServerParameters, stdio_client
     exe = REPO / ".venv" / "bin" / "ipsissima-mcp"
     cmd = (str(exe), []) if exe.exists() else (sys.executable,
                                                ["-m", "ipsissima_mcp.server"])
-    params = StdioServerParameters(command=cmd[0], args=cmd[1], cwd=str(REPO))
+    params = StdioServerParameters(command=cmd[0], args=cmd[1], cwd=str(REPO),
+                                   env={**os.environ, **env} if env else None)
     async with stdio_client(params) as (r, w):
         async with ClientSession(r, w) as s:
             await s.initialize()
@@ -151,20 +152,33 @@ def test_server(d):
         check_true("the Argdown syntax reference is a resource",
                    "ipsissima://argdown/syntax" in res)
 
-        # THE README'S PROBE SENTENCE IS A PROMISE, held here against the live server. "A
-        # working install answers 9 tools, 2 prompts and 8 resources" is what a reader uses to
-        # tell a broken install from a broken client, and a count that has drifted sends them
-        # debugging the wrong side. The T3 drift — the same README denying a tool this server
-        # ships — is the pedigree (docs/values/AUTOMATION.md 4.1, row 4). Shown able to fail:
-        # bump any number in the sentence and the matching check goes red.
+        # THE README'S PROBE SENTENCE IS A PROMISE, held here against the live server — a
+        # count that has drifted sends a reader debugging the wrong side. The T3 drift is the
+        # pedigree (docs/values/AUTOMATION.md 4.1, row 4), and the check's own first public CI
+        # run supplied a second: the sentence promised the Zotero tool on machines with no
+        # Zotero, because `zotero_lookup` is registered only where a library exists. So the
+        # sentence carries the condition, and this check asks for whichever count THIS
+        # machine's server should give. The no-library count is exercised on every machine by
+        # the forced session below, not only on machines that happen to lack a library.
+        # Shown able to fail: bump any number in the sentence and the matching check goes red.
         readme = (REPO / "ipsissima-mcp" / "README.md").read_text(encoding="utf-8")
-        m = re.search(r"answers (\d+)\s+tools,\s+(\d+)\s+prompts\s+and\s+(\d+)\s+resources",
-                      readme)
-        check_true("the README still makes its probe promise", bool(m))
+        m = re.search(r"answers (\d+)\s+tools\s+\((\d+)\s+without a Zotero[^)]*\),\s+"
+                      r"(\d+)\s+prompts\s+and\s+(\d+)\s+resources", readme)
+        check_true("the README still makes its probe promise, condition included", bool(m))
         if m:
-            check("the README's tool count is the server's", int(m.group(1)), len(tools))
-            check("its prompt count too", int(m.group(2)), len(prompts))
-            check("and its resource count", int(m.group(3)), len(res))
+            want = int(m.group(1)) if "zotero_lookup" in tools else int(m.group(2))
+            check("the README's tool count is this server's", want, len(tools))
+            check("its prompt count too", int(m.group(3)), len(prompts))
+            check("and its resource count", int(m.group(4)), len(res))
+
+            async def no_library(s2):
+                t2 = {t.name for t in (await s2.list_tools()).tools}
+                check_true("  without a library, the Zotero tool is not offered",
+                           "zotero_lookup" not in t2)
+                check("  and the count is the sentence's without-Zotero number",
+                      len(t2), int(m.group(2)))
+            await _session(no_library,
+                           env={"ZOTERO_DATA_DIR": str(d / "no-zotero-here")})
 
         # The prompt is the file on disk, not a copy compiled into the server.
         p = await s.get_prompt("reconstruct_argument", {"source_path": "source/x.md"})

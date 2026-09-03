@@ -245,9 +245,11 @@ EOF
 ```
 
 One line of JSON comes back naming the server and its version. **A working install answers 10
-tools, 2 prompts and 8 resources**; if the count is lower, the client is not the problem.
-(That sentence is held against the live server by the test suite, so it cannot quietly drift
-the way it once did — it said 9 for five days after `check_for_updates` made it 10.)
+tools (9 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
+is lower than that, the client is not the problem. (That sentence is held against the live
+server by the test suite, so it cannot quietly drift the way it did twice: it said 9 for five
+days after `check_for_updates` made it 10, and the corrected 10 then promised the Zotero tool
+to machines with no Zotero — which the first public CI run caught within the hour.)
 
 Note that `pymupdf` prints a deprecation notice on startup. It goes to stderr, where it is
 harmless — the protocol is on stdout — and it is not a sign of a bad install.
