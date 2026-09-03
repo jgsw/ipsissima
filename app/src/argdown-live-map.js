@@ -3476,8 +3476,11 @@ function createLiveMap(container, graph, options) {
             // NOT show, which is the only reason a tooltip earns its place.
             const rtip = el("title");
             rtip.textContent = r.rule
-              + (v === "valid" ? "\n\nChecked: the conclusion follows from the premises."
-               : v === "invalid" ? "\n\nChecked: the conclusion does NOT follow."
+              // Both verdicts name the formalizations, matching the ! badge: no string on the
+              // map states a verdict without attributing it to what was actually examined —
+              // the formulas, never the author's argument (docs/values/INVENTORY.md, A11).
+              + (v === "valid" ? "\n\nChecked: the conclusion follows from the premises, on the formalizations given."
+               : v === "invalid" ? "\n\nChecked: the conclusion does NOT follow, on the formalizations given."
                : v === "unformalized" ? "\n\nNot checked: the lines of this step carry no "
                                         + "`formalization:`, so the claim is unexamined."
                : v === "stale" ? "\n\nNOT checked: a claim of this step has been edited since it "
