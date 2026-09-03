@@ -388,6 +388,11 @@ it: seven claims lost their hover text for a day.
 it needs the private corpus to appear and that should be written down. An expectation that has
 quietly become untrue is the same species of bug as `n.full`.
 
+*Resolved 3 Sep 2026: the failure was fixed (29 Aug) and the allowance had outlived it. The
+suite was re-run clean [measured], the allowance removed from the workflow, and
+`CONTRIBUTING.md` updated — `docs/values/TENSIONS.md` T2, which also names the lesson this
+paragraph could not act on alone: detection without an owner is silence one level up.*
+
 ---
 
 ## 10. The order, and what it costs

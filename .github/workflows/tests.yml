@@ -1,14 +1,15 @@
 # Ipsissima — the whole suite, on every push and pull request.
 #
-# ONE COMMAND, because that is the promise `run_all_tests.mjs` makes: twenty suites, each
+# ONE COMMAND, because that is the promise `run_all_tests.mjs` makes: every suite, each
 # printing its own detail, and a non-zero exit if any fails. Running them separately here would
 # be a second definition of "the tests" that drifts from the first.
 #
-# THE SUITE IS EXPECTED TO FAIL until the issue in KNOWN-ISSUES.md is fixed — a claim can be
-# drawn with no visible connection in the Exposition view under some fold states, and the
-# invariant that catches it is left failing rather than quietly weakened. `continue-on-error`
-# would hide that; instead the job runs the suite twice, once to show every result and once
-# with the known failure allowed, so a NEW failure turns the build red and the old one does not.
+# EVERYTHING IS EXPECTED TO PASS, and no failure is allowed through. This file used to carry an
+# allowance for one documented fold defect; the defect was fixed on 29 Aug 2026 and the
+# allowance outlived it — which made it a hole, since any new failure of that suite would have
+# turned the build green. Removed 3 Sep 2026 (docs/values/TENSIONS.md, T2). If a defect must
+# ever ship failing again, it goes in KNOWN-ISSUES.md AND an explicit allowance here, and both
+# come out the day it is fixed.
 
 name: tests
 
@@ -53,29 +54,9 @@ jobs:
 
       - name: Everything
         id: suite
-        continue-on-error: true
         # A MISSING BROWSER MUST BE A FAILURE HERE, not the skip a developer's checkout gets. The
         # skip exists so that `npm test` is useful before `playwright install`; on CI it would
         # mean the one instrument watching the painted map had quietly stopped running.
         env:
           IPS_REQUIRE_BROWSER: "1"
-        run: node app/run_all_tests.mjs | tee /tmp/suite.txt
-
-      - name: Only the known failure
-        # KNOWN-ISSUES.md names one failing suite: a second contention drawn unattached in
-        # one fold state, found by adding a sixth sample. Anything else red fails the build.
-        run: |
-          failed=$(grep -E '^  FAIL' /tmp/suite.txt | sed 's/^  FAIL  //' | sort)
-          expected='fold invariants (state space)'
-          if [ -z "$failed" ]; then
-            echo "Everything passed — the documented failure is fixed."
-            echo "Update KNOWN-ISSUES.md and this workflow."
-            exit 0
-          fi
-          if [ "$failed" = "$expected" ]; then
-            echo "Only the documented failure is red. See KNOWN-ISSUES.md."
-            exit 0
-          fi
-          echo "Unexpected failure(s):"
-          echo "$failed"
-          exit 1
+        run: node app/run_all_tests.mjs

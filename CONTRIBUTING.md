@@ -30,10 +30,13 @@ Twenty suites: the renderer's fold logic and layout geometry, the exposition arr
 one-file bundle, the desktop host adapter, the converters, the provenance rules in both
 languages, and a typecheck. It takes about two minutes.
 
-**One suite is expected to fail.** `fold invariants (state space)` reports a real defect,
-diagnosed in [KNOWN-ISSUES.md](KNOWN-ISSUES.md), and is left failing rather than quietly weakened.
-CI allows that one and no others. If you fix it, please also update KNOWN-ISSUES.md and the
-expected list in `.github/workflows/tests.yml`.
+**Everything is expected to pass**, locally and on CI, and CI allows no failures through. It
+was not always so: for a while `fold invariants (state space)` reported a real defect and was
+left failing rather than quietly weakened, with CI allowing exactly that one. The defect was
+fixed on 29 Aug 2026, and the allowance was removed on 3 Sep when it was noticed to have
+outlived it. If a defect ever has to ship failing again, that is the pattern: name it in
+[KNOWN-ISSUES.md](KNOWN-ISSUES.md), allow it explicitly in `.github/workflows/tests.yml`, and
+remove both the day it is fixed — never weaken the test.
 
 ## Setting up
 
