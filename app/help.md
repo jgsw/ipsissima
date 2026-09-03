@@ -94,14 +94,14 @@ again — those are panes, and any combination of them can be open at once.
 still means what it means above — the arrangement never changes what a line <em>is</em> — but the
 weight of the ink says when its support arrives:</p>
 
-- **Solid** — the reasons were already given by the time the claim was made. Nothing is owed.
-- **Pale** — the claim is asserted *before* its justification arrives. At the point you meet it,
-  it is provisional: you are being asked to carry a promise.
+- **Solid** — the reasons were already given by the time the claim was made.
+- **Pale** — the claim is asserted *before* its justification arrives: at the point you meet
+  it, its reasons are still to come.
 - **Heavier** — the relation reaches a long way across the text, whichever direction it runs.
 
-Weight of ink means the same thing here as it does on a claim's border: how firmly established
-this is. A quotation is drawn solid and an imputation dot-dashed, and a justification still owed
-is drawn pale for the same reason.
+Weight of ink means the same thing here as it does on a claim's border: how settled this is *at
+this point in the reading*. A quotation is drawn solid and an imputation dot-dashed, and a
+justification still to come is drawn pale for the same reason.
 
 Only relations that reach further than about a twelfth of the reconstruction are marked this way.
 Most support sits a line or two from what it supports, and that is not a finding about the text,
@@ -280,27 +280,27 @@ whatever the text put in between sitting on top of it, and a line re-emerging at
 would otherwise look exactly like a line starting there. The broken stretch says the claim it
 crosses has nothing to do with it.
 
-## Justificatory debt
+## Where the reasons fall
 
 
-A claim has to be justified, and there are only two places its justification can sit: before it in
-the text, or after. If it comes after, the reader is asked to accept the claim now and take the
-reasons on trust — a **justificatory debt**, carried from the moment the claim is made until the
-argument for it arrives.
+A claim has to be justified, and there are only two places its justification can sit: before it
+in the text, or after. If it comes after, the reader holds the claim while its reasons are still
+to come; if before, the reader has held the *materials* without yet knowing what they were for.
 
-Neither is a fault. Stating a thesis and then arguing for it is ordinary practice; so is building
-the case and letting the conclusion land at the end. What matters is how much a reader is asked to
-carry, how far, and whether it is ever discharged.
+Neither is a fault, and each asks something of a reader in its own way. Stating a thesis and
+then arguing for it is ordinary practice — the reader knows where the text is going, and holds
+the thesis on trust while it gets there. Building the case first is ordinary too — nothing is
+taken on trust, and the reader assembles pieces whose purpose arrives later. This view measures
+where each claim's support falls and how far away it sits; it does not score either habit.
 
-So each band carries a **sparkline**, and the whole reconstruction has one in the footer beside the
-claim count. It is a ledger, read left to right through the text:
+So each band carries a **sparkline**, and the whole reconstruction has one in the footer beside
+the claim count, read left to right through the text:
 
-- **below the line** — claims asserted here whose reasons come later: debt incurred, and the
-  reader carries it until the argument arrives
-- **above the line** — claims made here that their reasons have already earned: nothing owed
+- **below the line** — support *anticipated*: claims stated here whose reasons are still to come
+- **above the line** — support *prepared*: claims made here whose reasons were already given
 
-Debt below, as on any ledger. The horizontal axis is already the text, so *forward* means
-rightward; height is left free to say something else, and what it says is what is owed.
+The horizontal axis is already the text, so *forward* means rightward; height is left free to
+say something else, and what it says is which side of a claim its reasons fall.
 
 Each mark is weighted by how far its relations reach, so line-to-line support barely registers and
 a reach across half the paper dominates. A band with nothing long-range to report shows no

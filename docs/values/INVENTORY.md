@@ -169,11 +169,19 @@ assessment of the quality of the argument, and what is merely reporting what the
 **Weight.** Heavy. Case law: colour was refused for the anticipated/prepared distinction because
 colour reads as verdict; the debt sparkline's ink chosen "one neutral" for the same reason.
 
-**Amended at Step Three (3 Sep), from `TENSIONS.md` T4.** The tool grades neither the author's
-argument nor their style; it may measure and display the **reader's burden** — justificatory
-debt, reach, what is held and for how long — provided the display never borrows the verdict
-channels (the colours that mean support and attack, the fault marks). "Owed" is owed *to the
-reader*, never *by the author*, and the reader-facing wording must keep that audible.
+**Amended at Step Three (3 Sep), from `TENSIONS.md` T4 — and re-amended the same day, on the
+author's challenge.** The first draft of this amendment permitted displays of "the reader's
+burden", and the author showed that formulation is loaded in its own right: the standing case
+*for* the announce-then-argue convention is precisely that it reduces what a reader carries, so
+"burden" quietly grades the other direction, as "debt" graded the first. Both conventions ask
+something of a reader, of different kinds, and no single-direction welfare word is neutral
+between them. What the tool may measure and display is therefore stated without welfare
+vocabulary at all: **where a claim's reasons fall in the text relative to the claim, and how
+far away** — temporal and positional facts, carried in the project's own neutral pair
+(*anticipated* / *prepared*) — with the verdict channels (the colours that mean support and
+attack, the fault marks) never borrowed. Reader-facing surfaces were reworded accordingly;
+"justificatory debt" survives as an internal term of art in the code and the documents of
+record, and whether to retire it there too is an open question for the author.
 
 ### A8. Exegetical adequacy is this project's half of the bargain
 
