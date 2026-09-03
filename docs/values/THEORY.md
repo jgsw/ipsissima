@@ -8,6 +8,11 @@ is a reconstruction and is marked as one: the ordering below is **interpretation
 `coherence` — it is the arrangement that makes the most of the record hang together, not an
 arrangement the record states.
 
+*Revised at Step Three (3 Sep), after the Step Two stress test (`TENSIONS.md` §5) and the
+author's checkpoint rulings: the keystone is now stated as distinctive rather than supreme,
+and a sixth apex commitment — the reader's attention (F4, respecified) — joins the five. The
+diff is the record of what moved.*
+
 ---
 
 ## 1. The keystone
@@ -29,22 +34,29 @@ that asks the question of reconstructions. It asks the question of everything it
 | the credits | debts in proportion; independent arrival ≠ debt (D1) |
 | the collaboration itself | interrogative, not generative; the very words are the author's (D7) |
 
-So the most general principle in the project — never stated anywhere, enacted everywhere — is:
+So the **distinctive** principle in the project — never stated anywhere, enacted everywhere —
+is:
 
 > **Every representation must answer for its distance from what it represents: graded where it
 > cannot be binary, declared where it cannot be checked, and checked where it can be.**
 
-Call it the **fidelity ethic**. Ipsissima is built the way it asks reconstructions to be built,
-and most of the inventory's apparently disparate principles — honesty about unsigned builds,
-loud converter failures, mutation-tested harnesses, the commit-subject genre — are this one
-ethic applied to a new class of representation. That reflexivity is, on this reading, the
-project's character; it is also why the framework in this directory marks its own provenance.
+Call it the **fidelity ethic**. Ipsissima is built the way it asks reconstructions to be
+built, and about half of the inventory's principles — the half that makes Ipsissima unlike
+other software: honesty about unsigned builds, loud converter failures, mutation-tested
+harnesses, the commit-subject genre — are this one ethic applied to a new class of
+representation. That reflexivity is, on this reading, the project's character; it is also why
+the framework in this directory marks its own provenance.
 
-## 2. The apex: five commitments that govern the whole project
+Distinctive, not supreme: stress-tested at Step Two against Rawls's fourth test (`TENSIONS.md`
+§5), the keystone cannot absorb the mission, sovereignty, attention, method-craft or
+citizenship clusters, and three firm considered judgments would come out wrong if it were made
+to govern them. It names the family P1 leads; it does not rule the six commitments below.
 
-Beneath the keystone, the record supports five apex commitments. They are not derivable from
-one another; every other principle in the inventory specialises one of them (or sits where two
-meet).
+## 2. The apex: six commitments that govern the whole project
+
+Beneath the keystone, the record supports six apex commitments — five extracted at Step One,
+the sixth elevated at Step Three. They are not derivable from one another; every other
+principle in the inventory specialises one of them (or sits where two meet).
 
 **P1 — The fidelity ethic** (the keystone, §1). Specialised by: A1–A5, A8 (what a
 reconstruction must answer for); F1–F2 (what a picture must answer for); C5, D4–D6 (what the
@@ -52,10 +64,11 @@ project must answer for); E3's negative form — a silent failure is an unanswer
 representation left standing; E6 (what a test result must answer for).
 
 **P2 — The mission: open serious argumentation to everyone** (B1). Specialised by: B2 (the
-reader's own pace), B4 (cost as hindrance), B5 (the user's own words), F4 (out of the way), F7
-(the right level of detail), and the novice-first rulings. The mission is why fidelity is
-*drawn* rather than merely recorded — a border legible at a glance is the ladder made available
-to someone who will never read a conventions file.
+reader's own pace), B4 (cost as hindrance), B5 (the user's own words), and the novice-first
+rulings. The mission is why fidelity is *drawn* rather than merely recorded — a border legible
+at a glance is the ladder made available to someone who will never read a conventions file.
+B6 — the author's values are not automatically the project's; the touchstone is the user — is
+the mission's second-order guardian, and governs how every apex below is interpreted.
 
 **P3 — Three sovereignties.** The tool serves three parties and may usurp none of them:
 
@@ -65,7 +78,7 @@ to someone who will never read a conventions file.
   them (G3), their file never rewritten unasked (C4), only facts — never judgements —
   adjudicated by the machine (A10, E7, A1);
 - *the reader*: their pace (B2), their machine and their trust (C1–C3, C5), their freedom to
-  leave (C6), their orientation on the map (F3), their attention (F4).
+  leave (C6) — with their attention and orientation now gathered under P6.
 
 D7 — interrogative, not generative — is P3 applied to the project's own making: the author of
 *Ipsissima* is a party the assistant must not usurp either.
@@ -79,9 +92,17 @@ commitments wearing engineering clothes.
 the project draws on, redistribution only by right. The project behaves as a participant in
 scholarship and in free software, with the obligations of both.
 
-The five are entangled at every edge — the case-law table in §5 is mostly records of their
-collisions — but the *direction of derivation* is stable: local principles cite these; these
-cite nothing above themselves except the keystone.
+**P6 — The reader's attention** (F4, respecified — elevated at Step Three, 3 Sep). Everything
+visible serves a useful purpose, and where additional information is needed for discovery and
+orientation, the reader can turn it off — the walkthrough is the exemplar: attention claimed
+once, easily exited, always recallable. Specialised by F3 (the mental map survives the click),
+F6 (hover adds only what the box could not), F7 (the right level of detail), and the pace half
+of B2. Its elevation carried the second-order ruling B6: the author's own, stricter
+intolerance of clutter is a personal value; what Ipsissima holds is the user-centred form.
+
+The six are entangled at every edge — the case-law table in §5 is mostly records of their
+collisions — but the *direction of derivation* is stable: local principles cite these six; the
+six cite nothing above themselves.
 
 ## 3. The division: what belongs to the whole, to the App, to the MCP
 
@@ -92,9 +113,9 @@ reconstruction; the MCP faces its *sources* and its *checking*. Each half's loca
 are the apex commitments specialised for its seam.
 
 ```
-                         the fidelity ethic (keystone)
+                    the fidelity ethic (the distinctive keystone, leading P1)
                                      │
-        P1 fidelity   P2 mission   P3 sovereignties   P4 method   P5 citizenship
+  P1 fidelity   P2 mission   P3 sovereignties   P4 method   P5 citizenship   P6 attention
                                      │
      ┌───────────────────────────────┼──────────────────────────────────┐
      │                               │                                  │
@@ -104,10 +125,11 @@ are the apex commitments specialised for its seam.
    F1 picture ≤ file          A9/E2 the language is                  G1 extraction = source
    F2 control = promise            someone else's: official          G2 gold/silver/bronze
    F3 mental map survives          parser, no dialect, ever          G3 judgement stays human
-   F4 flow state              C6 no lock-in                          G4 loud, readable reports
+     (P6, App-local)          C6 no lock-in                          G4 loud, readable reports
    F5 one meaning/channel     G3 the judgement seam                  G5 measured instructions
    F6 hover adds only         C1 network claims, per artifact        B4 ask before spending
-   F7 right level of detail   C4 the user's files                    A5–A8 via the checker
+   F7 right level of detail   C4 the user's files                    A5–A8, A11 via the checker
+     (P6, App-local)
    C2 one self-contained file
 ```
 
@@ -224,6 +246,11 @@ values-improvement:
    silently cannot.
 
 ## 6. What Step Two should press on
+
+*(Step Two did — `TENSIONS.md`. Item 1 was upheld in part: the keystone survived as
+distinctive and fell as supreme, §1 above now says so. Item 5's curation happened at the
+checkpoints. Items 2–4 remain live for future rounds, item 4 enlarged by the two candidates
+`TENSIONS.md` §6 closes with. The list is kept as written, as the record of what was asked.)*
 
 The framework's own weakest points, named in advance (D5 applies to this document too):
 

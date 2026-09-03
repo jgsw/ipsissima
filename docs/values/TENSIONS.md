@@ -12,6 +12,17 @@ degree of confidence — whether the fault lies with the decision or with the fr
 Discrepancy is diagnostic, not a call for immediate change: sometimes the behaviour is the
 mistake, and sometimes the behaviour is instantiating a value the framework overlooked.
 
+> **Acted on at the checkpoint, 3 September.** The author confirmed the high-confidence
+> verdicts, approved A11 ("It seems right — do add it") and the move away from a single apex.
+> T5 and T6 were resolved a third way, better than either drafted verdict: not by the trade as
+> recorded but by a **respecification of F4** (now apex P6) — everything visible serves a
+> useful purpose, and orientation aids must be dismissible and recallable, the walkthrough the
+> exemplar — which permits a legend the flat no-clutter reading refused, provided it can be
+> turned off. The respecification carried a new second-order principle, B6: the author's
+> personal values are not automatically Ipsissima's; the touchstone is the user. The framework
+> revisions are in `INVENTORY.md` and `THEORY.md`; the behaviour items are carried by
+> `ALIGNMENT-PLAN.md`.
+
 ---
 
 ## 1. Method: Rawls, adapted to a repository

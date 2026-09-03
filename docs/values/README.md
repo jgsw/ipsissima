@@ -25,16 +25,32 @@ through it.
 
 ## The three steps
 
-- **Step One — this directory as first committed.** A sweep of the repository, the commit
+- **Step One — done, 3 Sep, reviewed by the author.** A sweep of the repository, the commit
   history, and the project's private record, extracting every explicit and implicit principle;
   each entry carries its provenance, its level of generality, and its weight. `INVENTORY.md` is
   the extraction; `THEORY.md` is the interpretation that orders it.
-- **Step Two — the tensions.** Concrete decisions tested against the framework, in search of
-  reflective equilibrium (Rawls, "Outline of a Decision Procedure for Ethics"): where a choice
-  and a principle disagree, a recommendation, with a stated confidence, about which of the two
-  should move.
-- **Step Three — the revision and the alignment plan.** The framework revised in the light of
-  Step Two, and a plan for bringing the codebase into line with it.
+- **Step Two — done, 3 Sep, reviewed by the author.** Concrete decisions tested against the
+  framework, in search of reflective equilibrium (Rawls, "Outline of a Decision Procedure for
+  Ethics"): where a choice and a principle disagree, a recommendation, with a stated
+  confidence, about which of the two should move. `TENSIONS.md`.
+- **Step Three — in progress.** The framework revised in the light of Step Two and the
+  author's checkpoint rulings (A11 added; A7 amended; F4 respecified and elevated to a sixth
+  apex; B6 added; the keystone restated as distinctive rather than supreme), and
+  `ALIGNMENT-PLAN.md` — the plan for bringing the codebase into line, held as a proposal for
+  the author's prioritisation.
+
+## Whose values are these
+
+A question the checkpoints answered about the framework itself, in both directions:
+
+- **Assistant-introduced principles are not thereby suspect, but their genealogy is kept** —
+  the origin field exists because provenance changes interpretation and weight without
+  changing whether a principle binds (C1 is the model case).
+- **Author-held values are not thereby Ipsissima's** (B6, the author's own ruling, 3 Sep):
+  "While I am the author of Ipsissima, it doesn't follow that all my personal values are
+  Ipsissima's values — it depends on what is best for the user." The touchstone for admitting
+  and weighing any candidate value, whoever introduced it, is the user. Its first application
+  re-scoped F4 the day it was stated.
 
 ## How provenance is marked, and why this way
 

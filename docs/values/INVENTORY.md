@@ -169,6 +169,12 @@ assessment of the quality of the argument, and what is merely reporting what the
 **Weight.** Heavy. Case law: colour was refused for the anticipated/prepared distinction because
 colour reads as verdict; the debt sparkline's ink chosen "one neutral" for the same reason.
 
+**Amended at Step Three (3 Sep), from `TENSIONS.md` T4.** The tool grades neither the author's
+argument nor their style; it may measure and display the **reader's burden** — justificatory
+debt, reach, what is held and for how long — provided the display never borrows the verdict
+channels (the colours that mean support and attack, the fault marks). "Owed" is owed *to the
+reader*, never *by the author*, and the reader-facing wording must keep that audible.
+
 ### A8. Exegetical adequacy is this project's half of the bargain
 
 **It says.** A reconstruction can be systematically correct (valid, non-circular) and can be
@@ -232,6 +238,33 @@ whose claim it is; the map works out what holds it up" (27 Aug).
 **Weight.** Medium-heavy; the division of labour it draws (human judgement records; mechanism
 computes) recurs project-wide (see E7). Case law: `#core` retired against the convenience of
 keeping it.
+
+### A11. What the reconstruction claims about itself is checked; what it claims about the author is only reported
+
+**It says.** Wherever the reconstruction asserts something about its own workings that has a
+fact of the matter — *this claim is a verbatim quotation*; *this step is deductively valid on
+these formalizations*; *these formulas were read against these words* — the assertion is
+checked rather than believed. What the reconstruction says about the author — the reading
+itself — is never graded, only reported (A1, A7). The verdict on a self-claim is never a
+verdict on the author, and the display must keep that difference legible.
+
+**Seen in.** Quotation verification (the principle's first instance); fidelity derivation at
+build time (second); the validity check, triggered only by a named rule (third); the
+`formalized:` stamp (fourth). The version-agreement test and the build-derived About lists are
+the same principle applied to the *software's* claims about itself (D6).
+
+**Provenance.** **interpretation**, ratified — origin: assistant. Surfaced at Step Two
+(`TENSIONS.md` §4) as the unstated principle that explicates the validity checker; approved by
+the author at the checkpoint of 3 Sep ("I like principle A11. It seems right — do add it").
+The warrant was `coherence`; ratification has discharged it.
+
+**Generality.** The whole project. It states the ground A8 gestured at, and explains why the
+checker's evaluative marks do not breach A7.
+
+**Weight.** Heavy — it inherits the case law of its four instances, including A2's precedent
+that instruction alone does not keep self-claims honest (38 of 126, "always in the same
+direction"). Its display corollary — a self-claim drawn in the checked style must actually
+have been checked — is what generates the rule-name items in `ALIGNMENT-PLAN.md`.
 
 ---
 
@@ -341,6 +374,30 @@ contract), extended by practice.
 
 **Weight.** Medium. Case law: the Cowork field test (31 Aug) treated a discoverability failure
 as a real failure and fixed it in documentation idiom rather than blaming the client.
+
+### B6. The author's values are not automatically Ipsissima's
+
+**It says.** Ipsissima's values are fixed by what is best for its users, not by the author's
+private preferences. Being the author does not make every personal value a project value: a
+candidate principle earns its place by serving the user, and a personal preference stronger
+than the user's interest warrants is recorded as a preference, not legislated. This is a
+second-order principle — it governs how the framework itself admits and weighs values, the
+author-origin counterpart of the scrutiny the **origin** field already applies to
+assistant-introduced ones (C1's genealogy).
+
+**Seen in.** Its first application, the same day it was stated: the F4 respecification, where
+the author's own very-heavy intolerance of visual clutter was re-scoped into the user-centred
+requirement that clutter be *avoidable* — "some others are more tolerant of visual clutter
+than I am."
+
+**Provenance.** **quotation** — origin: author (3 Sep, at the Step Two checkpoint: "While I am
+the author of Ipsissima, it doesn't follow that all my personal values are Ipsissima's values
+— it depends on what is best for the user").
+
+**Generality.** Second-order: the framework and every future values decision.
+
+**Weight.** Heavy and structural, though tested only once — its first application re-scoped an
+apex principle on the day it was stated, which is a strong opening precedent.
 
 ---
 
@@ -864,27 +921,44 @@ critical", 29 Aug).
 the meta-rule that when it collides with within-picture quality, "the table decides, not the
 principle."
 
-### F4. Stay out of the way: the tool serves a flow state
+### F4. The reader's attention: everything visible earns its place, and orientation can be dismissed
 
-**It says.** "I require tools that allow me to maintain a flow state while I am working … the
-design should be as clean and non-distracting as possible … Zettlr, not Word." Chrome is quiet;
-nothing reflows unbidden; explanation lives behind How to use rather than competing for
-attention; debugging counts move out of the footer.
+**It says** (respecified 3 Sep, at the Step Two checkpoint; the original below). Ipsissima
+must be easy to use **without** visual clutter — which is not an outright ban on visible aids
+but two requirements: **(a)** everything visible serves a useful purpose; **(b)** where
+additional information is needed for discovery and user orientation, the user can easily turn
+it off. The walkthrough is the exemplar: it calls attention to itself once, on first opening;
+the user can easily exit; and it remains available for reactivation whenever wanted.
 
-**Seen in.** The design constitution (18 Aug, 10:12, quoted in the record); `viewer.md` ("The
-viewer's interface"); `REVIEW.md` §3.
+The original statement (18 Aug, 10:12): "I require tools that allow me to maintain a flow
+state while I am working … the design should be as clean and non-distracting as possible …
+Zettlr, not Word." Chrome is quiet; nothing reflows unbidden; explanation lives behind How to
+use; debugging counts move out of the footer. The respecification is compatible with this and
+deliberately widens its scope: a dismissible aid is permitted where the flat reading would
+have refused it.
 
-**Provenance.** **quotation** — origin: author.
+**Seen in.** The design constitution (18 Aug); `viewer.md` ("The viewer's interface");
+`REVIEW.md` §3; the walkthrough's own behaviour.
 
-**Generality.** The App; extends in spirit to every reader-facing surface.
+**Provenance.** **quotation**, twice over — origin: author, 18 Aug and again 3 Sep ("Not an
+outright 'no' to visual clutter, but: (a) everything visible serves a useful purpose, and (b)
+where additional information is required for discovery and user orientation, the user should
+be able to turn this off"). The respecification came with the second-order ruling recorded as
+[[B6]]: the author's personal intolerance of clutter is stronger than the principle Ipsissima
+needs, and "what matters here is *Ipsissima's* values, rather than my own private values."
 
-**Weight.** Very heavy — by the author's own ruling at the Step One checkpoint (3 Sep: "It's
-often in my mind when I make suggestions, but I don't often state it explicitly"), raised from
-the Heavy that its case law alone supported. Case law: the Order scatter retired as "a
-curiosity"; counts demoted; full-screen implemented as hiding chrome rather than an API call
-because that is what the value actually wanted. The correction is itself a finding about
-method: case-law weighting undercounts values that operate silently inside the author's
-suggestions rather than in recorded collisions — see `TENSIONS.md` §1.
+**Generality.** Apex — P6 in `THEORY.md` §2, elevated at Step Three from an App-local
+principle; it governs every reader-facing surface, with F3, F6 and F7 its nearest
+specialisations.
+
+**Weight.** Very heavy — the author's ruling at the Step One checkpoint (3 Sep: "It's often in
+my mind when I make suggestions, but I don't often state it explicitly"), raised from the
+Heavy its case law alone supported. Case law: the Order scatter retired as "a curiosity";
+counts demoted; full-screen implemented as hiding chrome rather than an API call because that
+is what the value actually wanted. Two findings about method attach: case-law weighting
+undercounts values that operate silently inside the author's suggestions (`TENSIONS.md` §1);
+and the respecification reopened T6 — a legend the flat reading refused is permitted if it can
+be turned off.
 
 ### F5. One meaning per channel, and every encoding earns its place
 
