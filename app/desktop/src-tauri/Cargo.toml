@@ -1,6 +1,6 @@
 [package]
 name = "ipsissima"
-version = "0.2.2"
+version = "0.2.3"
 description = "Argument reconstruction, read against the text it is of."
 edition = "2021"
 rust-version = "1.77"
