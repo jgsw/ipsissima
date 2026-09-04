@@ -88,6 +88,11 @@ them.
 [releases page](https://github.com/jgsw/ipsissima/releases) and open it. You will need
 [Node](https://nodejs.org) on the machine; Claude Desktop provides the rest.
 
+**In a terminal it is one line**: `uvx ipsissima-mcp` runs the released server straight from
+[PyPI](https://pypi.org/project/ipsissima-mcp/) — so
+`claude mcp add ipsissima -- uvx ipsissima-mcp` is the whole install for Claude Code, and any
+other MCP client points at the same command. Node is still needed.
+
 ## Get the application
 
 The desktop application adds what a web page cannot do: open a `.argdown` by double-clicking it,

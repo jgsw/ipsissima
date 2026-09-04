@@ -18,7 +18,7 @@ drawn from, and how far each claim stands from the source's own words.
 
 ### The easy way: the Claude Desktop bundle
 
-Download **`ipsissima-mcp-0.1.0.mcpb`** from the
+Download the **`.mcpb` bundle** from the
 [releases page](https://github.com/jgsw/ipsissima/releases) and double-click it. Claude Desktop
 installs it, provisions Python and the dependencies itself, and there is nothing to configure —
 no terminal, no virtual environment, no path typed into a JSON file.
@@ -32,6 +32,22 @@ one rather than carrying its own.
 If the checker later reports that it cannot find Node, install it and restart Claude Desktop.
 It looks in the usual places as well as on the `PATH`, because an application launched from the
 Dock does not get the `PATH` your terminal has.
+
+### The terminal's way: from PyPI
+
+Already in a terminal, with [uv](https://docs.astral.sh/uv/) on the machine? The whole install
+is one line:
+
+```bash
+claude mcp add ipsissima -- uvx ipsissima-mcp
+```
+
+`uvx` makes an environment, installs the released
+[`ipsissima-mcp`](https://pypi.org/project/ipsissima-mcp/) into it and throws it away
+afterwards, so there is no virtual environment to make, remember, or type the path of. Any MCP
+client can run the same command — `uvx ipsissima-mcp` *is* the server. Node still has to be on
+the machine, as above, and [pandoc](https://pandoc.org/installing.html) is still worth having.
+The source checkout below remains the way to work on Ipsissima-MCP itself.
 
 ### The developer's way: from source
 
