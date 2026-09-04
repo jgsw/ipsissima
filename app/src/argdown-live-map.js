@@ -2977,6 +2977,29 @@ function createLiveMap(container, graph, options) {
   const toolbar = parts ? buildToolbar(parts) : null;
   if (toolbar) container.appendChild(toolbar);
 
+  /* The fold's two halves: hide the bar, show the chip that brings it back. `tell` separates
+   * the reader's own toggle — which the host may remember — from applying a remembered choice
+   * at mount, which must not be re-announced or the store would echo itself forever. */
+  let barChip = null;
+  function setBarFolded(folded, tell) {
+    if (!toolbar) return;
+    toolbar.hidden = !!folded;
+    if (barChip) barChip.hidden = !folded;
+    if (tell && typeof opt.onBarFold === "function") {
+      try { opt.onBarFold(!!folded); } catch (e) { /* the host's storage is the host's problem */ }
+    }
+  }
+  if (toolbar) {
+    barChip = document.createElement("button");
+    barChip.className = "alm-barchip";
+    barChip.title = "Show the map's controls";
+    barChip.innerHTML = "⌃ <b>controls</b>";
+    barChip.hidden = true;
+    barChip.addEventListener("click", () => setBarFolded(false, true));
+    container.appendChild(barChip);
+    if (opt.barFolded) setBarFolded(true, false);
+  }
+
   const view = { x: 0, y: 0, k: 1 };
   let userMoved = false;   // has the reader taken the camera? see render()
   // Has the map ever been framed against a container that actually had a size? See `fitTo` and
@@ -4867,6 +4890,64 @@ function createLiveMap(container, graph, options) {
     };
     svg.addEventListener("pointerup", stop);
     svg.addEventListener("pointercancel", stop);
+
+    /* PINCH IS THE PHONE'S WHEEL. The SVG carries touch-action:none, so the browser hands every
+     * touch straight to these handlers and does nothing itself — which meant two fingers did
+     * NOTHING AT ALL: page zoom suppressed, map zoom unwritten. On a phone that left the wheel's
+     * job unfilled and a map wider than the screen effectively unnavigable, which is how it was
+     * found (reported from Android, Chrome and Firefox both, 4 Sep 2026). Tracked on the
+     * container, like the wheel, so a finger that lands on a box still counts: nobody aims a
+     * pinch. The maths is the wheel's, held to the fingers: the content under the fingers'
+     * midpoint stays under it, so spreading the fingers zooms about them and moving both
+     * together is the two-finger pan.
+     */
+    const touches = new Map();
+    let pinch = null;   // {d, mx, my, x, y, k}: fingers and camera when the second finger landed
+    const midAndDist = () => {
+      const [a, b] = [...touches.values()];
+      return { mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) };
+    };
+    container.addEventListener("pointerdown", ev => {
+      if (ev.pointerType !== "touch") return;
+      touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (touches.size === 2) {
+        // The second finger turns whatever the first was doing into a pinch: a pan that had
+        // started ends here, and `stop`'s click-that-clears never fires because `dragging` is
+        // already false by the time either finger lifts.
+        dragging = false; down = null; svg.classList.remove("is-panning");
+        const m = midAndDist();
+        pinch = { d: Math.max(m.d, 1), mx: m.mx, my: m.my, x: view.x, y: view.y, k: view.k };
+        userMoved = true; viewport.style.transition = "";
+      }
+    });
+    container.addEventListener("pointermove", ev => {
+      if (!pinch || !touches.has(ev.pointerId)) return;
+      touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      const m = midAndDist();
+      const k = Math.max(0.15, Math.min(4, pinch.k * (m.d / pinch.d)));
+      // Zoom about the ORIGINAL midpoint, then follow the midpoint's travel. Same anchor-point
+      // algebra as the wheel: the graph point that was under the fingers stays under them.
+      view.x = m.mx - (pinch.mx - pinch.x) * (k / pinch.k);
+      view.y = m.my - (pinch.my - pinch.y) * (k / pinch.k);
+      view.k = k; applyView();
+    });
+    const endTouch = ev => {
+      if (ev.pointerType !== "touch") return;
+      touches.delete(ev.pointerId);
+      if (pinch && touches.size < 2) {
+        pinch = null;
+        // A finger that stays down after a pinch reads as a pan from here on — and never as a
+        // click: `down` stays null, so lifting it cannot clear the lit selection.
+        const rest = [...touches.values()][0];
+        if (rest) { dragging = true; down = null; sx = rest.x - view.x; sy = rest.y - view.y; }
+      }
+      // A finger lifted off the SVG never reaches `stop` up there; without this the pan it
+      // started outlives it, and on a touchscreen laptop the next MOUSE move pans with no
+      // button held — the exact fault the divider's four belts were built against.
+      if (!touches.size && !pinch) { dragging = false; svg.classList.remove("is-panning"); }
+    };
+    container.addEventListener("pointerup", endTouch);
+    container.addEventListener("pointercancel", endTouch);
   }
 
   /* ------------------------------------------------------------ controls */
@@ -4910,7 +4991,13 @@ function createLiveMap(container, graph, options) {
         'title="Only claims that hold something up: remove one and part of the argument ' +
         'loses its route to a contention">load-bearing</button>' +
       '</span>' +
-      (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "");
+      (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "") +
+      // THE BAR CAN BE PUT AWAY. On a desktop it earns its strip; on a phone the strip is the
+      // scarcest thing there is, and a reader who has set the map how they want it is done with
+      // these controls. Folded, a small chip remains where the bar was — dismissible AND
+      // recallable, the walkthrough's own rule — and the choice is the HOST's to remember (see
+      // barFolded / onBarFold at mount): this file stays out of storage on principle.
+      '<button class="alm-barfold" data-act="fold" title="Fold the controls away">⌄</button>';
     // `input`, not `change`: the map should follow the thumb as it is dragged, which is the whole
     // reason a ladder is worth making draggable.
     bar.addEventListener("input", ev => {
@@ -4923,6 +5010,7 @@ function createLiveMap(container, graph, options) {
     bar.addEventListener("click", ev => {
       const b = /** @type {any} */ (ev.target).closest("button"); if (!b) return;
       const act = b.dataset.act;
+      if (act === "fold")     return setBarFolded(true, true);
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
@@ -5689,13 +5777,40 @@ function injectStyle() {
    page's and a copy over there would lose to it. */
 @media (max-width:560px){
   .alm-bar{max-width:calc(100vw - 1.6rem);flex-wrap:nowrap;overflow-x:auto;
-    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-right:.5rem}
   .alm-bar::-webkit-scrollbar{display:none}
   .alm-bar .alm-grp{flex:0 0 auto}
 }
 /* display:flex above beats the UA rule for [hidden], so setting .hidden on a group did nothing
-   and a control the code had decided not to offer stayed on the toolbar. */
+   and a control the code had decided not to offer stayed on the toolbar. The bar itself is in
+   the same trap once it can be folded, so it gets the same rule. */
 .alm-bar .alm-grp[hidden]{display:none}
+.alm-bar[hidden]{display:none}
+/* The fold pins to the bar's top-right corner while the bar WRAPS — as a flex item it landed
+   on a row of its own the moment the bar filled, a whole row spent on the control for spending
+   less. The bar reserves the corner. In the phone's sideways-scroll mode below, it rejoins the
+   flow as a sticky item at the reader's edge instead, because an absolute child would scroll
+   away with the content. */
+.alm-bar{padding-right:1.7rem}
+.alm-bar .alm-barfold{position:absolute;right:.3rem;top:.3rem;padding:.05rem .3rem;
+  background:var(--alm-bar-bg,rgba(255,255,255,.92))}
+/* In the phone's sideways-scroll mode the fold rejoins the flow and STICKS at the reader's
+   edge as the strip scrolls under it — an absolute child would scroll away with the content
+   it is meant to fold. AFTER the rule above, or that rule wins the cascade regardless of the
+   media query: a media query changes when a rule applies, not who wins. */
+@media (max-width:560px){
+  .alm-bar{padding-right:.5rem}
+  .alm-bar .alm-barfold{position:sticky;right:0;top:auto;flex:0 0 auto;margin-left:.15rem;
+    padding:.15rem .45rem}
+}
+/* What a folded bar leaves behind: the same corner, the same family, one word. */
+.alm-barchip{position:absolute;left:8px;bottom:8px;font:11px system-ui,sans-serif;
+  background:var(--alm-bar-bg,rgba(255,255,255,.92));border:1px solid var(--alm-group-line,#ddd);
+  border-radius:7px;padding:.35rem .5rem;cursor:pointer;color:var(--alm-fg,#222)}
+.alm-barchip b{font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;
+  font-size:9px}
+.alm-barchip:hover{border-color:#888}
+.alm-barchip[hidden]{display:none}
 .alm-bar b{font-weight:600;opacity:.6;margin-right:.15rem;text-transform:uppercase;
   letter-spacing:.05em;font-size:9px}
 .alm-bar button{font:inherit;padding:.15rem .45rem;border:1px solid var(--alm-group-line,#ccc);
@@ -5739,7 +5854,7 @@ function injectStyle() {
   .alm-n .alm-pcs-row.is-conclusion .alm-pcs-text{fill:var(--alm-fg,#e8e8e8)}
   .alm-n .alm-pcs-num,.alm-n .alm-pcs-rule{fill:var(--alm-fg-faint,#7d7d7d)}
   .alm-n .alm-pcs-bar{stroke:var(--alm-fg-faint,#7d7d7d)}
-  .alm-bar{background:var(--alm-bar-bg,rgba(30,32,36,.94))}
+  .alm-bar,.alm-barfold,.alm-barchip{background:var(--alm-bar-bg,rgba(30,32,36,.94))}
 }`;
   document.head.appendChild(s);
 }

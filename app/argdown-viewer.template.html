@@ -568,6 +568,13 @@ footer{flex:0 0 auto;padding:.3rem .9rem;border-top:1px solid var(--line);
   background:var(--panel);color:var(--fg-dim);font-size:11px;
   display:flex;gap:1rem;flex-wrap:wrap}
 footer .muted{opacity:.65}
+/* THE FOOTER GIVES ITS ROWS BACK on a phone. On Miller at 375px the counts plus the exposition
+   mark wrapped to three lines — a tenth of the screen for what the comment on statsLine itself
+   calls a debugging aid. Everything it said stays recallable: the counts, the borders state and
+   the exposition verdict all live in the Help panel's statistics block (see statsLine). The
+   rule sits HERE, after the base rule above, because it loses to that rule's display:flex from
+   anywhere earlier in the sheet — a media query changes when a rule applies, not who wins. */
+@media (max-width:560px){ footer{display:none} }
 
 /* Icons are drawn here rather than pulled from a set, so the page stays self-contained and
    nothing is asserted about another project's path data. Line-drawn, one weight, currentColor:
@@ -1333,7 +1340,8 @@ function openingDepth(graph){
     depth: openingDepth(graph),
     onLocate: msLocate,
     onMenu: ctxShow, onExplode: explodeShow,
-    onMargin: openMargin
+    onMargin: openMargin,
+    barFolded: barFoldedNow(), onBarFold: rememberBarFold
   });
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
@@ -1453,6 +1461,7 @@ function statsLine(graph){
    * comes out at 73% of the way through the text and Horton at 42%, and that difference is the
    * whole difference between reading them. */
   var shape = $("shape");
+  var expoLine = "";     // the sparkline's verdict in words, for the help statistics below
   if (shape && window.ArgdownExposition && msAvailable()) {
     var EXP = window.ArgdownExposition;
     var rk = EXP.ranks(graph.nodes || []);
@@ -1464,6 +1473,7 @@ function statsLine(graph){
       var t = document.createElement("span");
       t.className = "shapetext";
       t.textContent = v.where + " · " + v.how;
+      expoLine = t.textContent;
       shape.appendChild(t);
       shape.title = v.text + "\n\nHow the text places its reasons, read left to right.\n\n" +
         "BELOW the line — support anticipated: claims stated here whose reasons are still to " +
@@ -1491,9 +1501,18 @@ function statsLine(graph){
           "check against the source (the floor is 30 characters), or none carried a " +
           "checkable level.")
     : "";
+  // THE FOOTER'S FACTS, SAID HERE TOO. On a phone the footer is not shown at all (see the
+  // max-width:560px rule), so this block is the only place the borders state and the exposition
+  // verdict can be looked up there — which makes both of them part of these statistics rather
+  // than an optional nicety.
   $("helpstats").textContent =
     graph.nodes.length + " claims\n" + (graph.edges||[]).length + " relations\n" +
     groups.length + " sections\n" + placedCount(graph) + " placed in the text" +
+    (DERIVED_IN_PAGE
+       ? "\n" + (BORDERS_TESTED ? "borders checked against the manuscript"
+                                : "borders as declared, not checked")
+       : "") +
+    (expoLine ? "\nexposition: " + expoLine : "") +
     (ftxt ? "\n\nhashtags:\n  " + ftxt : "");
 }
 
@@ -3078,6 +3097,13 @@ function keySeen(){ return KEY_STORE.ok ? KEY_STORE.get() === "seen" : false; }
 function keyRemember(){ if (KEY_STORE.ok) KEY_STORE.set("seen"); }
 var KEY_GRAPH = null;
 
+/* THE MAP BAR'S FOLD IS A STANDING CHOICE, like the key's. The bar itself belongs to
+   argdown-live-map.js, which stays out of storage on principle; this page is the host, so the
+   remembering happens here and travels through `barFolded` / `onBarFold` at every mount. */
+var BAR_STORE = makeChoiceStore("ipsissima.mapbar.v1");
+function barFoldedNow(){ return BAR_STORE.ok ? BAR_STORE.get() === "folded" : false; }
+function rememberBarFold(folded){ if (BAR_STORE.ok) BAR_STORE.set(folded ? "folded" : "open"); }
+
 /** The footer sparkline's own inputs, or null where the exposition mark cannot be drawn —
  *  the same guards `statsLine` applies, asked without drawing anything. */
 function sparkFor(graph){
@@ -4164,6 +4190,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow,
+    barFolded: barFoldedNow(), onBarFold: rememberBarFold,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
     depth: keep ? keep.depth : null,

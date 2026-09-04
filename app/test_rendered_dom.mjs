@@ -882,6 +882,91 @@ async function exportChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ a phone's screen
+ *
+ * Reported from Android (Chrome and Firefox both, 4 Sep 2026): pinch-to-zoom did nothing —
+ * touch-action:none suppressed the browser's zoom and the map had only written the wheel's —
+ * and the footer plus the map bar spent a tenth of a small screen on chrome. What is promised
+ * now: a pinch zooms the map both ways, driven here as the REAL gesture through CDP's touch
+ * synthesis rather than as dispatched events; the footer yields its rows at phone width, its
+ * facts recallable in the Help statistics; and the bar folds to a chip whose choice is
+ * remembered. SHOWN ABLE TO FAIL, 4 Sep 2026: stubbing the pinch pointermove fails both zoom
+ * checks; dropping the footer's media rule fails the footer check; dropping the template's
+ * barFolded wiring fails the remembered-fold check.
+ */
+async function mobileChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  if (!miller) { check(false, "mobile: a manuscript map exists", "no Miller sample built"); return; }
+  const ctx = await browser.newContext({
+    viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  const pageErrors = [];
+  page.on("pageerror", e => pageErrors.push(String(e.message || e)));
+  await page.goto("file://" + miller.html);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
+    try { localStorage.removeItem("ipsissima.mapbar.v1"); } catch (e) { void e; }
+  });
+  await page.reload();
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  await page.waitForTimeout(600);
+
+  check(await page.evaluate(() =>
+          getComputedStyle(document.getElementById("stats").closest("footer")).display === "none"),
+        "the footer yields its rows at phone width");
+  check(await page.evaluate(() =>
+          /exposition: /.test(document.getElementById("helpstats").textContent)),
+        "while its exposition verdict is recallable in the Help statistics");
+
+  const scaleOf = () => page.evaluate(() => {
+    const m = /scale\(([\d.]+)\)/.exec(
+      document.querySelector(".alm-viewport").style.transform || "");
+    return m ? +m[1] : null;
+  });
+  const k0 = await scaleOf();
+  const cdp = await ctx.newCDPSession(page);
+  // gestureSourceType is forced to "touch": left to the platform default, headless Chromium
+  // synthesizes ctrl+wheel instead, and the check then exercises the WHEEL handler — which is
+  // exactly what its first mutation run proved, by passing with the pinch handler stubbed.
+  await cdp.send("Input.synthesizePinchGesture",
+    { x: 187, y: 380, scaleFactor: 2.0, relativeSpeed: 300, gestureSourceType: "touch" });
+  await page.waitForTimeout(300);
+  const k1 = await scaleOf();
+  await cdp.send("Input.synthesizePinchGesture",
+    { x: 187, y: 380, scaleFactor: 0.5, relativeSpeed: 300, gestureSourceType: "touch" });
+  await page.waitForTimeout(300);
+  const k2 = await scaleOf();
+  check(k0 != null && k1 != null && k1 > k0 * 1.15, "a pinch spread zooms the map in",
+        `k ${k0} -> ${k1}`);
+  check(k2 != null && k1 != null && k2 < k1 * 0.85, "and a pinch closed zooms it back out",
+        `k ${k1} -> ${k2}`);
+
+  const barState = () => page.evaluate(() => ({
+    bar: !document.querySelector(".alm-bar").hidden,
+    chip: !document.querySelector(".alm-barchip").hidden,
+    store: (() => { try { return localStorage.getItem("ipsissima.mapbar.v1"); }
+                    catch (e) { return null; } })(),
+  }));
+  await page.tap(".alm-barfold").catch(() => {});
+  const folded = await barState();
+  check(!folded.bar && folded.chip && folded.store === "folded",
+        "the bar folds to a chip and the choice is recorded", JSON.stringify(folded));
+  await page.reload();
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  await page.waitForTimeout(400);
+  const kept = await barState();
+  check(!kept.bar && kept.chip, "a folded bar stays folded on the next load",
+        JSON.stringify(kept));
+  await page.tap(".alm-barchip").catch(() => {});
+  const back = await barState();
+  check(back.bar && !back.chip && back.store === "open",
+        "and the chip brings it back, recorded too", JSON.stringify(back));
+
+  check(pageErrors.length === 0, "the phone session raises no error", pageErrors.join(" | "));
+  await ctx.close();
+}
+
 /* ------------------------------------------------------------------ main */
 
 const maps = corpus();
@@ -963,6 +1048,7 @@ for (const scheme of ["light", "dark"]) {
 }
 await keyChecks(browser);
 await exportChecks(browser);
+await mobileChecks(browser);
 await browser.close();
 if (!KEEP) fs.rmSync(tmp, { recursive: true, force: true });
 
