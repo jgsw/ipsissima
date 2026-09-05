@@ -1350,6 +1350,10 @@ function render(name, source, graph){
   // The guide is about the file that was open, for the same reason the tour is — except when
   // this render IS the guide's own beginning, which starts it right after.
   if (GUIDE) guideEnd();
+  // And so is a standing quote-this-passage offer: its words belong to the file that was open.
+  QUOTE_SEL = null;
+  $("msquote").hidden = true;
+  $("mspara").hidden = true;
   NAME = name; SOURCE = source || ""; CURRENT_GRAPH = graph;
   $("fname").innerHTML = name ? name.replace(/&/g,"&amp;").replace(/</g,"&lt;") : "Argdown viewer";
   $("adname").textContent = name || "Argdown";
@@ -5050,11 +5054,27 @@ var QUOTE_SEL = null;   // the last non-empty selection inside #mstext, kept bec
 document.addEventListener("selectionchange", function(){
   if (!ED) { $("msquote").hidden = true; $("mspara").hidden = true; return; }
   var sel = document.getSelection();
-  var ok = sel && !sel.isCollapsed && sel.rangeCount > 0 &&
-           $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
-  if (ok) QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER };
-  $("msquote").hidden = !ok;
-  $("mspara").hidden = !ok;
+  var inMs = sel && sel.rangeCount > 0 &&
+             $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
+  if (inMs && !sel.isCollapsed) {
+    QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER };
+    // The reader has left the editor for the text; telling the editor helps it not fight
+    // back, though it is not relied on — see below.
+    if (ED.hasFocus()) ED.view.contentDOM.blur();
+    $("msquote").hidden = false;
+    $("mspara").hidden = false;
+  } else if (inMs) {
+    // A plain click in the text is the reader withdrawing the selection: the offer goes.
+    QUOTE_SEL = null;
+    $("msquote").hidden = true;
+    $("mspara").hidden = true;
+  }
+  // A selection anywhere ELSE changes nothing, deliberately. Right after an insert the
+  // editor holds focus with the new title selected, and CodeMirror re-asserts its own
+  // selection on a later update — measured 5 Sep at ~120ms, and again from the linter's
+  // dispatch at ~400ms, faster than a reader can move: the buttons vanished from under the
+  // pointer, and three CI runs failed on exactly this. So the offer stands on the words
+  // already stored, and only the reader withdraws it — in the text, or by using it.
 });
 
 /** What a paraphrase claim's text says until the writer says it better. Obviously a

@@ -631,6 +631,15 @@ async function keyChecks(browser) {
   const leaks = [];
   page.on("request", r => { if (!r.url().startsWith("file:")) leaks.push(r.url()); });
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   // The walkthrough is settled and the key unseen — the exact state the offer waits for.
   await page.evaluate(() => {
     try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
@@ -792,6 +801,15 @@ async function exportChecks(browser) {
   const pageErrors = [];
   page.on("pageerror", e => pageErrors.push(String(e.message || e)));
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   await page.evaluate(() => {
     try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
     try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
@@ -1076,6 +1094,15 @@ async function genTextChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   const drop = (text, name) => page.evaluate(({ t, n }) => {
     const dt = new DataTransfer();
     dt.items.add(new File([t], n));
@@ -1122,6 +1149,15 @@ async function navChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   const drop = (files) => page.evaluate((fl) => {
     const dt = new DataTransfer();
     for (const f of fl) dt.items.add(new File([f.t], f.n));
@@ -1184,6 +1220,15 @@ async function editorChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
   // SETUP BY API, BEHAVIOUR BY KEYBOARD: the caret is placed at the document's end through
@@ -1218,6 +1263,39 @@ async function editorChecks(browser) {
   await ctx.close();
 }
 
+/* A REAL DRAG, made stubborn. A claim landing opens the Argdown pane and schedules the
+ * preview's own redraw, and for a beat afterwards the Manuscript pane is still re-settling —
+ * a bounding box read in that beat sends the drag somewhere stale, and the selection comes
+ * up empty. Locally the beat is too short to hit; the CI runner hit it every time (5 Sep:
+ * three runs, all one TimeoutError at the paraphrase drag, which aborted the suite before
+ * the guided checks ever ran). So the box must hold still across a beat before the drag,
+ * the selection is verified to have actually appeared, and the whole gesture retries —
+ * which is what a person does too, without noticing. */
+async function dragSelect(page, nth, w) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let box = null;
+    for (let i = 0; i < 12; i++) {
+      const a = await page.locator("#mstext [data-l]").nth(nth).boundingBox();
+      await page.waitForTimeout(250);
+      const b = await page.locator("#mstext [data-l]").nth(nth).boundingBox();
+      if (a && b && a.x === b.x && a.y === b.y &&
+          a.width === b.width && a.height === b.height) { box = b; break; }
+    }
+    if (box) {
+      const y = box.y + Math.min(10, box.height / 2);
+      await page.mouse.move(box.x + 4, y);
+      await page.mouse.down();
+      await page.mouse.move(box.x + Math.min(w, box.width * 0.6), y, { steps: 8 });
+      await page.mouse.up();
+      const ok = await page.waitForFunction(
+        () => !document.getElementById("msquote").hidden, { timeout: 2000 }
+      ).then(() => true, () => false);
+      if (ok) return true;
+    }
+  }
+  return false;
+}
+
 /* ------------------------------------------------------------------ selection-to-claim */
 /* The provenance is written by the machine that can see it (docs/EDITOR-PLAN.md §2): select
  * words in the Manuscript, click once, and a claim arrives with fidelity: quotation, the
@@ -1242,6 +1320,15 @@ async function quoteChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   await page.evaluate(({ a, aName, s, sName }) => {
     const dt = new DataTransfer();
     dt.items.add(new File([a], aName));
@@ -1252,18 +1339,13 @@ async function quoteChecks(browser) {
   await page.waitForSelector(".alm-n", { timeout: 20000 });
   await page.click('button[data-p="text"]');
   await page.waitForSelector("#mstext [data-l]", { timeout: 20000 });
-  const para = await page.locator("#mstext [data-l]").first().boundingBox();
-  const y = para.y + Math.min(10, para.height / 2);
-  await page.mouse.move(para.x + 4, y);
-  await page.mouse.down();
-  await page.mouse.move(para.x + Math.min(260, para.width * 0.6), y, { steps: 8 });
-  await page.mouse.up();
+  const dragged = await dragSelect(page, 0, 260);
   const afterDrag = await page.evaluate(() => ({
     sel: String(getSelection()).length,
     btn: document.getElementById("msquote").hidden,
     note: document.getElementById("msnote").textContent
   }));
-  check(afterDrag.sel > 3 && afterDrag.btn === false,
+  check(dragged && afterDrag.sel > 3 && afterDrag.btn === false,
         "dragging over the text offers Quote this passage", JSON.stringify(afterDrag));
   check(afterDrag.note === "",
         "  and the selecting drag lit nothing — a drag that selects is not a click that asks",
@@ -1289,14 +1371,9 @@ async function quoteChecks(browser) {
   // THE OTHER DOOR: a paraphrase's text is the reader's judgement, so the machine writes
   // only the provenance and hands the caret to the placeholder — what arrives selected is
   // the human's half, not the title.
-  const para2 = await page.locator("#mstext [data-l]").nth(1).boundingBox();
-  const y2 = para2.y + Math.min(10, para2.height / 2);
-  await page.mouse.move(para2.x + 4, y2);
-  await page.mouse.down();
-  await page.mouse.move(para2.x + Math.min(220, para2.width * 0.5), y2, { steps: 8 });
-  await page.mouse.up();
-  await page.waitForSelector("#mspara:not([hidden])", { timeout: 4000 });
-  await page.click("#mspara");
+  const dragged2 = await dragSelect(page, 1, 220);
+  check(dragged2, "a second drag selects again, once the pane has settled", String(dragged2));
+  if (dragged2) await page.click("#mspara");
   const p = await page.evaluate(() => {
     const v = window.__ARGDOWN_EDITOR__.view;
     return { tail: v.state.doc.sliceString(Math.max(0, v.state.doc.length - 400)),
@@ -1330,6 +1407,15 @@ async function guidedChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
+  // A RETURNING READER, in every check that is not about the tour itself: each fresh context
+  // is a first-time reader, and 450ms after any render the walkthrough greets one by taking
+  // the panes over — mid-drag, on a slow runner mid-anything. That auto-start is designed
+  // behaviour; these checks are about other things, so they arrive as someone who has seen
+  // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
+  // under the paraphrase drag, later on the runner than locally.)
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
   await page.click("#picknewtext");
   await page.fill("#pastetext",
     "Every citizen deserves a vote at sixteen. Young people already work and pay taxes.\n\n" +
@@ -1352,16 +1438,12 @@ async function guidedChecks(browser) {
         "  and the reading-policy block was written first", opened.doc.slice(0, 90));
 
   const dragOver = async (idx, w) => {
-    const para = await page.locator("#mstext [data-l]").nth(idx).boundingBox();
-    const y = para.y + Math.min(10, para.height / 2);
-    await page.mouse.move(para.x + 4, y);
-    await page.mouse.down();
-    await page.mouse.move(para.x + Math.min(w, para.width * 0.6), y, { steps: 8 });
-    await page.mouse.up();
-    await page.waitForSelector("#msquote:not([hidden])", { timeout: 4000 });
-    await page.click("#msquote");
+    const ok = await dragSelect(page, idx, w);
+    if (ok) await page.click("#msquote");
+    return ok;
   };
-  await dragOver(0, 240);
+  const d1 = await dragOver(0, 240);
+  check(d1, "guided: the conclusion drag selects", String(d1));
   const s2 = await page.evaluate(() => ({
     step: document.getElementById("guidecard").dataset.step,
     tail: window.__ARGDOWN_EDITOR__.view.state.doc.sliceString(
