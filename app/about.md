@@ -13,15 +13,16 @@
 
 ## Ipsissima
 
-*The very words, and how far a reading stands from them.*
+*Making complex reasoning intelligible through maps you can check at every step.*
 
-**Ipsissima** reads an argument reconstruction beside the text itself: the argument as
-a map, the passage each claim was drawn from, and the marks a reader writes in the margin.
+**Ipsissima** opens an argument as an interactive map — a reading of one text, a survey of a
+whole debate, or an argument of your own — with the passage each claim came from beside it
+when the map was drawn from a text, and the marks a reader writes in the margin.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write *these words*, or is this a faithful report of what they meant? Every
-discipline that quotes anybody has had to draw that line. Ipsissima keeps the distinction, on
-every claim.
+discipline that quotes anybody has had to draw that line. Wherever a claim has a source to
+stand at a distance from, Ipsissima keeps the distinction, on every claim.
 
 <dl id="aboutmeta">
   <dt>Version</dt><dd id="aboutver">—</dd>
