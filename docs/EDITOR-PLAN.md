@@ -174,6 +174,17 @@ trap; selection-to-claim with its drag-guard, and the paraphrase door beside it;
 mode entire — the paste door with its attribution question, the five steps, replace-the-
 text-keep-the-map, the walkthrough hand-off (all 5 Sep, on the author's word). A guided
 file's claims verify: run against the checker, coverage full, quotations exact, the
-imputation warranted. Not in v1: `pinpoint:`; a way to reach the paste door on the web once
-a file is already open (the app has File ▸ New from Text…; the web page offers the door
-only at the cold start, so wholesale replacement is app-only for now).
+imputation warranted.
+
+**The door after the cold start (the author's ask, 5 Sep).** An earlier version of this
+section claimed the web could not reach the door once a file was open. Wrong, and the
+correction is the design: on the web, **Open…** already reopens the cold-start panel — the
+page's one File surface, dismissible by clicking off it — with all three doors on it, so
+"start from a text" was reachable all along. What was genuinely missing was that the door
+*conflated two intents*: with a pasted text open it went straight to replace mode, and a
+fresh from-text start became unreachable — on the web and in the app alike. Now, when a
+pasted text is open, the door offers both and guesses at neither: **Replace the text, keep
+the map** (the claims re-placed, the borders re-checked) or **Start fresh from this text**.
+With no pasted text open there is one intent, and one Begin.
+
+Not in v1: `pinpoint:`.

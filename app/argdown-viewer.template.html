@@ -182,6 +182,8 @@ main.swapped{flex-direction:row-reverse}
 #pastedoor .small{font-size:11.5px}
 #pastedoor #pastebegin{font:inherit;font-size:13px;padding:.35rem .9rem;border-radius:8px;
   border:1px solid transparent;background:var(--accent,#3a7bd5);color:#fff;cursor:pointer}
+#pastedoor #pastefresh{font:inherit;font-size:13px;padding:.35rem .9rem;border-radius:8px;
+  border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
 
 /* THE GUIDE CARD: the key card's manners — foldable to its header, closable — sat on the
    map's other corner, above the bar. */
@@ -1012,7 +1014,7 @@ body.fs #fsexit{display:inline-flex}
        the checks verify against this pasted copy, never against the original. -->
   <div id="pastedoor" hidden role="dialog" aria-modal="true" aria-label="Start from a text">
     <div class="card">
-      <header><b id="pastetitle">Start from a text</b><span class="grow"></span>
+      <header><b>Start from a text</b><span class="grow"></span>
         <button class="plain x" id="pasteclose" title="Close (Esc)">&times;</button></header>
       <div class="body">
         <p>Paste the passage you are working from. Plain text is fine — paragraphs stay
@@ -1026,7 +1028,11 @@ body.fs #fsexit{display:inline-flex}
         <p class="muted small">Quotations will be checked against this pasted copy — not
            against the original. Saying which edition it came from lets a reader check the
            copy too.</p>
-        <p><button id="pastebegin" type="button">Begin</button></p>
+        <!-- TWO INTENTS, TWO BUTTONS, and the second only where the situation is ambiguous:
+             with a pasted text already open, "start from a text" could mean correcting the
+             paste or beginning again, and the door must not guess (docs/EDITOR-PLAN.md §4). -->
+        <p><button id="pastebegin" type="button">Begin</button>
+           <button id="pastefresh" type="button" hidden>Start fresh from this text</button></p>
       </div>
     </div>
   </div>
@@ -5130,7 +5136,7 @@ var GUIDE = null;
 
 function yamlQuote(s){ return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
 
-function pasteBegin(){
+function pasteBegin(mode){
   var raw = $("pastetext").value.replace(/\r\n?/g, "\n").trim();
   if (!raw) { $("pastetext").focus(); return; }
   var who = $("pastewho").value.replace(/\s+/g, " ").trim();
@@ -5142,7 +5148,7 @@ function pasteBegin(){
     "provenance: pasted\n" +
     "---\n\n" + raw.replace(/\n{3,}/g, "\n\n") + "\n";
 
-  if (PASTE_REPLACING) {
+  if (mode === "replace") {
     ALL_SOURCES[PASTE_PATH] = chapter;
     if (MS) for (var i = 0; i < MS.chapters.length; i++)
       if (MS.chapters[i].path === PASTE_PATH) MS.chapters[i].text = chapter;
@@ -5196,7 +5202,8 @@ function pasteBegin(){
   if (!PANES.text) setPane("text", true);
   guideStart();
 }
-$("pastebegin").onclick = pasteBegin;
+$("pastebegin").onclick = function(){ pasteBegin(PASTE_REPLACING ? "replace" : "fresh"); };
+$("pastefresh").onclick = function(){ pasteBegin("fresh"); };
 $("pasteclose").onclick = function(){ $("pastedoor").hidden = true; };
 $("pastedoor").addEventListener("keydown", function(e){
   if (e.key === "Escape") $("pastedoor").hidden = true;
@@ -6799,13 +6806,14 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
   newFromText = canEdit ? function(){
     $("pastetext").value = "";
     $("pastewho").value = "";
-    // REPLACE MODE when the open file already reads a pasted text: the same door corrects a
-    // bad paste wholesale — a manuscript is never edited in place — and keeps the map:
-    // relocation re-places every claim and re-checks every border against the replaced text,
-    // which is the checker doing its job.
+    // TWO INTENTS when the open file already reads a pasted text: correcting the paste
+    // wholesale — a manuscript is never edited in place, and relocation then re-places every
+    // claim and re-checks every border, which is the checker doing its job — or beginning
+    // again from a new text. The door offers both and guesses at neither; with no pasted
+    // text open there is only one intent, and only Begin.
     PASTE_REPLACING = !!(BUNDLE && ALL_SOURCES[PASTE_PATH] != null);
-    $("pastetitle").textContent = PASTE_REPLACING ? "Replace the text" : "Start from a text";
     $("pastebegin").textContent = PASTE_REPLACING ? "Replace the text, keep the map" : "Begin";
+    $("pastefresh").hidden = !PASTE_REPLACING;
     $("pastedoor").hidden = false;
     $("pastetext").focus();
   } : null;

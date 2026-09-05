@@ -1394,6 +1394,40 @@ async function guidedChecks(browser) {
   await page.click("#guidebtns button:not(.primary)");   // Done
   const gone = await page.evaluate(() => document.getElementById("guidecard").hidden);
   check(gone === true, "  Done puts the guide away", String(gone));
+
+  // THE DOOR AFTER THE COLD START: Open… brings the panel back, and with a pasted text open
+  // the door offers both intents — replace keeps the map, fresh begins again — guessing at
+  // neither (EDITOR-PLAN §4).
+  await page.click("#openbtn");
+  await page.waitForSelector("#picknewtext:not([hidden])", { timeout: 4000 });
+  await page.click("#picknewtext");
+  const both = await page.evaluate(() => ({
+    begin: document.getElementById("pastebegin").textContent,
+    fresh: !document.getElementById("pastefresh").hidden
+  }));
+  check(/Replace the text/.test(both.begin) && both.fresh,
+        "reopened over a pasted text, the door offers both intents", JSON.stringify(both));
+  await page.fill("#pastetext",
+    "Every citizen deserves a vote at sixteen. A corrected paste.\n\n" +
+    "Those who bear the burdens of law ought to have a say in making it.");
+  await page.click("#pastebegin");    // replace, keep the map
+  const kept = await page.evaluate(() => ({
+    claims: /every-citizen-deserves/.test(window.__ARGDOWN_EDITOR__.view.state.doc.toString()),
+    ms: document.getElementById("mstext").textContent.includes("A corrected paste")
+  }));
+  check(kept.claims && kept.ms,
+        "  replace swaps the text and keeps the map", JSON.stringify(kept));
+  await page.click("#openbtn");
+  await page.waitForSelector("#picknewtext:not([hidden])", { timeout: 4000 });
+  await page.click("#picknewtext");
+  await page.fill("#pastetext", "A different passage entirely, for a different map.");
+  await page.click("#pastefresh");    // begin again
+  const fresh = await page.evaluate(() => ({
+    step: document.getElementById("guidecard").dataset.step,
+    old: /every-citizen-deserves/.test(window.__ARGDOWN_EDITOR__.view.state.doc.toString())
+  }));
+  check(fresh.step === "1" && !fresh.old,
+        "  and fresh begins again at the first question", JSON.stringify(fresh));
   await ctx.close();
 }
 

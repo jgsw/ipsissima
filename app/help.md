@@ -580,7 +580,8 @@ that cannot choose where to write, Save offers the file as a download instead an
 
 
 **Start from a text** — the third door on the opening panel, and **File ▸ New from Text…** in the
-app — is for when what you have is a passage and the map does not exist yet. Paste the text, say
+app — is for when what you have is a passage and the map does not exist yet. The door is never
+far away once something is open: **Open…** brings the opening panel back, doors and all. Paste the text, say
 whose it is, and press Begin. The pasted text becomes the manuscript, carried *inside* your file:
 saving produces one `.argdown` with the text embedded, which opens anywhere and can be handed to
 anyone whole. Whose-text-you-said appears in the panel at the top-left of the map, and one thing
@@ -603,8 +604,10 @@ whether the reading is fair — those stay yours. The **–** folds the guide to
 **×** puts it away for good, and the map and text stay exactly as they are.
 
 The pasted text itself is never edited in place — no manuscript is. A bad paste is corrected
-wholesale: **File ▸ New from Text…** again, and the door offers **Replace the text, keep the
-map** — every claim is then re-placed and every border re-checked against the corrected copy.
+wholesale: reach the door again — **File ▸ New from Text…** in the app, **Open…** then *start
+from a text* on the web — and with a pasted text open it offers both intents, guessing at
+neither: **Replace the text, keep the map**, which re-places every claim and re-checks every
+border against the corrected copy, or **Start fresh from this text**, which begins again.
 
 ## The controls
 
