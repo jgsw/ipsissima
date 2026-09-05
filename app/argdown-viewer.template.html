@@ -4067,7 +4067,12 @@ function claimByLabel(name){
 function followClaim(n){
   if (LIVE) LIVE.markClaims([n.id]);
   if (ED && n.docLine != null) ED.revealLine(n.docLine);
-  if (msAvailable() && n.pos && n.pos.chapter) msLocate(n);
+  // ONLY IF THE MANUSCRIPT IS ALREADY OPEN. "This one" is a selection, not a summons:
+  // msLocate is the go-to-source gesture and earns the right to open the pane; a selection
+  // shows the claim in whatever the reader has chosen to have on screen — the docstring
+  // above has said "their business, not the code's" from the start, and the code now
+  // agrees with it (audited 5 Sep, docs/NAVIGATION.md).
+  if (PANES.text && msAvailable() && n.pos && n.pos.chapter) msLocate(n);
 }
 
 /** Argdown's OWN errors, positioned. The parser is the authority on what is valid; the editor
@@ -4313,8 +4318,9 @@ function applyComment(label, value){
  *
  * A corner mark says there is something written here; it does not let you READ your own
  * feedback back. Twenty comments on an essay and hunting for corners is the wrong interaction —
- * this is the list, and clicking one lights the claim on the map, opens the passage it came
- * from, and takes the Argdown to its line, which is the same `followClaim` everything else uses.
+ * this is the list, and clicking one lights the claim on the map, takes the Argdown to its
+ * line, and — when the Manuscript pane is open — its passage too: the same `followClaim`
+ * everything else uses.
  */
 function marginalia(){
   var out = [], ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
@@ -4844,6 +4850,20 @@ function msLocate(n){
   // first, so it happens even when there is no manuscript to show.
   if (ED && n && n.docLine != null) ED.revealLine(n.docLine);
   if (!msAvailable()) {
+    // THE TAB POLICY, APPLIED TO THE GESTURE (B7; the Manuscript tab's note above). A map
+    // that reads no text has no passages, and telling its reader to go and find the folder
+    // invents a manuscript that never existed. The genre is told apart the way the tab
+    // tells it — does any claim cite a chapter? — and the no-text answer is spoken only
+    // when the gesture otherwise did nothing visible: with the Argdown pane open, the
+    // claim's own line has already answered.
+    var cites = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [])
+                  .some(function(x){ return x.chapter; });
+    if (!cites) {
+      if (!(ED && PANES.argdown && n && n.docLine != null))
+        showErr("This map reads no text, so its claims have no passages to go to.",
+                { note: true });
+      return;
+    }
     showErr("This viewer has no copy of the manuscript, so it cannot show the passage.\n\n" +
             "Drop the reconstruction's FOLDER rather than the .argdown on its own — or rebuild " +
             "with:  build_argdown_viewer.mjs FILE.argdown --source-root <manuscript folder>");
@@ -5605,6 +5625,18 @@ function ctxShow(n, ev){
   b.type = "button";
   b.textContent = "Go to source";
   b.disabled = !msAvailable() || !(n.pos && n.pos.chapter);
+  // A DISABLED CONTROL EARNS ITS PIXELS BY SAYING WHY (the tab policy, 3 Sep): the three
+  // reasons are different remedies, and only one of them is the reader's to fix.
+  if (b.disabled) {
+    var citesAny = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [])
+                     .some(function(x){ return x.chapter; });
+    b.title = !citesAny
+      ? "This map reads no text, so there is no source to go to."
+      : !msAvailable()
+        ? "The claims cite a manuscript this viewer has no copy of. Drop the folder rather " +
+          "than the file, and the source appears."
+        : "This claim cites no file.";
+  }
   b.onclick = function(){ ctxHide(); msLocate(n); };
   m.appendChild(b);
 
@@ -5760,8 +5792,8 @@ window.addEventListener("scroll", function(){
 window.addEventListener("blur", ctxHide);
 window.addEventListener("resize", ctxHide);
 
-/* Clicking a claim reference in the Argdown: light it on the map AND show its passage. Which
-   of the two the reader wanted depends on the view they are in, and doing both costs nothing. */
+/* Clicking a claim reference in the Argdown: the same selection `followClaim` serves
+   everywhere — lit on the map, and its passage shown when the Manuscript pane is open. */
 // The read-only pane's version. With the editor mounted this element is gone and CodeMirror's
 // own decorations carry the links instead.
 $("src").addEventListener("click", function(e){

@@ -1099,8 +1099,77 @@ async function genTextChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------ the go-to-source gesture */
+/* The two-promises doctrine (docs/NAVIGATION.md): the go-to gesture opens the Manuscript
+ * where there is one, and on a map that reads no text it says so instead of demanding a
+ * folder that never existed. Driven by real double-clicks on the painted node, because a
+ * synthetic event would skip the path under test. */
+async function navChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  const out = path.join(tmp, "nav-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "nav: the standalone builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const sourceless = [
+    "[a]: A claim of a debate map.",
+    "    + [b]: Its reason.",
+    ""
+  ].join("\n");
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  const drop = (files) => page.evaluate((fl) => {
+    const dt = new DataTransfer();
+    for (const f of fl) dt.items.add(new File([f.t], f.n));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, files);
+
+  await drop([{ t: sourceless, n: "debate.argdown" }]);
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "debate.argdown", { timeout: 20000 });
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  const box = await page.locator(".alm-n").first().boundingBox();
+  await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
+  const said = await page.evaluate(() => ({
+    shown: document.getElementById("err").classList.contains("show"),
+    text: document.getElementById("errmsg").textContent,
+    ms: document.getElementById("ms").hidden
+  }));
+  check(said.shown && /reads no text/.test(said.text) && said.ms,
+        "on a sourceless map the go-to gesture says so, and summons nothing",
+        JSON.stringify(said));
+
+  if (miller) {
+    const ad = fs.readFileSync(miller.argdown, "utf8");
+    const srcDir = path.join(miller.root, "source");
+    const srcName = fs.readdirSync(srcDir).find(f => f.endsWith(".md"));
+    const src = fs.readFileSync(path.join(srcDir, srcName), "utf8");
+    await drop([{ t: ad, n: path.basename(miller.argdown) }, { t: src, n: srcName }]);
+    await page.waitForFunction((want) =>
+      document.getElementById("fname").textContent === want,
+      path.basename(miller.argdown), { timeout: 20000 });
+    await page.waitForSelector(".alm-n", { timeout: 20000 });
+    const before = await page.evaluate(() => document.getElementById("ms").hidden);
+    const b2 = await page.locator(".alm-n").first().boundingBox();
+    await page.mouse.dblclick(b2.x + b2.width / 2, b2.y + b2.height / 2);
+    const after = await page.evaluate(() => document.getElementById("ms").hidden);
+    check(before === true && after === false,
+          "on a reading it opens the Manuscript, which is the thing asked for",
+          `before=${before} after=${after}`);
+  } else {
+    check(false, "nav: a qualifying reading exists", "no Miller sample built");
+  }
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
+await navChecks(browser);
 await exportChecks(browser);
 await mobileChecks(browser);
 await browser.close();

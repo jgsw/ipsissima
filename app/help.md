@@ -410,13 +410,24 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
 `source:` quotation against the source without leaving the page.
 
 - **Double-click a claim** — jump to the passage it was drawn from
-- <kbd>Shift</kbd>**-click a claim** — the same
+- <kbd>Shift</kbd>**-click a claim** — the same, and so is <kbd>Shift</kbd>+<kbd>Enter</kbd> on
+  a claim reached by keyboard
 - **Right-click a claim** — **Go to source**, from a menu
 - **Click a claim** — marks it as the one you are working on
 - **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
   the map. If they are folded away they are opened, and if they all fit on screen the map moves
   to them.
-- **Click a `[claim]` in the Argdown** — lights it on the map and shows its passage
+- **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
+  open, shows its passage
+
+Two kinds of gesture, keeping two different promises. **Selecting** — a plain click on a claim,
+a claim's name in the Argdown, an entry in the margin list — shows the claim in whatever panes
+are already open, and opens none: which panes you work with is your business. **Going to the
+passage** — double-click, shift-click, or **Go to source** from the menu — is the one request
+that opens a pane, because the Manuscript is the very thing it asks for. (The one other opener
+is the folded corner of a commented claim, which opens the margin list it names.) On a map that
+reads no text there are no passages, and the go-to gesture says so rather than asking you for a
+manuscript that never existed.
 
 A panel at the top-left of the map carries whatever the manuscript's own front matter offers as
 an orientation to the text — the article's **abstract**, or for a judgment its **facts of the
