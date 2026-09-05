@@ -2,7 +2,7 @@
   "name": "ipsissima",
   "version": "0.1.0",
   "private": true,
-  "description": "Ipsissima \u2014 read an argument reconstruction beside the text itself. Builds the self-contained viewer and editor.",
+  "description": "Ipsissima — read an argument reconstruction beside the text itself. Builds the self-contained viewer and editor.",
   "license": "MIT",
   "author": "James Wilson",
   "type": "commonjs",
@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@argdown/cli": "^2.0.0",
-    "@argdown/pandoc-filter": "^2.0.1"
+    "@argdown/pandoc-filter": "^2.0.1",
+    "@codemirror/autocomplete": "^6.20.3"
   },
   "devDependencies": {
     "@anthropic-ai/mcpb": "^2.1.2",

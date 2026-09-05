@@ -1167,9 +1167,61 @@ async function navChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ title completion */
+/* Reuse of a defined title is how Argdown expresses structure, and the editor now offers the
+ * titles the last good parse knows when `[` is typed. Driven as a writer would drive it:
+ * start a reconstruction from the cold panel, click into the editor, type — and the list
+ * that appears must contain a title the skeleton defines. */
+async function editorChecks(browser) {
+  const out = path.join(tmp, "editor-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "--editor", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "completion: the editor build builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.click("#picknew");
+  await page.waitForSelector(".cm-content", { timeout: 20000 });
+  // SETUP BY API, BEHAVIOUR BY KEYBOARD: the caret is placed at the document's end through
+  // the editor's own published handle (Ctrl+End is not a macOS binding, and a click lands
+  // wherever the skeleton happens to wrap), and everything under test — the typing, the
+  // auto-close, the completion — is real keys.
+  await page.evaluate(() => {
+    const ed = window.__ARGDOWN_EDITOR__;
+    ed.view.dispatch({ selection: { anchor: ed.view.state.doc.length },
+                       scrollIntoView: true });
+    ed.view.contentDOM.focus();
+  });
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("+ [", { delay: 40 });
+  let offered = [];
+  try {
+    await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 4000 });
+    offered = await page.evaluate(() =>
+      [...document.querySelectorAll(".cm-tooltip-autocomplete .cm-completionLabel")]
+        .map(e => e.textContent));
+  } catch { /* asserted below */ }
+  check(offered.includes("main-claim"),
+        "typing [ offers the titles the map defines",
+        "offered: " + (offered.join(", ") || "nothing"));
+  // And the bracket auto-closed around the caret while the list was up.
+  const around = await page.evaluate(() => {
+    const s = window.__ARGDOWN_EDITOR__.view.state;
+    const p = s.selection.main.head;
+    return s.doc.sliceString(Math.max(0, p - 1), p + 1);
+  });
+  check(around === "[]", "and the [ closed itself behind the caret", JSON.stringify(around));
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await navChecks(browser);
+await editorChecks(browser);
 await exportChecks(browser);
 await mobileChecks(browser);
 await browser.close();

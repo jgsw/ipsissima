@@ -20,9 +20,11 @@ import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo,
          undoDepth, redoDepth } from "@codemirror/commands";
 import { search, searchKeymap, highlightSelectionMatches, openSearchPanel } from "@codemirror/search";
 import { StreamLanguage, HighlightStyle, syntaxHighlighting, bracketMatching,
-         foldService, foldGutter, codeFolding, foldEffect, unfoldAll, foldedRanges }
+         foldService, foldGutter, codeFolding, foldEffect, unfoldAll, foldedRanges,
+         indentService, indentUnit }
   from "@codemirror/language";
 import { linter, lintGutter, setDiagnostics } from "@codemirror/lint";
+import { autocompletion, closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { tags as t } from "@lezer/highlight";
 
 /* ---------------------------------------------------------------- the language */
@@ -31,6 +33,14 @@ import { tags as t } from "@lezer/highlight";
  *  the two things that span lines: the `===` front-matter fence and `{…}` metadata. */
 const argdownMode = StreamLanguage.define({
   name: "argdown",
+  // `<` IS NOT A CLOSEABLE BRACKET here, deliberately: `<+` and `<-` open relation lines, and
+  // auto-closing the angle would turn every attempt to type one into `<>+`. Square brackets,
+  // braces and quotes close safely — nothing in the syntax puts a bare `[` or `{` anywhere
+  // but the start of a reference or a metadata block.
+  languageData: {
+    closeBrackets: { brackets: ["(", "[", "{", '"'] },
+    commentTokens: { line: "//" }
+  },
   startState: () => ({ front: false, meta: 0 }),
   token(stream, state) {
     if (stream.sol()) {
@@ -286,6 +296,53 @@ function allMetaRanges(state) {
   return out;
 }
 
+/* ---------------------------------------------------------------- completion and indent */
+
+/** Reuse of a defined title is how Argdown expresses structure, and until now the writer had
+ *  to remember and retype every title exactly. Typing `[` or `<` offers the titles the last
+ *  good parse knows — statements after `[`, arguments after `<` — from the host's `titles`
+ *  callback, so the list is the map's own and never a second opinion.
+ */
+function titleCompletions(titlesOf) {
+  return context => {
+    if (!titlesOf) return null;
+    const st = context.matchBefore(/@?\[[^\]\n]*$/);
+    const ar = st ? null : context.matchBefore(/@?<[^>\n]*$/);
+    const m = st || ar;
+    if (!m) return null;
+    const kind = st ? "statement" : "argument";
+    const all = titlesOf() || [];
+    const seen = new Set();
+    const options = [];
+    for (const t2 of all) {
+      if (t2.kind !== kind || !t2.name || seen.has(t2.name)) continue;
+      seen.add(t2.name);
+      // The closing bracket is appended only for `<…>`: `[` auto-closes (languageData above),
+      // so its `]` is already sitting under the caret and typing it skips over.
+      options.push({ label: t2.name, type: st ? "variable" : "type",
+                     apply: st ? t2.name : t2.name + ">" });
+    }
+    if (!options.length) return null;
+    const open = m.text.startsWith("@") ? 2 : 1;
+    return { from: m.from + open, options,
+             validFor: st ? /^[^\]\n]*$/ : /^[^>\n]*$/ };
+  };
+}
+
+/** KEEP THE WRITER'S LEVEL. Indentation is semantic in Argdown — a level is a claim's place in
+ *  the argument — so Enter holds the level of the line above rather than resetting to the
+ *  margin. A blank line ends a block in the syntax, so after one the indent returns to zero. */
+const argdownIndent = indentService.of((ctx, pos) => {
+  const line = ctx.state.doc.lineAt(pos);
+  if (line.number === 1) return 0;
+  const prev = ctx.state.doc.line(line.number - 1);
+  if (!prev.text.trim()) return 0;
+  const lead = /^[ \t]*/.exec(prev.text)[0];
+  let col = 0;
+  for (const ch of lead) col += ch === "\t" ? 4 : 1;
+  return col;
+});
+
 /* ---------------------------------------------------------------- the editor */
 
 export function create(parent, opts) {
@@ -340,7 +397,13 @@ export function create(parent, opts) {
         // Slow on purpose: re-linting runs the real parser, and doing that on every keystroke
         // would fight the live preview for the same idle time.
         linter(/** @type {any} */ (lintSource), { delay: 400 }),
-        keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+        // Four spaces is the house indent (every skeleton and sample uses it), and the indent
+        // service holds the writer's level across Enter — see argdownIndent above.
+        indentUnit.of("    "), argdownIndent,
+        closeBrackets(),
+        autocompletion({ override: [titleCompletions(o.titles)] }),
+        keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap,
+                   ...searchKeymap, indentWithTab]),
         EditorView.lineWrapping,
         EditorView.updateListener.of(u => { if (u.docChanged && o.onChange) o.onChange(view.state.doc.toString()); })
       ]

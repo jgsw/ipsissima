@@ -658,6 +658,21 @@ Argdown is line-oriented. Four things make up a reconstruction:
   once; afterwards `[name]` on its own points at it.
 - `<Name>: text` — an **argument**: a named inference, which can carry a premise-conclusion
   structure.
+
+The editor helps with the mechanics, so the argument gets your attention instead:
+
+- **Typing `[` or `<` offers every title the map already defines** — statements after `[`,
+  arguments after `<` — because pointing at a claim again is how the structure is built, and
+  a title retyped from memory is a title misspelled. Pick one with the arrow keys and
+  <kbd>Enter</kbd>, or just keep typing.
+- **`[`, `{`, `(` and `"` close themselves** behind the caret; typing the closing character
+  skips over it. `<` does not, deliberately — `<+` and `<-` open relation lines.
+- **<kbd>Enter</kbd> keeps your indentation level**, because a level is a claim's place in the
+  argument, not a style choice; a blank line ends a block, so after one the margin returns.
+  <kbd>Tab</kbd> indents by four, the house step.
+- **Where a line does not parse, the margin says so on the line**, with the real Argdown
+  parser doing the judging — plus warnings for the traps that parse cleanly and mean the
+  wrong thing, which are worse.
 - `+` and `-` — support and attack. **Indentation decides direction, and it runs child → parent.**
   A reason is written *underneath* what it bears on.
 - `#tag` — a kind of claim. The map colours by these and the **kinds** buttons filter on them.

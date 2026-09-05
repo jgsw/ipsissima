@@ -4024,6 +4024,15 @@ function showArgdown(text){
         lineNumbers: false,
         lint: parseErrors,
         knowsClaim: function(name){ return !!claimByLabel(name); },
+        // The completion list is the map's own: whatever the last good parse defined. It goes
+        // stale only as far as the live preview does, which is a keystroke's worth.
+        titles: function(){
+          var ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
+          var out = [];
+          for (var i = 0; i < ns.length; i++)
+            out.push({ name: ns[i].label, kind: ns[i].kind });
+          return out;
+        },
         onClaimClick: function(name){ var n = claimByLabel(name); if (n) followClaim(n); },
         onChange: function(next){ SOURCE = next; DIRTY = true; markState(); schedulePreview(); }
       });
