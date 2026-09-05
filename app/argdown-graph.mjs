@@ -868,7 +868,13 @@ export function toGraph(res) {
       edges.push({ from: n.id, to: sid, type: "support", concludes: l.step, line: l.n });
     }
   }
-  return { nodes, groups, edges };
+  return { nodes, groups, edges,
+           // The map's own declaration about the TEXT it reads (front matter
+           // `text-provenance:`), carried to the page so the reader meets it beside the
+           // title. `generated` is the documented value; any other declared value travels
+           // verbatim, because dropping a declaration silently is exactly what this field
+           // exists to prevent.
+           textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null };
 }
 
 /** The process chain and settings every host must use, so a file maps identically everywhere.

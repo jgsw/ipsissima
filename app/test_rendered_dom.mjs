@@ -1046,7 +1046,61 @@ for (const scheme of ["light", "dark"]) {
   }
   await ctx.close();
 }
+/* ---------------------------------------------------------- the text's provenance chip */
+/* A map may declare that the text it reads was machine-generated (front matter
+ * `text-provenance: generated`), and the reader must meet that declaration beside the
+ * title — a checked-quotation border otherwise lends the manuscript the look of an
+ * authored source (docs/values/SECOND-THOUGHTS.md). Driven as a reader would drive it:
+ * two real drops, one declaring and one not, because a chip that never hides is as wrong
+ * as one that never shows. */
+async function genTextChecks(browser) {
+  const out = path.join(tmp, "gentext-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "text-provenance: the standalone builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const declared = [
+    "===",
+    "title: A generated-text reading",
+    "text-provenance: generated",
+    "===",
+    "",
+    "[a]: A claim.",
+    "    + [b]: Its reason.",
+    ""
+  ].join("\n");
+  const plain = declared.split("\n").filter(l => !/^text-provenance/.test(l)).join("\n");
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  const drop = (text, name) => page.evaluate(({ t, n }) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([t], n));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, { t: text, n: name });
+  await drop(declared, "gen.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "gen.argdown", { timeout: 20000 });
+  const shown = await page.evaluate(() => {
+    const c = document.getElementById("gentext");
+    return { hidden: c.hidden, text: c.textContent };
+  });
+  check(!shown.hidden && shown.text === "AI-written text",
+        "a declared text-provenance shows beside the title", JSON.stringify(shown));
+  await drop(plain, "plain.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "plain.argdown", { timeout: 20000 });
+  const gone = await page.evaluate(() => document.getElementById("gentext").hidden);
+  check(gone === true, "and an undeclared one shows nothing", String(gone));
+  await ctx.close();
+}
+
 await keyChecks(browser);
+await genTextChecks(browser);
 await exportChecks(browser);
 await mobileChecks(browser);
 await browser.close();

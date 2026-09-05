@@ -175,6 +175,14 @@ them against the source rather than only reporting them. A hand-built reconstruc
 work and is never written to without being asked. Remove the line once a person has curated the
 markers.
 
+**Top-level `text-provenance: generated` is the other declaration, and they are not the same
+thing.** `reconstruction: generated:` says who wrote the *map*; `text-provenance:` says who
+wrote the *text* the map reads — declare it whenever the manuscript itself was produced by a
+model, as when a user asks for a report on the arguments about something and then for a map of
+that report. Ipsissima shows the declaration beside the map's title, because a checked
+quotation border otherwise lends a generated text the look of an authored source. The checks
+establish that the map is faithful to the text — never that the text is true.
+
 ---
 
 ## 5. Tags

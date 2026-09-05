@@ -85,6 +85,13 @@ from — and the front matter carries `author:` and `date:`, because a debate ma
 drew it. The analogue of accuracy here is fairness to the position: each side's best
 publicly-circulating case, laid out to be examined.
 
+A GENERATED REPORT IS THE OTHER CASE. Where the user first has an overview written -- "report
+on the arguments about X", by you or another assistant -- that report is a manuscript:
+gold-route Markdown, full fidelity, the whole ORDER OF WORK above. Declare
+`text-provenance: generated` in the map's front matter (Ipsissima shows it beside the title),
+and tell the user what the checks then establish: that the map is faithful to the report, not
+that the report is true.
+
 WHICH FILE TO ASK FOR. Markdown is gold, pandoc-readable formats (.docx, .odt, .html, .epub,
 .tex) are silver, PDF is bronze — a PDF only records where ink sat, so paragraphs and headings
 have to be inferred. If a user offers a PDF of a document they also have as .docx, say so and

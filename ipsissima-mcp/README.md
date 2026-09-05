@@ -323,6 +323,16 @@ on screen rather than checkable against a text. The checker still holds it to pa
 structure, and greets the genre as one: a sourceless map is not asked for provenance it
 cannot have.
 
+**An overview written first, then mapped.**
+
+> Write me a report on the arguments about nuclear power, then map it with Ipsissima.
+
+The report is a manuscript like any other — gold-route Markdown — so the map of it gets the
+full treatment: quotations verified, departures marked, the text beside the map. Two honest
+labels ride with it: the map's front matter declares `text-provenance: generated`, which
+Ipsissima shows beside the title, and what the checks establish is that the map is faithful
+*to the report* — not that the report is true.
+
 ### It will ask before it spends
 
 A reconstruction is the expensive step, and *"a map of each of these articles"* and *"one map
