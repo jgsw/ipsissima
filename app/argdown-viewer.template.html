@@ -164,6 +164,42 @@ main.swapped{flex-direction:row-reverse}
    the respecified F4 (docs/values/INVENTORY.md): absolutely positioned over a corner of the map
    so it reflows nothing, gone in one action, remembered gone, and permanently findable under
    How to use instead of in any standing chrome. */
+/* THE PASTE DOOR: same dialog manners as About — fixed, dimmed, one card, Esc and the
+   surround both close it. */
+#pastedoor{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
+  display:flex;align-items:center;justify-content:center}
+#pastedoor[hidden]{display:none}
+#pastedoor .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  width:min(560px,92vw);max-height:86vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#pastedoor header{display:flex;align-items:center;gap:.5rem;padding:.5rem .8rem;
+  border-bottom:1px solid var(--line)}
+#pastedoor .body{padding:.6rem .8rem .8rem;font-size:13px;line-height:1.55}
+#pastedoor textarea,#pastedoor input{width:100%;font:inherit;font-size:13px;
+  border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;
+  background:var(--bg);color:var(--fg);box-sizing:border-box}
+#pastedoor textarea{resize:vertical;min-height:130px}
+#pastedoor label{display:block;margin:.55rem 0 .2rem;font-weight:600;font-size:12.5px}
+#pastedoor .small{font-size:11.5px}
+#pastedoor #pastebegin{font:inherit;font-size:13px;padding:.35rem .9rem;border-radius:8px;
+  border:1px solid transparent;background:var(--accent,#3a7bd5);color:#fff;cursor:pointer}
+
+/* THE GUIDE CARD: the key card's manners — foldable to its header, closable — sat on the
+   map's other corner, above the bar. */
+#guidecard{position:absolute;left:14px;bottom:56px;z-index:6;max-width:300px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.5rem .65rem;font-size:12px;line-height:1.5;
+  box-shadow:0 8px 28px rgba(0,0,0,.18)}
+#guidecard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.15rem}
+#guidecard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
+#guidecard header button.plain{font-size:11px;line-height:1.3;padding:0 4px;color:var(--fg-dim)}
+#guidecard header button.plain:hover{color:var(--fg)}
+#guidecard.min #guidebody,#guidecard.min #guidebtns{display:none}
+#guidecard p{margin:.25rem 0}
+#guidebtns{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+#guidebtns button{font:inherit;font-size:12px;padding:.2rem .6rem;border-radius:7px;
+  border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
+#guidebtns button.primary{background:var(--accent,#3a7bd5);color:#fff;border-color:transparent}
+
 #keycard{position:absolute;right:14px;bottom:14px;z-index:5;max-width:270px;
   background:var(--panel);border:1px solid var(--line);border-radius:8px;
   padding:.45rem .7rem .6rem;box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
@@ -872,6 +908,19 @@ body.fs #fsexit{display:inline-flex}
        once; dismissed in one action and remembered dismissed; always under How to use. The
        card's body is written by keyContent() from the open reconstruction, so it shows only
        the markings this map actually uses. -->
+  <!-- THE GUIDE (docs/EDITOR-PLAN.md §3): build a map from a text, one question at a time —
+       the walkthrough's manners, selection-to-claim as its only gesture. The card never
+       proposes which sentence is the conclusion, never ranks premises, never supplies the
+       assumption: the judgement stays the reader's (G3); the card asks, and works the
+       gesture. -->
+  <div id="guidecard" hidden role="note" aria-label="Building a map from the text" data-step="0">
+    <header><b>From text to map</b><span id="guidestep"></span>
+      <button class="plain" id="guidemin" title="Fold the guide to its header">&#8211;</button>
+      <button class="plain" id="guideclose"
+              title="Close the guide. The map and the text stay; the steps are under How to use.">&#215;</button></header>
+    <div id="guidebody"></div>
+    <div id="guidebtns"></div>
+  </div>
   <div id="keycard" hidden role="note" aria-label="Key to the map's markings">
     <header><b>Key</b><span>what the markings mean</span>
       <button class="plain" id="keymin"
@@ -945,7 +994,8 @@ body.fs #fsexit{display:inline-flex}
               had to be told to create an empty file somewhere else and drop it on this. Hidden in
               a build with no editor, where it would only produce a file nobody could type into. -->
          &nbsp;·&nbsp; <button class="plain" id="picknew" hidden>start a reconstruction</button>
-         &nbsp;·&nbsp; <button class="plain" id="picknewdebate" hidden>start a debate map</button></p>
+         &nbsp;·&nbsp; <button class="plain" id="picknewdebate" hidden>start a debate map</button>
+         &nbsp;·&nbsp; <button class="plain" id="picknewtext" hidden>start from a text</button></p>
       <p>A folder brings the manuscript with it, so the claims can be laid out
          <b>by where they appear in the text</b>. A lone file gives the argument map only —
          unless it is a <b>bundle</b>, which carries the text inside it.</p>
@@ -953,6 +1003,33 @@ body.fs #fsexit{display:inline-flex}
     </div>
   </div>
   </div><!-- /#stage -->
+
+  <!-- THE PASTE DOOR (docs/EDITOR-PLAN.md §3). Starting from a text without a folder and
+       without the MCP: paste the passage, say whose it is, and the text becomes an embedded
+       chapter of a bundle — read-only from that moment, exactly like any other manuscript,
+       because the rule is that a cited text is never EDITED in place; bringing one in is
+       ingest. The honest line is on the door because it is true of everything that follows:
+       the checks verify against this pasted copy, never against the original. -->
+  <div id="pastedoor" hidden role="dialog" aria-modal="true" aria-label="Start from a text">
+    <div class="card">
+      <header><b id="pastetitle">Start from a text</b><span class="grow"></span>
+        <button class="plain x" id="pasteclose" title="Close (Esc)">&times;</button></header>
+      <div class="body">
+        <p>Paste the passage you are working from. Plain text is fine — paragraphs stay
+           paragraphs. A handout's worth is the right size; whole books come in by the
+           folder instead.</p>
+        <textarea id="pastetext" rows="9" spellcheck="false"
+                  placeholder="The passage, pasted here…"></textarea>
+        <label for="pastewho">Whose text is this?</label>
+        <input id="pastewho" type="text"
+               placeholder="Author, title, edition — e.g. Mill, On Liberty, ch. 2, Penguin 1974">
+        <p class="muted small">Quotations will be checked against this pasted copy — not
+           against the original. Saying which edition it came from lets a reader check the
+           copy too.</p>
+        <p><button id="pastebegin" type="button">Begin</button></p>
+      </div>
+    </div>
+  </div>
 
   <!-- ABOUT. A panel rather than a second native window: a second window would boot the whole
        program again — parser, editor, renderer — to show five paragraphs, and the same markup
@@ -1264,6 +1341,9 @@ function render(name, source, graph){
   // the one the tour has pinned a camera to and a step's worth of state in. Ended rather than
   // restored: the file being opened brings its own state and there is nothing left to put back.
   if (WALK) abandonWalkthrough();
+  // The guide is about the file that was open, for the same reason the tour is — except when
+  // this render IS the guide's own beginning, which starts it right after.
+  if (GUIDE) guideEnd();
   NAME = name; SOURCE = source || ""; CURRENT_GRAPH = graph;
   $("fname").innerHTML = name ? name.replace(/&/g,"&amp;").replace(/</g,"&lt;") : "Argdown viewer";
   $("adname").textContent = name || "Argdown";
@@ -3086,6 +3166,11 @@ $("walk").onclick = function(e){
 var WALK_OFFERED = false;
 function maybeStartWalkthrough(){
   if (WALK_OFFERED || WALK) return;
+  // ONE TEACHER AT A TIME: while the from-a-text guide is up, the tour does not offer
+  // itself — the guide's own last step hands over to it, on a map that by then has claims
+  // worth touring. (Found live, 5 Sep: the tour's card grabbed focus over the guide, and its
+  // scrim's user-select made the Manuscript unselectable — the one gesture the guide runs on.)
+  if (GUIDE) return;
   WALK_OFFERED = true;
   if (window.__ARGDOWN_PAYLOAD__) return;
   if (!WALK_STORE.ok) return;
@@ -3093,7 +3178,9 @@ function maybeStartWalkthrough(){
   // A beat after the first render, so the map has been framed against a container with a real
   // size before the camera is asked to point anywhere. See the ResizeObserver note in the
   // renderer: a map framed blind has boxes of the wrong size, not merely the wrong position.
-  setTimeout(startWalkthrough, 450);
+  // The guide guard again AT FIRE TIME, because the paste flow arms this during its render
+  // and only starts the guide a moment later, in the same tick's continuation.
+  setTimeout(function(){ if (!GUIDE) startWalkthrough(); }, 450);
 }
 
 /* ================= THE KEY =============================================================
@@ -3909,7 +3996,11 @@ var SUMMARY_KINDS = [
   { key: "abstract", label: "Abstract",
     caption: "the article's own abstract, not part of the reconstruction" },
   { key: "facts", label: "Facts of the case", credit: "facts_source",
-    caption: "the facts of the case, not part of the reconstruction" }
+    caption: "the facts of the case, not part of the reconstruction" },
+  // WHOSE TEXT IS THIS, for a pasted one: the paste door asks, the chapter's front matter
+  // records the answer, and the same orientation panel that carries an abstract carries it.
+  { key: "attribution", label: "The text",
+    caption: "whose text this is, as the reconstructor described it" }
 ];
 
 /** One scalar out of a chapter's front matter, for the short keys that never take a block. */
@@ -4989,11 +5080,18 @@ function insertClaimFromSelection(kind){
       QUOTE_SEL.chapter !== (CURRENT_GRAPH && CURRENT_GRAPH.defaultChapter))
     meta = 'chapter: "' + QUOTE_SEL.chapter + '", ' + meta;
   var text = kind === "quotation" ? words : PARA_PLACEHOLDER;
+  // THE GUIDE'S ONE LIBERTY: in its premises step, the question just asked was "what
+  // supports the conclusion?", so the claim the answer makes arrives already connected to
+  // it — the relation enacts the reader's own answer, nothing more. Every other step leaves
+  // the wiring to the reader.
+  var supports = (GUIDE && GUIDE.step === 2 && GUIDE.apex && GUIDE.apex !== title)
+                   ? GUIDE.apex : null;
   var view = ED.view, doc = view.state.doc;
   var tail = doc.sliceString(Math.max(0, doc.length - 2));
   var sep = !doc.length ? "" : tail.slice(-2) === "\n\n" ? "" :
             tail.slice(-1) === "\n" ? "\n" : "\n\n";
-  var insert = sep + "[" + title + "]: " + text + "\n    {" + meta + "}\n";
+  var insert = sep + "[" + title + "]: " + text + "\n    {" + meta + "}\n" +
+               (supports ? "    +> [" + supports + "]\n" : "");
   var base = doc.length;
   var selFrom, selTo;
   if (kind === "quotation") {
@@ -5009,11 +5107,187 @@ function insertClaimFromSelection(kind){
   view.contentDOM.focus({ preventScroll: true });
   $("msquote").hidden = true;
   $("mspara").hidden = true;
+  if (GUIDE) guideOnClaim(title);
 }
 $("msquote").addEventListener("mousedown", function(e){ e.preventDefault(); });
 $("mspara").addEventListener("mousedown", function(e){ e.preventDefault(); });
 $("msquote").onclick = function(){ insertClaimFromSelection("quotation"); };
 $("mspara").onclick = function(){ insertClaimFromSelection("paraphrase"); };
+
+/* ---- THE PASTE DOOR AND THE GUIDE (docs/EDITOR-PLAN.md §3) --------------------------------
+ *
+ * Start from a text: paste it, say whose it is, and build the map one question at a time.
+ * The pasted text becomes an embedded chapter of a bundle — read-only from that moment on,
+ * because the rule, stated precisely, is that a cited text is never EDITED in place;
+ * bringing one in is ingest. Save then writes one .argdown carrying text and map together.
+ * The guide is the walkthrough's manners applied to writing: five steps, selection-to-claim
+ * as the only gesture, and the judgement always the reader's — the card asks which sentence
+ * is the conclusion; it never proposes one (G3).
+ */
+var PASTE_PATH = "source/pasted-text.md";
+var PASTE_REPLACING = false;
+var GUIDE = null;
+
+function yamlQuote(s){ return '"' + String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"') + '"'; }
+
+function pasteBegin(){
+  var raw = $("pastetext").value.replace(/\r\n?/g, "\n").trim();
+  if (!raw) { $("pastetext").focus(); return; }
+  var who = $("pastewho").value.replace(/\s+/g, " ").trim();
+  // The chapter the paste becomes. `attribution:` is the door's question answered, and the
+  // orientation panel shows it; `provenance: pasted` is the record that this copy arrived by
+  // hand — the checks verify against it, not against any edition.
+  var chapter = "---\n" +
+    (who ? "attribution: " + yamlQuote(who) + "\n" : "") +
+    "provenance: pasted\n" +
+    "---\n\n" + raw.replace(/\n{3,}/g, "\n\n") + "\n";
+
+  if (PASTE_REPLACING) {
+    ALL_SOURCES[PASTE_PATH] = chapter;
+    if (MS) for (var i = 0; i < MS.chapters.length; i++)
+      if (MS.chapters[i].path === PASTE_PATH) MS.chapters[i].text = chapter;
+    // The map is kept; the text under it moved. Forcing the signature makes redrawFrom
+    // relocate and re-adjudicate every border against the replaced text.
+    MAP_SIG = null;
+    var g2 = CURRENT_GRAPH;
+    try { g2 = window.__ARGDOWN_PARSE__(ED ? ED.getText() : SOURCE); } catch (e) { void e; }
+    redrawFrom(g2);
+    if (MSCHAPTER === PASTE_PATH) msRender(PASTE_PATH);
+    $("pastedoor").hidden = true;
+    return;
+  }
+
+  if (!confirmDiscard("Start from a text")) return;
+  // THE READING-POLICY BLOCK IS WRITTEN FIRST (the author's ruling, 5 Sep 2026): the file is
+  // honest from its first save. The guide draws attention to it only at the end, when the
+  // reader has made enough readings for aim, unit, mode and strength to mean something.
+  var starter = "===\n" +
+    "title: " + yamlQuote("A reading of " + (who || "a pasted text")) + "\n" +
+    "reconstruction:\n    aim: fit\n    unit: commitment\n    mode: coherence\n    strength: ordinary\n" +
+    "defaults:\n    chapter: \"" + PASTE_PATH + "\"\n" +
+    "===\n\n# The reading {isGroup: true}\n";
+  var graph;
+  try { graph = window.__ARGDOWN_PARSE__(starter); }
+  catch (e) {
+    showErr("The starter for a pasted text does not parse: " + (e && e.message || e));
+    return;
+  }
+  // The same reset every other door performs — see startFromSkeleton for why each line.
+  DERIVED_IN_PAGE = false;
+  BORDERS_TESTED = 0; BORDERS_CORRECTED = 0;
+  MS = null;
+  ALL_SOURCES = {};
+  BUNDLE = null;
+  HOST_PATH = null;
+  AD_HANDLE = null;
+  if (UNWATCH) { UNWATCH(); UNWATCH = null; }
+  if (UNWATCH_AD) { UNWATCH_AD(); UNWATCH_AD = null; }
+  AD_ON_DISK = null;
+  AD_PENDING = null;
+  adExternHide();
+  ALL_SOURCES[PASTE_PATH] = chapter;
+  BUNDLE = { meta: {} };
+  locateInPage(graph, ALL_SOURCES);
+  $("drop").classList.remove("show");
+  $("pastedoor").hidden = true;
+  render("untitled.argdown", starter, graph);
+  // The reader works text-first: the Manuscript opens; the Argdown waits for the first
+  // claim, whose gesture summons it.
+  if (!PANES.text) setPane("text", true);
+  guideStart();
+}
+$("pastebegin").onclick = pasteBegin;
+$("pasteclose").onclick = function(){ $("pastedoor").hidden = true; };
+$("pastedoor").addEventListener("keydown", function(e){
+  if (e.key === "Escape") $("pastedoor").hidden = true;
+});
+$("pastedoor").onclick = function(ev){ if (ev.target === $("pastedoor")) $("pastedoor").hidden = true; };
+
+function guideStart(){
+  GUIDE = { step: 1, apex: null, imputed: false };
+  $("guidecard").hidden = false;
+  $("guidecard").classList.remove("min");
+  guideShow();
+}
+function guideEnd(){
+  GUIDE = null;
+  $("guidecard").hidden = true;
+}
+function guideShow(){
+  if (!GUIDE) return;
+  var b = $("guidebody"), k = $("guidebtns");
+  b.textContent = ""; k.textContent = "";
+  $("guidecard").dataset.step = String(GUIDE.step);
+  $("guidestep").textContent = "step " + GUIDE.step + " of 5";
+  var p = function(t){ var e = document.createElement("p"); e.textContent = t; b.appendChild(e); };
+  var btn = function(t, primary, fn){
+    var e = document.createElement("button");
+    e.type = "button";
+    if (primary) e.className = "primary";
+    e.textContent = t; e.onclick = fn;
+    k.appendChild(e);
+  };
+  if (GUIDE.step === 1) {
+    p("Read the text on the right, and find the sentence it is finally arguing for.");
+    p("Select those words, then press “Quote this passage” — or “Paraphrase it” to say them your own way.");
+  } else if (GUIDE.step === 2) {
+    p("What has to hold for that conclusion to follow?");
+    p("Select each place the text gives a reason. Each becomes a claim, already connected to your conclusion.");
+    btn("Next: the evidence", true, function(){ GUIDE.step = 3; guideShow(); });
+  } else if (GUIDE.step === 3) {
+    p("Where does the text back its reasons up — an example, a case, an observation?");
+    p("Select each one. Then say which reason it supports: on the line below the new claim, type +> and then [ — every title you have made is offered.");
+    btn("Next: the unspoken", true, function(){ GUIDE.step = 4; guideShow(); });
+  } else if (GUIDE.step === 4 && !GUIDE.imputed) {
+    p("Are there any unspoken assumptions — something the argument needs that the text never says?");
+    p("No is a fine answer. A yes is where reconstruction earns its keep.");
+    btn("Yes — add one", true, guideImputation);
+    btn("No — finish", false, function(){ GUIDE.step = 5; guideShow(); });
+  } else if (GUIDE.step === 4) {
+    p("Added — say the assumption in the claim's own words, and give the note its why.");
+    btn("Add another", false, guideImputation);
+    btn("Finish", true, function(){ GUIDE.step = 5; guideShow(); });
+  } else if (GUIDE.step === 5) {
+    p("One thing was done for you at the start: the top of the Argdown carries a reconstruction: block — a declaration of which reading yours tries to be. Now that you have made some readings, it is worth a look; “How to use” explains each line.");
+    p("Your file saves as one .argdown carrying the text inside it — hand the whole thing to anyone.");
+    btn("Take the walkthrough", true, function(){ guideEnd(); startWalkthrough(); });
+    btn("Done", false, guideEnd);
+  }
+}
+/** A claim was made by selection-to-claim while the guide is up. */
+function guideOnClaim(title){
+  if (!GUIDE) return;
+  if (GUIDE.step === 1) { GUIDE.apex = title; GUIDE.step = 2; guideShow(); }
+}
+/** The unspoken assumption: the one claim with no selection behind it, and exactly where the
+ *  imputation vocabulary should arrive — its subject matter has just come to exist. The text
+ *  placeholder arrives selected, the same contract the paraphrase door keeps: the machine
+ *  never fakes the reader's judgement. */
+function guideImputation(){
+  if (!ED || !GUIDE) return;
+  var have = {};
+  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ have[x.label] = 1; });
+  var title = "unspoken-assumption", nth = 2;
+  while (have[title]) title = "unspoken-assumption-" + (nth++);
+  var PLACE = "The premise the argument needs and the text never states.";
+  var view = ED.view, doc = view.state.doc;
+  var tail = doc.sliceString(Math.max(0, doc.length - 2));
+  var sep = !doc.length ? "" : tail.slice(-2) === "\n\n" ? "" :
+            tail.slice(-1) === "\n" ? "\n" : "\n\n";
+  var insert = sep + "[" + title + "]: " + PLACE + "\n" +
+    '    {fidelity: "imputation", warrant: "enthymeme", note: "Say here why the argument cannot do without it."}\n' +
+    (GUIDE.apex ? "    +> [" + GUIDE.apex + "]\n" : "");
+  var base = doc.length;
+  var f = base + sep.length + 1 + title.length + 3, t = f + PLACE.length;
+  view.dispatch({ changes: { from: base, insert: insert },
+                  selection: { anchor: f, head: t }, scrollIntoView: true });
+  if (!PANES.argdown) setPane("argdown", true);
+  view.contentDOM.focus({ preventScroll: true });
+  GUIDE.imputed = true;
+  guideShow();
+}
+$("guidemin").onclick = function(){ $("guidecard").classList.toggle("min"); };
+$("guideclose").onclick = guideEnd;
 
 /** Show which lines were taken as "the passage", so the answer is checkable. */
 function msMarkSpan(span){
@@ -6024,6 +6298,18 @@ function locateInPage(graph, byPath){
                 : (!dup[base] && byBase[base] != null) ? byPath[byBase[base]]
                 : null;
   }
+  // THE DECLARED TEXT COUNTS BEFORE ANY CLAIM CITES IT. A file that names its chapter in
+  // front-matter `defaults:` has said which text it reads, and the Manuscript pane follows
+  // the declaration, not only the claims — without this, a reconstruction begun from a
+  // pasted text lost its manuscript whenever the map had no claims yet, which is exactly
+  // when the reader most needs the text on screen.
+  ch = graph.defaultChapter;
+  if (ch && !(ch in sources)) {
+    var dbase = ch.slice(ch.lastIndexOf("/") + 1);
+    sources[ch] = byPath[ch] != null ? byPath[ch]
+                : (!dup[dbase] && byBase[dbase] != null) ? byPath[byBase[dbase]]
+                : null;
+  }
   var projectText = "";
   for (i = 0; i < PROJECT_FILES.length; i++)
     if (byPath[PROJECT_FILES[i]] != null) { projectText = byPath[PROJECT_FILES[i]]; break; }
@@ -6452,6 +6738,7 @@ function hostWatchManuscript(){
  */
 var newReconstruction = null;
 var newDebateMap = null;
+var newFromText = null;
 var canEdit = !!window.ArgdownEditor && typeof window.__ARGDOWN_PARSE__ === "function";
 
 if (typeof window.__ARGDOWN_PARSE__ === "function"){
@@ -6506,6 +6793,24 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
   if (newReconstruction) $("picknew").onclick = newReconstruction;
   $("picknewdebate").hidden = !newDebateMap;
   if (newDebateMap) $("picknewdebate").onclick = newDebateMap;
+  // THE THIRD DOOR (docs/EDITOR-PLAN.md §3): start from a text, by pasting it. Editor-gated
+  // like its siblings — the door exists so claims can be written, and the Reader has nowhere
+  // to put them.
+  newFromText = canEdit ? function(){
+    $("pastetext").value = "";
+    $("pastewho").value = "";
+    // REPLACE MODE when the open file already reads a pasted text: the same door corrects a
+    // bad paste wholesale — a manuscript is never edited in place — and keeps the map:
+    // relocation re-places every claim and re-checks every border against the replaced text,
+    // which is the checker doing its job.
+    PASTE_REPLACING = !!(BUNDLE && ALL_SOURCES[PASTE_PATH] != null);
+    $("pastetitle").textContent = PASTE_REPLACING ? "Replace the text" : "Start from a text";
+    $("pastebegin").textContent = PASTE_REPLACING ? "Replace the text, keep the map" : "Begin";
+    $("pastedoor").hidden = false;
+    $("pastetext").focus();
+  } : null;
+  $("picknewtext").hidden = !newFromText;
+  if (newFromText) $("picknewtext").onclick = newFromText;
   var pickFile = function(){
     var i = document.createElement("input");
     i.type = "file"; i.accept = ".argdown,.ad,text/plain";
@@ -6763,6 +7068,7 @@ if (HOST) {
                          },
       "new":             function(){ if (newReconstruction) newReconstruction(); },
       "new-debate":      function(){ if (newDebateMap) newDebateMap(); },
+      "new-from-text":   function(){ if (newFromText) newFromText(); },
       "save":            function(){ saveArgdown(false); },
       "save-as":         function(){ saveArgdown(true); },
       // A menu item that can do nothing says why, rather than saying nothing: the silent

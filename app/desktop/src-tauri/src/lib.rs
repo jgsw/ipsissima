@@ -80,6 +80,7 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
     let file_menu = SubmenuBuilder::new(app, "File")
         .item(&item("new", "New Reconstruction", Some("CmdOrCtrl+N"))?)
         .item(&item("new-debate", "New Debate Map", Some("CmdOrCtrl+Shift+N"))?)
+        .item(&item("new-from-text", "New from Text…", None)?)
         .separator()
         .item(&item("open", "Open…", Some("CmdOrCtrl+O"))?)
         .item(&item("open-folder", "Open Folder…", Some("CmdOrCtrl+Shift+O"))?)

@@ -96,11 +96,17 @@ what would this cost, times fifty, with no one at the front of the room who know
 and the field data arrives when teachers adopt it. What still beats any self-measurement is
 one early pair of real hands: one novice, one text, watched.
 
-## 3. The guided build-from-a-text mode — designed, ruled on, not yet built
+## 3. The guided build-from-a-text mode — built, 5 Sep, on the author's word
 
-**Status: the author's rulings received 5 Sep** — the design below is settled except where
-marked, and the build waits on his word plus his ratification of the ingest reading at the
-end of this section.
+**Status: shipped.** The author ratified the ingest reading, ruled that the paste door asks
+whose text this is, and gave the word; everything below is now the record of what was built,
+held by rendered-DOM checks that fill the door and make the selections with a real mouse.
+Two live findings from building it: the walkthrough used to offer itself on top of the
+guide's first step — its scrim made the Manuscript unselectable, the one gesture the guide
+runs on — and now stands down while the guide is up (its own last step hands over to the
+tour instead); and a map with no claims yet used to lose its manuscript, because the pane
+followed only the claims' citations — it now follows the front matter's `defaults:`
+declaration too, which serves any reconstruction begun before its first claim.
 
 **The shape.** A guided mode on the walkthrough's pattern — P6's exemplar: attention claimed
 once, easily exited, always recallable — carrying the reading method the writing-centre
@@ -155,14 +161,19 @@ Three consequences worth stating:
   door says so in one honest line, exactly as `text-provenance:` says its sentence: the
   borders vouch for the map's reading of *this* text.
 
-**Still open.** Whether the paste door asks "whose text is this?" — one field, written into
-the chapter's front matter — in v1; and the build itself, on the author's word.
+**Resolved.** The paste door asks "whose text is this?" (the author's ruling): the answer is
+written into the chapter's front matter as `attribution:`, shown by the same orientation
+panel that carries an abstract, and folded into the map's own title. The mode itself is
+built — the door, the five steps, the wholesale-replace path, and the walkthrough hand-off.
 
 ## 4. Standing
 
 Shipped, each held by tests: the navigation audit and its three fixes; title completion,
 safe auto-closing, indent-holding (`b449f40`); the parse-error translation and the fourth
-trap; selection-to-claim with its drag-guard, and the paraphrase door beside it (5 Sep, on
-the author's word). Designed and ruled but not built: the guided mode (§3), waiting on the
-author's word and his ratification of the ingest reading. Not in v1: `pinpoint:`, and the
-paste door's authorship field.
+trap; selection-to-claim with its drag-guard, and the paraphrase door beside it; the guided
+mode entire — the paste door with its attribution question, the five steps, replace-the-
+text-keep-the-map, the walkthrough hand-off (all 5 Sep, on the author's word). A guided
+file's claims verify: run against the checker, coverage full, quotations exact, the
+imputation warranted. Not in v1: `pinpoint:`; a way to reach the paste door on the web once
+a file is already open (the app has File ▸ New from Text…; the web page offers the door
+only at the cold start, so wholesale replacement is app-only for now).

@@ -121,7 +121,7 @@ The author gave the word for the whole queue on 5 Sep, and the waves landed the 
   safe auto-closing, Enter holding the writer's level.
 
 Still open, and why: the **survey sample** awaits Gregor Betz's answer on the licence of the
-Guide's example maps (the letter is drafted for the author to send; the machinery is ready);
-**friendlier parse-error wording** is unbuilt; **selection-to-claim** waits for its
-measurement, per the method; the **guided build-from-a-text mode** stays at design-note
-stage.
+Guide's example maps (the letter is drafted for the author to send; the machinery is ready).
+Everything else queued here landed the same day, on the author's rulings as they came:
+parse-error wording the measured way, selection-to-claim with its paraphrase door, and the
+guided build-from-a-text mode entire — `EDITOR-PLAN.md` is that record.

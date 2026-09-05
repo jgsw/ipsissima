@@ -1312,11 +1312,97 @@ async function quoteChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ the guided mode */
+/* Start from a text (docs/EDITOR-PLAN.md §3): the paste door, then five steps with
+ * selection-to-claim as the only gesture. Driven as a reader would drive it — the door
+ * filled and clicked, the selections made with a real mouse drag — and the file the steps
+ * produce must carry what the design promises: the policy block written first, the premise
+ * wired to the conclusion the reader chose, the imputation with its warrant. */
+async function guidedChecks(browser) {
+  const out = path.join(tmp, "guided-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "--editor", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "guided: the editor build builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.click("#picknewtext");
+  await page.fill("#pastetext",
+    "Every citizen deserves a vote at sixteen. Young people already work and pay taxes.\n\n" +
+    "Those who bear the burdens of law ought to have a say in making it.");
+  await page.fill("#pastewho", "A. Sample, The Franchise Question, 2020");
+  await page.click("#pastebegin");
+  await page.waitForSelector("#mstext [data-l]", { timeout: 20000 });
+  const opened = await page.evaluate(() => ({
+    step: document.getElementById("guidecard").dataset.step,
+    ms: !document.getElementById("ms").hidden,
+    bundle: !document.getElementById("adbundle").hidden,
+    abs: !document.getElementById("abs").hidden,
+    doc: window.__ARGDOWN_EDITOR__.view.state.doc.sliceString(0, 220)
+  }));
+  check(opened.step === "1" && opened.ms && opened.bundle,
+        "the paste door opens the text, the bundle, and the guide's first step",
+        JSON.stringify({ step: opened.step, ms: opened.ms, bundle: opened.bundle }));
+  check(opened.abs, "  and whose-text-this-is is offered as orientation", String(opened.abs));
+  check(/reconstruction:/.test(opened.doc) && /defaults:/.test(opened.doc),
+        "  and the reading-policy block was written first", opened.doc.slice(0, 90));
+
+  const dragOver = async (idx, w) => {
+    const para = await page.locator("#mstext [data-l]").nth(idx).boundingBox();
+    const y = para.y + Math.min(10, para.height / 2);
+    await page.mouse.move(para.x + 4, y);
+    await page.mouse.down();
+    await page.mouse.move(para.x + Math.min(w, para.width * 0.6), y, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForSelector("#msquote:not([hidden])", { timeout: 4000 });
+    await page.click("#msquote");
+  };
+  await dragOver(0, 240);
+  const s2 = await page.evaluate(() => ({
+    step: document.getElementById("guidecard").dataset.step,
+    tail: window.__ARGDOWN_EDITOR__.view.state.doc.sliceString(
+      Math.max(0, window.__ARGDOWN_EDITOR__.view.state.doc.length - 200))
+  }));
+  check(s2.step === "2" && /fidelity: "quotation"/.test(s2.tail),
+        "the conclusion advances the guide", JSON.stringify(s2.step));
+  await dragOver(1, 220);
+  const wired = await page.evaluate(() =>
+    /\+> \[/.test(window.__ARGDOWN_EDITOR__.view.state.doc.toString()));
+  check(wired, "  and a premise arrives already connected to it", String(wired));
+
+  await page.click("#guidebtns button.primary");   // -> 3, the evidence
+  await page.click("#guidebtns button.primary");   // -> 4, the unspoken
+  await page.click("#guidebtns button.primary");   // Yes — add one
+  const imp = await page.evaluate(() => {
+    const v = window.__ARGDOWN_EDITOR__.view;
+    return { doc: v.state.doc.toString(),
+             sel: v.state.doc.sliceString(v.state.selection.main.from,
+                                          v.state.selection.main.to) };
+  });
+  check(/warrant: "enthymeme"/.test(imp.doc) &&
+        imp.sel === "The premise the argument needs and the text never states.",
+        "the unspoken assumption arrives as an imputation, its text handed to the reader",
+        JSON.stringify(imp.sel));
+  await page.click("#guidebtns button.primary");   // Finish -> 5
+  const five = await page.evaluate(() =>
+    document.getElementById("guidecard").dataset.step);
+  check(five === "5", "  and the last step turns to the policy block", five);
+  await page.click("#guidebtns button:not(.primary)");   // Done
+  const gone = await page.evaluate(() => document.getElementById("guidecard").hidden);
+  check(gone === true, "  Done puts the guide away", String(gone));
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);
+await guidedChecks(browser);
 await exportChecks(browser);
 await mobileChecks(browser);
 await browser.close();

@@ -576,6 +576,36 @@ whose name goes in the front matter — with tags marking which side each claim 
 and goes on editing *that* file, which is what you want before a substantial revision. In a browser
 that cannot choose where to write, Save offers the file as a download instead and says so.
 
+## Starting from a text
+
+
+**Start from a text** — the third door on the opening panel, and **File ▸ New from Text…** in the
+app — is for when what you have is a passage and the map does not exist yet. Paste the text, say
+whose it is, and press Begin. The pasted text becomes the manuscript, carried *inside* your file:
+saving produces one `.argdown` with the text embedded, which opens anywhere and can be handed to
+anyone whole. Whose-text-you-said appears in the panel at the top-left of the map, and one thing
+is true of everything that follows: **quotations are checked against this pasted copy, not
+against the original** — which is why the door asks for the edition.
+
+A guide then takes you through building the map, one question at a time, with selecting-and-
+quoting as the only gesture:
+
+1. **Find the conclusion** — select the sentence the text is finally arguing for.
+2. **Find the premises** — each selection becomes a claim, already connected to your conclusion.
+3. **Find the evidence** — the same gesture; you say which reason each piece supports.
+4. **Are there any unspoken assumptions?** *No* is a fine answer. A *yes* becomes an
+   `imputation` with its `warrant` — the one claim with nothing to select.
+5. **The declaration** — the top of your file has carried, from the start, a `reconstruction:`
+   block saying which reading yours tries to be. The last step is when it is worth reading.
+
+The guide asks; it never answers. Which sentence *is* the conclusion, what the assumption says,
+whether the reading is fair — those stay yours. The **–** folds the guide to its header; the
+**×** puts it away for good, and the map and text stay exactly as they are.
+
+The pasted text itself is never edited in place — no manuscript is. A bad paste is corrected
+wholesale: **File ▸ New from Text…** again, and the door offers **Replace the text, keep the
+map** — every claim is then re-placed and every border re-checked against the corrected copy.
+
 ## The controls
 
 
