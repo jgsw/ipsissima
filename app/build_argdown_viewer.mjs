@@ -319,10 +319,16 @@ function helpPart() {
   // test suite parse it — a starter file that does not parse would teach the syntax wrongly to
   // the one person guaranteed not to spot it.
   const starter = fs.readFileSync(path.join(HERE, "new-reconstruction.argdown"), "utf8");
+  // ITS SIBLING, one per genre: the reconstruction skeleton teaches citing and borders, the
+  // debate skeleton teaches tags and the absence of both — a debate map surveys a pattern of
+  // public argument, so there is no source to cite (docs/values/SECOND-THOUGHTS.md).
+  const debate = fs.readFileSync(path.join(HERE, "new-debate-map.argdown"), "utf8");
   return wrap("help.md", `window.__HELP_MD__ = ${safeJSON(md)};`, "HELP") +
          wrap("about.md", `window.__ABOUT_MD__ = ${safeJSON(about)};`, "HELP") +
          wrap("new-reconstruction.argdown",
-              `window.__STARTER_ARGDOWN__ = ${safeJSON(starter)};`, "HELP");
+              `window.__STARTER_ARGDOWN__ = ${safeJSON(starter)};`, "HELP") +
+         wrap("new-debate-map.argdown",
+              `window.__DEBATE_ARGDOWN__ = ${safeJSON(debate)};`, "HELP");
 }
 
 function buildStamp() {

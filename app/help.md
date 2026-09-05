@@ -28,11 +28,14 @@
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
 
+Ipsissima makes complex reasoning intelligible through maps you can check at every step — a
+reading of one text, a survey of a whole debate, or an argument of your own.
+
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write *these words*, or is this a faithful report of what they meant? Every
-discipline that quotes anybody has had to draw that line, and this tool keeps it — every claim
-marked for how far it stands from the words it came from, and every quotation checkable against
-the page it was taken from.
+discipline that quotes anybody has had to draw that line, and wherever a claim has a source to
+stand at a distance from, this tool keeps it — every claim marked for how far it stands from
+the words it came from, and every quotation checkable against the page it was taken from.
 
 New to it? **Take the walkthrough** — the first entry below. Two minutes, and it runs on the
 reconstruction you have open. It offers to run again next time; if you said no, it lives here.
@@ -523,11 +526,16 @@ single paper and is the reconstructor's own sequence for several.
 **Open a folder** instead when there is no `.argdown` yet, or when you want to pick the folder
 rather than hunt for the file inside it. It is the same result either way.
 
-**Start a new one** when there is nothing to open. It is on the panel Ipsissima shows when no file
-is loaded, and in **File ▸ New Reconstruction** in the app. What appears is a small working
-skeleton — a claim, the argument for it, an objection, two premises — with a border of each kind, so
-the vocabulary the map draws with is on screen before you have written anything. Type over it. It
-unloads whatever is open, and asks first if there is anything unsaved.
+**Start a new one** when there is nothing to open. The panel Ipsissima shows when no file is
+loaded offers both kinds — **start a reconstruction** and **start a debate map** — and in the
+app they are **File ▸ New Reconstruction** and **File ▸ New Debate Map**. Either way, what
+appears is a small working skeleton to type over; it unloads whatever is open, and asks first
+if there is anything unsaved. The reconstruction skeleton — a claim, the argument for it, an
+objection, two premises — carries a border of each kind, so the vocabulary the map draws with is
+on screen before you have written anything. The debate-map skeleton carries none, which is its
+own lesson: a debate map surveys a pattern of public argument rather than reading one text, so
+no claim cites a source, and the map stands instead on the fairness of the person who drew it —
+whose name goes in the front matter — with tags marking which side each claim belongs to.
 
 **Save** writes the reconstruction back where it came from. **Save as…** writes it somewhere else
 and goes on editing *that* file, which is what you want before a substantial revision. In a browser

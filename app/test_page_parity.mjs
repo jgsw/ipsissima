@@ -267,5 +267,28 @@ console.log("the file a new reconstruction starts from");
         fid.size >= 3, [...fid].join(", "));
 }
 
+console.log("the file a new debate map starts from");
+{
+  const starter = fs.readFileSync(path.join(HERE, "new-debate-map.argdown"), "utf8");
+  const bad = metadataProblems(starter, yaml.load);
+  check("its metadata blocks are well formed", bad.length === 0, JSON.stringify(bad));
+  const res = await argdown.runAsync({ input: starter, ...RUN });
+  const broke = parseProblems(res, starter);
+  check("  it parses", broke.length === 0, JSON.stringify(broke));
+  const g = res.map ? toGraph(res) : { nodes: [], edges: [] };
+  check("  and draws a map, so the first thing a new reader sees is not an empty page",
+        g.nodes.length >= 3 && g.edges.length >= 2,
+        `${g.nodes.length} nodes, ${g.edges.length} edges`);
+  // The reconstruction skeleton's teaching, inverted: a debate map surveys a pattern of
+  // public argument, so fidelity has no subject matter here — no border vocabulary to meet —
+  // and the standpoints are what a new reader should meet instead, carried by tags.
+  check("  and carries no fidelity marker, because its genre has none to carry",
+        g.nodes.every(n => !n.fidelity),
+        g.nodes.filter(n => n.fidelity).map(n => n.fidelity).join(", "));
+  const sides = new Set(g.nodes.map(n => n.facet).filter(Boolean));
+  check("  and marks at least two standpoints with tags",
+        sides.size >= 2, [...sides].join(", "));
+}
+
 console.log(fails ? `\n${fails} check(s) failed\n` : "\nall passed\n");
 process.exit(fails ? 1 : 0);

@@ -1,0 +1,40 @@
+// A NEW DEBATE MAP. Everything below is a placeholder — replace it with the debate you are
+// surveying. Lines beginning with // are comments and never reach the map.
+//
+// A debate map surveys a pattern of public argument — the case for and against a claim —
+// rather than reading one text. So no claim cites a source, and none carries a fidelity
+// border: there is no text to stand at a distance from. What the map owes instead is
+// fairness: each side's best case, laid out step by step where anyone can examine it. Put
+// your name in the front matter, because a debate map stands on who drew it.
+//
+// Tags — #pro and #con below, but any names, and any number of sides — mark which standpoint
+// a claim or argument belongs to.
+//
+// Reading one text instead? File ▸ New Reconstruction starts from the other skeleton, where
+// every claim can cite its source.
+//
+// Press ? or "How to use" for the rest.
+
+===
+title: A new debate map
+author: Your Name
+date: 2026
+===
+
+[main-claim]: The claim the debate turns on. #pro
+    + <the-case-for>
+    - [the-objection]: The strongest consideration on the other side, as its proponents actually press it. #con
+        + <why-it-presses>
+
+<the-case-for>: How the best case for the claim runs, spelled out step by step. #pro
+
+    (1) [first-reason]: The first premise, in the strongest form it circulates in.
+    (2) [second-reason]: The premise it needs alongside the first.
+    ----
+    (3) [main-claim]
+
+<why-it-presses>: Why the objection is not a quibble — the reasoning behind it. #con
+
+    (1) [rival-ground]: What the other side starts from.
+    ----
+    (2) [the-objection]

@@ -9,26 +9,27 @@ title: Ipsissima
      own `# Ipsissima`. `default` renders the content and nothing else.
      `title:` stays, because the <title> tag is built from it.
 
-     THE PAGE STILL NEEDS ONE H1, so the strapline is it. That is the better heading anyway: the
-     name is already in the nav, and a visitor who has just arrived learns more from what the
-     thing is for than from being told its name a second time. The descriptive line stays as the
-     first thing under it. -->
+     THE PAGE STILL NEEDS ONE H1, so the mission sentence is it — settled in the author's own
+     words at the Second Thoughts checkpoint (docs/values/SECOND-THOUGHTS.md, 5 Sep 2026). The
+     verba/vox paragraph stays close beneath: it is the name and the distinctive half, but it
+     describes one genre of map, so it no longer stands for the whole. -->
 
-# The very words, and how far a reading stands from them
-
-Read an argument reconstruction beside the text itself.
-
-*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
-did the author write **these words**, or is this a faithful report of what they meant? Every
-discipline that quotes anybody has had to draw that line — historians since Thucydides, jurists
-whenever quotation marks are at stake. Ipsissima keeps the distinction, on every claim.
+# Making complex reasoning intelligible through maps you can check at every step
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
-Christian Voigt and maintained by the Argdown team —
-and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
-drawn from, and the marks a reader writes in the margin. **It runs entirely in your browser and
-makes no network requests of any kind.** (The downloadable application adds one, and only when
-you choose Help ▸ Check for Updates; the page on this site has nothing of the sort.)
+Christian Voigt and maintained by the Argdown team — and opens an argument as an interactive
+map: the main claims at a glance, the detail where you choose to look, the marks a reader
+writes in the margin, and, when the map was drawn from a text, the passage each claim came
+from beside the claim that reports it. **It runs entirely in your browser and makes no network
+requests of any kind.** (The downloadable application adds one, and only when you choose
+Help ▸ Check for Updates; the page on this site has nothing of the sort.)
+
+The name is the distinctive half. *ipsissima verba* — the very words themselves, as against
+*ipsissima vox*, the authentic voice: did the author write **these words**, or is this a
+faithful report of what they meant? Every discipline that quotes anybody has had to draw that
+line — historians since Thucydides, jurists whenever quotation marks are at stake. Wherever a
+claim has a source to stand at a distance from, Ipsissima keeps the distinction, on every
+claim.
 
 ---
 
@@ -37,7 +38,9 @@ you choose Help ▸ Check for Updates; the page on this site has nothing of the 
 <a href="{{ '/ipsissima.html' | relative_url }}"><strong>Open Ipsissima →</strong></a>
 
 One page, nothing to install. Drop an `.argdown` file onto it — or a whole folder, which brings
-the manuscript with it so the claims can be laid out by where they appear in the text.
+the manuscript with it so the claims can be laid out by where they appear in the text. Nothing
+to open yet? The same panel can **start a new one**: a worked skeleton you replace claim by
+claim, with the map redrawing as you write.
 
 New to argument maps? Take the walkthrough: it is the first entry under **How to use**, runs on
 whatever you have open, and takes about two minutes.
@@ -63,14 +66,28 @@ claim back to the passage it came from and see how far it stands from the author
 
 ## What it is for
 
-A reconstruction is **a scholarly claim about someone's work**, and it should be checkable like
-one. So every claim in an Ipsissima map records how far it stands from the words it came from —
-quotation, paraphrase, compression, interpretation, or the reconstructor's own imputation — and
-every quotation is verified against the source, character for character, before the map is built.
-The border drawn around a claim tells you which it is.
+**A map of a text.** A reconstruction of a paper, a judgment or a chapter is **a scholarly
+claim about someone's work**, and it should be checkable like one. So every claim in the map
+records how far it stands from the words it came from — quotation, paraphrase, compression,
+interpretation, or the reconstructor's own imputation — and every quotation is verified against
+the source, character for character, before the map is built. The border drawn around a claim
+tells you which it is. That makes two things visible that a normal argument map hides: **whose
+words these are**, and **where the reconstructor has supplied something the author did not
+say**.
 
-That makes two things visible that a normal argument map hides: **whose words these are**, and
-**where the reconstructor has supplied something the author did not say**.
+**A map of a debate.** Some arguments belong to no single text: the case for and against
+censorship, or a drug law, is a pattern of public argument, not a document. Ipsissima opens
+these maps too, and leaves out what does not apply — no manuscript pane, no source borders,
+just each standpoint's case laid out step by step where anyone can examine it. Here there is
+nothing for the tool to check a claim against, and it does not pretend otherwise: a debate map
+stands on the fairness of the person who drew it, named in the map's own front matter, and the
+tool's job is to make every step visible enough to challenge.
+
+**A map of your own.** Ipsissima is also an editor, and for most people the lightest way to
+write Argdown — one page in a browser, rather than a programmer's IDE. Start a new map from
+the opening panel (**File ▸ New** in the application), write, and the map redraws as you go;
+where a line does not parse, the editor says so on the line, with the real Argdown parser
+doing the judging.
 
 ## The other half
 

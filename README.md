@@ -1,18 +1,21 @@
 # Ipsissima
 
-**The very words, and how far a reading stands from them.**
+**Making complex reasoning intelligible through maps you can check at every step.**
 
-Read an argument reconstruction beside the text itself.
+Explore an argument as an interactive map — and, when the map was drawn from a text, read each
+claim beside the passage it came from.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write **these words**, or is this a faithful report of what they meant? Every
 discipline that quotes anybody has had to draw that line — historians since Thucydides, jurists
-whenever quotation marks are at stake. Ipsissima keeps the distinction, on every claim.
+whenever quotation marks are at stake. Wherever a claim has a source to stand at a distance
+from, Ipsissima keeps the distinction, on every claim.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team —
-and shows a reconstruction three ways at once: the argument as a map, the passage each claim was
-drawn from, and the marks a reader writes in the margin. It runs entirely on your own machine.
+and shows an argument three ways at once: the map, the passage each claim was drawn from when
+there is one, and the marks a reader writes in the margin. It runs entirely on your own
+machine.
 
 **`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
 one file that works with the network cable out. **The desktop application makes exactly one, and
@@ -111,13 +114,19 @@ in those rather than in its tools.
 Everything else, including installing from source and the command line tools, is in
 [`ipsissima-mcp/README.md`](ipsissima-mcp/README.md#install).
 
-## What it does that other Argdown viewers do not
+## What it does that other Argdown tools do not
 
 - **The claim and the passage it came from, side by side.** Every claim can record which file and
   which words it was drawn from; the map and the manuscript are linked in both directions.
 - **Whose words are these.** Each claim is marked for how far it stands from its source —
   quotation, paraphrase, compression, interpretation, imputation — and the map draws that as the
   box's border. Quotations are *checked* against the source rather than believed.
+- **A debate as easily as a document.** A map with no source text — the arguments for and
+  against something, drawn from a whole public debate rather than one document — is a genre
+  here, not a defect. The manuscript and exposition controls simply do not appear, and what
+  remains is each standpoint's case laid out to be examined. Its trust story is different, and
+  the tool never blurs the two: declared and checkable on screen, rather than checked against
+  a text.
 - **A step that names a rule is asked to keep its word.** Write `-- Modus ponens {uses: [1, 2]} --`
   on an inference line, give the claims a `formalization`, and Ipsissima decides whether the
   conclusion follows — marking the bar quietly when it does, loudly when it does not, and offering
@@ -135,6 +144,10 @@ Everything else, including installing from source and the command line tools, is
   reasons have already earned.
 - **Margins that go back to the writer.** Comments written on the map export as *real Word
   comments* on the essay, anchored to the passage each one is about.
+- **An editor most people can actually start in.** One page in a browser, or one application —
+  not an IDE with an extension. A new map starts from a worked skeleton (File ▸ New), the map
+  redraws as you write, and where a line does not parse the editor says so on the line, with
+  the official Argdown parser doing the judging.
 - **One file that carries everything.** A reconstruction and the text it is of can be saved as a
   single `.argdown` — still a valid one — or as a self-contained web page the recipient
   double-clicks.

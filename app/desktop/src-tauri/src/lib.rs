@@ -79,6 +79,7 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
     // .argdown somewhere else first. It unloads what is open and asks before it does.
     let file_menu = SubmenuBuilder::new(app, "File")
         .item(&item("new", "New Reconstruction", Some("CmdOrCtrl+N"))?)
+        .item(&item("new-debate", "New Debate Map", Some("CmdOrCtrl+Shift+N"))?)
         .separator()
         .item(&item("open", "Open…", Some("CmdOrCtrl+O"))?)
         .item(&item("open-folder", "Open Folder…", Some("CmdOrCtrl+Shift+O"))?)

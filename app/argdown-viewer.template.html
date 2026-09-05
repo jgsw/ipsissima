@@ -939,7 +939,8 @@ body.fs #fsexit{display:inline-flex}
               already exists, and no way to begin; someone whose reconstruction does not exist yet
               had to be told to create an empty file somewhere else and drop it on this. Hidden in
               a build with no editor, where it would only produce a file nobody could type into. -->
-         &nbsp;·&nbsp; <button class="plain" id="picknew" hidden>start a new one</button></p>
+         &nbsp;·&nbsp; <button class="plain" id="picknew" hidden>start a reconstruction</button>
+         &nbsp;·&nbsp; <button class="plain" id="picknewdebate" hidden>start a debate map</button></p>
       <p>A folder brings the manuscript with it, so the claims can be laid out
          <b>by where they appear in the text</b>. A lone file gives the argument map only —
          unless it is a <b>bundle</b>, which carries the text inside it.</p>
@@ -6297,16 +6298,19 @@ function hostWatchManuscript(){
  * disagree about it.
  */
 var newReconstruction = null;
+var newDebateMap = null;
 var canEdit = !!window.ArgdownEditor && typeof window.__ARGDOWN_PARSE__ === "function";
 
 if (typeof window.__ARGDOWN_PARSE__ === "function"){
   $("openbtn").hidden = false;
 
-  newReconstruction = canEdit ? function(){
-    if (!confirmDiscard("Start a new reconstruction")) return;
-    var text = window.__STARTER_ARGDOWN__;
+  // ONE STARTER PER GENRE (docs/values/SECOND-THOUGHTS.md): the reconstruction skeleton for a
+  // reading of a text, the debate skeleton for a survey of a pattern of public argument. The
+  // machinery is identical, so it is one function and two doors.
+  var startFromSkeleton = canEdit ? function(what, text){
+    if (!confirmDiscard(what)) return;
     if (!text) {
-      showErr("This build carries no starter reconstruction to begin from.");
+      showErr("This build carries no starter skeleton to begin from.");
       return;
     }
     var graph;
@@ -6314,7 +6318,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     catch (e) {
       // Cannot happen from a build that ran the tests, and worth saying plainly if it does:
       // the fault is in the shipped file, not in anything the reader did.
-      showErr("The starter reconstruction in this build does not parse: " +
+      showErr("The starter skeleton in this build does not parse: " +
               (e && e.message || e));
       return;
     }
@@ -6339,8 +6343,16 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     // type into it, and a map of a skeleton is not what they came for.
     if (!PANES.argdown) setPane("argdown", true);
   } : null;
+  newReconstruction = canEdit ? function(){
+    startFromSkeleton("Start a new reconstruction", window.__STARTER_ARGDOWN__);
+  } : null;
+  newDebateMap = canEdit ? function(){
+    startFromSkeleton("Start a new debate map", window.__DEBATE_ARGDOWN__);
+  } : null;
   $("picknew").hidden = !newReconstruction;
   if (newReconstruction) $("picknew").onclick = newReconstruction;
+  $("picknewdebate").hidden = !newDebateMap;
+  if (newDebateMap) $("picknewdebate").onclick = newDebateMap;
   var pickFile = function(){
     var i = document.createElement("input");
     i.type = "file"; i.accept = ".argdown,.ad,text/plain";
@@ -6597,6 +6609,7 @@ if (HOST) {
                            if (d) await hostLoadDir(d, null);
                          },
       "new":             function(){ if (newReconstruction) newReconstruction(); },
+      "new-debate":      function(){ if (newDebateMap) newDebateMap(); },
       "save":            function(){ saveArgdown(false); },
       "save-as":         function(){ saveArgdown(true); },
       // A menu item that can do nothing says why, rather than saying nothing: the silent
