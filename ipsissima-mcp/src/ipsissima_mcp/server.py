@@ -55,6 +55,8 @@ readings of, and checks finished reconstructions against their sources.
 
 WHAT USERS CALL THIS. "Make an Argdown", "make an Ipsissima diagram", "map the argument",
 "reconstruct this paper", "make an argument map" are all the same request. Treat them as such.
+"Map the debate" and "the arguments for and against X" are the same request minus the text —
+A MAP WITH NO SOURCE TEXT below says what changes.
 
 THE ORDER OF WORK
   1. `plan_job` — always, before anything expensive. It reports what it found, which route each
@@ -73,6 +75,15 @@ THE ORDER OF WORK
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
+
+A MAP WITH NO SOURCE TEXT is a genre, not a mistake. A debate map surveys a pattern of public
+argument — "the arguments for and against X" — rather than reading one document, so there is
+nothing to extract: skip `plan_job` and `extract_text`, write the map, and still run
+`check_reconstruction`, which holds it to parsing and structure and does not ask a sourceless
+map for fidelity. Claims carry no fidelity markers — there is no text to stand at a distance
+from — and the front matter carries `author:` and `date:`, because a debate map stands on who
+drew it. The analogue of accuracy here is fairness to the position: each side's best
+publicly-circulating case, laid out to be examined.
 
 WHICH FILE TO ASK FOR. Markdown is gold, pandoc-readable formats (.docx, .odt, .html, .epub,
 .tex) are silver, PDF is bronze — a PDF only records where ink sat, so paragraphs and headings

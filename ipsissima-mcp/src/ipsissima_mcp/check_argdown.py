@@ -352,8 +352,9 @@ def coverage_report(cli, path, source_root=None):
     except ImportError:
         return
     doc = export_json(cli, path)
+    fm = (prov.read_frontmatter(path) or {}) if doc else {}
     if doc:
-        prov.apply_defaults(doc, prov.read_frontmatter(path))
+        prov.apply_defaults(doc, fm)
     if not doc:
         return
     merged = prov.merged_statements(doc)
@@ -376,14 +377,37 @@ def coverage_report(cli, path, source_root=None):
           + (f", {have_sec - len(pinned)} narrowed by a section"
              if have_sec > len(pinned) else ""))
     if not have_ch:
-        finding("provenance-coverage", "!",
-                "no claim cites a chapter, so the map cannot be placed in any text: the "
-                "exposition-order view and the Order tab will both be unavailable",
-                fix='add a `defaults:` block to the frontmatter with chapter: "source/<file>.md"')
-        print("      ! no claim can be placed in a text. The exposition-order view and the")
-        print("        Order tab will both be unavailable. Add {chapter: \"...\", "
-              "section: \"...\"}")
-        print("        as you reconstruct -- retro-fitting it means re-reading the source.")
+        # A MAP WITH NO SOURCE TEXT IS A GENRE, NOT A MISTAKE (B7, ruled 5 Sep 2026). Zero
+        # coverage used to be a `!` fault flatly, which told every debate map to invent a
+        # manuscript. The file's own front matter is the only honest witness to intent: a
+        # `defaults:` chapter or a `reconstruction:` reading policy announces a reading of a
+        # text, and there zero coverage stays a fault; a map declaring neither is asked a
+        # question that answers both ways, because guessing the genre would repair one kind
+        # of map by breaking the other.
+        declares_reading = bool((fm.get("defaults") or {}).get("chapter")) \
+            or isinstance(fm.get("reconstruction"), dict)
+        if declares_reading:
+            finding("provenance-coverage", "!",
+                    "no claim cites a chapter, so the map cannot be placed in any text: the "
+                    "exposition-order view and the Order tab will both be unavailable",
+                    fix='add a `defaults:` block to the frontmatter with chapter: "source/<file>.md"')
+            print("      ! no claim can be placed in a text. The exposition-order view and the")
+            print("        Order tab will both be unavailable. Add {chapter: \"...\", "
+                  "section: \"...\"}")
+            print("        as you reconstruct -- retro-fitting it means re-reading the source.")
+        else:
+            finding("provenance-coverage", "?",
+                    "no claim cites a chapter, and the front matter declares no reading "
+                    "policy. As a map of a debate that is the genre, not a fault; as a "
+                    "reading of a text it is missing its provenance",
+                    fix='a debate map is fine as it is; a reading adds a `defaults:` block '
+                        'with chapter: "source/<file>.md"')
+            print("      ? no claim cites a chapter, and the front matter declares no reading")
+            print("        policy. As a map of a debate -- an argument belonging to no single")
+            print("        text -- that is the genre, not a fault, and none of this applies.")
+            print("        As a reading of a text it is missing its provenance: add a")
+            print("        `defaults:` block with chapter: \"source/<file>.md\" as you")
+            print("        reconstruct -- retro-fitting it means re-reading the source.")
     elif have_ch < n:
         missing = [t for t, r in merged.items() if not r["data"].get("chapter")]
         for t in missing:
@@ -1056,6 +1080,24 @@ def fidelity_report(cli, path):
 
     # ---- fidelity census first: it decides whether the rest applies ------- #
     if not census:
+        # THE SAME GENRE QUESTION coverage_report answers, answered the same way (B7, ruled
+        # 5 Sep 2026): a map that cites no text and declares no reading policy is the shape
+        # of a debate map, where fidelity has no subject matter. Prescribing departure-marking
+        # there told the map to measure its distance from a text that does not exist.
+        cites_text = any(r["data"].get("chapter")
+                         for r in prov.merged_statements(doc).values())
+        if not cites_text and not policy:
+            print(f"\n   FIDELITY: no node of {il['total']} carries a marker, and no claim "
+                  f"cites a text.")
+            print("      A map of a debate looks exactly like this -- no text to stand at a")
+            print("      distance from, so no fidelity to mark. Its trust is carried another")
+            print("      way: by every step being on screen to examine, and by the front")
+            print("      matter's `author:` naming who stands behind the reading of the debate.")
+            print("      If this IS a reading of a text, the markers are missing: mark at least")
+            print("      the departures -- `interpretation` for a reading the text supports but")
+            print("      does not state, `imputation` for a premise the argument needs and the")
+            print("      author never gives -- and add `chapter` provenance as you go.")
+            return
         print(f"\n   FIDELITY: no node of {il['total']} carries a marker.")
         print("      Mark at least the departures -- `interpretation` for a reading the text")
         print("      supports but does not state, `imputation` for a premise the argument needs")

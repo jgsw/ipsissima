@@ -1,7 +1,9 @@
 # Ipsissima-MCP
 
 Ask your assistant for an argument map of a paper, and get one that cites the text it is a
-reading of.
+reading of. Ask for a map of a debate — the arguments for and against a conclusion, belonging
+to no single text — and there is nothing to cite: the assistant writes the map directly, and
+the checks still hold it to parsing and structure.
 
 Ipsissima-MCP is an [MCP](https://modelcontextprotocol.io) server. It does the mechanical half of
 building a reconstruction — getting a document into structured Markdown with its paragraphs and
@@ -310,6 +312,16 @@ Open the folder in Ipsissima.
 **Text only, no reconstruction.**
 
 > Just extract the markdown from these PDFs — don't make a map.
+
+**A debate, not a document.**
+
+> Map the arguments for and against lowering the voting age.
+
+No source text, so no extraction and no fidelity borders — the map is the assistant's survey
+of the debate, each side's best case laid out step by step, and it stands on being checkable
+on screen rather than checkable against a text. The checker still holds it to parsing and
+structure, and greets the genre as one: a sourceless map is not asked for provenance it
+cannot have.
 
 ### It will ask before it spends
 
