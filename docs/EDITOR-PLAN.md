@@ -74,23 +74,33 @@ Verified end to end: a claim written by the gesture passes `check_argdown.py --s
 on the Darwin sample — 13/13 quotations exact, the new claim placed to its own line — and
 the whole path is held by rendered-DOM checks driven with a real mouse drag.
 
-**Deliberately not in v1.** A paraphrase variant (a second button is a vocabulary decision
-the guided mode should own); `pinpoint:` (printed page numbers need the page map); a
+**The paraphrase door, added on the author's word (5 Sep).** The same gesture, the other
+fidelity: **Paraphrase it** writes the provenance — `fidelity: "paraphrase"`, the selected
+words verbatim in `source:` so the reading can be checked against them — and *not* the
+claim's text, because the restatement is the reader's judgement and the machine must not
+fake a first draft of it (G3). What arrives selected is therefore the human's half in both
+doors: the title for a quotation, whose text is already done, and the placeholder for a
+paraphrase. The two buttons are the fidelity vocabulary's first lesson, met at the gesture
+rather than in a conventions file.
+
+**Deliberately not in v1.** `pinpoint:` (printed page numbers need the page map); a
 selection crossing block boundaries is joined with single spaces and left to the writer's
 judgement; `{` or `}` inside the selected words will break the metadata line, and the lint
 says so on the line.
 
-**The measurement that gates what comes next.** The design above was measured against the
-tool, not against people. Before the gesture grows (paraphrase, pinpoint, the guided mode),
-the class-of-fifty brief should be run for real at whatever scale is available — one novice,
-one text, watched, is enough to start; fifty student files collected and run through
-`check_argdown.py` would make the checker itself the instrument.
+**The gate, reframed by the author (5 Sep).** There is no class of fifty to hand. The aim is
+to build the tool to a level of ease and intelligibility at which teachers can be
+*recommended* it, choose it for their own classes, and generate the real-world data. The
+class-of-fifty brief therefore stays as the design target every choice is tested against —
+what would this cost, times fifty, with no one at the front of the room who knows the tool —
+and the field data arrives when teachers adopt it. What still beats any self-measurement is
+one early pair of real hands: one novice, one text, watched.
 
-## 3. The guided build-from-a-text mode — a design note, nothing more
+## 3. The guided build-from-a-text mode — designed, ruled on, not yet built
 
-**Status: design-note only, at the author's direction (5 Sep).** Not to be built until
-selection-to-claim has met real hands (§2's measurement) and the author has ruled on the open
-questions below.
+**Status: the author's rulings received 5 Sep** — the design below is settled except where
+marked, and the build waits on his word plus his ratification of the ingest reading at the
+end of this section.
 
 **The shape.** A guided mode on the walkthrough's pattern — P6's exemplar: attention claimed
 once, easily exited, always recallable — carrying the reading method the writing-centre
@@ -98,39 +108,61 @@ tradition sets out (UNC Writing Center, "Philosophy"; Fisher and Govier behind i
 selection-to-claim as its one primitive:
 
 1. **Find the conclusion.** "Select the sentence the text is finally arguing for." The
-   selection becomes the apex claim, by the §2 gesture.
+   selection becomes the apex claim, by the §2 gesture — quote it or paraphrase it, which is
+   already the first fidelity lesson.
 2. **Find the premises.** "What has to hold for that to follow? Select each place the text
    says one." Each selection becomes a claim; the mode offers the relation to the apex.
 3. **Find the evidence.** The same gesture at the examples and observations the text uses,
    offered as support for the premises they support.
-4. **Name the unspoken assumption.** The one step with *no* selection to make — and exactly
-   where the fidelity vocabulary should arrive: the mode teaches `imputation` and
-   `warrant: "enthymeme"` at the moment their subject matter first exists, instead of in a
-   conventions file the novice will never read.
+4. **Ask about the unspoken** *(ruled 5 Sep: a question, never an obligation)*. "Are there
+   any unspoken assumptions — something the argument needs that the text never says?" *No*
+   is an acceptable answer and ends the step. A *yes* is the moment the mode teaches
+   `imputation` and `warrant: "enthymeme"` — the fidelity vocabulary arriving exactly when
+   its subject matter does, instead of in a conventions file the novice will never read.
 5. **Walk the result.** Hand off to the existing walkthrough machinery on the map just
    built, so the mode ends where reading begins.
 
-**Principles it must keep.** G3 — the judgement stays human: the mode never proposes *which*
-sentence is the conclusion, never ranks candidate premises, never supplies the assumption;
-it asks the questions and works the gesture. B2 and P6 — every step dismissible, the whole
-mode exitable and recallable; a scaffold, not a rail. B1 — tested against the novice before
-the adept. And the two-promises doctrine for every gesture it adds.
+**Ruled, 5 Sep.** The mode lives as a **third door on the cold-start panel** — "start from a
+text…", beside *start a reconstruction* and *start a debate map*. And it writes the
+`reconstruction:` reading-policy block **first**, so the file is honest from its first save
+— but draws the reader's attention to it only at the **end**, when they have made enough
+readings for aim, unit, mode and strength to mean something: written up front, explained
+when earned.
 
-**Open questions for the author.**
+**How the text gets in — the author's question, and the proposed resolution.** The
+Manuscript view has been read-only by rule, and a classroom cannot be assumed to have
+Ipsissima-MCP for converting sources. The resolution: the rule survives untouched once it is
+stated precisely. What C4 and the read-only pane protect is that a cited text is never
+*edited in place* — the author's words cannot drift a character at a time under the
+reconstructor's hands. *Bringing a text in* is ingest, not editing, and the tool already
+owns the mechanism: the bundle. The third door opens on a paste panel — "paste the passage
+you are working from" — and the pasted text becomes an embedded chapter of a bundle (the
+`+ essay` machinery), read-only from that moment on, with `defaults: chapter:` set and the
+reading-policy block written. Save produces one `.argdown` carrying text and map together —
+which is also the classroom's collection mechanism: each student hands the teacher one file.
 
-- Where does it live: under **How to use** beside the walkthrough, or as a third door on the
-  cold-start panel ("start from a text…")? The second is more discoverable and more
-  presumptuous.
-- Does step 4 belong in v1, or is imputation a second lesson? The UNC sequence includes it;
-  a first assignment might not.
-- Should the mode write the `reconstruction:` reading-policy block, and if so when — up
-  front (honest, but jargon-first) or at the end (earned, but easily skipped)?
-- What the real measurement is, before building: one watched novice, or the class of fifty
-  with their files as the corpus.
+Three consequences worth stating:
+
+- **Markdown is a non-problem at classroom scale.** Pasted plain text already *is* the
+  Markdown the tool needs — paragraphs separated by blank lines. The MCP remains the route
+  for PDFs, page numbers and whole books; the guided mode's texts are handout-sized.
+- **Correction is wholesale, never in place.** A paste with a typo is fixed by *replacing
+  the text* — a visible act, offered from the same door — not by editing the manuscript. The
+  no-drift rule keeps its point, and any quotations already taken show their breakage
+  against the replaced text, which is the checker doing its job.
+- **The checks verify against the paste.** A pasted text has whatever fidelity the paste had
+  to its original; the tool can verify claim-against-paste, never paste-against-edition. The
+  door says so in one honest line, exactly as `text-provenance:` says its sentence: the
+  borders vouch for the map's reading of *this* text.
+
+**Still open.** Whether the paste door asks "whose text is this?" — one field, written into
+the chapter's front matter — in v1; and the build itself, on the author's word.
 
 ## 4. Standing
 
 Shipped, each held by tests: the navigation audit and its three fixes; title completion,
 safe auto-closing, indent-holding (`b449f40`); the parse-error translation and the fourth
-trap; selection-to-claim with its drag-guard. Gated: everything in §3, and §2's growth
-items, on the measurement and the author's rulings.
+trap; selection-to-claim with its drag-guard, and the paraphrase door beside it (5 Sep, on
+the author's word). Designed and ruled but not built: the guided mode (§3), waiting on the
+author's word and his ratification of the ingest reading. Not in v1: `pinpoint:`, and the
+paste door's authorship field.

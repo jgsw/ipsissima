@@ -1285,6 +1285,30 @@ async function quoteChecks(browser) {
   check(got.renaming.length > 0 && got.tail.includes("[" + got.renaming + "]"),
         "  and the title arrives selected, ready to be renamed",
         JSON.stringify(got.renaming));
+
+  // THE OTHER DOOR: a paraphrase's text is the reader's judgement, so the machine writes
+  // only the provenance and hands the caret to the placeholder — what arrives selected is
+  // the human's half, not the title.
+  const para2 = await page.locator("#mstext [data-l]").nth(1).boundingBox();
+  const y2 = para2.y + Math.min(10, para2.height / 2);
+  await page.mouse.move(para2.x + 4, y2);
+  await page.mouse.down();
+  await page.mouse.move(para2.x + Math.min(220, para2.width * 0.5), y2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForSelector("#mspara:not([hidden])", { timeout: 4000 });
+  await page.click("#mspara");
+  const p = await page.evaluate(() => {
+    const v = window.__ARGDOWN_EDITOR__.view;
+    return { tail: v.state.doc.sliceString(Math.max(0, v.state.doc.length - 400)),
+             selected: v.state.doc.sliceString(v.state.selection.main.from,
+                                               v.state.selection.main.to) };
+  });
+  check(/fidelity: "paraphrase"/.test(p.tail) && /source: "\\"/.test(p.tail),
+        "Paraphrase it writes the provenance and not the reader's words",
+        p.tail.slice(-160));
+  check(p.selected === "The passage, said in your own words.",
+        "  and the placeholder text arrives selected — the human's half, not the title",
+        JSON.stringify(p.selected));
   await ctx.close();
 }
 

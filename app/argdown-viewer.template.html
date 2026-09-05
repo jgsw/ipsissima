@@ -1130,9 +1130,12 @@ body.fs #fsexit{display:inline-flex}
         <!-- SELECTION-TO-CLAIM (docs/EDITOR-PLAN.md): shown only while words are selected in
              the text below, and only where an editor exists to write into. One click turns
              the selection into a claim with its provenance already filled in — the machine
-             writes the part the machine can see. -->
+             writes the part the machine can see. Two doors, and they are the reader's first
+             fidelity lesson: a quotation's text IS the words, a paraphrase's text is yours. -->
         <button class="plain" id="msquote" hidden
-                title="New claim from the selected words — written into the Argdown with fidelity: quotation, the source recorded verbatim, and the chapter cited.">Quote this passage</button>
+                title="New claim carrying the selected words as its text — fidelity: quotation, the source recorded verbatim, the chapter cited. The title arrives selected, ready to be renamed.">Quote this passage</button>
+        <button class="plain" id="mspara" hidden
+                title="New claim for saying the selected words your own way — fidelity: paraphrase, with the source recorded verbatim so the reading can be checked against it. Your restatement arrives selected, ready to be written.">Paraphrase it</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
       <div id="mstext" tabindex="0"></div>
@@ -4946,18 +4949,27 @@ $("mstext").addEventListener("click", function(e){
  * (docs/NAVIGATION.md — the same reasoning that lets go-to-source open the Manuscript).
  */
 var QUOTE_SEL = null;   // the last non-empty selection inside #mstext, kept because pressing
-                        // the button would otherwise collapse the selection before the click
+                        // a button would otherwise collapse the selection before the click
 document.addEventListener("selectionchange", function(){
-  var btn = $("msquote");
-  if (!ED) { btn.hidden = true; return; }
+  if (!ED) { $("msquote").hidden = true; $("mspara").hidden = true; return; }
   var sel = document.getSelection();
   var ok = sel && !sel.isCollapsed && sel.rangeCount > 0 &&
            $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
   if (ok) QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER };
-  btn.hidden = !ok;
+  $("msquote").hidden = !ok;
+  $("mspara").hidden = !ok;
 });
-$("msquote").addEventListener("mousedown", function(e){ e.preventDefault(); });
-$("msquote").onclick = function(){
+
+/** What a paraphrase claim's text says until the writer says it better. Obviously a
+ *  placeholder on sight AND on the map, so one left standing indicts itself. */
+var PARA_PLACEHOLDER = "The passage, said in your own words.";
+
+/** One insertion, two doors. The machine writes the part the machine can see — title,
+ *  provenance, and for a quotation the text itself, which IS the selected words. What
+ *  arrives selected is the human's half: the title for a quotation (its text is done), the
+ *  placeholder text for a paraphrase (the restatement is the reader's judgement, and the
+ *  machine must not fake a first draft of it — G3). */
+function insertClaimFromSelection(kind){
   if (!ED || !QUOTE_SEL || !QUOTE_SEL.text) return;
   // ONE LINE'S WORTH OF WORDS: the source file's line breaks are layout, not text, and the
   // quotation check normalises whitespace the same way.
@@ -4970,25 +4982,38 @@ $("msquote").onclick = function(){
   var title = slug, nth = 2;
   while (have[title]) title = slug + "-" + (nth++);
   var esc = words.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  var meta = 'fidelity: "quotation", source: "\\"' + esc + '\\""';
+  var meta = 'fidelity: "' + kind + '", source: "\\"' + esc + '\\""';
   // The chapter is cited only where the front-matter default does not already say it —
   // "declare it once", the conventions say, and a claim the page writes should obey them.
   if (QUOTE_SEL.chapter &&
       QUOTE_SEL.chapter !== (CURRENT_GRAPH && CURRENT_GRAPH.defaultChapter))
     meta = 'chapter: "' + QUOTE_SEL.chapter + '", ' + meta;
+  var text = kind === "quotation" ? words : PARA_PLACEHOLDER;
   var view = ED.view, doc = view.state.doc;
   var tail = doc.sliceString(Math.max(0, doc.length - 2));
   var sep = !doc.length ? "" : tail.slice(-2) === "\n\n" ? "" :
             tail.slice(-1) === "\n" ? "\n" : "\n\n";
-  var insert = sep + "[" + title + "]: " + words + "\n    {" + meta + "}\n";
+  var insert = sep + "[" + title + "]: " + text + "\n    {" + meta + "}\n";
   var base = doc.length;
-  var tFrom = base + sep.length + 1, tTo = tFrom + title.length;
+  var selFrom, selTo;
+  if (kind === "quotation") {
+    selFrom = base + sep.length + 1;
+    selTo = selFrom + title.length;
+  } else {
+    selFrom = base + sep.length + 1 + title.length + 3;
+    selTo = selFrom + text.length;
+  }
   view.dispatch({ changes: { from: base, insert: insert },
-                  selection: { anchor: tFrom, head: tTo }, scrollIntoView: true });
+                  selection: { anchor: selFrom, head: selTo }, scrollIntoView: true });
   if (!PANES.argdown) setPane("argdown", true);
   view.contentDOM.focus({ preventScroll: true });
   $("msquote").hidden = true;
-};
+  $("mspara").hidden = true;
+}
+$("msquote").addEventListener("mousedown", function(e){ e.preventDefault(); });
+$("mspara").addEventListener("mousedown", function(e){ e.preventDefault(); });
+$("msquote").onclick = function(){ insertClaimFromSelection("quotation"); };
+$("mspara").onclick = function(){ insertClaimFromSelection("paraphrase"); };
 
 /** Show which lines were taken as "the passage", so the answer is checkable. */
 function msMarkSpan(span){

@@ -22,8 +22,8 @@ different promises**:
 Two deliberate exceptions, each summoning exactly the pane it needs: the folded corner of a
 commented claim opens the **Notes** pane — that glyph's whole meaning is "there is a margin
 entry here" — and (since selection-to-claim landed the same day, `EDITOR-PLAN.md` §2) the
-**Quote this passage** button opens the **Argdown** pane, because writing into the file is
-the very thing it asks for.
+selection-to-claim buttons — **Quote this passage** and **Paraphrase it** — open the
+**Argdown** pane, because writing into the file is the very thing they ask for.
 
 ## The table, as found (and where changed, as it now is)
 
@@ -36,7 +36,7 @@ the very thing it asks for.
 | Argdown pane, a `[claim]` name | click (editor decoration; `.ref` + <kbd>Enter</kbd> in the Reader's read-only pane) | selection: lit on map, own line revealed; passage only if the Manuscript pane is open *(changed — see finding 2)* | no |
 | Notes pane, an entry | click | the same selection | no |
 | Manuscript, a passage | click | every claim drawn from that passage lights on the map (deliberately plural — 57% of placed claims share a line); camera moves only when they can all be framed. A drag that merely selects does neither: while words are selected the lighting gesture stands down | no |
-| Manuscript, a selection | **Quote this passage** | a new claim written into the Argdown with its provenance filled in; title selected for renaming (`EDITOR-PLAN.md` §2) | **Argdown** (the pane written into) |
+| Manuscript, a selection | **Quote this passage** / **Paraphrase it** | a new claim written into the Argdown with its provenance filled in; what arrives selected is the human's half — the title for a quotation, the placeholder text for a paraphrase (`EDITOR-PLAN.md` §2) | **Argdown** (the pane written into) |
 | Manuscript, chapter select | change | switches the chapter, clears the note | no |
 
 Notes on two asymmetries that survive the audit unchanged:

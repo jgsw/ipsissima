@@ -419,12 +419,14 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
   to them.
 - **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
   open, shows its passage
-- **Select a passage** — a **Quote this passage** button appears above the text: one click
-  writes a new claim into the Argdown with its provenance already filled in — `fidelity:
-  quotation`, the selected words recorded verbatim as the `source:`, the chapter cited where
-  the front matter does not already say it — and the claim's title arrives selected, ready to
-  be renamed. While words are selected, clicking does not light claims or move the map: a drag
-  that selects is not a click that asks.
+- **Select a passage** — two buttons appear above the text, and they are the fidelity
+  vocabulary's first lesson. **Quote this passage** writes a new claim whose text *is* the
+  selected words — `fidelity: quotation`, the source recorded verbatim, the chapter cited
+  where the front matter does not already say it — with the claim's title arriving selected,
+  ready to be renamed. **Paraphrase it** writes the same provenance but not your words: the
+  restatement is yours to make, so the claim's text arrives as a selected placeholder, ready
+  to be written over. Either way, while words are selected, clicking does not light claims or
+  move the map: a drag that selects is not a click that asks.
 
 Two kinds of gesture, keeping two different promises. **Selecting** — a plain click on a claim,
 a claim's name in the Argdown, an entry in the margin list — shows the claim in whatever panes
