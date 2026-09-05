@@ -92,11 +92,23 @@ console.log("\nthe samples name their licences");
     const srcDir = path.join(d, "source");
     const sources = fs.existsSync(srcDir)
       ? fs.readdirSync(srcDir).filter(f => f.endsWith(".md")) : [];
-    ok(`  and its source file${sources.length === 1 ? "" : "s"} carr${sources.length === 1 ? "ies" : "y"} it too`,
-       sources.length > 0 &&
-       sources.every(f => LIC.test(fs.readFileSync(path.join(srcDir, f), "utf8"))),
-       sources.filter(f => !LIC.test(fs.readFileSync(path.join(srcDir, f), "utf8"))).join(", ")
-         || "no source/*.md at all");
+    if (sources.length) {
+      ok(`  and its source file${sources.length === 1 ? "" : "s"} carr${sources.length === 1 ? "ies" : "y"} it too`,
+         sources.every(f => LIC.test(fs.readFileSync(path.join(srcDir, f), "utf8"))),
+         sources.filter(f => !LIC.test(fs.readFileSync(path.join(srcDir, f), "utf8"))).join(", "));
+    } else {
+      // A SURVEY SAMPLE HAS NO SOURCE TEXT — a debate map reads no document
+      // (docs/values/SECOND-THOUGHTS.md) — so the .argdown itself is the file that travels
+      // alone, and the rule attaches to it: the licence rides in every file that can leave
+      // by itself. A reading sample that has simply lost its sources still fails here,
+      // because its .argdown names no licence for a text it does not carry.
+      const maps = fs.readdirSync(d).filter(f => f.endsWith(".argdown"));
+      ok(`  and its .argdown carries it too (no source text: a survey sample)`,
+         maps.length > 0 &&
+         maps.every(f => LIC.test(fs.readFileSync(path.join(d, f), "utf8"))),
+         maps.filter(f => !LIC.test(fs.readFileSync(path.join(d, f), "utf8"))).join(", ")
+           || "no .argdown at all");
+    }
   }
 }
 
