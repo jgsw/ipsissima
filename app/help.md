@@ -419,15 +419,22 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
   to them.
 - **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
   open, shows its passage
+- **Select a passage** — a **Quote this passage** button appears above the text: one click
+  writes a new claim into the Argdown with its provenance already filled in — `fidelity:
+  quotation`, the selected words recorded verbatim as the `source:`, the chapter cited where
+  the front matter does not already say it — and the claim's title arrives selected, ready to
+  be renamed. While words are selected, clicking does not light claims or move the map: a drag
+  that selects is not a click that asks.
 
 Two kinds of gesture, keeping two different promises. **Selecting** — a plain click on a claim,
 a claim's name in the Argdown, an entry in the margin list — shows the claim in whatever panes
 are already open, and opens none: which panes you work with is your business. **Going to the
 passage** — double-click, shift-click, or **Go to source** from the menu — is the one request
-that opens a pane, because the Manuscript is the very thing it asks for. (The one other opener
-is the folded corner of a commented claim, which opens the margin list it names.) On a map that
-reads no text there are no passages, and the go-to gesture says so rather than asking you for a
-manuscript that never existed.
+that opens a pane, because the Manuscript is the very thing it asks for. (Two more openers,
+each summoning exactly the pane it needs: the folded corner of a commented claim opens the
+margin list it names, and **Quote this passage** opens the Argdown it writes into.) On a map
+that reads no text there are no passages, and the go-to gesture says so rather than asking you
+for a manuscript that never existed.
 
 A panel at the top-left of the map carries whatever the manuscript's own front matter offers as
 an orientation to the text — the article's **abstract**, or for a judgment its **facts of the

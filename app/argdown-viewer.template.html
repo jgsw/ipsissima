@@ -1127,6 +1127,12 @@ body.fs #fsexit{display:inline-flex}
         <select id="mschapter" title="Which file of the manuscript"></select>
         <span id="msnote" class="muted"></span>
         <span class="grow"></span>
+        <!-- SELECTION-TO-CLAIM (docs/EDITOR-PLAN.md): shown only while words are selected in
+             the text below, and only where an editor exists to write into. One click turns
+             the selection into a claim with its provenance already filled in — the machine
+             writes the part the machine can see. -->
+        <button class="plain" id="msquote" hidden
+                title="New claim from the selected words — written into the Argdown with fidelity: quotation, the source recorded verbatim, and the chapter cited.">Quote this passage</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
       <div id="mstext" tabindex="0"></div>
@@ -4903,6 +4909,13 @@ function msLocate(n){
  * passage produced, and moves the camera only when there is exactly one to move it to.
  */
 $("mstext").addEventListener("click", function(e){
+  // A DRAG THAT SELECTS IS NOT A CLICK THAT ASKS. Measured 5 Sep 2026 (docs/EDITOR-PLAN.md):
+  // selecting a passage by dragging also fired this handler, lighting ten claims and moving
+  // the camera wherever they could be framed — the map lurching mid-selection. While words
+  // are selected the lighting gesture stands down; a plain click collapses the selection
+  // before this handler runs, so it behaves exactly as before.
+  var sel0 = document.getSelection();
+  if (sel0 && !sel0.isCollapsed) return;
   var line = e.target.closest("[data-l]");
   // THE TWO MARKS ARE CLEARED SEPARATELY, and this is the source side of that. A click in this
   // pane that finds no passage puts THIS mark out and leaves the map's alone — they answer
@@ -4921,6 +4934,61 @@ $("mstext").addEventListener("click", function(e){
   $("msnote").textContent = (at.ids.length === 1 ? "1 claim" : at.ids.length + " claims") +
     " from this passage" + (centred ? "" : " — spread too wide to frame");
 });
+
+/* ---- SELECTION-TO-CLAIM: the provenance is written by the machine that can see it -------
+ *
+ * Measured 5 Sep 2026 (docs/EDITOR-PLAN.md §2): a properly-cited quotation claim took nine
+ * steps by hand — two pastes, the `\"…\"` escaping convention, the chapter path — and every
+ * step was a chance to break the byte-fidelity the checker verifies. Here the reader selects
+ * the words and clicks once. The claim arrives with its title selected, ready to be renamed,
+ * and the Argdown pane opens if it was closed: a creation is the one selection-side gesture
+ * that summons a pane, because writing into the file is the very thing it asks for
+ * (docs/NAVIGATION.md — the same reasoning that lets go-to-source open the Manuscript).
+ */
+var QUOTE_SEL = null;   // the last non-empty selection inside #mstext, kept because pressing
+                        // the button would otherwise collapse the selection before the click
+document.addEventListener("selectionchange", function(){
+  var btn = $("msquote");
+  if (!ED) { btn.hidden = true; return; }
+  var sel = document.getSelection();
+  var ok = sel && !sel.isCollapsed && sel.rangeCount > 0 &&
+           $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
+  if (ok) QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER };
+  btn.hidden = !ok;
+});
+$("msquote").addEventListener("mousedown", function(e){ e.preventDefault(); });
+$("msquote").onclick = function(){
+  if (!ED || !QUOTE_SEL || !QUOTE_SEL.text) return;
+  // ONE LINE'S WORTH OF WORDS: the source file's line breaks are layout, not text, and the
+  // quotation check normalises whitespace the same way.
+  var words = QUOTE_SEL.text.replace(/\s+/g, " ").trim();
+  if (!words) return;
+  var slug = words.toLowerCase().replace(/[^a-z0-9 ]+/g, "").trim()
+               .split(/\s+/).slice(0, 5).join("-") || "quoted-claim";
+  var have = {};
+  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ have[x.label] = 1; });
+  var title = slug, nth = 2;
+  while (have[title]) title = slug + "-" + (nth++);
+  var esc = words.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  var meta = 'fidelity: "quotation", source: "\\"' + esc + '\\""';
+  // The chapter is cited only where the front-matter default does not already say it —
+  // "declare it once", the conventions say, and a claim the page writes should obey them.
+  if (QUOTE_SEL.chapter &&
+      QUOTE_SEL.chapter !== (CURRENT_GRAPH && CURRENT_GRAPH.defaultChapter))
+    meta = 'chapter: "' + QUOTE_SEL.chapter + '", ' + meta;
+  var view = ED.view, doc = view.state.doc;
+  var tail = doc.sliceString(Math.max(0, doc.length - 2));
+  var sep = !doc.length ? "" : tail.slice(-2) === "\n\n" ? "" :
+            tail.slice(-1) === "\n" ? "\n" : "\n\n";
+  var insert = sep + "[" + title + "]: " + words + "\n    {" + meta + "}\n";
+  var base = doc.length;
+  var tFrom = base + sep.length + 1, tTo = tFrom + title.length;
+  view.dispatch({ changes: { from: base, insert: insert },
+                  selection: { anchor: tFrom, head: tTo }, scrollIntoView: true });
+  if (!PANES.argdown) setPane("argdown", true);
+  view.contentDOM.focus({ preventScroll: true });
+  $("msquote").hidden = true;
+};
 
 /** Show which lines were taken as "the passage", so the answer is checkable. */
 function msMarkSpan(span){

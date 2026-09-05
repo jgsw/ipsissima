@@ -902,7 +902,11 @@ export function toGraph(res) {
            // title. `generated` is the documented value; any other declared value travels
            // verbatim, because dropping a declaration silently is exactly what this field
            // exists to prevent.
-           textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null };
+           textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null,
+           // The front matter's own default chapter, so a claim the page writes (the
+           // Quote-this-passage gesture) can obey "declare it once": it cites a chapter
+           // explicitly only where the default does not already say it.
+           defaultChapter: defaults.chapter || null };
 }
 
 /** The process chain and settings every host must use, so a file maps identically everywhere.

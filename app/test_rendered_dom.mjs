@@ -1218,10 +1218,81 @@ async function editorChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ selection-to-claim */
+/* The provenance is written by the machine that can see it (docs/EDITOR-PLAN.md §2): select
+ * words in the Manuscript, click once, and a claim arrives with fidelity: quotation, the
+ * source recorded verbatim behind its escapes, and the title selected for renaming. Driven
+ * by a real mouse drag, which also holds the guard the measurement demanded: a drag that
+ * selects must not light claims or move the camera. */
+async function quoteChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  if (!miller) { check(false, "quote: a qualifying reading exists", "no Miller sample built"); return; }
+  const out = path.join(tmp, "quote-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "--editor", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "quote: the editor build builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ad = fs.readFileSync(miller.argdown, "utf8");
+  const srcDir = path.join(miller.root, "source");
+  const srcName = fs.readdirSync(srcDir).find(f => f.endsWith(".md"));
+  const src = fs.readFileSync(path.join(srcDir, srcName), "utf8");
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(({ a, aName, s, sName }) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([a], aName));
+    dt.items.add(new File([s], sName));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, { a: ad, aName: path.basename(miller.argdown), s: src, sName: srcName });
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  await page.click('button[data-p="text"]');
+  await page.waitForSelector("#mstext [data-l]", { timeout: 20000 });
+  const para = await page.locator("#mstext [data-l]").first().boundingBox();
+  const y = para.y + Math.min(10, para.height / 2);
+  await page.mouse.move(para.x + 4, y);
+  await page.mouse.down();
+  await page.mouse.move(para.x + Math.min(260, para.width * 0.6), y, { steps: 8 });
+  await page.mouse.up();
+  const afterDrag = await page.evaluate(() => ({
+    sel: String(getSelection()).length,
+    btn: document.getElementById("msquote").hidden,
+    note: document.getElementById("msnote").textContent
+  }));
+  check(afterDrag.sel > 3 && afterDrag.btn === false,
+        "dragging over the text offers Quote this passage", JSON.stringify(afterDrag));
+  check(afterDrag.note === "",
+        "  and the selecting drag lit nothing — a drag that selects is not a click that asks",
+        JSON.stringify(afterDrag.note));
+  const before = await page.evaluate(() =>
+    window.__ARGDOWN_EDITOR__.view.state.doc.length);
+  await page.click("#msquote");
+  const got = await page.evaluate(() => {
+    const v = window.__ARGDOWN_EDITOR__.view;
+    return { tail: v.state.doc.sliceString(Math.max(0, v.state.doc.length - 400)),
+             grew: v.state.doc.length,
+             renaming: v.state.doc.sliceString(v.state.selection.main.from,
+                                               v.state.selection.main.to) };
+  });
+  check(got.grew > before && /fidelity: "quotation"/.test(got.tail) &&
+        /source: "\\"/.test(got.tail),
+        "one click writes the claim with its provenance filled in",
+        got.tail.slice(-160));
+  check(got.renaming.length > 0 && got.tail.includes("[" + got.renaming + "]"),
+        "  and the title arrives selected, ready to be renamed",
+        JSON.stringify(got.renaming));
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
+await quoteChecks(browser);
 await exportChecks(browser);
 await mobileChecks(browser);
 await browser.close();
