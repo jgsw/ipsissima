@@ -144,6 +144,22 @@ export function traps(text) {
                  `symbol). In a heading that silently breaks every reference to it. Write it ` +
                  `without the trailing dot.` });
 
+    // AN UNCLOSED BRACKET IS NOT A SYNTAX ERROR, which is the trap. `[claim: text` parses as
+    // ordinary prose (measured 5 Sep 2026, docs/EDITOR-PLAN.md): no claim is defined,
+    // completion will not offer the title, and a later `[claim]` quietly creates a different,
+    // empty statement. Only the shape that cannot be prose is flagged — a line opening a
+    // reference whose colon arrives with no closing bracket anywhere on the line. The `<`
+    // variant must not match relation lines, so it requires a title character after the angle.
+    const noClose =
+      /^\s*@?\[[^\]\n]*:[^\]\n]*$/.test(line) ? "[" :
+      /^\s*@?<[A-Za-z0-9][^>\n]*:[^>\n]*$/.test(line) ? "<" : null;
+    if (noClose)
+      out.push({ from: start, to: start + line.length, severity: "warning",
+        message: "This `" + noClose + "` never closes, so the whole line reads as plain " +
+                 "text: no claim is defined here, and a reference to this title elsewhere " +
+                 "would create a different, empty statement. Close the title — " +
+                 (noClose === "[" ? "`[title]: text`" : "`<title>: text`") + "." });
+
     // AN UNDERSCORE INSIDE A WORD opens an italic range. Unpaired, it aborts the parse; paired,
     // it silently italicises and mangles an identifier.
     const us = line.match(/(?<![\\\w])[A-Za-z0-9]+_[A-Za-z0-9]/);

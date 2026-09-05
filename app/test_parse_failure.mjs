@@ -24,7 +24,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { argdown } from "@argdown/core";
-import { toGraph, RUN } from "./argdown-graph.mjs";
+import { toGraph, RUN, friendlyParseMessage } from "./argdown-graph.mjs";
+import { traps } from "./argdown-editor.src.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 let fails = 0;
@@ -105,6 +106,46 @@ console.log("\nthe rule the viewer depends on");
 // rather than being reported as broken, or opening a new reconstruction would look like a fault.
 check("an empty file is empty, not an error", parse("").nodes, 0);
 check("  and so is one holding only a comment", parse("// nothing here yet\n").nodes, 0);
+
+// THE TRANSLATION, held to what was measured (docs/EDITOR-PLAN.md §1): exactly one chevrotain
+// shape is reworded, the parser's own long messages pass through untouched, and the raw words
+// always survive on the end — the translation is ours, the authority is not.
+console.log("\nthe one message worth translating");
+{
+  const eof = t => `Expecting token of type --> EOF <-- but found --> '${t}' <--`;
+  const colon = friendlyParseMessage(eof("text without the colon"),
+                                     "[claim] text without the colon");
+  check("a bare reference followed by text points at the missing colon",
+        /put a `:` after/.test(colon), true);
+  const twice = friendlyParseMessage(eof("[b]:"), "[a]: One. [b]: Two.");
+  check("  a second claim on the line is named as one",
+        /each claim needs its own line/.test(twice), true);
+  check("  and both keep the parser's own words",
+        /The parser said: Expecting token/.test(colon) &&
+        /The parser said: Expecting token/.test(twice), true);
+  const official = "Invalid relation syntax. This may either be caused by a) an invalid " +
+                   "relation parent or b) invalid indentation.";
+  check("  the parser's own teaching passes through untouched",
+        friendlyParseMessage(official, "+ [a]: x"), official);
+  const other = "Expecting token of type --> Dedent <-- but found --> 'x' <--";
+  check("  and an unmeasured shape is not guessed at",
+        friendlyParseMessage(other, "x"), other);
+}
+
+// THE FOURTH TRAP: an unclosed bracket is not a syntax error, which is the trap — `[claim:
+// text` parses as ordinary prose (measured 5 Sep 2026), so no claim is defined and nothing
+// says so. The shapes that must NOT fire are as load-bearing as the one that must.
+console.log("\nthe unclosed-title trap");
+{
+  const hits = t => traps(t).filter(d => /never closes/.test(d.message)).length;
+  check("`[claim: text` with no closing bracket is flagged", hits("[claim: The text.\n"), 1);
+  check("  the `<` variant too", hits("<arg: How it runs.\n"), 1);
+  check("  a closed title does not fire", hits("[claim]: The text.\n"), 0);
+  check("  a bracketed aside in prose does not fire",
+        hits("[a]: He wrote [sic: as written] here.\n"), 0);
+  check("  a relation line does not fire", hits("[a]: One.\n    <+ [b]: Two.\n"), 0);
+  check("  a comment does not fire", hits("// [claim: not real\n"), 0);
+}
 
 // The guard lives in the viewer template; this holds the wiring so the two cannot drift apart
 // silently, which is the same reason test_argdown_positions.mjs exists.

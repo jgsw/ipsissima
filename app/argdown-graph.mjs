@@ -47,6 +47,32 @@
  *  Returns [{ line, column, message, text }], line 1-based: the same shape `metadataProblems`
  *  returns, so the three consumers that already know how to present one need no new code.
  */
+/* THE ONE SHAPE WORTH TRANSLATING, and only that one. Measured 5 Sep 2026 over eighteen
+ * classroom-shaped mistakes (docs/EDITOR-PLAN.md \u00a71): the parser's own long messages \u2014
+ * "Invalid relation syntax\u2026", "Incomplete premise-conclusion-structure\u2026", "Missing
+ * inference\u2026", "Invalid paragraph start\u2026", "Invalid inference position\u2026" \u2014 already teach,
+ * and pass through untouched; rewording them would be a second opinion on the official
+ * parser's words. What a classroom meets and cannot read is chevrotain's
+ *
+ *     Expecting token of type --> EOF <-- but found --> '\u2026' <--
+ *
+ * which is how three different mistakes come back: text after a bare [reference] (a missing
+ * colon), a second claim started on the same line, and their variants. The raw words stay on
+ * the end of the translation, because the translation is ours and the authority is not. */
+export function friendlyParseMessage(message, lineText) {
+  const m = /^Expecting token of type --> EOF <-- but found --> '([\s\S]*)' <--/.exec(message);
+  if (!m) return message;
+  const secondClaim = /^@?[[<]/.test(m[1]);
+  const bareRef = /^\s*@?(\[[^\]\n]+\]|<[^>\n]+>)\s+\S/.test(lineText || "");
+  const why = secondClaim
+    ? "a new claim starts before the line ends, and each claim needs its own line"
+    : bareRef
+      ? "text follows a bare reference \u2014 to give the claim its text here, put a `:` after " +
+        "the closing bracket"
+      : "the line was already complete, and what follows cannot be read as part of it";
+  return "Could not read past this point: " + why + ". (The parser said: " + message + ")";
+}
+
 export function parseProblems(res, source) {
   const out = [];
   if (!res) return out;
@@ -66,7 +92,9 @@ export function parseProblems(res, source) {
     const tok = (e && e.token && e.token.startLine ? e.token : e && e.previousToken) || {};
     const line = tok.startLine || 1;
     out.push({ line, column: tok.startColumn || 1,
-               message: String((e && e.message) || e).split("\n")[0], text: at(line) });
+               message: friendlyParseMessage(
+                 String((e && e.message) || e).split("\n")[0], at(line)),
+               text: at(line) });
   }
   return out;
 }
