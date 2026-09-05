@@ -282,10 +282,12 @@ have been checked — is what generates the rule-name items in `ALIGNMENT-PLAN.m
 
 ### B1. Ipsissima is for everyone, not for the trained
 
-**It says.** The project "aims to open up philosophical argumentation to everyone". Its users
-include checkers, teachers, students studying hard texts, and academics; the people it most
-exists to help are those *not* used to long arguments with numbered premises — and design
-decisions are tested against the novice before the adept.
+**It says.** The mission, in the author's settled words (5 Sep): **"Making complex reasoning
+intelligible through maps you can check at every step."** Not philosophical argumentation
+only, and not the academy only — wherever someone wants to assess reasons for and against a
+conclusion. Its users include checkers, teachers, students studying hard texts, and academics;
+the people it most exists to help are those *not* used to long arguments with numbered
+premises — and design decisions are tested against the novice before the adept.
 
 **Seen in.** The staircase decision ("Sketch B … is *much* easier to follow for those who are
 not used to long arguments with numbered premisses; and these are the very people Ipsissima
@@ -293,10 +295,12 @@ exists to help!", 1 Sep); comments addable with "absolutely no skill in or under
 Argdown" (21 Aug); "It will seem a bit too much like reading The Matrix to the novice user!"
 (22 Aug); the four-users brief (21 Aug, 08:50).
 
-**Provenance.** **quotation** (mission sentence quoted in the record, 27 Aug) and repeated
-author rulings — origin: author. The audience widened explicitly on 20 Aug, 08:43: "We are
-moving from a tool that will be used only by me … to one that will be used by hundreds or even
-thousands of people."
+**Provenance.** **quotation** — origin: author, twice over: the earlier form in the record
+(27 Aug, "aims to open up philosophical argumentation to everyone"), restated in the settled
+words above at the Second Thoughts checkpoint (5 Sep); and repeated author rulings. The
+audience widened explicitly on 20 Aug, 08:43: "We are moving from a tool that will be used
+only by me … to one that will be used by hundreds or even thousands of people" — and a second
+time on 5 Sep (addendum below).
 
 **Generality.** The whole project.
 
@@ -304,13 +308,12 @@ thousands of people."
 form kept as an option, not the default); the walkthrough; `top-level` documented as a trap
 rather than assumed understood.
 
-*Addendum, proposed 5 Sep (Second Thoughts episode — awaiting the author's ruling).* The
-audience widened a second time: "I created a tool that initially seemed to be for use only in
-an academic environment, but I think it can be useful wherever someone wants to assess reasons
-for and against a conclusion" (5 Sep, the private record). The author's draft of the restated
-mission — "opening up complex reasoning to everyone through clear and trustworthy
-visualisations" — is his to settle in final words (D7); until then B1's principle stands with
-its scope so widened, and B7 says how trust is carried where no text anchors it.
+*Addendum (5 Sep, ruled at the Second Thoughts checkpoint).* The audience widened a second
+time: "I created a tool that initially seemed to be for use only in an academic environment,
+but I think it can be useful wherever someone wants to assess reasons for and against a
+conclusion" (5 Sep, the private record). The mission was restated the same day in the
+author's settled words, above — the draft form in "Second thoughts" was his to settle (D7),
+and was settled at the checkpoint. B7 says how trust is carried where no text anchors it.
 
 ### B2. The reader explores at their own pace
 
@@ -351,7 +354,11 @@ assistant's articulation of it.
 **Generality.** The whole project; sharpest in the MCP's checker and the exposition views.
 
 **Weight.** Medium-heavy. Case law: `inert` demoted from alarm to observation for drafts;
-"more than one apex is a result, not a failure."
+"more than one apex is a result, not a failure." Bounded on 5 Sep (Second Thoughts T2): B3
+does not extend to syntactic mess — "the map won't visualise if the syntax is wrong, so we
+can't be tolerant of it" — what is owed there is editor support, so the user is less likely
+to write invalid syntax inadvertently, and help fixing it when they do; never checker
+leniency.
 
 ### B4. Cost is a mission constraint, and the tool asks before it spends
 
@@ -417,7 +424,7 @@ the author of Ipsissima, it doesn't follow that all my personal values are Ipsis
 **Weight.** Heavy and structural, though tested only once — its first application re-scoped an
 apex principle on the day it was stated, which is a strong opening precedent.
 
-### B7. Trust has more than one carrier *(proposed, 5 Sep — awaiting the author's ruling)*
+### B7. Trust has more than one carrier
 
 **It says.** Automated fidelity checking is the apt trust mechanism only where a canonical text
 exists. Where none does — a map of a pattern of public argument rather than of one text —
@@ -442,9 +449,11 @@ trusts the institutional facts about the newspaper.
 **Generality.** The whole project; sharpest in the App's handling of sourceless maps and in
 every self-description.
 
-**Weight.** Untested — no collision has been adjudicated under it. The first is queued:
-whether "accuracy vs charity — accuracy, always" holds in the survey genre
-(`SECOND-THOUGHTS.md`, tension T1).
+**Weight.** One case, ruled the day the principle was admitted (5 Sep, Second Thoughts T1):
+in the survey genre "accuracy vs charity" gives way to **fairness to the position** — each
+standpoint's best publicly-circulating case, declared as such — while accuracy still binds
+wherever a source exists. The first case-law row whose winner depends on genre (`THEORY.md`
+§5).
 
 ---
 

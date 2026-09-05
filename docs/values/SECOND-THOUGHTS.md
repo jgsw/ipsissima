@@ -3,14 +3,14 @@
 Opened 5 September 2026, at the author's direction, on the branch `values-second-thoughts` —
 the framework's first live values-improvement episode since it was built. The prompt is the
 author's document "Second thoughts on Ipsissima's values and purpose" (5 Sep, in the private
-record), which this file quotes; **like Step One's inventory, those quotations are the
-author's to review before this branch is ever pushed.**
+record), which this file quotes; the quotations were reviewed and approved by the author for
+an eventually public branch the same day (ruling 7, §4).
 
-The episode follows the established shape: proposed edits on a branch, the author's rulings
-at a checkpoint, nothing merged or implemented on the assistant's judgement. This file is the
-record of what is proposed and why; the ⟨proposed, 5 Sep⟩ markers in `THEORY.md` and the two
-*proposed* passages in `INVENTORY.md` are the edits themselves. **Status: awaiting the
-author's rulings. Hard stop.**
+The episode followed the established shape: proposed edits on a branch, the author's rulings
+at a checkpoint, nothing merged or implemented on the assistant's judgement. **Status: the
+author's rulings received, 5 Sep — recorded in §4, and carried into the files the same day
+(the ⟨proposed⟩ markers are off; the diff is the record). The values half of the episode is
+closed; the downstream alignment work proceeds wave by wave, each on the author's word.**
 
 ---
 
@@ -44,57 +44,59 @@ provenance declared.
 
 | where | what | status |
 |---|---|---|
-| `INVENTORY.md` B7 | new principle: **trust has more than one carrier** — provenance quotation, origin author (5 Sep) | proposed |
-| `INVENTORY.md` B1 | addendum: the audience widened a second time; the author's draft mission sentence recorded as a draft, final words his (D7) | proposed |
-| `THEORY.md` §1 | how the keystone reads per genre — checked / declared / not yet applicable | proposed |
-| `THEORY.md` §2 P1 | scope condition: the A-cluster governs the reading genre; not a demotion | proposed |
-| `THEORY.md` §2 P2 | the mission's restated scope; B7 joins the cluster; authoring is mission work | proposed |
-| `THEORY.md` §3 | the App faces the *writer* as well as the reader; the hand-author is P3's reconstructor | proposed |
+| `INVENTORY.md` B7 | new principle: **trust has more than one carrier** — provenance quotation, origin author (5 Sep) | **admitted as worded** |
+| `INVENTORY.md` B1 | revised: the mission in the author's settled words; the addendum records the second widening | **ruled — sentence settled** |
+| `THEORY.md` §1 | how the keystone reads per genre — checked / declared / not yet applicable | **admitted** |
+| `THEORY.md` §2 P1 | scope condition: the A-cluster governs the reading genre; not a demotion | **admitted** |
+| `THEORY.md` §2 P2 | the mission's restated scope; B7 joins the cluster; authoring is mission work | **admitted, with the settled sentence** |
+| `THEORY.md` §3 | the App faces the *writer* as well as the reader; the hand-author is P3's reconstructor | **admitted** |
 
-Nothing already ruled on has been moved, and no case-law row has been added — §5's table
-grows only from adjudicated collisions, and the first candidate is tension T1 below, which
-has not been adjudicated yet.
+One case-law row was added after adjudication, not before: T1's, the first row in §5's table
+whose winner depends on genre.
 
-## 3. Tensions this episode queues for testing
+## 3. The tensions, adjudicated
 
-Named in advance, Step Two's method, not yet run — each ends in a recommendation with a
-confidence, for the author to rule on:
+Named in advance, Step Two's method — each proposed with a candidate resolution, and each
+ruled on by the author the same day:
 
 - **T1 — Does "accuracy vs charity — accuracy, always" hold in the survey genre?** There is
   no author to be accurate *to*; the Argdown project's own debate maps are deliberate
   steelmen. Candidate resolution: accuracy binds wherever a source exists; the survey-genre
   analogue is *fairness to the position* — each standpoint's best publicly-circulating case,
-  and a declaration that this is what is being done. Whatever the ruling, it should become
-  the first case-law row whose winner depends on genre — written down, not absorbed silently.
+  and a declaration that this is what is being done. **Ruled, 5 Sep: adopted.** The case-law
+  row is in `THEORY.md` §5 — the first whose winner depends on genre — and B7's weight
+  cites it.
 - **T2 — Does B3 (tolerant of mess) extend to syntactic mess?** B3 was written about
-  argumentative mess (disconnected claims, missing conclusions). A classroom of hand-authors
-  produces the other kind — indentation errors, unclosed brackets — and the tolerant response
-  is editor support, not checker leniency. This is the values-side warrant for the editor
-  programme.
+  argumentative mess (disconnected claims, missing conclusions); a classroom of hand-authors
+  produces the other kind. **Ruled, 5 Sep: it does not extend.** In the author's words: "the
+  map won't visualise if the syntax is wrong, so we can't be tolerant of it — but we can and
+  should provide support to the user so they are less likely to inadvertently write invalid
+  syntax, and help them to fix things when they do." Recorded as B3 case law. The editor
+  programme's warrant is therefore not tolerance but *prevention and repair* — support
+  before the error, help after it.
 - **T3 — Is the defensive genealogy a value or an origin?** The trust machinery was built in
   part to disarm the AI-sceptic; the author now calls that "a bit defensive." The C1 doctrine
   disposes of it: origin changes how a value is weighed and interpreted, never whether it
   binds. The machinery stays — ratified by what it does for users, and by the observation
   that what was built to placate the sceptic is precisely what makes classroom and public
   deployment possible (no accounts, no uploads, one file that works offline). Only the
-  defensive *framing* retires. Confidence: high; recorded here so the question stays
+  defensive *framing* retires. **Ruled, 5 Sep: agreed.** Recorded here so the question stays
   answered.
 
-## 4. Rulings the checkpoint needs
+## 4. The rulings, received 5 Sep
 
-1. **B7** — admitted? As worded, or in the author's words?
-2. **B1's addendum** — stands? And the mission sentence's final wording, which only the
-   author can supply.
-3. **The keystone's per-genre paragraph** (`THEORY.md` §1) — stands?
-4. **The A-cluster scope condition** (§2, P1) — stands?
-5. **The App-faces-the-writer amendment** (§3) — stands?
-6. **T1's candidate resolution** — adopt, amend, or test further before any case-law row is
-   written?
-7. **The quotations from the private record** in B7, B1's addendum, and this file — approved
-   for an eventually-public branch?
+1. **B7** — admitted as worded.
+2. **B1 and the mission sentence** — the author's settled words: **"Making complex reasoning
+   intelligible through maps you can check at every step."** B1 revised in its light; the
+   addendum records the second widening.
+3. **The keystone's per-genre paragraph** — stands.
+4. **The A-cluster scope condition** — stands.
+5. **The App-faces-the-writer amendment** — stands.
+6. **T1's candidate resolution** — adopted; the row is written.
+7. **The quotations from the private record** — approved for an eventually public branch.
 
-After the rulings: the ⟨proposed⟩ markers come off whatever is admitted (the diff remaining
-the record), whatever is declined is removed, and the downstream work — self-description
-copy, the survey sample and its licence question, the checker's greeting, the generated-text
-label, the editor programme — proceeds in the order the examination proposed, each on the
-author's word.
+With the rulings carried into the files, the values half of the episode is closed. The
+downstream work — self-description copy, the survey sample and its licence question, the
+checker's greeting, the generated-text label, and the editor programme (opening with the
+cross-pane navigation audit) — proceeds in the order the examination proposed, each wave on
+the author's word.

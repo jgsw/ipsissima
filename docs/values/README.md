@@ -45,11 +45,13 @@ should exist (it should not, and the framework says why), which checkable slice 
 automated (a promises lint), and how the framework reaches contributors and the author by
 different routes, deliberately.
 
-- **The Second Thoughts episode — opened 5 Sep, awaiting the author's rulings.** The
-  framework's first live values-improvement: the author's restatement of the mission's scope
-  (three genres of map, not one), a proposed principle B7, and marked ⟨proposed⟩ passages in
-  `THEORY.md`. `SECOND-THOUGHTS.md` is the record, the queued tensions, and the checkpoint
-  questions.
+- **The Second Thoughts episode — opened and ruled 5 Sep.** The framework's first live
+  values-improvement: the author restated the mission in his settled words — "Making complex
+  reasoning intelligible through maps you can check at every step" — named three genres of
+  map (a reading, a survey, an argument), admitted B7 (trust has more than one carrier), and
+  adjudicated three tensions, one into the case-law table. `SECOND-THOUGHTS.md` is the
+  record; the alignment work downstream of the rulings proceeds wave by wave, each on the
+  author's word.
 
 ## Whose values are these
 
