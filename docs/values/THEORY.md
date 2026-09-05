@@ -13,6 +13,11 @@ author's checkpoint rulings: the keystone is now stated as distinctive rather th
 and a sixth apex commitment — the reader's attention (F4, respecified) — joins the five. The
 diff is the record of what moved.*
 
+*Proposed revision at the Second Thoughts episode (5 Sep) — the author's restatement of the
+mission's scope, and what follows from it. Every passage it would add is marked ⟨proposed,
+5 Sep⟩ in place and awaits his checkpoint rulings; `SECOND-THOUGHTS.md` is the episode
+record. Nothing already ruled on has been moved.*
+
 ---
 
 ## 1. The keystone
@@ -52,6 +57,17 @@ Distinctive, not supreme: stress-tested at Step Two against Rawls's fourth test 
 citizenship clusters, and three firm considered judgments would come out wrong if it were made
 to govern them. It names the family P1 leads; it does not rule the six commitments below.
 
+⟨proposed, 5 Sep⟩ The ethic reads at a different level per **genre of map**, and its own three
+clauses already say how. For a *reading* — a map of one text — distance-from-source can be
+checked, and the full apparatus applies. For a *survey* — a map of a pattern of public
+argument, with no canonical text — distance-from-source cannot be checked, so the third clause
+governs: the map *declares* what it is, and stands on the reader's own checking and the
+mapper's named good faith (B7). For an *argument* of the map-maker's own, there is nothing yet
+to stand at a distance from, and the ethic waits. A reading whose manuscript is
+machine-generated is a reading still: the apparatus applies unchanged, and the text's own
+provenance must be declared — the keystone applied to a class of representation that did not
+exist when it was written down.
+
 ## 2. The apex: six commitments that govern the whole project
 
 Beneath the keystone, the record supports six apex commitments — five extracted at Step One,
@@ -61,7 +77,10 @@ principle in the inventory specialises one of them (or sits where two meet).
 **P1 — The fidelity ethic** (the keystone, §1). Specialised by: A1–A5, A8 (what a
 reconstruction must answer for); F1–F2 (what a picture must answer for); C5, D4–D6 (what the
 project must answer for); E3's negative form — a silent failure is an unanswered
-representation left standing; E6 (what a test result must answer for).
+representation left standing; E6 (what a test result must answer for). ⟨proposed, 5 Sep⟩ The
+A-cluster's scope is the reading genre: where a map has no source text, A2–A8 do not apply
+for want of a subject matter, and B7 says what carries trust instead. A scope condition, not
+a demotion.
 
 **P2 — The mission: open serious argumentation to everyone** (B1). Specialised by: B2 (the
 reader's own pace), B4 (cost as hindrance), B5 (the user's own words), and the novice-first
@@ -69,6 +88,12 @@ rulings. The mission is why fidelity is *drawn* rather than merely recorded — 
 at a glance is the ladder made available to someone who will never read a conventions file.
 B6 — the author's values are not automatically the project's; the touchstone is the user — is
 the mission's second-order guardian, and governs how every apex below is interpreted.
+⟨proposed, 5 Sep⟩ The mission's scope was restated by the author: not philosophical
+argumentation only, but complex reasoning wherever someone wants to assess reasons for and
+against a conclusion — his draft sentence, awaiting his final words, is B1's addendum. B7
+joins the cluster as the mission's account of how trust is carried where no text anchors it;
+and the person who *builds* a map is opened to reasoning at least as much as the person who
+reads one, so authoring support is mission work, not a side door.
 
 **P3 — Three sovereignties.** The tool serves three parties and may usurp none of them:
 
@@ -110,7 +135,10 @@ The project splits along one seam, stated in both READMEs: **the mechanical half
 tool's; the judgement half is the model's, and behind the model the person's** (G3). The App
 and the MCP sit on either side of a second seam: the App faces the *reader* of a
 reconstruction; the MCP faces its *sources* and its *checking*. Each half's local principles
-are the apex commitments specialised for its seam.
+are the apex commitments specialised for its seam. ⟨proposed, 5 Sep⟩ The App faces the
+*writer* of a map as well: the hand-author is P3's reconstructor at the keyboard, and the
+editor's support for them — completion, indentation, errors a novice can act on — is B1
+carried out, with no new sovereign party needed.
 
 ```
                     the fidelity ethic (the distinctive keystone, leading P1)

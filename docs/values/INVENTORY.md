@@ -304,6 +304,14 @@ thousands of people."
 form kept as an option, not the default); the walkthrough; `top-level` documented as a trap
 rather than assumed understood.
 
+*Addendum, proposed 5 Sep (Second Thoughts episode — awaiting the author's ruling).* The
+audience widened a second time: "I created a tool that initially seemed to be for use only in
+an academic environment, but I think it can be useful wherever someone wants to assess reasons
+for and against a conclusion" (5 Sep, the private record). The author's draft of the restated
+mission — "opening up complex reasoning to everyone through clear and trustworthy
+visualisations" — is his to settle in final words (D7); until then B1's principle stands with
+its scope so widened, and B7 says how trust is carried where no text anchors it.
+
 ### B2. The reader explores at their own pace
 
 **It says.** The map's job is to let someone see the main points at a glance or descend into
@@ -408,6 +416,35 @@ the author of Ipsissima, it doesn't follow that all my personal values are Ipsis
 
 **Weight.** Heavy and structural, though tested only once — its first application re-scoped an
 apex principle on the day it was stated, which is a strong opening precedent.
+
+### B7. Trust has more than one carrier *(proposed, 5 Sep — awaiting the author's ruling)*
+
+**It says.** Automated fidelity checking is the apt trust mechanism only where a canonical text
+exists. Where none does — a map of a pattern of public argument rather than of one text —
+trustworthiness is carried by other things: the map's own checkability by the reader (every
+step of the argument on screen, each standpoint's case laid out to be examined), and the
+mapper's identity, expertise and good faith, displayed rather than certified. A map without
+sources is a genre, not a defect, and no part of the tool may treat it as a reconstruction
+with missing provenance.
+
+**Seen in.** The viewer's tab policy (3 Sep): a map citing no text keeps the Manuscript tab
+hidden — "there is nothing to obtain, and a control that can never work is clutter, not
+teaching". The export gate fixed on Betz's censorship map (4 Sep) — a survey-genre map the
+tool was made to serve properly. Not yet seen in any user-facing description, which is the
+tension the Second Thoughts episode exists to resolve.
+
+**Provenance.** **quotation** — origin: author (5 Sep, "Second thoughts on Ipsissima's values
+and purpose", in the private record): "much of the burden of trustworthiness can and should be
+carried by the expertise, credentials, and good faith of the reconstructor", with the
+science-journalism analogy — a fellow scientist can check the report; the average reader
+trusts the institutional facts about the newspaper.
+
+**Generality.** The whole project; sharpest in the App's handling of sourceless maps and in
+every self-description.
+
+**Weight.** Untested — no collision has been adjudicated under it. The first is queued:
+whether "accuracy vs charity — accuracy, always" holds in the survey genre
+(`SECOND-THOUGHTS.md`, tension T1).
 
 ---
 

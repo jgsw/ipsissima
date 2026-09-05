@@ -45,6 +45,12 @@ should exist (it should not, and the framework says why), which checkable slice 
 automated (a promises lint), and how the framework reaches contributors and the author by
 different routes, deliberately.
 
+- **The Second Thoughts episode — opened 5 Sep, awaiting the author's rulings.** The
+  framework's first live values-improvement: the author's restatement of the mission's scope
+  (three genres of map, not one), a proposed principle B7, and marked ⟨proposed⟩ passages in
+  `THEORY.md`. `SECOND-THOUGHTS.md` is the record, the queued tensions, and the checkpoint
+  questions.
+
 ## Whose values are these
 
 A question the checkpoints answered about the framework itself, in both directions:
