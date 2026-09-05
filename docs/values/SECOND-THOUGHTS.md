@@ -100,3 +100,28 @@ downstream work — self-description copy, the survey sample and its licence que
 checker's greeting, the generated-text label, and the editor programme (opening with the
 cross-pane navigation audit) — proceeds in the order the examination proposed, each wave on
 the author's word.
+
+## 5. The downstream record
+
+The author gave the word for the whole queue on 5 Sep, and the waves landed the same day:
+
+- **The checker greets the genre** — a sourceless map is asked a question that answers both
+  ways instead of being handed a `!` fault and told to invent a manuscript.
+- **The self-description** — site and README lead with the mission; "What it is for" tells all
+  three genres honestly; the cold-start panel and the File menu offer both skeletons (New
+  Reconstruction, New Debate Map).
+- **The samples lint** learned the survey genre ahead of the first survey sample.
+- **The generated-text label** — front-matter `text-provenance: generated`, shown as a chip
+  beside the title; distinct from `reconstruction: generated:`, and the conventions draw the
+  line. The checks say the map is faithful to the text, never that the text is true.
+- **The navigation audit** (`docs/NAVIGATION.md`) — the two-promises doctrine stated, three
+  drifts corrected: the sourceless map's error, the selection that summoned the Manuscript,
+  the disabled menu item that said nothing.
+- **The editor's quick wins** (the T2 ruling's warrant) — title completion on `[` and `<`,
+  safe auto-closing, Enter holding the writer's level.
+
+Still open, and why: the **survey sample** awaits Gregor Betz's answer on the licence of the
+Guide's example maps (the letter is drafted for the author to send; the machinery is ready);
+**friendlier parse-error wording** is unbuilt; **selection-to-claim** waits for its
+measurement, per the method; the **guided build-from-a-text mode** stays at design-note
+stage.
