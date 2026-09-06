@@ -867,13 +867,22 @@ def interpretive_load(doc):
 
     out = []
     for c in apex:
-        # THE CONTENTION'S OWN FIDELITY IS REPORTED SEPARATELY, and it is not folded into the
-        # load. `load` answers "how much of the argument REACHING this is mine"; whether the
-        # contention itself is mine is a different and larger fact. Carroll states no conclusion
-        # anywhere, so the contention of any map of him is an imputation -- and with only the
-        # load reported that map read 0, the cleanest possible score, while resting on a claim
-        # its author never made.
+        # AN IMPUTED CONTENTION COUNTS IN ITS OWN LOAD (ruled by James, 6 Sep 2026). This used
+        # to be reported separately and not folded in, on the ground that `load` answers "how
+        # much of the argument REACHING this is mine" and the contention itself is a different
+        # fact. Two dramatised texts showed what that reads like in practice: Carroll and the
+        # Swift satire both printed a banner saying the conclusion is the reconstructor's,
+        # directly above a route scoring 0 "on reported material" -- where the reported
+        # material is precisely what the imputation reinterprets (the Tortoise's own
+        # exchanges, the projector's own asides). Every route to a conclusion the author never
+        # stated ends at the reconstructor, so the terminus counts, and the floor for an
+        # imputed contention is 1. Scoped to `imputation` alone: an interpretation-marked
+        # contention is a reading OF something stated, and premise-imputations sit on routes,
+        # not at their end, so neither is touched. Measured blast radius at the ruling: the
+        # Carroll and Swift maps; every other map in both corpora has the author's own
+        # contentions at the apex.
         own_fid = fid.get(c)
+        terminus = own.get(c, 0) if own_fid == "imputation" else 0
         routes = [(cost(k), k) for k in kids.get(c, [])]
         routes = [(r, k) for r, k in routes if r is not None]
         if not routes:
@@ -884,7 +893,7 @@ def interpretive_load(doc):
         while node is not None:
             path.append(node)
             node = (memo.get(node) or (0, None))[1]
-        out.append(dict(contention=c, load=best, path=path, fidelity=own_fid))
+        out.append(dict(contention=c, load=best + terminus, path=path, fidelity=own_fid))
 
     # Departures that nothing supports AND that hold something up: premises supplied by the
     # reconstructor and argued for nowhere. These are the joints the reading hangs from.
