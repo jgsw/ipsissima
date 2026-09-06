@@ -76,6 +76,13 @@ THE ORDER OF WORK
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
 
+LEAVE THE FOLDER AS YOU WOULD HAND IT OVER. The deliverable is the .argdown and its source/
+folder, nothing else. If you wrote a scratch map to try the checker's conventions — a
+probe.argdown, a test file — delete it before you report the job done: it sits beside the real
+map wearing the same extension, and the user or the next session has to open it to learn it
+means nothing. You should rarely need one: everything a probe would discover is stated in the
+reference documents, and the checker's own report names each fault it finds.
+
 A MAP WITH NO SOURCE TEXT is a genre, not a mistake. A debate map surveys a pattern of public
 argument — "the arguments for and against X" — rather than reading one document, so there is
 nothing to extract: skip `plan_job` and `extract_text`, write the map, and still run

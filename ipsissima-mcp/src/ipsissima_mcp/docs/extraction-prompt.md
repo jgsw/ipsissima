@@ -291,6 +291,9 @@ of an argument that is not there is worse than an honest one full of gaps.
 4. Objections of the right kind, attributed to whoever made them.
 5. The author's hedges and scope intact. *Most* is not *all*.
 6. Nothing invented. If the source raises a point and drops it, the dropping is recorded.
+7. **Nothing beside it that is not part of it.** If you wrote a scratch map to try the checker's
+   conventions, delete it before you finish: the folder handed over holds the `.argdown` and
+   `source/`, and a leftover probe wears the same extension as the real map.
 
 ## What makes a reconstruction bad
 
