@@ -604,7 +604,15 @@ def quotation_context_report(prov, doc, source_root, quotes):
         if c["dropped"]:
             bits.append(f'a leading "{c["dropped"]}" sits just outside the quotation')
         if c["continues"]:
-            bits.append(f'the sentence continues against it: "{c["continues"][:90]}"')
+            # THE WHOLE REMAINDER, NOT THE NEXT CLAUSE. This showed 90 characters, and a run
+            # that widened its span to cover them was met next round by the clause the
+            # truncation had hidden -- one clause per checker round, three rounds for one
+            # claim. The extractor returns the rest of the sentence entire; show enough of it
+            # to fix the claim in one pass, and say when there is still more.
+            cont = c["continues"]
+            more = (f" [and {len(cont) - 200} more chars to the sentence's end]"
+                    if len(cont) > 200 else "")
+            bits.append(f'the sentence continues against it: "{cont[:200]}"{more}')
         if c["gap"]:
             bits.append(f"the elision bridges {c['gap']} characters of source")
         if show_absent:
@@ -614,15 +622,19 @@ def quotation_context_report(prov, doc, source_root, quotes):
             continue
         finding("quotation-context", "!", "; ".join(bits), title=c["title"],
                 sentence=c["sentence"][:200],
-                fix=("widen the quotation to take in what it was cut away from, or mark the "
-                     "claim `paraphrase` and say in a `note:` what was left out"))
+                fix=("widen the quotation to the END of its sentence in one step -- the whole "
+                     "continuation is shown, and widening clause by clause costs a checker "
+                     "round per clause -- or mark the claim `paraphrase` and say in a `note:` "
+                     "what was left out"))
         print(f"      ! [{c['title']}]")
         if c["dropped"]:
             print(f"           a leading \u201c{c['dropped']}\u201d sits just OUTSIDE the "
                   f"quotation")
         if c["continues"]:
             print(f"           the sentence continues against it: "
-                  f"\u201c{c['continues'][:78]}\u201d")
+                  f"\u201c{c['continues'][:160]}\u201d"
+                  + (f" [+{len(c['continues']) - 160} chars]"
+                     if len(c["continues"]) > 160 else ""))
         if c["gap"]:
             print(f"           the elision bridges {c['gap']} characters of source")
         if show_absent:

@@ -274,10 +274,10 @@ FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `so
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.
 `quotation` means the ENTIRE claim text is the source's words: a claim that wraps a
 verbatim span in framing of your own ("The proposer says ...") is `compression`, however
-exact the span -- this is the marker most often got wrong, always in that direction. But
-a trailing full stop, a #tag and the {braces} are NOT framing: a claim that is nothing
-but the span is a `quotation`, and punctuation, case and quote marks are normalised
-before checking.
+exact the span. A trailing full stop, a #tag and the {braces} are NOT framing: a claim
+that is nothing but the span is a `quotation`, and punctuation, case and quote marks are
+normalised before checking. Do not agonise over this marker in either direction -- it is
+the one level with a fact of the matter, so the checker computes it and names every miss.
 Every interpretation and imputation carries `warrant:` -- one line saying why the
 departure is allowed (enthymeme, hyperbole, sloppy-phrasing, secret-sign, other-texts,
 coherence, convention; any short reason is accepted). WHOSE view a claim is, is a TAG,
