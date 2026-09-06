@@ -9,9 +9,11 @@ claim, and the open question of how solid it is. Nothing in the identity may col
 fidelity; solidity means closeness to the words, everywhere, always.
 
 The strapline is **"The very words, and how far a reading stands from them."** The descriptive
-line — "Read an argument reconstruction beside the text itself" — is not a rival and
-stays as the subtitle everywhere. The history behind the name is in the About window, under
-*The name*.
+line — "Making complex reasoning intelligible through maps you can check at every step" — is
+not a rival and stays as the subtitle everywhere. (It replaced "Read an argument reconstruction
+beside the text itself" at the Second Thoughts checkpoint, 5 Sep 2026: the old line describes
+one genre of map, so it no longer stands for the whole.) The history behind the name is in the
+About window, under *The name*.
 
 ## Files
 

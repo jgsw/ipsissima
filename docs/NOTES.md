@@ -42,10 +42,12 @@ that way: the history is a chorus, and no single tradition is the frame.
 
 **The strapline is "The very words, and how far a reading stands from them."** It translates the
 name and states the product in the copy's own recurring measure ("how far it stands from its
-source"). The descriptive line — "Read an argument reconstruction beside the text itself" — is
-not a rival; it stays as the subtitle everywhere. (Reworded 28 Aug 2026 from "…the text it is a
-reading of": the relative clause made a first-time visitor parse, and *itself* ends the line on
-the name's own root.)
+source"). The descriptive line — "Making complex reasoning intelligible through maps you can
+check at every step" — is not a rival; it stays as the subtitle everywhere. (This is the mission
+line in the author's settled words from the Second Thoughts checkpoint, 5 Sep 2026. It replaced
+"Read an argument reconstruction beside the text itself" — itself reworded 28 Aug 2026 from
+"…the text it is a reading of" — because the old line describes one genre of map, so it no
+longer stands for the whole.)
 
 **Fidelity is pattern; relation is colour.** The mark is one claim box whose border enters solid
 (quotation) and leaves as dash-dot (imputation), quotation marks seated inside — the map's own
