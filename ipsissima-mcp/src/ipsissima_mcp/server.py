@@ -226,6 +226,65 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
     return plan
 
 
+#: The conventions a reconstruction is checked against, compressed to ride in a tool result.
+#:
+#: WHY THIS EXISTS, AND WHY IT RIDES ON extract_text. The method lives in the
+#: `reconstruct_argument` prompt and the reference resources, and MCP clients support prompts
+#: and resources unevenly: tools are the one universal primitive. A session that could not
+#: fetch the prompt used to discover these conventions by experiment -- writing a probe
+#: .argdown of guessed field names and reading what check_reconstruction said about it, twice
+#: leaving the probe beside the finished map. extract_text is step 2 of the order of work and
+#: always runs immediately before the reconstruction, so its reply is the one place the
+#: rulebook reaches every client. For a client that can read the prompt this is a moment's
+#: redundancy; for the others it is the difference between knowing the conventions and
+#: guessing them.
+CONVENTIONS_DIGEST = """\
+The map the checker can verify uses these conventions. The `reconstruct_argument` prompt and
+the server's resources carry the full method -- prefer them when your client can fetch them;
+this digest is for clients that cannot.
+
+FRONT MATTER, fenced by === lines:
+    ===
+    title: Author YEAR -- short title
+    reconstruction:
+        generated: true      # a model wrote the map; the checker may then correct markers
+        aim: fit             # fit | appropriation
+        unit: meaning        # meaning | commitment
+        mode: coherence      # coherence | truth | soundness | agreement | interest
+        strength: ordinary   # minimal | ordinary | strong
+    defaults:
+        chapter: "source/<file>.md"   # declared once here, not repeated on every claim
+    ===
+
+A CLAIM, and the only metadata keys anything reads:
+    [Title in prose]: Claim text, quoting the source's exact words "in double quotation
+    marks" wherever the words allow. #tag {fidelity: "compression", note: "..."}
+The keys are: chapter, source, section, pinpoint, note, fidelity, warrant, reviewed --
+plus uses and formalization on premise-conclusion lines. There is NO other quotation
+field: quoted spans of 10+ characters inside the claim's own text, and in `source:`, are
+verified character-by-character against the chapter file. Never correct the source inside
+quotation marks, even where it is wrong.
+
+FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `source:`
+field): quotation | paraphrase | compression (the default) | interpretation | imputation.
+Every interpretation and imputation carries `warrant:` -- one line saying why the
+departure is allowed (enthymeme, hyperbole, sloppy-phrasing, secret-sign, other-texts,
+coherence, convention; any short reason is accepted). WHOSE view a claim is, is a TAG,
+not a fidelity level: #reported (set out, not held), #conceded, #contested, #authority.
+
+RELATIONS: `<+` support, `<-` attack, `<_` undercut -- the child acts on the parent;
+`+>`, `->`, `_>` reverse it. An objection that grants the premises and denies that they
+license the conclusion is an undercut, and an undercut targets an argument, not a claim.
+A numbered argument is `<Title>: text`, premises (1)..(n), an inference line `----`, then
+the conclusion; with two or more steps every inference line declares `-- {uses: [..]} --`.
+An <Argument> takes a fidelity marker like any other node.
+
+Then run check_reconstruction, fix exactly what it names, and stop only when `ok` AND
+`verified` are BOTH true. Hand over a clean folder -- the .argdown and source/, with no
+probe or scratch files left beside them.
+"""
+
+
 @server.tool(
     structured_output=True,
     title="Extract the text",
@@ -326,6 +385,7 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         ok=True, dry_run=dry_run, grouping=grouping, out=str(out), written=written,
         sources=[_reply(r) for r in results],
         failures=failures, unreadable=unreadable, skipped=skipped,
+        conventions=CONVENTIONS_DIGEST,
         next=("nothing written (dry run)" if dry_run else
               "the text is on disk at `written`; `head` is its first few lines and nothing more. "
               "OPEN THOSE FILES and reconstruct from them. If the paths do not resolve for you, "
@@ -333,7 +393,9 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
               "folder to be shared. Do NOT reconstruct from `head`, and do NOT fall back to "
               "reading the original document yourself -- a map built that way cites no text and "
               "check_reconstruction cannot verify one word of it. Then reconstruct with the "
-              "`reconstruct_argument` prompt and call check_reconstruction until it reports ok"))
+              "`reconstruct_argument` prompt and call check_reconstruction until it reports ok. "
+              "If your client cannot fetch that prompt, `conventions` above is the rulebook the "
+              "checker holds the map to: follow it rather than guessing or probing"))
 
 
 @server.tool(

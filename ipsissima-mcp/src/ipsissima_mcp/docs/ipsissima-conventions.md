@@ -59,6 +59,10 @@ The map draws it as the border of the box, so it is visible without opening anyt
 > **`fidelity` describes the CLAIM TEXT, not the `source:` field.** A quotation sitting in
 > `source:` does not make the claim a `quotation`. If the claim text is your summary it is a
 > `paraphrase`, however exact the supporting quotation is.
+>
+> **And it describes the words, not the voice.** Whose *view* a claim is — set out to be
+> attacked, conceded, a critic's own — is a tag (§5), not a fidelity level: `reported` gets
+> guessed as one, and no such level exists.
 
 **You do not have to get this one right.** `quotation` is the only level with a fact of the
 matter, so the checker computes it rather than believing you: it takes the claim's own text, looks

@@ -47,6 +47,7 @@ Usage:
 import argparse
 import contextlib
 import copy
+import difflib
 import io
 import json
 import os
@@ -469,6 +470,88 @@ def coverage_report(cli, path, source_root=None):
                 print(f"           looked in {os.path.join(root, ch)}")
         else:
             print(f"\n   CITED FILES: all {len(cited)} exist.")
+
+    # ---- and the KEYS have to be ones something reads --------------------- #
+    # THE ONE QUESTION THIS REPORT WOULD NOT ANSWER. Values were always checked -- a fidelity
+    # outside the vocabulary is named with the legal list, a reading-policy key outside it
+    # likewise -- but a data KEY the project never defined was carried by the parser and read
+    # by nothing, silently. Measured cost, twice over: sessions that cannot fetch the
+    # `reconstruct_argument` prompt discovered the field names by EXPERIMENT, writing a probe
+    # .argdown of guesses (`verbatim:`, `quotes:`, `page:`) and reading what this report said
+    # about it -- and leaving the probe beside the finished map. And a misnamed key on a real
+    # map is worse than any probe: `page:` for `pinpoint:` loses every pinpoint in the file
+    # with no word anywhere. A `?`, not a fault: Argdown permits arbitrary YAML and a
+    # deliberate private key is legitimate -- the line exists so that carrying one is a
+    # decision rather than an accident.
+    unknown_data_keys(doc)
+
+
+#: Every key that something -- this checker, or the app's views -- actually reads off a node.
+#: PROVENANCE_FIELDS is what the analysis here merges; `pinpoint` and `reviewed` are drawn in
+#: the app; `uses`, `formalization` and `formalized` ride on premise-conclusion lines;
+#: `isGroup` on headings.
+EXTRA_DATA_KEYS = ("pinpoint", "reviewed", "uses", "formalization", "formalized", "isGroup")
+
+#: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
+#: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
+#: typos; these are the semantic misses it cannot.
+DATA_KEY_ALIASES = {
+    "quotation": "source", "quote": "source", "quotes": "source", "verbatim": "source",
+    "text": "source",
+    "page": "pinpoint", "pages": "pinpoint",
+    "file": "chapter", "path": "chapter",
+    "warrants": "warrant", "notes": "note",
+}
+
+
+def unknown_data_keys(doc):
+    """Report every metadata key on a claim, argument or pcs line that nothing reads."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as prov
+    except ImportError:
+        return
+    known = set(prov.PROVENANCE_FIELDS) | set(EXTRA_DATA_KEYS)
+    seen = {}
+
+    # A SET OF TITLES, NOT A LIST OF SIGHTINGS: the export repeats a definition's data on the
+    # statement's own record as well as its member, and two sightings of one key on one node
+    # would report as two nodes.
+    def note_keys(data, where):
+        for k in (data or {}):
+            if k not in known:
+                seen.setdefault(str(k), set()).add(str(where))
+
+    for title, st in (doc.get("statements") or {}).items():
+        for m in (st.get("members") or []) + [st]:
+            note_keys(m.get("data"), title)
+    for title, arg in (doc.get("arguments") or {}).items():
+        for m in (arg.get("members") or []) + [arg]:
+            note_keys(m.get("data"), title)
+        for entry in arg.get("pcs") or []:
+            note_keys(entry.get("data"), entry.get("title") or title)
+            note_keys((entry.get("inference") or {}).get("data"), title)
+    if not seen:
+        return
+
+    known_list = ", ".join(sorted(known))
+    print(f"\n   UNKNOWN FIELDS: {len(seen)} key(s) that nothing reads")
+    for k, titles in sorted(seen.items()):
+        hint = DATA_KEY_ALIASES.get(k) \
+            or next(iter(difflib.get_close_matches(k, known, 1, 0.75)), None)
+        fix = (f"did you mean `{hint}:`?" if hint
+               else f"the fields read are: {known_list}") \
+            + " A quotation in an unknown key is never verified and a pinpoint in one is " \
+              "never shown; if the key is deliberate, carry on -- this is a note, not a fault"
+        finding("unknown-field", "?",
+                f"`{k}:` on {len(titles)} node(s) is not a field the checker or the app "
+                f"reads -- the parser carries it and everything else ignores it",
+                key=k, titles=sorted(titles)[:8], fix=fix)
+        print(f"      ? `{k}:` on {len(titles)} node(s) -- read by nothing"
+              + (f". Did you mean `{hint}:`?" if hint else ""))
+        for t in sorted(titles)[:4]:
+            print(f"           {t[:66]}")
+    print(f"        the fields read: {known_list}")
 
 
 def quotation_context_report(prov, doc, source_root, quotes):
