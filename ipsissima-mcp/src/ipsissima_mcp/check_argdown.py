@@ -1532,6 +1532,30 @@ def provenance_report(cli, path, source_root, fix=None):
     # confuses more than it informs. So the default follows the file's own declaration.
     policy = (prov.reconstruction_policy(path)[0] or {})
     generated = str(policy.get("generated", "")).lower() in ("true", "yes", "1")
+
+    # ---- `reviewed` on a file nobody has reviewed ------------------------- #
+    # THE SAME RULE AS `formalized:`. `reviewed` records a PERSON's pass over the map, and a
+    # generated file arrived stamped with the day it was generated -- the conventions' own
+    # example block showed the field and the model copied the pattern, which is how a stamp
+    # vouching for a pass nobody made gets written by instruction-following alone. So it is
+    # checked: the two declarations contradict each other, and the reviewer resolves it by
+    # setting `reviewed` and removing `generated: true` in the same pass.
+    if generated:
+        fm_here = prov.read_frontmatter(path)
+        stamped = bool((fm_here.get("defaults") or {}).get("reviewed")) or any(
+            (m.get("data") or {}).get("reviewed") for _, m in prov.iter_members(doc))
+        if stamped:
+            finding("reviewed-unreviewed", "?",
+                    "the file declares `generated: true` and carries `reviewed:` -- but "
+                    "`reviewed` records a person's pass over the map, and `generated` says "
+                    "nobody has made one. The stamp vouches for a review that did not happen",
+                    fix="remove `reviewed:` from a generated map; the reviewer sets it, "
+                        "removing `generated: true` in the same pass")
+            print("\n   REVIEWED, ON A FILE NOBODY HAS REVIEWED:")
+            print("      ? `generated: true` and `reviewed:` together -- the stamp vouches for")
+            print("        a person's pass that `generated` says nobody has made. The reviewer")
+            print("        sets `reviewed` and removes `generated: true` in the same pass.")
+
     if fix is None:
         fix = generated
     if fix and (over or under):

@@ -263,7 +263,9 @@ A CLAIM, and the only metadata keys anything reads:
     [Title in prose]: Claim text, quoting the source's exact words "in double quotation
     marks" wherever the words allow. #tag {fidelity: "compression", note: "..."}
 The keys are: chapter, source, section, pinpoint, note, fidelity, warrant, reviewed --
-plus uses and formalization on premise-conclusion lines. There is NO other quotation
+plus uses and formalization on premise-conclusion lines. `reviewed` records a PERSON's
+pass over the map: never set it on a map you generated; the reviewer sets it, removing
+`generated: true` at the same time. There is NO other quotation
 field: quoted spans of 10+ characters inside the claim's own text, and in `source:`, are
 verified character-by-character against the chapter file. Never correct the source inside
 quotation marks, even where it is wrong.
@@ -272,7 +274,10 @@ FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `so
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.
 `quotation` means the ENTIRE claim text is the source's words: a claim that wraps a
 verbatim span in framing of your own ("The proposer says ...") is `compression`, however
-exact the span -- this is the marker most often got wrong, always in that direction.
+exact the span -- this is the marker most often got wrong, always in that direction. But
+a trailing full stop, a #tag and the {braces} are NOT framing: a claim that is nothing
+but the span is a `quotation`, and punctuation, case and quote marks are normalised
+before checking.
 Every interpretation and imputation carries `warrant:` -- one line saying why the
 departure is allowed (enthymeme, hyperbole, sloppy-phrasing, secret-sign, other-texts,
 coherence, convention; any short reason is accepted). WHOSE view a claim is, is a TAG,

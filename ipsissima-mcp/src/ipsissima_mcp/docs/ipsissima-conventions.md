@@ -28,7 +28,7 @@ from themselves.
 | `section` | only when a claim has *no* quotation and the source prints a heading to name. A verified quotation has already pinned the line |
 | `pinpoint` | page or section, for a human reader |
 | `note` | prose: why this reading, what was compressed, what was left out |
-| `reviewed` | date of the pass. Front-matter `defaults:` |
+| `reviewed` | date of a **person's** pass over the map. Front-matter `defaults:`. A generated map never sets it — the reviewer does, removing `generated: true` at the same time |
 
 **Quote exactly what the converted source says, including its errors.** Converted text carries OCR
 damage — `on its hack` for "back", `A and B and G` for "C". Quotations are checked character by
@@ -147,7 +147,6 @@ reconstruction:
     strength: ordinary
 defaults:
     chapter: "source/paper.md"
-    reviewed: "2026-08-27"
 ===
 
 [A claim]: Statements follow, after a blank line.
