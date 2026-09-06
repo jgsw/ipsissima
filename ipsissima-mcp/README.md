@@ -266,8 +266,8 @@ a client that finds no tools will usually say nothing about why. This asks it di
 EOF
 ```
 
-One line of JSON comes back naming the server and its version. **A working install answers 10
-tools (9 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
+One line of JSON comes back naming the server and its version. **A working install answers 11
+tools (10 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
 is lower than that, the client is not the problem. (That sentence is held against the live
 server by the test suite, so it cannot quietly drift the way it did twice: it said 9 for five
 days after `check_for_updates` made it 10, and the corrected 10 then promised the Zotero tool

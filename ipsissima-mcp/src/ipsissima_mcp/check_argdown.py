@@ -1557,10 +1557,22 @@ def provenance_report(cli, path, source_root, fix=None):
         stamped = bool((fm_here.get("defaults") or {}).get("reviewed")) or any(
             (m.get("data") or {}).get("reviewed") for _, m in prov.iter_members(doc))
         if stamped:
+            # WITH ITS LINE: a fault with no location cannot be acted on, and the contract
+            # test holds every finding to that.
+            lineno = None
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    for i, ln in enumerate(fh, 1):
+                        if "reviewed" in ln and ":" in ln.split("reviewed", 1)[1][:2]:
+                            lineno = i
+                            break
+            except OSError:
+                pass
             finding("reviewed-unreviewed", "?",
                     "the file declares `generated: true` and carries `reviewed:` -- but "
                     "`reviewed` records a person's pass over the map, and `generated` says "
                     "nobody has made one. The stamp vouches for a review that did not happen",
+                    line=lineno,
                     fix="remove `reviewed:` from a generated map; the reviewer sets it, "
                         "removing `generated: true` in the same pass")
             print("\n   REVIEWED, ON A FILE NOBODY HAS REVIEWED:")
