@@ -64,7 +64,9 @@ THE ORDER OF WORK
      THE USER and do not guess: reconstructing the wrong text, or making one map where six were
      wanted, costs the user real money.
   2. `extract_text` — writes the structured Markdown a reconstruction can point at.
-  3. Reconstruct. Use the `reconstruct_argument` prompt. This is your judgement, not a tool.
+  3. Reconstruct. Use the `reconstruct_argument` prompt; if your client cannot fetch prompts,
+     the `reconstruction_method` tool serves the same instructions -- call it before writing
+     any Argdown. The reconstruction itself is your judgement, not a tool.
   4. `check_reconstruction` — repeatedly, until it reports ok. It returns faults with locations
      and fixes; apply the fixes, do not rewrite the map.
   5. Where the map names inference rules, `next` will say how many formalizations carry no
@@ -240,8 +242,9 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
 #: guessing them.
 CONVENTIONS_DIGEST = """\
 The map the checker can verify uses these conventions. The `reconstruct_argument` prompt and
-the server's resources carry the full method -- prefer them when your client can fetch them;
-this digest is for clients that cannot.
+the server's resources carry the full method -- prefer them when your client can fetch them,
+and when it cannot, the `reconstruction_method` tool serves the same documents as tool
+results. This digest is the short form.
 
 FRONT MATTER, fenced by === lines:
     ===
@@ -397,8 +400,59 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
               "reading the original document yourself -- a map built that way cites no text and "
               "check_reconstruction cannot verify one word of it. Then reconstruct with the "
               "`reconstruct_argument` prompt and call check_reconstruction until it reports ok. "
-              "If your client cannot fetch that prompt, `conventions` above is the rulebook the "
-              "checker holds the map to: follow it rather than guessing or probing"))
+              "If your client cannot fetch that prompt, call `reconstruction_method` -- it "
+              "serves the same instructions as a tool result. `conventions` above is the "
+              "compressed rulebook; follow it rather than guessing, and prefer the full method "
+              "when a document-sized read is affordable"))
+
+
+#: The method, model-fetchable. MCP's prompts are user-invoked and its resources are
+#: application-attached, and clients support both unevenly -- Cowork's remote-devices bridge,
+#: measured 6 Sep 2026, forwards tools alone, and even a client that surfaces prompts gives the
+#: MODEL no way to pull one mid-task. Tools are the one primitive every client hands the model,
+#: so the documents are served through one. This is a delivery route, not a workaround.
+METHOD_DOCS = {
+    "extraction-prompt": ("extraction-prompt.md",
+                          "the full reconstruction instructions -- read this one first"),
+    "syntax": ("argdown-cheatsheet.md",
+               "the whole Argdown language, checked against the parser"),
+    "method": ("reconstruction-cheatsheet.md",
+               "how to reconstruct: the conclusion first, the Assertibility Question, "
+               "linked vs convergent, undercuts, Stern on charity"),
+    "conventions": ("ipsissima-conventions.md",
+                    "what Ipsissima records on a claim: provenance, fidelity, warrants, "
+                    "tags, front matter"),
+}
+
+
+@server.tool(
+    structured_output=True,
+    title="The reconstruction method",
+    description=(
+        "Serve the reconstruction method as a tool result, for clients that cannot reach this "
+        "server's prompts and resources -- many expose tools alone, and none lets the model "
+        "pull a prompt mid-task. The `reconstruct_argument` prompt and the ipsissima:// "
+        "resources carry the same documents; use those when your client surfaces them. "
+        "Otherwise call this BEFORE writing any .argdown, starting with \"extraction-prompt\", "
+        "which names the other three and the order to read them: \"syntax\" (the Argdown "
+        "language -- do not write Argdown from memory), \"method\" (how to reconstruct), "
+        "\"conventions\" (what goes on a claim). The `conventions` digest in extract_text's "
+        "reply is the compressed form of these documents; this tool serves what it "
+        "compresses."),
+)
+def reconstruction_method(document: str = "extraction-prompt") -> dict[str, Any]:
+    """
+    Args:
+        document: which document — "extraction-prompt", "syntax", "method" or "conventions".
+    """
+    if document not in METHOD_DOCS:
+        return dict(ok=False, error=f"no document called {document!r}",
+                    documents={k: v[1] for k, v in METHOD_DOCS.items()})
+    fname, _ = METHOD_DOCS[document]
+    others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document)
+    return dict(ok=True, document=document, text=_doc(fname),
+                next=(f"read it before writing any node; {others} are served here too, and "
+                      "the extraction prompt says which to read and in what order"))
 
 
 @server.tool(

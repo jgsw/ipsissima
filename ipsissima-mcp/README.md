@@ -159,26 +159,30 @@ one. Elsewhere, install from source and configure the command yourself, as below
 by doing that; the bundle is a convenience, not a capability.
 
 **What genuinely varies is prompts and resources.** MCP has three kinds of thing, and clients
-support them unevenly: tools are universal, prompts and resources much less so. That matters more
-here than it would for most servers, because this one's *method* is not in its tools. The ten
-tools convert documents and check reconstructions; how to actually reconstruct an argument — the
-Assertibility Question, linked versus convergent support, what fidelity levels mean, what to do
-about what an author did not say — is served as a prompt (`reconstruct_argument`) and three
-reference documents served as resources. A client that offers only tools gives the model the
-machinery and none of the instructions, which is the exact situation the extraction prompt exists
-to prevent: there is very little Argdown in the world, and a model guessing at it confidently
-writes files that do not parse.
+support them unevenly: tools are universal, prompts and resources much less so. And the
+unevenness is not the whole problem. The protocol makes prompts *user*-invoked and resources
+*application*-attached, so even a client that surfaces both beautifully gives the **model** no
+way to pull them mid-task — and it is the model, halfway into "make me an argument map", that
+needs the method: the Assertibility Question, linked versus convergent support, what fidelity
+levels mean, what to do about what an author did not say. There is very little Argdown in the
+world, and a model guessing at it confidently writes files that do not parse.
 
-If your client cannot reach prompts and resources, hand the model the documents directly — they
-are in `src/ipsissima_mcp/docs/`, and `extraction-prompt.md` opens by naming the three it needs.
-That is a documented fallback, not a workaround.
+So the method is served on every channel, and the tool channel is the one that cannot go
+missing. The `reconstruct_argument` prompt and the `ipsissima://` resources carry it for
+clients that surface them. For everything else — measured on a hosted session reaching this
+server across a device bridge that forwarded tools alone — `extract_text` returns a compressed
+conventions digest with the extracted text, and the `reconstruction_method` tool serves the
+full documents as ordinary tool results, one call each. A model that can call tools has the
+whole method; no client configuration and no user instruction is required. (The documents also
+sit in `src/ipsissima_mcp/docs/` for anyone who wants to paste them by hand, but nothing now
+depends on that.)
 
 **A fourth thing can go missing, and it is the quietest of them.** An MCP server also ships
 *instructions* — prose the client is meant to put in front of the model beside the tool list.
 This server's says in its opening lines that "make an Argdown", "map the argument" and
 "reconstruct this paper" are one request, and then gives the order of work. A client that drops
-it leaves the model holding ten tool names with no reason to connect any of them to what was
-asked.
+it leaves the model holding a list of bare tool names with no reason to connect any of them to
+what was asked.
 
 Observed, in a hosted session reaching this server across a device bridge: the instructions of
 *every* connected server were dropped, the tools arrived as bare names in one alphabetised list
