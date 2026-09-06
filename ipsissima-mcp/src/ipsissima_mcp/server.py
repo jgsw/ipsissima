@@ -267,6 +267,9 @@ quotation marks, even where it is wrong.
 
 FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `source:`
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.
+`quotation` means the ENTIRE claim text is the source's words: a claim that wraps a
+verbatim span in framing of your own ("The proposer says ...") is `compression`, however
+exact the span -- this is the marker most often got wrong, always in that direction.
 Every interpretation and imputation carries `warrant:` -- one line saying why the
 departure is allowed (enthymeme, hyperbole, sloppy-phrasing, secret-sign, other-texts,
 coherence, convention; any short reason is accepted). WHOSE view a claim is, is a TAG,

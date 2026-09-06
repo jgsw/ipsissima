@@ -585,11 +585,21 @@ def quotation_context_report(prov, doc, source_root, quotes):
         return
     print("      Verbatim is not the same as faithful: what a span was cut away from cannot be")
     print("      checked by matching it. These are facts about the cut, not verdicts.")
+    absent_reported = set()
     for c in sorted(flagged, key=lambda c: c["title"]):
         # STERN'S CASES, IN THE MACHINE-READABLE FORM TOO. These are the findings this project
         # most wants a reader to act on -- a quotation can be verbatim and still misreport --
         # and reporting them only in the prose meant `--format json` came back `ok` on a map
         # carrying four of them.
+        #
+        # ABSENT TERMS ARE A FACT ABOUT THE CLAIM, NOT THE SPAN. The records here are one per
+        # quoted span, and this fault used to be restated on every span of its claim -- a
+        # two-span claim reported it twice, byte-identical, and a diagnostics bundle read the
+        # doubled findings as two faults. Once per claim; a later span of the same claim that
+        # has nothing else to say says nothing.
+        show_absent = bool(c["absent_terms"]) and c["title"] not in absent_reported
+        if c["absent_terms"]:
+            absent_reported.add(c["title"])
         bits = []
         if c["dropped"]:
             bits.append(f'a leading "{c["dropped"]}" sits just outside the quotation')
@@ -597,9 +607,11 @@ def quotation_context_report(prov, doc, source_root, quotes):
             bits.append(f'the sentence continues against it: "{c["continues"][:90]}"')
         if c["gap"]:
             bits.append(f"the elision bridges {c['gap']} characters of source")
-        if c["absent_terms"]:
+        if show_absent:
             bits.append("marked `quotation`, but these words of the claim are not in the cited "
                         "file: " + ", ".join(c["absent_terms"][:5]))
+        if not bits:
+            continue
         finding("quotation-context", "!", "; ".join(bits), title=c["title"],
                 sentence=c["sentence"][:200],
                 fix=("widen the quotation to take in what it was cut away from, or mark the "
@@ -613,7 +625,7 @@ def quotation_context_report(prov, doc, source_root, quotes):
                   f"\u201c{c['continues'][:78]}\u201d")
         if c["gap"]:
             print(f"           the elision bridges {c['gap']} characters of source")
-        if c["absent_terms"]:
+        if show_absent:
             n = len(c["absent_terms"])
             print(f"           marked `quotation`; {n} word{'' if n == 1 else 's'} of the claim "
                   f"{'is' if n == 1 else 'are'} not in the cited file: "
@@ -1042,6 +1054,82 @@ def validity_report(doc):
         print("      this decides -- see docs/VALIDITY-PLAN.md for what that fragment is.")
         for title, step, named, why in found["undecided"]:
             print(f"      ? <{title}> step {step} (`{named}`): {why}")
+
+
+#: A relation line that aims an undercut: `<_ [X]` / `<_ <X>` (the child undercuts the
+#: parent), `_> [X]` (the parent undercuts the child), and the bare `_ [X]` the house style
+#: bans anyway. Order matters in the alternation: `_>` before `_`.
+_UNDERCUT_ARROW = re.compile(r"^(\s*)(<_|_>|_)\s+(\[[^\]]*\]|<[^>]*>)")
+
+#: A line that can be the parent of an indented relation: a statement `[T]` or argument
+#: `<T>`, optionally behind a relation marker of its own, optionally a pcs line `(n) [T]`.
+_UNDERCUT_ANCHOR = re.compile(
+    r"^(\s*)(?:(?:<\+|<-|<_|\+>|->|_>|><|[+\-_])\s+)?(?:(\(\d+\))\s*)?(\[[^\]]*\]|<[^>]*>)")
+
+
+def statement_undercut_report(path):
+    """Report every undercut whose target is a statement, from the FILE, not the export.
+
+    An undercut denies an INFERENCE -- even granting the premises, they do not support that
+    conclusion -- so its target has to be something that infers. The cheatsheet says the
+    parser will let you undercut a statement and tells you not to; what it could not say is
+    what the parser then does, which is now measured: on the first digest-guided
+    reconstruction, `[reply] <_` under a plain statement came out of the JSON export
+    reattached to a DIFFERENT argument's inference (`toType: "inference"` on an argument
+    named nowhere in that relation), so the drawn map asserted an undercut its author never
+    wrote, and the export holds no trace of the original target. That is why this reads the
+    .argdown text: the JSON has already lost the truth. And it is why the severity is `!` --
+    not style advice but an arrow the map will draw somewhere else.
+
+    Skipped deliberately: `<_` under a pcs line `(n) [C]`, which Argdown defines as an
+    undercut of the step concluding there -- an inference exists and the arrow lands on it.
+    """
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return
+    hits = []
+    for i, line in enumerate(lines):
+        mo = _UNDERCUT_ARROW.match(line)
+        if not mo:
+            continue
+        indent = len(mo.group(1).expandtabs())
+        arrow, ref = mo.group(2), mo.group(3)
+        if arrow == "_>":
+            # The parent undercuts the node named HERE; a statement here is the fault.
+            if ref.startswith("["):
+                hits.append((i + 1, ref.strip("[]"), "_>"))
+            continue
+        # `<_` (or bare `_`): the child undercuts the nearest shallower anchor above.
+        for j in range(i - 1, -1, -1):
+            prev = lines[j]
+            if not prev.strip() or prev.lstrip().startswith("//"):
+                continue
+            if prev.startswith("#") or prev.startswith("==="):
+                break
+            am = _UNDERCUT_ANCHOR.match(prev)
+            if not am or len(am.group(1).expandtabs()) >= indent:
+                continue
+            if am.group(2) is None and am.group(3).startswith("["):
+                hits.append((i + 1, am.group(3).strip("[]"), arrow))
+            break
+    if not hits:
+        return
+    print(f"\n   UNDERCUT AIMED AT A STATEMENT ({len(hits)}):")
+    print("      An undercut denies an inference, and a statement has none. The parser does")
+    print("      not refuse this -- measured, it silently reattached the arrow to another")
+    print("      argument's inference, so the map draws an undercut nobody wrote.")
+    for lineno, target, arrow in hits[:8]:
+        finding("statement-undercut", "!",
+                f"line {lineno}: `{arrow}` aims an undercut at the statement [{target}] -- a "
+                f"statement has no inference to deny, and the parser reattaches such an arrow "
+                f"to an inference elsewhere in the file, so the map draws an undercut nobody "
+                f"wrote", line=lineno, target=target,
+                fix="aim the undercut at the argument whose inference it denies -- give the "
+                    "objection an <Argument> structure if it needs one -- or write `<-` if "
+                    "the statement itself is being denied")
+        print(f"      ! line {lineno}: `{arrow}` at statement [{target}]")
 
 
 def pcs_report(doc):
@@ -1542,8 +1630,14 @@ def provenance_report(cli, path, source_root, fix=None):
             print(f"      -> the text uses both conventions ({len(fwd)} anticipated, "
                   f"{len(back)} prepared).")
     if unplaced:
-        print(f"      ({len(unplaced)} claims could not be placed in the text: no chapter, "
-              f"or a section heading that does not match)")
+        n = len(unplaced)
+        # NAME THE USUAL REASON, AND GET THE GRAMMAR RIGHT. This read "1 claims could not be
+        # placed ... no chapter, or a section heading that does not match" about a claim that
+        # had the default chapter and no section: an interpretation whose words are simply not
+        # in the text, which is what unplaced normally means in a finished map.
+        print(f"      ({n} claim{'' if n == 1 else 's'} could not be placed in the text: "
+              f"no words of the claim found in the chapter -- normal for an interpretation "
+              f"or imputation -- or no chapter at all)")
 
     # ---- what earns its place ------------------------------------------- #
     contrib = prov.contribution(doc)
@@ -1967,6 +2061,9 @@ def _report(cli, path, a):
         # Same export, same question — what is this arrow actually claiming? — so it reads the
         # document already in hand rather than exporting it a second time.
         precondition_report(doc_for_pcs)
+    # The arrow the export cannot testify about: an undercut aimed at a statement is silently
+    # reattached by the parser, so this check reads the file itself and needs no export.
+    statement_undercut_report(path)
 
     # ---- 6. JSON cross-check --------------------------------------------- #
     with tempfile.TemporaryDirectory() as td:
