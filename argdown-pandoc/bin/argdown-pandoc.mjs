@@ -312,9 +312,37 @@ function runtime() {
       } catch (e) {}
     }
     el.__almBooted = true;
+    // A reveal deck SCALES its slide canvas to the window, and the map's type and control
+    // bar magnify with it — on a 27" monitor the bar came out at twice life size, as if
+    // the page were a phone. Counter-scale: lay the map out at the window's REAL
+    // resolution and shrink it back by reveal's factor, so the net scale is 1 — native-
+    // sized type and controls, and more map in the same slide. (height="screen" needs
+    // none of this: the lifted element sits outside the scaled canvas already.)
+    var target = el;
+    if (window.Reveal && Reveal.getScale && el.closest("section")) {
+      var inner = document.createElement("div");
+      var size = function(){
+        var sc = Reveal.getScale() || 1;
+        inner.style.width = Math.round(el.clientWidth * sc) + "px";
+        inner.style.height = Math.round(el.clientHeight * sc) + "px";
+        inner.style.transform = "scale(" + (1 / sc) + ")";
+        inner.style.transformOrigin = "0 0";
+      };
+      if (Math.abs((Reveal.getScale() || 1) - 1) > 0.02) {
+        size();
+        el.appendChild(inner);
+        target = inner;
+        if (Reveal.on) Reveal.on("resize", function(){
+          size();
+          // An empty patch re-renders; the second argument asks for a refit, so the
+          // camera follows the new box. (NB no backticks here: this lives in a template.)
+          try { m.setState({}, true); } catch (e) {}
+        });
+      }
+    }
     var m;
     opts.onExplode = function(node){ explodeOpen(graph, node, m); };
-    m = ArgdownLiveMap.createLiveMap(el, graph, opts);
+    m = ArgdownLiveMap.createLiveMap(target, graph, opts);
     // spine is not an option createLiveMap reads at construction; hand it in afterwards.
     if (opts.spine != null) { try { m.setState({ spine: opts.spine }); } catch (e) {} }
     return true;
