@@ -85,6 +85,7 @@ with a sentence saying so** instead of silently drawing nonsense. Coarser contro
 | `height="full"` | live | fill the window/slide below the map |
 | `height="screen"` | reveal.js | genuine full screen: the map overlays the whole window while its slide is current |
 | `src="file.argdown"` | all | render this file instead of the block body |
+| `format="svg"` | pptx | keep the vector SVG instead of the default PNG (PowerPoint-only decks) |
 | anything else | static | passed through to the Image element (`width`, …) |
 
 On reveal.js a map **fills the slide below it by default**; give an explicit `height=` to
@@ -126,10 +127,27 @@ In Zettlr's editor, a *bare* fence (` ```argdown-map `, no braces) displays with
 highlighting; the brace syntax needed for attributes does not. The file-embedding image
 syntax avoids the problem entirely — there is no pasted source to highlight.
 
-## PowerPoint
+## PowerPoint and Google Slides
 
-`pptx` gets the static SVG figure. PowerPoint cannot run HTML on a slide; if you want the
-live map in a talk, export the talk itself to reveal.js.
+Neither can run HTML on a slide — no embedded viewer is possible there. If you want the
+live map in a talk, export the talk itself to reveal.js; that is what it is for.
+
+`pptx` output gets a **high-resolution PNG** figure by default rather than SVG, because a
+.pptx is also what people feed Google Slides, and Slides rejects SVG (an "Unsupported image
+type" since 2021, on security grounds) — an SVG-bearing deck would import with its maps
+missing. Add `format="svg"` to a block to keep vector graphics for a deck that will only
+ever open in real PowerPoint (2016+).
+
+For Google Slides directly, render a PNG and Insert → Image:
+
+```bash
+argdown-map paper.argdown -o map.png --scale 3
+```
+
+At `--scale 3` the figure stays crisp when projected. (Vector-into-Slides is technically
+possible by laundering the SVG through WMF or LibreOffice into a pptx, but it is a fiddly
+third-party workflow; a 3x PNG is the dependable route.) A slide can also simply link out
+to a published HTML export, where the reader gets the live map.
 
 ## How it stays honest
 

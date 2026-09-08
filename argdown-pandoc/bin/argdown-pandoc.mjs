@@ -49,8 +49,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
-import { buildGraph, foldOptions, renderSvg, svgToPdf, closeBrowser, rendererScripts }
-  from "../lib/render.mjs";
+import { buildGraph, foldOptions, renderSvg, svgToPdf, svgToPng, closeBrowser,
+         rendererScripts } from "../lib/render.mjs";
 
 const FORMAT = process.argv[2] || "";
 const IS_HTML = /^(html|html4|html5|revealjs|s5|slidy|slideous|dzslides)$/.test(FORMAT);
@@ -394,11 +394,19 @@ async function staticBlock(graph, attrs, id) {
     const pdf = path.join(dir, stem + ".pdf");
     fs.writeFileSync(pdf, await svgToPdf(svg));
     file = pdf;
+  } else if (FORMAT === "pptx" && attrs.format !== "svg") {
+    // PowerPoint renders SVG, but a pptx is also what people feed Google Slides — which
+    // REJECTS SVG (since 2021, on security grounds) and would import the deck with the
+    // map missing. A 2x PNG survives both. format="svg" keeps vector for decks that will
+    // only ever open in real PowerPoint.
+    const png = path.join(dir, stem + ".png");
+    fs.writeFileSync(png, await svgToPng(svg, 2));
+    file = png;
   }
   const title = attrs.title || "Argdown argument map";
   const passthrough = Object.entries(attrs)
     .filter(([k]) => !["fold", "folded", "depth", "caption", "title",
-                       "controls", "height", "src", "claims"].includes(k));
+                       "controls", "height", "src", "claims", "format"].includes(k));
   const image = { t: "Image", c: [[id || "", [], passthrough],
                                   [{ t: "Str", c: title }], [file, title]] };
   if (attrs.caption) {
