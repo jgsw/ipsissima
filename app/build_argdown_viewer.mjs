@@ -182,6 +182,9 @@ window.__MARKDOWN__ = function (text) {
 
 function liveMapDeps() {
     return          wrap("argdown-live-map.js", readScript("argdown-live-map.js"), "LIVEMAP_DEPS") +
+         // The explode panel's engine, shared with the Pandoc export filter. Before the main
+         // script, which calls ArgdownStaircase from explDraw.
+         wrap("argdown-staircase.js", readScript("argdown-staircase.js"), "LIVEMAP_DEPS") +
          // The SAME module the Node build uses to place claims in the manuscript. It already
          // publishes itself as `window.ArgdownPositions`, so inlining it is all that is needed
          // and the standalone can do its own locating from dropped source files instead of
