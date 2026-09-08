@@ -1,0 +1,47 @@
+{
+  "name": "argdown-pandoc",
+  "version": "0.1.0",
+  "description": "Interactive Argdown argument maps in Pandoc exports — live pan/zoom/fold maps for HTML and reveal.js, print-faithful SVG/PDF figures for Word and LaTeX — rendered by the Ipsissima viewer.",
+  "type": "module",
+  "bin": {
+    "argdown-pandoc": "bin/argdown-pandoc.mjs",
+    "argdown-map": "bin/argdown-map.mjs"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "vendor",
+    "README.md"
+  ],
+  "scripts": {
+    "sync-vendor": "node sync-vendor.mjs",
+    "prepack": "node sync-vendor.mjs",
+    "test": "node test/smoke.mjs"
+  },
+  "dependencies": {
+    "@argdown/node": "^2.0.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jgsw/ipsissima.git",
+    "directory": "argdown-pandoc"
+  },
+  "homepage": "https://github.com/jgsw/ipsissima/tree/main/argdown-pandoc#readme",
+  "author": "James Wilson",
+  "license": "MIT",
+  "keywords": [
+    "argdown",
+    "pandoc",
+    "pandoc-filter",
+    "argument-map",
+    "argumentation",
+    "reveal.js",
+    "ipsissima"
+  ],
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
