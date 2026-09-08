@@ -267,8 +267,12 @@ plus uses and formalization on premise-conclusion lines. `reviewed` records a PE
 pass over the map: never set it on a map you generated; the reviewer sets it, removing
 `generated: true` at the same time. There is NO other quotation
 field: quoted spans of 10+ characters inside the claim's own text, and in `source:`, are
-verified character-by-character against the chapter file. Never correct the source inside
-quotation marks, even where it is wrong.
+verified character-by-character against the chapter file. HOUSE STYLE: quote in the
+claim's own text -- the map draws fidelity as the border of the box, and only words in
+the claim itself are ever shown, so a map whose spans all hide in `source:` shows the
+reader none of the author's words. `source:` is for pinning a claim whose own text has
+to be a summary. Never correct the source inside quotation marks, even where it is
+wrong.
 
 FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `source:`
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.

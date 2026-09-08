@@ -24,7 +24,7 @@ from themselves.
 | field | what it does |
 |---|---|
 | `chapter` | path to the source file. **Without it a claim cannot be placed in the text at all** — no Manuscript link, no exposition view. Declare it once in front-matter `defaults:` rather than on every claim |
-| `source` | the author's exact words, in quotation marks. **The most valuable field there is**: it is verified against the file character by character, and pins the claim to an exact line. Quote wherever you can |
+| `source` | the author's exact words, in quotation marks, **for pinning a claim whose own text has to be a summary** — as the example above shows. Verified character by character, exactly like a quoted span in the claim's own text. But the claim text is where quotation belongs (ruled 8 Sep 2026): the map draws fidelity as the border of the box, and only words in the claim itself are ever shown — a map whose every span hides in `source:` passes every check and shows the reader none of the author's words. Quote in the claim; reach for `source:` when the claim cannot carry the words |
 | `section` | only when a claim has *no* quotation and the source prints a heading to name. A verified quotation has already pinned the line |
 | `pinpoint` | page or section, for a human reader |
 | `note` | prose: why this reading, what was compressed, what was left out |

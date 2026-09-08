@@ -281,9 +281,12 @@ of an argument that is not there is worse than an honest one full of gaps.
    more than one thing, and where it does the map should say so — two theses drawn as two apex
    claims is a report of the paper, whereas forcing them into one is a claim the paper does not
    make. What does not belong at the apex is loose framing material that was never attached.
-2. Every claim placed in the text — a `chapter`, and a verified `source` quotation wherever the
-   words allow. *Placed*, not *annotated*: declare the `chapter` once in the front matter's
-   `defaults:` and override it only where a claim comes from a different file.
+2. Every claim placed in the text — a `chapter`, and the author's words quoted verbatim **in
+   the claim's own text** wherever they allow; `source:` pins a claim whose text has to be a
+   summary. Both are verified, but only the claim text is ever drawn, so a map whose spans all
+   hide in `source:` shows the reader none of the words. *Placed*, not *annotated*: declare the
+   `chapter` once in the front matter's `defaults:` and override it only where a claim comes
+   from a different file.
 3. Every claim marked for fidelity, and every departure carrying a `warrant`. **An
    `<Argument>` takes a marker like any other claim, and usually should** — assembling premises
    into a numbered structure is your work even where every step is the author's. The checker now

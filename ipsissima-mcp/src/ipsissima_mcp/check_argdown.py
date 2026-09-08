@@ -1294,6 +1294,25 @@ def fidelity_report(cli, path):
     print(f"\n   FIDELITY: {il['marked']}/{il['total']} nodes marked -- "
           + ", ".join(f"{v} {k}" for k, v in census.items()))
 
+    # ---- a map that never shows the author's words ------------------------ #
+    # RULED 8 Sep 2026: quotations live in the claim text. Both homes are verified, but only
+    # the claim text is drawn -- fidelity is the border of the box, and a `quotation` border
+    # can exist only where a claim's own words are the author's. The run that prompted the
+    # ruling parked all 31 of its verbatim spans in `source:` fields behind summaries and
+    # passed every check: a verified map of A Modest Proposal showing not one of Swift's
+    # sentences. A census line and not a finding, because the file is not wrong -- the reader
+    # is just never shown the words.
+    if not census.get("quotation"):
+        spans = sum(1 for _, m in prov.iter_members(doc)
+                    for field in ((m.get("text") or ""),
+                                  ((m.get("data") or {}).get("source") or ""))
+                    for _mo in prov.QUOTED.finditer(field))
+        if spans >= 5:
+            print(f"      {spans} quoted spans, and no node is a `quotation`: no claim's own")
+            print("      text is wholly the author's words, so the map draws no solid border")
+            print("      and shows the reader none of the text. House style quotes in the")
+            print("      claim itself; `source:` is for pinning a claim that must summarise.")
+
     # ---- nodes carrying no marker at all, which are nearly always arguments --- #
     # A CENSUS IS NOT A CHECK, and this one was only a census. On the rebuilt Tooming 18 of 128
     # nodes carried no fidelity marker and every one was an `<Argument>` -- the count was
