@@ -1,6 +1,6 @@
 {
   "name": "argdown-pandoc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Interactive Argdown argument maps in Pandoc exports — live pan/zoom/fold maps for HTML and reveal.js, print-faithful SVG/PDF figures for Word and LaTeX — rendered by the Ipsissima viewer.",
   "type": "module",
   "bin": {
