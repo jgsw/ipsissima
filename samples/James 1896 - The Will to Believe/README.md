@@ -30,8 +30,10 @@ measure would crown the coda while the famous thesis ranked as an intermediate.
 
 **This is the map the front matter's `contentions:` declaration was built for.** The
 declaration names the three theses; it is additive — the computed apex keeps its place beside
-them — and the map's depth ladder now opens on the thesis, with its six supporting arguments
-one step away. Most maps need no declaration, and the conventions say when this one kind does.
+them — and the map's depth ladder opens on the thesis, with its six supporting arguments one
+step away. The thesis claim is titled in prose, `[Passional nature must decide genuine
+options]`, so it announces itself on the map rather than hiding behind a label. Most maps need
+no declaration, and the conventions say when this one kind does.
 
 **The groups are the argument's forms, not the essay's sections.** The thesis is held up by six
 convergent arguments — suspension of belief is itself a passional decision; the evidentialist

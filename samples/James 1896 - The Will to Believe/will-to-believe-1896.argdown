@@ -9,7 +9,7 @@ reconstruction:
 defaults:
     chapter: "source/will-to-believe-essay.md"
 contentions:
-    - Thesis
+    - Passional nature must decide genuine options
     - The agnostic veto is irrational
     - Respect one another's mental freedom
 ===
@@ -23,7 +23,7 @@ contentions:
 
 # The contentions {isGroup: true}
 
-[Thesis]: "Our passional nature not only lawfully may, but must, decide an option between propositions, whenever it is a genuine option that cannot by its nature be decided on intellectual grounds" {fidelity: "quotation", pinpoint: "p. 11", note: "James's own statement of 'the thesis I defend', section IV. The thesis is restricted to genuine options: forced, living and momentous."}
+[Passional nature must decide genuine options]: "Our passional nature not only lawfully may, but must, decide an option between propositions, whenever it is a genuine option that cannot by its nature be decided on intellectual grounds" {fidelity: "quotation", pinpoint: "p. 11", note: "James's own statement of 'the thesis I defend', section IV. The thesis is restricted to genuine options: forced, living and momentous."}
     <+ <Suspension is itself a passional decision>
     <+ <The evidentialist rule is itself a passion>
     <+ <Believe truth and shun error are separable laws>

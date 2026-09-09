@@ -62,9 +62,10 @@ const SAMPLES = [
     dir: "James 1896 - The Will to Believe",
     file: "will-to-believe-1896.argdown",
     title: "James, The Will to Believe",
-    blurb: "A whole essay argued in series — thesis, application, closing corollary — with the " +
-           "front matter declaring the three theses, so the map opens on the claim James " +
-           "calls 'the thesis I defend' rather than on the coda that happens to come last." },
+    blurb: "The classic defence of the legitimacy of religious faith. Where a question is " +
+           "living, forced and momentous, and evidence cannot settle it, James argues that " +
+           "our passional nature not only may but must decide — against Clifford's rule that " +
+           "believing on insufficient evidence is always, everywhere wrong." },
   // SWIFT STAYS OFF THE SITE, DELIBERATELY (James Wilson's call, 10 Sep 2026). The sample is in
   // `samples/` — A Modest Proposal is the corpus's dramatised-text test case — but its surface
   // argument is dark enough to repel, or be read straight by, a first-time visitor who meets it

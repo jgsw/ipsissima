@@ -196,7 +196,7 @@ ranked an intermediate. Where that happens, declare the paper's stated theses:
 
 ```argdown
 contentions:
-  - Thesis
+  - Passional nature must decide genuine options
   - The agnostic veto is irrational
 ```
 
