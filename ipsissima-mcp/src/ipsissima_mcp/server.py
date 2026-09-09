@@ -382,9 +382,15 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         src_dir.mkdir(parents=True, exist_ok=True)
         for r in results:
             target = src_dir / r["name"]
-            target.write_text(ingest.header(r["src"], r["notes"]) + r["md"].rstrip() + "\n",
-                              encoding="utf-8")
+            hdr = ingest.header(r["src"], r["notes"])
+            target.write_text(hdr + r["md"].rstrip() + "\n", encoding="utf-8")
             written.append(str(target))
+            # Line numbers in the notes count the TEXT BODY; the written file opens with this
+            # header. Left unsaid, a note's "line 73" was found at line 87 and read as wrong.
+            if any(re.search(r"\bline\s+\d", n) for n in r["notes"]):
+                r["notes"].append(f"(line numbers above count the text body; the written file "
+                                  f"opens with a {hdr.count(chr(10))}-line header comment, so "
+                                  f"add {hdr.count(chr(10))} when opening it)")
         if len(results) > 1 and grouping == "one-map":
             proj = Path(out) / "argdown-project.yml"
             if not proj.exists():
@@ -667,8 +673,16 @@ def repair_source(path: str, repairs: list[dict[str, Any]], dry_run: bool = Fals
         return dict(ok=False, error=f"no such file: {p}")
     text = p.read_text(encoding="utf-8")
     applied, refused = [], []
+    known_keys = {"find", "replace", "why", "note"}
     for r in repairs:
         find, repl = r.get("find", ""), r.get("replace", "")
+        # `note` is accepted as a synonym for `why`, and any OTHER key is named rather than
+        # dropped -- a run passed `note:` believing it was stored, and silence about unknown
+        # keys is the same fault the checker's unknown-field finding exists to prevent.
+        r = dict(r)
+        if r.get("why") is None and r.get("note") is not None:
+            r["why"] = r["note"]
+        ignored = sorted(set(r) - known_keys)
         n = text.count(find)
         if not find:
             refused.append(dict(**r, why_refused="empty `find`"))
@@ -683,6 +697,7 @@ def repair_source(path: str, repairs: list[dict[str, Any]], dry_run: bool = Fals
             applied.append(dict(find=find[:80] + ("…" if len(find) > 80 else ""),
                                 replace=repl[:80] + ("…" if len(repl) > 80 else ""),
                                 why=r.get("why"),
+                                **({"ignored_keys": ignored} if ignored else {}),
                                 lines_before=find.count("\n") + 1,
                                 lines_after=repl.count("\n") + 1))
     if applied and not dry_run:

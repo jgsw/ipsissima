@@ -35,7 +35,11 @@ QUOTED = re.compile(r'[“”"«]([^“”"»]{%d,})[“”"»]'
                     % MIN_QUOTE)
 
 _SUBS = {
-    "‘": "'", "’": "'", "“": '"', "”": '"',
+    # SINGLE AND DOUBLE FOLD TOGETHER. Pandoc backslash-escapes the source's double quotes and
+    # a reconstruction writing an inner quotation as '...' then missed a verbatim sentence by
+    # one character class (measured on the Will to Believe: a 98% near-miss whose every word
+    # matched). Both sides pass through this table, so apostrophes stay consistent too.
+    "‘": '"', "’": '"', "“": '"', "”": '"', "'": '"',
     "«": '"', "»": '"', "–": "-", "—": "-",
     "…": "...", " ": " ",
 }
@@ -815,12 +819,12 @@ def interpretive_load(doc, declared=None):
 
     THE QUESTION. Fidelity records, node by node, how far each claim sits from the source's
     words. It does not say what that adds up to. The thing a reader of a reconstruction wants
-    to know is whether the argument reaching the thesis can be run on reported material at all,
+    to know is whether the argument reaching the thesis can be run on the author's material at all,
     or whether every route to it goes through claims the author never made. Stern's "third
     thing" -- neither the philosopher's words nor the interpreter's own view, but an unowned
     hybrid -- is exactly the second case, and this is what it looks like in a graph.
 
-    Zero means some route to this contention uses only reported material; it does not mean the
+    Zero means some route to this contention uses only the author's material; it does not mean the
     argument is good, and it does not mean the route is the interesting one. Above zero means
     EVERY route passes through the reconstructor, and the number is how many of their claims
     the cheapest route needs.

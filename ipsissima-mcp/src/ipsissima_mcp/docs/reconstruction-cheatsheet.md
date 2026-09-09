@@ -82,8 +82,13 @@ thing the paper demolishes — a census reporting the *target* as the contention
 the author's claims as mere objections. The paper's answer to its own question — *no analysis of
 this form is sufficient* — is a claim, the author usually states it (often as two or three
 closing sentences), and joining those into one contention that the failure arguments support is
-a report of the paper, not an addition to it. The attacked target then sits below, `#reported`,
-with the refutation both supporting the contention and attacking the target.
+a report of the paper, not an addition to it. **And draw the reported target as ATTACKING the
+contention** — `<- [Target]` beneath the failure claim — not the other way round. The wiring
+matters, and it was measured going wrong: an earlier form of this advice said the refutation
+should attack the target, a run followed it with `-> [Target]`, then `><`, and both times the
+census crowned the target — an attacked node with no outgoing edge still "supports nothing",
+which is what the computed apex is. The target attacking the contention is also the truer
+picture: the definition, were it right, is the standing reason against the failure claim.
 
 ### Step 2. Work backwards, and use the Assertibility Question
 

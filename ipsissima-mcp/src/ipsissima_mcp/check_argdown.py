@@ -1463,7 +1463,7 @@ def fidelity_report(cli, path):
     if not cont:
         return
     print("\n   INTERPRETIVE LOAD -- of the argument reaching each contention, how much is the")
-    print("      reconstructor's own. Zero means SOME route runs on reported material alone; it")
+    print("      reconstructor's own. Zero means SOME route runs on the author's material alone; it")
     print("      is not a score, and a reconstruction whose contribution IS a reading should")
     print("      read above zero everywhere.")
     for c in cont:
@@ -1475,7 +1475,7 @@ def fidelity_report(cli, path):
         if c["load"] is None:
             print(f"      {c['contention'][:30]:32} -   nothing supports it")
         elif c["load"] == 0:
-            print(f"      {c['contention'][:30]:32} 0   a route runs on reported material: "
+            print(f"      {c['contention'][:30]:32} 0   a route runs on the author's material: "
                   f"{' <- '.join(c['path'][:3])}")
         else:
             print(f"      {c['contention'][:30]:32} {c['load']}   EVERY route passes through the "
@@ -1748,9 +1748,14 @@ def provenance_report(cli, path, source_root, fix=None):
         # placed ... no chapter, or a section heading that does not match" about a claim that
         # had the default chapter and no section: an interpretation whose words are simply not
         # in the text, which is what unplaced normally means in a finished map.
-        print(f"      ({n} claim{'' if n == 1 else 's'} could not be placed in the text: "
-              f"no words of the claim found in the chapter -- normal for an interpretation "
-              f"or imputation -- or no chapter at all)")
+        # "COULD NOT BE PLACED" DISAGREED WITH "PLACED". TEXT POSITIONS counts a chapter-only
+        # claim as placed (it names a file), while this section cannot order it (no words of it
+        # are findable there) -- both true, and the two labels read as a contradiction until
+        # they say which fact each one counts.
+        print(f"      ({n} claim{'' if n == 1 else 's'} ha{'s' if n == 1 else 've'} no position "
+              f"within {'its' if n == 1 else 'their'} chapter -- no words of the claim found "
+              f"there, normal for an interpretation or imputation; TEXT POSITIONS counts "
+              f"{'it' if n == 1 else 'them'} as placed by chapter alone)")
 
     # ---- what earns its place ------------------------------------------- #
     declared_here, _ = prov.declared_contentions(prov.read_frontmatter(path), doc)

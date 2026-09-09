@@ -148,6 +148,32 @@ PAGE_EDGE_SUSPECT = re.compile(r"(?m)^\s*\d{1,4}\s+[A-Z]{2,}[A-Z .?']*\s+[a-z]")
 BYLINE = re.compile(r"(?m)^\s*By\s+[A-Z][-A-Z.'’ ]{4,}\s*$")
 
 
+#: A Project Gutenberg page anchor as pandoc renders it: `[{[]{#P27}27}]{.pagenum}` in the
+#: middle of a sentence, or the plainer `[27]{.pagenum}`. Left alone these cost twice --
+#: `pages: 0` on a 31-page essay, and a page break that splits an otherwise verifiable
+#: quotation -- so they are converted to the `<!-- p.N begins here -->` convention every other
+#: route uses, and lifted out of the running text.
+PAGENUM_SPAN = re.compile(r"\[(?:\{\[\]\{#[^}]*\})?(\d+)\}?\]\{\.pagenum\}")
+
+
+def convert_pagenum_spans(md):
+    """Gutenberg `.pagenum` spans -> page markers on their own lines. Returns (text, count)."""
+    out, converted = [], 0
+    for line in md.splitlines():
+        pages = PAGENUM_SPAN.findall(line)
+        if not pages:
+            out.append(line)
+            continue
+        stripped = re.sub(r"  +", " ", PAGENUM_SPAN.sub(" ", line)).strip()
+        for n in pages:
+            out.append(f"<!-- p.{n} begins here -->")
+            out.append("")
+            converted += 1
+        if stripped:
+            out.append(stripped)
+    return "\n".join(out), converted
+
+
 def page_edge_suspects(text):
     """Lines that look like a page header glued to body text. Returns [(line_no, line), ...]."""
     out = []
@@ -429,6 +455,10 @@ def ingest_one(path, allow_ocr=True):
     md, fixed = tidy_headings(md)
     if fixed:
         notes.append(f"{fixed} heading(s) unwrapped from emphasis")
+    md, pagenums = convert_pagenum_spans(md)
+    if pagenums:
+        notes.append(f"{pagenums} Gutenberg page anchor(s) converted to page markers and "
+                     f"lifted out of the running text")
     # BEFORE the stamps, because control characters are how a stamp escapes them: a NUL sitting
     # where the pattern expects a digit and the line survives, identity intact, while the count
     # below reports success on the lines that did match.

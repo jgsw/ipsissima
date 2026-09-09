@@ -102,9 +102,10 @@ The form is the map's skeleton. **Working section-by-section through the text in
 map that mirrors the table of contents and hides the argument.**
 
 **On a refutation, put the failure claim at the apex.** When the thesis is that a target fails,
-join the failure claims into a contention the counterexamples support — otherwise the attacked
-target is the only node supporting nothing, and the computed apex comes out as the very thing
-the paper demolishes.
+join the failure claims into a contention the counterexamples support, and draw the reported
+target as ATTACKING that contention (`<- [Target]` beneath it) — never the reverse, and not
+`><`: an attacked or contradicted node with no outgoing edge still "supports nothing", and the
+computed apex then comes out as the very thing the paper demolishes.
 
 Two qualifications. The form shapes the wiring and is **not recorded** — no field holds it and no
 check verifies it. And a text of any length uses several: name the top-level move once, then name
