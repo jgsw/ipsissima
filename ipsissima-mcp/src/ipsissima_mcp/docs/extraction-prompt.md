@@ -101,6 +101,11 @@ reductio, inference to the best explanation, dilemma, argument from analogy, con
 The form is the map's skeleton. **Working section-by-section through the text instead produces a
 map that mirrors the table of contents and hides the argument.**
 
+**On a refutation, put the failure claim at the apex.** When the thesis is that a target fails,
+join the failure claims into a contention the counterexamples support — otherwise the attacked
+target is the only node supporting nothing, and the computed apex comes out as the very thing
+the paper demolishes.
+
 Two qualifications. The form shapes the wiring and is **not recorded** — no field holds it and no
 check verifies it. And a text of any length uses several: name the top-level move once, then name
 a form for each `<Argument>` you build. A single label at the top describes none of the arguments

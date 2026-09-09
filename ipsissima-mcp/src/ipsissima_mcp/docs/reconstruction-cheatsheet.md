@@ -66,6 +66,16 @@ What is *not* a second conclusion: a restatement in different words (that is one
 Argdown's equivalence classes are what express it), or a claim that simply has nothing attached
 because its relations were never drawn.
 
+**When the thesis is that a target FAILS, join the failure claims into a contention at the
+apex.** A refutation's conclusion is easy to leave implicit: the counterexamples attack the
+definition, the definition supports nothing, and the map's computed apex comes out as the very
+thing the paper demolishes — a census reporting the *target* as the contention and every one of
+the author's claims as mere objections. The paper's answer to its own question — *no analysis of
+this form is sufficient* — is a claim, the author usually states it (often as two or three
+closing sentences), and joining those into one contention that the failure arguments support is
+a report of the paper, not an addition to it. The attacked target then sits below, `#reported`,
+with the refutation both supporting the contention and attacking the target.
+
 ### Step 2. Work backwards, and use the Assertibility Question
 
 For the conclusion, ask: **what immediate reasons does the text give for accepting this?** Then

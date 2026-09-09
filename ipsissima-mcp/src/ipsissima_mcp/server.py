@@ -271,8 +271,11 @@ verified character-by-character against the chapter file. HOUSE STYLE: quote in 
 claim's own text -- the map draws fidelity as the border of the box, and only words in
 the claim itself are ever shown, so a map whose spans all hide in `source:` shows the
 reader none of the author's words. `source:` is for pinning a claim whose own text has
-to be a summary. Never correct the source inside quotation marks, even where it is
-wrong.
+to be a summary. Whitespace is normalised, so a quotation may run across the converter's
+line and paragraph breaks -- quote the sentence as prose. Never correct the source inside
+quotation marks, even where it is wrong; where a span you need carries OCR damage, repair
+the SOURCE first (page_images to read the page, repair_source to fix it, documented) and
+then quote it clean -- quote damage only when the page image cannot settle it.
 
 FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `source:`
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.
@@ -353,12 +356,20 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
             failures.append(dict(path=p, refused=str(e)))
             continue
         trimmed, cut = ingest.extract_for_prompt(md)
+        pages = len(re.findall(r"<!-- .*?p\.\s*\d+ begins here -->", md))
+        # SHEET NUMBERS, NOT FOLIOS. A PDF's markers count its sheets from 1; the printed page a
+        # reader cites can start anywhere (a JSTOR cover makes sheet 2 into p. 121). The first
+        # run to hit this hand-derived every pinpoint from page images without being told to.
+        if pages and Path(p).suffix.lower() == ".pdf":
+            notes.append("the <!-- p.N --> markers number the PDF's sheets; the printed page a "
+                         "reader cites can differ (covers, front matter). Check one page "
+                         "before writing pinpoint: values")
         results.append(dict(
             src=p, name=ingest.slug(Path(p).stem) + ".md", md=md, notes=notes,
             words=len(md.split()), prompt_words=len(trimmed.split()),
             headings=len(re.findall(r"(?m)^#{1,6} ", md)),
             locatable_lines=sum(1 for l in md.splitlines() if len(l) >= 120),
-            pages=len(re.findall(r"<!-- .*?p\.\s*\d+ begins here -->", md)),
+            pages=pages,
             back_matter_cut=(cut[0] if cut else None)))
 
     written = []
@@ -512,8 +523,20 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
                             f"{soup} garbled passage(s) in {words} words; conversion will try "
                             f"OCR and keep whichever route scores better")
 
+    # ABSENCE IS NOT GARBLE, and the garble count cannot see it. A page-edge truncation loses
+    # characters cleanly -- three printed lines merged, middles missing, every surviving word a
+    # word -- and this tool reported `easy, 0 garbled` on exactly that file. The glued-header
+    # pattern is the visible symptom; the fix is the page-image route, and the note says so.
+    suspects = ingest.page_edge_suspects(layer)
+    if suspects:
+        note += (f"; BUT {len(suspects)} line(s) look like a page header glued to body text -- "
+                 f"possible page-edge truncation (characters missing, nothing garbled). After "
+                 f"extracting, render those page tops with page_images and repair_source what "
+                 f"is lost")
+
     out = dict(ok=True, path=str(p), pages=pages, words_in_text_layer=words,
                words_per_page=round(per_page, 1), garbled_passages=soup,
+               page_edge_suspects=len(suspects),
                difficulty=difficulty, note=note,
                metadata={k: v for k, v in meta.items() if k in ("title", "author", "creator")})
 
@@ -574,7 +597,9 @@ def _open_access_routes(doi):
         "only — a scan whose text layer and OCR both fail.\n\n"
         "CROPS, NOT WHOLE PAGES, wherever you can manage it: proofreading five whole pages to "
         "check three damaged lines was measured at about ten thousand tokens and found nothing "
-        "the converter had not already flagged. Give `pages` as narrowly as you can."),
+        "the converter had not already flagged. Give `pages` as narrowly as you can, and crop "
+        "with `clip` -- [x0, y0, x1, y1] as FRACTIONS of the page, so [0, 0, 1, 0.15] is the "
+        "top 15%."),
 )
 def page_images(path: str, pages: list[int], out_dir: str | None = None,
                 dpi: int = 200, clip: list[float] | None = None) -> dict[str, Any]:
@@ -649,7 +674,11 @@ def repair_source(path: str, repairs: list[dict[str, Any]], dry_run: bool = Fals
             refused.append(dict(**r, why_refused=f"matches {n} times; make `find` unique"))
         else:
             text = text.replace(find, repl, 1)
-            applied.append(dict(find=find[:80], replace=repl[:80], why=r.get("why"),
+            # The echo is display, not the edit: the full strings landed. Say so when cut,
+            # because an unmarked truncation reads as a truncated REPAIR.
+            applied.append(dict(find=find[:80] + ("…" if len(find) > 80 else ""),
+                                replace=repl[:80] + ("…" if len(repl) > 80 else ""),
+                                why=r.get("why"),
                                 lines_before=find.count("\n") + 1,
                                 lines_after=repl.count("\n") + 1))
     if applied and not dry_run:

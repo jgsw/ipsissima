@@ -121,6 +121,42 @@ ACCESS_STAMPS = (
 )
 
 
+#: Control characters have no place in extracted text, and they are not harmless: measured on a
+#: JSTOR text layer whose access stamps embed NUL bytes mid-line, the stamp patterns above
+#: stopped matching -- the identifying IP and timestamp survived "blanking" while the note
+#: counted the four harmless terms lines -- and the file read as binary to grep, git and diff.
+#: Newlines and tabs stay; everything else in C0 (and DEL) goes.
+CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+#: A looser net than ACCESS_STAMPS, for AUDITING what the blanking left behind rather than for
+#: blanking. The narrow patterns above decide what goes; this one decides whether the file may
+#: still be carrying a stamp the patterns did not recognise -- because the failure mode that
+#: matters reports success: "N stamps removed" while the identifying line survives.
+STAMP_AUDIT = re.compile(r"(?i)downloaded\s+from|all\s+use\s+subject\s+to|brought\s+to\s+you\s+by")
+
+#: A page header glued straight into body text: a page number, a run of capitals (the running
+#: head), then lowercase prose on the same line. Body text never prints this; a text layer that
+#: does has usually lost characters at the page edge -- clean-looking ABSENCE, which no garble
+#: detector sees because nothing is garbled. Measured: `122 ANALYSIS in which the conditions st
+#: though it is at the same tim that proposition.` -- three printed lines merged with their
+#: middles missing, on a file assessed `easy, 0 garbled`.
+PAGE_EDGE_SUSPECT = re.compile(r"(?m)^\s*\d{1,4}\s+[A-Z]{2,}[A-Z .?']*\s+[a-z]")
+
+#: An author byline on its own line. One is the article's own; a SECOND usually means the scan
+#: carries the start of the next article on the same sheet (a JSTOR habit), interleaved into
+#: this file with no other announcement.
+BYLINE = re.compile(r"(?m)^\s*By\s+[A-Z][-A-Z.'’ ]{4,}\s*$")
+
+
+def page_edge_suspects(text):
+    """Lines that look like a page header glued to body text. Returns [(line_no, line), ...]."""
+    out = []
+    for i, line in enumerate(text.splitlines(), 1):
+        if PAGE_EDGE_SUSPECT.match(line):
+            out.append((i, line.strip()))
+    return out
+
+
 def strip_access_stamps(md):
     """Blank the publisher's access stamps. Returns (text, [what was removed]).
 
@@ -393,6 +429,12 @@ def ingest_one(path, allow_ocr=True):
     md, fixed = tidy_headings(md)
     if fixed:
         notes.append(f"{fixed} heading(s) unwrapped from emphasis")
+    # BEFORE the stamps, because control characters are how a stamp escapes them: a NUL sitting
+    # where the pattern expects a digit and the line survives, identity intact, while the count
+    # below reports success on the lines that did match.
+    md, ctl = CONTROL_CHARS.subn("", md)
+    if ctl:
+        notes.append(f"{ctl} control character(s) removed from the text layer")
     md, stamps = strip_access_stamps(md)
     if stamps:
         # COUNTED HERE, QUOTED NOWHERE. `notes` is written into the converted file's own header,
@@ -401,6 +443,27 @@ def ingest_one(path, allow_ocr=True):
         # header needs; the caller gets the lines themselves and can print them to a terminal.
         notes.append(f"! {len(stamps)} publisher access stamp(s) removed -- lines naming the "
                      f"downloading institution, which are not the author's text")
+    # AND THEN CHECK, because the count above is only the lines the patterns recognised. A line
+    # that still smells of a stamp is named by line number, not quoted -- same rule as above.
+    survivors = [i for i, ln in enumerate(md.splitlines(), 1) if STAMP_AUDIT.search(ln)]
+    if survivors:
+        notes.append(f"! line(s) {', '.join(str(n) for n in survivors[:4])} still look like a "
+                     f"publisher access stamp after blanking -- read them and blank by hand "
+                     f"(repair_source, keeping the line count): they may name the downloading "
+                     f"institution")
+    suspects = page_edge_suspects(md)
+    if suspects:
+        notes.append(f"! {len(suspects)} line(s) look like a page header glued to body text "
+                     f"(first: line {suspects[0][0]}) -- possible page-edge truncation in the "
+                     f"text layer: characters missing with nothing garbled. Render the page top "
+                     f"with page_images, read what is missing, and repair_source it")
+    bylines = [(i, ln.strip()) for i, ln in enumerate(md.splitlines(), 1)
+               if BYLINE.match(ln)]
+    if len(bylines) >= 2:
+        notes.append(f"! {len(bylines)} author bylines ('{bylines[1][1]}' at line "
+                     f"{bylines[1][0]}) -- a scanned sheet can carry the start of the NEXT "
+                     f"article, interleaved here. Quotations still verify, but do not quote or "
+                     f"reconstruct the other author's text")
     return md, notes
 
 

@@ -32,8 +32,15 @@ from themselves.
 
 **Quote exactly what the converted source says, including its errors.** Converted text carries OCR
 damage — `on its hack` for "back", `A and B and G` for "C". Quotations are checked character by
-character. If the passage you want is damaged, quote a clean span nearby or do not quote at all.
-**Never silently correct the source inside quotation marks.**
+character. **Never silently correct the source inside quotation marks.** But quoting the damage
+is the last resort, not the first: if the passage you want is damaged, **repair the source and
+then quote it clean** — `page_images` renders the page so the true words can be read off it, and
+`repair_source` fixes the file with the repair documented and the line count kept. That is how
+the reference reconstructions handle scans, and it is why their quotations read as the author
+wrote them. Quote a clean span nearby, or the damage itself, only when the page image cannot
+settle what the words were. And whitespace is normalised in checking, so a quotation may run
+across the converter's line and paragraph breaks — quote the sentence as prose, even where the
+converter split it.
 
 **If a claim joins two passages that sit far apart, say so** — in the claim text with an elision
 (`'…one half… the other half'`) or in its `note:`. Compressing distant material is legitimate and
