@@ -66,6 +66,15 @@ What is *not* a second conclusion: a restatement in different words (that is one
 Argdown's equivalence classes are what express it), or a claim that simply has nothing attached
 because its relations were never drawn.
 
+**When the paper argues thesis → application → closing corollary, declare the theses.** A used
+conclusion is an intermediate one by the tests above, and on a serial paper that puts only the
+closing corollary at the computed apex — *The Will to Believe*'s map crowns the coda about
+mutual tolerance while the claim James calls "the thesis I defend" ranks as an intermediate.
+The front matter's `contentions:` list (see the conventions) raises the paper's stated theses
+to contention rank beside the computed apex, additively, so the census and the map's ladder
+answer with the thesis. Declare rarely — most papers' conclusions are their termini — and only
+ever the author's own stated theses.
+
 **When the thesis is that a target FAILS, join the failure claims into a contention at the
 apex.** A refutation's conclusion is easy to leave implicit: the counterexamples attack the
 definition, the definition supports nothing, and the map's computed apex comes out as the very

@@ -258,6 +258,10 @@ FRONT MATTER, fenced by === lines:
     defaults:
         chapter: "source/<file>.md"   # declared once here, not repeated on every claim
     ===
+RARELY, a paper argues thesis -> application -> closing corollary, and the computed apex
+then crowns only the corollary. Add a front-matter `contentions:` list (`- Title` lines)
+naming the paper's STATED theses -- additive to the computed apex, checked, and only ever
+the author's own theses, never a persona's. Most maps need no declaration.
 
 A CLAIM, and the only metadata keys anything reads:
     [Title in prose]: Claim text, quoting the source's exact words "in double quotation

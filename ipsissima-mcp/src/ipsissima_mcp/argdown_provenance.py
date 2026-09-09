@@ -810,7 +810,7 @@ def reconstruction_policy(path):
 # Interpretive load: how much of the argument is the reconstructor's own
 # --------------------------------------------------------------------------- #
 
-def interpretive_load(doc):
+def interpretive_load(doc, declared=None):
     """Per contention: the fewest of the reconstructor's own claims any route to it passes.
 
     THE QUESTION. Fidelity records, node by node, how far each claim sits from the source's
@@ -839,7 +839,7 @@ def interpretive_load(doc):
         if kind == "support":
             kids.setdefault(b, []).append(a)
 
-    contrib = contribution(doc)
+    contrib = contribution(doc, declared)
     apex = sorted(t for t, c in contrib.items() if c["apex"])
 
     # Cheapest route from t down to a leaf, counting the reconstructor's own claims on the way.
@@ -970,6 +970,21 @@ def read_frontmatter(path):
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         lead = len(line) - len(line.lstrip())
+        # A DASH LINE IS A LIST ITEM. The one list this parser has to understand is
+        # `contentions:` (ruled 10 Sep 2026), and the JS half reads the same block through the
+        # parser's own YAML, so the two must agree on the simple form: a key with no value,
+        # then `- Title` lines indented beneath it.
+        dash = re.match(r"\s*-\s+(.*)$", line)
+        if dash and section is not None and lead > indent:
+            item = dash.group(1).strip()
+            if item[:1] in ("\"", "'"):
+                end = item.find(item[0], 1)
+                item = item[1:end] if end > 0 else item[1:]
+            if isinstance(out.get(section), dict) and not out[section]:
+                out[section] = []
+            if isinstance(out.get(section), list):
+                out[section].append(item)
+            continue
         kv = re.match(r"\s*([\w-]+)\s*:\s*(.*)$", line)
         if not kv:
             continue
@@ -1663,7 +1678,29 @@ def _dump_positions():
     print(json.dumps(text_positions(doc, root, check_quotations(doc, root))))
 
 
-def contribution(doc):
+def declared_contentions(fm, doc):
+    """The front matter's `contentions:` declaration, split into (known, unknown) titles.
+
+    RULED 10 Sep 2026, for the serial genre: an essay that argues thesis -> application ->
+    closing corollary leaves only the corollary at the computed apex, and every
+    contention-relative measure then anchors on the coda rather than on the claim the author
+    calls the thesis. The declaration is the reconstructor's exegetical judgement -- the same
+    kind the reading-policy block already records -- and it is ADDITIVE ONLY: declared titles
+    join the computed apex, they never replace it, so a map that declares nothing behaves
+    exactly as before and a declaration can never hide structure.
+    """
+    raw = fm.get("contentions")
+    if isinstance(raw, str):
+        raw = [raw]
+    if not isinstance(raw, list) or not raw:
+        return [], []
+    titles = set(merged_nodes(doc))
+    known = [str(t) for t in raw if str(t) in titles]
+    unknown = [str(t) for t in raw if str(t) not in titles]
+    return known, unknown
+
+
+def contribution(doc, declared=None):
     """Which claims do work for a main contention, and how much rests on each.
 
     "Orphaned setup -- material introduced early that nothing later uses" was the original
@@ -1703,8 +1740,13 @@ def contribution(doc):
         down.setdefault(b, []).append(a)
 
     # A contention bears on nothing and has something bearing on it. The second half matters:
-    # without it every stray unattached claim counts as a contention of its own.
+    # without it every stray unattached claim counts as a contention of its own. Declared
+    # contentions (front matter, see `declared_contentions`) JOIN this set -- additive only --
+    # so every distance, role and load below measures against the paper's declared theses as
+    # well as its terminus, and a map with no declaration is measured exactly as before.
     apex = {t for t in titles if t not in bears_on and t in borne}
+    declared_set = {t for t in (declared or []) if t in titles}
+    apex = apex | declared_set
 
     def walk(start, adj):
         seen, queue = set(), [start]
@@ -1750,7 +1792,8 @@ def contribution(doc):
                 "inert")
         out[t] = dict(role=role, reaches=by_support or t in apex, engages=by_any,
                       dist=d_any.get(t), dist_support=d_sup.get(t),
-                      load=len(walk(t, down)), apex=t in apex)
+                      load=len(walk(t, down)), apex=t in apex,
+                      declared=t in declared_set)
     return out
 
 

@@ -135,6 +135,34 @@ for (const dir of fs.readdirSync(SAMPLES).sort()) {
               `spine ${String(kept).padStart(2)}/${String(total).padEnd(3)} (${Math.round(frac * 100)}%)`);
 }
 
+console.log("\na DECLARED contention counts as one (front matter `contentions:`, 10 Sep 2026)");
+// The serial genre: [Coda] is the terminus, [Thesis] is used and so never sits at the computed
+// apex -- until the front matter raises it. Declared, it must be a contention everywhere the
+// word means anything: it scores load like one, it survives the spine like one, and it seeds
+// the depth ladder at rung 0 (checked here through loadOf, which walks from the contention set).
+const serial = `===
+contentions:
+    - Thesis
+===
+
+[Coda]: The closing corollary.
+    <+ [Thesis]: The paper's stated thesis.
+        <+ [R1]: A reason for the thesis.
+        <+ [R2]: Another reason.
+`;
+const sg = toGraph(argdown.run({ input: serial, ...RUN }));
+check("the declaration resolves to the thesis node",
+      sg.contentions.map(id => sg.nodes.find(n => n.id === id).label), ["Thesis"]);
+const six = M.index(sg);
+check("the declared node is a contention to the index", six.isContention(sg.contentions[0]), true);
+const sload = M.loadOf(six);
+const byLabel = t => sg.nodes.find(n => n.label === t).id;
+// Undeclared, removing [Coda] strands everything (load 3). Declared, the thesis is a
+// contention in its own right, so its reasons still reach one when the coda goes -- and the
+// thesis itself now scores as what everything beneath it stands on.
+check("declared, the coda strands nothing", sload.get(byLabel("Coda")), 0);
+check("the declared thesis holds up its two reasons", sload.get(byLabel("Thesis")), 2);
+
 console.log();
 if (fails) { console.log(`${fails} FAILED\n`); process.exit(1); }
 console.log("all passed\n");

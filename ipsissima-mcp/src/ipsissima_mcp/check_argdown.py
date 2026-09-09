@@ -1227,9 +1227,55 @@ def fidelity_report(cli, path):
     doc = export_json(cli, path)
     if not doc:
         return
-    prov.apply_defaults(doc, prov.read_frontmatter(path))
+    fm_here = prov.read_frontmatter(path)
+    prov.apply_defaults(doc, fm_here)
 
-    il = prov.interpretive_load(doc)
+    # ---- declared contentions (ruled 10 Sep 2026) ------------------------- #
+    # Additive only: the declaration can raise a used thesis to contention rank beside the
+    # computed apex, never replace or hide the apex. Checked, because a declaration is a lever:
+    # a title that names nothing is a fault; a declared claim whose support reaches no computed
+    # apex is off the argument's route and is queried; and a long list is the #core failure
+    # returning under a new name, so it is queried too.
+    declared, unknown_decl = prov.declared_contentions(fm_here, doc)
+    for t in unknown_decl:
+        finding("contention-declaration", "!",
+                f"the front matter declares `{t}` a contention, and no claim in the map "
+                f"carries that title",
+                title=t, fix="match the declared title to a claim exactly, or remove it")
+    if declared:
+        sup_up = {}
+        for a, b, kind in prov.title_edges(doc):
+            if kind == "support":
+                sup_up.setdefault(a, []).append(b)
+        computed_apex = {t for t, c in prov.contribution(doc).items() if c["apex"]}
+        for t in declared:
+            if t in computed_apex:
+                continue
+            seen, q = set(), [t]
+            reaches = False
+            while q and not reaches:
+                for nxt in sup_up.get(q.pop(), []):
+                    if nxt in computed_apex:
+                        reaches = True
+                        break
+                    if nxt not in seen:
+                        seen.add(nxt)
+                        q.append(nxt)
+            if not reaches:
+                finding("contention-declaration", "?",
+                        f"`{t}` is declared a contention but its support reaches no computed "
+                        f"apex -- a thesis off the argument's own route is usually a mistake",
+                        title=t,
+                        fix="wire the claim into the argument, or remove the declaration")
+        extras = [t for t in declared if t not in computed_apex]
+        if len(extras) > 4:
+            finding("contention-declaration", "?",
+                    f"{len(extras)} claims are declared contentions beyond the computed apex "
+                    f"-- a declaration this long stops meaning anything, which is how #core "
+                    f"died",
+                    fix="keep the declaration to the paper's stated theses")
+
+    il = prov.interpretive_load(doc, declared)
     census = {k: v for k, v in il["census"].items() if v}
     policy, unknown = prov.reconstruction_policy(path)
 
@@ -1707,13 +1753,20 @@ def provenance_report(cli, path, source_root, fix=None):
               f"or imputation -- or no chapter at all)")
 
     # ---- what earns its place ------------------------------------------- #
-    contrib = prov.contribution(doc)
+    declared_here, _ = prov.declared_contentions(prov.read_frontmatter(path), doc)
+    contrib = prov.contribution(doc, declared_here)
     roles = Counter(c["role"] for c in contrib.values())
     apex = sorted(t for t, c in contrib.items() if c["apex"])
     print(f"\n   CONTRIBUTION: {roles.get('supports', 0)} claims support a contention, "
           f"{roles.get('engages', 0)} engage one by objecting,")
     print(f"      {roles.get('inert', 0)} reach none at all, of {len(contrib)}.")
     print(f"      the contentions are: {', '.join(apex) if apex else '(none found)'}")
+    if declared_here:
+        bears = {a for a, _, _ in prov.title_edges(doc)}
+        extra = sorted(t for t, c in contrib.items() if c.get("declared") and t in bears)
+        if extra:
+            print(f"      ({', '.join(extra)}: declared in the front matter -- used further "
+                  f"down the argument, so not at the computed apex)")
     inert = sorted((t for t, c in contrib.items() if c["role"] == "inert"),
                    key=lambda t: (-contrib[t]["load"], t))
     if inert:
@@ -1949,6 +2002,15 @@ def _report(cli, path, a):
     print(f"\n   APEX ({len(terminal)} node(s) that support nothing):")
     for t in terminal:
         print(f"      * {t[:96]}")
+    # Declared contentions stand beside the computed apex, never instead of it -- printing both
+    # is what keeps a declaration from hiding structure.
+    decl_fm = _fm.get("contentions")
+    if isinstance(decl_fm, str):
+        decl_fm = [decl_fm]
+    if isinstance(decl_fm, list) and decl_fm:
+        print(f"   DECLARED CONTENTIONS (front matter, joining the apex for every measure):")
+        for t in decl_fm[:8]:
+            print(f"      + {str(t)[:96]}")
     if isolated:
         # IN A DRAFT AN ORPHAN IS A RESULT. A claim wired to nothing in a finished reconstruction
         # is a fault: either it belongs somewhere or it should go. In a text still being written

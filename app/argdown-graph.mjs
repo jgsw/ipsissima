@@ -359,6 +359,7 @@ export function withComment(text, label, value){
  *  `response.statements` / `response.arguments` are indexed under. */
 export function toGraph(res) {
   const nodes = [], groups = [], edges = [];
+  const titleToId = new Map();
   const tagOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -544,6 +545,7 @@ export function toGraph(res) {
         visit(n.children, n.id);
       } else {
         const tag = tagOf(n.title);
+        if (n.title != null && !titleToId.has(n.title)) titleToId.set(n.title, n.id);
         nodes.push({
           id: n.id,
           label: n.labelTitle || n.title || n.id,
@@ -903,6 +905,16 @@ export function toGraph(res) {
            // verbatim, because dropping a declaration silently is exactly what this field
            // exists to prevent.
            textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null,
+           // Declared contentions (front matter `contentions:`, ruled 10 Sep 2026): titles the
+           // reconstructor names as the paper's theses -- the serial-genre case, where the
+           // stated thesis is used further down and so never sits at the computed apex. They
+           // are resolved to node ids here and ADDED to the computed apex wherever contentions
+           // are measured (spine, load, the depth ladder), never replacing it. A title that
+           // matches no node is dropped silently here; the checker names it as a fault.
+           contentions: (Array.isArray(res.frontMatter && res.frontMatter.contentions)
+                         ? res.frontMatter.contentions.map(t => titleToId.get(String(t)))
+                             .filter(id => id != null)
+                         : []),
            // The front matter's own default chapter, so a claim the page writes (the
            // Quote-this-passage gesture) can obey "declare it once": it cites a chapter
            // explicitly only where the default does not already say it.

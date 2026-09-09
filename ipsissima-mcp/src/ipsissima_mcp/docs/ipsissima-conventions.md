@@ -187,6 +187,28 @@ that is charitable at one `strength` is uncharitable at another. Declaring them 
 *"this reading is uncharitable"* a claim someone can argue with rather than an appeal to a
 principle that names no single thing.
 
+**`contentions:` — for the paper whose stated thesis is not its terminus** (ruled 10 Sep 2026).
+Every contention-relative measure — the census's contribution roles, interpretive load, the
+map's spine and depth ladder — anchors on the computed apex: claims that support nothing. On a
+serial paper that argues *thesis → application → closing corollary*, only the corollary sits
+there, and the map crowns the coda while the claim the author calls "the thesis I defend" is
+ranked an intermediate. Where that happens, declare the paper's stated theses:
+
+```argdown
+contentions:
+  - Thesis
+  - The agnostic veto is irrational
+```
+
+The declaration is **additive only**: declared titles join the computed apex, they never
+replace it, so a map that declares nothing behaves exactly as before and a declaration can
+never hide structure — the census prints both. It is checked: a title matching no claim is a
+fault, a declared claim whose support reaches no computed apex is queried, and a long list is
+queried too, because a declaration of everything means nothing (that is how `#core` died).
+Declare rarely: most papers' conclusions are their termini, and the computed apex already
+names them. This is the reconstructor's exegetical judgement about what the paper concludes —
+so in a dramatised text it names the *author's* contentions, never the persona's.
+
 **If you have not read Stern, read §2 of `reconstruction-cheatsheet.md` before choosing these
 values.** It sets out each dimension with the example that shows why it matters, and explains
 where the `warrant:` vocabulary above comes from — `hyperbole`, `sloppy-phrasing` and

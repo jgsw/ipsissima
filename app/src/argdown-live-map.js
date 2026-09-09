@@ -45,7 +45,14 @@ function index(graph) {
     childrenOf.get(e.to).push(e.from);
     outCount.set(e.from, outCount.get(e.from) + 1);
   }
-  return { nodes, edges, groups, byId, groupById, childrenOf, outCount };
+  // Declared contentions travel on the graph (front matter `contentions:`). Additive only:
+  // `isContention` is the union of "supports nothing" and the declaration, so a map that
+  // declares nothing behaves exactly as before, and everything below that measures against
+  // contentions -- spine, load, the depth ladder -- asks this one question instead of five
+  // copies of `outCount === 0`.
+  const declared = new Set(graph.contentions || []);
+  const isContention = id => (outCount.get(id) || 0) === 0 || declared.has(id);
+  return { nodes, edges, groups, byId, groupById, childrenOf, outCount, declared, isContention };
 }
 
 /** Every group id from a node up to the outermost, innermost first. */
@@ -81,7 +88,7 @@ function groupChain(ix, nodeId) {
  *  footing, not the immediate neighbours.
  */
 function loadOf(ix) {
-  const contentions = ix.nodes.filter(n => (ix.outCount.get(n.id) || 0) === 0).map(n => n.id);
+  const contentions = ix.nodes.filter(n => ix.isContention(n.id)).map(n => n.id);
   // Which claims can reach a contention at all, with `skip` taken out of the graph. Walked DOWN
   // from the contentions through `childrenOf`, which is the reverse of the direction a reason
   // points — reaching a contention and being reachable from one are the same relation read
@@ -364,11 +371,11 @@ function filterOnce(graph, state, force) {
    * because there the reader has named the very thing they are hiding. */
   const facetOk = n => n.facet
     ? (!S.facets || S.facets.has(n.facet))
-    : (S.untagged || (ix.outCount.get(n.id) || 0) === 0);
+    : (S.untagged || ix.isContention(n.id));
   const load    = S.spine == null ? null : loadOf(ix);
   const spineOk = n => S.spine == null
     || (load.get(n.id) || 0) >= S.spine
-    || (ix.outCount.get(n.id) || 0) === 0;      // a contention is always spine
+    || ix.isContention(n.id);                   // a contention is always spine
   const passes  = new Set(ix.nodes.filter(n => facetOk(n) && spineOk(n)).map(n => n.id));
   const kids    = id => (ix.childrenOf.get(id) || []).filter(c => passes.has(c));
 
@@ -382,8 +389,11 @@ function filterOnce(graph, state, force) {
   //     facet filter can strand a component, so those need seeding too — but that search must
   //     not see the limits, or a node hidden on purpose looks like an unreachable fragment and
   //     gets re-seeded straight back into view.
+  // A DECLARED contention seeds the walk at distance 0 beside the structural roots: the
+  // depth ladder's first rung is the paper's theses, which is the point of declaring them.
   const roots = ix.nodes.filter(n => passes.has(n.id) &&
-    ix.edges.every(e => e.from !== n.id || !passes.has(e.to))).map(n => n.id);
+    (ix.declared.has(n.id) ||
+     ix.edges.every(e => e.from !== n.id || !passes.has(e.to)))).map(n => n.id);
   const reached = new Set();
   const reach = start => {
     const q = [start];
@@ -2806,7 +2816,7 @@ function reduceFold(graph, state, action, vis, opt) {
 /** Depth of the deepest node, so a host can size its depth control honestly. */
 function maxDepth(graph) {
   const ix = index(graph);
-  const roots = ix.nodes.filter(n => ix.outCount.get(n.id) === 0).map(n => n.id);
+  const roots = ix.nodes.filter(n => ix.isContention(n.id)).map(n => n.id);
   const dist = new Map(roots.map(id => [id, 0]));
   const queue = roots.slice();
   let max = 0;
