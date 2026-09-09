@@ -6,7 +6,9 @@
      lines they sat on are kept so nothing below them moves.
      Back matter is kept here and trimmed only when text is sent to a model.
      pandoc html --wrap=none
-     31 Gutenberg page anchor(s) converted to page markers and lifted out of the running text -->
+     31 Gutenberg page anchor(s) converted to page markers and lifted out of the running text
+     Public domain: William James died in 1910; the text is the essay from the Project
+     Gutenberg e-text of The Will to Believe and Other Essays (1897). -->
 
 <!-- p.1 begins here -->
 

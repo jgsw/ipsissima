@@ -505,6 +505,23 @@ async function facetFilter(page, map, scheme) {
   await dismissWalkthrough(page);
   if (!(await clickBarButton(page, "open"))) return;
   await page.waitForTimeout(1200);
+  /* FULL DEPTH, DELIBERATELY, before the invariant is measured. "open" expands the sections and
+   * — by its own design — leaves the "how much" depth limit alone. Under a depth limit the
+   * invariant below is not exact: removing the untagged claims re-routes distances, and a
+   * tagged claim whose only short route ran THROUGH untagged tissue can fall past the horizon.
+   * Eight maps never showed it because none had the shape; the Swift satire does — its
+   * #reported persona reaches the contentions only through the untagged interpretive layer —
+   * and n17 dropped out the first time the suite met it. At full depth the invariant is exact
+   * and stays proved able to fail. */
+  await page.evaluate(() => {
+    const r = document.querySelector("input.alm-range");
+    if (r) {
+      r.value = r.max;   // the last rung is "everything"
+      r.dispatchEvent(new Event("input", { bubbles: true }));
+      r.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+  await page.waitForTimeout(800);
 
   const drawn = () => page.evaluate(() => {
     const kinds = b => (b.getAttribute("class") || "").match(/alm-k-[a-z-]+/g) || [];
