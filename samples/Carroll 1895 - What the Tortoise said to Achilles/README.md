@@ -78,8 +78,9 @@ sentence, in these words, in the source?*
 **And the map exposed a blind spot in the tooling.** `interpretive_load` measures departures on
 the paths *below* a contention and never looked at the contention itself. A map whose conclusion
 is an imputation therefore read **0** — the cleanest possible score — while resting on a claim its
-author never made. The contention's own fidelity is now reported separately, and this is the only
-one of the five sample maps where it fires.
+author never made. The contention's own fidelity is now reported separately -- and, since the ruling of
+10 September 2026, an imputed contention counts in its own load. Carroll was the first
+sample map where it fires; the Swift satire now joins it, with two.
 
 ## Rebuilding
 

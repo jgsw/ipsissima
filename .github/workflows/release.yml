@@ -153,7 +153,7 @@ jobs:
 
             **Nothing, to try it.** Download **`Ipsissima.html`** and double-click it: it works offline in any browser and makes no network requests of any kind. Drop a `.argdown` file onto it — or a whole folder, which brings the manuscript with it so claims can be laid out by where they appear in the text. **`Ipsissima.Reader.html`** is the same thing without the editor — the one to send to somebody you want to *show* a reconstruction to. New to argument maps? The walkthrough is the first entry under **How to use** and takes about two minutes.
 
-            **Nothing, to read the worked examples.** Four finished reconstructions, each opening with the text it was drawn from, are at [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example); three more journal articles are in [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples).
+            **Nothing, to read the worked examples.** Five finished reconstructions, each opening with the text it was drawn from, are at [jgsw.github.io/ipsissima](https://jgsw.github.io/ipsissima/#or-start-from-a-worked-example); four more are in [`samples/`](https://github.com/jgsw/ipsissima/tree/main/samples) — or download the **samples zip** below, which carries all nine with their source texts, ready to drop onto the app or the page as folders.
 
             **The desktop application.** Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage` are Linux. The builds are **unsigned**, so the first launch is blocked once: on macOS, after dragging Ipsissima to Applications, allow it under **System Settings → Privacy & Security → Open Anyway**; on Windows, choose "More info" then "Run anyway". [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md) shows every dialog before you meet it.
 
@@ -170,6 +170,19 @@ jobs:
           node ../build_argdown_viewer.mjs --standalone --editor -o "Ipsissima.html"
           node ../build_argdown_viewer.mjs --standalone -o "Ipsissima Reader.html"
           gh release upload "${{ github.ref_name }}" "Ipsissima.html" "Ipsissima Reader.html" --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # THE SAMPLES, AS ONE DOWNLOAD. Nine worked reconstructions with the texts they cite,
+      # zipped from the tag being released so the corpus needs no git. Rides with the macOS job
+      # for the same reason the pages above do: one copy, not three racing to overwrite each
+      # other. A sample travels as a FOLDER -- map plus source/ -- which is exactly what the
+      # app and the pages accept by drop, and what the zip preserves.
+      - name: Attach the samples
+        if: matrix.platform == 'macos-latest'
+        run: |
+          (cd ../.. && zip -rq "ipsissima-samples-${GITHUB_REF_NAME#v}.zip" samples -x "*.DS_Store")
+          gh release upload "${{ github.ref_name }}" ../../ipsissima-samples-*.zip --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

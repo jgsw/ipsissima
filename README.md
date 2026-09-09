@@ -39,15 +39,19 @@ checking the finished reconstruction against its sources word for word. It does 
 arguments itself; that judgement belongs to the model, and the instructions for it are served as
 a prompt read off disk. The command line is still there for a one-off.
 
-**`samples/`** — seven worked reconstructions of real arguments, each with the text it was drawn
-from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, and four
-journal articles. **Three are on the website ready to open, with the manuscript already in the
-page** — [Darwin](https://jgsw.github.io/ipsissima/try/darwin.html),
-[Carroll](https://jgsw.github.io/ipsissima/try/carroll.html) and
-[Miller](https://jgsw.github.io/ipsissima/try/miller.html) — and are the quickest way to see what
-a finished reconstruction looks like without building anything. The rest are in this folder, and
-open in the app or the viewer by dropping the sample's **folder** (not just the `.argdown`) onto
-it, which is what brings the manuscript along.
+**`samples/`** — nine worked reconstructions of real arguments, each with the text it was drawn
+from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, James's "The
+Will to Believe", Swift's satire, and four journal articles. **Five are on the website ready to
+open, with the manuscript already in the page** —
+[Darwin](https://jgsw.github.io/ipsissima/try/darwin.html),
+[Carroll](https://jgsw.github.io/ipsissima/try/carroll.html),
+[Miller](https://jgsw.github.io/ipsissima/try/miller.html),
+[James](https://jgsw.github.io/ipsissima/try/james.html) and
+[Wilson](https://jgsw.github.io/ipsissima/try/wilson.html) — and are the quickest way to see what
+a finished reconstruction looks like without building anything. The whole folder is also
+attached to every [release](https://github.com/jgsw/ipsissima/releases) as a **samples zip**;
+a sample opens in the app or the viewer by dropping its **folder** (not just the `.argdown`)
+onto it, which is what brings the manuscript along.
 
 ## Try it without installing anything
 
