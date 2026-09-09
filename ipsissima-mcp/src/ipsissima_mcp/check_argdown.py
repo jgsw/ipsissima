@@ -95,6 +95,12 @@ DEFAULT_CLI = ("app/node_modules/.bin/argdown")
 FINDINGS = []
 
 #: What the run found out about the map's shape, for the ledger.
+#: THE CENSUS AS DATA. Every report section deposits what it just printed, from the same
+#: in-memory objects the prose is rendered from -- so the two cannot disagree -- and the JSON
+#: output carries the whole dict as `shape`. Before this, a client wanting the apex or the
+#: contribution had to regex the census prose, and every wording improvement broke somebody's
+#: parser; the Gettier-3 run could detect its own inverted apex only by reading English.
+#: The field names are a contract: rename nothing casually.
 SHAPE = {"parsed": True}
 
 # Value sets a fix has to choose from, collected once rather than restated on every finding that
@@ -1337,6 +1343,10 @@ def fidelity_report(cli, path):
                                     ("aim", "unit", "mode", "strength") if policy.get(k))
             print(f"   READING POLICY: {shown} (declared, but nothing is marked against it)")
         return
+    SHAPE["fidelity"] = dict(census)
+    SHAPE["interpretive_load"] = [
+        {"contention": c["contention"], "load": c["load"], "fidelity": c.get("fidelity")}
+        for c in il["contentions"]]
     print(f"\n   FIDELITY: {il['marked']}/{il['total']} nodes marked -- "
           + ", ".join(f"{v} {k}" for k, v in census.items()))
 
@@ -1531,6 +1541,7 @@ def provenance_report(cli, path, source_root, fix=None):
 
     quotes = prov.check_quotations(doc, source_root)
     counts = Counter(q["status"] for q in quotes)
+    SHAPE["quotations"] = {"checked": len(quotes), "exact": counts.get("exact", 0)}
     print(f"\n   QUOTATIONS ({len(quotes)} checked against the sources): "
           + ", ".join(f"{v} {k}" for k, v in counts.most_common()))
     for q in quotes:
@@ -1762,6 +1773,10 @@ def provenance_report(cli, path, source_root, fix=None):
     contrib = prov.contribution(doc, declared_here)
     roles = Counter(c["role"] for c in contrib.values())
     apex = sorted(t for t, c in contrib.items() if c["apex"])
+    SHAPE["contentions"] = apex
+    SHAPE["contribution"] = {"supports": roles.get("supports", 0),
+                             "engages": roles.get("engages", 0),
+                             "inert": roles.get("inert", 0), "total": len(contrib)}
     print(f"\n   CONTRIBUTION: {roles.get('supports', 0)} claims support a contention, "
           f"{roles.get('engages', 0)} engage one by objecting,")
     print(f"      {roles.get('inert', 0)} reach none at all, of {len(contrib)}.")
@@ -1774,6 +1789,7 @@ def provenance_report(cli, path, source_root, fix=None):
                   f"down the argument, so not at the computed apex)")
     inert = sorted((t for t, c in contrib.items() if c["role"] == "inert"),
                    key=lambda t: (-contrib[t]["load"], t))
+    SHAPE["inert"] = list(inert)
     if inert:
         print(f"      ! {len(inert)} claims reach NO contention by any route -- not by "
               f"supporting one, not by")
@@ -1993,7 +2009,9 @@ def _report(cli, path, a):
         return 1
     dot = r.stdout
     nodes, kinds, edges, clusters = parse_dot(dot)
-    SHAPE.update(nodes=len(nodes), edges=len(edges))
+    SHAPE.update(nodes=len(nodes), edges=len(edges),
+                 arguments=Counter(kinds.values()).get("argument-map-node", 0),
+                 clusters=len(clusters))
     print(f"   parses OK -- {len(nodes)} nodes "
           f"({Counter(kinds.values()).get('argument-map-node', 0)} arguments), "
           f"{len(edges)} edges, {len(clusters)} clusters")
@@ -2004,6 +2022,7 @@ def _report(cli, path, a):
     isolated = [nodes[n] for n in nodes if n not in src and n not in dst]
     terminal = [nodes[n] for n in nodes if n not in src]
 
+    SHAPE["apex"] = list(terminal)
     print(f"\n   APEX ({len(terminal)} node(s) that support nothing):")
     for t in terminal:
         print(f"      * {t[:96]}")
@@ -2012,6 +2031,7 @@ def _report(cli, path, a):
     decl_fm = _fm.get("contentions")
     if isinstance(decl_fm, str):
         decl_fm = [decl_fm]
+    SHAPE["declared_contentions"] = [str(t) for t in decl_fm] if isinstance(decl_fm, list) else []
     if isinstance(decl_fm, list) and decl_fm:
         print(f"   DECLARED CONTENTIONS (front matter, joining the apex for every measure):")
         for t in decl_fm[:8]:
@@ -2153,6 +2173,7 @@ def _report(cli, path, a):
             loose.update(found)          # a tag with no claim on its line: count each one
     tags = Counter(t for _, t in seen_tag) + loose
     if tags:
+        SHAPE["tags"] = dict(tags)
         print("\n   TAGS (drive the overview view via selection.selectedTags):")
         for t, c in tags.most_common():
             print(f"      #{t:<14} {c}")
@@ -2252,7 +2273,8 @@ def main():
                           "findings": FINDINGS,
                           **({"vocabulary": VOCABULARY} if VOCABULARY else {}),
                           **({"stamps": STAMPS} if any(STAMPS.values()) else {}),
-                          **({"census": census} if census else {})},
+                          **({"census": census} if census else {}),
+                          "shape": SHAPE},
                          indent=2, ensure_ascii=False))
     elif a.quiet:
         print(f"== {os.path.basename(path)}")

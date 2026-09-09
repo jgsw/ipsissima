@@ -599,8 +599,16 @@ def _open_access_routes(doi):
     return found
 
 
+#: A crop this size or smaller rides back INSIDE the tool result as an image the model can see
+#: directly. The measured p. 122 crop that repaired the Gettier truncation was 35 KB; a whole
+#: page at 300 dpi is not a crop and stays a path. The gate is what keeps a twelve-page call
+#: from flooding the client's context -- every inlined image is spent from it, which is the
+#: point of inlining, and the reason not to inline everything.
+INLINE_IMAGE_CAP = 200_000
+
+
 @server.tool(
-    structured_output=True,
+    structured_output=False,
     title="Page images",
     description=(
         "Render pages of a PDF as PNG files so they can be read directly. For the `hard` case "
@@ -609,10 +617,13 @@ def _open_access_routes(doi):
         "check three damaged lines was measured at about ten thousand tokens and found nothing "
         "the converter had not already flagged. Give `pages` as narrowly as you can, and crop "
         "with `clip` -- [x0, y0, x1, y1] as FRACTIONS of the page, so [0, 0, 1, 0.15] is the "
-        "top 15%."),
+        "top 15%.\n\n"
+        "A crop small enough (under ~200 KB) comes back INSIDE this result as an image, so you "
+        "can read it directly even when this server runs on another machine; larger renders "
+        "are written to disk and returned as paths only, and the JSON says which happened."),
 )
 def page_images(path: str, pages: list[int], out_dir: str | None = None,
-                dpi: int = 200, clip: list[float] | None = None) -> dict[str, Any]:
+                dpi: int = 200, clip: list[float] | None = None) -> Any:
     """
     Args:
         path: the PDF.
@@ -621,6 +632,7 @@ def page_images(path: str, pages: list[int], out_dir: str | None = None,
         dpi: render resolution. 200 is enough to read; 300 for small print.
         clip: [x0, y0, x1, y1] as fractions of the page, to crop rather than render it whole.
     """
+    from mcp.server.mcpserver.utilities.types import Image
     import pymupdf
     p = Path(path).expanduser()
     if not p.exists():
@@ -630,7 +642,7 @@ def page_images(path: str, pages: list[int], out_dir: str | None = None,
                                     f"not the document — see the tool description.")
     target = Path(out_dir) if out_dir else p.parent / "page-images"
     target.mkdir(parents=True, exist_ok=True)
-    written = []
+    written, inline = [], []
     with pymupdf.open(str(p)) as doc:
         for n in pages:
             if not 1 <= n <= doc.page_count:
@@ -646,9 +658,18 @@ def page_images(path: str, pages: list[int], out_dir: str | None = None,
             pix = page.get_pixmap(dpi=dpi, clip=box)
             f = target / f"{p.stem}-p{n:03d}.png"
             pix.save(str(f))
-            written.append(dict(page=n, file=str(f), width=pix.width, height=pix.height))
-    return dict(ok=True, images=written,
-                next="read these, then call repair_source with the corrected text")
+            size = f.stat().st_size
+            inlined = size <= INLINE_IMAGE_CAP
+            if inlined:
+                inline.append(Image(path=str(f)))
+            written.append(dict(page=n, file=str(f), width=pix.width, height=pix.height,
+                                bytes=size, inlined=inlined))
+    result = dict(ok=True, images=written,
+                  next=("the image(s) follow in this result -- read them, then call "
+                        "repair_source with the corrected text" if inline else
+                        "read the files at `images`, then call repair_source with the "
+                        "corrected text; a crop under 200 KB would have come back inline"))
+    return [result, *inline] if inline else result
 
 
 @server.tool(
@@ -756,7 +777,11 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
     title="Check a reconstruction",
     description=(
         "Validate an .argdown file and check it against the text it cites. Returns FAULTS ONLY, "
-        "each with where it is and — where one can be worked out — the fix itself.\n\n"
+        "each with where it is and — where one can be worked out — the fix itself. The result "
+        "also carries `shape`: the census as data (nodes, apex, declared and measured "
+        "contentions, contribution, fidelity counts, quotations, interpretive load), assembled "
+        "from the same objects the prose census is printed from — read that rather than "
+        "parsing the prose.\n\n"
         "Call this after writing a map and after every round of edits, until `ok` is true. "
         "APPLY THE FIXES; do not rewrite the map. A quotation reported as found verbatim in "
         "another chapter is a stale `chapter:` path, not a misquotation, and needs a one-line "
