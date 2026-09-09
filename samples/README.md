@@ -42,6 +42,8 @@ openly licensed instead.
 | **Akhlaghi**, "Transformative experience and the right to revelatory autonomy" (2023) | 93 nodes, 10 pages | CC-BY 4.0 |
 | **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 127 nodes, 9 pages | CC-BY 4.0 |
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 161 nodes, 28 pages | Creative Commons, by the author of Ipsissima |
+| **James**, "The Will to Believe" (1896) | 69 nodes, 31 pages | public domain |
+| **Swift**, *A Modest Proposal* (1729) | 53 nodes, one pamphlet | public domain |
 
 **The middle column counts nodes, not claims, and the difference is not cosmetic.** A node is a
 claim *or* an argument, and an argument with a premise-conclusion structure is a node in its own
@@ -57,6 +59,15 @@ clearest statement here of the distinction that decides how a reconstruction is 
 - Darwin's premises work **only together**. Variation without struggle preserves nothing; struggle
   without variation has nothing to preserve. So they sit in premise-conclusion structures, and
   drawing them as siblings would claim something false about the argument.
+
+**James** and **Swift** are the two limit cases, added 10 September 2026, and both were
+generated end to end by a model driving Ipsissima-MCP — `generated: true`, checker-verified,
+no `reviewed:` stamp yet. James's essay argues in series — thesis, application, closing
+corollary — and is the map the front matter's `contentions:` declaration exists for: without
+it the computed apex crowns the coda while the claim James calls "the thesis I defend" ranks
+as an intermediate. Swift is the dramatised-text test: every sentence in the persona's voice,
+tagged `#reported` throughout, with Swift's never-stated contentions imputed at the apex and
+counting in their own interpretive load. Its README says how to read it; start there.
 
 **Miller** is the one that is not philosophy, which is exactly what it is here to test. A judgment
 is cited by paragraph and not by page — *Miller (No 2)* at [50] is the whole address of a claim,

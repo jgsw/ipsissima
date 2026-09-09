@@ -1,0 +1,138 @@
+===
+title: Swift 1729 -- A Modest Proposal
+reconstruction:
+    generated: true
+    aim: fit
+    unit: commitment
+    mode: coherence
+    strength: ordinary
+defaults:
+    chapter: "source/a-modest-proposal.md"
+===
+
+// The pamphlet is spoken throughout by a persona, the proposer. Claims that belong to
+// the proposer's scheme are tagged #reported: Swift sets them out and does not hold them.
+// A handful of the persona's sentences are read, on the standard reading, as Swift's own
+// voice breaking through; those are left untagged and each carries a note saying so.
+// Swift's contention is never stated and is marked as an imputation.
+
+# The proposer's case {isGroup: true}
+
+[The proposal should be adopted]: Ireland should adopt the scheme of selling the children of the poor at a year old as food, this being "a fair, cheap and easy method of making these children sound and useful members of the commonwealth". #reported
+    {fidelity: "compression", note: "The apex of the persona's argument. The scheme itself is stated across several paragraphs; the quoted phrase is the criterion the proposer sets himself at the outset."}
+    <+ [A new method of providing for the children of the poor is needed]
+    <+ [At a year old the children can be turned to account for parents and kingdom]
+    <+ [The advantages of the proposal are obvious and many]
+    <+ [No other expedient is to be talked of until there is some hope it will be attempted]
+    <+ [The scheme prevents abortion and infanticide]: The scheme "will prevent those voluntary abortions, and that horrid practice of women murdering their bastard children". #reported {fidelity: "compression"}
+    <+ [The parents themselves would think it a happiness to have been sold for food]
+    <+ [The proposer has no personal interest in the scheme]: The proposer has "not the least personal interest in endeavouring to promote this necessary work", having "no children, by which I can propose to get a single penny". #reported {fidelity: "compression", note: "Offered as a warrant for the proposer's sincerity rather than as a reason for the scheme; hung here because the text offers it in support of the whole."}
+    <- [The population of the kingdom would be much lessened]: "the number of people will be thereby much lessened in the kingdom". #conceded {fidelity: "quotation", note: "The only objection the proposer can think of. He grants it and converts it: this I freely own, and was indeed one principal design in offering it to the world."}
+    <- [The scheme does nothing for the aged, diseased or maimed poor]: "Some persons of a desponding spirit are in great concern about that vast number of poor people, who are aged, diseased, or maimed", for whom the scheme makes no provision. #contested {fidelity: "compression", note: "Voiced by unnamed persons of a desponding spirit who have desired the proposer to employ his thoughts on the matter."}
+        <- [No provision is needed for the aged, diseased and maimed poor]: The proposer is "not in the least pain upon that matter". #reported {fidelity: "compression"}
+            <+ [The aged poor are every day dying of cold, famine, filth and vermin]
+
+[The aged poor are every day dying of cold, famine, filth and vermin]: The aged, diseased and maimed poor "are every day dying, and rotting, by cold and famine, and filth, and vermin, as fast as can be reasonably expected".
+    {fidelity: "compression", note: "Spoken by the persona as reassurance; read as Swift's own report of the condition of the poor, which is why it is left untagged. It also feeds the young labourers point: they cannot get work, and consequently pine away from want of nourishment."}
+
+## The arithmetic of the poor {isGroup: true}
+
+<The children cannot otherwise be provided for>: Given the number of children born to the poor each year and the failure of every existing method, a new method is needed. #reported
+    {fidelity: "compression", note: "Form: elimination of the existing alternatives. The proposer's own calculation, from the number of souls in the kingdom down to the number of children born to poor parents."}
+
+(1) [A hundred and twenty thousand children of poor parents are born annually]: "There only remain a hundred and twenty thousand children of poor parents annually born." #reported {fidelity: "quotation"}
+(2) [No method hitherto proposed can rear and provide for these children]: Providing for this number "under the present situation of affairs, is utterly impossible by all the methods hitherto proposed". #reported {fidelity: "compression"}
+    <+ [Children under six cannot work, cultivate land or steal]: Children under six can neither be employed in handicraft or agriculture, nor build houses or cultivate land, and can very seldom live by stealing. #reported {fidelity: "paraphrase", note: "Left out: the proposer excepts children of towardly parts, confesses that they learn the rudiments of theft much earlier, and counts them as probationers until six on the word of a principal gentleman in the county of Cavan."}
+    <+ [Before twelve a child is no saleable commodity]: "a boy or a girl, before twelve years old, is no saleable commodity", and even then will not yield above three pounds, "which cannot turn to account either to the parents or kingdom". #reported {fidelity: "compression", note: "Joins two spans of the same sentence, eliding the price of three pounds or three pounds and half a crown that sits between them."}
+    <+ [No rival scheme says how a hundred thousand useless mouths are to be fed and clothed]: No author of a rival scheme has considered "how they will be able to find food and raiment for a hundred thousand useless mouths and backs". #reported {fidelity: "compression", note: "The closing challenge to objectors, read as a reason for the impossibility claim: the proposer dares any objector to answer the question, which he takes to be unanswerable as things now stand."}
+    <- <Other expedients would provide for the poor>
+-----
+(3) [A new method of providing for the children of the poor is needed]: The question is "How this number shall be reared and provided for?", and the methods hitherto proposed cannot answer it. #reported {fidelity: "compression"}
+
+<Other expedients would provide for the poor>: The kingdom could be relieved by taxing absentees, using only its own manufactures, curing its own vices, and teaching landlords mercy. #contested
+    {fidelity: "compression", note: "The objection the proposer anticipates and refuses to hear: let no man talk to me of other expedients. Set out only to be dismissed."}
+
+(1) [There are other expedients]: Other expedients have been proposed, "Of taxing our absentees at five shillings a pound", of using only goods of our own growth and manufacture, of rejecting foreign luxury, of parsimony, prudence and temperance, of learning to love our country, of quitting our animosities and factions, and "Of teaching landlords to have at least one degree of mercy towards their tenants". #contested {fidelity: "compression"}
+(2) [These expedients would relieve the kingdom]: If put into practice, these expedients would relieve the distress of the kingdom. #contested {fidelity: "imputation", warrant: "enthymeme", note: "The text never says the expedients would work; the objection needs this to reach its conclusion, and the proposer never denies it, quarrelling only with the hope of their being attempted."}
+-----
+(3) [The poor could be provided for by expedients already proposed]: The children of the poor could be provided for by methods already proposed. #contested {fidelity: "compression"}
+    -> [No method hitherto proposed can rear and provide for these children]
+
+<Nothing else will be attempted>: Whatever the other expedients might do, there is no hope of a sincere attempt at any of them, whereas the proposal is wholly in our own power. #reported
+    {fidelity: "compression", note: "An undercut, not an attack: the proposer grants that the expedients exist and never says they would fail, only that nobody will try them. The remark about disobliging England is the last of these grounds."}
+    _> <Other expedients would provide for the poor>
+
+(1) [There is no hope of a sincere attempt to put the other expedients into practice]: "let no man talk to me of these and the like expedients, till he hath at least some glympse of hope, that there will ever be some hearty and sincere attempt to put them into practice".
+    {fidelity: "quotation", note: "Spoken by the persona, but read as Swift's own verdict on the Irish governing class, and so left untagged. It does double duty: it is the persona's ground for dismissing the expedients and Swift's ground for despairing of them."}
+(2) [The proposal is solid, cheap, and wholly in our own power]: The proposal, "as it is wholly new, so it hath something solid and real, of no expence and little trouble, full in our own power, and whereby we can incur no danger in disobliging England". #reported {fidelity: "compression"}
+    <+ [Infant flesh will not bear exportation]: "this kind of commodity will not bear exportation", flesh being of too tender a consistence to admit a long continuance in salt. #reported {fidelity: "compression"}
+-----
+(3) [No other expedient is to be talked of until there is some hope it will be attempted]: "Therefore let no man talk to me of other expedients". #reported {fidelity: "quotation"}
+
+## The child as commodity {isGroup: true}
+
+<A child is a saleable food>: A year-old child is wholesome food, will fetch ten shillings, and costs two to rear, so the sale turns to account. #reported
+    {fidelity: "compression", note: "Form: cost-benefit calculation. The three premises are linked: the price alone, or the wholesomeness alone, shows nothing without the cost of rearing."}
+
+(1) [A year-old child is delicious, nourishing and wholesome food]: "a young healthy child well nursed, is, at a year old, a most delicious nourishing and wholesome food, whether stewed, roasted, baked, or boiled". #reported {fidelity: "quotation", note: "On the assurance of a very knowing American of my acquaintance in London."}
+(2) [A gentleman would give ten shillings for the carcass of a good fat child]: "no gentleman would repine to give ten shillings for the carcass of a good fat child". #reported {fidelity: "quotation"}
+(3) [Nursing a beggar's child for a year costs about two shillings]: The proposer has computed "the charge of nursing a beggar's child" to be "about two shillings per annum, rags included". #reported {fidelity: "compression"}
+-----
+(4) [At a year old the children can be turned to account for parents and kingdom]: Sold at a year old, the children turn to account: "the mother will have eight shillings neat profit, and be fit for work till she produces another child", and the squire will learn to be a good landlord. #reported {fidelity: "compression", note: "Answers the earlier finding that before twelve a child cannot turn to account either to the parents or kingdom."}
+
+[Only infants of a year old are to be sold]: Of the hundred and twenty thousand, twenty thousand are to be "reserved for breed" and "the remaining hundred thousand may, at a year old, be offered in sale to the persons of quality and fortune, through the kingdom". #reported
+    {fidelity: "compression"}
+    +> [At a year old the children can be turned to account for parents and kingdom]
+    <- [Lads and maidens between twelve and fourteen should be sold as well]: "the want of venison might be well supplied by the bodies of young lads and maidens, not exceeding fourteen years of age, nor under twelve". #reported {fidelity: "quotation", note: "A refinement offered by a very worthy person, a true lover of his country; the proposer, with due deference, cannot be altogether in his sentiments."}
+        <+ [In Formosa the carcasses of executed young persons are sold as a prime dainty]: Psalmanaazor of Formosa told the friend that in his country "the executioner sold the carcass to persons of quality, as a prime dainty". #reported {fidelity: "compression"}
+        <- [The flesh of the males would be tough and lean]: "their flesh was generally tough and lean, like that of our schoolboys, by continual exercise, and their taste disagreeable, and to fatten them would not answer the charge". #reported {fidelity: "quotation"}
+        <- [Selling the females would be a loss to the public]: "it would, I think, with humble submission, be a loss to the publick, because they soon would become breeders themselves". #reported {fidelity: "quotation"}
+        <- [Some scrupulous people might censure the practice as bordering upon cruelty]: "it is not improbable that some scrupulous people might be apt to censure such a practice, (although indeed very unjustly) as a little bordering upon cruelty". #conceded {fidelity: "quotation", note: "The proposer calls the censure unjust and yet offers it as a reason against the refinement."}
+            <+ [Cruelty is the strongest objection against any project]
+
+[Cruelty is the strongest objection against any project]: Cruelty "hath always been with me the strongest objection against any project, how well soever intended". #conceded
+    {fidelity: "compression", note: "The hinge of the satire: the proposer avows the principle that condemns his own scheme, and applies it only to the refinement."}
+
+## The advantages {isGroup: true}
+
+[The advantages of the proposal are obvious and many]: "the advantages by the proposal which I have made are obvious and many, as well as of the highest importance". #reported
+    {fidelity: "quotation", note: "Conductive: six numbered advantages, each offered as counting on its own, plus others omitted for brevity. They are drawn as convergent siblings, not as linked premises."}
+    <+ [The scheme would lessen the number of Papists]: "it would greatly lessen the number of Papists, with whom we are yearly overrun". #reported {fidelity: "quotation"}
+    <+ [The poorer tenants would have something distrainable of their own]: "The poorer tenants will have something valuable of their own, which by law may be made liable to a distress, and help to pay their landlord's rent". #reported {fidelity: "quotation"}
+    <+ [The nation's stock would be increased by fifty thousand pounds a year]: "the nation's stock will be thereby encreased fifty thousand pounds per annum", besides the profit of a new dish. #reported {fidelity: "quotation"}
+    <+ [The breeders would gain eight shillings a year and be rid of the charge of maintenance]: "The constant breeders, besides the gain of eight shillings sterling per annum by the sale of their children, will be rid of the charge of maintaining them after the first year." #reported {fidelity: "quotation"}
+    <+ [The scheme would bring great custom to taverns]: "This food would likewise bring great custom to taverns". #reported {fidelity: "quotation"}
+    <+ [The scheme would be a great inducement to marriage]: "This would be a great inducement to marriage", and "It would encrease the care and tenderness of mothers towards their children". #reported {fidelity: "compression"}
+
+## The challenge to objectors {isGroup: true}
+
+[The parents themselves would think it a happiness to have been sold for food]: Those who dislike the overture should first ask the parents of these mortals "whether they would not at this day think it a great happiness to have been sold for food at a year old".
+    {fidelity: "compression", note: "The persona's closing challenge, read as Swift's own indictment and so left untagged: the point is not that the scheme is good but that the life it replaces is worse."}
+    <+ [The poor suffer a perpetual scene of misfortunes]: The parents have gone through "the oppression of landlords, the impossibility of paying rent without money or trade, the want of common sustenance, with neither house nor clothes to cover them from the inclemencies of the weather", with the prospect of entailing the like on their breed for ever. {fidelity: "compression", note: "Spoken by the persona; read as Swift's own catalogue of the causes of Irish misery, and so left untagged."}
+
+# Swift's argument {isGroup: true}
+
+[The Irish poor are already being devoured]: The Irish poor are already consumed by their landlords, by England, and by those who reckon them as stock; eating their children would only make literal what is already done to them.
+    {fidelity: "imputation", warrant: "convention", note: "The satire never states its contention. This is the standard reading and the wording is the reconstructor's. The reductio below is the route from the persona's argument to it."}
+    <+ <The proposal as reductio>
+    <+ [Landlords have already devoured most of the parents]: Landlords, "as they have already devoured most of the parents, seem to have the best title to the children". {fidelity: "compression", note: "Spoken by the persona as a pleasantry about who can afford the dish; read as Swift's own charge, and so left untagged."}
+    <+ [England would gladly eat up the whole nation]: "perhaps I could name a country, which would be glad to eat up our whole nation without it". {fidelity: "quotation", note: "The persona's aside on exportation; read as Swift on England, and so left untagged."}
+    <+ [The aged poor are every day dying of cold, famine, filth and vermin]
+    <+ [The parents themselves would think it a happiness to have been sold for food]
+
+<The proposal as reductio>: Reckon the poor purely as stock and the proposal follows; the proposal is monstrous; so reckoning the poor as stock is monstrous.
+    {fidelity: "interpretation", warrant: "convention", note: "Form: reductio ad absurdum. The persona asserts the premises and the conclusion; Swift asserts neither, and the reductio is the reader's inference from the persona's sincerity. The step is not drawn as a named deductive rule because the absurdity is felt, not derived."}
+
+(1) [The poor are to be reckoned purely as stock]: The proposer reckons the poor as couples "whose wives are breeders", an infant as "a child just dropt from its dam", and its body as a carcass to be valued by weight and price. #reported {fidelity: "interpretation", warrant: "coherence", note: "Never stated as a principle; it is the assumption on which every computation in the pamphlet runs, and the proposer applies it without comment."}
+(2) [The proposal should be adopted]
+(3) [Selling children as food is monstrous]: Selling year-old children to be eaten is a cruelty no advantage can outweigh. {fidelity: "imputation", warrant: "convention", note: "The pamphlet never says so; it relies on the reader to supply it. The proposer supplies the principle himself and withholds the application."}
+    <+ [Cruelty is the strongest objection against any project]
+    <+ [Some scrupulous people might censure the practice as bordering upon cruelty]
+-----
+(4) [Reckoning the poor purely as stock is monstrous]: The way of reckoning the poor that yields the proposal is itself monstrous. {fidelity: "imputation", warrant: "enthymeme", note: "The conclusion of the reductio; it supports the contention because the reckoning is not the persona's invention but the projectors' and landlords' ordinary practice."}
+
+[The honest remedies for Ireland are known and refused]: The expedients that would relieve Ireland are known to all and will not be sincerely attempted by those with the power to attempt them.
+    {fidelity: "imputation", warrant: "other-texts", note: "Swift's second contention, argued separately. The expedients listed and dismissed by the persona are those Swift had urged in his own Irish tracts, so the dismissal is read as Swift's despair rather than the persona's impatience."}
+    <+ [The other expedients are the real remedies]: The expedients the proposer refuses to hear of, from taxing absentees to teaching landlords one degree of mercy, are the remedies Ireland actually needs. {fidelity: "interpretation", warrant: "other-texts", note: "The persona dismisses them as vain, idle, visionary thoughts; they are Swift's own proposals."}
+        <+ [There are other expedients]
+    <+ [There is no hope of a sincere attempt to put the other expedients into practice]

@@ -31,7 +31,7 @@ const REPO = path.resolve(HERE, "..");
 const BUILDER = path.join(REPO, "app", "build_argdown_viewer.mjs");
 const OUT = HERE;
 
-/** The three published samples, and the slug each is served under.
+/** The published samples, and the slug each is served under.
  *
  *  PUBLIC-DOMAIN AND OPEN-LICENCE ONLY, which is not a coincidence. Darwin and Carroll are out of
  *  copyright; Miller is Crown copyright reusable under the Open Government Licence. A CC-BY
@@ -58,7 +58,19 @@ const SAMPLES = [
     blurb: "The prorogation judgment, mapped backwards from the order the court made. The steps " +
            "the court needed to get there are its ratio; what it said by the way is marked " +
            "obiter, and the authorities it rests on are marked as authorities." },
-  // FOURTH, AND THE ONLY ONE HERE BY SOMEBODY STILL ALIVE TO MIND. Published open access, and by
+  { slug: "james",
+    dir: "James 1896 - The Will to Believe",
+    file: "will-to-believe-1896.argdown",
+    title: "James, The Will to Believe",
+    blurb: "A whole essay argued in series — thesis, application, closing corollary — with the " +
+           "front matter declaring the three theses, so the map opens on the claim James " +
+           "calls 'the thesis I defend' rather than on the coda that happens to come last." },
+  // SWIFT STAYS OFF THE SITE, DELIBERATELY (James Wilson's call, 10 Sep 2026). The sample is in
+  // `samples/` — A Modest Proposal is the corpus's dramatised-text test case — but its surface
+  // argument is dark enough to repel, or be read straight by, a first-time visitor who meets it
+  // cold, and the landing page is where visitors are coldest. Its README carries the framing a
+  // reader needs; the landing page cannot.
+  // FIFTH, AND THE ONLY ONE HERE BY SOMEBODY STILL ALIVE TO MIND. Published open access, and by
   // the author of Ipsissima, which is what makes putting a whole journal article on this site his
   // decision to make rather than a licence question. The other CC-BY samples in `samples/` stay
   // off the web on etiquette rather than law.
