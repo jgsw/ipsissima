@@ -302,8 +302,15 @@ The alternative is uniform strength, and then it has to be set somewhere:
 | `strength:` | |
 |---|---|
 | `minimal` | what any minimally rational person might hold. Useless in philosophy: as long as *somebody* could hold the worse view, charity cannot choose |
-| `ordinary` | what philosophers can generally be assumed to be committed to |
+| `ordinary` | what philosophers can generally be assumed to be committed to. The working default, not the safe one: it presupposes a shared body of commitments, and common agreement among philosophers is hard to find — not impossible, but never free |
 | `strong` | the best a trained philosopher could read them as meaning. Severs the link with ordinary meaning — nobody means that |
+
+None of the three is problem-free; `ordinary` survives as the default because its weakness is a
+difficulty to watch where the other two fail outright. So a map declaring `strength: ordinary`
+invites its own critical question, in the manner of the forms below: *which assumed commitments
+is this reading leaning on, and would the author recognise them?* Where one is doing real work,
+say so in a `note:`. (The asymmetry — problems recorded for `minimal` and `strong` but not
+`ordinary` — was pointed out by the source's own author, Sept 2026.)
 
 ### 2.3 The move to watch: manufacturing openness
 
