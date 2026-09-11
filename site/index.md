@@ -12,9 +12,18 @@ title: Ipsissima
      THE PAGE STILL NEEDS ONE H1, so the mission sentence is it — settled in the author's own
      words at the Second Thoughts checkpoint (docs/values/SECOND-THOUGHTS.md, 5 Sep 2026). The
      verba/vox paragraph stays close beneath: it is the name and the distinctive half, but it
-     describes one genre of map, so it no longer stands for the whole. -->
+     describes one genre of map, so it no longer stands for the whole.
+
+     The plain what-it-is-for paragraph directly under the H1 was folded back from the
+     announcement drafts (11 Sep 2026): the page led with the format before a first-time
+     visitor knew what the program did for them. -->
 
 # Making complex reasoning intelligible through maps you can check at every step
+
+Ipsissima is for understanding writing that reasons to a conclusion — a philosophical argument,
+a legal judgment, a policy report. It breaks the argument down into individual steps, so you can
+see the conclusion you are being asked to accept, and the structure of the reasoning that
+supports it.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
 Christian Voigt and maintained by the Argdown team — and opens an argument as an interactive
@@ -75,6 +84,12 @@ tells you which it is. That makes two things visible that a normal argument map 
 words these are**, and **where the reconstructor has supplied something the author did not
 say**.
 
+Because each claim knows where it sits in the text, one map carries two views of the same
+claims: the structure of **justification**, in which everything is rearranged to show how it
+supports the conclusion, and the structure of **exposition**, which shows the claims in the
+order the text presents them. Switching between the two shows the rhetoric of a piece as well
+as its logic — how far the order of telling departs from the order of proving.
+
 **A map of a debate.** Some arguments belong to no single text: the case for and against
 censorship, or a drug law, is a pattern of public argument, not a document. Ipsissima opens
 these maps too, and leaves out what does not apply — no manuscript pane, no source borders,
@@ -88,6 +103,11 @@ write Argdown — one page in a browser, rather than a programmer's IDE. Start a
 the opening panel (**File ▸ New** in the application), write, and the map redraws as you go;
 where a line does not parse, the editor says so on the line, with the real Argdown parser
 doing the judging.
+
+**A map of a draft.** Reconstruction does not have to wait for a finished text. If the argument
+of a paper or a chapter is not coalescing, tell Ipsissima-MCP — the reconstruction half,
+described below — that it is working from a draft: the map shows which parts of the argument
+are already solid and where the gaps are, while the writing can still respond.
 
 ## The other half
 
