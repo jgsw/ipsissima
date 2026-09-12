@@ -128,6 +128,16 @@ ACCESS_STAMPS = (
 #: Newlines and tabs stay; everything else in C0 (and DEL) goes.
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
+#: Typographic ligatures are font artefacts, not spelling: a text layer that prints `ﬁnd` and
+#: `reﬂection` fails character-by-character quotation verification for anyone typing ordinary
+#: letters, and quoting the glyph would be quoting the typesetter. Measured on a Cambridge
+#: edition PDF: 67 occurrences, "text layer clean" -- every quotation would have missed until
+#: the reconstructing model ran its own sed outside the tools. The Unicode Latin ligature
+#: block, expanded to the letters it stands for.
+LIGATURES = re.compile(r"[ﬀ-ﬆ]")
+LIGATURE_MAP = {"ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi",
+                "ﬄ": "ffl", "ﬅ": "st", "ﬆ": "st"}
+
 #: A looser net than ACCESS_STAMPS, for AUDITING what the blanking left behind rather than for
 #: blanking. The narrow patterns above decide what goes; this one decides whether the file may
 #: still be carrying a stamp the patterns did not recognise -- because the failure mode that
@@ -459,6 +469,10 @@ def ingest_one(path, allow_ocr=True):
     if pagenums:
         notes.append(f"{pagenums} Gutenberg page anchor(s) converted to page markers and "
                      f"lifted out of the running text")
+    md, ligs = LIGATURES.subn(lambda m: LIGATURE_MAP[m.group(0)], md)
+    if ligs:
+        notes.append(f"{ligs} typographic ligature(s) (fi, fl, ...) expanded to plain letters "
+                     f"so quotations match")
     # BEFORE the stamps, because control characters are how a stamp escapes them: a NUL sitting
     # where the pattern expects a digit and the line survives, identity intact, while the count
     # below reports success on the lines that did match.

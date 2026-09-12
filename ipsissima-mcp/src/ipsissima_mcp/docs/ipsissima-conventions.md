@@ -38,9 +38,12 @@ then quote it clean** — `page_images` renders the page so the true words can b
 `repair_source` fixes the file with the repair documented and the line count kept. That is how
 the reference reconstructions handle scans, and it is why their quotations read as the author
 wrote them. Quote a clean span nearby, or the damage itself, only when the page image cannot
-settle what the words were. And whitespace is normalised in checking, so a quotation may run
-across the converter's line and paragraph breaks — quote the sentence as prose, even where the
-converter split it.
+settle what the words were. One recurring form of damage worth knowing by sight: critical
+editions mark translator's or editor's footnotes with superscript letters, and the text layer
+glues the letter to the word before it — `judgingh an object`, `his ownd taste`, `please.a Hence`.
+Repair-then-quote applies to these exactly as to OCR damage. And whitespace is normalised in
+checking, so a quotation may run across the converter's line and paragraph breaks — quote the
+sentence as prose, even where the converter split it.
 
 **If a claim joins two passages that sit far apart, say so** — in the claim text with an elision
 (`'…one half… the other half'`) or in its `note:`. Compressing distant material is legitimate and

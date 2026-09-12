@@ -163,6 +163,31 @@ const byLabel = t => sg.nodes.find(n => n.label === t).id;
 check("declared, the coda strands nothing", sload.get(byLabel("Coda")), 0);
 check("the declared thesis holds up its two reasons", sload.get(byLabel("Thesis")), 2);
 
+console.log("\nan intermediary conclusion drawn as its own node is NOT a contention (Kant, 12 Sep 2026)");
+// A statement that concludes a step AND carries relations of its own gets a node of its own,
+// and its carriage into the later steps of the same argument is deliberately not drawn (see
+// the `concludes` synthesis in argdown-graph.mjs). "Supports nothing" is then false of the
+// picture but true of nothing: on the Kant map the step-3 conclusion of the free-play argument
+// sat at rung 0 beside the text's two definitions.
+const midSrc = `<Arg>: A two-step argument.
+
+(1) [P1]: A premise.
+(2) [P2]: Another premise.
+-----
+(3) [Mid]: The middle conclusion, with support of its own.
+    <+ [Side]: A reason bearing on the middle directly.
+(4) [P3]: A further premise.
+-----
+(5) [End]: The conclusion.
+`;
+const mg = toGraph(argdown.run({ input: midSrc, ...RUN }));
+const mix = M.index(mg);
+const mid = mg.nodes.find(n => n.label === "Mid");
+const end = mg.nodes.find(n => n.label === "End");
+check("the middle conclusion has no drawn outgoing edge", mix.outCount.get(mid.id) || 0, 0);
+check("but it is not a contention", mix.isContention(mid.id), false);
+check("the main conclusion still is", mix.isContention(end.id), true);
+
 console.log();
 if (fails) { console.log(`${fails} FAILED\n`); process.exit(1); }
 console.log("all passed\n");

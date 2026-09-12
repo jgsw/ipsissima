@@ -279,7 +279,9 @@ to be a summary. Whitespace is normalised, so a quotation may run across the con
 line and paragraph breaks -- quote the sentence as prose. Never correct the source inside
 quotation marks, even where it is wrong; where a span you need carries OCR damage, repair
 the SOURCE first (page_images to read the page, repair_source to fix it, documented) and
-then quote it clean -- quote damage only when the page image cannot settle it.
+then quote it clean -- quote damage only when the page image cannot settle it. Critical
+editions glue superscript footnote letters to the word before them ("judgingh an
+object", "his ownd taste") -- that is damage of the same kind: repair-then-quote.
 
 FIDELITY says how far the CLAIM TEXT stands from the author's words (not the `source:`
 field): quotation | paraphrase | compression (the default) | interpretation | imputation.
@@ -544,9 +546,18 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
                  f"extracting, render those page tops with page_images and repair_source what "
                  f"is lost")
 
+    # Ligatures are damage the garble count cannot see either: every word containing one is a
+    # real word, but a quotation typed with ordinary letters will fail against it. ingest
+    # expands them at conversion, so the count here is a forecast, not a fault -- it keeps
+    # "text layer clean" honest on a file where 67 spans would otherwise silently not match.
+    ligatures = len(ingest.LIGATURES.findall(layer))
+    if ligatures:
+        note += (f"; {ligatures} typographic ligature(s) (fi, fl, ...) in the text layer -- "
+                 f"extract_text will expand them to plain letters so quotations match")
+
     out = dict(ok=True, path=str(p), pages=pages, words_in_text_layer=words,
                words_per_page=round(per_page, 1), garbled_passages=soup,
-               page_edge_suspects=len(suspects),
+               page_edge_suspects=len(suspects), ligatures=ligatures,
                difficulty=difficulty, note=note,
                metadata={k: v for k, v in meta.items() if k in ("title", "author", "creator")})
 
@@ -781,7 +792,10 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
         "also carries `shape`: the census as data (nodes, apex, declared and measured "
         "contentions, contribution, fidelity counts, quotations, interpretive load), assembled "
         "from the same objects the prose census is printed from — read that rather than "
-        "parsing the prose.\n\n"
+        "parsing the prose. `checked_file` names the file this run actually read (md5, bytes, "
+        "mtime): on a client that syncs files to another machine, compare it with what you "
+        "wrote before believing findings about an edit — a synced copy can lag one edit "
+        "behind.\n\n"
         "Call this after writing a map and after every round of edits, until `ok` is true. "
         "APPLY THE FIXES; do not rewrite the map. A quotation reported as found verbatim in "
         "another chapter is a stale `chapter:` path, not a misquotation, and needs a one-line "
@@ -816,6 +830,17 @@ def check_reconstruction(path: str, source_root: str | None = None,
     p = Path(path).expanduser()
     if not p.exists():
         return dict(ok=False, error=f"no such file: {p}")
+    # WHICH FILE THIS RUN ACTUALLY SAW. On a remote-bridge client the file the model just wrote
+    # and the file on this machine can silently differ: measured on the Kant run, two commits in
+    # a row delivered a snapshot one edit behind, and two checker results were read as anomalies
+    # in edits they had never seen -- it took a forensic pass of checksums and rebuilds to
+    # untangle which run saw what. The checksum turns that afternoon into one comparison: hash
+    # what you wrote, and if `checked_file.md5` disagrees, the file did not arrive.
+    import hashlib
+    from datetime import datetime
+    raw = p.read_bytes()
+    checked = dict(md5=hashlib.md5(raw).hexdigest(), bytes=len(raw),
+                   mtime=datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="seconds"))
     extra = ["--no-fix"] + (["--selection-modes"] if full_report else [])
     r = _run_check(p, source_root, fmt="json", extra=extra)
     try:
@@ -823,6 +848,7 @@ def check_reconstruction(path: str, source_root: str | None = None,
     except json.JSONDecodeError:
         return dict(ok=False, error="the checker did not return JSON",
                     stdout=r.stdout[:1500], stderr=r.stderr[:800])
+    out["checked_file"] = checked
     # "NOTHING TO FIX" WAS SAID ABOUT FILES NOTHING HAD OPENED. `ok` reports that no fault was
     # found among the things the run looked at; `verified` reports whether the quotations were
     # among them, which is true only when a source_root was given. Both come back, and `next`

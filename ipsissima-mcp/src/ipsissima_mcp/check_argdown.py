@@ -618,6 +618,15 @@ def quotation_context_report(prov, doc, source_root, quotes):
             cont = c["continues"]
             more = (f" [and {len(cont) - 200} more chars to the sentence's end]"
                     if len(cont) > 200 else "")
+            # A "sentence end" WITH NO FINAL PUNCTUATION IS A BREAK, NOT AN END. The sentence
+            # model stops at the converter's sheet breaks and markers, so "widen to the end of
+            # its sentence" can mean ending the span on the word `the` -- which reads as absurd
+            # advice until you know why. Say so, and point at the convention that handles it.
+            if not re.search(r'[.!?…]["\'”’)\]]*\s*$', cont):
+                more += (" [this 'sentence' ends without final punctuation -- it is cut by a "
+                         "page break or marker in the converted file; the real sentence "
+                         "continues past it. Quote it as two spans with a note:, per the "
+                         "conventions]")
             bits.append(f'the sentence continues against it: "{cont[:200]}"{more}')
         if c["gap"]:
             bits.append(f"the elision bridges {c['gap']} characters of source")
@@ -2022,10 +2031,44 @@ def _report(cli, path, a):
     isolated = [nodes[n] for n in nodes if n not in src and n not in dst]
     terminal = [nodes[n] for n in nodes if n not in src]
 
+    # THE DRAWN MAP LIES ABOUT INTERMEDIATE CONCLUSIONS. An intermediate conclusion that
+    # carries relations of its own is exported as a separate statement node, but its carriage
+    # into the next step of its own PCS is not an edge argdown draws -- so it comes out
+    # terminal here while `title_edges` (and every provenance measure) knows it supports the
+    # step after it. Measured on the Kant map: the step-3 conclusion of a four-step argument
+    # was crowned APEX in three checker runs while CONTRIBUTION said two contentions and 0
+    # inert throughout. Cross-check against the edges the PCS implies, and name what was
+    # dropped rather than dropping it silently.
+    carried = []
+    doc_for_apex = export_json(cli, path)
+    if doc_for_apex:
+        try:
+            bears = {a for a, _b, _k in _prov.title_edges(doc_for_apex)}
+            def _norm(s):
+                return re.sub(r"\s+", " ", (s or "").replace('\\"', '"')).strip()
+            to_title = {}
+            for title, rec in _prov.merged_statements(doc_for_apex).items():
+                to_title[_norm(title)] = title
+                if rec.get("text"):
+                    to_title[_norm(rec["text"])] = title
+            kept = []
+            for t in terminal:
+                title = to_title.get(_norm(t))
+                if title and title in bears:
+                    carried.append((t, title))
+                else:
+                    kept.append(t)
+            terminal = kept
+        except Exception:
+            carried = []
+
     SHAPE["apex"] = list(terminal)
     print(f"\n   APEX ({len(terminal)} node(s) that support nothing):")
     for t in terminal:
         print(f"      * {t[:96]}")
+    for t, title in carried:
+        print(f"      (not apex: [{title}] is drawn as its own node but is an intermediate "
+              f"conclusion carried into a later step)")
     # Declared contentions stand beside the computed apex, never instead of it -- printing both
     # is what keeps a declaration from hiding structure.
     decl_fm = _fm.get("contentions")

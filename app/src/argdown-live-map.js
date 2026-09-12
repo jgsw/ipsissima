@@ -51,7 +51,15 @@ function index(graph) {
   // contentions -- spine, load, the depth ladder -- asks this one question instead of five
   // copies of `outCount === 0`.
   const declared = new Set(graph.contentions || []);
-  const isContention = id => (outCount.get(id) || 0) === 0 || declared.has(id);
+  // An intermediary conclusion drawn as its own node has NO outgoing edge -- its carriage into
+  // the later steps of its own argument is deliberately not drawn (a two-cycle with its own
+  // argument is dagre bait; see the `concludes` synthesis in argdown-graph.mjs). But it does
+  // support something, so "supports nothing" must not crown it: on the Kant map the step-3
+  // conclusion of a four-step argument sat at rung 0 beside the text's two definitions. The
+  // `concludes` marker on the synthesised edge is exactly the set of such nodes.
+  const midConclusion = new Set(edges.filter(e => e.concludes != null).map(e => e.to));
+  const isContention = id => ((outCount.get(id) || 0) === 0 && !midConclusion.has(id))
+                             || declared.has(id);
   return { nodes, edges, groups, byId, groupById, childrenOf, outCount, declared, isContention };
 }
 
