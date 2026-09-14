@@ -1068,6 +1068,34 @@ if _zotero_available():
                      if {"text/html", "application/pdf"} <= kinds else None),
             next="call argdown_plan with the path from `best`")
 
+    @server.tool(
+        structured_output=True,
+        title="Store the reconstruction in Zotero",
+        description=(
+            "Store copies of a reconstruction — the .argdown, the converted source it cites, "
+            "and optionally the exported one-file HTML — as attachments under the same Zotero "
+            "item as the source, so the whole reading survives together and travels with "
+            "Zotero's own sync. The working folder stays the source of truth; Zotero knows "
+            "each stored file's md5, so `check_only` reports which copies are current, stale "
+            "or absent without writing anything, and a plain call refreshes them.\n\n"
+            "Writes go to the Zotero running ON THIS COMPUTER, and only with the user's "
+            "consent given in Zotero's own dialog (Allow / Always Allow / Deny, naming "
+            "Ipsissima; revocable in Zotero's Settings > Advanced). Nothing here contacts "
+            "zotero.org — the copies travel only when the user's own Zotero syncs. Requires "
+            "Zotero 10+ running, and a source whose front matter carries its `zotero:` key."),
+    )
+    def zotero_store(path: str, export: str | None = None,
+                     check_only: bool = False) -> dict[str, Any]:
+        try:
+            from ipsissima_mcp import zotero_store as zs
+        except ImportError:
+            import zotero_store as zs
+        try:
+            lines = zs.store(path, export=export, check_only=check_only)
+        except SystemExit as e:
+            return dict(ok=False, error=str(e))
+        return dict(ok=True, report=lines)
+
 
 # ----------------------------------------------------------------- prompts ---- #
 # THE INSTRUCTIONS ARE PROSE, LOADED FRESH. Improving a reconstruction should mean editing a

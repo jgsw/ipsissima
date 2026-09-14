@@ -19,8 +19,13 @@ contains every asset it uses.
   `ipsissima-mcp/eval/CONVERTER-FINDINGS.md`, where several otherwise-good converters were
   rejected for exactly this.
 
-**Zotero is read-only.** The library is read from a *copy* of the database, never the live file,
-and nothing is ever written into the storage tree.
+**Zotero is read by copy, and written only with consent given in Zotero itself.** Reading uses
+a *copy* of the database, never the live file, and never touches the storage tree. Writing
+exists for one purpose — storing a reconstruction's own files as attachments under the item
+they read, when you ask for that — and goes through Zotero 10's local API on this machine:
+Zotero shows its own permission dialog naming Ipsissima (Allow / Always Allow / Deny), the
+key it grants works only locally, and the grant is revocable in Zotero's Settings ▸ Advanced.
+Nothing contacts zotero.org; stored copies travel only when your own Zotero syncs.
 
 **Publisher access stamps are removed.** A PDF served to a logged-in reader carries a line naming
 the downloading institution on every page. Ipsissima strips those during ingest, because a

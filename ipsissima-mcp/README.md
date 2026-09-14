@@ -266,7 +266,7 @@ a client that finds no tools will usually say nothing about why. This asks it di
 EOF
 ```
 
-One line of JSON comes back naming the server and its version. **A working install answers 11
+One line of JSON comes back naming the server and its version. **A working install answers 12
 tools (10 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
 is lower than that, the client is not the problem. (That sentence is held against the live
 server by the test suite, so it cannot quietly drift the way it did twice: it said 9 for five
@@ -451,8 +451,8 @@ comments, and Ipsissima's Manuscript view shows the page number beside the text.
 
 ## Zotero makes it better, and is not required
 
-Everything above works with no Zotero installed. If you do have it, the server notices, reads it
-**read-only** (never the live database — a copy, because Zotero holds the file open), and can:
+Everything above works with no Zotero installed. If you do have it, the server notices, reads
+it **by copy** (never the live database — Zotero holds the file open), and can:
 
 - build maps from items in your library, found by DOI, item key or title;
 - use an item's **HTML snapshot** for the text and its **PDF for the page numbers** — the best
@@ -460,9 +460,15 @@ Everything above works with no Zotero installed. If you do have it, the server n
   other lacks: a web page has no pages, and a PDF has no idea what a heading is. The page number
   is *read off each sheet*, not counted from one, because a paper whose front matter says it
   starts at 511 can print 514 on its first sheet;
-- find snapshots you had forgotten were there, which read far better than the PDF beside them.
+- find snapshots you had forgotten were there, which read far better than the PDF beside them;
+- **store the finished reconstruction back into Zotero**, on your request: the `.argdown`, the
+  converted source, and the exported one-file page land as attachments under the item they
+  read, so the whole reading survives beside its source and travels with Zotero's own sync.
 
-Nothing is ever written into your Zotero storage.
+Reading never writes anything. Storing writes only what you asked stored, only after you
+answer Zotero's own permission dialog (which names Ipsissima, and whose grant you can revoke
+in Zotero's Settings ▸ Advanced), and only to the Zotero on this machine — the server never
+contacts zotero.org.
 
 ---
 

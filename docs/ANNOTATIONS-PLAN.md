@@ -126,3 +126,41 @@ the second half of the agreed scope); EPUB/HTML attachments (the key rule genera
 converters differ); and the deferred non-Zotero project (§3.3). The text-first default
 (Formation item 6) can now be judged against a manuscript pane that carries the reader's
 own marks.
+
+## 6. The workflow programme — the author's E10 enlargement, ruled and begun 14 Sep
+
+The author's further thought, in the light of E10: what he would most like is a **whole
+workflow** integrating Ipsissima with Zotero — the extracted Markdown and the Argdown stored
+in Zotero alongside the source, "keeping everything together; nothing gets lost" — with the
+question put whether that needs a Zotero plugin.
+
+**The measurement that reshaped the plan.** His Zotero is 10.0.2, and since Zotero 10 the
+local API accepts **writes**: `POST /api/local/authorize` makes Zotero itself show a consent
+dialog naming the application (Allow / Always Allow / Deny; revocable in Settings ▸
+Advanced) and answer with a machine-local key; item, annotation and attachment writes plus a
+full three-phase file upload (md5-verified) follow the web API's shapes; local changes reach
+zotero.org only when the user's own Zotero syncs. So: **no plugin** — a plugin would buy
+only in-Zotero UI, at the price of a second codebase. §1's feasibility caveats are obsolete
+on the write side, and the md5 handshake makes staleness a measurement.
+
+**His rulings (14 Sep):** the project folder stays the source of truth, Zotero holding
+copies the machinery keeps honest (E10's "held together by machinery" done by content
+hash); the stored artifacts are the working pair he originally named plus the exported
+one-file HTML; both drivers — an app menu action and an MCP tool — from the start; stale
+copies are **flagged, refreshed on request**, never auto-pushed. Measured limit, his own
+test: Zotero's snapshot reader blocks scripts, so the stored export shows only its static
+shell *inside* Zotero — it opens fully via Show File in any real browser, and a static-SVG
+no-script fallback in the export is noted as a possible refinement.
+
+**Built the same day (MCP half):** `zotero_local.py` — the local-write client (server-ID
+handshake, the consent flow with "Always Allow" keys persisted to the one file both drivers
+share, single-use keys re-asked honestly, three-phase upload; every failure a sentence) —
+and `zotero_store.py` + the `zotero_store` MCP tool: the item found through the source's
+`zotero:` key to its parent, copies matched by filename (refreshed under `If-Match`, never
+duplicated), `--check` the flag half of flag-and-refresh. Held by `test_zotero_store.py`
+against a fake local Zotero implementing the measured protocol — a test that wrote to a
+real library would be a side effect in someone's research records. Promise copy moved with
+the capability (D6): SECURITY.md and the MCP README now say "read by copy, written only
+with consent given in Zotero itself". **Next:** the app-side driver (File ▸ Store in
+Zotero…, export included), then write-back with exact rectangles via a per-page word
+geometry sidecar written at conversion.

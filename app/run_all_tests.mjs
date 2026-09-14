@@ -92,6 +92,7 @@ const SUITES = [
   // checkout works fine for us and for nobody else.
   ["the package carries what it serves", PY, [path.join(PYTESTS, "test_installable.py")]],
   ["reading Zotero safely",      PY, [path.join(PYTESTS, "test_zotero.py")]],
+  ["the copies Zotero holds",    PY, [path.join(PYTESTS, "test_zotero_store.py")]],
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),
                                                 "--self-test"]],
   ["the PDF probe",              PY, [path.join(MCP, "eval", "probe_pdf.py"), "--self-test"]],
