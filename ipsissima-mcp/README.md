@@ -404,6 +404,11 @@ Ipsissima reads your **live file**, so the Manuscript view is always your curren
 `.docx`, `.odt`, `.html`, `.epub`, `.tex`. The document's own structure survives: a heading is a
 heading because the document says so, not because something guessed from the type size.
 
+A **saved web page** is the one silver format that is mostly not the document — nav, ads,
+"related stories", images embedded as base64. Ingest finds the article by text density and
+never writes the rest; embedded images are blanked and a Project Gutenberg text loses its
+header and licence together. Every cut is counted in the converted file's own header.
+
 **If you are not writing in Markdown**, the best workflow is to export to Markdown yourself with
 pandoc and keep that file as the manuscript:
 

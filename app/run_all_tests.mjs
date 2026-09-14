@@ -81,6 +81,7 @@ const SUITES = [
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
   ["what holds the argument up", "node", [path.join(HERE, "test_spine.mjs")]],
   ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
+  ["what ingest refuses to write", PY, [path.join(PYTESTS, "test_ingest.py")]],
   ["the publisher's own structure", PY, [path.join(PYTESTS, "test_structured_source.py")]],
   ["named rules: the python half", PY, [path.join(PYTESTS, "test_validity.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],

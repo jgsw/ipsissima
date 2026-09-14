@@ -5,8 +5,10 @@
 > publick*. Dublin.
 >
 > **Public domain.** The converted text in `source/` was made from Project Gutenberg e-text
-> #1080 and keeps Gutenberg's front and back matter, blanked and trimmed by the converter's
-> ordinary rules.
+> #1080. Gutenberg's apparatus — header and licence together — is cut by the converter's
+> creation-time rule: PG's terms allow the public-domain text stripped of all PG references,
+> or the ebook whole with its licence, never their branding without their licence. This
+> note is the provenance record.
 
 **Read the front matter's note before the map.** The pamphlet is a satire, and its surface
 argument — that the poor of Ireland should sell their year-old children as food — is monstrous

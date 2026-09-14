@@ -42,6 +42,25 @@ THREE THINGS THAT BITE, all silent, all handled here:
   * BACK MATTER stays in the file on disk and is trimmed only for the prompt. Cutting it from
     the file would be the one operation here that loses text, and because references sit at the
     end, keeping them costs nothing and keeps every line number stable.
+
+WHAT INGEST CUTS, IT CUTS AT CREATION, AND SAYS SO. The never-cut rule above protects a file a
+reconstruction already anchors to: removing a line from THAT file slides every position below
+it. At ingest there is no reconstruction yet -- the file is being created, and choosing what
+the file IS loses nothing anyone anchored. Three cuts are made at the door, each counted in
+the file's own header:
+
+  * PAGE CHROME on the .html route: the article is found by text density (`html_to_source.py`)
+    and the nav, ads and "related stories" around it are never written. Measured on the file
+    that forced this: a saved transcript page was 2.2 MB of which 97.6% was base64 images, and
+    the speech was 498 words of the 2,591 the page's text still held.
+  * EMBEDDED BASE64 ASSETS, on every route: an image is nobody's wording, and each blob counts
+    as one "word" to every word-count this pipeline reports, so a megabyte hides behind an
+    honest-looking number. The URI is stubbed; alt text, which IS page text, stays.
+  * PROJECT GUTENBERG'S APPARATUS -- cover, machine header, licence -- cut together, never
+    halved: PG's own terms allow the public-domain text stripped of all PG references, or the
+    ebook whole with its licence, and keeping their branding while cutting their licence is
+    the one combination those terms forbid. Provenance belongs in the folder's README, where
+    the samples already keep it.
 """
 import argparse
 import os
@@ -164,6 +183,78 @@ BYLINE = re.compile(r"(?m)^\s*By\s+[A-Z][-A-Z.'’ ]{4,}\s*$")
 #: quotation -- so they are converted to the `<!-- p.N begins here -->` convention every other
 #: route uses, and lifted out of the running text.
 PAGENUM_SPAN = re.compile(r"\[(?:\{\[\]\{#[^}]*\})?(\d+)\}?\]\{\.pagenum\}")
+
+
+#: An embedded base64 asset, as a page saved self-contained carries them. The length floor is
+#: what keeps this honest: a short data URI can be a deliberate inline glyph, but 200+
+#: characters of base64 is an asset, and the Thunberg measurement (97.6% of a 2.2 MB file)
+#: showed what leaving them in costs. Word counts cannot see them -- each blob splits as one
+#: "word" -- which is why the note below reports kilobytes.
+DATA_URI = re.compile(r"data:[a-z]+/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=]{200,}")
+
+#: Project Gutenberg's own boundary markers, in pandoc's escaped form (`\*\*\* START OF THE
+#: PROJECT GUTENBERG EBOOK ... \*\*\*`) or the plain-text original. `.{0,40}` is the escaped
+#: asterisks and nothing else worth matching mid-sentence.
+GUTENBERG_START = re.compile(r"(?im)^.{0,40}START OF (?:THE|THIS) PROJECT GUTENBERG.*$")
+GUTENBERG_END = re.compile(r"(?im)^.{0,40}END OF (?:THE|THIS) PROJECT GUTENBERG.*$")
+
+
+def strip_data_uris(md):
+    """Embedded base64 assets -> a stub URI. Returns (text, count, kilobytes removed).
+
+    The image syntax around the URI is left standing, so alt text -- which is page text --
+    survives, and the stub says where the bytes went rather than pretending a broken link.
+    """
+    tally = [0, 0]
+
+    def stub(m):
+        tally[0] += 1
+        tally[1] += len(m.group(0))
+        return "data:,removed-at-ingest"
+
+    out = DATA_URI.sub(stub, md)
+    return out, tally[0], tally[1] // 1024
+
+
+def _pg_junk(line):
+    """A line that is only conversion scaffolding: a pandoc div fence, a bare anchor, an
+    image reference, or nothing. Never a line with words on it."""
+    t = line.strip()
+    return (not t or re.fullmatch(r":{2,}.*", t) or re.fullmatch(r"\[\]\{#[^}]*\}", t)
+            or re.fullmatch(r"!\[[^\]]*\]\([^)]*\)", t) is not None)
+
+
+def strip_gutenberg(md):
+    """Project Gutenberg's apparatus, cut at creation. Returns (text, note_or_None).
+
+    HEADER AND LICENCE GO TOGETHER -- see the module docstring for why halving them is the one
+    wrong combination. Everything through the START marker goes (cover image, machine header,
+    the eBook boilerplate) and everything from the END marker on (the donation and licence
+    sections, which no heading pattern recognises because PG marks them with div classes).
+    The markers sit inside pandoc's div fences, so the kept text is trimmed of the orphaned
+    fence lines at its edges -- fence lines only, never a line with words on it.
+    """
+    s = GUTENBERG_START.search(md)
+    e = GUTENBERG_END.search(md)
+    if not s and not e:
+        return md, None
+    start = s.end() if s else 0
+    end = e.start() if e else len(md)
+    if end <= start:
+        return md, ("! Project Gutenberg markers found out of order -- nothing cut; "
+                    "read the file before trusting it")
+    kept = md[start:end].splitlines()
+    while kept and _pg_junk(kept[0]):
+        kept.pop(0)
+    while kept and _pg_junk(kept[-1]):
+        kept.pop()
+    body = "\n".join(kept) + "\n"
+    cut = len(md.split()) - len(body.split())
+    sides = "header and licence" if s and e else ("header" if s else "licence")
+    return body, (f"Project Gutenberg apparatus ({sides}, {cut} words) cut at ingest -- "
+                  f"the text is public domain; PG's terms allow it stripped of PG "
+                  f"references, or the ebook whole, never their branding without their "
+                  f"licence. Provenance goes in the folder's README")
 
 
 def convert_pagenum_spans(md):
@@ -402,6 +493,37 @@ def from_pandoc(path, ext):
     return r.stdout, notes
 
 
+def from_html(path):
+    """A saved web page: the article, found by text density -- not the whole page.
+
+    THE INTELLIGENCE ALREADY EXISTED and was simply not wired in: `html_to_source.py` has
+    found the article element by density for the Zotero route since it was written, while
+    this module sent .html through plain pandoc -- which faithfully converted a saved
+    transcript page's every ad slot and thumbnail (see the module docstring's measurements).
+    When no element holds enough article text, the whole page still goes through pandoc as
+    before, loudly: that usually means a landing page or a paywall notice, and a wrong whole
+    page the note points at beats a silent refusal.
+    """
+    try:
+        try:
+            from .html_to_source import convert as article_convert
+        except ImportError:
+            from html_to_source import convert as article_convert
+    except Exception as exc:            # bs4/lxml missing in a bare environment
+        md, notes = from_pandoc(path, ".html")
+        notes.append(f"! article finder unavailable ({exc.__class__.__name__}) -- the whole "
+                     f"saved page was converted, chrome and all")
+        return md, notes
+    md, rep = article_convert(path)
+    if md is None:
+        md, notes = from_pandoc(path, ".html")
+        notes.append(f"! {rep['why']} -- the whole saved page was converted; read the result")
+        return md, notes
+    return md, [f"article found by text density: {rep['words']} words; the rest of the "
+                f"saved page (nav, ads, related stories) was not the article and was "
+                f"never written"]
+
+
 def is_tei(path):
     """Is this XML a TEI document? Decided by the namespace, not the extension.
 
@@ -456,12 +578,24 @@ def ingest_one(path, allow_ocr=True):
     # which is exactly the inversion `structured_source.py` exists to complain about.
     elif ext in (".zip", ".xml") and is_tei(path):
         md, notes = from_tei(path)
+    elif ext in (".html", ".htm"):
+        md, notes = from_html(path)
     elif ext in PANDOC_FORMATS:
         md, notes = from_pandoc(path, ext)
     elif ext in PASSTHROUGH:
         md, notes = open(path, encoding="utf-8", errors="replace").read(), ["copied verbatim"]
     else:
         raise SystemExit(f"no route for {ext or 'a file with no extension'}: {path}")
+    # THE CREATION-TIME CUTS, before anything indexes a line: see the module docstring. PG
+    # first, because its header carries headings tidy_headings would otherwise be reported
+    # as having repaired.
+    md, pg_note = strip_gutenberg(md)
+    if pg_note:
+        notes.append(pg_note)
+    md, uris, kb = strip_data_uris(md)
+    if uris:
+        notes.append(f"{uris} embedded base64 asset(s) ({kb} KB) blanked at ingest -- an "
+                     f"image is nobody's wording; alt text, where there was any, is kept")
     md, fixed = tidy_headings(md)
     if fixed:
         notes.append(f"{fixed} heading(s) unwrapped from emphasis")
