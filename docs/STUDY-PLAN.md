@@ -76,10 +76,13 @@ article, it may be far from obvious. So it seems like something that should be o
 and non-obtrusive." That rules out the door as originally drawn: the commitment gesture is
 **recallable only, never offered** — no panel on opening, no prompt at the folder drop; it
 lives where study mode lives (How to use, and nowhere louder), for the reader who has read
-the text and wants to test their own reading against the map's. The remaining questions —
-whether the commitment persists as a margin note or evaporates with the session, and
-whether the classroom variant is worth designing before the first watched novice — still
-stand, and the build awaits the word.
+the text and wants to test their own reading against the map's.
+
+**Closed, 14 Sep, on the author's second ruling:** "On reflection, I don't think we need
+Wave 4 at present." Nothing is built; this section stays as the record of the design and
+of why it was set aside, and study mode carries the reach-first idea in the form the
+author did want. If the need returns — a teacher asking for exactly this — the recallable-
+only shape above is where to restart.
 
 **The shape.** An optional door, offered once and remembered, when a reading-genre map opens
 with its manuscript present: *"Before the map: mark what you take the text to be finally
@@ -106,9 +109,7 @@ returns uninvited, and remains recallable from the same place study mode lives.
 
 ## 3. Standing
 
-Wave 3 is built, tested and in both viewers (14 Sep); wave 4 is re-shaped by the author's
-steer — recallable only, never offered — and awaits the word, with persistence and the
-classroom variant its two open questions. Both designs reuse machinery that exists; the new
-code is the mode's choreography, not new capability. The gate stays the editor programme's:
-the class-of-fifty brief as design target, one watched novice worth more than any
-self-measurement.
+Wave 3 is built, tested and in both viewers (14 Sep). Wave 4 is closed unbuilt, on the
+author's ruling of the same day — the design kept above as the restart point if the need
+returns. The gate stays the editor programme's: the class-of-fifty brief as design target,
+one watched novice worth more than any self-measurement.

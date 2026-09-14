@@ -54,7 +54,32 @@ line-wrapping cannot move it.
 - **The refusal to judge**, in the report's own last line: which reading is better is the
   argument the two files exist to have, and it is theirs.
 
-## 2. The App surface — not yet designed; the questions for the author
+## 2. The App surface — ruled 14 Sep, and the first surface built the same day
+
+**The rulings.** The manuscript-as-common-ground surface first (candidate 1). The classroom
+aggregate (candidate 4) is deferred in the author's words: "I can see that the classroom
+aggregate could be very useful; but I don't yet have a class of students with whom to test
+it" — it waits for the field data it would itself serve. And on the end state: "I suspect
+that the two maps side by side may be the final resting place; but even when it's built it
+would also be useful to use the manuscript as a common ground" — so candidate 2 remains the
+likely destination, and what is built now is not thrown away by it.
+
+**What shipped** (held by rendered-DOM checks: a real second file handed to the control, ×
+to end, and the refusal). A **Compare…** control in the Manuscript pane's header — offered
+only where the page carries the parser to read a second file (the standalone, the Reader,
+the application; a baked per-map viewer rightly never shows it: a control that cannot work
+is clutter, not teaching). Opening another reading of the same text paints each paragraph's
+standing in the margin: a stripe for read-by-both, read-by-this-map, read-by-the-other; a
+⚑ where the two read the same words *differently*, with the hover naming the divergence in
+the comparator's three kinds (crux declared on one side only; #reported on one side only —
+a disagreement about who is speaking; the checked end of the fidelity ladder against the
+interpretive end). Hovering names the claims each map draws from the passage. Placement
+rides the page's own machinery (`locateInPage`), never text-matching between the two maps'
+claims; the layer clears with one click, both files untouched; a file placing no claim in
+this manuscript is refused with the not-readings-of-the-same-source sentence rather than
+painted as an empty layer. The help topic "Comparing two readings" documents it.
+
+## 2a. The candidates, as originally put
 
 The comparator serves whoever has files and a shell — the teacher with fifty maps, the
 scholar with two. What the App should draw is a design with real alternatives, and it is
@@ -78,14 +103,12 @@ deliberately not built ahead of a ruling (D7). The candidates, with what each co
    surface of the four. It is also the one that turns the teacher's fifty files into the
    field data the Formation episode wants.
 
-**Questions put to the author:** which surface first (the recommendation is 1, with 4 close
-behind for the classroom); whether comparison belongs in the exported Reader page or only
-in the working App; and whether cross-folder identity (the same work in two editions, two
-converters, two filenames) is worth a declared key later — within one folder the shared
-chapters answer identity, and nothing was invented ahead of the need.
+**The questions, as ruled (14 Sep):** surface 1 first — built; 4 deferred until a class
+exists; 2 the likely end state, with 1 kept beside it. Cross-folder identity stays
+uninvented ahead of the need.
 
 ## 3. Standing
 
-Wave 2's computation half is shipped and tested; its App half awaits the rulings above.
-The comparator is deliberately a CLI first: every surface in §2 renders what it computes,
-so nothing built now is thrown away by any ruling.
+Wave 2 is whole: the comparator (CLI, §1) and the manuscript-as-common-ground surface
+(App, §2) are both shipped and tested. Ahead, in their own time: the two-maps-side-by-side
+end state, and the classroom aggregate when there is a classroom.

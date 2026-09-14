@@ -554,6 +554,20 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 #split::after{content:"";position:absolute;inset:0 3px;background:var(--line)}
 #split:hover::after,#split.dragging::after{background:var(--accent)}
 @media (prefers-color-scheme:dark){#ms .hit{--hit:rgba(120,170,255,.22)}}
+
+/* THE MANUSCRIPT AS COMMON GROUND (docs/PLURALITY-PLAN.md §2, ruled 14 Sep): while a second
+   reading is open for comparison, each passage's standing is a stripe in the text's own
+   margin — read by both maps, by this one alone, or by the other alone — and a passage the
+   two read DIFFERENTLY carries a flag. Inset shadows, not borders: the text must not move
+   when the layer appears, and the whole layer goes with one click (P6). */
+#ms .cmp-both{box-shadow:inset 3px 0 0 var(--accent)}
+#ms .cmp-mine{box-shadow:inset 3px 0 0 var(--fg-dim)}
+#ms .cmp-other{box-shadow:inset 3px 0 0 transparent;
+  background:linear-gradient(to right,var(--line) 0,var(--line) 3px,transparent 3px)}
+#ms .cmp-div{position:relative}
+#ms .cmp-div::after{content:"⚑";position:absolute;left:-1.05em;top:0;font-size:.85em;
+  color:var(--accent)}
+#cmpnote{font-size:11px;color:var(--fg-dim);font-style:italic}
 #src{margin:0;padding:.7rem .9rem;
   font:12.5px/1.6 var(--argdown-font);
   font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual;
@@ -1227,6 +1241,17 @@ body.fs #fsexit{display:inline-flex}
                 title="New claim carrying the selected words as its text — fidelity: quotation, the source recorded verbatim, the chapter cited. The title arrives selected, ready to be renamed.">Quote this passage</button>
         <button class="plain" id="mspara" hidden
                 title="New claim for saying the selected words your own way — fidelity: paraphrase, with the source recorded verbatim so the reading can be checked against it. Your restatement arrives selected, ready to be written.">Paraphrase it</button>
+        <!-- THE MANUSCRIPT AS COMMON GROUND (docs/PLURALITY-PLAN.md §2, ruled 14 Sep): open
+             another reading of this same text, and the margin shows where the two maps read
+             the same passages, where each goes alone, and where they read the same words
+             differently. The text is the one thing two readings share, so the text is where
+             their disagreement is legible. -->
+        <button class="plain" id="mscompare" hidden
+                title="Open another reconstruction of this same text, and see in the margin which passages each reading covers — and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have.">Compare…</button>
+        <input type="file" id="cmpfile" hidden accept=".argdown">
+        <span id="cmpnote" hidden></span>
+        <button class="plain" id="cmpend" hidden
+                title="End the comparison. The margin stripes go; both files are untouched.">&times; end</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
       <div id="mstext" tabindex="0"></div>
@@ -1361,6 +1386,8 @@ function render(name, source, graph){
   // And a study run: its frontier belongs to the map that was open, and its saved fold state
   // must not be put back over a different file's map.
   if (STUDY) endStudy(false);
+  // And a comparison: the other reading was another reading of the file that was open.
+  endCompare();
   // And so is a standing quote-this-passage offer: its words belong to the file that was open.
   QUOTE_SEL = null;
   $("msquote").hidden = true;
@@ -4011,10 +4038,12 @@ function msRender(path){
       marked[q].classList.add("mline");
       MSLINES[ln - 1] = marked[q];
     }
+    cmpPaint();
     return true;
   }
   box.classList.remove("prose");
   box.appendChild(frag);
+  cmpPaint();
   return true;
 }
 
@@ -4285,6 +4314,167 @@ function msClaimsAt(line){
   return { ids: out, span: span };
 }
 
+/* ================= THE MANUSCRIPT AS COMMON GROUND =====================================
+ *
+ * Compare this reconstruction with another reading of the same text (docs/PLURALITY-PLAN.md
+ * §2, ruled 14 Sep 2026). One file asserts one reading; two defensible readings are two
+ * files; and the one thing the two share is the text — so the text is where their
+ * disagreement is drawn. While a comparison is open, each paragraph of the manuscript
+ * carries its standing in the margin: read by both maps, by this one alone, or by the other
+ * alone — and a paragraph the two read DIFFERENTLY carries a flag whose hover says how:
+ * one map marks the reading contested (#crux) where the other does not; the maps disagree
+ * about who is speaking (#reported on one side only); or the same words are read at the
+ * checked end of the fidelity ladder by one and the interpretive end by the other.
+ *
+ * NOTHING IS JUDGED. The maps are compared BY PASSAGE, via the same placement machinery the
+ * pane already trusts — never by guessing whether two claim texts "mean the same thing",
+ * which would be a judgement about both readings (G3). And the layer is a costume, not a
+ * commitment: one click ends it, both files untouched (P6).
+ */
+var CMP = null;                 // { name, graph } — the other reading, or null
+
+function cmpSyncHeader(){
+  var on = !!CMP;
+  // OFFERED ONLY WHERE IT CAN WORK. A per-map viewer baked without the parser cannot read a
+  // second file, and a control that can never work is clutter, not teaching (the Manuscript
+  // tab's own policy). The standalone, the Reader and the application all carry the parser.
+  var can = typeof window.__ARGDOWN_PARSE__ === "function";
+  $("mscompare").hidden = on || !MSCHAPTER || !can;
+  $("cmpnote").hidden = !on;
+  $("cmpend").hidden = !on;
+}
+
+/** Claims of one graph placed in the paragraph [span] of the chapter on screen. The chapter
+ *  is matched by path or basename, the same tolerance locateInPage itself applies to a
+ *  loose-dropped file. */
+function cmpAt(graph, span){
+  var base = MSCHAPTER ? MSCHAPTER.slice(MSCHAPTER.lastIndexOf("/") + 1) : "";
+  var out = [], nodes = (graph && graph.nodes) || [];
+  for (var i = 0; i < nodes.length; i++) {
+    var p = nodes[i].pos;
+    if (!p || p.line == null || !p.chapter) continue;
+    if (p.chapter !== MSCHAPTER &&
+        p.chapter.slice(p.chapter.lastIndexOf("/") + 1) !== base) continue;
+    if (p.line >= span[0] && p.line <= span[1]) out.push(nodes[i]);
+  }
+  return out;
+}
+
+/** How the two sides read one passage differently — [] where they do not. */
+function cmpKinds(a, b){
+  var has = function(list, t){
+    for (var i = 0; i < list.length; i++)
+      if ((list[i].tags || []).indexOf(t) >= 0) return true;
+    return false;
+  };
+  var lvl = function(list, levels){
+    for (var i = 0; i < list.length; i++)
+      if (levels.indexOf(list[i].fidelity) >= 0) return true;
+    return false;
+  };
+  var CHECKED = ["quotation", "paraphrase"], INTERP = ["interpretation", "imputation"];
+  var kinds = [];
+  if (has(a, "crux") !== has(b, "crux"))
+    kinds.push("one map marks the reading here as contested (#crux); the other reads the " +
+               "same passage without noting a choice");
+  if (has(a, "reported") !== has(b, "reported"))
+    kinds.push("the maps disagree about who is speaking: one reads this passage as the " +
+               "author's own voice, the other as a view the author sets out (#reported)");
+  var aC = lvl(a, CHECKED), aI = lvl(a, INTERP), bC = lvl(b, CHECKED), bI = lvl(b, INTERP);
+  if ((aC && bI && !bC) || (bC && aI && !aC))
+    kinds.push("the same words are read at the checked end of the fidelity ladder by one " +
+               "map and the interpretive end by the other");
+  return kinds;
+}
+
+/** Paint the margin for the chapter on screen. Idempotent, and a no-op outside a
+ *  comparison; called from msRender (a fresh chapter), redrawFrom (this map edited), and
+ *  startCompare itself. */
+function cmpPaint(){
+  var i, k;
+  for (i = 0; i < MSLINES.length; i++) {
+    var el0 = MSLINES[i];
+    if (!el0) continue;
+    el0.classList.remove("cmp-both", "cmp-mine", "cmp-other", "cmp-div");
+    if (el0.dataset.cmpTitle != null) { el0.removeAttribute("title"); delete el0.dataset.cmpTitle; }
+  }
+  cmpSyncHeader();
+  if (!CMP || !MSCHAPTER) return;
+  var counts = { both: 0, mine: 0, other: 0, div: 0 }, done = {};
+  for (i = 1; i < MSPARA.length; i++) {
+    var span = MSPARA[i];
+    if (!span || done[span[0]]) continue;
+    done[span[0]] = true;
+    var a = cmpAt(CURRENT_GRAPH, span), b = cmpAt(CMP.graph, span);
+    if (!a.length && !b.length) continue;
+    var cls = a.length && b.length ? "cmp-both" : a.length ? "cmp-mine" : "cmp-other";
+    counts[a.length && b.length ? "both" : a.length ? "mine" : "other"]++;
+    var kinds = a.length && b.length ? cmpKinds(a, b) : [];
+    if (kinds.length) counts.div++;
+    var names = function(list){
+      return list.map(function(n){ return "[" + n.label + "]"; }).join(", ");
+    };
+    var title = (a.length ? "this map: " + names(a) : "this map: —") +
+                " · " + CMP.name + ": " + (b.length ? names(b) : "—") +
+                (kinds.length ? "\n⚑ " + kinds.join("\n⚑ ") : "");
+    for (k = span[0]; k <= span[1]; k++) {
+      var el = MSLINES[k - 1];
+      if (!el) continue;
+      el.classList.add(cls);
+      if (kinds.length && k === span[0]) el.classList.add("cmp-div");
+      el.title = title;
+      el.dataset.cmpTitle = "1";
+    }
+  }
+  $("cmpnote").textContent = "vs " + CMP.name + " — " + counts.both + " shared, " +
+    counts.mine + " here only, " + counts.other + " theirs only" +
+    (counts.div ? ", " + counts.div + " read differently" : "") + " (this chapter)";
+}
+
+function startCompare(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    var text = String(reader.result || ""), graph = null;
+    try { graph = window.__ARGDOWN_PARSE__(text); }
+    catch (e) {
+      // The parser wrapper already speaks the translated line-and-column language the
+      // editor's own errors use; repeat it, do not re-word it.
+      showErr("Could not read “" + file.name + "” as Argdown: " +
+              (e && e.message || String(e)));
+      return;
+    }
+    locateInPage(graph, msSources());
+    var placed = 0;
+    for (var i = 0; i < graph.nodes.length; i++)
+      if (graph.nodes[i].pos && graph.nodes[i].pos.line != null) placed++;
+    // NOT A READING OF THIS TEXT. Zero placed claims means no verified ground to compare
+    // on, and painting an empty layer would read as the feature being broken rather than
+    // as the files not sharing a source. Say which it is.
+    if (!placed) {
+      showErr("“" + file.name + "” places no claim in this manuscript, so there " +
+              "is no shared text to compare on. Two maps that cite no chapter in common " +
+              "are not readings of the same source.");
+      return;
+    }
+    clearErr();
+    CMP = { name: file.name, graph: graph };
+    cmpPaint();
+  };
+  reader.onerror = function(){ showErr("Could not read the file: " + file.name); };
+  reader.readAsText(file);
+}
+
+function endCompare(){
+  if (!CMP) return;
+  CMP = null;
+  $("cmpfile").value = "";
+  cmpPaint();
+}
+
+$("mscompare").onclick = function(){ $("cmpfile").click(); };
+$("cmpfile").onchange = function(){ if (this.files && this.files[0]) startCompare(this.files[0]); };
+$("cmpend").onclick = endCompare;
+
 /* ================= THE ARGDOWN PANE: read-only, or an editor ==========================
  *
  * One pane, two fillings. Without the editor bundle it is the highlighted `<pre>` it always was.
@@ -4498,6 +4688,8 @@ function redrawFrom(graph){
   if (MS && window.ArgdownPositions) locateInPage(graph, msSources());
   var sig = mapSignature(graph);
   CURRENT_GRAPH = graph;
+  // An edit moved this map's claims; the comparison margin reads them live, so repaint it.
+  cmpPaint();
   if (sig === MAP_SIG) return;            // the edit did not touch the picture
   MAP_SIG = sig;
   var keep = LIVE ? LIVE.getState() : null;

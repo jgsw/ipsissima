@@ -561,6 +561,29 @@ note names the road not taken. A map declaring any shows **one reading · N crux
 title: it is one reading among defensible readings, and it says so at exactly the points where
 that matters.
 
+## Comparing two readings
+
+
+One text legitimately supports more than one reconstruction, and two defensible readings are
+two `.argdown` files. To see where they differ, open one of them, show the Manuscript, and
+press **Compare…** in the Manuscript's header, choosing the other file. The text is the one
+thing the two readings share, so the text is where their disagreement is drawn: each passage's
+margin shows whether **both** maps read it, only **this** one, or only the **other** — and a
+passage the two read *differently* carries a **⚑** whose hover says how. Three kinds of
+difference are flagged, all from what the maps themselves declare:
+
+- one map marks the reading **contested** (`#crux`) where the other notes no choice;
+- the maps disagree about **who is speaking** — one reads the passage as the author's own
+  voice, the other as a view the author sets out (`#reported`);
+- the same words are read at the **checked** end of the fidelity ladder by one map
+  (quotation, paraphrase) and the **interpretive** end by the other.
+
+Hovering a striped passage names the claims each map draws from it. Nothing is judged and
+nothing is written: which reading is better is the argument the two files exist to have, and
+**× end** removes every stripe, both files untouched. A file that places no claim in this
+manuscript is refused with an explanation — maps citing no text in common are not readings of
+the same source, and there is nothing to compare them on.
+
 # Working with a reconstruction
 
 ## Opening a reconstruction

@@ -1720,9 +1720,144 @@ async function studyChecks(browser) {
   await ctx.close();
 }
 
+/* -------------------------------------------------- the manuscript as common ground */
+/* Comparing two readings of one text (docs/PLURALITY-PLAN.md §2, ruled 14 Sep 2026): the
+ * margin shows where each reading covers the text and where the two read the same words
+ * differently. Driven as a reader would: the Manuscript pane's Compare… control, a real
+ * file handed to its input, × to end. The refusal is checked too: a map of a different
+ * text is told so, not painted as an empty layer. */
+async function compareChecks(browser) {
+  const root = fs.mkdtempSync(path.join(tmp, "cmp-"));
+  fs.mkdirSync(path.join(root, "source"));
+  fs.writeFileSync(path.join(root, "source", "essay.md"), [
+    "The argument of this essay is that memory functions as a promise made to the future self.",
+    "",
+    "Each act of recollection carries an obligation forward, binding the rememberer to what",
+    "they once witnessed.",
+    "",
+    "Some will say that recollection is merely causal, a trace with no normative force at all.",
+    "",
+    "There is much else to say about the phenomenology of remembering, none of it at issue.",
+    "",
+    "A promise unkept corrodes the keeper, and an unkept memory corrodes no less.",
+    "",
+    "The sceptic replies that traces fade whether or not anyone is bound by them.",
+    ""
+  ].join("\n"));
+  const fm = (title, mode) => [
+    "===", "title: " + title, "reconstruction:", "    aim: fit", "    unit: meaning",
+    "    mode: " + mode, "    strength: ordinary",
+    "defaults:", "    chapter: \"source/essay.md\"", "===", "", ""
+  ].join("\n");
+  fs.writeFileSync(path.join(root, "reading-a.argdown"), fm("Reading A", "coherence") + [
+    "[Memory is promissory]: Memory binds as \"a promise made to the future self\". {fidelity: \"compression\"}",
+    "",
+    "[Recollection binds]: Recollection \"carries an obligation forward, binding the rememberer\" to the witnessed. {fidelity: \"paraphrase\"}",
+    "    +> [Memory is promissory]",
+    "",
+    "[Causal trace reading]: Recollection may be \"merely causal, a trace with no normative force\" at all. #crux {fidelity: \"compression\", note: \"The causal reading is live.\"}",
+    "    -> [Memory is promissory]",
+    "",
+    "[Corrosion]: \"A promise unkept corrodes the keeper\", and an unkept memory no less. {fidelity: \"compression\"}",
+    "    +> [Memory is promissory]",
+    ""
+  ].join("\n"));
+  const readingB = fm("Reading B", "truth") + [
+    "[Memory as mere trace]: The essay concedes that \"traces fade whether or not anyone is bound\" by them. {fidelity: \"compression\"}",
+    "",
+    "[Obligation passage]: The binding view — \"carries an obligation forward, binding the rememberer\" — is set out to be undermined. #reported {fidelity: \"interpretation\", warrant: \"coherence\"}",
+    "    +> [Memory as mere trace]",
+    "",
+    "[Causal passage]: Recollection is \"merely causal, a trace with no normative force\" at all. {fidelity: \"compression\"}",
+    "    +> [Memory as mere trace]",
+    ""
+  ].join("\n");
+  fs.writeFileSync(path.join(root, "reading-b.argdown"), readingB);
+  fs.writeFileSync(path.join(root, "other.argdown"), [
+    "===", "defaults:", "    chapter: \"source/other.md\"", "===", "",
+    "[Elsewhere]: A claim about some other text entirely.", ""
+  ].join("\n"));
+
+  const out = path.join(root, "viewer.html");
+  try {
+    // --editor, because the Compare control needs the in-page parser to read the second
+    // file, and a baked per-map viewer without one (rightly) never offers the control.
+    execFileSync("node", [BUILDER, path.join(root, "reading-a.argdown"),
+                          "-o", out, "--source-root", root, "--editor"], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "compare: the fixture viewer builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  await page.click('#panes [data-p="text"]');
+  await page.waitForSelector("#mscompare:not([hidden])", { timeout: 10000 });
+  check(true, "compare: the control appears with the manuscript", "");
+
+  await page.setInputFiles("#cmpfile", path.join(root, "reading-b.argdown"));
+  await page.waitForSelector("#cmpnote:not([hidden])", { timeout: 10000 });
+  const painted = await page.evaluate(() => {
+    const at = q => {
+      const el = [...document.querySelectorAll("#mstext .mline")]
+        .find(e => (e.textContent || "").includes(q));
+      return el ? { cls: el.className, title: el.title || "" } : null;
+    };
+    return {
+      note: document.getElementById("cmpnote").textContent,
+      both: at("carries an obligation forward"),
+      crux: at("merely causal"),
+      mine: at("promise unkept corrodes"),
+      other: at("traces fade")
+    };
+  });
+  check(painted.both && /cmp-both/.test(painted.both.cls),
+        "a passage both maps read is striped as shared", JSON.stringify(painted.both));
+  check(painted.crux && /cmp-div/.test(painted.crux.cls) &&
+        /contested/.test(painted.crux.title),
+        "the crux divergence is flagged where only one map declares it",
+        JSON.stringify(painted.crux));
+  check(painted.both && /who is speaking/.test(painted.both.title),
+        "the voice divergence is named on the shared passage", painted.both && painted.both.title);
+  check(painted.mine && /cmp-mine/.test(painted.mine.cls),
+        "a passage only this map reads is striped as its own", JSON.stringify(painted.mine));
+  check(painted.other && /cmp-other/.test(painted.other.cls),
+        "a passage only the other map reads is striped as theirs", JSON.stringify(painted.other));
+  check(/read differently/.test(painted.note),
+        "the header counts the disagreements", painted.note);
+
+  await page.click("#cmpend");
+  const cleared = await page.evaluate(() => ({
+    stripes: document.querySelectorAll("#mstext .cmp-both, #mstext .cmp-mine, " +
+                                       "#mstext .cmp-other, #mstext .cmp-div").length,
+    note: document.getElementById("cmpnote").hidden,
+    again: document.getElementById("mscompare").hidden
+  }));
+  check(cleared.stripes === 0 && cleared.note && !cleared.again,
+        "ending the comparison clears every stripe and offers the control again",
+        JSON.stringify(cleared));
+
+  await page.setInputFiles("#cmpfile", path.join(root, "other.argdown"));
+  await page.waitForSelector("#err.show", { timeout: 10000 });
+  const refused = await page.evaluate(() => ({
+    msg: document.getElementById("errmsg").textContent,
+    note: document.getElementById("cmpnote").hidden
+  }));
+  check(/not readings of the same source/.test(refused.msg) && refused.note,
+        "a map of a different text is refused with a sentence, not painted",
+        refused.msg.slice(0, 120));
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);
+await compareChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);
