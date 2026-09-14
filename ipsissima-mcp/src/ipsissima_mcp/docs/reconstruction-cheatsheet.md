@@ -361,6 +361,26 @@ quotation that *is* exact, what it was cut away from. A checker can verify the c
 see the debasement, because the debasement is entirely a matter of what the span was cut away
 **from**.
 
+### 2.5 Cruxes: when the text underdetermines the reading
+
+The front matter's reading policy (§2.2) declares the reading *globally* — which aim, unit, mode
+and strength the whole file attempts. But underdetermination is also local. A reconstruction must
+be more determinate than its text: the author may never state the main claim, an argument may be
+only hinted at, and a serious text often leaves room for reasonable disagreement about its best
+reading. So a reconstructor sometimes chooses among readings that scholarship genuinely divides
+over — `unit: meaning` at the scale of a single claim. The choosing is not the failure; hiding it
+is. A map that presents one interpretation as *the* interpretation forecloses precisely the
+struggle between readings that contested texts are taught for.
+
+The discipline is the warrant field's honesty applied to interpretation: **a choice made visibly,
+not one claim at a time.** At each point where you chose among live readings, tag the claim
+`#crux` and name the road not taken in its `note:`, attributed where the division has names. A
+rival that is local and load-bearing may be *reported* beside your reading (`#reported`,
+attributed), exactly as an opponent's position is. A rival that would re-wire the argument, move
+the apex, or answer the reading policy differently is a different reconstruction — a sibling
+file, one file per reading, each checkable on its own terms. The conventions document (§5) has
+the full three-scale rule.
+
 ## 3. Forms worth recognising
 
 Naming the form gets the skeleton right. It shapes the wiring; it is not recorded anywhere.

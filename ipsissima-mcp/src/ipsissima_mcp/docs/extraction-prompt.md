@@ -195,6 +195,16 @@ distinction the argument turns on still cannot be drawn, **write it in the claim
 limitation the reader is told about is a limitation, while one they must infer from a flat arrow
 is a misreading waiting to happen.
 
+**And where the text underdetermines the reading, say which reading this is.** A claim you
+settled by choosing among live interpretations is a **crux**: tag it `#crux`, and let its
+`note:` name the reading followed and the road not taken — attributed, where scholarship
+divides (*"Follows Allison; Guyer reads this as…"*). Where a rival reading is local and
+load-bearing, report it beside your own (`#reported`, attributed to whose reading it is);
+where it would re-wire the argument, move the apex, or answer the reading policy differently,
+it is a different reconstruction — a sibling file, never a second reading multiplexed into
+this one. Naming a crux is a result, not a failure: a map of an old or contested text with no
+cruxes is usually claiming a determinacy the text does not have.
+
 ### 4. Check, and fix what it finds
 
 ```

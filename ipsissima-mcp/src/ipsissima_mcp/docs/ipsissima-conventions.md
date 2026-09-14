@@ -251,6 +251,7 @@ from one they are attacking.
 | `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
 | `#authority` | **a proposition whose force comes from its source, not from its content** — a decided case, a statute, a constitutional instrument. Chiefly for legal texts |
 | `#obiter` | **said in a legal judgment, but not a necessary step to the disposal** — the court's own remarks *by the way*. The untagged steps on the route to the order the court made are its *ratio*; this marks what sits off that route |
+| `#crux` | **a claim the reconstructor settled by choosing among live readings** — the text underdetermines it, interpreters divide over it, and the claim's `note:` names the reading followed and the road not taken |
 
 Each answers a question the structure cannot: nothing about the shape of a graph reveals that a
 claim is Hume's rather than the paper's.
@@ -286,6 +287,43 @@ So:
 That last rule is general. **Where the notation cannot carry a distinction the argument turns on,
 the note carries it** — and the reconstruction is more honest for saying which distinction the map
 is not drawing.
+
+### `#crux`: where the reading divides
+
+The other tags say whose *claim* it is; this one says the *reading* is somebody's choice. A
+reconstruction is by nature more determinate than its text — an author may never state their main
+claim, an argument may only be hinted at — so a map must sometimes choose among readings that
+scholarship genuinely divides over. The choosing is not the failure; presenting the result as if
+the text had settled it is. A reader given one interpretation as *the* interpretation of the
+Critique of Judgement has been denied exactly the struggle such a text is taught for.
+
+It passes the three tests: the structure cannot compute where interpreters divide; cruxes recur
+throughout older texts and any text not written in the argument-telegraphing contemporary style;
+and *"show me where this reading is contested"* is the first question a seminar asks of a map.
+The chip turns a map from *the* interpretation into a map honest about being *an* interpretation
+at exactly the points where that matters.
+
+**The discipline, at three scales.** A file asserts exactly one reading — the front matter's
+reading policy (§4) declares which — so multiplicity is carried differently at each scale:
+
+- **Every crux gets the note.** Tag the claim `#crux`, and let its `note:` name the reading
+  followed and the road not taken, attributed where the division has names: *"Follows Allison's
+  epistemic reading; Guyer takes the deduction to concern…"*. Naming a crux is a result, not a
+  failure — the draft-mode rule again.
+- **A local rival may be reported.** Where the rival reading is load-bearing at one juncture —
+  the objection a seminar would raise — set it out the way an opponent's position is already set
+  out: `#reported` claims, attributed to whose reading it is. The map asserts one reading and
+  *reports* another at the point where the disagreement bites. No new machinery.
+- **A global rival is a sibling file, never a second reading in this one.** A rival that
+  re-wires the argument, moves the apex, or answers the reading policy differently is a
+  different reconstruction. Do not multiplex it in with tags: the drawn graph would carry both
+  wirings at once — a union-picture asserting a reading nobody holds — the computed apex and
+  census would aggregate across readings, and neither reading would be checkable on its own
+  terms. Two defensible readings of one text are two `.argdown` files, each coherent, each
+  checked, disagreeing with each other in the open.
+
+Distinguish it from `#contested`: `#contested` marks an objection *within* the argument being
+mapped; `#crux` marks a disagreement *about the mapping itself*.
 
 ### Why there is no `#core`
 
