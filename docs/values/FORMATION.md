@@ -246,29 +246,45 @@ The waves, in the drafted order:
    the warrant: fifty files of one text are the plurality the Kant worry wants *and* the
    empirical dataset the document says these questions need, already in the teacher's
    hands.
-3. **Folding as retrieval practice.** A study option that folds a contention's support and
-   asks the reader to predict before unfolding — the testing effect built from machinery
-   that already exists, offered on the walkthrough's pattern. (T2's terms.)
-4. **Elicit-before-show.** An optional door that asks the reader to commit their candidate
-   conclusion before an existing map opens — the guided mode's step 1 turned to face a
-   finished map; D7's *interrogative, not generative* extended to the reader's own reading,
-   against anchoring. (T2's terms govern its offer.)
-5. **The orientation panel's one-reading sentence**, census-driven, where interpretive
-   load or the crux count is high. (T4's second scale.) This wave also inherits T3's
-   refined ruling: the read-by-a-human line, if drawn, is a declaration and not a
-   certification, worded to claim no more reassurance than checking a hundred-claim map
-   against its source can actually deliver. Found while landing wave 1: **the data half
-   of T3's line already exists** — the `reviewed:` key records a person's pass over the
-   map, and the checker already guards it with the `formalized:` stamp's own rule (never
-   set on a generated map; the reviewer sets it, removing `generated: true` in the same
-   pass). What remains is the App's sentence, bounded as the ruling requires.
-6. **Text-first or map-first?** Which pane a reading-genre map opens into is a values
-   decision wearing a default's clothes; the question is put rather than answered, with
-   B9's road-not-journey as the test.
-7. **The self-description sweep.** Site and README checked against T5's rule: no unmeasured
-   learning claims; the map sold as an instrument of reading, not its replacement.
-8. **The persona question, joined.** The Modest Proposal sample's open `#reported`-for-
-   persona question is the document's Swift point arriving in the machinery: a text whose
-   value is not its argument may deserve a front-matter declaration to that effect, so the
-   map can honestly say the argument is the least of what the text is. To be answered
-   together with T4's conventions rather than separately.
+3. **Folding as retrieval practice — designed 14 Sep, awaiting the word.** The study mode:
+   predict before unfolding, the machine staging the reveal and staying out of the
+   comparison (no typing judged, no scoring — a quiz would grade the reader against one
+   interpretation). `docs/STUDY-PLAN.md` §1 is the design; its open questions are put.
+   (T2's terms; the guided mode's design-then-word rhythm.)
+4. **Elicit-before-show — designed 14 Sep, awaiting the word.** The commitment door: mark
+   what you take the text to be finally arguing before the map opens, kept as the reader's
+   own margin note, the divergence theirs to weigh. Reuses selection-to-claim and the
+   marginalia machinery. `docs/STUDY-PLAN.md` §2 is the design; its open questions are
+   put. (D7 extended to the reader's reading, against anchoring.)
+5. **The map's own declarations — landed 14 Sep.** Two chips beside the title, the
+   `text-provenance` chip's counterparts. T3's line: a map declaring
+   `reconstruction: generated:` with no recorded pass shows *machine-written map*; one
+   whose front matter records `reviewed:` shows *map read by a person*, its hover claiming
+   exactly what the ruling allows — a record that someone looked, limited reassurance, not
+   proof (the `reviewed:` key already existed, guarded like `formalized:`; only the
+   sentence was missing). T4's second scale: a map declaring any `#crux` shows *one
+   reading · N cruxes* — declared-driven, never a threshold the page invented, because an
+   interpretive-load cutoff would be a magic number where the crux tag is the
+   reconstructor's own word. Held by rendered-DOM checks driven by real drops; help
+   entries beside the existing one; full suite green.
+6. **Text-first or map-first — investigated 14 Sep; the question is put.** The finding:
+   the app always opens map-first — `PANES` initialises `{map: true, text: false}` and
+   every fresh render re-asserts `PANES.text = false` — so a reading-genre map opens with
+   the road to its text closed until a click. The question for the author: should a
+   reading whose manuscript is present open text-beside-map (B9's road visible), or does
+   P6 keep the single pane and the road stays one visible click away? Narrow screens
+   force one pane either way; the walkthrough already teaches the click.
+7. **The self-description sweep — done 14 Sep; a null result, recorded.** Site, README and
+   help carry no unmeasured learning claims — "is for understanding writing that reasons
+   to a conclusion" states an aim, not an outcome — and the copy is already
+   instrument-shaped ("follow a claim back to the passage it came from"). Nothing to fix;
+   T5's rule held before it was written, which is worth knowing about the record.
+8. **The persona question, joined — options put 14 Sep.** The Modest Proposal sample's
+   `#reported`-for-persona question is the document's Swift point arriving in the
+   machinery: a text whose value is not its argument may deserve a declaration to that
+   effect. With T4's conventions landed, the candidate shapes are: (a) a front-matter
+   note surfaced by the orientation panel (the attribution kind's pattern — machinery
+   exists); (b) a documented convention only — the conventions' persona passage plus a
+   `note:` on the apex, nothing drawn; (c) nothing — the `#reported` tags on the
+   persona's case already carry it. The choice touches the conventions' vocabulary, so
+   it is the author's; put, not made.
