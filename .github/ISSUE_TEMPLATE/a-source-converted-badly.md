@@ -21,7 +21,7 @@ that went wrong quietly is a worse bug than the conversion, and the report is wh
 
 **Was there a better source available?** Markdown is gold, anything pandoc reads is silver, PDF
 is bronze. If you converted a PDF of a document you also have as `.docx`, try the `.docx` first —
-`plan_job` will say so too.
+`argdown_plan` will say so too.
 
 **Can you share it?** If not, a page or two showing the problem is usually enough. Please do not
 attach anything you do not have the right to redistribute.

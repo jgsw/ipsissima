@@ -58,7 +58,7 @@ def classify(name, inp, map_name):
         text = " ".join(str(v) for v in inp.values() if isinstance(v, (str, int)))
     low = text.lower()
 
-    if "check_argdown" in low or "check_reconstruction" in name.lower():
+    if "check_argdown" in low or "argdown_check" in name.lower():
         return "run the checker"
     if name in ("Write",) and map_name and map_name.lower() in low:
         return "write the map"

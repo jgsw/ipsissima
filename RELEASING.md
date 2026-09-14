@@ -132,7 +132,7 @@ its version.
 
 **A `check_for_updates` tool.** A server has no menus, so the equivalent of a menu item is a tool
 the reader asks for — *"is there a new version of Ipsissima?"* — and the same rules hold: only on
-request, nothing sent, nothing installed. It is deliberately **not** folded into `plan_job`, where
+request, nothing sent, nothing installed. It is deliberately **not** folded into `argdown_plan`, where
 it would fire every time somebody began a reconstruction and quietly become a startup check.
 
 Installing the update is not the same job as for the app:

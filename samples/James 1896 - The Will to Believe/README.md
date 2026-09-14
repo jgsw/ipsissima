@@ -54,7 +54,7 @@ we believed."
   together.
 
 The map was generated end to end by a model driving Ipsissima-MCP and verified by
-`check_reconstruction`; it declares `generated: true` and carries no `reviewed:` stamp, because
+`argdown_check`; it declares `generated: true` and carries no `reviewed:` stamp, because
 no full human pass has been made — which is exactly what those two fields are for.
 
 ## Rebuilding

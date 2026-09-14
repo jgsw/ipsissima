@@ -137,8 +137,8 @@ def test_server(d):
 
     async def body(s):
         tools = {t.name for t in (await s.list_tools()).tools}
-        for name in ("plan_job", "extract_text", "assess_pdf", "page_images",
-                     "repair_source", "add_page_numbers", "check_reconstruction",
+        for name in ("argdown_plan", "extract_text", "assess_pdf", "page_images",
+                     "repair_source", "add_page_numbers", "argdown_check",
                      "split_manuscript"):
             check_true(f"tool `{name}` is offered", name in tools)
 
@@ -214,7 +214,7 @@ def test_server(d):
         check_true(f"the Darwin sample is where the test expects it ({sample})",
                    sample.is_dir(), "a skipped check reads exactly like a passing one")
         if sample.is_dir():
-            out = result(await s.call_tool("check_reconstruction",
+            out = result(await s.call_tool("argdown_check",
                                            {"path": str(sample / "darwin-natural-selection.argdown"),
                                             "source_root": str(sample)}))
             check_true("the checker returns findings, not prose",
@@ -225,7 +225,7 @@ def test_server(d):
                        "a fault with no location cannot be acted on")
 
         # A file that does not exist is an answer, not a crash.
-        out = result(await s.call_tool("check_reconstruction", {"path": str(d / "no.argdown")}))
+        out = result(await s.call_tool("argdown_check", {"path": str(d / "no.argdown")}))
         check("a missing file is reported", out.get("ok"), False)
 
     asyncio.run(_session(body))

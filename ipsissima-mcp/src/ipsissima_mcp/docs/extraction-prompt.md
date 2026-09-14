@@ -198,7 +198,7 @@ is a misreading waiting to happen.
 ### 4. Check, and fix what it finds
 
 ```
-check_reconstruction(path=..., source_root=...)
+argdown_check(path=..., source_root=...)
 ```
 
 Without the MCP server, the same thing on the command line:

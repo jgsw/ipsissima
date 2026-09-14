@@ -11,14 +11,14 @@ so improving a reconstruction means editing prose rather than shipping a release
 What the server provides is everything mechanical around that judgement, and the mechanical half
 is most of the cost:
 
-  * working out WHAT WAS ASKED FOR before anything expensive starts (`plan_job`)
+  * working out WHAT WAS ASKED FOR before anything expensive starts (`argdown_plan`)
   * getting the text out of a PDF, .docx, .epub or HTML with its paragraphs intact
   * saying when a PDF is too damaged to convert mechanically, and handing back page crops
   * checking a finished reconstruction against the text it cites, in a form a fix loop can act on
 
 THE ORDER MATTERS, and one tool enforces it. A reconstruction is the expensive step, and the two
 requests "make a map of each article in this folder" and "make one map from the chapters in this
-folder" are indistinguishable from the files alone. So `plan_job` returns QUESTIONS as data, and
+folder" are indistinguishable from the files alone. So `argdown_plan` returns QUESTIONS as data, and
 `extract_text` refuses a multi-source run that has not answered them. Asking is not politeness
 here; it is the difference between one reconstruction and six.
 
@@ -59,15 +59,15 @@ WHAT USERS CALL THIS. "Make an Argdown", "make an Ipsissima diagram", "map the a
 A MAP WITH NO SOURCE TEXT below says what changes.
 
 THE ORDER OF WORK
-  1. `plan_job` — always, before anything expensive. It reports what it found, which route each
+  1. `argdown_plan` — always, before anything expensive. It reports what it found, which route each
      source will take, and what is genuinely ambiguous. If it returns `questions`, PUT THEM TO
      THE USER and do not guess: reconstructing the wrong text, or making one map where six were
      wanted, costs the user real money.
   2. `extract_text` — writes the structured Markdown a reconstruction can point at.
   3. Reconstruct. Use the `reconstruct_argument` prompt; if your client cannot fetch prompts,
-     the `reconstruction_method` tool serves the same instructions -- call it before writing
+     the `argdown_method` tool serves the same instructions -- call it before writing
      any Argdown. The reconstruction itself is your judgement, not a tool.
-  4. `check_reconstruction` — repeatedly, until it reports ok. It returns faults with locations
+  4. `argdown_check` — repeatedly, until it reports ok. It returns faults with locations
      and fixes; apply the fixes, do not rewrite the map.
   5. Where the map names inference rules, `next` will say how many formalizations carry no
      `formalized:` stamp. PUT THAT TO THE USER. The stamp records that a person has read the
@@ -87,8 +87,8 @@ reference documents, and the checker's own report names each fault it finds.
 
 A MAP WITH NO SOURCE TEXT is a genre, not a mistake. A debate map surveys a pattern of public
 argument — "the arguments for and against X" — rather than reading one document, so there is
-nothing to extract: skip `plan_job` and `extract_text`, write the map, and still run
-`check_reconstruction`, which holds it to parsing and structure and does not ask a sourceless
+nothing to extract: skip `argdown_plan` and `extract_text`, write the map, and still run
+`argdown_check`, which holds it to parsing and structure and does not ask a sourceless
 map for fidelity. Claims carry no fidelity markers — there is no text to stand at a distance
 from — and the front matter carries `author:` and `date:`, because a debate map stands on who
 drew it. The analogue of accuracy here is fairness to the position: each side's best
@@ -104,7 +104,7 @@ that the report is true.
 WHICH FILE TO ASK FOR. Markdown is gold, pandoc-readable formats (.docx, .odt, .html, .epub,
 .tex) are silver, PDF is bronze — a PDF only records where ink sat, so paragraphs and headings
 have to be inferred. If a user offers a PDF of a document they also have as .docx, say so and
-ask for the .docx. `plan_job` detects this and reports it as advice.
+ask for the .docx. `argdown_plan` detects this and reports it as advice.
 """
 
 def _version():
@@ -174,7 +174,7 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "work or several, and which of two drafts is the current one. `advice` reports a source "
         "available in a better format than the one offered."),
 )
-def plan_job(sources: list[str], intent: str = "reconstruct",
+def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
     """
     Args:
@@ -211,7 +211,7 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
     # ---- what it will cost ------------------------------------------------ #
     # AN ESTIMATE, LABELLED AS ONE. Words to tokens is about 4/3 for academic prose; a
     # reconstruction reads the source once and writes a map a fraction of its size, and the
-    # check-and-fix rounds are small since check_reconstruction returns faults rather than
+    # check-and-fix rounds are small since argdown_check returns faults rather than
     # reports. Better than nothing and worse than measurement, which is what the range says.
     src_tokens = int(plan["total_words"] * 4 / 3)
     plan["estimate"] = dict(
@@ -234,7 +234,7 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
 #: `reconstruct_argument` prompt and the reference resources, and MCP clients support prompts
 #: and resources unevenly: tools are the one universal primitive. A session that could not
 #: fetch the prompt used to discover these conventions by experiment -- writing a probe
-#: .argdown of guessed field names and reading what check_reconstruction said about it, twice
+#: .argdown of guessed field names and reading what argdown_check said about it, twice
 #: leaving the probe beside the finished map. extract_text is step 2 of the order of work and
 #: always runs immediately before the reconstruction, so its reply is the one place the
 #: rulebook reaches every client. For a client that can read the prompt this is a moment's
@@ -243,7 +243,7 @@ def plan_job(sources: list[str], intent: str = "reconstruct",
 CONVENTIONS_DIGEST = """\
 The map the checker can verify uses these conventions. The `reconstruct_argument` prompt and
 the server's resources carry the full method -- prefer them when your client can fetch them,
-and when it cannot, the `reconstruction_method` tool serves the same documents as tool
+and when it cannot, the `argdown_method` tool serves the same documents as tool
 results. This digest is the short form.
 
 FRONT MATTER, fenced by === lines:
@@ -303,7 +303,7 @@ A numbered argument is `<Title>: text`, premises (1)..(n), an inference line `--
 the conclusion; with two or more steps every inference line declares `-- {uses: [..]} --`.
 An <Argument> takes a fidelity marker like any other node.
 
-Then run check_reconstruction, fix exactly what it names, and stop only when `ok` AND
+Then run argdown_check, fix exactly what it names, and stop only when `ok` AND
 `verified` are BOTH true. Hand over a clean folder -- the .argdown and source/, with no
 probe or scratch files left beside them.
 """
@@ -316,7 +316,7 @@ probe or scratch files left beside them.
         "Convert sources to the structured Markdown a reconstruction can cite, and write them "
         "to `<out>/source/`. PDFs keep their page numbers as `<!-- p.N begins here -->` "
         "comments, which is what lets Ipsissima's Manuscript view show page numbers.\n\n"
-        "Call `plan_job` first. With more than one source this REFUSES to run until `grouping` "
+        "Call `argdown_plan` first. With more than one source this REFUSES to run until `grouping` "
         "is given, because 'one map from these chapters' and 'a map of each of these articles' "
         "are different jobs and choosing wrongly wastes a whole reconstruction.\n\n"
         "THE TEXT IS WRITTEN TO DISK, NOT RETURNED. The reply reports what was written and "
@@ -330,7 +330,7 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
                  dry_run: bool = False) -> dict[str, Any]:
     """
     Args:
-        sources: the files to convert (resolved paths from plan_job).
+        sources: the files to convert (resolved paths from argdown_plan).
         out: the folder to write into; `source/` is created inside it.
         grouping: "one-map" or "map-each". Required when there is more than one source.
         title: title for the project file, when one is written.
@@ -430,9 +430,9 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
               "this server is running on a different machine from you: say so and ask for the "
               "folder to be shared. Do NOT reconstruct from `head`, and do NOT fall back to "
               "reading the original document yourself -- a map built that way cites no text and "
-              "check_reconstruction cannot verify one word of it. Then reconstruct with the "
-              "`reconstruct_argument` prompt and call check_reconstruction until it reports ok. "
-              "If your client cannot fetch that prompt, call `reconstruction_method` -- it "
+              "argdown_check cannot verify one word of it. Then reconstruct with the "
+              "`reconstruct_argument` prompt and call argdown_check until it reports ok. "
+              "If your client cannot fetch that prompt, call `argdown_method` -- it "
               "serves the same instructions as a tool result. `conventions` above is the "
               "compressed rulebook; follow it rather than guessing, and prefer the full method "
               "when a document-sized read is affordable"))
@@ -472,7 +472,7 @@ METHOD_DOCS = {
         "reply is the compressed form of these documents; this tool serves what it "
         "compresses."),
 )
-def reconstruction_method(document: str = "extraction-prompt") -> dict[str, Any]:
+def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     """
     Args:
         document: which document — "extraction-prompt", "syntax", "method" or "conventions".
@@ -810,7 +810,7 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
         "that every file a claim cites actually exists. With it, every quotation is verified "
         "against the source word for word."),
 )
-def check_reconstruction(path: str, source_root: str | None = None,
+def argdown_check(path: str, source_root: str | None = None,
                          full_report: bool = False) -> dict[str, Any]:
     """
     Args:
@@ -932,7 +932,7 @@ def check_for_updates() -> dict[str, Any]:
     ONLY WHEN ASKED, WHICH IS THE POINT. Nothing else in this server contacts the network on its
     own account -- conversions, checks and the Zotero reader all work against files on disk -- and
     that is worth keeping true for a tool people point at unpublished manuscripts. So there is no
-    check on startup and none folded into `plan_job`, where it would run every time somebody
+    check on startup and none folded into `argdown_plan`, where it would run every time somebody
     began a reconstruction. A reader who wants to know asks, and a model can offer to ask.
 
     Nothing about the machine is sent. A version goes nowhere; what comes back is a version.
@@ -1059,7 +1059,7 @@ if _zotero_available():
             pairing=("this item has both an HTML snapshot and a PDF — extract from the snapshot "
                      "and use the PDF for page numbers"
                      if {"text/html", "application/pdf"} <= kinds else None),
-            next="call plan_job with the path from `best`")
+            next="call argdown_plan with the path from `best`")
 
 
 # ----------------------------------------------------------------- prompts ---- #
@@ -1083,7 +1083,7 @@ def reconstruct_argument(source_path: str = "", out_path: str = "") -> str:
     if source_path:
         tail = (f"\n\n---\n\n## This job\n\nThe source is `{source_path}`."
                 + (f" Write the reconstruction to `{out_path}`." if out_path else "")
-                + "\n\nWhen the map is written, call `check_reconstruction` on it with "
+                + "\n\nWhen the map is written, call `argdown_check` on it with "
                   "`source_root` set to the folder containing `source/`, and apply the fixes it "
                   "reports until it comes back `ok`. Do not rewrite the map to fix one claim.")
     return _doc("extraction-prompt.md") + tail
@@ -1099,7 +1099,7 @@ def extract_text_only(sources: str = "") -> str:
         "Extract the text of "
         + (f"`{sources}`" if sources else "the sources the user named")
         + " to structured Markdown, and stop there. Do NOT reconstruct an argument.\n\n"
-        "1. `plan_job` with intent=\"extract\". If it returns questions, ask them.\n"
+        "1. `argdown_plan` with intent=\"extract\". If it returns questions, ask them.\n"
         "2. If any source is a PDF, `assess_pdf` first — a machine-readable version of the same "
         "article may exist, and a scan may need reading rather than converting.\n"
         "3. `extract_text`.\n"

@@ -234,7 +234,7 @@ name of several words is reduced to its initials, and a one-word name is drawn a
 **And the name is not what the map's mark vouches for.** The verdict comes from the
 `formalization` lines alone — the map would reach the same answer if the line said `-- Banana --`.
 What the name does on the map is *ask the question*: a step with no rule named is not checked at
-all. The label itself is examined elsewhere: `check_reconstruction` matches a single textbook
+all. The label itself is examined elsewhere: `argdown_check` matches a single textbook
 name against that rule's actual schema and reports a valid step wearing the wrong one — a
 *modus ponens* labelled `Modus tollens` comes back flagged. A name of your own, and a line
 naming two rules at once (a compound step), are labels rather than claims to a known form, and

@@ -96,10 +96,10 @@ list.** Ipsissima-MCP does not carry the whole job. Look at where the work actua
 
 | step | who does it | needs disk access? |
 |---|---|---|
-| `plan_job`, `extract_text` | the server | no — the server writes to disk itself |
+| `argdown_plan`, `extract_text` | the server | no — the server writes to disk itself |
 | **read the extracted Markdown** | **the assistant** | **yes, read** |
 | **write the `.argdown`** | **the assistant** | **yes, write** |
-| `check_reconstruction` | the server | no — it reads the file from disk |
+| `argdown_check` | the server | no — it reads the file from disk |
 
 `extract_text` writes `source/` and returns a *report* of what it wrote rather than the text: the
 reply carries a short `head` of each file and no more, because a book-length source would
@@ -121,7 +121,7 @@ nothing where the model is standing.
 
 Measured once, on a 321-page book. The model could not open the paths, and went back to reading
 the original PDF itself — producing a competent Argdown file with no `chapter` on any claim,
-which is to say a map that cites no text and that `check_reconstruction` cannot verify one word
+which is to say a map that cites no text and that `argdown_check` cannot verify one word
 of. Nothing errored and nothing said anything was wrong, which is why it is worth naming here: a
 map that cannot be checked against its source is the one thing this project exists to prevent.
 
@@ -142,7 +142,7 @@ from something sitting on the same machine as your files.
 a file called `test.md` in this folder, then read it back to me*. If it can do both, it can drive
 Ipsissima-MCP end to end. If it cannot, you can still use the server for everything up to the
 reconstruction — extraction, page images, repair, the Zotero lookup — and then paste the map into
-a file yourself before asking for `check_reconstruction`. That works; it is just handwork the
+a file yourself before asking for `argdown_check`. That works; it is just handwork the
 other clients do for you.
 
 ### Which assistants can use this
@@ -171,7 +171,7 @@ So the method is served on every channel, and the tool channel is the one that c
 missing. The `reconstruct_argument` prompt and the `ipsissima://` resources carry it for
 clients that surface them. For everything else — measured on a hosted session reaching this
 server across a device bridge that forwarded tools alone — `extract_text` returns a compressed
-conventions digest with the extracted text, and the `reconstruction_method` tool serves the
+conventions digest with the extracted text, and the `argdown_method` tool serves the
 full documents as ordinary tool results, one call each. A model that can call tools has the
 whole method; no client configuration and no user instruction is required. (The documents also
 sit in `src/ipsissima_mcp/docs/` for anyone who wants to paste them by hand, but nothing now
@@ -195,7 +195,7 @@ yourself.
 **The model is a separate question from the client.** Ipsissima-MCP does not reconstruct
 arguments; it prepares sources and checks results, and the reading itself is the model's
 judgement. A weaker model behind a fully capable client will produce a weaker reconstruction, and
-`check_reconstruction` will report the difference rather than repair it.
+`argdown_check` will report the difference rather than repair it.
 
 ### Tell your assistant about it
 
@@ -465,13 +465,13 @@ Nothing is ever written into your Zotero storage.
 
 | tool | |
 |---|---|
-| `plan_job` | reads the request; reports the sources, the routes, the cost, and what is ambiguous |
+| `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous |
 | `extract_text` | documents to structured Markdown, with page markers |
 | `assess_pdf` | how hard is this PDF, and does a machine-readable version exist? |
 | `page_images` | crops of damaged passages, for the cases a converter cannot do |
 | `repair_source` | apply corrections read off those crops |
 | `add_page_numbers` | the PDF's pagination onto text taken from the snapshot |
-| `check_reconstruction` | validity, provenance and fidelity — faults with fixes, not a report |
+| `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report |
 | `split_manuscript` | a one-file book into chapters plus a project file |
 | `zotero_lookup` | only when a library is present |
 | `check_for_updates` | only when asked — see *Updating and removing it* above |
