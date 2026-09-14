@@ -442,6 +442,11 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
 - **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
   the map. If they are folded away they are opened, and if they all fit on screen the map moves
   to them.
+- <kbd>Shift</kbd>**-click a passage** — the same, and the map *reframes* on the lit claims,
+  zooming out as far as it needs to hold them all. The plain click moves the camera only when
+  the claims fit at your current zoom — claims scattered across the whole map have a midpoint
+  near none of them — so this is the gesture for a crowded screen, and the note under the
+  chapter menu names it whenever it would help.
 - **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
   open, shows its passage
 - **Select a passage** — two buttons appear above the text, and they are the fidelity

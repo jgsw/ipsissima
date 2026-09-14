@@ -1800,6 +1800,30 @@ async function compareChecks(browser) {
   await page.waitForSelector("#mscompare:not([hidden])", { timeout: 10000 });
   check(true, "compare: the control appears with the manuscript", "");
 
+  /* Shift-click a passage reframes the map on its claims (the author's ask, 14 Sep): the
+   * plain click moves the camera only when the lit claims fit at the current zoom, so on a
+   * crowded screen the lit claim can be anywhere. Driven with a real modifier click, from a
+   * camera deliberately zoomed away first. */
+  const mapBox = await page.locator("#map").boundingBox();
+  await page.mouse.move(mapBox.x + mapBox.width / 2, mapBox.y + mapBox.height / 2);
+  await page.mouse.wheel(0, -900);           // zoom in hard, so the frame no longer fits
+  await page.waitForTimeout(400);
+  const zoomed = await page.evaluate(() => {
+    const v = document.querySelector("#map .alm-viewport");
+    return v ? v.style.transform : "";
+  });
+  const passage = page.locator("#mstext .mline", { hasText: "merely causal" }).first();
+  await passage.click({ modifiers: ["Shift"] });
+  await page.waitForTimeout(900);
+  const reframed = await page.evaluate(() => {
+    const v = document.querySelector("#map .alm-viewport");
+    return { transform: v ? v.style.transform : "",
+             note: document.getElementById("msnote").textContent };
+  });
+  check(reframed.transform !== zoomed && /claim/.test(reframed.note),
+        "shift-clicking a passage reframes the map on its claims",
+        JSON.stringify({ zoomed, after: reframed }).slice(0, 160));
+
   await page.setInputFiles("#cmpfile", path.join(root, "reading-b.argdown"));
   await page.waitForSelector("#cmpnote:not([hidden])", { timeout: 10000 });
   const painted = await page.evaluate(() => {

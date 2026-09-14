@@ -125,7 +125,7 @@ is sovereign, and the tool protects the road to the text, never prescribes the j
 D7 — interrogative, not generative — is P3 applied to the project's own making: the author of
 *Ipsissima* is a party the assistant must not usurp either.
 
-**P4 — The empirical method** (E1–E9). Measure before design; validate, never assume;
+**P4 — The empirical method** (E1–E10). Measure before design; validate, never assume;
 definitions before repairs; fail loudly; exhaust what can be exhausted. This is the project's
 means-improvement engine (§4), and it is not value-neutral machinery: E3 and E6 are P1
 commitments wearing engineering clothes.

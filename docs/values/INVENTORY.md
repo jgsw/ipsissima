@@ -553,6 +553,19 @@ informed of fixes, it was *split into two precise claims* rather than either ret
 blocking the feature. The provenance matters for interpretation: the principle serves trust and
 user sovereignty; it is not asceticism about networks.
 
+*Addendum (14 Sep, ruled).* The second collision, and the same resolution as the first. E10's
+first outward application — displaying the reader's Zotero highlights from Zotero's own store
+(`docs/ANNOTATIONS-PLAN.md`) — needs the desktop application to speak to Zotero's local API,
+a port on the reader's own machine. The author ruled: "I would favour a targeted narrowing of
+the no-network principle to accommodate this case." So the claim splits again, per artifact
+and with the 29 Aug precision: the one-file page's *no request of any kind, ever* stands
+absolute and untouched; the desktop application's sentence becomes *nothing leaves your
+machine, and it speaks beyond it exactly once, on your explicit request (Check for Updates)*
+— traffic to Zotero on the same machine being a conversation between two programs the reader
+runs, opened only when the reader connects it, carrying nothing anywhere. The public promise
+copy changes only when the feature ships, so no sentence ever describes a capability the
+build does not carry (D6).
+
 ### C2. One self-contained file, and nothing between the source and the reader
 
 **It says.** Ipsissima builds to a single HTML file that opens by double-clicking, works from
@@ -983,7 +996,7 @@ generator can be taught."
 
 **Weight.** Medium within its locus; untested against other principles.
 
-### E10. One source of truth, or copies held together by machinery ⟨proposed, 14 Sep⟩
+### E10. One source of truth, or copies held together by machinery
 
 **It says.** Where a fact can live in one place, it lives in one place. Where duplication
 is unavoidable — two languages reading one block, two programs holding one reader's marks —
@@ -1002,14 +1015,15 @@ keeping a second one.
 **Provenance.** **quotation** — origin: author (14 Sep, on annotation round-tripping):
 "having a single source of truth if at all possible, and using design decisions to prevent
 things that ought to be in sync from getting out of sync." The entry's articulation is the
-assistant's; admission as worded awaits the author.
+assistant's; **admitted as worded the same day.**
 
 **Generality.** The whole project; E4's spirit widened from the project's own derived
 artifacts to whatever the user's tools jointly hold.
 
 **Weight.** Heavily enacted, untested as a stated principle. Its first outward application
-(`ANNOTATIONS-PLAN.md` §2) would collide with C1's no-network promise, and that collision
-is put to the author before anything is built.
+(`ANNOTATIONS-PLAN.md` §2) collided with C1's no-network promise on the day of admission,
+and the author ruled for a targeted narrowing of C1 rather than either retreating — the
+same shape as C1's own 29 Aug precedent (see C1's addendum).
 
 ---
 

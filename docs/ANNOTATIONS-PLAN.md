@@ -15,8 +15,8 @@ later. Two implications, in his words' order:
 
 And a candidate principle, proposed by the author with the second implication: *"having a
 single source of truth if at all possible, and using design decisions to prevent things that
-ought to be in sync from getting out of sync."* Drafted as E10 ⟨proposed⟩ in
-`docs/values/INVENTORY.md`, awaiting admission — see §4.
+ought to be in sync from getting out of sync."* Drafted as E10 in `docs/values/INVENTORY.md`
+and **admitted as worded the same day** — see §4.
 
 ## 1. Feasibility, measured against the machinery that exists
 
@@ -50,25 +50,32 @@ This also re-frames the text-first question the author opened: the manuscript pa
 more worth opening first the more it carries the reader's own working marks. The two
 questions should be settled together, and neither is settled here.
 
-## 3. The questions put to the author
+## 3. The questions, as ruled (14 Sep)
 
-1. **E10** — admit as worded (`INVENTORY.md` ⟨proposed⟩)?
-2. **Scope of v1.** Display-only (Zotero highlights shown in the manuscript pane, read-only)
-   is the smallest honest step and proves the placement machinery on real data. Write-back
-   second. Agreed?
-3. **The no-Zotero reader.** A second store in the bundle contradicts E10's spirit unless it
-   is the *only* store for that reader (in which case it is not a second one). Carry a
-   bundle-native highlights block for Zotero-less readers, or defer?
-4. **Where the traffic runs.** The App is no-network by promise (C1); Zotero's local API is
-   a localhost port, and the desktop app is the natural host for it — but any route needs
-   the C1 sentence rewritten with the same per-artifact precision the update check got.
-   This is the heaviest question and gates everything above.
-5. **Text-first** (Formation item 6) — held open deliberately, to be settled with this
-   programme rather than before it.
+1. **E10 — admitted as worded.** The ⟨proposed⟩ marker is off; `INVENTORY.md` E10 stands.
+2. **Scope of v1 — agreed.** Display-only first: Zotero highlights shown in the manuscript
+   pane, read-only, proving the placement machinery on real data; write-back second.
+3. **The no-Zotero reader — deferred, and enlarged before being deferred.** The author's
+   framing: can highlights and comments embedded in a PDF be taken up at ingest? Which
+   other applications besides Zotero deserve support? "Scoping this is a project in its
+   own right and could be deferred for the moment." Both questions are recorded here as
+   the deferral's contents — the PDF-annotations-at-ingest idea is a real candidate (the
+   converters already read the PDF; embedded annotations carry text and page, the same
+   two hooks §1 relies on), and it would arrive on the MCP side rather than the App's.
+4. **The C1 collision — ruled: a targeted narrowing.** "I would favour a targeted
+   narrowing of the no-network principle to accommodate this case." C1 carries the
+   addendum (`INVENTORY.md`): the one-file page's absolute promise untouched; the desktop
+   application's sentence re-drawn so that traffic to Zotero on the same machine —
+   a conversation between two programs the reader runs, opened only when the reader
+   connects it — is distinguished from anything leaving the machine, which remains
+   exactly one request, on explicit request. The public promise copy changes only when
+   the feature ships (D6).
+5. **Text-first** (Formation item 6) — still held open, to be settled with this
+   programme's build rather than before it.
 
-## 4. The candidate principle, and where it came from
+## 4. The principle, and where it came from
 
-E10 ⟨proposed⟩: *one source of truth where possible; where duplication is unavoidable, the
+E10, admitted 14 Sep: *one source of truth where possible; where duplication is unavoidable, the
 copies are held together by machinery, not by care.* Origin: author (14 Sep, verbatim in the
 provenance field). It is E4's spirit widened from the project's own artifacts to the user's
 data across systems — E4 governs what the build derives; E10 would govern what the *user's
@@ -80,7 +87,9 @@ programs, "prevent the second copy" is a design decision, not a lint.
 
 ## 5. Standing
 
-Nothing is built. The feasibility analysis is this document; the principle awaits admission;
-the four scope questions await rulings. The comparison surface (PLURALITY-PLAN) and study
-mode shipped first because they needed no new promises; everything here touches either C1
-or a second data store, and neither is the assistant's to decide.
+The rulings are in (§3): E10 admitted, the v1 scope agreed, the C1 narrowing ruled, the
+no-Zotero question deferred as its own future project. What remains before the v1 build is
+engineering design, not values: how the desktop host reaches Zotero's local API, how a
+source names its Zotero item (what `from_zotero.py` already records is the first thing to
+measure), and what the manuscript pane draws for a highlight. The build proceeds on that
+design; the promise copy moves only when it ships.

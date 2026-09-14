@@ -2330,7 +2330,11 @@ var LAYOUTS = [
   { id: "read",    label: "Read",    hint: "map only", primary: "map",
     icon: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/>',
     arrange: "reasons", panes: { map: true, argdown: false, notes: false, text: false } },
-  { id: "study",   label: "Study",   hint: "map + the essay", primary: "text",
+  // "Follow", not "Study" (renamed 14 Sep 2026): study is now a MODE — predict-then-unfold,
+  // on the bar and under How to use — and two things wearing one name would make the menu
+  // and the bar contradict each other. The id stays "study" so any stored layout choice
+  // survives the rename; ids are addresses, labels are promises.
+  { id: "study",   label: "Follow",  hint: "map + the essay", primary: "text",
     icon: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M11 3.5v13"/>' +
           '<path d="M12.6 7h4M12.6 10h4M12.6 13h2.6"/>',
     arrange: "exposition", panes: { map: true, argdown: false, notes: false, text: true },
@@ -5399,8 +5403,16 @@ $("mstext").addEventListener("click", function(e){
   msMarkSpan(at.span);
   if (!LIVE) return;
   var centred = LIVE.markClaims(at.ids);
+  // SHIFT IS THE EMPHATIC FORM (the author's ask, 14 Sep). A plain click moves the camera
+  // only when the lit claims all fit at the reader's zoom — six scattered claims have a
+  // midpoint near none of them, and centring on it would move the reader away from
+  // everything they asked about. Shift-click means "take me to them": the camera reframes,
+  // zoom included, so the lit claims cannot be lost on a crowded screen. The plain click's
+  // note names the gesture at exactly the moment it is needed.
+  if (e.shiftKey) centred = LIVE.spotlight(at.ids, { pad: 60 }) || centred;
   $("msnote").textContent = (at.ids.length === 1 ? "1 claim" : at.ids.length + " claims") +
-    " from this passage" + (centred ? "" : " — spread too wide to frame");
+    " from this passage" +
+    (centred ? "" : " — spread too wide to frame; shift-click to reframe the map on them");
 });
 
 /* ---- SELECTION-TO-CLAIM: the provenance is written by the machine that can see it -------

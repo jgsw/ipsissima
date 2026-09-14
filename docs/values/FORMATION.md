@@ -281,9 +281,9 @@ The waves, in the drafted order:
    a larger one — where the reader does their serious reading, and where their marks live.
    His own reading happens in Zotero on a tablet, with highlights and notes made there;
    the implications (marks on the manuscript itself; round-tripping with Zotero; and a
-   candidate principle, E10 ⟨proposed⟩ — one source of truth, copies held together by
-   machinery) are the opening of `docs/ANNOTATIONS-PLAN.md`, and the pane default is
-   deliberately settled *with* that programme rather than before it.
+   new principle, E10 — one source of truth, copies held together by machinery — admitted
+   as worded 14 Sep) are the opening of `docs/ANNOTATIONS-PLAN.md`, and the pane default
+   is deliberately settled *with* that programme rather than before it.
 7. **The self-description sweep — done 14 Sep; a null result, recorded.** Site, README and
    help carry no unmeasured learning claims — "is for understanding writing that reasons
    to a conclusion" states an aim, not an outcome — and the copy is already

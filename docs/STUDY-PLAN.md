@@ -61,6 +61,14 @@ nothing.
 **The open questions, as ruled (14 Sep).** Both bar and How to use; no typed note; the
 fold tree (tentatively — see above); the guided mode hands off to study.
 
+**The name, kept — and the Layout menu's "Study" renamed (the author's catch, 14 Sep).**
+Two things wore the word: this mode, and the layout arranging map + essay. The mode has
+the stronger claim — it *is* studying in the formative sense, and its name runs through
+the help and these records — while the layout label merely named a pane arrangement its
+own hint already lists. The layout is now **Follow** (map + the essay: following the
+argument through the text); its id stays `study`, so any stored layout choice survives —
+ids are addresses, labels are promises.
+
 ## 2. Wave 4 — Elicit before show: commit to a conclusion first
 
 **The brief.** Anchoring: once a plausible map has been seen, the reading the reader would
