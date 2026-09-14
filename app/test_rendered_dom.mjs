@@ -1878,10 +1878,124 @@ async function compareChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------- the Zotero highlights */
+/* Display-only v1 (docs/ANNOTATIONS-PLAN.md, ruled 14 Sep 2026): the reader's marks live
+ * in Zotero and the page displays them — no second store. Driven through the REAL host
+ * adapter over a faked __TAURI__ bridge, because the adapter's availability logic and the
+ * invoke plumbing are part of what must hold. The web case is checked first: no host, no
+ * button, however loudly the chapter declares its key. */
+async function zoteroChecks(browser) {
+  const root = fs.mkdtempSync(path.join(tmp, "zot-"));
+  fs.mkdirSync(path.join(root, "source"));
+  fs.writeFileSync(path.join(root, "source", "essay.md"), [
+    "---",
+    'title: "An essay"',
+    'zotero: "AB12CD34"',
+    "---",
+    "",
+    "The argument of this essay is that memory functions as a promise made to the future self.",
+    "",
+    "Some will say that recollection is merely causal, a trace with no normative force at all.",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "reading.argdown"), [
+    "===",
+    "defaults:",
+    '    chapter: "source/essay.md"',
+    "===",
+    "",
+    "[Memory is promissory]: Memory binds as \"a promise made to the future self\". {fidelity: \"compression\"}",
+    "    <- [Causal doubt]: Recollection may be merely causal. {fidelity: \"compression\"}",
+    ""
+  ].join("\n"));
+  const out = path.join(root, "viewer.html");
+  try {
+    execFileSync("node", [BUILDER, path.join(root, "reading.argdown"),
+                          "-o", out, "--source-root", root], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "zotero: the fixture viewer builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+
+  // THE WEB CASE FIRST: no host, so the button must not exist for this reader at all.
+  const webCtx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const webPage = await webCtx.newPage();
+  await webPage.goto("file://" + out);
+  await webPage.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await webPage.waitForSelector("#map .alm-n", { timeout: 20000 });
+  await webPage.click('#panes [data-p="text"]');
+  await webPage.waitForSelector("#mstext .mline", { timeout: 10000 });
+  const webBtn = await webPage.evaluate(() => document.getElementById("mszotero").hidden);
+  check(webBtn === true, "zotero: without a desktop host the button never appears",
+        String(webBtn));
+  await webCtx.close();
+
+  // THE DESKTOP CASE, over a faked bridge serving three annotations: one placeable, one
+  // whose words no conversion holds, one area mark with no words at all.
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    window.__TAURI__ = {
+      core: { invoke: (cmd) => {
+        if (cmd === "take_pending_open") return Promise.resolve([]);
+        if (cmd === "zotero_annotations") return Promise.resolve([
+          { data: { itemType: "annotation", annotationType: "highlight",
+                    annotationText: "merely causal, a trace with no normative force",
+                    annotationComment: "the passage to press on",
+                    annotationColor: "#5fb236", annotationPageLabel: "3" } },
+          { data: { itemType: "annotation", annotationType: "highlight",
+                    annotationText: "words that appear in no conversion anywhere" } },
+          { data: { itemType: "annotation", annotationType: "image" } }
+        ]);
+        return Promise.resolve(null);
+      } },
+      fs: {}, dialog: {}, event: { listen: () => {} }
+    };
+  });
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  await page.click('#panes [data-p="text"]');
+  await page.waitForSelector("#mszotero:not([hidden])", { timeout: 10000 });
+  check(true, "with a host and a declared key the button appears", "");
+
+  await page.click("#mszotero");
+  await page.waitForSelector("#mstext .zot-mark", { timeout: 10000 });
+  const marked = await page.evaluate(() => {
+    const el = document.querySelector("#mstext .zot-mark");
+    return { text: (el.textContent || "").slice(0, 80),
+             color: el.style.getPropertyValue("--zot"),
+             title: el.title,
+             note: document.getElementById("msnote").textContent };
+  });
+  check(/merely causal/.test(marked.text),
+        "the highlight lands on the passage its words sit in", marked.text);
+  check(marked.color === "#5fb236", "and carries its Zotero colour", marked.color);
+  check(/the passage to press on/.test(marked.title) && /p\. 3/.test(marked.title),
+        "the hover carries the comment and the printed page", marked.title.slice(0, 120));
+  check(/1 highlight/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
+        /1 carry no text/.test(marked.note),
+        "unplaceable and wordless marks are counted, never dropped", marked.note);
+
+  await page.click("#mszotero");
+  const off = await page.evaluate(() => ({
+    marks: document.querySelectorAll("#mstext .zot-mark").length,
+    note: document.getElementById("msnote").textContent
+  }));
+  check(off.marks === 0 && off.note === "",
+        "pressing again puts the marks away", JSON.stringify(off));
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);
 await compareChecks(browser);
+await zoteroChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);

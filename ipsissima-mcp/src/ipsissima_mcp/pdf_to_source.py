@@ -1403,6 +1403,21 @@ def heading_gaps(used):
     return [n for n in range(min(tops), max(tops) + 1) if n not in tops]
 
 
+def zotero_key_of(path):
+    """The Zotero attachment key, read off a storage path — or None where there is none.
+
+    A PDF that came out of Zotero was converted from `<dataDir>/storage/<KEY>/file.pdf`, so
+    the identity is IN the path that was actually converted: measured from what happened,
+    never passed as a parameter that could drift or lie (E10 — one source of truth). The key
+    is the ATTACHMENT's, which is where Zotero hangs the reader's highlights, so a viewer
+    holding this front matter can ask Zotero for exactly this file's annotations. Eight
+    characters, uppercase alphanumeric, between two separators: anything else is not a
+    storage path and gets no key.
+    """
+    m = re.search(r"[/\\]storage[/\\]([A-Z0-9]{8})[/\\]", str(path))
+    return m.group(1) if m else None
+
+
 def header(cfg, r):
     """The provenance header, GENERATED from what actually happened.
 
@@ -1414,6 +1429,12 @@ def header(cfg, r):
                       if b[k] is not None)
     lines = [
         "---", f'title: "{cfg.title}"', f'author: "{cfg.author}"', f'source: "{cfg.source}"']
+    # WHERE THE FILE CAME FROM, when it came from Zotero: the attachment key, read off the
+    # converted path itself. The desktop viewer uses it to show the reader their own Zotero
+    # highlights beside this text, on request (docs/ANNOTATIONS-PLAN.md).
+    zkey = zotero_key_of(cfg.pdf)
+    if zkey:
+        lines.append(f'zotero: "{zkey}"')
     # THE FRONT MATTER, NOT THE BODY. The abstract says what the paper argues and is exactly what
     # a reader opening an unfamiliar map wants -- but it is not a passage a claim may cite, and
     # putting it in the manuscript would invite a reconstruction to quote it as the argument.

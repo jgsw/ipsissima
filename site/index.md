@@ -30,8 +30,9 @@ Christian Voigt and maintained by the Argdown team — and opens an argument as 
 map: the main claims at a glance, the detail where you choose to look, the marks a reader
 writes in the margin, and, when the map was drawn from a text, the passage each claim came
 from beside the claim that reports it. **It runs entirely in your browser and makes no network
-requests of any kind.** (The downloadable application adds one, and only when you choose
-Help ▸ Check for Updates; the page on this site has nothing of the sort.)
+requests of any kind.** (The downloadable application speaks beyond your machine only when you
+choose Help ▸ Check for Updates, and can read your Zotero highlights from Zotero on your own
+computer — a conversation that never leaves it; the page on this site has nothing of the sort.)
 
 The name is the distinctive half. *ipsissima verba* — the very words themselves, as against
 *ipsissima vox*, the authentic voice: did the author write **these words**, or is this a

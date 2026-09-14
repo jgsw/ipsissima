@@ -219,6 +219,39 @@ async fn check_for_updates() -> Result<UpdateCheck, String> {
                      downloads: DOWNLOADS.to_string() })
 }
 
+/// The reader's own highlights for one attachment, from Zotero ON THIS MACHINE.
+///
+/// This is the C1 narrowing the author ruled for (14 Sep 2026, docs/ANNOTATIONS-PLAN.md):
+/// two programs the reader runs, conversing on their own computer — nothing leaves the
+/// machine. The host and port are compiled in, the same rule as `open_fixed`: the only thing
+/// the page may pass is the eight-character item key, validated to be exactly that, so this
+/// command cannot be turned into a way to fetch anything else. It runs only when the reader
+/// presses the button that asks (C3: nothing behind the reader's back).
+#[tauri::command]
+async fn zotero_annotations(key: String) -> Result<serde_json::Value, String> {
+    if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
+        return Err("not a Zotero item key".to_string());
+    }
+    let url = format!("http://127.0.0.1:23119/api/users/0/items/{key}/children");
+    let resp = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| e.to_string())?
+        .get(&url)
+        .send()
+        .await
+        .map_err(|_| {
+            "Zotero is not answering on this machine. Is it running — and is 'Allow other \
+             applications on this computer to communicate with Zotero' switched on in its \
+             Settings ▸ Advanced?"
+                .to_string()
+        })?;
+    if !resp.status().is_success() {
+        return Err(format!("Zotero answered {}", resp.status()));
+    }
+    resp.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
 /// One of two fixed pages, in the reader's own browser.
 ///
 /// NO ARGUMENT ON EITHER COMMAND, DELIBERATELY. Each address is a constant compiled into the
@@ -342,7 +375,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page, zotero_annotations])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());

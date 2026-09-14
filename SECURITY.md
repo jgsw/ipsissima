@@ -34,6 +34,13 @@ network permission, no shell access and no process spawning**. Its scope is your
 mounted volumes, with `~/.ssh`, `~/.aws`, `~/.gnupg` and the macOS keychains explicitly denied.
 See `app/desktop/src-tauri/capabilities/default.json` — it is short on purpose and worth reading.
 
+The application's own code makes requests in exactly two cases, both only on your explicit
+request, and neither granted to the page (each lives in the Rust binary, behind a command that
+takes no URL): **Help ▸ Check for Updates** asks GitHub for the latest release number, and the
+**Zotero highlights** button asks Zotero — running on this same computer, at a compiled-in
+localhost address — for your own highlights of the open text. The second conversation never
+leaves the machine.
+
 **Builds are unsigned.** macOS and Windows will both warn the first time. `app/desktop/INSTALL.md`
 says exactly what you will see. Signing costs an Apple Developer membership and a Windows
 code-signing certificate; until those exist, the honest thing is to say so rather than to look

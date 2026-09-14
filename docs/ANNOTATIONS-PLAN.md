@@ -85,11 +85,44 @@ the Reader byte-for-byte, the fold-state identifier's round-trip. The Zotero rou
 would be its first application *outward*, and the reason it needs stating: between two
 programs, "prevent the second copy" is a design decision, not a lint.
 
-## 5. Standing
+## 5. The v1 build — shipped 14 Sep, the same day as the rulings
 
-The rulings are in (§3): E10 admitted, the v1 scope agreed, the C1 narrowing ruled, the
-no-Zotero question deferred as its own future project. What remains before the v1 build is
-engineering design, not values: how the desktop host reaches Zotero's local API, how a
-source names its Zotero item (what `from_zotero.py` already records is the first thing to
-measure), and what the manuscript pane draws for a highlight. The build proceeds on that
-design; the promise copy moves only when it ships.
+**Identity, measured then written.** The converted sources carried no Zotero identity — so
+now `pdf_to_source.py` writes one, and writes it the header's own way: *read off the path
+that was actually converted*. A PDF out of Zotero's library lives at
+`…/storage/<KEY>/file.pdf`, and that eight-character segment is the attachment key — the
+very item Zotero hangs the reader's highlights on. The front matter gains `zotero: "KEY"`
+automatically, no parameter to drift or lie (E10), and nothing for a non-Zotero path.
+
+**Transport, the ruled narrowing enacted.** A Rust command `zotero_annotations` in the
+desktop shell, on `check_for_updates`' pattern and `open_fixed`'s rule: host and port
+compiled in (`127.0.0.1:23119`, Zotero's local API), the only thing the page may pass an
+eight-character key validated to be exactly that. It runs when and only when the reader
+presses the button (C3). A Zotero that is not answering produces the sentence that says
+what to check, not a stack trace.
+
+**Display, and no second store.** The Manuscript header gains **Zotero highlights** —
+shown only in the desktop application, and only when the open chapter declares its
+`zotero:` key. Each highlight is placed by `ArgdownPositions.findQuote`, the same machinery
+that places a claim's quotation, and drawn as a gutter bar in its own Zotero colour on the
+passage its words sit in; the words, any comment, and the printed page ride the hover.
+Pressing again puts the marks away. A highlight whose words this conversion does not hold
+is **counted and said** — "N could not be placed" — never dropped; an area mark with no
+words is counted separately. Nothing is written anywhere: the marks remain Zotero's, so
+there is no copy to drift (E10's first outward application, kept clean).
+
+**The promises moved with the capability** (D6): README, SECURITY, the About panel and the
+site each now carry the per-artifact sentence — the one-file page absolute as ever; the
+desktop application leaving the machine exactly once on request, and conversing with
+Zotero on the reader's own computer only when asked.
+
+Held by rendered-DOM checks driven through the real host adapter over a faked Tauri
+bridge — including the web case (no host, no button, however loudly the chapter declares
+its key) — plus unit checks on the key-off-the-path rule and `cargo check` on the command.
+Help topic: "Your Zotero highlights".
+
+**What remains, in its own time:** write-back (highlight in Ipsissima, stored in Zotero —
+the second half of the agreed scope); EPUB/HTML attachments (the key rule generalises, the
+converters differ); and the deferred non-Zotero project (§3.3). The text-first default
+(Formation item 6) can now be judged against a manuscript pane that carries the reader's
+own marks.

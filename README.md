@@ -18,9 +18,13 @@ there is one, and the marks a reader writes in the margin. It runs entirely on y
 machine.
 
 **`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
-one file that works with the network cable out. **The desktop application makes exactly one, and
-only when you ask for it**: Help ▸ Check for Updates asks GitHub whether a newer release exists.
-It sends nothing about you or your documents, downloads nothing, and installs nothing.
+one file that works with the network cable out. **The desktop application speaks beyond your
+machine exactly once, and only when you ask for it**: Help ▸ Check for Updates asks GitHub
+whether a newer release exists. It sends nothing about you or your documents, downloads nothing,
+and installs nothing. And on your own machine it can do one more thing: show your **Zotero
+highlights** beside a text converted from your Zotero library — read from Zotero running on the
+same computer, only when you press the button that asks. That conversation never leaves your
+machine.
 
 ---
 

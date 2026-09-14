@@ -568,6 +568,15 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 #ms .cmp-div::after{content:"⚑";position:absolute;left:-1.05em;top:0;font-size:.85em;
   color:var(--accent)}
 #cmpnote{font-size:11px;color:var(--fg-dim);font-style:italic}
+
+/* THE READER'S OWN ZOTERO HIGHLIGHTS (docs/ANNOTATIONS-PLAN.md, ruled 14 Sep): a bar in the
+   left gutter, in the highlight's own Zotero colour, on the paragraph the highlighted words
+   sit in — the exact words and any comment ride the hover. A gutter bar rather than a tint,
+   because tinting the whole paragraph would claim more than the highlight does; and a
+   ::before, so it coexists with the comparison layer's inset stripes and ⚑. */
+#ms .zot-mark{position:relative}
+#ms .zot-mark::before{content:"";position:absolute;left:-0.55em;top:.25em;bottom:.25em;
+  width:4px;border-radius:2px;background:var(--zot,#ffd400);opacity:.85}
 #src{margin:0;padding:.7rem .9rem;
   font:12.5px/1.6 var(--argdown-font);
   font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual;
@@ -1246,6 +1255,13 @@ body.fs #fsexit{display:inline-flex}
              the same passages, where each goes alone, and where they read the same words
              differently. The text is the one thing two readings share, so the text is where
              their disagreement is legible. -->
+        <!-- THE READER'S OWN MARKS, from their own store (E10; docs/ANNOTATIONS-PLAN.md).
+             Shown only in the desktop application, and only when this text declares the
+             Zotero attachment it was converted from. Pressing it is the one thing that makes
+             the app speak to Zotero — on this machine, per the ruled C1 narrowing — and
+             pressing it again puts the marks away. -->
+        <button class="plain" id="mszotero" hidden
+                title="Show your own Zotero highlights of this text, read from Zotero running on this computer — nothing leaves your machine, and it is asked only when you press this. Press again to put them away.">Zotero highlights</button>
         <button class="plain" id="mscompare" hidden
                 title="Open another reconstruction of this same text, and see in the margin which passages each reading covers — and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have.">Compare…</button>
         <input type="file" id="cmpfile" hidden accept=".argdown">
@@ -1388,6 +1404,8 @@ function render(name, source, graph){
   if (STUDY) endStudy(false);
   // And a comparison: the other reading was another reading of the file that was open.
   endCompare();
+  // And the highlights, whose chapter went with the file.
+  if (ZOT) endZotero();
   // And so is a standing quote-this-passage offer: its words belong to the file that was open.
   QUOTE_SEL = null;
   $("msquote").hidden = true;
@@ -4042,12 +4060,16 @@ function msRender(path){
       marked[q].classList.add("mline");
       MSLINES[ln - 1] = marked[q];
     }
+    ZOT = null;          // highlights belong to the chapter that was up; the button stays
     cmpPaint();
+    zotPaint();
     return true;
   }
   box.classList.remove("prose");
   box.appendChild(frag);
+  ZOT = null;
   cmpPaint();
+  zotPaint();
   return true;
 }
 
@@ -4479,6 +4501,108 @@ $("mscompare").onclick = function(){ $("cmpfile").click(); };
 $("cmpfile").onchange = function(){ if (this.files && this.files[0]) startCompare(this.files[0]); };
 $("cmpend").onclick = endCompare;
 
+/* ================= THE READER'S OWN ZOTERO HIGHLIGHTS ==================================
+ *
+ * Display-only v1 (docs/ANNOTATIONS-PLAN.md, all four questions ruled 14 Sep 2026). The
+ * reader's marks live in Zotero — their own store — and Ipsissima DISPLAYS them rather than
+ * keeping a second copy that could drift (E10). The chapter's front matter names the Zotero
+ * attachment it was converted from (`zotero:`, written by pdf_to_source.py off the storage
+ * path itself); the desktop host asks Zotero, on this machine, when and only when the
+ * reader presses the button (C3; the ruled C1 narrowing); and each highlight is placed in
+ * the converted text by the same machinery that places a claim's quotation. A highlight
+ * whose words cannot be found in this conversion is COUNTED and said, never dropped: the
+ * note reports how many placed and how many did not.
+ */
+var ZOT = null;      // { key, marks: [{line, color, title}], skipped, unplaced } — or null
+
+function zoteroKeyOfChapter(){
+  if (!MSCHAPTER || !MS) return "";
+  for (var i = 0; i < MS.chapters.length; i++)
+    if (MS.chapters[i].path === MSCHAPTER)
+      return frontMatterValue(MS.chapters[i].text, "zotero");
+  return "";
+}
+
+function zoteroSyncBtn(){
+  var b = $("mszotero");
+  b.hidden = !(HOST && HOST.zoteroAnnotations && zoteroKeyOfChapter());
+  b.classList.toggle("on", !!ZOT);
+}
+
+function zotPaint(){
+  for (var i = 0; i < MSLINES.length; i++) {
+    var el0 = MSLINES[i];
+    if (!el0) continue;
+    el0.classList.remove("zot-mark");
+    el0.style.removeProperty("--zot");
+    if (el0.dataset.zotTitle != null) {
+      // The comparison layer shares the title attribute; give it back its own words.
+      if (el0.dataset.cmpTitle != null) el0.title = el0.title.split("\n◍ ")[0];
+      else el0.removeAttribute("title");
+      delete el0.dataset.zotTitle;
+    }
+  }
+  zoteroSyncBtn();
+  if (!ZOT) return;
+  for (var k = 0; k < ZOT.marks.length; k++) {
+    var m = ZOT.marks[k];
+    var el = MSLINES[m.line - 1];
+    if (!el) continue;
+    el.classList.add("zot-mark");
+    if (m.color) el.style.setProperty("--zot", m.color);
+    el.title = (el.title ? el.title + "\n" : "") + "◍ " + m.title;
+    el.dataset.zotTitle = "1";
+  }
+}
+
+function endZotero(){
+  if (!ZOT) return;
+  ZOT = null;
+  zotPaint();
+  $("msnote").textContent = "";
+}
+
+function startZotero(){
+  var key = zoteroKeyOfChapter();
+  if (!key || !HOST || !HOST.zoteroAnnotations) return;
+  var ch = null;
+  for (var i = 0; i < MS.chapters.length; i++)
+    if (MS.chapters[i].path === MSCHAPTER) ch = MS.chapters[i];
+  if (!ch) return;
+  HOST.zoteroAnnotations(key).then(function(items){
+    items = Array.isArray(items) ? items : [];
+    var marks = [], unplaced = 0, skipped = 0;
+    for (var j = 0; j < items.length; j++) {
+      var d = (items[j] && items[j].data) || items[j] || {};
+      if (d.itemType !== "annotation") continue;
+      // Only marks that CARRY WORDS can be placed by words. An area (image) annotation has
+      // no text to find; it is counted rather than silently dropped.
+      var text = d.annotationText || "";
+      if (!text.trim()) { skipped++; continue; }
+      var line = window.ArgdownPositions
+        ? window.ArgdownPositions.findQuote(text, ch.text) : null;
+      if (line == null) { unplaced++; continue; }
+      marks.push({
+        line: line,
+        color: d.annotationColor || "",
+        title: "“" + text + "”" +
+               (d.annotationComment ? " — " + d.annotationComment : "") +
+               (d.annotationPageLabel ? " (p. " + d.annotationPageLabel + ")" : "")
+      });
+    }
+    ZOT = { key: key, marks: marks, unplaced: unplaced, skipped: skipped };
+    zotPaint();
+    $("msnote").textContent = marks.length + " highlight" + (marks.length === 1 ? "" : "s") +
+      " from Zotero" +
+      (unplaced ? " — " + unplaced + " could not be placed in this converted text" : "") +
+      (skipped ? " — " + skipped + " carry no text (area marks)" : "");
+  }).catch(function(e){
+    showErr(String(e && e.message || e));
+  });
+}
+
+$("mszotero").onclick = function(){ if (ZOT) endZotero(); else startZotero(); };
+
 /* ================= THE ARGDOWN PANE: read-only, or an editor ==========================
  *
  * One pane, two fillings. Without the editor bundle it is the highlighted `<pre>` it always was.
@@ -4692,8 +4816,10 @@ function redrawFrom(graph){
   if (MS && window.ArgdownPositions) locateInPage(graph, msSources());
   var sig = mapSignature(graph);
   CURRENT_GRAPH = graph;
-  // An edit moved this map's claims; the comparison margin reads them live, so repaint it.
+  // An edit moved this map's claims; the comparison margin reads them live, so repaint it —
+  // and the highlights after it, because the repaint clears shared hover titles.
   cmpPaint();
+  zotPaint();
   if (sig === MAP_SIG) return;            // the edit did not touch the picture
   MAP_SIG = sig;
   var keep = LIVE ? LIVE.getState() : null;

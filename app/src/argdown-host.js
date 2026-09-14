@@ -209,6 +209,10 @@ var API = {
   checkForUpdates: function () { return T.core.invoke("check_for_updates"); },
   openReleasesPage: function () { return T.core.invoke("open_releases_page"); },
   openDownloadPage: function () { return T.core.invoke("open_download_page"); },
+  // The reader's own Zotero highlights for one attachment, from Zotero on this same
+  // machine — the ruled C1 narrowing (docs/ANNOTATIONS-PLAN.md): nothing leaves the
+  // machine, and it runs only when the reader presses the button that asks.
+  zoteroAnnotations: function (key) { return T.core.invoke("zotero_annotations", { key: key }); },
   pickDirectory: pickDirectory, pickFile: pickFile, pickSavePath: pickSavePath,
   readText: readText, writeText: writeText, writeBinary: writeBinary, readDirDeep: readDirDeep,
   watch: watch, onOpenPaths: onOpenPaths,

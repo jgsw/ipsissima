@@ -30,9 +30,13 @@ stand at a distance from, Ipsissima keeps the distinction, on every claim.
   <dt>Licence</dt><dd id="aboutlicence">—</dd>
 </dl>
 
-It runs entirely on your own machine. Nothing is uploaded, and it makes no network requests of any
-kind — not for updates, not for fonts, not for analytics. You can disconnect from the internet and
-it behaves identically.
+It runs entirely on your own machine, and nothing is ever uploaded. **As a single HTML file** it
+makes no network requests of any kind — not for updates, not for fonts, not for analytics;
+disconnect from the internet and it behaves identically. **As the desktop application** it speaks
+beyond your machine exactly once, and only when you ask: Help ▸ Check for Updates asks GitHub for
+the latest release number. It can also show your Zotero highlights beside a text converted from
+your Zotero library — read from Zotero running on this same computer, only when you press the
+button that asks, and never leaving your machine.
 
 ## Argdown
 

@@ -616,5 +616,22 @@ check("  and a pair the document never hyphenates is joined too",
 check("case does not defeat it", dehyphenate("A Well- Known result", False, keep),
       "A Well-Known result")
 
+# THE ZOTERO KEY IS IN THE PATH, or it is nowhere. A PDF converted out of Zotero's storage
+# carries its attachment key as a path segment, and that key is how the desktop viewer asks
+# Zotero for the reader's own highlights on exactly this file (docs/ANNOTATIONS-PLAN.md).
+# Anything that is not a storage path yields no key rather than a guess.
+from pdf_to_source import zotero_key_of                                      # noqa: E402
+
+check("a storage path yields its attachment key",
+      zotero_key_of("/Users/x/Zotero/storage/AB12CD34/paper.pdf"), "AB12CD34")
+check("  and Windows separators too",
+      zotero_key_of(r"C:\Users\x\Zotero\storage\AB12CD34\paper.pdf"), "AB12CD34")
+check("an ordinary path yields none",
+      zotero_key_of("/Users/x/Documents/paper.pdf"), None)
+check("a lowercase segment is not a key",
+      zotero_key_of("/x/storage/ab12cd34/paper.pdf"), None)
+check("a nine-character segment is not a key",
+      zotero_key_of("/x/storage/AB12CD345/paper.pdf"), None)
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

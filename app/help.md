@@ -589,6 +589,30 @@ nothing is written: which reading is better is the argument the two files exist 
 manuscript is refused with an explanation — maps citing no text in common are not readings of
 the same source, and there is nothing to compare them on.
 
+## Your Zotero highlights
+
+
+If you read and mark your library in **Zotero**, your marks can appear here too — without ever
+becoming a second copy. A text converted out of your Zotero library carries the name of the
+attachment it came from in its own front matter (`zotero:`, written by the converter from the
+path it actually read), and in the **desktop application** the Manuscript header then offers a
+**Zotero highlights** button. Pressing it asks Zotero — running on this same computer — for
+your highlights of exactly this file, and draws each one as a bar in the left gutter, in its
+Zotero colour, on the passage the highlighted words sit in; the exact words, any comment, and
+the printed page ride the hover. Pressing it again puts them away.
+
+Three honesty notes. The marks stay **Zotero's**: Ipsissima displays them and keeps no copy,
+so there is nothing to drift out of sync — Zotero remains the one place your marks live.
+The button is the **only** thing that makes the application speak to Zotero, and that
+conversation never leaves your machine. And a highlight whose words cannot be found in this
+converted text is **counted, not dropped** — the note under the chapter menu says how many
+placed and how many did not, the same honesty the quotation checks keep. (An area highlight —
+a rectangle over a figure — carries no words to find, and is counted separately.)
+
+If the button reports that Zotero is not answering: Zotero has to be running, and *Allow other
+applications on this computer to communicate with Zotero* switched on in its
+Settings ▸ Advanced.
+
 # Working with a reconstruction
 
 ## Opening a reconstruction
