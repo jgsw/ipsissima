@@ -521,6 +521,21 @@ they always say — that the map is faithful to the text. Whether the text is *t
 different question, and the label is there so nobody mistakes the first assurance for the
 second.
 
+**When the map itself was machine-written.** The same honesty runs the other way. A map whose
+front matter declares `reconstruction: generated:` and records no `reviewed:` shows
+**machine-written map** beside the title; one whose front matter records `reviewed:` — a
+person's pass over the map, dated — shows **map read by a person** instead. The second label
+records that someone looked, and deliberately claims no more: checking a long map against its
+source is hard, so a recorded pass is limited reassurance, not a proof. The quotation checks
+are mechanical and hold either way; whether the *reading* is fair remains a judgement, and the
+label says whose.
+
+**A reading that names its cruxes.** A claim tagged `#crux` marks a point where the text
+underdetermines the reading and the reconstructor chose among live alternatives — the claim's
+note names the road not taken. A map declaring any shows **one reading · N cruxes** beside the
+title: it is one reading among defensible readings, and it says so at exactly the points where
+that matters.
+
 # Working with a reconstruction
 
 ## Opening a reconstruction

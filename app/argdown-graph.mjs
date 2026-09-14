@@ -905,6 +905,29 @@ export function toGraph(res) {
            // verbatim, because dropping a declaration silently is exactly what this field
            // exists to prevent.
            textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null,
+           // The MAP's own provenance, the text's counterpart (Formation T3, ruled 14 Sep
+           // 2026): the reading policy block whole (its `generated:` is what the page
+           // reads), and the front matter's `reviewed:` -- the record of a PERSON's pass
+           // over the map. The page draws these as a declaration, never a certification:
+           // the ruling's own words are that even a human pass gives limited reassurance.
+           reconstruction: (res.frontMatter &&
+                            typeof res.frontMatter.reconstruction === "object")
+                           ? res.frontMatter.reconstruction : null,
+           reviewed: defaults.reviewed || null,
+           // How many claims declare a crux -- a choice among live readings (`#crux`,
+           // Formation wave 1). Counted over the equivalence classes, not the nodes' single
+           // `facet`, because a claim tagged `#reported #crux` reaches the map with only
+           // tags[0] and the count must not lose it.
+           cruxCount: (() => {
+             let n = 0;
+             for (const dict of [res.statements, res.arguments]) {
+               for (const t in (dict || {})) {
+                 const rec = dict[t];
+                 if (rec && rec.tags && rec.tags.indexOf("crux") >= 0) n++;
+               }
+             }
+             return n;
+           })(),
            // Declared contentions (front matter `contentions:`, ruled 10 Sep 2026): titles the
            // reconstructor names as the paper's theses -- the serial-genre case, where the
            // stated thesis is used further down and so never sits at the computed apex. They

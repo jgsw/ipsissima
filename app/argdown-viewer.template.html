@@ -806,6 +806,17 @@ body.fs #fsexit{display:inline-flex}
        border lends a manuscript the look of an authored source, and the label is what stops
        that borrowed trust (docs/values/SECOND-THOUGHTS.md). -->
   <span id="gentext" class="muted" hidden></span>
+  <!-- AND WHOSE MAP: the same declaration made about the reconstruction itself (Formation
+       T3, ruled 14 Sep). A map that declares `reconstruction: generated:` and records no
+       `reviewed:` says so beside the title; one recording a person's pass says that instead.
+       Both are declarations, never certifications — the ruling's own constraint is that even
+       a human pass over a hundred-claim map gives limited reassurance, and the hover says so. -->
+  <span id="mapprov" class="muted" hidden></span>
+  <!-- ONE READING AMONG READINGS: shown when the map declares at least one #crux — a claim
+       whose reading was chosen among live alternatives (Formation T4; the conventions'
+       three-scale rule). Declared-driven, not threshold-driven: the page shows what the
+       reconstructor marked and invents no cutoff of its own. -->
+  <span id="cruxchip" class="muted" hidden></span>
   <!-- ONE CONTROL, TWO ARRANGEMENTS. Both are the argument; what differs is what ORDERS the
        claims. `Reasons` puts the main claim at the apex with what holds it up below; `Exposition`
        lays the same claims out in the order the text presents them.
@@ -1348,6 +1359,38 @@ function render(name, source, graph){
         "assistant (text-provenance: generated). The borders and checks say the map is " +
         "faithful to that text — not that the text is true."
       : "Declared in the map's front matter.";
+  }
+  // The MAP's provenance, beside the text's (Formation T3, ruled 14 Sep). `reviewed:` is a
+  // record that a person looked, and the hover claims no more than the ruling allows: even a
+  // human pass over a long map is limited reassurance, so this is a declaration, never a
+  // certification. A machine-written map with no recorded pass says that instead; a map
+  // declaring neither says nothing.
+  var mp = $("mapprov");
+  var rev = graph && graph.reviewed;
+  var recGen = graph && graph.reconstruction && graph.reconstruction.generated;
+  mp.hidden = !(rev || recGen);
+  if (rev) {
+    mp.textContent = "map read by a person";
+    mp.title = "The front matter records a person's pass over this map (reviewed: " + rev +
+      "). That records that someone looked — limited reassurance, not a proof: checking a " +
+      "long map against its source is hard, and the reading remains a judgement to weigh.";
+  } else if (recGen) {
+    mp.textContent = "machine-written map";
+    mp.title = "The front matter declares this map was machine-generated (reconstruction: " +
+      "generated) and records no person's pass over it. The quotation checks are mechanical " +
+      "and hold either way; whether the reading is fair, no one has yet vouched.";
+  }
+  // One reading among readings: the map's own declared cruxes, counted — never a threshold
+  // the page invented (Formation T4).
+  var cx = $("cruxchip");
+  var cc = (graph && graph.cruxCount) || 0;
+  cx.hidden = !cc;
+  if (cc) {
+    cx.textContent = "one reading · " + cc + (cc === 1 ? " crux" : " cruxes");
+    cx.title = "This map marks " + cc + (cc === 1 ? " point" : " points") +
+      " where the text underdetermines the reading and the reconstructor chose among live " +
+      "alternatives (#crux). It is one reading among defensible readings; each marked " +
+      "claim's note names the road not taken.";
   }
   showArgdown(SOURCE);
   $("drop").classList.remove("show");

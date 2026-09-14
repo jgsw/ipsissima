@@ -1140,6 +1140,72 @@ async function genTextChecks(browser) {
     document.getElementById("fname").textContent === "plain.argdown", { timeout: 20000 });
   const gone = await page.evaluate(() => document.getElementById("gentext").hidden);
   check(gone === true, "and an undeclared one shows nothing", String(gone));
+
+  /* THE MAP'S OWN PROVENANCE, beside the text's (Formation T3, ruled 14 Sep 2026): a
+   * machine-written map with no recorded pass says so; a recorded pass says a person looked
+   * — and no more than that, because the ruling bounds the reassurance a pass may claim. And
+   * the one-reading chip (Formation T4): declared cruxes are counted, a map declaring none
+   * shows nothing. Driven by the same real drops. */
+  const generated = [
+    "===",
+    "title: A machine-written reading",
+    "reconstruction:",
+    "    generated: true",
+    "===",
+    "",
+    "[a]: A claim.",
+    "    + [b]: Its reason.",
+    ""
+  ].join("\n");
+  await drop(generated, "machine.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "machine.argdown", { timeout: 20000 });
+  const machine = await page.evaluate(() => {
+    const c = document.getElementById("mapprov");
+    return { hidden: c.hidden, text: c.textContent,
+             crux: document.getElementById("cruxchip").hidden };
+  });
+  check(!machine.hidden && machine.text === "machine-written map",
+        "a generated map without a pass declares itself", JSON.stringify(machine));
+  check(machine.crux === true, "and no declared crux shows no reading chip",
+        String(machine.crux));
+
+  const reviewed = [
+    "===",
+    "title: A read map",
+    "defaults:",
+    "    reviewed: \"2026-09-14\"",
+    "===",
+    "",
+    "[a]: A claim. #crux {note: \"Follows one live reading; another is named here.\"}",
+    "    + [b]: Its reason.",
+    ""
+  ].join("\n");
+  await drop(reviewed, "reviewed.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "reviewed.argdown", { timeout: 20000 });
+  const read = await page.evaluate(() => ({
+    prov: document.getElementById("mapprov").textContent,
+    provTitle: document.getElementById("mapprov").title,
+    crux: document.getElementById("cruxchip").textContent,
+    cruxHidden: document.getElementById("cruxchip").hidden
+  }));
+  check(read.prov === "map read by a person",
+        "a recorded pass declares that a person looked", JSON.stringify(read));
+  check(/limited reassurance/.test(read.provTitle),
+        "and its hover claims no more than the ruling allows", read.provTitle.slice(0, 80));
+  check(!read.cruxHidden && read.crux === "one reading · 1 crux",
+        "one declared crux shows the one-reading chip", JSON.stringify(read));
+
+  await drop(plain, "plain2.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "plain2.argdown", { timeout: 20000 });
+  const silent = await page.evaluate(() => ({
+    prov: document.getElementById("mapprov").hidden,
+    crux: document.getElementById("cruxchip").hidden
+  }));
+  check(silent.prov === true && silent.crux === true,
+        "a map declaring neither says nothing", JSON.stringify(silent));
   await ctx.close();
 }
 
