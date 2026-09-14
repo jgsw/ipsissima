@@ -85,6 +85,7 @@ const SUITES = [
   ["named rules: the python half", PY, [path.join(PYTESTS, "test_validity.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
+  ["two readings, compared",     PY, [path.join(PYTESTS, "test_compare.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],
   // That the server can be INSTALLED, not just run from here — every path that assumes a source
   // checkout works fine for us and for nobody else.

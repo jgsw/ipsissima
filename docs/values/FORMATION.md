@@ -235,11 +235,17 @@ The waves, in the drafted order:
    document grounds it in the charity analysis (§2.5, beside Stern's `unit: meaning`).
    The census change was nothing: the tag census already counts per-claim tags. (T4's
    first scale; the draft-mode precedent.)
-2. **Same-text plurality in the App.** An identity for "readings of the same source" and a
-   surface for comparing two maps of one text — side by side, or their disagreements
-   diffed. The classroom convergence is the warrant: fifty files of one text are the
-   plurality the Kant worry wants *and* the empirical dataset the document says these
-   questions need, already sitting in the teacher's hands.
+2. **Same-text plurality — computation half landed 14 Sep; App surface awaits rulings.**
+   `compare_argdown.py` compares two readings of one text, anchored on the shared source
+   (passages = paragraphs, placed by verified quotations, never by matching claim texts),
+   reporting policies, apexes, coverage, and three divergence kinds (crux, voice,
+   distance) with no verdict. Identity needed no new key: readings of the same source are
+   maps citing a chapter in common. `docs/PLURALITY-PLAN.md` is the programme record and
+   puts the App-surface questions — manuscript-as-common-ground vs side-by-side vs
+   rendered report vs classroom aggregate — to the author. The classroom convergence is
+   the warrant: fifty files of one text are the plurality the Kant worry wants *and* the
+   empirical dataset the document says these questions need, already in the teacher's
+   hands.
 3. **Folding as retrieval practice.** A study option that folds a contention's support and
    asks the reader to predict before unfolding — the testing effect built from machinery
    that already exists, offered on the walkthrough's pattern. (T2's terms.)
