@@ -411,6 +411,22 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #ms select{font:inherit;font-size:12px;max-width:16rem;flex:1;min-width:0}
 #ms .muted{font-size:11px;color:var(--fg-dim);white-space:nowrap}
 #ms > header button{padding:.05rem .4rem;line-height:1.1;font-size:15px}
+/* THE CONTENTS, FLOATING (see the JS block of the same name). Absolutely positioned inside
+   #ms so it stays put while #mstext scrolls under it -- reachable from anywhere in a long
+   file, which is its whole reason to exist. Top-right, clear of the prose margin; the page
+   numbers' gutter is under it only while it is open, and it is the reader who opened it. */
+#ms{position:relative}
+#mstoc{position:absolute;top:2.1rem;right:.6rem;z-index:5;width:15rem;max-width:70%;
+  max-height:65%;overflow:auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:.3rem 0 .35rem;box-shadow:0 6px 22px rgba(0,0,0,.16);
+  font-size:12px}
+#mstoc .toc-e{display:flex;align-items:baseline;gap:.5rem;padding:.16rem .7rem;
+  cursor:pointer;color:var(--fg);border-left:3px solid transparent}
+#mstoc .toc-e:hover{background:rgba(0,0,0,.05)}
+@media (prefers-color-scheme:dark){#mstoc .toc-e:hover{background:rgba(255,255,255,.07)}}
+#mstoc .toc-e.is-here{border-left-color:var(--accent)}
+#mstoc .toc-t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#mstoc .toc-p{color:var(--fg-dim);font-size:10.5px;flex:0 0 auto}
 #mstext{flex:1;overflow:auto;padding:.6rem .9rem 40vh;font:14px/1.7 Georgia,"Times New Roman",serif;
   color:var(--fg)}
 /* Rendered prose. Restrained on purpose — a reading surface beside a map, not a document
@@ -1239,6 +1255,12 @@ body.fs #fsexit{display:inline-flex}
     <section id="ms" hidden aria-label="The manuscript">
       <header>
         <select id="mschapter" title="Which file of the manuscript"></select>
+        <!-- THE CONTENTS, FLOATING: the file's own headings, one click from anywhere in a
+             long text. Beside the chapter select on purpose -- the select answers "which
+             file", this answers "where in it". Hidden when the file has fewer than two
+             headings: a list of one entry navigates nothing. -->
+        <button class="plain" id="mstocbtn" hidden aria-expanded="false"
+                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, or press Escape, to fold the list away.">Contents</button>
         <span id="msnote" class="muted"></span>
         <span class="grow"></span>
         <!-- SELECTION-TO-CLAIM (docs/EDITOR-PLAN.md): shown only while words are selected in
@@ -1270,6 +1292,7 @@ body.fs #fsexit{display:inline-flex}
                 title="End the comparison. The margin stripes go; both files are untouched.">&times; end</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
+      <nav id="mstoc" hidden aria-label="Contents of this file"></nav>
       <div id="mstext" tabindex="0"></div>
     </section>
   </aside>
@@ -1568,6 +1591,8 @@ function openingDepth(graph){
   }
   MSCHAPTER = null; MSLINES = [];
   $("msnote").textContent = "";
+  // A fresh file's contents are its own: the previous file's list must not survive it.
+  TOC = []; $("mstoc").textContent = ""; $("mstocbtn").hidden = true; msTocOpen(false);
   // Offered from the same manuscript the chapter list was just built from, so a file opened into
   // this page cannot leave the previous one's abstract behind it.
   syncAbstract();
@@ -3981,6 +4006,9 @@ document.addEventListener("keydown", function(e){
   // The abstract sits with the panels rather than with full screen: it is a thing the reader
   // opened over the map, and one Escape should put it back before it touches anything else.
   if (!$("abspanel").hidden) return setAbstract(false);
+  // The contents float over the text the way the abstract floats over the map: a thing the
+  // reader opened, put back by one Escape before anything larger is touched.
+  if (!$("mstoc").hidden) return msTocOpen(false);
   if (LIVE && $("drop").classList.contains("show")) return $("drop").classList.remove("show");
   if (document.body.classList.contains("fs")) setFull(false);
 });
@@ -4063,6 +4091,7 @@ function msRender(path){
     ZOT = null;          // highlights belong to the chapter that was up; the button stays
     cmpPaint();
     zotPaint();
+    msTocBuild(ch);
     return true;
   }
   box.classList.remove("prose");
@@ -4070,8 +4099,140 @@ function msRender(path){
   ZOT = null;
   cmpPaint();
   zotPaint();
+  msTocBuild(ch);
   return true;
 }
+
+/* ---- THE CONTENTS, FLOATING -----------------------------------------------------------
+ *
+ * A long article or a book is navigated by its own structure, and the pane already holds
+ * that structure: the headings the document declared -- never invented, which is ingest's
+ * own rule, so this list can only ever show the text's shape as the text stated it. The
+ * list floats over the text behind one header button, so any section is one click away
+ * from wherever the reader is, and the entry for the section under their eyes is marked
+ * as they scroll. Fewer than two headings and the button never appears (P6: a list of one
+ * entry navigates nothing).
+ */
+var TOC = [];              // [{line, level, text, page}] for the rendered chapter
+var TOC_OPEN = false;      // survives a chapter switch: a reader mid-navigation stays navigating
+
+/** The chapter's headings, read the way the prose renderer reads the text: front matter and
+ *  converter comments skipped, fenced code skipped, and each heading's text cleaned of the
+ *  notation around it -- pandoc's `{#id}` trailer, ATX closers, markdown escapes. The page
+ *  is the printed page the heading falls on, from the converter's own markers, because a
+ *  reader navigating a book thinks in its pages. */
+function msTocParse(text){
+  var lines = String(text == null ? "" : text).split("\n");
+  var out = [], fence = false, comment = false, i = 0;
+  if (lines.length && /^---\s*$/.test(lines[0]))
+    for (i = 1; i < lines.length; i++)
+      if (/^(---|\.\.\.)\s*$/.test(lines[i])) { i++; break; }
+  var marks = pageMarks(text), pg = 0, lastPage = "";
+  for (; i < lines.length; i++) {
+    var ln = lines[i];
+    if (comment) { if (ln.indexOf("-->") !== -1) comment = false; continue; }
+    if (/^\s*<!--/.test(ln)) { if (ln.indexOf("-->") === -1) comment = true; continue; }
+    if (/^```/.test(ln)) { fence = !fence; continue; }
+    if (fence) continue;
+    var mo = /^(#{1,6})\s+(.+?)\s*$/.exec(ln);
+    if (!mo) continue;
+    var t = mo[2]
+      .replace(/\s*\{[#.][^{}]*\}\s*$/, "")     // the same attrs shape readableSource strips
+      .replace(/\s*#+\s*$/, "")
+      .replace(/\\([\\`*_{}\[\]()#+.!-])/g, "$1")
+      .replace(/[*_`]/g, "").trim();
+    if (!t) continue;
+    while (pg < marks.length && marks[pg].line <= i + 1) { lastPage = marks[pg].page; pg++; }
+    out.push({ line: i + 1, level: mo[1].length, text: t, page: lastPage });
+  }
+  return out;
+}
+
+function msTocBuild(ch){
+  TOC = msTocParse(ch.text);
+  var btn = $("mstocbtn"), box = $("mstoc");
+  box.textContent = "";
+  if (TOC.length < 2) { TOC = []; btn.hidden = true; box.hidden = true; return; }
+  btn.hidden = false;
+  var base = TOC[0].level;
+  for (var b = 1; b < TOC.length; b++) base = Math.min(base, TOC[b].level);
+  TOC.forEach(function (e, idx) {
+    var row = document.createElement("div");
+    row.className = "toc-e";
+    row.dataset.i = String(idx);
+    var t = document.createElement("span");
+    t.className = "toc-t";
+    t.style.marginLeft = ((e.level - base) * 0.85) + "rem";
+    t.textContent = e.text;         // textContent, never innerHTML: these are the text's words
+    t.title = e.text;
+    row.appendChild(t);
+    if (e.page) {
+      var p = document.createElement("span");
+      p.className = "toc-p";
+      p.textContent = "p." + e.page;
+      p.title = "printed page " + e.page;
+      row.appendChild(p);
+    }
+    box.appendChild(row);
+  });
+  msTocOpen(TOC_OPEN);
+  msTocSpot();
+}
+
+/** One function for the button, the Escape and a fresh chapter, so they cannot drift. */
+function msTocOpen(open){
+  TOC_OPEN = !!(open && TOC.length);
+  $("mstoc").hidden = !TOC_OPEN;
+  $("mstocbtn").classList.toggle("on", TOC_OPEN);
+  $("mstocbtn").setAttribute("aria-expanded", TOC_OPEN ? "true" : "false");
+  if (TOC_OPEN) msTocSpot();
+}
+
+/** The block a TOC entry names, by the same fallback every locator here uses. */
+function msTocBlock(e){ return MSLINES[e.line - 1] || nearestBlock(e.line); }
+
+/** Mark the entry for the section under the reader's eyes, and keep it in the panel's view.
+ *  The blocks are in document order, so the first one below the fold ends the walk. */
+function msTocSpot(){
+  if (!TOC.length) return;
+  var host = $("mstext"), here = -1;
+  for (var i = 0; i < TOC.length; i++) {
+    var el = msTocBlock(TOC[i]);
+    if (!el) continue;
+    // 80px of grace, not a hairline: a heading's own top margin puts it ~30px below the
+    // pane's edge, and a section whose heading is anywhere in the pane's first inches is
+    // the section being read.
+    if (el.offsetTop - host.offsetTop <= host.scrollTop + 80) here = i;
+    else break;
+  }
+  var rows = $("mstoc").children;
+  for (var r = 0; r < rows.length; r++) rows[r].classList.toggle("is-here", r === here);
+  if (here >= 0 && TOC_OPEN) {
+    var row = rows[here], box = $("mstoc");
+    if (row.offsetTop < box.scrollTop + 8 ||
+        row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight - 8)
+      box.scrollTop = Math.max(0, row.offsetTop - box.clientHeight / 2);
+  }
+}
+
+$("mstocbtn").onclick = function(){ msTocOpen($("mstoc").hidden); };
+$("mstoc").addEventListener("click", function(e){
+  var row = e.target.closest(".toc-e");
+  if (!row) return;
+  var entry = TOC[+row.dataset.i];
+  var el = entry && msTocBlock(entry);
+  if (!el) return;
+  // Top-aligned, not centred: a reader going to a section wants to start at its heading,
+  // and centring would put the heading mid-pane with the previous section above it.
+  var host = $("mstext");
+  host.scrollTop = Math.max(0, el.offsetTop - host.offsetTop - 8);
+  msTocSpot();
+});
+var TOC_RAF = 0;
+$("mstext").addEventListener("scroll", function(){
+  if (!TOC.length || TOC_RAF) return;
+  TOC_RAF = requestAnimationFrame(function(){ TOC_RAF = 0; msTocSpot(); });
+});
 
 /* WHICH PASSAGE A LINE BELONGS TO. A reader clicking in the manuscript means "this bit of
    text", and the unit they mean is the paragraph, not the line under the pointer: a claim
@@ -4152,6 +4313,20 @@ function readableSource(text) {
     } else if (inComment) {
       if (lines[i].indexOf("-->") !== -1) inComment = false;
       lines[i] = "";
+    } else if (/^\s*(?::{2,}(?:\s+.*)?|\[\]\{#[^\x7d]*\})\s*$/.test(lines[i])) {
+      // (`\x7d` is the closing brace: test_source_pane lifts this function by counting
+      // braces, so everything inside it -- regex literals and comments alike -- must keep
+      // them balanced.)
+      // PANDOC'S SCAFFOLDING, printed as punctuation by markdown-it: a `::: chapter` div
+      // fence, or a bare `[]{#anchor}` span. Neither is a word of the text; both litter a
+      // converted EPUB or HTML source. Blanked like the comments, never deleted, so every
+      // data-l line number below stays true.
+      lines[i] = "";
+    } else if (/^#{1,6}\s/.test(lines[i])) {
+      // A heading's pandoc attributes -- `## Title {#id .class}` -- are notation, not
+      // title, and markdown-it prints them into the heading. Stripped WITHIN the line, so
+      // the line count cannot move.
+      lines[i] = lines[i].replace(/\s*\{[#.][^{}]*\}\s*$/, "");
     }
   }
   return lines.join("\n");

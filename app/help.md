@@ -501,6 +501,18 @@ reference maps 57% of placed claims share a line with another — a claim pinned
 carries that paragraph's first line — so "the closest" would be a choice between several the tool
 has no way to make.
 
+## The file's contents
+
+A long article or a book is navigated by its own structure, and the Manuscript pane knows it:
+**Contents**, in the pane's header, floats the file's headings over the text, so any section is
+one click away from wherever you are. Click a heading to go there; the section you are reading
+is marked as you scroll, and where the source records printed pages, each entry carries the
+page it falls on. Click the button again — or press Escape — to fold the list away.
+
+The headings are the document's own, never invented: the converter's rule is that a `#` in the
+source is there because the document said so, and this list can only show the text's shape as
+the text stated it. A file with fewer than two headings offers no Contents at all.
+
 ## Provenance
 
 

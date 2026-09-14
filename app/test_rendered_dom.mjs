@@ -2053,12 +2053,191 @@ async function voiceChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------ the contents, floating */
+/* The Manuscript pane's floating table of contents: the file's own headings behind one
+ * header button, any section one click away, the current section marked as the reader
+ * scrolls. Driven as a reader would — the button clicked, an entry clicked, the text
+ * wheeled back up — and the counter-case proves the button absent on a file whose two
+ * headings do not exist. */
+async function tocChecks(browser) {
+  const root = fs.mkdtempSync(path.join(tmp, "toc-"));
+  fs.mkdirSync(path.join(root, "source"));
+  const para = ("The argument advances by a distinction that the previous paragraph did " +
+                "not yet need, and the reader is asked to hold both halves in mind. ");
+  const sect = (n) => Array(8).fill(para + `(§${n})`).join("\n\n");
+  fs.writeFileSync(path.join(root, "source", "long-essay.md"), [
+    "---",
+    'title: "A long essay"',
+    "---",
+    "",
+    "<!-- CONVERTED TEXT - a converter comment the contents must skip. -->",
+    "",
+    "# The whole argument {#whole .unnumbered}",
+    "",
+    "[]{#a-bare-anchor.xhtml}",
+    "",
+    "::: chapter",
+    "",
+    sect(1),
+    "",
+    "## The first movement",
+    "",
+    sect(2),
+    "",
+    "## The second movement",
+    "",
+    sect(3),
+    "",
+    "<!-- p.7 begins here -->",
+    "",
+    "### A refinement of the second {#refine}",
+    "",
+    "The refinement is that memory binds as \"a promise made to the future self\".",
+    "",
+    sect(4),
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "reading.argdown"), [
+    "===",
+    "defaults:",
+    '    chapter: "source/long-essay.md"',
+    "===",
+    "",
+    "[Memory is promissory]: Memory binds as \"a promise made to the future self\". {fidelity: \"compression\"}",
+    "    <- [Causal doubt]: Recollection may be merely causal. {fidelity: \"compression\"}",
+    ""
+  ].join("\n"));
+  const out = path.join(root, "viewer.html");
+  try {
+    execFileSync("node", [BUILDER, path.join(root, "reading.argdown"),
+                          "-o", out, "--source-root", root], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "contents: the fixture viewer builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  await page.click('#panes [data-p="text"]');
+  await page.waitForSelector("#mstoc[hidden]", { state: "attached", timeout: 10000 });
+  const btn = await page.evaluate(() => document.getElementById("mstocbtn").hidden);
+  check(btn === false, "contents: a file with headings offers the button", String(btn));
+
+  // The pane reads as prose, not as pandoc notation: heading attributes are stripped
+  // within their line, fences and bare anchors blanked -- and the line numbers hold,
+  // which the claim placed AFTER all of it proves.
+  const prose = await page.evaluate(() => {
+    const h1 = document.querySelector("#mstext h1");
+    return { h1: h1 ? h1.textContent : "(none)",
+             scaffold: /::: chapter|\{#a-bare-anchor/.test(
+               document.getElementById("mstext").textContent),
+             placed: document.querySelectorAll("#mstext [data-l]").length > 0 };
+  });
+  check(/^The whole argument\s*$/.test(prose.h1) && !prose.scaffold && prose.placed,
+        "  and the pane prints the text, never pandoc's scaffolding",
+        JSON.stringify(prose));
+
+  await page.click("#mstocbtn");
+  await page.waitForSelector("#mstoc:not([hidden])", { timeout: 5000 });
+  const list = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll("#mstoc .toc-e")];
+    return rows.map(r => ({
+      text: r.querySelector(".toc-t").textContent,
+      indent: r.querySelector(".toc-t").style.marginLeft,
+      page: (r.querySelector(".toc-p") || {}).textContent || ""
+    }));
+  });
+  check(list.length === 4, "  every heading is an entry, comments and front matter are not",
+        String(list.length));
+  check(list[0] && list[0].text === "The whole argument",
+        "  the pandoc attributes are stripped from the entry", JSON.stringify(list[0]));
+  check(list[3] && list[3].indent !== "" && list[3].indent !== list[1].indent,
+        "  a deeper heading sits deeper in the list",
+        JSON.stringify({ h2: list[1] && list[1].indent, h3: list[3] && list[3].indent }));
+  check(list[3] && list[3].page === "p.7",
+        "  and carries the printed page it falls on", JSON.stringify(list[3]));
+
+  await page.click("#mstoc .toc-e:nth-child(4)");
+  const gone = await page.evaluate(() => {
+    const host = document.getElementById("mstext");
+    const rows = document.querySelectorAll("#mstoc .toc-e");
+    return { top: host.scrollTop, here: rows[3].classList.contains("is-here"),
+             open: !document.getElementById("mstoc").hidden };
+  });
+  check(gone.top > 500 && gone.here && gone.open,
+        "clicking an entry goes to its section, marks it, and keeps the list up",
+        JSON.stringify(gone));
+
+  const box = await page.locator("#mstext").boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.wheel(0, -1000000);
+  await page.waitForTimeout(300);
+  const spy = await page.evaluate(() => {
+    const rows = document.querySelectorAll("#mstoc .toc-e");
+    return { top: document.getElementById("mstext").scrollTop,
+             first: rows[0].classList.contains("is-here"),
+             last: rows[3].classList.contains("is-here") };
+  });
+  check(spy.top === 0 && spy.first && !spy.last,
+        "wheeling back up moves the mark to the section under the reader's eyes",
+        JSON.stringify(spy));
+
+  await page.keyboard.press("Escape");
+  const shut = await page.evaluate(() => ({
+    hidden: document.getElementById("mstoc").hidden,
+    aria: document.getElementById("mstocbtn").getAttribute("aria-expanded")
+  }));
+  check(shut.hidden && shut.aria === "false",
+        "one Escape folds the list away, before it touches anything larger",
+        JSON.stringify(shut));
+
+  // THE COUNTER-CASE: one heading navigates nothing, so the button must not exist for
+  // this reader at all.
+  fs.writeFileSync(path.join(root, "source", "flat.md"),
+    "# Only a title\n\nA text of plain paragraphs with nothing to list.\n\n" +
+    "Recollection may be merely causal after all.\n");
+  fs.writeFileSync(path.join(root, "flat.argdown"), [
+    "===",
+    "defaults:",
+    '    chapter: "source/flat.md"',
+    "===",
+    "",
+    "[Flat claim]: Recollection may be \"merely causal\" after all. {fidelity: \"compression\"}",
+    "    <- [A doubt]: Or it may not. {fidelity: \"compression\"}",
+    ""
+  ].join("\n"));
+  const out2 = path.join(root, "flat.html");
+  try {
+    execFileSync("node", [BUILDER, path.join(root, "flat.argdown"),
+                          "-o", out2, "--source-root", root], { stdio: "pipe" });
+    const p2 = await ctx.newPage();
+    await p2.goto("file://" + out2);
+    await p2.evaluate(() => {
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    });
+    await p2.waitForSelector("#map .alm-n", { timeout: 20000 });
+    await p2.click('#panes [data-p="text"]');
+    await p2.waitForSelector("#mstext .mline, #mstext [data-l]", { timeout: 10000 });
+    const none = await p2.evaluate(() => document.getElementById("mstocbtn").hidden);
+    check(none === true, "a file with one heading offers no Contents at all", String(none));
+    await p2.close();
+  } catch (e) {
+    check(false, "contents: the counter-case builds", String(e.message || e).slice(0, 200));
+  }
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);
 await compareChecks(browser);
 await zoteroChecks(browser);
 await voiceChecks(browser);
+await tocChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);
