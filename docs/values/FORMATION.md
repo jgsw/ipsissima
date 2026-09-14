@@ -235,7 +235,12 @@ The waves, in the drafted order:
    document grounds it in the charity analysis (§2.5, beside Stern's `unit: meaning`).
    The census change was nothing: the tag census already counts per-claim tags. (T4's
    first scale; the draft-mode precedent.)
-2. **Same-text plurality — computation half landed 14 Sep; App surface awaits rulings.**
+2. **Same-text plurality — whole, 14 Sep.** The computation half first, then, on the
+   author's surface ruling the same day, the manuscript-as-common-ground layer in the App:
+   Compare… in the Manuscript header, each paragraph's standing striped in the margin, the
+   three divergence kinds flagged where the two readings part, the refusal for a map of a
+   different text. Side-by-side is the likely end state (the author's suspicion, recorded);
+   the classroom aggregate waits for a classroom. Earlier record of the computation half:
    `compare_argdown.py` compares two readings of one text, anchored on the shared source
    (passages = paragraphs, placed by verified quotations, never by matching claim texts),
    reporting policies, apexes, coverage, and three divergence kinds (crux, voice,
@@ -254,11 +259,11 @@ The waves, in the drafted order:
    mode now hands off to study — the builder becomes their own first reader (ruled). Exit
    keeps the reader's folds, except an exit before any unfold, which restores. Rendered-
    DOM checks by real drops, clicks and Esc; `docs/STUDY-PLAN.md` §1 is the record.
-4. **Elicit-before-show — re-shaped by the author's steer 14 Sep; build awaits the word.**
-   "Optional, and non-obtrusive": the commitment gesture is recallable only, never
-   offered — no door at opening, no prompt at the drop; it lives where study mode lives,
-   for the reader who has read the text. Persistence (margin note vs session) and the
-   classroom variant remain open. `docs/STUDY-PLAN.md` §2.
+4. **Elicit-before-show — closed unbuilt, 14 Sep.** First re-shaped by the author's steer
+   ("optional, and non-obtrusive" → recallable only, never offered), then closed on his
+   second ruling: "On reflection, I don't think we need Wave 4 at present." The design
+   stays in `docs/STUDY-PLAN.md` §2 as the restart point if a real need returns; study
+   mode carries the reach-first idea in the form he did want.
 5. **The map's own declarations — landed 14 Sep.** Two chips beside the title, the
    `text-provenance` chip's counterparts. T3's line: a map declaring
    `reconstruction: generated:` with no recorded pass shows *machine-written map*; one
@@ -270,13 +275,15 @@ The waves, in the drafted order:
    interpretive-load cutoff would be a magic number where the crux tag is the
    reconstructor's own word. Held by rendered-DOM checks driven by real drops; help
    entries beside the existing one; full suite green.
-6. **Text-first or map-first — investigated 14 Sep; the question is put.** The finding:
-   the app always opens map-first — `PANES` initialises `{map: true, text: false}` and
-   every fresh render re-asserts `PANES.text = false` — so a reading-genre map opens with
-   the road to its text closed until a click. The question for the author: should a
-   reading whose manuscript is present open text-beside-map (B9's road visible), or does
-   P6 keep the single pane and the road stays one visible click away? Narrow screens
-   force one pane either way; the walkthrough already teaches the click.
+6. **Text-first or map-first — enlarged by the author, 14 Sep, and held open with the
+   annotations programme.** The finding stands (the app always opens map-first;
+   `PANES.text = false` on every render). The author's addition: the question sits inside
+   a larger one — where the reader does their serious reading, and where their marks live.
+   His own reading happens in Zotero on a tablet, with highlights and notes made there;
+   the implications (marks on the manuscript itself; round-tripping with Zotero; and a
+   candidate principle, E10 ⟨proposed⟩ — one source of truth, copies held together by
+   machinery) are the opening of `docs/ANNOTATIONS-PLAN.md`, and the pane default is
+   deliberately settled *with* that programme rather than before it.
 7. **The self-description sweep — done 14 Sep; a null result, recorded.** Site, README and
    help carry no unmeasured learning claims — "is for understanding writing that reasons
    to a conclusion" states an aim, not an outcome — and the copy is already

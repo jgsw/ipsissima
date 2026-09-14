@@ -983,6 +983,34 @@ generator can be taught."
 
 **Weight.** Medium within its locus; untested against other principles.
 
+### E10. One source of truth, or copies held together by machinery ⟨proposed, 14 Sep⟩
+
+**It says.** Where a fact can live in one place, it lives in one place. Where duplication
+is unavoidable — two languages reading one block, two programs holding one reader's marks —
+the copies are held together by machinery, not by care: a cross-check that fails loudly, or
+a design that never creates the second copy at all. Out of order: any arrangement where two
+stores of the same thing can drift apart silently and nothing is charged with noticing.
+
+**Seen in.** Enacted before stated, throughout: the six version files under one test
+(`test_versions.mjs`); the Python and JS front-matter readers pinned by a cross-check
+(`test_argdown_positions.mjs`); the dead-field lint; the exported page that *is* the Reader
+(`test_page_parity.mjs`); the fold-state identifier's round-trip. Not yet seen across a
+program boundary — the Zotero annotations question (`docs/ANNOTATIONS-PLAN.md`) is where it
+would first bind outward, by displaying the reader's marks from their own store rather than
+keeping a second one.
+
+**Provenance.** **quotation** — origin: author (14 Sep, on annotation round-tripping):
+"having a single source of truth if at all possible, and using design decisions to prevent
+things that ought to be in sync from getting out of sync." The entry's articulation is the
+assistant's; admission as worded awaits the author.
+
+**Generality.** The whole project; E4's spirit widened from the project's own derived
+artifacts to whatever the user's tools jointly hold.
+
+**Weight.** Heavily enacted, untested as a stated principle. Its first outward application
+(`ANNOTATIONS-PLAN.md` §2) would collide with C1's no-network promise, and that collision
+is put to the author before anything is built.
+
 ---
 
 ## F. The App's display ethic
