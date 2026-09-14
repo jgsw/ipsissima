@@ -455,6 +455,67 @@ standpoint's best publicly-circulating case, declared as such — while accuracy
 wherever a source exists. The first case-law row whose winner depends on genre (`THEORY.md`
 §5).
 
+### B8. Offload the accidental difficulty; preserve — even stage — the intrinsic ⟨proposed, Formation episode, 14 Sep⟩
+
+**It says.** The difficulty of engaging with an argument has two sources, and the tool owes
+them opposite duties. *Accidental* difficulty — unclear or ambiguous statement, missing
+signposts, syntax, escaping conventions, provenance bookkeeping — is cost without formative
+return, and the tool machines it away. *Intrinsic* difficulty — deciding what the text
+finally argues, what must hold for that to follow, what relation an objection really bears —
+is where understanding is formed, and the tool leaves it with the person: preserved always,
+and, where the reader is studying rather than consulting, deliberately staged. A feature is
+misdesigned when it performs the intrinsic work and calls the performance help.
+
+**Seen in.** Enacted before stated. The guided from-a-text mode (`EDITOR-PLAN.md` §3): five
+steps that machine away syntax and bookkeeping while leaving which-sentence and
+what-relation entirely with the student. Selection-to-claim writing "the part the machine
+can see" while the human half arrives selected — the title for a quotation, the placeholder
+for a paraphrase, the restatement itself never drafted (G3). The parse-error translation:
+accidental difficulty removed at exactly the point where the intrinsic is untouched.
+
+**Provenance.** **compression** — origin: author's document "Reading, cognitive atrophy and
+Ipsissima" (12 Sep, the private record: the observation that much of the cognitive load of
+argumentative reading comes from arguments "unclearly or ambiguously stated, or only hinted
+at", and the prediction of "the atrophying of some cognitive skills, but the enhancement of
+others"), with the assistant supplying the accidental/intrinsic cut and the learning-science
+warrant (the generation and testing effects; desirable difficulties). The sentence endorsed
+by the author as the episode's lodestar, 14 Sep; quotations await approval (`FORMATION.md`).
+
+**Generality.** The whole project. For the App it governs study features (`FORMATION.md`
+T2); for the MCP it restates the seam G3 already draws, as a duty about difficulty.
+
+**Weight.** Untested as stated; heavily enacted (the guided mode, the paraphrase door, G3's
+seam). Candidate case law sits in `FORMATION.md` §3 and awaits adjudication.
+
+### B9. The map is a way into the text, not a way past it ⟨proposed, Formation episode, 14 Sep⟩
+
+**It says.** For the reading genre, a map's success includes where it leaves the reader with
+respect to the source: it should bring them to the text "with insight and understanding"
+(the SEP editorial standard, adapted in the author's document), not absorb the attention
+that belonged to it. Displacement-relative, never absolute: where the map displaces an
+abstract or a skim it is an upgrade; where the reader's purpose is legitimately terminal —
+triage, a text not worth the return trip — that purpose is sovereign (B6; P3-reader). What
+the principle demands of the tool is the road, not the journey: the way from any claim to
+the words it reads stays open, visible and short, and no default or self-description may
+present the map as more terminal than it is.
+
+**Seen in.** Shift-click from claim to source and back; the Manuscript co-present rather
+than an appendix; the guided mode ending where reading begins — the hand-off to the
+walkthrough on the map just built (`EDITOR-PLAN.md` §3); the fidelity borders read as
+invitations to check, which is to say, to read.
+
+**Provenance.** **compression** — origin: author (12 Sep document, adapting the SEP
+editorial guideline: the map should bring readers "to a state where they can read [the
+source text(s)] with insight and understanding"), with the assistant supplying the
+displacement-relative form and the road-not-journey scope. Quotations await approval
+(`FORMATION.md`).
+
+**Generality.** The reading genre (as with the A-cluster); the App's defaults and every
+self-description.
+
+**Weight.** Untested. Its first candidate collisions are `FORMATION.md` §3 (instrument vs
+terminus in the self-description; text-first vs map-first defaults).
+
 ---
 
 ## C. Trust: the reader's machine, and the author's files

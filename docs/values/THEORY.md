@@ -19,6 +19,11 @@ you can check at every step" — B7 admitted to the mission cluster, the keyston
 genre, the A-cluster scoped to the reading genre, and the App's seam widened to face the
 writer. `SECOND-THOUGHTS.md` is the episode record; the diff is the record of what moved.*
 
+*⟨proposed⟩ A second episode is open (the Formation episode, 14 Sep): `FORMATION.md`
+proposes B8 and B9 into the mission cluster — the reader's formation as part of the
+mission's measure. The ⟨proposed⟩ markers stand until the author's rulings; nothing below
+them is yet the framework's.*
+
 ---
 
 ## 1. The keystone
@@ -95,6 +100,17 @@ at least as much as the person who reads one, so authoring support is mission wo
 side door. B6 — the author's values are not automatically the project's; the touchstone is
 the user — is the mission's second-order guardian, and governs how every apex below is
 interpreted.
+
+*⟨proposed, Formation episode, 14 Sep⟩* The mission sentence measures the map; the
+Formation episode proposes measuring the reader too. Intelligibility *delivered* and
+understanding *formed* can come apart — some of the difficulty a map removes was doing
+formative work — and the episode's cut says which is which: accidental difficulty is
+machined away, intrinsic difficulty is preserved and, for study, staged (B8). And for the
+reading genre, part of a map's success is where it leaves the reader with respect to the
+source — a way into the text, not past it, in the displacement-relative form (B9). B6
+guards both: the reader's own terminal purpose is sovereign, and the tool protects the
+road to the text, never prescribes the journey. `FORMATION.md` carries the tensions and
+the queue; nothing here binds until the rulings.
 
 **P3 — Three sovereignties.** The tool serves three parties and may usurp none of them:
 

@@ -53,6 +53,13 @@ different routes, deliberately.
   record; the alignment work downstream of the rulings proceeds wave by wave, each on the
   author's word.
 
+- **The Formation episode — opened 14 Sep, ⟨proposed⟩, awaiting rulings.** Prompted by the
+  author's "Reading, cognitive atrophy and Ipsissima" (12 Sep, the private record): the
+  hidden premise *intelligibility delivered is understanding formed*, the
+  accidental/intrinsic difficulty lodestar (proposed as B8), and the propaedeutic clause
+  (proposed as B9). `FORMATION.md` is the record; nothing is merged or implemented until
+  the author rules.
+
 ## Whose values are these
 
 A question the checkpoints answered about the framework itself, in both directions:
