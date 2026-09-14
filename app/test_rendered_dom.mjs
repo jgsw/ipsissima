@@ -1991,11 +1991,74 @@ async function zoteroChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------- the voice declaration */
+/* A wholly dramatised text declares itself once, whole (conventions §2): `voice:` in the
+ * source's front matter, drawn on the orientation panel. The fixture carries an abstract
+ * TOO, because the point worth proving is precedence — the declaration that stops a
+ * misreading must win the panel over the courtesy summary. */
+async function voiceChecks(browser) {
+  const root = fs.mkdtempSync(path.join(tmp, "voice-"));
+  fs.mkdirSync(path.join(root, "source"));
+  fs.writeFileSync(path.join(root, "source", "satire.md"), [
+    "---",
+    'title: "A satire"',
+    "abstract: >-",
+    "  The proposer sets out his scheme and answers the objections to it.",
+    "voice: >-",
+    "  The argument mapped here is the proposer's, a persona the author does not hold.",
+    "---",
+    "",
+    "I shall now humbly propose my own thoughts, which cannot be liable to the least objection.",
+    ""
+  ].join("\n"));
+  fs.writeFileSync(path.join(root, "reading.argdown"), [
+    "===",
+    "defaults:",
+    '    chapter: "source/satire.md"',
+    "===",
+    "",
+    "[The scheme should be adopted]: The scheme \"cannot be liable to the least objection\". #reported {fidelity: \"compression\"}",
+    "    <- [The scheme is monstrous]: The scheme is monstrous by design. {fidelity: \"imputation\"}",
+    ""
+  ].join("\n"));
+  const out = path.join(root, "viewer.html");
+  try {
+    execFileSync("node", [BUILDER, path.join(root, "reading.argdown"),
+                          "-o", out, "--source-root", root], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "voice: the fixture viewer builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  const offered = await page.evaluate(() => document.getElementById("abs").hidden);
+  check(offered === false, "voice: the declaration is offered as orientation", String(offered));
+  await page.click("#absbtn");
+  const panel = await page.evaluate(() => ({
+    label: document.getElementById("abslabel").textContent,
+    body: document.getElementById("absbody").textContent,
+    where: document.getElementById("abswhere").textContent
+  }));
+  check(panel.label === "The voice",
+        "  and it wins the panel over the abstract beside it", panel.label);
+  check(/persona the author does not hold/.test(panel.body),
+        "  carrying the reconstructor's sentence", panel.body.slice(0, 90));
+  check(/as the reconstructor read it/.test(panel.where),
+        "  and saying whose reading it is", panel.where);
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);
 await compareChecks(browser);
 await zoteroChecks(browser);
+await voiceChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);

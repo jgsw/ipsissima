@@ -4229,6 +4229,15 @@ var ABSTRACT = null;        // { text, chapter, kind, credit } for the one being
  * words that does not say whose is the thing this program exists to prevent.
  */
 var SUMMARY_KINDS = [
+  // A TEXT WHOSE VALUE IS NOT ITS ARGUMENT says so where the reader orients. The Modest
+  // Proposal is the case: every claim of the persona's is tagged, but no tag can say of the
+  // WHOLE that the text's force is its satire. The reconstructor's sentence lives in the
+  // chapter's front matter under `voice:` — the word the tags and the comparison machinery
+  // already use for whose speech a claim is. First in this list deliberately: if a chapter
+  // carried both this and an abstract, the declaration that stops a misreading must win the
+  // panel over the courtesy summary.
+  { key: "voice", label: "The voice",
+    caption: "how the text holds the argument mapped here, as the reconstructor read it" },
   { key: "abstract", label: "Abstract",
     caption: "the article's own abstract, not part of the reconstruction" },
   { key: "facts", label: "Facts of the case", credit: "facts_source",

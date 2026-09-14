@@ -299,6 +299,9 @@ A claim you settled by choosing among live scholarly readings is a CRUX: tag it 
 and let its note: name the reading followed and the road not taken. A rival reading
 that is local may be #reported beside your own; one that would re-wire the argument or
 move the apex is a sibling file -- one file, one reading, never two multiplexed.
+A WHOLLY DRAMATISED text (satire, dialogue, a persona throughout) also declares itself
+once, whole: `voice:` in the SOURCE file's front matter, one or two sentences of yours
+on whose voice the mapped argument is in -- the app shows it where the reader orients.
 
 RELATIONS: `<+` support, `<-` attack, `<_` undercut -- the child acts on the parent;
 `+>`, `->`, `_>` reverse it. An objection that grants the premises and denies that they

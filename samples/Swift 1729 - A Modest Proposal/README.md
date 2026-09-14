@@ -14,7 +14,9 @@ argument — that the poor of Ireland should sell their year-old children as foo
 the view an author sets out to be seen through, and what Swift is actually arguing is never
 stated in the text at all. This sample exists because that structure is the hardest test the
 fidelity apparatus has: a text whose every sentence is in one voice and whose meaning is in
-another.
+another. The source file's front matter says so once, whole, under `voice:`, and the app
+draws that sentence on the orientation panel before the reader takes a green border as the
+text vouched for entire.
 
 3,400 words of pamphlet. 53 nodes, 7 of them arguments. 47 of 47 quotations verify, in the
 proposer's own 1729 spellings. `unit: commitment` — the question this text poses is which view

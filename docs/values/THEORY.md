@@ -281,6 +281,7 @@ precedent a future decision can cite or distinguish.
 | accuracy vs charity, where no source exists (survey genre) | fairness to the position — each standpoint's best circulating case, declared as such; accuracy binds wherever a source exists | SECOND-THOUGHTS T1, ruled 5 Sep |
 | novice legibility vs formative staging | the legible default, the effortful option kept — staging offered on the walkthrough's pattern, never imposed | FORMATION T2, ruled 14 Sep |
 | one reading presented as *the* reading | plurality over hedging — cruxes noted and tagged in the map, rival readings as sibling files, comparison first-class | FORMATION T4, ruled 14 Sep |
+| a text whose value is not its argument | declared once, whole, where the reader orients — `voice:` on the panel, ahead of the abstract; the tags keep carrying it claim by claim | FORMATION §6 item 8, ruled 14 Sep |
 
 Two meta-principles govern the table itself, and they are the project's native mode of doing
 values-improvement:

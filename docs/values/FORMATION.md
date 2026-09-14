@@ -297,4 +297,12 @@ The waves, in the drafted order:
    exists); (b) a documented convention only — the conventions' persona passage plus a
    `note:` on the apex, nothing drawn; (c) nothing — the `#reported` tags on the
    persona's case already carry it. The choice touches the conventions' vocabulary, so
-   it is the author's; put, not made.
+   it is the author's; put, not made. **Ruled 14 Sep: (a), and built the same day.** The
+   key is `voice:` — the word the tags and the comparison machinery already use for whose
+   speech a claim is, so the vocabulary is reused rather than grown — a block scalar in
+   the *source file's* front matter, one or two sentences of the reconstructor's own,
+   drawn by the orientation panel with the caption "as the reconstructor read it". It
+   takes the panel ahead of an abstract deliberately: a declaration that stops a
+   misreading outranks a courtesy summary. Conventions §2 and the extraction prompt
+   instruct it; the digest carries it; the Modest Proposal source now declares itself;
+   a rendered-DOM check proves the precedence on a fixture carrying both kinds.

@@ -205,6 +205,13 @@ it is a different reconstruction — a sibling file, never a second reading mult
 this one. Naming a crux is a result, not a failure: a map of an old or contested text with no
 cruxes is usually claiming a determinacy the text does not have.
 
+**A wholly dramatised text also declares itself once, whole.** Where the entire argument is a
+persona's — a satire, a dialogue, a view set out to be seen through — tag its claims
+`#reported` as the conventions direct, and *also* write `voice:` into the source file's front
+matter: one or two sentences of yours saying whose voice the mapped argument is in and where
+the text's force lies. The app shows it where the reader orients, so a faithful map of the
+persona's case is never mistaken for the text's own testimony.
+
 ### 4. Check, and fix what it finds
 
 ```

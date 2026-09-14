@@ -115,6 +115,16 @@ conclusion the author never stated ends at the reconstructor. Declare `unit: com
 the front matter: the question such a text poses is which view is held, not what the words
 mean.
 
+**And say it once of the whole, where the reader orients.** The tags carry the persona claim
+by claim, but no tag can say that the text's *value* is not its argument — that a perfectly
+faithful map of the proposer's case is the least of what A Modest Proposal is. Write one or
+two sentences of the reconstructor's own into the **source file's** front matter under
+`voice:` (a YAML block scalar, like `abstract:`), saying whose voice the mapped argument is
+in and where the text's force actually lies. The app draws it on the orientation panel — the
+same panel that carries an abstract or the facts of a case — labelled as the reconstructor's
+reading, before the reader takes a single green border as the text vouched for whole. Most
+texts need no `voice:` line at all; a text that needs one needs it badly.
+
 ---
 
 ## 3. Warrant — why a departure is allowed

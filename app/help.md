@@ -480,8 +480,13 @@ facts_source: "Headnote, [2019] UKSC 41"
 ---
 ```
 
-Neither is part of the reconstruction, and the panel says so. A file offering neither has no
-panel.
+One more kind, for the rare text that needs it: **the voice**. A satire or a dialogue can be
+mapped in perfect fidelity — every quotation verbatim, every border green — while the argument
+belongs to a persona the author invents to be seen through. The tags on the claims say so one
+by one; a `voice:` line in the source's front matter says it once, of the whole, in the
+reconstructor's own sentence, and it takes the panel ahead of an abstract because a warning
+against misreading outranks a courtesy summary. None of these is part of the reconstruction,
+and the panel says so. A file offering none of them has no panel.
 
 The note above the passage says how precisely the claim was placed — *found by its quotation* is
 exact, *the paragraph it came from* is as close as an unquoted claim can be pinned. A claim

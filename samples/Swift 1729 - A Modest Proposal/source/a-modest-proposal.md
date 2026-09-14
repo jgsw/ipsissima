@@ -1,3 +1,10 @@
+---
+voice: >-
+  The pamphlet is spoken throughout by a persona, the proposer, and the argument mapped here
+  is his: Swift sets it out and does not hold it. The text's force is its satire — what Swift
+  himself argues is never stated in the text, and stands in the map as imputations.
+---
+
 <!-- CONVERTED TEXT - NOT THE PUBLISHED DOCUMENT.
      Made by ingest.py from pg1080-images-3.md.
      No heading was inserted; any `#` below is the document's own, or was
