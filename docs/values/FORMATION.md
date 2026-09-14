@@ -8,10 +8,12 @@ the Second Thoughts precedent (its ruling 7).
 
 The episode follows the established shape: proposed edits on the branch, marked ⟨proposed⟩,
 the author's rulings at a checkpoint, nothing merged or implemented on the assistant's
-judgement. **Status: proposals drafted, 14 Sep — awaiting the author's rulings. §5 lists
-the questions put.** One element is already ruled: the author endorsed the episode's
-lodestar sentence (B8's principle) as a lodestar on 14 Sep, before this drafting; its
-admission *as an inventory entry, as worded*, still awaits the checkpoint.
+judgement. **Status: the author's rulings received, 14 Sep — recorded in §5, and carried
+into the files the same day (the ⟨proposed⟩ markers are off; the diff is the record). The
+values half of the episode is closed; the downstream queue proceeds in §6's order, wave 1
+landed the same day.** One element preceded the drafting: the author endorsed the
+episode's lodestar sentence (B8's principle) as a lodestar on 14 Sep, before the files
+were written; its admission as an inventory entry, as worded, came at the checkpoint.
 
 ---
 
@@ -98,11 +100,11 @@ and nothing read), which the tool cannot control but its defaults and rhetoric n
 
 | where | what | status |
 |---|---|---|
-| `INVENTORY.md` B8 | new principle: **offload the accidental difficulty; preserve — even stage — the intrinsic** | ⟨proposed⟩ — the sentence endorsed as lodestar 14 Sep; admission as worded awaits the checkpoint |
-| `INVENTORY.md` B9 | new principle: **the map is a way into the text, not a way past it** — displacement-relative | ⟨proposed⟩ |
-| `THEORY.md` §2 P2 | the mission's success has a reader-side: B8, B9 join the cluster; B6 guards both | ⟨proposed⟩ |
-| `THEORY.md` header | the open-episode notice | ⟨proposed⟩ |
-| `README.md` | the episode registered in the framework's history | ⟨proposed⟩ |
+| `INVENTORY.md` B8 | new principle: **offload the accidental difficulty; preserve — even stage — the intrinsic** | **admitted as worded** |
+| `INVENTORY.md` B9 | new principle: **the map is a way into the text, not a way past it** — displacement-relative | **admitted as worded** |
+| `THEORY.md` §2 P2 | the mission's success has a reader-side: B8, B9 join the cluster; B6 guards both | **admitted** |
+| `THEORY.md` header | the open-episode notice, now the checkpoint record | **carried** |
+| `README.md` | the episode registered in the framework's history | **carried** |
 
 **No case-law rows are added before adjudication** — the Second Thoughts precedent (its row
 was written after ruling, not before). The candidate rows live in §3 beside the tensions
@@ -167,19 +169,72 @@ Named in advance, with a candidate resolution each, awaiting the author's ruling
 6. **The downstream queue's order** (§6) — which waves, and in what order, on the author's
    word; nothing proceeds without it.
 
-## 5. The rulings
+## 5. The rulings, received 14 Sep
 
-*Awaiting the checkpoint.*
+1. **B8** — admitted as worded.
+2. **B9** — admitted as worded, in the displacement-relative form.
+3. **T1–T5's candidate resolutions** — adopted. T2 and T4 write their case-law rows
+   (`THEORY.md` §5).
+4. **T3, refined in the ruling.** The lightweight option is chosen — "a line saying it has
+   or hasn't been read against the source text by a human might be helpful" — but with a
+   constraint the candidate resolution lacked: "it's far from straightforward to actually
+   check a 100 claim map against its source; and so I suspect that even if a human being
+   does look at it, the amount of reassurance it should provide should be limited." So the
+   line, when built, must itself be worded on the fidelity ethic's terms: it records that
+   a person looked, not that the reading is vouched for — a declaration, not a
+   certification, and the reassurance it offers is bounded by what checking a hundred-claim
+   map against its source actually costs. Carried into the queue (item 5's wave inherits
+   the wording constraint).
+5. **The quotations** from "Reading, cognitive atrophy and Ipsissima" — approved for an
+   eventually public branch.
+6. **The downstream queue** — the word given for the queue as drafted, with one question
+   put back: the relationship between items 1 and 2 — when, if ever, should a
+   reconstruction present multiple readings *in the map* rather than confining the
+   multiplicity to the notes, and would item 2's machinery show multiple readings better
+   than labelling interpretations with hashtags? §6's preamble records the answer wave 1's
+   conventions now carry.
 
-## 6. The downstream queue, proposed
+## 6. The downstream queue
 
-Nothing here is built; each item is a wave awaiting the word, ordered by the examination's
-judgement of value against cost:
+The word was given for the queue as drafted (ruling 6), and the author's question about
+items 1 and 2 settled their boundary before either was built:
 
-1. **Interpretive forks in the extraction method.** The extraction prompt and method
-   document teach the convention: where the text underdetermines the reading and the
-   reconstructor chose among live alternatives, the `note:` names the road not taken. The
-   checker's census counts declared forks. (T4's first scale; the draft-mode precedent.)
+**One file, one reading — multiplicity at three scales (settled 14 Sep).** A reconstruction
+asserts exactly one reading: the front matter's reading policy declares *which* reading the
+file attempts, and that machinery presumes a singular answer. Multiplicity then lives at
+three scales, and the scale is the criterion:
+
+- **The floor — every fork gets a note.** Wherever the reconstructor chose among live
+  readings, the `note:` names the reading followed and the road not taken, attributed
+  where scholarship divides.
+- **The chip — `#crux`.** The same claim carries the tag, so the contested points are
+  countable and filterable. The existing tag census counts it with **zero checker
+  changes** — "the census counts declared forks" fell out of machinery already built.
+- **The reported rival — in the map, at local junctures.** Where a rival reading is local
+  and load-bearing, it appears the way an opponent's position already does: `#reported`
+  claims, attributed to whose reading it is. The map still asserts one reading; it
+  *reports* another at the point where the disagreement bites. Existing A10 machinery, no
+  new mechanism.
+- **The sibling file — item 2's machinery, for global rivals.** A rival that re-wires the
+  argument, moves the apex, or changes the reading policy is a different reconstruction,
+  and hashtag-multiplexing cannot carry it: the drawn graph would hold both wirings at
+  once — a union-picture asserting a reading nobody holds, the F1 family's failure (the
+  picture saying what no interpretation says); the computed apex and census would
+  aggregate across readings; and neither reading would be individually checkable. Sibling
+  files keep each reading a coherent, checkable assertion with its own reading policy,
+  and the comparison surface computes their agreement and disagreement. So item 2's
+  machinery is not a better display of what hashtags do — it is the only honest carrier
+  of the global case, while hashtags (`#crux`, `#reported`) remain the right tool at the
+  local scale.
+
+The waves, in the drafted order:
+
+1. **Interpretive forks in the extraction method — landed 14 Sep.** The conventions
+   document defines `#crux` (tag table row and its own subsection, with the three-scale
+   discipline); the extraction prompt instructs it at the point of writing; the method
+   document grounds it in the charity analysis (§2.5, beside Stern's `unit: meaning`).
+   The census change was nothing: the tag census already counts per-claim tags. (T4's
+   first scale; the draft-mode precedent.)
 2. **Same-text plurality in the App.** An identity for "readings of the same source" and a
    surface for comparing two maps of one text — side by side, or their disagreements
    diffed. The classroom convergence is the warrant: fifty files of one text are the
@@ -192,8 +247,15 @@ judgement of value against cost:
    conclusion before an existing map opens — the guided mode's step 1 turned to face a
    finished map; D7's *interrogative, not generative* extended to the reader's own reading,
    against anchoring. (T2's terms govern its offer.)
-5. **The orientation panel's one-reading sentence**, census-driven, where interpretive load
-   is high. (T4's second scale.)
+5. **The orientation panel's one-reading sentence**, census-driven, where interpretive
+   load or the crux count is high. (T4's second scale.) This wave also inherits T3's
+   refined ruling: the read-by-a-human line, if drawn, is a declaration and not a
+   certification, worded to claim no more reassurance than checking a hundred-claim map
+   against its source can actually deliver. Found while landing wave 1: **the data half
+   of T3's line already exists** — the `reviewed:` key records a person's pass over the
+   map, and the checker already guards it with the `formalized:` stamp's own rule (never
+   set on a generated map; the reviewer sets it, removing `generated: true` in the same
+   pass). What remains is the App's sentence, bounded as the ruling requires.
 6. **Text-first or map-first?** Which pane a reading-genre map opens into is a values
    decision wearing a default's clothes; the question is put rather than answered, with
    B9's road-not-journey as the test.

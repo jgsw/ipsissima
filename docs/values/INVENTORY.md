@@ -455,7 +455,7 @@ standpoint's best publicly-circulating case, declared as such — while accuracy
 wherever a source exists. The first case-law row whose winner depends on genre (`THEORY.md`
 §5).
 
-### B8. Offload the accidental difficulty; preserve — even stage — the intrinsic ⟨proposed, Formation episode, 14 Sep⟩
+### B8. Offload the accidental difficulty; preserve — even stage — the intrinsic
 
 **It says.** The difficulty of engaging with an argument has two sources, and the tool owes
 them opposite duties. *Accidental* difficulty — unclear or ambiguous statement, missing
@@ -479,15 +479,18 @@ argumentative reading comes from arguments "unclearly or ambiguously stated, or 
 at", and the prediction of "the atrophying of some cognitive skills, but the enhancement of
 others"), with the assistant supplying the accidental/intrinsic cut and the learning-science
 warrant (the generation and testing effects; desirable difficulties). The sentence endorsed
-by the author as the episode's lodestar, 14 Sep; quotations await approval (`FORMATION.md`).
+by the author as the episode's lodestar and the entry admitted as worded the same day
+(14 Sep, `FORMATION.md` §5); the quotations approved for an eventually public branch.
 
 **Generality.** The whole project. For the App it governs study features (`FORMATION.md`
 T2); for the MCP it restates the seam G3 already draws, as a duty about difficulty.
 
-**Weight.** Untested as stated; heavily enacted (the guided mode, the paraphrase door, G3's
-seam). Candidate case law sits in `FORMATION.md` §3 and awaits adjudication.
+**Weight.** Heavily enacted before stated (the guided mode, the paraphrase door, G3's
+seam), and first case law the day of admission (14 Sep, Formation T2): novice legibility vs
+formative staging — the legible default, the effortful option kept, staging offered on the
+walkthrough's pattern and never imposed (`THEORY.md` §5).
 
-### B9. The map is a way into the text, not a way past it ⟨proposed, Formation episode, 14 Sep⟩
+### B9. The map is a way into the text, not a way past it
 
 **It says.** For the reading genre, a map's success includes where it leaves the reader with
 respect to the source: it should bring them to the text "with insight and understanding"
@@ -507,14 +510,18 @@ invitations to check, which is to say, to read.
 **Provenance.** **compression** — origin: author (12 Sep document, adapting the SEP
 editorial guideline: the map should bring readers "to a state where they can read [the
 source text(s)] with insight and understanding"), with the assistant supplying the
-displacement-relative form and the road-not-journey scope. Quotations await approval
-(`FORMATION.md`).
+displacement-relative form and the road-not-journey scope. Admitted as worded, in the
+displacement-relative form, 14 Sep (`FORMATION.md` §5); the quotations approved for an
+eventually public branch.
 
 **Generality.** The reading genre (as with the A-cluster); the App's defaults and every
 self-description.
 
-**Weight.** Untested. Its first candidate collisions are `FORMATION.md` §3 (instrument vs
-terminus in the self-description; text-first vs map-first defaults).
+**Weight.** Admitted in the displacement-relative form on the day the absolute form was
+argued against it (Formation T1, 14 Sep): the reader's terminal purpose is sovereign, and
+the tool protects the road, never prescribes the journey. Its named candidate collisions
+(instrument vs terminus in the self-description; text-first vs map-first defaults) await
+the queue's later waves (`FORMATION.md` §6).
 
 ---
 

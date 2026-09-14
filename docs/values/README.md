@@ -53,12 +53,14 @@ different routes, deliberately.
   record; the alignment work downstream of the rulings proceeds wave by wave, each on the
   author's word.
 
-- **The Formation episode — opened 14 Sep, ⟨proposed⟩, awaiting rulings.** Prompted by the
-  author's "Reading, cognitive atrophy and Ipsissima" (12 Sep, the private record): the
-  hidden premise *intelligibility delivered is understanding formed*, the
-  accidental/intrinsic difficulty lodestar (proposed as B8), and the propaedeutic clause
-  (proposed as B9). `FORMATION.md` is the record; nothing is merged or implemented until
-  the author rules.
+- **The Formation episode — opened and ruled 14 Sep.** Prompted by the author's "Reading,
+  cognitive atrophy and Ipsissima" (12 Sep, the private record): the hidden premise
+  *intelligibility delivered is understanding formed*, the accidental/intrinsic difficulty
+  lodestar admitted as B8, the propaedeutic clause admitted as B9 in its
+  displacement-relative form, five tensions adjudicated (two into the case-law table, T3
+  with a reassurance-limited refinement), and the one-file-one-reading criterion settled
+  for interpretive plurality. `FORMATION.md` is the record; the downstream queue proceeds
+  in its §6 order, wave 1 (the `#crux` convention) landed the same day.
 
 ## Whose values are these
 

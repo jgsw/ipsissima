@@ -19,10 +19,11 @@ you can check at every step" — B7 admitted to the mission cluster, the keyston
 genre, the A-cluster scoped to the reading genre, and the App's seam widened to face the
 writer. `SECOND-THOUGHTS.md` is the episode record; the diff is the record of what moved.*
 
-*⟨proposed⟩ A second episode is open (the Formation episode, 14 Sep): `FORMATION.md`
-proposes B8 and B9 into the mission cluster — the reader's formation as part of the
-mission's measure. The ⟨proposed⟩ markers stand until the author's rulings; nothing below
-them is yet the framework's.*
+*Revised again at the Formation checkpoint (14 Sep), after the author's rulings: B8
+(accidental difficulty offloaded, the intrinsic preserved and staged) and B9 (the map a
+way into the text, displacement-relative) admitted to the mission cluster — the reader's
+formation joins the mission's measure — and two case-law rows written (T2, T4).
+`FORMATION.md` is the episode record; the diff is the record of what moved.*
 
 ---
 
@@ -101,16 +102,15 @@ side door. B6 — the author's values are not automatically the project's; the t
 the user — is the mission's second-order guardian, and governs how every apex below is
 interpreted.
 
-*⟨proposed, Formation episode, 14 Sep⟩* The mission sentence measures the map; the
-Formation episode proposes measuring the reader too. Intelligibility *delivered* and
-understanding *formed* can come apart — some of the difficulty a map removes was doing
-formative work — and the episode's cut says which is which: accidental difficulty is
-machined away, intrinsic difficulty is preserved and, for study, staged (B8). And for the
-reading genre, part of a map's success is where it leaves the reader with respect to the
-source — a way into the text, not past it, in the displacement-relative form (B9). B6
-guards both: the reader's own terminal purpose is sovereign, and the tool protects the
-road to the text, never prescribes the journey. `FORMATION.md` carries the tensions and
-the queue; nothing here binds until the rulings.
+The mission sentence measures the map; the Formation episode (14 Sep) added the reader's
+side of the measurement. Intelligibility *delivered* and understanding *formed* can come
+apart — some of the difficulty a map removes was doing formative work — and the episode's
+cut says which is which: accidental difficulty is machined away, intrinsic difficulty is
+preserved and, for study, staged (B8). For the reading genre, part of a map's success is
+where it leaves the reader with respect to the source — a way into the text, not past it,
+in the displacement-relative form (B9). B6 guards both: the reader's own terminal purpose
+is sovereign, and the tool protects the road to the text, never prescribes the journey.
+`FORMATION.md` is the episode record.
 
 **P3 — Three sovereignties.** The tool serves three parties and may usurp none of them:
 
@@ -279,6 +279,8 @@ precedent a future decision can cite or distinguish.
 | dependency standardness vs owning the layout | measured case-by-case: dagre retired, parser kept | STABILITY-PLAN; CREDITS |
 | picture stability vs static optimality | neither by principle: "the table decides" | STABILITY-PLAN |
 | accuracy vs charity, where no source exists (survey genre) | fairness to the position — each standpoint's best circulating case, declared as such; accuracy binds wherever a source exists | SECOND-THOUGHTS T1, ruled 5 Sep |
+| novice legibility vs formative staging | the legible default, the effortful option kept — staging offered on the walkthrough's pattern, never imposed | FORMATION T2, ruled 14 Sep |
+| one reading presented as *the* reading | plurality over hedging — cruxes noted and tagged in the map, rival readings as sibling files, comparison first-class | FORMATION T4, ruled 14 Sep |
 
 Two meta-principles govern the table itself, and they are the project's native mode of doing
 values-improvement:
