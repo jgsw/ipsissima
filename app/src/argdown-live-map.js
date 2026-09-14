@@ -5010,6 +5010,11 @@ function createLiveMap(container, graph, options) {
         'loses its route to a contention">load-bearing</button>' +
       '</span>' +
       (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "") +
+      // STUDY is a mode, not a filter, so it sits apart from the scales — offered only where
+      // the host wires one in (the viewer does; an export with no host machinery does not).
+      (opt.onStudy ? '<span class="alm-grp alm-seg" data-role="study">' +
+        '<button data-act="study" title="Study this map: say what you think holds each ' +
+        'claim up before unfolding it">study</button></span>' : "") +
       // THE BAR CAN BE PUT AWAY. On a desktop it earns its strip; on a phone the strip is the
       // scarcest thing there is, and a reader who has set the map how they want it is done with
       // these controls. Folded, a small chip remains where the bar was — dismissible AND
@@ -5029,6 +5034,7 @@ function createLiveMap(container, graph, options) {
       const b = /** @type {any} */ (ev.target).closest("button"); if (!b) return;
       const act = b.dataset.act;
       if (act === "fold")     return setBarFolded(true, true);
+      if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"

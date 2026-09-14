@@ -246,16 +246,19 @@ The waves, in the drafted order:
    the warrant: fifty files of one text are the plurality the Kant worry wants *and* the
    empirical dataset the document says these questions need, already in the teacher's
    hands.
-3. **Folding as retrieval practice — designed 14 Sep, awaiting the word.** The study mode:
-   predict before unfolding, the machine staging the reveal and staying out of the
-   comparison (no typing judged, no scoring — a quiz would grade the reader against one
-   interpretation). `docs/STUDY-PLAN.md` §1 is the design; its open questions are put.
-   (T2's terms; the guided mode's design-then-word rhythm.)
-4. **Elicit-before-show — designed 14 Sep, awaiting the word.** The commitment door: mark
-   what you take the text to be finally arguing before the map opens, kept as the reader's
-   own margin note, the divergence theirs to weigh. Reuses selection-to-claim and the
-   marginalia machinery. `docs/STUDY-PLAN.md` §2 is the design; its open questions are
-   put. (D7 extended to the reader's reading, against anchoring.)
+3. **Folding as retrieval practice — ruled and built 14 Sep.** Study mode: the map folds
+   to its contention and the card asks, of each frontier claim, what the reader thinks
+   holds it up before they unfold it themselves — no typing, no scoring, the comparison
+   theirs (a machine grading the answer would grade them against one reading). On the map
+   bar and under How to use (ruled); fold-tree grain (ruled, tentatively); the guided
+   mode now hands off to study — the builder becomes their own first reader (ruled). Exit
+   keeps the reader's folds, except an exit before any unfold, which restores. Rendered-
+   DOM checks by real drops, clicks and Esc; `docs/STUDY-PLAN.md` §1 is the record.
+4. **Elicit-before-show — re-shaped by the author's steer 14 Sep; build awaits the word.**
+   "Optional, and non-obtrusive": the commitment gesture is recallable only, never
+   offered — no door at opening, no prompt at the drop; it lives where study mode lives,
+   for the reader who has read the text. Persistence (margin note vs session) and the
+   classroom variant remain open. `docs/STUDY-PLAN.md` §2.
 5. **The map's own declarations — landed 14 Sep.** Two chips beside the title, the
    `text-provenance` chip's counterparts. T3's line: a map declaring
    `reconstruction: generated:` with no recorded pass shows *machine-written map*; one

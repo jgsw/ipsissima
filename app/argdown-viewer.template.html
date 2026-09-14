@@ -202,6 +202,21 @@ main.swapped{flex-direction:row-reverse}
   border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
 #guidebtns button.primary{background:var(--accent,#3a7bd5);color:#fff;border-color:transparent}
 
+/* THE STUDY CARD: the guide card's manners, on the map's other corner (the key's corner is
+   below it; z keeps the working card above the standing reference). It asks and never
+   answers — see startStudy. */
+#studycard{position:absolute;right:14px;bottom:56px;z-index:6;max-width:300px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+  padding:.5rem .65rem;font-size:12px;line-height:1.5;
+  box-shadow:0 8px 28px rgba(0,0,0,.18)}
+#studycard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.15rem}
+#studycard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
+#studycard header button.plain{font-size:11px;line-height:1.3;padding:0 4px;color:var(--fg-dim)}
+#studycard header button.plain:hover{color:var(--fg)}
+#studycard.min #studybody{display:none}
+#studycard p{margin:.25rem 0}
+#studycard .crux{font-style:italic;color:var(--fg-dim)}
+
 #keycard{position:absolute;right:14px;bottom:14px;z-index:5;max-width:270px;
   background:var(--panel);border:1px solid var(--line);border-radius:8px;
   padding:.45rem .7rem .6rem;box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
@@ -905,6 +920,17 @@ body.fs #fsexit{display:inline-flex}
     <div id="guidebody"></div>
     <div id="guidebtns"></div>
   </div>
+  <!-- STUDY MODE (docs/STUDY-PLAN.md §1, ruled 14 Sep): predict before unfolding. The card
+       stages the reveal and stays out of the comparison — it never asks the reader to type,
+       never scores, never records; what they expected and what the map says are compared in
+       their own judgement (G3, applied to the reader's reading). -->
+  <div id="studycard" hidden role="note" aria-label="Study mode">
+    <header><b>Study</b><span id="studyhint">predict, then unfold</span>
+      <button class="plain" id="studymin" title="Fold the card to its header">&#8211;</button>
+      <button class="plain" id="studyclose"
+              title="End study mode. The map stays folded as you left it; the mode is under How to use and on the map bar.">&#215;</button></header>
+    <div id="studybody"></div>
+  </div>
   <div id="keycard" hidden role="note" aria-label="Key to the map's markings">
     <header><b>Key</b><span>what the markings mean</span>
       <button class="plain" id="keymin"
@@ -1332,6 +1358,9 @@ function render(name, source, graph){
   // The guide is about the file that was open, for the same reason the tour is — except when
   // this render IS the guide's own beginning, which starts it right after.
   if (GUIDE) guideEnd();
+  // And a study run: its frontier belongs to the map that was open, and its saved fold state
+  // must not be put back over a different file's map.
+  if (STUDY) endStudy(false);
   // And so is a standing quote-this-passage offer: its words belong to the file that was open.
   QUOTE_SEL = null;
   $("msquote").hidden = true;
@@ -1474,6 +1503,7 @@ function openingDepth(graph){
     onLocate: msLocate,
     onMenu: ctxShow, onExplode: explodeShow,
     onMargin: openMargin,
+    onStudy: startStudy, onStateChange: studyOnState,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold
   });
 
@@ -1793,6 +1823,13 @@ function buildHelpPages(){
   wt.textContent = "Take the walkthrough";
   wt.onclick = function(){ setHelp(false); startWalkthrough(); };
   toc.appendChild(wt);
+  // The second doing-entry, beside the first (ruled 14 Sep): study mode lives on the map bar
+  // and here, because help is where a dismissed teacher is found again.
+  var sm = document.createElement("button");
+  sm.type = "button";
+  sm.textContent = "Study this map";
+  sm.onclick = function(){ setHelp(false); startStudy(); };
+  toc.appendChild(sm);
   var shown = null;
   pages.forEach(function(pg, i){
     // The group's label, once, above the first topic in it. Written from the page's own
@@ -2815,6 +2852,9 @@ function startWalkthrough(){
   clearErr();
   setHelp(false);
   ctxHide();
+  // One teacher at a time, in both directions: the guide already stands the tour down, and a
+  // study run in progress ends (keeping the reader's folds) before the tour takes the panes.
+  if (STUDY) endStudy();
   WALK = {
     i: -1,
     steps: walkSteps(),
@@ -3204,8 +3244,125 @@ function maybeStartWalkthrough(){
   // renderer: a map framed blind has boxes of the wrong size, not merely the wrong position.
   // The guide guard again AT FIRE TIME, because the paste flow arms this during its render
   // and only starts the guide a moment later, in the same tick's continuation.
-  setTimeout(function(){ if (!GUIDE) startWalkthrough(); }, 450);
+  setTimeout(function(){ if (!GUIDE && !STUDY) startWalkthrough(); }, 450);
 }
+
+/* ================= STUDY MODE ==========================================================
+ *
+ * Predict before unfolding (docs/STUDY-PLAN.md §1; Formation B8's staging clause, offered
+ * on the walkthrough's pattern per the T2 ruling: the legible default, the effortful
+ * option). The map folds to the contention — the ladder's own "main claim" rung — and the
+ * card asks, of the topmost claim still holding a closed fold, what the reader thinks
+ * holds it up. The reader answers in their head and presses the badge themselves: the
+ * ordinary gesture, so the mode teaches the map's own controls in passing. The card never
+ * asks them to type, never scores, never records (ruled 14 Sep: no typed note) — a judged
+ * answer would grade the reader against one interpretation, which is exactly what the
+ * one-reading chip exists to deny.
+ *
+ * THE MODE FOLLOWS THE READER, not the other way round: any unfold advances it, whichever
+ * badge was pressed, because the frontier is re-read from the drawn map on every state
+ * change. Exit keeps the map as the reader left it — their unfolds ARE the study — except
+ * an exit before any unfold, which puts back what entry replaced, so pressing the wrong
+ * button costs nothing.
+ */
+var STUDY = null;
+
+function startStudy(){
+  if (STUDY) return;
+  if (!LIVE) {
+    showErr("Study mode runs on a reconstruction, and there is not one open yet.\n\n" +
+            "Open an .argdown file — or start one with New Reconstruction — and find " +
+            "study on the map's control bar, or under How to use.");
+    return;
+  }
+  if (WALK) abandonWalkthrough();
+  if (GUIDE) guideEnd();
+  clearErr(); setHelp(false); ctxHide();
+  STUDY = { was: LIVE.getState(), touched: false };
+  // The Reasons view, folded to its bottom rung: the contention alone, everything beneath
+  // it a badge. setState fires studyOnState synchronously, which marks the run touched —
+  // so `touched` is put back after, and only the READER's own changes count from here on.
+  LIVE.setState({ expositionOrder: false, depth: 0 }, true);
+  STUDY.touched = false;
+  $("studycard").hidden = false;
+  $("studycard").classList.remove("min");
+  document.addEventListener("keydown", studyKey, true);
+  studySync();
+}
+
+function endStudy(restore){
+  if (!STUDY) return;
+  var was = STUDY.was, untouched = !STUDY.touched;
+  STUDY = null;
+  $("studycard").hidden = true;
+  document.removeEventListener("keydown", studyKey, true);
+  if (LIVE) {
+    LIVE.markClaims([]);
+    if (restore !== false && untouched) LIVE.setState(was, true);
+  }
+}
+
+function studyKey(ev){
+  if (ev.key !== "Escape") return;
+  ev.preventDefault(); ev.stopPropagation();
+  endStudy();
+}
+
+/** The topmost drawn claim still holding a closed fold. Topmost, not smallest: in the
+ *  Reasons view the top is the nearest thing to the contention, so the descent follows the
+ *  argument downward rather than wherever the cheapest badge happens to sit. */
+function studyFrontier(){
+  var best = null, bestY = Infinity;
+  walkBoxes(".alm-n").forEach(function(e){
+    if (!e.querySelector(".alm-toggle.is-closed")) return;
+    var r = e.getBoundingClientRect();
+    if (r.height && r.top < bestY) { bestY = r.top; best = e; }
+  });
+  return best;
+}
+
+/** Fired from the renderer on every state change; also the card's own refresh. */
+function studyOnState(){
+  if (!STUDY) return;
+  STUDY.touched = true;
+  studySync();
+}
+
+function studySync(){
+  if (!STUDY) return;
+  var body = $("studybody");
+  body.textContent = "";
+  var p = function(text, cls){
+    var el = document.createElement("p");
+    if (cls) el.className = cls;
+    el.textContent = text;     // textContent throughout: claim titles are somebody's words
+    body.appendChild(el);
+    return el;
+  };
+  var el = studyFrontier();
+  if (!el) {
+    $("studyhint").textContent = "walked to the end";
+    p("Nothing is left folded: you have walked the whole argument, prediction by " +
+      "prediction. The map stays as you leave it.");
+    if (LIVE) LIVE.markClaims([]);
+    return;
+  }
+  var node = walkNodeById(el.dataset.id);
+  var title = (node && node.label) || el.dataset.id;
+  $("studyhint").textContent = "predict, then unfold";
+  p("“" + title + "” has reasons still folded beneath it.");
+  p("Before you look: what do you think holds it up — and would anything speak against " +
+    "it? When you have your answer, press the ⊞ badge under the claim and compare.");
+  // The crux moment (Formation T4): the plurality lesson arrives exactly when its subject
+  // matter does, on the guided mode's explained-when-earned principle.
+  if (node && node.tags && node.tags.indexOf("crux") >= 0)
+    p("The reconstructor marks this claim's reading as one among live alternatives " +
+      "(#crux) — its note names the road not taken.", "crux");
+  if (LIVE) LIVE.markClaims([el.dataset.id]);
+}
+
+$("studyclose").onclick = function(){ endStudy(); };
+$("studymin").onclick = function(){ $("studycard").classList.toggle("min"); };
 
 /* ================= THE KEY =============================================================
  *
@@ -4348,6 +4505,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow,
+    onStudy: startStudy, onStateChange: studyOnState,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
@@ -5291,7 +5449,10 @@ function guideShow(){
   } else if (GUIDE.step === 5) {
     p("One thing was done for you at the start: the top of the Argdown carries a reconstruction: block — a declaration of which reading yours tries to be. Now that you have made some readings, it is worth a look; “How to use” explains each line.");
     p("Your file saves as one .argdown carrying the text inside it — hand the whole thing to anyone.");
-    btn("Take the walkthrough", true, function(){ guideEnd(); startWalkthrough(); });
+    // The hand-off is STUDY MODE (ruled 14 Sep): the builder becomes the map's first
+    // reader, predicting their own argument back before each unfold — retrieval on the
+    // freshest possible material. The tour stays one entry away under How to use.
+    btn("Study what you built", true, function(){ guideEnd(); startStudy(); });
     btn("Done", false, guideEnd);
   }
 }

@@ -1596,8 +1596,133 @@ async function guidedChecks(browser) {
   await ctx.close();
 }
 
+/* ---------------------------------------------------------------------- study mode */
+/* Predict before unfolding (docs/STUDY-PLAN.md §1, ruled 14 Sep 2026). Driven as a reader
+ * would drive it: the bar's study button, a real click on the frontier claim's fold badge,
+ * Esc to leave. What is checked is the mode's contract — the map folds to the contention on
+ * entry, the card follows the reader's own unfolds, the crux moment fires on a #crux claim,
+ * and an exit before any unfold puts the fold state back while an exit after one keeps it. */
+async function studyChecks(browser) {
+  const out = path.join(tmp, "study-standalone.html");
+  try {
+    execFileSync("node", [BUILDER, "--standalone", "-o", out], { stdio: "pipe" });
+  } catch (e) {
+    check(false, "study: the standalone builds", String(e.message || e).slice(0, 200));
+    return;
+  }
+  const map = [
+    "[A]: The conclusion of the essay.",
+    "    + [B]: The first reason.",
+    "        + [D]: A contested deep reason. #crux {note: \"Follows one reading; another is live.\"}",
+    "            + [F]: The deepest support.",
+    "        + [E]: A second deep reason.",
+    "    + [C]: The second reason.",
+    ""
+  ].join("\n");
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.evaluate(({ t, n }) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([t], n));
+    document.dispatchEvent(new DragEvent("drop",
+      { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, { t: map, n: "study.argdown" });
+  await page.waitForFunction(() =>
+    document.getElementById("fname").textContent === "study.argdown", { timeout: 20000 });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  // A beat for the editor's debounced preview to settle: a drop renders once, and the editor
+  // path re-draws a moment later. A reader cannot reach the bar inside that window, and a
+  // check that does races the rebuild and reads a half-torn-down map.
+  await page.waitForTimeout(1200);
+
+  const before = await page.evaluate(() =>
+    document.querySelectorAll("#map .alm-n").length);
+  check(before >= 6, "study: the map opens whole (six claims drawn)", String(before));
+
+  // In by the reader's route: the bar's own button.
+  await page.click('#map [data-act="study"]');
+  await page.waitForSelector("#studycard:not([hidden])", { timeout: 10000 });
+  await page.waitForTimeout(400);
+  const entered = await page.evaluate(() => ({
+    drawn: document.querySelectorAll("#map .alm-n").length,
+    body: document.getElementById("studybody").textContent
+  }));
+  check(entered.drawn < before,
+        "entering folds the map toward the contention", `${before} -> ${entered.drawn}`);
+  check(/what do you think holds it up/i.test(entered.body),
+        "and the card asks before it shows", entered.body.slice(0, 90));
+  check(/A|conclusion/.test(entered.body),
+        "the question names the frontier claim", entered.body.slice(0, 90));
+
+  // Leaving before any unfold puts the fold state back: the wrong button costs nothing.
+  await page.keyboard.press("Escape");
+  await page.waitForSelector("#studycard[hidden]", { state: "attached", timeout: 10000 });
+  await page.waitForTimeout(400);
+  const restored = await page.evaluate(() =>
+    document.querySelectorAll("#map .alm-n").length);
+  check(restored === before,
+        "an exit before any unfold restores the map", `${before} vs ${restored}`);
+
+  // Back in, and this time the argument is walked: each frontier badge pressed with a real
+  // click until the card reaches the contested claim, whose crux line must be on the card.
+  await page.click('#map [data-act="study"]');
+  await page.waitForSelector("#studycard:not([hidden])", { timeout: 10000 });
+  let sawCrux = false, steps = 0;
+  for (; steps < 8; steps++) {
+    const done = await page.evaluate(() =>
+      !document.querySelector("#map .alm-n .alm-toggle.is-closed"));
+    if (done) break;
+    if (await page.evaluate(() =>
+        /one among live alternatives/.test(
+          document.getElementById("studybody").textContent))) sawCrux = true;
+    const box = await page.evaluate(() => {
+      let best = null, bestY = Infinity;
+      document.querySelectorAll("#map .alm-n").forEach(e => {
+        const b = e.querySelector(".alm-toggle.is-closed");
+        if (!b) return;
+        const r = e.getBoundingClientRect();
+        if (r.height && r.top < bestY) {
+          bestY = r.top;
+          const br = b.getBoundingClientRect();
+          best = { x: br.left + br.width / 2, y: br.top + br.height / 2 };
+        }
+      });
+      return best;
+    });
+    if (!box) break;
+    await page.mouse.click(box.x, box.y);
+    await page.waitForTimeout(700);
+    if (await page.evaluate(() =>
+        /one among live alternatives/.test(
+          document.getElementById("studybody").textContent))) sawCrux = true;
+  }
+  check(sawCrux, "the crux moment fires on the contested claim", `after ${steps} unfolds`);
+  const walked = await page.evaluate(() => ({
+    body: document.getElementById("studybody").textContent,
+    hint: document.getElementById("studyhint").textContent
+  }));
+  check(/whole argument/.test(walked.body) && /end/.test(walked.hint),
+        "walking every fold reaches the card's end state", JSON.stringify(walked).slice(0, 120));
+
+  // An exit after unfolding keeps the map as the reader left it.
+  const open = await page.evaluate(() =>
+    document.querySelectorAll("#map .alm-n").length);
+  await page.click("#studyclose");
+  const kept = await page.evaluate(() =>
+    document.querySelectorAll("#map .alm-n").length);
+  check(kept === open, "an exit after unfolding keeps the reader's folds",
+        `${open} vs ${kept}`);
+  await ctx.close();
+}
+
 await keyChecks(browser);
 await genTextChecks(browser);
+await studyChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
 await quoteChecks(browser);

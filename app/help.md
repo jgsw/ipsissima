@@ -195,6 +195,31 @@ about.
 A step whose only input is the conclusion above it gets no box; it becomes a label on the arrow,
 which is what such a step is: *and therefore*.
 
+## Studying a map
+
+
+Unfolding a map shows you the argument; **study mode** makes you reach for it first. Start it
+from **study** on the map's control bar, or from **Study this map** at the top of this panel.
+The map folds to its main claim, and a small card asks one question of the topmost claim that
+still has reasons folded beneath it: *what do you think holds this up — and would anything
+speak against it?* Answer in your own head, then press the claim's **⊞** badge and compare
+what you expected with what the map says.
+
+That order — reach first, then look — is the whole feature. Recalling an argument beats
+re-reading it, and predicting a reason beats being handed one; the card only stages the
+reveal. It never asks you to type, never scores you, and never records your answer: whether
+your expectation and the map agree is your judgement to make, not the tool's — and on a
+contested text, a machine grading your answer would be grading you against one reading among
+several.
+
+Where the reconstructor has marked a claim's reading as contested (`#crux`), the card says so
+at that step, and the claim's note names the readings not taken.
+
+The mode follows you rather than steering you: unfold any badge, in any order, and the card
+moves on. <kbd>Esc</kbd> or the **×** ends it at any time, and the map stays folded exactly as
+you left it — your unfolds are the study. The one exception: ending the mode before you have
+unfolded anything puts the map back as it was, so pressing the wrong button costs nothing.
+
 The window is **as wide as the argument needs**, not a fixed size: a box gets one comfortable
 measure and keeps it, and what makes the window wider is the *travel* — how far the chain has to
 step to the right. A one-step argument travels nowhere and opens in the narrowest window; a long

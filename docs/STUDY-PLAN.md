@@ -17,11 +17,30 @@ stages the reveal and stays out of the comparison (G3, applied to the reader's o
 
 ## 1. Wave 3 — Study mode: predict before unfolding
 
-**The brief.** A reader in workflow 2 — studying a text with its map — currently unfolds for
-comprehension: each click reveals, and nothing asks them to reach first. The study mode runs
-the same descent with the question in front of the reveal.
+**Ruled, 14 Sep, and built the same day.** The author's answers to the open questions: it
+lives **both** on the map's control bar and under How to use; **no** typed note — the pause
+is the whole apparatus; the descent follows the **fold tree** (the author's word, with his
+uncertainty recorded: "I *think* the answer is fold tree, but am not sure about this" — the
+staircase-grain alternative stays available if use says otherwise); and the guided mode's
+hand-off **is study mode** — the builder becomes their own map's first reader, predicting
+their argument back before each unfold.
 
-**The shape.**
+**What shipped** (held by rendered-DOM checks driven by real drops, real badge clicks, and
+Esc): the `study` control on the bar (present only where a host wires it — the viewer does,
+a bare export does not) and the *Study this map* entry beside the walkthrough's; entry folds
+the Reasons view to the ladder's own "main claim" rung and the card asks, of the topmost
+claim still holding a closed fold, *what do you think holds this up — and would anything
+speak against it?*; the reader presses the badge themselves, so the mode teaches the map's
+own controls in passing; the crux moment fires on a `#crux` claim (the full tag list now
+travels on every node — `facet` alone lost a `#reported #crux` claim's crux); the mode
+follows the reader, re-reading the frontier from the drawn map on every state change,
+whichever badge they pressed. One teacher at a time in every direction: walkthrough, guide
+and study each stand the others down. And one design addition found while building: exit
+keeps the map as the reader left it — their unfolds are the study — **except** an exit
+before any unfold, which puts back what entry replaced, so pressing the wrong button costs
+nothing.
+
+**The shape as designed** (kept as the record of what was proposed):
 
 1. Entered like the walkthrough (and exited like it, and recallable like it). On entry the
    map folds to the contention — the staircase's top rung, machinery that exists.
@@ -39,17 +58,8 @@ the same descent with the question in front of the reveal.
    explained-when-earned principle.
 5. Exit hands back the ordinary map, folded as the reader left it.
 
-**Open questions for the author.**
-
-- Where it lives: an entry under **How to use** beside the walkthrough, a map-bar control,
-  or both. (The walkthrough precedent says How to use; a mode meant for repeated study may
-  earn the bar.)
-- Whether step 2's pause should optionally take a *private, unjudged* typed note — the
-  generation effect is stronger for produced answers — or whether typing is already too
-  much apparatus for v1.
-- Whether the descent follows the staircase's rungs (section by section) or the fold tree
-  (claim by claim); the right grain may differ by map size.
-- Whether the guided mode's final hand-off should offer study mode on the map just built.
+**The open questions, as ruled (14 Sep).** Both bar and How to use; no typed note; the
+fold tree (tentatively — see above); the guided mode hands off to study.
 
 ## 2. Wave 4 — Elicit before show: commit to a conclusion first
 
@@ -58,6 +68,18 @@ have formed on their own is hard to recover — which touches even the adjunct w
 the reader has read the text but not yet articulated their own reconstruction. D7 —
 interrogative, not generative — extended to the reader's reading: the tool asks before it
 answers.
+
+**The author's steer (14 Sep), and what it re-shapes.** "I can see this being annoying if
+the user hasn't read (and doesn't intend to read) the source in full. If the source is
+short, then it's not too difficult to locate the conclusion; but if it's a 10,000 word
+article, it may be far from obvious. So it seems like something that should be optional,
+and non-obtrusive." That rules out the door as originally drawn: the commitment gesture is
+**recallable only, never offered** — no panel on opening, no prompt at the folder drop; it
+lives where study mode lives (How to use, and nowhere louder), for the reader who has read
+the text and wants to test their own reading against the map's. The remaining questions —
+whether the commitment persists as a margin note or evaporates with the session, and
+whether the classroom variant is worth designing before the first watched novice — still
+stand, and the build awaits the word.
 
 **The shape.** An optional door, offered once and remembered, when a reading-genre map opens
 with its manuscript present: *"Before the map: mark what you take the text to be finally
@@ -84,7 +106,9 @@ returns uninvited, and remains recallable from the same place study mode lives.
 
 ## 3. Standing
 
-Nothing is built. Both designs reuse machinery that exists (folding, staircase,
-walkthrough pattern, selection-to-claim, marginalia); the new code in each is the mode's
-choreography, not new capability. The gate stays the editor programme's: the class-of-fifty
-brief as design target, one watched novice worth more than any self-measurement.
+Wave 3 is built, tested and in both viewers (14 Sep); wave 4 is re-shaped by the author's
+steer — recallable only, never offered — and awaits the word, with persistence and the
+classroom variant its two open questions. Both designs reuse machinery that exists; the new
+code is the mode's choreography, not new capability. The gate stays the editor programme's:
+the class-of-fifty brief as design target, one watched novice worth more than any
+self-measurement.

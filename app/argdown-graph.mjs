@@ -545,10 +545,16 @@ export function toGraph(res) {
         visit(n.children, n.id);
       } else {
         const tag = tagOf(n.title);
+        // ALL of a claim's tags, not only the drawn facet. `facet` is tags[0] and the map's
+        // colour spends it; a claim tagged `#reported #crux` would otherwise reach the page
+        // with its crux invisible, and study mode's crux moment reads the full list.
+        const recFor = (res.statements && res.statements[n.title]) ||
+                       (res.arguments && res.arguments[n.title]);
         if (n.title != null && !titleToId.has(n.title)) titleToId.set(n.title, n.id);
         nodes.push({
           id: n.id,
           label: n.labelTitle || n.title || n.id,
+          tags: (recFor && recFor.tags) || [],
           // MENTIONS RESOLVED, EMPHASIS CARRIED. `labelText` arrives with `@[…]` and `@<…>`
           // still in it -- see resolveMentions -- and its `ranges` were dropped here, which is
           // the single cause behind bold, italic, links and both mention forms all being lost.
