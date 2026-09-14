@@ -44,3 +44,7 @@ site/ipsissima-reader.html
 site/try/
 site/_data/
 site/_site/
+
+# uv writes a lockfile beside pyproject when `uv run` is used for the tests; the package
+# publishes to PyPI unpinned, so the lock is a local artifact, not part of the record.
+ipsissima-mcp/uv.lock
