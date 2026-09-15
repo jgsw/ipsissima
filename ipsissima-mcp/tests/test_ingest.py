@@ -17,7 +17,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
 from ingest import (strip_data_uris, strip_gutenberg, ingest_one,            # noqa: E402
-                    lift_footnote_definitions, front_matter, pandoc)
+                    lift_footnote_definitions, front_matter, pandoc,
+                    strip_publisher_apparatus)
 
 fails = 0
 
@@ -98,6 +99,31 @@ b4, n4 = strip_gutenberg(
     "text\n*** START OF THE PROJECT GUTENBERG EBOOK X ***\n")
 check("markers out of order cut nothing and say so",
       ("text" in b4, "out of order" in (n4 or "")), (True, True))
+
+# ---- the journal's voice, blanked --------------------------------------------------- #
+# The author's ruling (15 Sep): the manuscript pane must make reading the whole article
+# pleasurable, so the journal's apparatus never reads as the text. Blanked, never deleted:
+# a claim's place is a line number.
+print("publisher apparatus")
+APP = "\n".join([
+    "The author's own first sentence stands.",
+    "doi:10.1017/S0031819126101314 © The Author(s), 2026. Published by Cambridge University "
+    "Press on behalf of The Royal Institute of Philosophy. This is an Open Access article, "
+    "distributed under the terms of the Creative Commons Attribution licence. "
+    "Philosophy 101 2026 511",
+    "https://doi.org/10.1017/S0031819125000014 Published online by Cambridge University Press",
+    "doi:10.1017/S0031819125000014",
+    "A sentence discussing the Creative Commons movement in the author's own voice.",
+])
+out, n = strip_publisher_apparatus(APP)
+check("the copyright block, the footer, and the bare DOI are blanked", n, 3)
+check("  and no line is lost", len(out.splitlines()), len(APP.splitlines()))
+check("  the author's prose stands, licensing talk included",
+      (out.splitlines()[0], out.splitlines()[4]),
+      ("The author's own first sentence stands.",
+       "A sentence discussing the Creative Commons movement in the author's own voice."))
+check("  nothing of the journal's voice survives",
+      [l for l in out.splitlines() if "Author(s)" in l or "Published online" in l], [])
 
 # ---- footnote definitions lifted from page-bottom blocks ----------------------------- #
 # The span rule marks the REFERENCES; the note's own text arrives as a paragraph opening

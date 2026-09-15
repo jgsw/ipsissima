@@ -311,6 +311,24 @@ check("a year is not a note number", note_opening("1963 was the year"), None)
 check("a heading is not a note unless dotted forms are allowed",
       note_opening("2. Hume and abstraction"), None)
 
+print("opens_note refuses a heading-shaped line")
+# "6 Ceremonies and Western Philosophy" stood in the bottom third of its sheet at body size,
+# matched the bare-number spelling, and latched the note zone -- swallowing the heading and
+# the section's first paragraph into footnote 1 (Wolff, 15 Sep). A body-sized line that is
+# also heading-shaped is the heading; a real note carries sentence punctuation.
+from pdf_to_source import opens_note                                          # noqa: E402
+row = lambda text, small: (11, 76.0, 700.0, 842.0, text, 0, small)
+check("a low body-sized section heading does not open a note",
+      opens_note(row("6 Ceremonies and Western Philosophy", False), None, 0.70, 43), False)
+check("  the same words at apparatus size still do",
+      bool(opens_note(row("6 Ceremonies and Western Philosophy", True), None, 0.70, 43)), True)
+check("  a body-sized note with a full stop still opens",
+      bool(opens_note(row("6 See Smith (2010), ch. 2 for the argument.", False),
+                      None, 0.70, 43)), True)
+check("  a small numbered note is untouched by the guard",
+      bool(opens_note(row("1 For comments I thank many colleagues.", True), None, 0.70, 43)),
+      True)
+
 print("join_spans (superscript footnote markers)")
 
 

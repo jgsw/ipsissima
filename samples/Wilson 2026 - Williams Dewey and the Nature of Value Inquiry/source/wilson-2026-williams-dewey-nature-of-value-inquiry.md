@@ -41,7 +41,7 @@ abstract: >-
 
 <!-- p.1 begins here -->
 
-JAMES WILSON
+
 
 Abstract For Bernard Williams, ethical inquiry is fundamentally about sense-making: it starts from what we already care about, and is always local. As a result, Williams opposes scientistic models of philosophy, arguing that philosophy should be seen as ‘part of a wider humanistic enterprise of making sense of ourselves and our activities’. This paper critiques the assumptions about disciplinarity on which Williams’s argument is based, and uses some resources from Dewey’s pragmatism to propose some friendly amendments to Williams’s account of the nature of value inquiry. Rather than seeking to assign philosophy either to the humanities or the sciences, it is more fruitful to examine philosophy through the lens of a transdisciplinary epistemology, in which incompatible methodologies and ontologies and how to reconcile them, are central. What is required is less a shift from scientistic to humanistic conceptions of philosophy, than for philosophers working in value inquiry to better align their aspirations for theory with what it can actually deliver.
 
@@ -51,7 +51,7 @@ Philosophy is the oldest academic discipline, but where philosophy should be pla
 
 Williams says little about what it is for a discipline to be humanistic, but takes history to be a central exemplar. Humanistic inquiry is pursued, in Moore’s elucidation ‘by humans, from their unique position in the world, to make sense both of themselves and of that position’ (Moore 2017: 45). Humanistic inquiry focuses on forms of sense-making, and on articulating in human terms the meaning of texts, institutions, norms, events, and artefacts through interpretation, criticism and argument. In Williams’s words, viewing
 
-doi:10.1017/S0031819126101314 © The Author(s), 2026. Published by Cambridge University Press on behalf of The Royal Institute of Philosophy. This is an Open Access article, distributed under the terms of the Creative Commons Attribution licence (http://creativecommons.org/licenses/by/4.0), which permits unrestricted re-use, distribution and reproduction, provided the original article is properly cited. Philosophy 101 2026 511
+
 
 <!-- p.2 begins here -->
 

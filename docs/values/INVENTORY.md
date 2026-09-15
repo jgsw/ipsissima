@@ -1270,3 +1270,29 @@ and says so is worth more than one that rounds down").
 **Generality.** The MCP's served method.
 
 **Weight.** Medium; subordinate to A-section principles by its own text.
+
+### G6. ⟨proposed⟩ The conversion reads as the article, not as the sheet
+
+**It says.** A converted source serves a reader, not only a checker, and the author's ruling
+sets the bar: *"We need to make not only possible, but pleasurable for a reader to read a
+whole article in the manuscript view."* Two halves. Negatively, the journal's voice never
+enters as text: running heads, page footers, the copyright block, a bare DOI — *"any
+extraneous text … should be automatically removed."* Positively, *"where it is possible to
+reconstruct the semantic structure of the source we should do so in the Markdown"* —
+footnotes as footnote definitions, headings as headings, inset quotations as blockquotes.
+Every removal counted and said (G4); no wording of the author's touched (G1); structure
+recovered, never invented (the header's own promise).
+
+**Seen in.** The access-stamp blanking (its oldest instance); the creation-time cuts of 14
+Sep (page chrome, embedded assets, the Gutenberg apparatus); `strip_publisher_apparatus` and
+`lift_footnote_definitions` in `ingest.py`; the furniture, heading, note-zone and licence
+machinery of `pdf_to_source.py`; blockquotes recorded as the unbuilt half.
+
+**Provenance.** **quotation** — origin: author, 15 Sep 2026 ("I think this is merely to
+restate how ingest is supposed to function" — enacted before stated, unevenly, which is why
+it needed stating).
+
+**Generality.** The MCP's converters; the manuscript pane inherits the benefit.
+
+**Weight.** Unassigned until ruled; the author flagged it as possibly principle-weight
+himself.

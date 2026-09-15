@@ -376,6 +376,13 @@ def detect_bands(lines):
 #: The journal's own imprint: a copyright assertion, or the ISSN/price code that follows it.
 LICENCE = re.compile(r"All rights reserved|\u00a9\s*\d{4}\s+by\s|\b\d{4}-\d{4}/\d{4}/")
 
+#: The unmistakable OPENERS of an open-access copyright block, each measured on a real first
+#: page (CUP 2025-26 house style). One line of these anchors the latch in `convert`'s filter
+#: loop; the block's unmarked continuation lines are carried by the latch, not by patterns.
+COPYRIGHT_OPEN = re.compile(
+    r"\u00a9\s*The Author|doi:\s*\S+\s+\u00a9|Creative Commons|"
+    r"This is an Open Access article", re.I)
+
 
 def printed_numbers(sheets):
     """The page number each sheet actually carries, read off the page. {sheet index: number}.
@@ -537,6 +544,11 @@ def detect_furniture(pages, extra=()):
         # it were a footnote of its own -- and how it cut footnote 1 off from its own runover on
         # the page after. No author's prose says "All rights reserved".
         if LICENCE.search(text) or text in imprint:
+            return "journal licence"
+        # A line that IS a DOI and nothing else: the copyright block's own first line, printed
+        # just above the © opener the latch anchors on. An author citing a DOI does it
+        # mid-sentence; a line carrying only the identifier is the journal speaking.
+        if re.fullmatch(r"doi:\s*\S+", text) and alone:
             return "journal licence"
         if any(rx.match(text) for rx in extra_rx):
             return "declared furniture"
@@ -1062,6 +1074,17 @@ def opens_note(row, display_edge, low, margin):
     if small and y0 > height * 0.50 and STAR_NOTE.match(text):
         return True
     op = note_opening(text, dotted=small)
+    # A SECTION HEADING IS NOT A FOOTNOTE, however low it sits. "6 Ceremonies and Western
+    # Philosophy" opens with a number, starts with a capital, and stood in the bottom third
+    # of its sheet -- and the zone it latched swallowed the heading and the section's first
+    # paragraph into footnote 1 (Wolff, measured 15 Sep; the only symptom was heading_gaps
+    # reporting [6]). At apparatus size the collision cannot arise; at body size a line
+    # that is ALSO heading-shaped -- NUMBERED's own test: short, capitalised, no sentence
+    # punctuation -- is the heading. A real body-sized note nearly always carries a full
+    # stop, which NUMBERED refuses; the rare dotless one is left in the flow, where a
+    # reader can see it, rather than risking a section swallowed where nobody can.
+    if op and not small and NUMBERED.match(text.strip()):
+        return False
     # A SMALLER LINE IS ALLOWED TO SIT HIGHER UP THE PAGE. `low` assumes the notes are a
     # footer-sized strip; a paper that runs eight footnotes on one page starts them at 0.60 of
     # the sheet (Horton), and the bottom-30% test alone rejects every one of them.
@@ -1210,7 +1233,26 @@ def convert(cfg):
         beside = {id(l) for l in lines
                   if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
                          and o["x0"] > l["x0"] for o in lines)}
+        # THE COPYRIGHT BLOCK LATCH. An open-access first page carries a licence block --
+        # `doi:… © The Author(s) … Creative Commons …`, then the journal-volume-page line --
+        # printed ONCE, so the repeats detector cannot see it, and set small, so it rode
+        # inside footnote 1's zone and surfaced in the middle of the note's own text
+        # (measured on the Wolff and the Wilson, reported by the author 15 Sep: the
+        # manuscript pane must read as the article, and no author's prose says "permits
+        # unrestricted re-use"). The opener is unmistakable; the lines after it carry no
+        # marker of their own, so the latch holds while the lines stay apparatus-sized and
+        # a body-sized line releases it.
+        lic = False
         for l in lines:
+            small_l = bool(doc_size) and round(l["size"], 1) < doc_size - 0.6
+            if lic and small_l:
+                dropped["journal licence"] += 1
+                continue
+            lic = False
+            if COPYRIGHT_OPEN.search(l["text"]):
+                dropped["journal licence"] += 1
+                lic = True
+                continue
             why = is_furniture(l["text"], l["y0"], height, alone=id(l) not in beside)
             if why:
                 dropped[why] += 1

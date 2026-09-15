@@ -157,6 +157,38 @@ LIGATURES = re.compile(r"[ﬀ-ﬆ]")
 LIGATURE_MAP = {"ﬀ": "ff", "ﬁ": "fi", "ﬂ": "fl", "ﬃ": "ffi",
                 "ﬄ": "ffl", "ﬅ": "st", "ﬆ": "st"}
 
+#: THE JOURNAL'S OWN VOICE, printed into the sheet: the open-access copyright block
+#: (`doi:… © The Author(s) … Creative Commons … properly cited. Philosophy 101 2026 511`),
+#: a bare DOI line, a per-page "Published online by …" footer. None of it is the author's
+#: text, and the author's ruling (15 Sep 2026) is that the manuscript pane must make reading
+#: the whole article pleasurable -- so these are blanked at the door the way the access
+#: stamps are: the line stays, its contents go, nothing below it moves. Each pattern is a
+#: spelling measured on a real page (CUP 2025-26); prose ABOUT a licence does not match,
+#: because each requires the journal's own conjunction, not a word.
+PUBLISHER_APPARATUS = (
+    # NOT a bare "Creative Commons" pattern, deliberately: an author writing ABOUT licensing
+    # says those words in prose. "© The Author(s)" is the block's own line and nobody's
+    # sentence, and in ingest's paragraph-shaped output the whole block is one line.
+    re.compile(r"(?i)©\s*The Author\(s?\)"),
+    re.compile(r"(?im)^\s*doi:\s*\S+\s*$"),
+    re.compile(r"(?im)^\s*https?://doi\.org/\S+\s+Published online by\s.{0,80}$"),
+    re.compile(r"(?im)^\s*Published online by\s.{0,80}$"),
+)
+
+
+def strip_publisher_apparatus(md):
+    """Blank the journal's apparatus lines. Returns (text, count). BLANKED, NOT DELETED,
+    the access stamps' own rule: a claim's place is a line number, and removing a line
+    slides everything below it."""
+    lines = md.split("\n")               # split("\n"), not splitlines(): the trailing
+    removed = 0                          # newline must ride through untouched
+    for i, line in enumerate(lines):
+        if any(p.search(line) for p in PUBLISHER_APPARATUS):
+            lines[i] = ""
+            removed += 1
+    return "\n".join(lines), removed
+
+
 #: A looser net than ACCESS_STAMPS, for AUDITING what the blanking left behind rather than for
 #: blanking. The narrow patterns above decide what goes; this one decides whether the file may
 #: still be carrying a stamp the patterns did not recognise -- because the failure mode that
@@ -660,6 +692,10 @@ def ingest_one(path, allow_ocr=True):
     md, ctl = CONTROL_CHARS.subn("", md)
     if ctl:
         notes.append(f"{ctl} control character(s) removed from the text layer")
+    md, apparatus = strip_publisher_apparatus(md)
+    if apparatus:
+        notes.append(f"{apparatus} publisher apparatus line(s) blanked -- copyright block, "
+                     f"licence, DOI footers: the journal's voice, not the author's")
     md, stamps = strip_access_stamps(md)
     if stamps:
         # COUNTED HERE, QUOTED NOWHERE. `notes` is written into the converted file's own header,
