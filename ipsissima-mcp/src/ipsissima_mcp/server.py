@@ -1072,12 +1072,13 @@ if _zotero_available():
         structured_output=True,
         title="Store the reconstruction in Zotero",
         description=(
-            "Store copies of a reconstruction — the .argdown, the converted source it cites, "
-            "and optionally the exported one-file HTML — as attachments under the same Zotero "
-            "item as the source, so the whole reading survives together and travels with "
-            "Zotero's own sync. The working folder stays the source of truth; Zotero knows "
-            "each stored file's md5, so `check_only` reports which copies are current, stale "
-            "or absent without writing anything, and a plain call refreshes them.\n\n"
+            "Store a reconstruction in Zotero as ONE attachment under the same item as its "
+            "source: the .argdown as a bundle, the converted source carried inside it (still "
+            "a valid .argdown — it opens in Ipsissima text-and-map together from a "
+            "double-click in Zotero). Optionally the exported one-file HTML too. The working "
+            "folder stays the source of truth; Zotero knows each stored file's md5, so "
+            "`check_only` reports current/stale/absent without writing anything, and a plain "
+            "call refreshes.\n\n"
             "Writes go to the Zotero running ON THIS COMPUTER, and only with the user's "
             "consent given in Zotero's own dialog (Allow / Always Allow / Deny, naming "
             "Ipsissima; revocable in Zotero's Settings > Advanced). Nothing here contacts "

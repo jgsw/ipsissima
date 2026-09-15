@@ -461,9 +461,11 @@ it **by copy** (never the live database — Zotero holds the file open), and can
   is *read off each sheet*, not counted from one, because a paper whose front matter says it
   starts at 511 can print 514 on its first sheet;
 - find snapshots you had forgotten were there, which read far better than the PDF beside them;
-- **store the finished reconstruction back into Zotero**, on your request: the `.argdown`, the
-  converted source, and the exported one-file page land as attachments under the item they
-  read, so the whole reading survives beside its source and travels with Zotero's own sync.
+- **store the finished reconstruction back into Zotero**, on your request: one `.argdown`
+  attachment lands under the item it reads, carrying the converted source *inside it* (the
+  argdown-bundle format — still a valid `.argdown`), so the whole reading survives beside
+  its source, travels with Zotero's own sync, and opens in Ipsissima text-and-map together
+  from a double-click. The exported one-file page can be stored too, on request.
 
 Reading never writes anything. Storing writes only what you asked stored, only after you
 answer Zotero's own permission dialog (which names Ipsissima, and whose grant you can revoke

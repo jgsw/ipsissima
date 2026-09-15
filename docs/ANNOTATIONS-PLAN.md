@@ -161,6 +161,22 @@ duplicated), `--check` the flag half of flag-and-refresh. Held by `test_zotero_s
 against a fake local Zotero implementing the measured protocol — a test that wrote to a
 real library would be a side effect in someone's research records. Promise copy moved with
 the capability (D6): SECURITY.md and the MCP README now say "read by copy, written only
-with consent given in Zotero itself". **Next:** the app-side driver (File ▸ Store in
-Zotero…, export included), then write-back with exact rectangles via a per-page word
-geometry sidecar written at conversion.
+with consent given in Zotero itself".
+
+**Rescoped by the author's own measurements, 15 Sep.** He tried the artifacts in Zotero
+itself: a stored HTML export is a dead shell in Zotero's script-blocking reader and cannot
+even be downloaded from Zotero on Android; a bare `.argdown` is the shape Zotero handles
+best — it knows it cannot render one, so the desktop hands it to the system's registered
+opener (Ipsissima) and Android offers the download — but stored bare it arrives without
+its manuscript, the source sitting in a different storage folder. His proposal: *an
+argdown with the embedded source text inside it*. The format already existed —
+`app/src/argdown-bundle.js`, the paste door's save format, a valid `.argdown` carrying its
+sources as line comments that no carried text can break — so the store tool now stores
+**one attachment: the bundle**, built deterministically from the working files (timestamp
+= newest input's, so unchanged inputs hash unchanged), the exported HTML demoted to
+`--export`. `argdown_bundle.py` is the Python port, and the two homes of the format are
+held together by a byte-identical attach/detach cross-check in the tests (E10, the
+positions py/js precedent). **Next:** the app-side driver (File ▸ Store in Zotero…), then
+write-back with exact rectangles via a per-page word geometry sidecar written at
+conversion; a checker that reads a bundle's own carried sources when the folder lacks
+them is noted as a natural follow-on.

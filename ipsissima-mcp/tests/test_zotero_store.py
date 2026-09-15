@@ -257,8 +257,48 @@ with tempfile.TemporaryDirectory() as td:
                  lambda: z.upload_file(key, f, old_md5="0" * 32), "Nothing was")
     srv.shutdown()
 
+# ---- the two homes of the bundle format, held together ------------------------------- #
+# The format lives in app/src/argdown-bundle.js with its rationale; argdown_bundle.py is a
+# port. Two implementations of one format are copies held together by machinery (E10): each
+# attaches, the other detaches, and the attach itself must agree to the byte.
+print("the bundle format, py against js")
+import argdown_bundle                                                        # noqa: E402
+import subprocess                                                            # noqa: E402
+JS = Path(__file__).resolve().parents[2] / "app" / "src" / "argdown-bundle.js"
+AD_TXT = '===\ndefaults:\n    chapter: "source/essay.md"\n===\n\n[A]: b.\n'
+ESSAY = ("# The essay\n\nText with --> and === and {metadata: \"blocks\"} and */ and\n"
+         "//>argdown-bundle inside it, carried safely.\n\n    indented code line\n")
+META = {"created": "2026-01-01T00:00:00.000Z"}
+if not JS.exists():
+    print("  skip  app/src/argdown-bundle.js not beside this checkout")
+else:
+    py_b = argdown_bundle.attach(AD_TXT, [("source/essay.md", ESSAY)], dict(META))
+    js_b = subprocess.run(
+        ["node", "-e",
+         "const B=require(process.argv[1]);"
+         "const i=JSON.parse(require('fs').readFileSync(0,'utf8'));"
+         "process.stdout.write(B.attach(i.ad,i.files,i.meta));",
+         str(JS)],
+        input=json.dumps({"ad": AD_TXT, "meta": META,
+                          "files": [{"path": "source/essay.md", "text": ESSAY}]}),
+        capture_output=True, text=True).stdout
+    check("attach agrees to the byte", py_b == js_b, True)
+    got = argdown_bundle.detach(js_b)
+    check("  py detaches what js attached", (got["files"][0]["text"], got["argdown"]),
+          (ESSAY, AD_TXT))
+    js_back = subprocess.run(
+        ["node", "-e",
+         "const B=require(process.argv[1]);"
+         "const b=require('fs').readFileSync(0,'utf8');"
+         "process.stdout.write(JSON.stringify(B.detach(b)));",
+         str(JS)],
+        input=py_b, capture_output=True, text=True).stdout
+    back = json.loads(js_back)
+    check("  js detaches what py attached", (back["files"][0]["text"], back["argdown"]),
+          (got["files"][0]["text"], AD_TXT))
+
 # ---- the store machinery, end to end ------------------------------------------------- #
-print("store, end to end")
+print("store, end to end -- one attachment, everything inside")
 with tempfile.TemporaryDirectory() as td:
     srv, state, base = fake_server()
     library(state)
@@ -267,20 +307,22 @@ with tempfile.TemporaryDirectory() as td:
 
     lines = zotero_store.store(ad, z=z)
     said = "\n".join(lines)
-    check("first run stores the argdown and the source",
-          said.count("stored"), 2)
+    check("first run stores exactly one attachment", said.count("stored"), 1)
     kids = [it for it in state["items"].values()
             if it["data"].get("parentItem") == "PARENT01"
-            and it["data"].get("filename") in ("reading.argdown", "essay.md")]
-    check("  as two attachments under the parent item", len(kids), 2)
-    check("  the argdown's bytes are byte-identical",
-          state["files"][[k["key"] for k in kids
-                          if k["data"]["filename"] == "reading.argdown"][0]],
-          ad.read_bytes())
+            and it["data"].get("filename") == "reading.argdown"]
+    check("  under the argdown's own name", len(kids), 1)
+    carried = argdown_bundle.detach(state["files"][kids[0]["key"]].decode("utf-8"))
+    check("  and it is a bundle carrying the source under its cited path",
+          (carried["files"][0]["path"],
+           "The text itself." in carried["files"][0]["text"]),
+          ("source/essay.md", True))
+    check("  whose map half is the working argdown, byte for byte",
+          carried["argdown"], ad.read_text(encoding="utf-8"))
 
     lines = zotero_store.store(ad, z=z)
-    check("a second run finds every copy current",
-          "\n".join(lines).count("current"), 2)
+    check("a second run finds the copy current -- the bundle rebuilds "
+          "deterministically", "\n".join(lines).count("current"), 1)
 
     ad.write_text(ad.read_text(encoding="utf-8") + "\n// a new thought\n",
                   encoding="utf-8")
@@ -290,14 +332,19 @@ with tempfile.TemporaryDirectory() as td:
           ("BEHIND" in said, "refreshed" in said), (True, False))
     lines = zotero_store.store(ad, z=z)
     check("a plain run refreshes it", "\n".join(lines).count("refreshed"), 1)
+
+    (ad.parent / "source" / "essay.md").write_text(
+        '---\ntitle: "An essay"\nzotero: "ATTACH01"\n---\n\nThe text itself, revised.\n',
+        encoding="utf-8")
     lines = zotero_store.store(ad, check_only=True, z=z)
-    check("  after which the copy is current again",
-          "\n".join(lines).count("current"), 2)
+    check("a changed SOURCE flags the bundle stale too -- the text is inside it",
+          "\n".join(lines).count("stale"), 1)
+    zotero_store.store(ad, z=z)
 
     exp = Path(td) / "reading.html"
     exp.write_text("<title>the export</title>", encoding="utf-8")
     lines = zotero_store.store(ad, export=exp, z=z)
-    check("an export given is stored beside them", "\n".join(lines).count("stored"), 1)
+    check("an export is stored only when asked for", "\n".join(lines).count("stored"), 1)
     srv.shutdown()
 
 # ---- the refusals -------------------------------------------------------------------- #
