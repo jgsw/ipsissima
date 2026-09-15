@@ -4737,13 +4737,38 @@ function zotPaint(){
   if (!ZOT) return;
   for (var k = 0; k < ZOT.marks.length; k++) {
     var m = ZOT.marks[k];
-    var el = MSLINES[m.line - 1];
-    if (!el) continue;
-    el.classList.add("zot-mark");
-    if (m.color) el.style.setProperty("--zot", m.color);
-    el.title = (el.title ? el.title + "\n" : "") + "◍ " + m.title;
-    el.dataset.zotTitle = "1";
+    for (var ln = m.line; ln <= (m.endLine || m.line); ln++) {
+      var el = MSLINES[ln - 1];
+      if (!el) continue;
+      el.classList.add("zot-mark");
+      if (m.color) el.style.setProperty("--zot", m.color);
+      el.title = (el.title ? el.title + "\n" : "") + "◍ " + m.title;
+      el.dataset.zotTitle = "1";
+    }
   }
+}
+
+/** The last line a mark's words reach: a highlight often crosses a paragraph break -- the
+ *  author's own first test underlined a citation's tail and the next paragraph's opening --
+ *  and a bar on the first paragraph alone misreports where the mark IS. Walk forward while
+ *  the annotation still holds the next block's opening words; capped, so a runaway match
+ *  under-marks rather than painting the page. */
+function zotSpanEnd(text, chText, startLine){
+  var norm = " " + String(text).replace(/\s+/g, " ").trim().toLowerCase() + " ";
+  var lines = chText.split("\n");
+  var last = startLine, i = startLine, hops = 0;
+  while (hops < 10) {
+    var j = i;                                  // the next non-empty line after block i
+    while (j < lines.length && !(lines[j] || "").trim()) j++;
+    if (j >= lines.length) break;
+    var opening = (lines[j] || "").replace(/\s+/g, " ").trim()
+      .split(" ").slice(0, 5).join(" ").toLowerCase();
+    if (opening.length < 8 || norm.indexOf(" " + opening) < 0) break;
+    last = j + 1;                               // 1-based
+    i = j + 1;
+    hops++;
+  }
+  return last;
 }
 
 function endZotero(){
@@ -4783,9 +4808,20 @@ function startZotero(){
         // placed in a converted text (the same rule that places a claim's quotation).
         var line = window.ArgdownPositions
           ? window.ArgdownPositions.findQuote(text, ch.text) : null;
+        // A mark that crosses a PRINTED page break cannot match whole: the converted text
+        // carries a `<!-- p.N -->` marker between its halves and the annotation does not.
+        // Drop leading sentences until the rest places; the span walk below still extends
+        // forward, so at worst the previous page's tail goes unbarred, said by nothing
+        // being lost -- the mark is placed, not dropped.
+        if (line == null && window.ArgdownPositions) {
+          var sents = text.split(". ");
+          for (var sd = 1; sd < sents.length && sd <= 4 && line == null; sd++)
+            line = window.ArgdownPositions.findQuote(sents.slice(sd).join(". "), ch.text);
+        }
         if (line == null) { unplaced++; continue; }
         marks.push({
           line: line,
+          endLine: zotSpanEnd(text, ch.text, line),
           color: d.annotationColor || "",
           title: (kind === "underline" ? "underlined: " : "") + "“" + text + "”" +
                  (d.annotationComment ? " — " + d.annotationComment : "") +

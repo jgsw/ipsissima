@@ -1895,6 +1895,8 @@ async function zoteroChecks(browser) {
     "",
     "The argument of this essay is that memory functions as a promise made to the future self.",
     "",
+    "It binds because we hold ourselves to it.",
+    "",
     "<!-- p.2 begins here -->",
     "",
     "Some will say that recollection is merely causal, a trace with no normative force at all.",
@@ -1959,6 +1961,12 @@ async function zoteroChecks(browser) {
           { data: { itemType: "annotation", annotationType: "note",
                     annotationComment: "a thought pinned to the page",
                     annotationColor: "#ffd400", annotationPageLabel: "3" } },
+          { data: { itemType: "annotation", annotationType: "highlight",
+                    annotationText: "a promise made to the future self. It binds " +
+                                    "because we hold ourselves" } },
+          { data: { itemType: "annotation", annotationType: "highlight",
+                    annotationText: "no normative force at all. The essay closes " +
+                                    "by refusing" } },
           { data: { itemType: "annotation", annotationType: "highlight",
                     annotationText: "words that appear in no conversion anywhere" } },
           { data: { itemType: "annotation", annotationType: "image" } }
@@ -2029,9 +2037,25 @@ async function zoteroChecks(browser) {
   check(/note — a thought pinned to the page.*pinned to the page/.test(kinds.titles),
         "a note is pinned to its printed page's beginning",
         kinds.titles.slice(-160));
-  check(/3 marks/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
+  check(/5 marks/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
         /1 carry no text/.test(marked.note),
         "unplaceable and wordless marks are counted, never dropped", marked.note);
+  const span = await page.evaluate(() => {
+    const els = [...document.querySelectorAll("#mstext .zot-mark")];
+    const both = els.filter(e => /future self\. It binds/.test(e.title));
+    const cross = els.filter(e => /force at all\. The essay closes/.test(e.title));
+    return { blocks: both.length,
+             first: /promise made to the future/.test(both[0] ? both[0].textContent : ""),
+             second: /It binds because/.test(both[1] ? both[1].textContent : ""),
+             cross: cross.length,
+             crossOn: /essay closes by refusing/.test(cross[0] ? cross[0].textContent : "") };
+  });
+  check(span.blocks === 2 && span.first && span.second,
+        "a mark crossing a paragraph break bars every paragraph its words reach",
+        JSON.stringify(span));
+  check(span.cross === 1 && span.crossOn,
+        "a mark crossing a PRINTED page places by its later sentences, never dropped",
+        JSON.stringify({ cross: span.cross, on: span.crossOn }));
 
   await page.click("#mszotero");
   const off = await page.evaluate(() => ({
@@ -2084,7 +2108,7 @@ async function zoteroChecks(browser) {
 
   await page.evaluate(() => { window.__ZOT_MATCH__.absFor("source/essay.md",
                                                           "/fake/essay.md"); });
-  const dragged = await dragSelect(page, 1, 180);
+  const dragged = await dragSelect(page, 2, 180);
   check(dragged, "write-back: the drag selects and the offer appears", String(dragged));
   const offered = await page.evaluate(() => document.getElementById("mszothl").hidden);
   check(offered === false, "  Highlight in Zotero is offered beside Quote and Paraphrase",

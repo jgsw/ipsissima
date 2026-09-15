@@ -918,6 +918,29 @@ def _page_margins(rows):
     return out
 
 
+def indent_step(rows, margins):
+    """The document's paragraph-indent STEP — how far a paragraph's first line sits off its
+    page's own margin — or None where nothing consistent shows.
+
+    WHY THE GLOBAL BAND IS NOT ENOUGH, measured on the Wolff: recto pages set the margin at
+    43 and indent paragraphs to 53; verso pages sit at 66 and 76. The global histogram
+    called 43 the margin and 75.7 the paragraph band — each true of half the pages — so on
+    every recto page a paragraph opening at 53 never reached the band and merged into the
+    block before it: one 527-word "paragraph", and a reader's highlight of five printed
+    lines drawn across thirty (the author's screenshot, 15 Sep). The step is the invariant
+    the two pages share; the margin is per-page.
+    """
+    deltas = Counter()
+    for p, x, _t in rows:
+        d = round(x) - margins.get(p, round(x))
+        if 4 < d <= 40:
+            deltas[d] += 1
+    if not deltas:
+        return None
+    step, n = deltas.most_common(1)[0]
+    return step if n >= max(3, len(rows) // 100) else None
+
+
 def hanging_blocks(rows):
     """Back-matter rows into entries, by the HANGING indent a bibliography is set with.
 
@@ -941,7 +964,7 @@ def hanging_blocks(rows):
 
 
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
-              caps_headings=None):
+              caps_headings=None, margins=None, step=None):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
 
     Four rules beyond the bands, each of which was a bug first:
@@ -1039,6 +1062,13 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             blocks[-1]["text"] += " " + text
             blocks[-1]["pages"].add(page)
             continue
+        elif (margins and step and page in margins
+              and x0 > margins[page] + step - 2):
+            # THE PAGE'S OWN PARAGRAPH THRESHOLD, where the per-page margins and the
+            # document's indent step are known — see indent_step for the recto/verso
+            # failure the global band alone cannot survive. The global tests below remain
+            # the fallback for callers that pass neither.
+            kind = "body"
         elif bands["paragraph"] and x0 > bands["paragraph"] - 2:
             kind = "body"
         elif bands["display"] and x0 > bands["display"] - 2:
@@ -1459,9 +1489,12 @@ def convert(cfg):
     # lines all off the page's own margin is somebody being quoted, and it becomes a
     # `> ` block rather than dissolving into the paragraph around it.
     qmarks = mark_displayed_quotes(flow)
+    page_margins = _page_margins(flow)
+    par_step = indent_step(flow, page_margins)
     flow = [(p, x, t, i in qmarks) for i, (p, x, t) in enumerate(flow)]
     blocks = finish(to_blocks(flow, bands, headings_now, cfg.end_marker,
-                              number_headings=cfg.number_headings, caps_headings=auto_caps),
+                              number_headings=cfg.number_headings, caps_headings=auto_caps,
+                              margins=page_margins, step=par_step),
                     cfg.repairs, applied, soft)
     note_blocks = finish(to_blocks(notes, bands, {}, None, notes=True),
                          cfg.repairs, applied, soft)
