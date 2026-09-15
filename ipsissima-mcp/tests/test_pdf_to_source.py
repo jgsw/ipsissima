@@ -365,6 +365,26 @@ after = bl[[i for i, b in enumerate(bl) if b["kind"] == "quote"][0] + 1]
 check("  and the resuming paragraph is NOT merged into it",
       after["text"].startswith("The paragraph resumes"), True)
 
+print("hanging_blocks (a bibliography's inverted indent)")
+from pdf_to_source import hanging_blocks                                      # noqa: E402
+BIB = [
+    (23, 43, "Catherine M. Bell, Ritual (New York, NY: Oxford"),
+    (23, 53, "University Press, 2009)."),
+    (23, 43, "Daniel A. Bell and Wang Pei, Just Hierarchy (Princeton, NJ: Princeton"),
+    (23, 53, "University Press, 2020)."),
+    (24, 66, "David Miller, Strangers in Our Midst (Cambridge, MA: Harvard"),   # verso:
+    (24, 76, "University Press, 2016)."),                                       # margin 66
+    (24, 66, "Iris Murdoch, The Sovereignty of the Good (London: Routledge)."),
+]
+hb = [b["text"] for b in hanging_blocks(BIB)]
+check("each entry is one block, ended by the next entry's margin line",
+      hb, ["Catherine M. Bell, Ritual (New York, NY: Oxford University Press, 2009).",
+           "Daniel A. Bell and Wang Pei, Just Hierarchy (Princeton, NJ: Princeton "
+           "University Press, 2020).",
+           "David Miller, Strangers in Our Midst (Cambridge, MA: Harvard "
+           "University Press, 2016).",
+           "Iris Murdoch, The Sovereignty of the Good (London: Routledge)."])
+
 print("join_spans (superscript footnote markers)")
 
 

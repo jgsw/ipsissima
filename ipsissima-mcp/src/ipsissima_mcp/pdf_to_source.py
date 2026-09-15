@@ -902,6 +902,44 @@ def mark_displayed_quotes(flow):
     return marked
 
 
+def _page_margins(rows):
+    """Each page's own left margin: the LEFTMOST heavily-used edge, the same reasoning as
+    mark_displayed_quotes and for the same two reasons -- recto and verso margins differ,
+    and on a page the mode can be an indent rather than the margin."""
+    from collections import defaultdict
+    by_page = defaultdict(list)
+    for p, x, _t in rows:
+        by_page[p].append(round(x))
+    out = {}
+    for p, xs in by_page.items():
+        c = Counter(xs)
+        heavy = [x for x, n in c.items() if n >= max(2, 0.25 * len(xs))]
+        out[p] = min(heavy) if heavy else c.most_common(1)[0][0]
+    return out
+
+
+def hanging_blocks(rows):
+    """Back-matter rows into entries, by the HANGING indent a bibliography is set with.
+
+    THE BODY RULE, INVERTED: an entry BEGINS at the page's own margin and its continuation
+    lines are indented -- the mirror image of a paragraph, whose first line is the indented
+    one. Assembled with the body's rule, every entry glued itself to the one before (both
+    at the margin, first letter a capital name) and split at its own first continuation
+    (indented past the paragraph band) -- 'University Press, 2009). Daniel A. Bell...' --
+    which is exactly what the author reported (15 Sep: run-ons, and lines split where they
+    should not be). Rows are (page, x0, text).
+    """
+    margins = _page_margins(rows)
+    blocks = []
+    for p, x, t in rows:
+        if blocks and x > margins[p] + 4:
+            blocks[-1]["text"] += " " + t
+            blocks[-1]["pages"].add(p)
+        else:
+            blocks.append(dict(page=p, pages={p}, kind="body", text=t))
+    return blocks
+
+
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
               caps_headings=None):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
@@ -1487,7 +1525,9 @@ def convert(cfg):
         group = []
 
         def flush_group():
-            for gb in finish(to_blocks(group, bands, {}, None), cfg.repairs, applied, soft):
+            # By the hanging indent, not the body bands: a bibliography's geometry is the
+            # body's inverted -- see hanging_blocks.
+            for gb in finish(hanging_blocks(group), cfg.repairs, applied, soft):
                 out.append(gb["text"])
             del group[:]
 
