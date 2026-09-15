@@ -221,6 +221,14 @@ var API = {
     return T.core.invoke("zotero_store_bundle",
                          { key: key, filename: filename, bundle: bundle });
   },
+  // The write-back half: one highlight, created IN Zotero on the attachment the text was
+  // converted from (E10: no second store — the pane re-reads it like any other mark), at
+  // rectangles the page resolved from the conversion's geometry sidecar.
+  zoteroCreateHighlight: function (key, text, pageLabel, pageIndex, rects, sortTop) {
+    return T.core.invoke("zotero_create_highlight",
+                         { key: key, text: text, pageLabel: pageLabel,
+                           pageIndex: pageIndex, rects: rects, sortTop: sortTop });
+  },
   pickDirectory: pickDirectory, pickFile: pickFile, pickSavePath: pickSavePath,
   readText: readText, writeText: writeText, writeBinary: writeBinary, readDirDeep: readDirDeep,
   watch: watch, onOpenPaths: onOpenPaths,

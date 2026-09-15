@@ -1272,6 +1272,12 @@ body.fs #fsexit{display:inline-flex}
                 title="New claim carrying the selected words as its text — fidelity: quotation, the source recorded verbatim, the chapter cited. The title arrives selected, ready to be renamed.">Quote this passage</button>
         <button class="plain" id="mspara" hidden
                 title="New claim for saying the selected words your own way — fidelity: paraphrase, with the source recorded verbatim so the reading can be checked against it. Your restatement arrives selected, ready to be written.">Paraphrase it</button>
+        <!-- WRITE-BACK (docs/ANNOTATIONS-PLAN.md): the selection becomes a highlight IN
+             ZOTERO, on the PDF itself, at the exact rectangles the conversion's geometry
+             sidecar resolves — created there and nowhere else (E10: no second store), so
+             pressing "Zotero highlights" afterwards reads it back like any other mark. -->
+        <button class="plain" id="mszothl" hidden
+                title="Highlight the selected passage in Zotero — the mark is created in Zotero itself, on the PDF, exactly where these words are printed, and lives only there. Zotero asks your permission the first time.">Highlight in Zotero</button>
         <!-- THE MANUSCRIPT AS COMMON GROUND (docs/PLURALITY-PLAN.md §2, ruled 14 Sep): open
              another reading of this same text, and the margin shows where the two maps read
              the same passages, where each goes alone, and where they read the same words
@@ -1433,6 +1439,7 @@ function render(name, source, graph){
   QUOTE_SEL = null;
   $("msquote").hidden = true;
   $("mspara").hidden = true;
+  $("mszothl").hidden = true;
   NAME = name; SOURCE = source || ""; CURRENT_GRAPH = graph;
   $("fname").innerHTML = name ? name.replace(/&/g,"&amp;").replace(/</g,"&lt;") : "Argdown viewer";
   $("adname").textContent = name || "Argdown";
@@ -4808,6 +4815,142 @@ function startZotero(){
 
 $("mszotero").onclick = function(){ if (ZOT) endZotero(); else startZotero(); };
 
+/* ---- WRITE-BACK: a highlight made here, created in Zotero -------------------------------
+ *
+ * The agreed scope's second half (docs/ANNOTATIONS-PLAN.md §3.2), E10-clean: the mark is
+ * created IN Zotero, on the PDF attachment the text was converted from, and nowhere else —
+ * this page keeps nothing, and re-reads it through the same button every other mark comes
+ * through. Exactness comes from the conversion's GEOMETRY SIDECAR (<source>.md.geometry.json,
+ * written by pdf_to_source while it still had the PDF): every word's box, per printed page,
+ * already in Zotero's coordinate frame, so the selected words resolve to the very rectangles
+ * Zotero itself would have drawn.
+ */
+var ZOT_GEOM = { path: null, pages: null };    // one chapter's sidecar, cached
+
+function zotWordKey(w){
+  return String(w).toLowerCase().replace(/^[^0-9a-z]+/, "").replace(/[^0-9a-z]+$/, "");
+}
+
+/** The selected words found among a page's word boxes; null when they are not there.
+ *  Conservative on purpose: whole words match exactly; the one allowance is a word the
+ *  PRINTER broke across lines (its two boxes join, trailing hyphen dropped), and the
+ *  selection's first and last word may be the reader's partial grab of a printed word. */
+function zotFindWords(text, words){
+  var want = String(text).replace(/\s+/g, " ").trim().split(" ")
+    .map(zotWordKey).filter(function(w){ return !!w; });
+  if (!want.length) return null;
+  for (var s = 0; s < words.length; s++) {
+    var i = s, j = 0, used = [];
+    while (j < want.length && i < words.length) {
+      var have = zotWordKey(words[i][0]);
+      if (have === want[j]
+          || (j === 0 && want.length > 1 && have.length > want[j].length
+              && have.slice(-want[j].length) === want[j])
+          || (j === want.length - 1 && j > 0 && have.length > want[j].length
+              && have.slice(0, want[j].length) === want[j])) {
+        used.push(i); i++; j++; continue;
+      }
+      if (i + 1 < words.length
+          && zotWordKey(String(words[i][0]).replace(/[-­]+$/, "")
+                        + words[i + 1][0]) === want[j]) {
+        used.push(i, i + 1); i += 2; j++; continue;
+      }
+      break;
+    }
+    if (j === want.length) return used.map(function(k){ return words[k]; });
+  }
+  return null;
+}
+
+/** Word boxes into line rectangles: grouped by their top edge, merged left-to-right. */
+function zotMergeRects(ws){
+  var lines = [];
+  for (var i = 0; i < ws.length; i++) {
+    var w = ws[i], hit = null;
+    for (var l = 0; l < lines.length; l++)
+      if (Math.abs(lines[l][3] - w[4]) < 3) { hit = lines[l]; break; }
+    if (hit) {
+      hit[0] = Math.min(hit[0], w[1]); hit[1] = Math.min(hit[1], w[2]);
+      hit[2] = Math.max(hit[2], w[3]); hit[3] = Math.max(hit[3], w[4]);
+    } else lines.push([w[1], w[2], w[3], w[4]]);
+  }
+  return lines;
+}
+
+// Exposed for the test harness, which proves the matcher's edges directly: two pure
+// functions, no state, nothing the page does not already do through the button.
+window.__ZOT_MATCH__ = { findWords: zotFindWords, mergeRects: zotMergeRects,
+                         // The harness's stand-in for a folder open: the sidecar lookup
+                         // starts from HOST_ABS, which only hostLoadDir fills for real.
+                         absFor: function(rel, abs){ HOST_ABS[rel] = abs; } };
+
+/** This chapter's sidecar, read from beside the converted file. Null, with a reason, when
+ *  there is none — an older conversion simply has no geometry to offer. */
+async function zotGeometry(){
+  var abs = HOST_ABS[MSCHAPTER];
+  if (!abs) return { pages: null, why: "this text did not arrive from a folder on disk" };
+  var path = abs + ".geometry.json";
+  if (ZOT_GEOM.path === path && ZOT_GEOM.pages) return { pages: ZOT_GEOM.pages };
+  var raw;
+  try { raw = await HOST.readText(path); }
+  catch (e) {
+    return { pages: null, why: "this conversion carries no geometry sidecar — reconvert " +
+                               "the PDF with the current converter to enable exact " +
+                               "highlights" };
+  }
+  try { ZOT_GEOM = { path: path, pages: JSON.parse(raw).pages || null }; }
+  catch (e) { return { pages: null, why: "the geometry sidecar would not parse" }; }
+  return { pages: ZOT_GEOM.pages };
+}
+
+async function zotHighlightSelection(){
+  if (!QUOTE_SEL || !QUOTE_SEL.text || !HOST || !HOST.zoteroCreateHighlight) return;
+  var key = zoteroKeyOfChapter();
+  if (!key) return;
+  var ch = null;
+  for (var i = 0; i < MS.chapters.length; i++)
+    if (MS.chapters[i].path === MSCHAPTER) ch = MS.chapters[i];
+  if (!ch || QUOTE_SEL.line == null) {
+    showErr("The selection's place in the file could not be read — select the passage " +
+            "again."); return;
+  }
+  // The printed page the selection sits on: the last p.N marker at or above its line.
+  var page = "", marks = pageMarks(ch.text);
+  for (var m = 0; m < marks.length; m++)
+    if (marks[m].line <= QUOTE_SEL.line) page = marks[m].page;
+  if (!page) { showErr("This passage sits above the first page marker, so its printed " +
+                       "page is unknown; nothing was written."); return; }
+  var g = await zotGeometry();
+  if (!g.pages) { showErr("Cannot place this highlight exactly: " + g.why + ". Nothing " +
+                          "was written."); return; }
+  var pg = g.pages[page];
+  var found = pg && zotFindWords(QUOTE_SEL.text, pg.words);
+  if (!found || !found.length) {
+    showErr("These exact words were not found on p. " + page + " of the PDF's geometry — " +
+            "the conversion may normalise them differently. Nothing was written.");
+    return;
+  }
+  var rects = zotMergeRects(found);
+  var top = Math.max(0, Math.round(pg.h - Math.max.apply(null, rects.map(function(r){
+    return r[3]; }))));
+  // pageIndex is the PDF's own 0-based sheet; the sidecar is keyed by printed page and the
+  // two coincide except for a skipped cover, which first_page already folded in. The safe
+  // derivation is printed − first printed page in the sidecar.
+  var first = Math.min.apply(null, Object.keys(g.pages).map(Number));
+  var text = QUOTE_SEL.text.replace(/\s+/g, " ").trim().slice(0, 4000);
+  try {
+    var said = await HOST.zoteroCreateHighlight(key, text, String(page),
+                                                Number(page) - first, rects, top);
+    showNote(said, 9000);
+    if (ZOT) { endZotero(); startZotero(); }   // the pane re-reads its marks from Zotero
+  } catch (e) {
+    showErr(String(e && e.message || e));
+  }
+}
+
+$("mszothl").addEventListener("mousedown", function(e){ e.preventDefault(); });
+$("mszothl").onclick = zotHighlightSelection;
+
 /* ================= THE ARGDOWN PANE: read-only, or an editor ==========================
  *
  * One pane, two fillings. Without the editor bundle it is the highlighted `<pre>` it always was.
@@ -5764,17 +5907,25 @@ document.addEventListener("selectionchange", function(){
   var inMs = sel && sel.rangeCount > 0 &&
              $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
   if (inMs && !sel.isCollapsed) {
-    QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER };
+    // The selection's line, for the write-back's page lookup: the nearest [data-l] above
+    // its start.
+    var selEl = sel.getRangeAt(0).startContainer;
+    if (selEl.nodeType !== 1) selEl = selEl.parentNode;
+    var selLine = selEl && selEl.closest ? selEl.closest("[data-l]") : null;
+    QUOTE_SEL = { text: String(sel), chapter: MSCHAPTER,
+                  line: selLine ? +selLine.getAttribute("data-l") : null };
     // The reader has left the editor for the text; telling the editor helps it not fight
     // back, though it is not relied on — see below.
     if (ED.hasFocus()) ED.view.contentDOM.blur();
     $("msquote").hidden = false;
     $("mspara").hidden = false;
+    $("mszothl").hidden = !(HOST && HOST.zoteroCreateHighlight && zoteroKeyOfChapter());
   } else if (inMs) {
     // A plain click in the text is the reader withdrawing the selection: the offer goes.
     QUOTE_SEL = null;
     $("msquote").hidden = true;
     $("mspara").hidden = true;
+    $("mszothl").hidden = true;
   }
   // A selection anywhere ELSE changes nothing, deliberately. Right after an insert the
   // editor holds focus with the new title selected, and CodeMirror re-asserts its own
@@ -5840,6 +5991,7 @@ function insertClaimFromSelection(kind){
   view.contentDOM.focus({ preventScroll: true });
   $("msquote").hidden = true;
   $("mspara").hidden = true;
+  $("mszothl").hidden = true;
   if (GUIDE) guideOnClaim(title);
 }
 $("msquote").addEventListener("mousedown", function(e){ e.preventDefault(); });

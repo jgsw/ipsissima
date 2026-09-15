@@ -6,8 +6,8 @@ publisher text automatically removed, and *"where it is possible to reconstruct 
 structure of the source we should do so in the Markdown"*: footnotes as footnote definitions,
 headings as headings, inset quotations as blockquotes. His own framing: *"merely to restate
 how ingest is supposed to function"* — a restatement that was needed because the ideal was
-being met unevenly. Drafted as G6 ⟨proposed⟩ in `docs/values/INVENTORY.md`, awaiting his
-ruling.
+being met unevenly. Admitted the same day as **G6** in `docs/values/INVENTORY.md`, reworded
+at his ask: *"The author's text, with its structure, and nothing else."*
 
 ## 1. What the measurement showed (Wolff, the same PDF through both converters)
 
@@ -72,5 +72,6 @@ actually uses. The Wolff read as the sheet because it went down the simple road.
    into one mega-paragraph with the prose around them; they now stand as eleven `>` blocks,
    and the paragraph a quotation interrupts is never merged into it.
 
-**Still open:** the G6 ruling itself (reworded 15 Sep at the author's ask: *"The author's
-text, with its structure, and nothing else"*).
+**G6 admitted, 15 Sep**, as reworded at the author's ask: *"The author's text, with its
+structure, and nothing else."* The inventory entry carries it; the ⟨proposed⟩ marker is
+off.

@@ -1271,7 +1271,7 @@ and says so is worth more than one that rounds down").
 
 **Weight.** Medium; subordinate to A-section principles by its own text.
 
-### G6. ⟨proposed⟩ The author's text, with its structure, and nothing else
+### G6. The author's text, with its structure, and nothing else
 
 **It says.** A converted source serves a reader, not only a checker, and the author's ruling
 sets the bar: *"We need to make not only possible, but pleasurable for a reader to read a
@@ -1295,5 +1295,7 @@ it needed stating).
 
 **Generality.** The MCP's converters; the manuscript pane inherits the benefit.
 
-**Weight.** Unassigned until ruled; the author flagged it as possibly principle-weight
-himself.
+**Weight.** Medium-heavy — it is what makes B9's road worth taking: a manuscript pane
+nobody enjoys reading defeats "the map is a way into the text". (Admitted as reworded,
+15 Sep 2026; weight assigned by the assistant on that reasoning, movable on the author's
+word.)

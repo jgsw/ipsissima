@@ -473,7 +473,7 @@ def plain_text(path):
     return "\n\n".join(b for b in out if b)
 
 
-def from_pdf_structured(path):
+def from_pdf_structured(path, extras=None):
     """The PDF through the full converter -- pdf_to_source.py, the one with the machinery.
 
     THE UNIFICATION, ruled by the author 15 Sep 2026: this module's own plain route left a
@@ -497,6 +497,12 @@ def from_pdf_structured(path):
         try:
             rep = convert(Config(pdf=pathlib.Path(path), out=out))
             text = out.read_text(encoding="utf-8")
+            # The geometry sidecar rides out of the temp dir with the text: it is what
+            # lets a highlight made in the app land in Zotero at exact rectangles, and
+            # the write site puts it beside the converted .md under the same name rule.
+            side = pathlib.Path(str(out) + ".geometry.json")
+            if extras is not None and side.exists():
+                extras["geometry"] = side.read_text(encoding="utf-8")
         except SystemExit as e:
             return None, str(e).split("\n")[0][:160]
         except Exception as e:                                  # noqa: BLE001 -- the fallback
@@ -521,7 +527,7 @@ def from_pdf_structured(path):
     return body, notes
 
 
-def from_pdf(path, allow_ocr=True):
+def from_pdf(path, allow_ocr=True, extras=None):
     """The text layer first; OCR only if the text layer is bad, and only if it beats it.
 
     THIS IS NOT WHAT THE FIRST VERSION DID, and the correction matters. pymupdf4llm was chosen
@@ -548,7 +554,7 @@ def from_pdf(path, allow_ocr=True):
         # scan has not. The floor is the honesty check: structured output holding many fewer
         # words than the raw layer (beyond the furniture it is meant to drop) means text was
         # misplaced, and the plain route -- ugly but complete -- wins.
-        body, s_notes = from_pdf_structured(path)
+        body, s_notes = from_pdf_structured(path, extras)
         if body is not None and len(body.split()) >= 0.85 * len(best.split()):
             return body, s_notes + [f"(the raw text layer held "
                                     f"{len(best.split())} words; this keeps "
@@ -705,10 +711,10 @@ def from_tei(path):
     return "\n\n".join(parts), notes
 
 
-def ingest_one(path, allow_ocr=True):
+def ingest_one(path, allow_ocr=True, extras=None):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".pdf":
-        md, notes = from_pdf(path, allow_ocr=allow_ocr)
+        md, notes = from_pdf(path, allow_ocr=allow_ocr, extras=extras)
     # BEFORE the pandoc branch, and by content rather than extension. pandoc 3.10 writes TEI and
     # does not read it, so a TEI book had no route in at all and the only way was its PDF --
     # which is exactly the inversion `structured_source.py` exists to complain about.
@@ -858,10 +864,11 @@ def main():
     for path in a.inputs:
         if not os.path.exists(path):
             raise SystemExit(f"no such file: {path}")
-        md, notes = ingest_one(path, allow_ocr=not a.no_ocr)
+        extras = {}
+        md, notes = ingest_one(path, allow_ocr=not a.no_ocr, extras=extras)
         name = slug(os.path.splitext(os.path.basename(path))[0]) + ".md"
         trimmed, cut = extract_for_prompt(md)
-        results.append(dict(src=path, name=name, md=md, notes=notes,
+        results.append(dict(src=path, name=name, md=md, notes=notes, extras=extras,
                             words=len(md.split()), prompt_words=len(trimmed.split()), cut=cut))
 
     print(f"== ingest -> {a.out}")
@@ -891,6 +898,12 @@ def main():
         with open(os.path.join(src_dir, r["name"]), "w", encoding="utf-8") as fh:
             fh.write(front_matter(r["src"], r["md"]) + header(r["src"], r["notes"])
                      + r["md"].rstrip() + "\n")
+        if r.get("extras", {}).get("geometry"):
+            # The word-geometry sidecar, beside the file under the same name: what lets a
+            # highlight made in the app land in Zotero at exact rectangles.
+            with open(os.path.join(src_dir, r["name"] + ".geometry.json"),
+                      "w", encoding="utf-8") as fh:
+                fh.write(r["extras"]["geometry"])
 
     if len(results) > 1:
         proj = os.path.join(a.out, "argdown-project.yml")

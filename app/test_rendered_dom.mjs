@@ -1916,8 +1916,10 @@ async function zoteroChecks(browser) {
   ].join("\n"));
   const out = path.join(root, "viewer.html");
   try {
+    // --editor: the write-back gesture rides the selection machinery, which is the
+    // editor build's; the web case below still proves the plain page shows no button.
     execFileSync("node", [BUILDER, path.join(root, "reading.argdown"),
-                          "-o", out, "--source-root", root], { stdio: "pipe" });
+                          "-o", out, "--source-root", root, "--editor"], { stdio: "pipe" });
   } catch (e) {
     check(false, "zotero: the fixture viewer builds", String(e.message || e).slice(0, 200));
     return;
@@ -1961,13 +1963,32 @@ async function zoteroChecks(browser) {
                     annotationText: "words that appear in no conversion anywhere" } },
           { data: { itemType: "annotation", annotationType: "image" } }
         ]);
+        if (cmd === "zotero_create_highlight") {
+          window.__hl = arg;
+          return Promise.resolve("highlighted in Zotero, on p. " + arg.pageLabel +
+                                 " of the PDF itself");
+        }
         if (cmd === "zotero_store_bundle") {
           window.__storeArgs = arg;
           return Promise.resolve("stored test.argdown under the item its source belongs to.");
         }
         return Promise.resolve(null);
       } },
-      fs: {}, dialog: {},
+      fs: { readTextFile: (p) => {
+        if (/essay\.md\.geometry\.json$/.test(p)) {
+          const words = ("Some will say that recollection is merely causal, a trace with " +
+                         "no normative force at all.").split(" ");
+          let x = 43;
+          const rows = words.map(w => {
+            const r = [w, x, 700, x + 6 * w.length, 711];
+            x += 6 * w.length + 4;
+            return r;
+          });
+          return Promise.resolve(JSON.stringify(
+            { version: 1, pages: { "2": { h: 800, words: rows } } }));
+        }
+        return Promise.reject(new Error("no such file"));
+      } }, dialog: {},
       event: { listen: (name, cb) => {
         if (name === "ipsissima://menu") window.__menu = cb;
       } }
@@ -2043,6 +2064,50 @@ async function zoteroChecks(browser) {
         JSON.stringify(stored.files));
   check(/stored test\.argdown/.test(stored.note),
         "  and Zotero's answer is shown to the reader", stored.note.slice(0, 80));
+
+  // WRITE-BACK, driven as a reader would: a real drag over the passage, then the button.
+  // The matcher's edges are proven directly first — they are pure functions in the page.
+  const edges = await page.evaluate(() => {
+    const broken = [["estab-", 10, 700, 40, 711], ["lished", 42, 700, 70, 711],
+                    ["practice", 74, 700, 120, 711]];
+    const plain = [["The", 10, 700, 28, 711], ["established", 30, 700, 90, 711],
+                   ["practice", 94, 700, 140, 711]];
+    const joined = window.__ZOT_MATCH__.findWords("established practice", broken);
+    const partial = window.__ZOT_MATCH__.findWords("stablished prac", plain);
+    const absent = window.__ZOT_MATCH__.findWords("entirely different words", plain);
+    return { joined: joined && joined.length, partial: partial && partial.length,
+             absent: absent };
+  });
+  check(edges.joined === 3 && edges.partial === 2 && edges.absent === null,
+        "the matcher joins printer-broken words and takes partial edge words, nothing else",
+        JSON.stringify(edges));
+
+  await page.evaluate(() => { window.__ZOT_MATCH__.absFor("source/essay.md",
+                                                          "/fake/essay.md"); });
+  const dragged = await dragSelect(page, 1, 180);
+  check(dragged, "write-back: the drag selects and the offer appears", String(dragged));
+  const offered = await page.evaluate(() => document.getElementById("mszothl").hidden);
+  check(offered === false, "  Highlight in Zotero is offered beside Quote and Paraphrase",
+        String(offered));
+  await page.click("#mszothl");
+  await page.waitForFunction(() => window.__hl, { timeout: 5000 });
+  const hl = await page.evaluate(() => {
+    const a = window.__hl;
+    return { key: a.key, label: a.pageLabel, index: a.pageIndex,
+             rects: a.rects, top: a.sortTop, text: a.text,
+             note: document.getElementById("err").textContent };
+  });
+  check(hl.key === "AB12CD34" && hl.label === "2" && hl.index === 0,
+        "the highlight lands on the right attachment and page",
+        JSON.stringify({ key: hl.key, label: hl.label, index: hl.index }));
+  check(/^Some will say/.test(hl.text),
+        "  carrying the selected words themselves", hl.text.slice(0, 40));
+  check(hl.rects.length === 1 && hl.rects[0][1] === 700 && hl.rects[0][3] === 711
+        && hl.rects[0][0] === 43 && hl.top === 89,
+        "  at the sidecar's exact rectangles, sorted from the page top",
+        JSON.stringify({ rects: hl.rects, top: hl.top }));
+  check(/highlighted in Zotero, on p\. 2/.test(hl.note),
+        "  and Zotero's answer is shown", hl.note.slice(0, 60));
   await ctx.close();
 }
 

@@ -288,6 +288,38 @@ fn zotero_key_file() -> std::path::PathBuf {
     }
 }
 
+/// Ask Zotero to ask the user — the one consent flow both write commands share, so the two
+/// cannot drift. Persists the key only on "Always Allow", exactly as `zotero_local.py` does.
+async fn zotero_authorize(slow: &reqwest::Client, sid: &str) -> Result<String, String> {
+    let r = slow.post("http://127.0.0.1:23119/api/local/authorize")
+        .header("Zotero-Server-ID", sid)
+        .json(&serde_json::json!({"appName": "Ipsissima"}))
+        .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+    match r.status().as_u16() {
+        403 => Err("Zotero asked, and write access for Ipsissima was declined. Nothing \
+                    was written. Try again to be asked again.".to_string()),
+        429 => Err("Zotero is declining to show another permission dialog just now. Wait \
+                    a minute and try again.".to_string()),
+        200 => {
+            let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+            let k = v["key"].as_str().unwrap_or_default().to_string();
+            if v["remember"].as_bool().unwrap_or(false) {
+                if let Some(dir) = zotero_key_file().parent() {
+                    let _ = std::fs::create_dir_all(dir);
+                }
+                let _ = std::fs::write(zotero_key_file(), format!("{k}\n"));
+            }
+            Ok(k)
+        }
+        s => Err(format!("Zotero declined the authorization request ({s}).")),
+    }
+}
+
+fn zotero_stored_key() -> Option<String> {
+    std::fs::read_to_string(zotero_key_file())
+        .ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+}
+
 const ZOTERO_NOT_RUNNING: &str =
     "Zotero is not answering on this machine. Is it running — and is 'Allow other \
      applications on this computer to communicate with Zotero' switched on in its \
@@ -371,34 +403,8 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
 
     // Consent: a remembered key from the shared file, else Zotero's own dialog; one honest
     // retry when a stored key turns out spent (single-use "Allow") or revoked.
-    let keyfile = zotero_key_file();
-    let mut api_key = std::fs::read_to_string(&keyfile)
-        .ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
-    let authorize = || async {
-        let r = slow.post(format!("{base}/api/local/authorize"))
-            .header("Zotero-Server-ID", &sid)
-            .json(&serde_json::json!({"appName": "Ipsissima"}))
-            .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
-        match r.status().as_u16() {
-            403 => Err("Zotero asked, and write access for Ipsissima was declined. \
-                        Nothing was written. Choose the menu item again to be asked \
-                        again.".to_string()),
-            429 => Err("Zotero is declining to show another permission dialog just now. \
-                        Wait a minute and choose the menu item again.".to_string()),
-            200 => {
-                let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
-                let k = v["key"].as_str().unwrap_or_default().to_string();
-                if v["remember"].as_bool().unwrap_or(false) {
-                    if let Some(dir) = zotero_key_file().parent() {
-                        let _ = std::fs::create_dir_all(dir);
-                    }
-                    let _ = std::fs::write(zotero_key_file(), format!("{k}\n"));
-                }
-                Ok(k)
-            }
-            s => Err(format!("Zotero declined the authorization request ({s}).")),
-        }
-    };
+    let mut api_key = zotero_stored_key();
+    let authorize = || zotero_authorize(&slow, &sid);
 
     // One write, with the retry-once rule, shared by every write below.
     macro_rules! zwrite {
@@ -495,6 +501,87 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     Ok(format!("{} {filename} under the item its source belongs to. The copy travels \
                 with Zotero's own sync from here; nothing else was contacted.",
                if made { "stored" } else { "refreshed" }))
+}
+
+/// Create ONE highlight annotation in Zotero, on the attachment the manuscript was
+/// converted from — the write-back half of docs/ANNOTATIONS-PLAN.md's agreed scope.
+///
+/// The mark is created IN Zotero and nowhere else (E10: no second store; the pane re-reads
+/// it back through `zotero_annotations` like any other mark). The page supplies what only
+/// it knows — the selected words, the printed page, and the exact rectangles resolved from
+/// the conversion's geometry sidecar, already in Zotero's own coordinate frame — and every
+/// field is validated to be no more than that. Consent is the shared flow above.
+#[tauri::command]
+async fn zotero_create_highlight(key: String, text: String, page_label: String,
+                                 page_index: u32, rects: Vec<[f64; 4]>, sort_top: u32)
+                                 -> Result<String, String> {
+    if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
+        return Err("not a Zotero item key".to_string());
+    }
+    if text.trim().is_empty() || text.len() > 4000 {
+        return Err("a highlight carries its words, at most a passage".to_string());
+    }
+    if page_label.len() > 20 || page_index > 9999 || sort_top > 99999 {
+        return Err("not a page".to_string());
+    }
+    if rects.is_empty() || rects.len() > 100
+        || rects.iter().flatten().any(|v| !v.is_finite() || *v < 0.0 || *v > 20000.0) {
+        return Err("not a set of page rectangles".to_string());
+    }
+    let base = "http://127.0.0.1:23119";
+    let http = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(20))
+        .build().map_err(|e| e.to_string())?;
+    let slow = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(180))
+        .build().map_err(|e| e.to_string())?;
+    let sid = http.get(format!("{base}/api/"))
+        .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?
+        .headers().get("Zotero-Server-ID")
+        .and_then(|v| v.to_str().ok()).map(String::from)
+        .ok_or_else(|| "This Zotero cannot accept local writes — writing through the \
+                        local API needs Zotero 10 or later.".to_string())?;
+
+    let position = serde_json::json!({"pageIndex": page_index, "rects": rects}).to_string();
+    let body = serde_json::json!([{
+        "itemType": "annotation", "parentItem": key,
+        "annotationType": "highlight", "annotationText": text,
+        "annotationComment": "", "annotationColor": "#ffd400",
+        "annotationPageLabel": page_label,
+        "annotationSortIndex": format!("{page_index:05}|000000|{sort_top:05}"),
+        "annotationPosition": position}]);
+
+    let mut api_key = zotero_stored_key();
+    for attempt in 0..2 {
+        if api_key.is_none() {
+            api_key = Some(zotero_authorize(&slow, &sid).await?);
+        }
+        let r = http.post(format!("{base}/api/users/0/items"))
+            .header("Zotero-Server-ID", &sid)
+            .header("Zotero-API-Key", api_key.clone().unwrap())
+            .json(&body)
+            .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+        match r.status().as_u16() {
+            401 | 403 if attempt == 0 => {
+                let _ = std::fs::remove_file(zotero_key_file());
+                api_key = None;
+            }
+            s if r.status().is_success() => {
+                let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+                if !v["failed"].as_object().map(|m| m.is_empty()).unwrap_or(true) {
+                    return Err(format!("Zotero rejected the highlight: {}",
+                                       v["failed"].to_string()
+                                        .chars().take(200).collect::<String>()));
+                }
+                let _ = s;
+                return Ok(format!("highlighted in Zotero, on p. {page_label} of the PDF \
+                                   itself — open it there and the mark is where these \
+                                   words are printed."));
+            }
+            s => return Err(format!("Zotero declined the highlight ({s}).")),
+        }
+    }
+    Err("Zotero did not accept the authorization.".to_string())
 }
 
 /// One of two fixed pages, in the reader's own browser.
@@ -620,7 +707,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page, zotero_annotations, zotero_store_bundle])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page, zotero_annotations, zotero_store_bundle, zotero_create_highlight])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());

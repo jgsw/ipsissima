@@ -1568,7 +1568,41 @@ def convert(cfg):
         abstract=abstract)
 
     cfg.out.write_text(header(cfg, report) + "\n\n".join(out) + "\n", encoding="utf-8")
+    # THE GEOMETRY SIDECAR: every word's box, per printed page, in Zotero's own coordinate
+    # frame (PDF units, origin bottom-left) — written while the PDF is still in hand,
+    # because it is the one moment the words and their rectangles are both known. It is
+    # what lets a highlight made in Ipsissima's manuscript pane land in Zotero at the exact
+    # rectangles Zotero itself would have drawn (docs/ANNOTATIONS-PLAN.md; the plan's old
+    # caveat "sub-page rectangle precision is missing" ends here). A derived file, keyed by
+    # the same printed numbers the `p.N` markers carry; ligatures expanded so its words
+    # match the converted text's.
+    sidecar = geometry_sidecar(doc, cfg.first_sheet, first_page)
+    sidecar_path = Path(str(cfg.out) + ".geometry.json")
+    sidecar_path.write_text(sidecar, encoding="utf-8")
+    report["geometry"] = sidecar_path.name
     return report
+
+
+def geometry_sidecar(doc, first_sheet, first_page):
+    """The words and their boxes, page by page, as JSON — see the note at the write site.
+
+    COORDINATES ARE ZOTERO'S: PDF units with the origin at the BOTTOM-left, y increasing
+    upward, which is the frame `annotationPosition.rects` speaks — pymupdf's top-left ys
+    are flipped here, once, so nothing downstream ever converts again. Each page carries
+    its height (`h`), which a consumer needs for sort order (distance from the TOP)."""
+    import json as _json
+    pages = {}
+    for n in range(first_sheet, doc.page_count):
+        page = doc[n]
+        h = page.rect.height
+        words = []
+        for x0, y0, x1, y1, w, _b, _l, _wn in page.get_text("words"):
+            for lig, plain in LIGATURES.items():
+                if lig in w:
+                    w = w.replace(lig, plain)
+            words.append([w, round(x0, 1), round(h - y1, 1), round(x1, 1), round(h - y0, 1)])
+        pages[str(first_page + (n - first_sheet))] = {"h": round(h, 1), "words": words}
+    return _json.dumps({"version": 1, "pages": pages}, separators=(",", ":"))
 
 
 def heading_gaps(used):

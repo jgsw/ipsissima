@@ -630,6 +630,15 @@ If the button reports that Zotero is not answering: Zotero has to be running, an
 applications on this computer to communicate with Zotero* switched on in its
 Settings ▸ Advanced.
 
+The conversation runs the other way too. Select a passage in the text and a third button
+joins Quote and Paraphrase: **Highlight in Zotero**. The mark is created *in Zotero*, on the
+PDF itself, at the exact rectangles where those words are printed — the conversion wrote a
+small geometry file beside the text for precisely this — and it lives only there: press
+**Zotero highlights** and it comes back like any mark you made in Zotero's own reader.
+Zotero asks your permission the first time, by name, revocably. A conversion made before
+this feature carries no geometry file; the button says so and writes nothing — reconvert
+the PDF to enable it.
+
 ## Storing the reconstruction in Zotero
 
 The conversation also runs the other way, on the same terms. **File ▸ Store in Zotero** places

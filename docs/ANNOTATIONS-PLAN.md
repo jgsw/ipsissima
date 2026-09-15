@@ -193,6 +193,23 @@ highlights shown, reconstruction stored — on your gesture, never beyond the ma
 Held by a rendered-DOM check that rings the real menu doorbell over the faked bridge and
 detaches the very bundle the page assembled; `cargo check` clean.
 
-**Next:** write-back with exact rectangles via a per-page word geometry sidecar written
-at conversion; a checker that reads a bundle's own carried sources when the folder lacks
-them is noted as a natural follow-on.
+**Write-back — built 15 Sep, the agreed scope's second half closed.** Select a passage in
+the manuscript pane and a third button joins Quote and Paraphrase: **Highlight in
+Zotero**. E10-clean: the mark is created *in* Zotero, on the PDF attachment the text was
+converted from, and nowhere else — the pane re-reads it through the same button every
+other mark comes through, so there is no second store and nothing to drift. Exactness is
+the **geometry sidecar**: `pdf_to_source` now writes `<source>.md.geometry.json` beside
+every conversion — each word's box, per printed page, already in Zotero's coordinate
+frame (flipped once, at write time) — and the page resolves the selected words to the
+very rectangles Zotero would have drawn, joining printer-broken words and accepting the
+reader's partial first and last word, nothing looser. §1's old caveat ("sub-page
+rectangle precision") is closed. The sidecar rides through the unified ingest route into
+`source/`; a conversion made before it says so and writes nothing. Rust
+`zotero_create_highlight` validates every field to be no more than the page needs to say
+and shares the one consent flow (extracted to `zotero_authorize`, so the two write
+commands cannot drift). Held by rendered-DOM checks: the matcher's edges proven directly,
+then a real drag over the passage, the button, and the captured annotation's key, page,
+rectangles and sort order asserted to the number.
+
+**Next:** a checker that reads a bundle's own carried sources when the folder lacks them;
+EPUB/HTML attachment keys; the deferred non-Zotero project (§3.3).

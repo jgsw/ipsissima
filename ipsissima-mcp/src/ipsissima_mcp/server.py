@@ -364,7 +364,8 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
     results, failures = [], []
     for p in files:
         try:
-            md, notes = ingest.ingest_one(p, allow_ocr=allow_ocr)
+            extras = {}
+            md, notes = ingest.ingest_one(p, allow_ocr=allow_ocr, extras=extras)
         except SystemExit as e:                    # ingest refuses tracked changes this way
             failures.append(dict(path=p, refused=str(e)))
             continue
@@ -378,7 +379,7 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
                          "reader cites can differ (covers, front matter). Check one page "
                          "before writing pinpoint: values")
         results.append(dict(
-            src=p, name=ingest.slug(Path(p).stem) + ".md", md=md, notes=notes,
+            src=p, name=ingest.slug(Path(p).stem) + ".md", md=md, notes=notes, extras=extras,
             words=len(md.split()), prompt_words=len(trimmed.split()),
             headings=len(re.findall(r"(?m)^#{1,6} ", md)),
             locatable_lines=sum(1 for l in md.splitlines() if len(l) >= 120),
@@ -399,6 +400,13 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
             hdr = ingest.header(r["src"], r["notes"])
             target.write_text(fm + hdr + r["md"].rstrip() + "\n", encoding="utf-8")
             written.append(str(target))
+            if r.get("extras", {}).get("geometry"):
+                side = src_dir / (r["name"] + ".geometry.json")
+                side.write_text(r["extras"]["geometry"], encoding="utf-8")
+                written.append(str(side))
+                r["notes"].append("word-geometry sidecar written beside the text -- it is "
+                                  "what lets a highlight made in the app land in Zotero at "
+                                  "exact rectangles")
             # Line numbers in the notes count the TEXT BODY; the written file opens with this
             # header. Left unsaid, a note's "line 73" was found at line 87 and read as wrong.
             head_lines = (fm + hdr).count(chr(10))

@@ -178,18 +178,18 @@ _orig = (_ingest.plain_text, _ingest.from_pdf_structured)
 PLAIN = " ".join(["word"] * 300)
 try:
     _ingest.plain_text = lambda p: PLAIN
-    _ingest.from_pdf_structured = lambda p: (" ".join(["word"] * 280), ["structured note"])
+    _ingest.from_pdf_structured = lambda p, extras=None: (" ".join(["word"] * 280), ["structured note"])
     md, notes = _ingest.from_pdf("x.pdf")
     check("a structured result near the layer's word count is used",
           (len(md.split()), any("structured note" in n for n in notes)), (280, True))
     check("  and the difference is accounted for aloud",
           any("difference measured furniture" in n for n in notes), True)
-    _ingest.from_pdf_structured = lambda p: (" ".join(["word"] * 100), ["structured note"])
+    _ingest.from_pdf_structured = lambda p, extras=None: (" ".join(["word"] * 100), ["structured note"])
     md, notes = _ingest.from_pdf("x.pdf")
     check("one that lost too many words is refused, and the plain route used",
           (md == PLAIN, any("more than furniture explains" in n for n in notes)),
           (True, True))
-    _ingest.from_pdf_structured = lambda p: (None, "the page uses more than two indent levels")
+    _ingest.from_pdf_structured = lambda p, extras=None: (None, "the page uses more than two indent levels")
     md, notes = _ingest.from_pdf("x.pdf")
     check("a converter refusal is quoted, not swallowed",
           (md == PLAIN, any("structured route declined" in n for n in notes)), (True, True))
