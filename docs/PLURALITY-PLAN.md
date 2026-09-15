@@ -79,6 +79,11 @@ claims; the layer clears with one click, both files untouched; a file placing no
 this manuscript is refused with the not-readings-of-the-same-source sentence rather than
 painted as an empty layer. The help topic "Comparing two readings" documents it.
 
+*Moved, 15 Sep:* the labelled header button read as one of the everyday controls, and
+comparing is an occasional errand. The application now offers it from **File ▸ Compare with
+Another Reading…** (the header carries nothing there); the web page, having no menu, keeps
+an unlabelled glyph at the end of the Manuscript's header. Both ring the same `startCompare`.
+
 ## 2a. The candidates, as originally put
 
 The comparator serves whoever has files and a shell — the teacher with fifty maps, the

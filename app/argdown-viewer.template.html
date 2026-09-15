@@ -417,9 +417,18 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
    numbers' gutter is under it only while it is open, and it is the reader who opened it. */
 #ms{position:relative}
 #mstoc{position:absolute;top:2.1rem;right:.6rem;z-index:5;width:15rem;max-width:70%;
-  max-height:65%;overflow:auto;background:var(--panel);border:1px solid var(--line);
-  border-radius:8px;padding:.3rem 0 .35rem;box-shadow:0 6px 22px rgba(0,0,0,.16);
-  font-size:12px}
+  max-height:65%;display:flex;flex-direction:column;background:var(--panel);
+  border:1px solid var(--line);border-radius:8px;padding:0 0 .35rem;
+  box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
+/* The title row stays put while the list scrolls under it, so the × is always where the
+   reader left it. Its × is the pane's own close glyph, at the pane's own size. */
+#mstoc .toc-h{display:flex;align-items:center;gap:.4rem;padding:.25rem .3rem .2rem .7rem;
+  border-bottom:1px solid var(--line);flex:0 0 auto}
+#mstoc .toc-h b{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--fg-dim)}
+#mstoc .toc-h button.x{font-size:14px;color:var(--fg-dim)}
+#mstoc .toc-h button.x:hover{color:var(--fg)}
+#mstoclist{flex:1 1 auto;min-height:0;overflow:auto;padding-top:.25rem}
 #mstoc .toc-e{display:flex;align-items:baseline;gap:.5rem;padding:.16rem .7rem;
   cursor:pointer;color:var(--fg);border-left:3px solid transparent}
 #mstoc .toc-e:hover{background:rgba(0,0,0,.05)}
@@ -1258,12 +1267,6 @@ body.fs #fsexit{display:inline-flex}
     <section id="ms" hidden aria-label="The manuscript">
       <header>
         <select id="mschapter" title="Which file of the manuscript"></select>
-        <!-- THE CONTENTS, FLOATING: the file's own headings, one click from anywhere in a
-             long text. Beside the chapter select on purpose -- the select answers "which
-             file", this answers "where in it". Hidden when the file has fewer than two
-             headings: a list of one entry navigates nothing. -->
-        <button class="plain icon" id="mstocbtn" hidden aria-expanded="false"
-                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, or press Escape, to fold the list away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
         <span id="msnote" class="muted"></span>
         <span class="grow"></span>
         <!-- SELECTION-TO-CLAIM (docs/EDITOR-PLAN.md): shown only while words are selected in
@@ -1285,7 +1288,22 @@ body.fs #fsexit{display:inline-flex}
              another reading of this same text, and the margin shows where the two maps read
              the same passages, where each goes alone, and where they read the same words
              differently. The text is the one thing two readings share, so the text is where
-             their disagreement is legible. -->
+             their disagreement is legible.
+
+             AN ICON ONLY, AT THE END OF THE ROW, and in the application not here at all:
+             comparing two readings is an occasional errand, and a labelled button beside the
+             everyday controls made it read as one of them (reported 15 Sep). The application
+             offers it from File ▸ Compare with Another Reading…, where occasional errands
+             live; the web page, having no menu, keeps the quiet glyph. Both ring the same
+             `startCompare`. -->
+        <!-- THE CONTENTS, FLOATING: the file's own headings, one click from anywhere in a
+             long text. AT THE RIGHT, because that is the corner the list drops from: it sat
+             beside the chapter select for a while ("which file" next to "where in it"), and
+             a button at one edge opening a panel at the other read as two unrelated things
+             (reported 15 Sep). Hidden when the file has fewer than two headings: a list of
+             one entry navigates nothing. -->
+        <button class="plain icon" id="mstocbtn" hidden aria-expanded="false"
+                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, press Escape, or use the list's own × to fold it away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
         <!-- THE READER'S OWN MARKS, from their own store (E10; docs/ANNOTATIONS-PLAN.md).
              Shown only in the desktop application, and only when this text declares the
              Zotero attachment it was converted from. Pressing it is the one thing that makes
@@ -1293,15 +1311,19 @@ body.fs #fsexit{display:inline-flex}
              pressing it again puts the marks away. -->
         <button class="plain icon" id="mszotero" hidden
                 title="Show your own Zotero highlights of this text, read from Zotero running on this computer — nothing leaves your machine, and it is asked only when you press this. Press again to put them away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 4.5v11"/><path d="M9 6.5h7"/><path d="M9 10h7"/><path d="M9 13.5h4.5"/></svg><span>Zotero highlights</span></button>
-        <button class="plain icon" id="mscompare" hidden
-                title="Open another reconstruction of this same text, and see in the margin which passages each reading covers — and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have."><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="6" height="12" rx="1.2"/><rect x="11" y="4" width="6" height="12" rx="1.2"/></svg><span>Compare…</span></button>
+        <button class="plain icon" id="mscompare" hidden aria-label="Compare with another reading…"
+                title="Compare with another reading… — open another reconstruction of this same text, and see in the margin which passages each reading covers, and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have."><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="6" height="12" rx="1.2"/><rect x="11" y="4" width="6" height="12" rx="1.2"/></svg></button>
         <input type="file" id="cmpfile" hidden accept=".argdown">
         <span id="cmpnote" hidden></span>
         <button class="plain" id="cmpend" hidden
                 title="End the comparison. The margin stripes go; both files are untouched.">&times; end</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
-      <nav id="mstoc" hidden aria-label="Contents of this file"></nav>
+      <nav id="mstoc" hidden aria-label="Contents of this file">
+        <div class="toc-h"><b>Contents</b><span class="grow"></span>
+          <button class="plain x" id="mstocx" title="Fold the contents away (Esc)">&times;</button></div>
+        <div id="mstoclist"></div>
+      </nav>
       <div id="mstext" tabindex="0"></div>
     </section>
   </aside>
@@ -1602,7 +1624,7 @@ function openingDepth(graph){
   MSCHAPTER = null; MSLINES = [];
   $("msnote").textContent = "";
   // A fresh file's contents are its own: the previous file's list must not survive it.
-  TOC = []; $("mstoc").textContent = ""; $("mstocbtn").hidden = true; msTocOpen(false);
+  TOC = []; $("mstoclist").textContent = ""; $("mstocbtn").hidden = true; msTocOpen(false);
   // Offered from the same manuscript the chapter list was just built from, so a file opened into
   // this page cannot leave the previous one's abstract behind it.
   syncAbstract();
@@ -4160,9 +4182,9 @@ function msTocParse(text){
 
 function msTocBuild(ch){
   TOC = msTocParse(ch.text);
-  var btn = $("mstocbtn"), box = $("mstoc");
+  var btn = $("mstocbtn"), box = $("mstoclist");
   box.textContent = "";
-  if (TOC.length < 2) { TOC = []; btn.hidden = true; box.hidden = true; return; }
+  if (TOC.length < 2) { TOC = []; btn.hidden = true; $("mstoc").hidden = true; return; }
   btn.hidden = false;
   var base = TOC[0].level;
   for (var b = 1; b < TOC.length; b++) base = Math.min(base, TOC[b].level);
@@ -4215,10 +4237,10 @@ function msTocSpot(){
     if (el.offsetTop - host.offsetTop <= host.scrollTop + 80) here = i;
     else break;
   }
-  var rows = $("mstoc").children;
+  var rows = $("mstoclist").children;
   for (var r = 0; r < rows.length; r++) rows[r].classList.toggle("is-here", r === here);
   if (here >= 0 && TOC_OPEN) {
-    var row = rows[here], box = $("mstoc");
+    var row = rows[here], box = $("mstoclist");
     if (row.offsetTop < box.scrollTop + 8 ||
         row.offsetTop + row.offsetHeight > box.scrollTop + box.clientHeight - 8)
       box.scrollTop = Math.max(0, row.offsetTop - box.clientHeight / 2);
@@ -4226,6 +4248,9 @@ function msTocSpot(){
 }
 
 $("mstocbtn").onclick = function(){ msTocOpen($("mstoc").hidden); };
+// The list's own ×: the same fold as the button and Escape, reachable from the list itself,
+// which is where the reader's pointer is once they have used it.
+$("mstocx").onclick = function(){ msTocOpen(false); };
 $("mstoc").addEventListener("click", function(e){
   var row = e.target.closest(".toc-e");
   if (!row) return;
@@ -4559,7 +4584,9 @@ function cmpSyncHeader(){
   // second file, and a control that can never work is clutter, not teaching (the Manuscript
   // tab's own policy). The standalone, the Reader and the application all carry the parser.
   var can = typeof window.__ARGDOWN_PARSE__ === "function";
-  $("mscompare").hidden = on || !MSCHAPTER || !can;
+  // IN THE APPLICATION THE DOORBELL IS THE MENU (File ▸ Compare with Another Reading…), so the
+  // header carries no second one: the errand is occasional, and the row is for the everyday.
+  $("mscompare").hidden = on || !MSCHAPTER || !can || !!HOST;
   $("cmpnote").hidden = !on;
   $("cmpend").hidden = !on;
 }
@@ -4651,37 +4678,62 @@ function cmpPaint(){
     (counts.div ? ", " + counts.div + " read differently" : "") + " (this chapter)";
 }
 
-function startCompare(file){
+/** The other reading, by name and text — whichever door it came through. */
+function startCompare(name, text){
+  var graph = null;
+  try { graph = window.__ARGDOWN_PARSE__(text); }
+  catch (e) {
+    // The parser wrapper already speaks the translated line-and-column language the
+    // editor's own errors use; repeat it, do not re-word it.
+    showErr("Could not read “" + name + "” as Argdown: " + (e && e.message || String(e)));
+    return;
+  }
+  locateInPage(graph, msSources());
+  var placed = 0;
+  for (var i = 0; i < graph.nodes.length; i++)
+    if (graph.nodes[i].pos && graph.nodes[i].pos.line != null) placed++;
+  // NOT A READING OF THIS TEXT. Zero placed claims means no verified ground to compare
+  // on, and painting an empty layer would read as the feature being broken rather than
+  // as the files not sharing a source. Say which it is.
+  if (!placed) {
+    showErr("“" + name + "” places no claim in this manuscript, so there " +
+            "is no shared text to compare on. Two maps that cite no chapter in common " +
+            "are not readings of the same source.");
+    return;
+  }
+  clearErr();
+  CMP = { name: name, graph: graph };
+  cmpPaint();
+}
+
+/** The browser's door: a File from the picker. */
+function compareFile(file){
   var reader = new FileReader();
-  reader.onload = function(){
-    var text = String(reader.result || ""), graph = null;
-    try { graph = window.__ARGDOWN_PARSE__(text); }
-    catch (e) {
-      // The parser wrapper already speaks the translated line-and-column language the
-      // editor's own errors use; repeat it, do not re-word it.
-      showErr("Could not read “" + file.name + "” as Argdown: " +
-              (e && e.message || String(e)));
-      return;
-    }
-    locateInPage(graph, msSources());
-    var placed = 0;
-    for (var i = 0; i < graph.nodes.length; i++)
-      if (graph.nodes[i].pos && graph.nodes[i].pos.line != null) placed++;
-    // NOT A READING OF THIS TEXT. Zero placed claims means no verified ground to compare
-    // on, and painting an empty layer would read as the feature being broken rather than
-    // as the files not sharing a source. Say which it is.
-    if (!placed) {
-      showErr("“" + file.name + "” places no claim in this manuscript, so there " +
-              "is no shared text to compare on. Two maps that cite no chapter in common " +
-              "are not readings of the same source.");
-      return;
-    }
-    clearErr();
-    CMP = { name: file.name, graph: graph };
-    cmpPaint();
-  };
+  reader.onload = function(){ startCompare(file.name, String(reader.result || "")); };
   reader.onerror = function(){ showErr("Could not read the file: " + file.name); };
   reader.readAsText(file);
+}
+
+/** The application's door, rung from File ▸ Compare with Another Reading…: the OS's own
+ *  picker, then the file read through the host. It summons the Manuscript if that pane is
+ *  shut, because the text is the very thing the comparison is drawn on — the same licence
+ *  go-to-source has (docs/NAVIGATION.md) — and it says why when there is no text at all. */
+async function compareFromHost(){
+  if (!HOST || typeof window.__ARGDOWN_PARSE__ !== "function") return;
+  if (CMP) { showNote("A comparison is already open — press × end in the Manuscript's " +
+                      "header to close it first."); return; }
+  if (!msAvailable()) {
+    showNote("Nothing to compare on: this map reads no manuscript, and the text is where " +
+             "two readings are compared.");
+    return;
+  }
+  if (!PANES.text) setPane("text", true);
+  var f = await HOST.pickFile();
+  if (!f) return;
+  var text;
+  try { text = await HOST.readText(f); }
+  catch (e) { showErr("Could not read the file: " + HOST.basename(f)); return; }
+  startCompare(HOST.basename(f), text);
 }
 
 function endCompare(){
@@ -4692,7 +4744,7 @@ function endCompare(){
 }
 
 $("mscompare").onclick = function(){ $("cmpfile").click(); };
-$("cmpfile").onchange = function(){ if (this.files && this.files[0]) startCompare(this.files[0]); };
+$("cmpfile").onchange = function(){ if (this.files && this.files[0]) compareFile(this.files[0]); };
 $("cmpend").onclick = endCompare;
 
 /* ================= THE READER'S OWN ZOTERO HIGHLIGHTS ==================================
@@ -5158,7 +5210,8 @@ function showArgdown(text){
           return out;
         },
         onClaimClick: function(name){ var n = claimByLabel(name); if (n) followClaim(n); },
-        onChange: function(next){ SOURCE = next; DIRTY = true; markState(); schedulePreview(); }
+        onChange: function(next){ SOURCE = next; DIRTY = true; TOUCHED = true; markState();
+                                  schedulePreview(); }
       });
       ["adfind","adnums","adfold","adsave","adsaveas"].forEach(function(id){ $(id).hidden = false; });
       // Published for the same reason `__ARGDOWN_PARSE__` is: a page that embeds this needs a
@@ -5169,7 +5222,9 @@ function showArgdown(text){
       // `setText` here left the old map undoable inside the new one.
       ED.loadText(text);
     }
-    DIRTY = false; markState();
+    // Loading goes through onChange like any edit; it is not one. Nor is it a touch: the
+    // doors a fresh file offers are the fresh file's own to decide (offersClaimDoors).
+    DIRTY = false; TOUCHED = false; markState();
     return;
   }
   // NO EDITOR IN THIS BUILD, and it should not take a while to work that out. The reader and the
@@ -6078,8 +6133,29 @@ $("mstext").addEventListener("click", function(e){
  */
 var QUOTE_SEL = null;   // the last non-empty selection inside #mstext, kept because pressing
                         // a button would otherwise collapse the selection before the click
+
+/* TWO WORKFLOWS, NOT ONE ROW OF BUTTONS (reported 15 Sep). Selecting words in the text can
+ * mean two quite different things: writing a claim into the map, or marking the passage in
+ * Zotero. Offering both doors to every selection made the row read as one confusing menu,
+ * so each is offered only where its workflow is plausibly the reader's:
+ *
+ *   QUOTE / PARAPHRASE  where there is an editor AND the reader is writing this map — a map
+ *                       built by hand (no `reconstruction: generated`), or a machine-written
+ *                       one the reader has already edited here (`TOUCHED`), which is how they
+ *                       say they mean to. A reader of an untouched machine-written map is
+ *                       reading, and reading offers no writing doors.
+ *   HIGHLIGHT IN ZOTERO where the text is Zotero's — the chapter declares the attachment it
+ *                       was converted from — and the host can reach Zotero (the application).
+ */
+var TOUCHED = false;    // has the open file been edited here, saved or not? (docs above)
+function mapIsGenerated(){
+  return !!(CURRENT_GRAPH && CURRENT_GRAPH.reconstruction &&
+            CURRENT_GRAPH.reconstruction.generated);
+}
+function offersClaimDoors(){ return !!ED && (TOUCHED || !mapIsGenerated()); }
+function offersZoteroDoor(){ return !!(HOST && HOST.zoteroCreateHighlight && zoteroKeyOfChapter()); }
+
 document.addEventListener("selectionchange", function(){
-  if (!ED) { $("msquote").hidden = true; $("mspara").hidden = true; return; }
   var sel = document.getSelection();
   var inMs = sel && sel.rangeCount > 0 &&
              $("mstext").contains(sel.getRangeAt(0).commonAncestorContainer);
@@ -6093,10 +6169,11 @@ document.addEventListener("selectionchange", function(){
                   line: selLine ? +selLine.getAttribute("data-l") : null };
     // The reader has left the editor for the text; telling the editor helps it not fight
     // back, though it is not relied on — see below.
-    if (ED.hasFocus()) ED.view.contentDOM.blur();
-    $("msquote").hidden = false;
-    $("mspara").hidden = false;
-    $("mszothl").hidden = !(HOST && HOST.zoteroCreateHighlight && zoteroKeyOfChapter());
+    if (ED && ED.hasFocus()) ED.view.contentDOM.blur();
+    var doors = offersClaimDoors();
+    $("msquote").hidden = !doors;
+    $("mspara").hidden = !doors;
+    $("mszothl").hidden = !offersZoteroDoor();
   } else if (inMs) {
     // A plain click in the text is the reader withdrawing the selection: the offer goes.
     QUOTE_SEL = null;
@@ -7087,9 +7164,11 @@ function adExternHide(){ $("adextern").hidden = true; }
  */
 function adAdoptFromDisk(text){
   AD_ON_DISK = text;
+  var touched = TOUCHED;               // a reload from disk is not the reader's touch either
   if (ED) ED.setText(text); else SOURCE = text;
   SOURCE = text;
   DIRTY = false;                       // setText goes through onChange, which sets it
+  TOUCHED = touched;
   markState();
   var graph = null;
   try { graph = window.__ARGDOWN_PARSE__ ? window.__ARGDOWN_PARSE__(text) : null; }
@@ -7593,7 +7672,10 @@ if (HOST) {
       "pane-notes":      function(){ pane("notes"); },
       "pane-text":       function(){ pane("text"); },
       "fit":             function(){ if (LIVE) LIVE.fit(); },
-      "layout":          function(){ $("laybtn").click(); }
+      "layout":          function(){ $("laybtn").click(); },
+      // The application's only door to a comparison — see cmpSyncHeader for why the
+      // Manuscript's header carries none here.
+      "compare":         function(){ compareFromHost(); }
     }[id] || function(){})();
   });
   // The drop panel's wording is written for a browser; in the app the folder caveat is gone.

@@ -84,6 +84,10 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .separator()
         .item(&item("open", "Open…", Some("CmdOrCtrl+O"))?)
         .item(&item("open-folder", "Open Folder…", Some("CmdOrCtrl+Shift+O"))?)
+        // Another reading of the same text, drawn against this one in the Manuscript's
+        // margin (docs/PLURALITY-PLAN.md §2). Here rather than on the Manuscript's own
+        // header because it is an occasional errand, and the header is for the everyday.
+        .item(&item("compare", "Compare with Another Reading…", None)?)
         .separator()
         .item(&item("save", "Save", Some("CmdOrCtrl+S"))?)
         .item(&item("save-as", "Save As…", Some("CmdOrCtrl+Shift+S"))?)
@@ -503,6 +507,111 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
                if made { "stored" } else { "refreshed" }))
 }
 
+/// One highlight, as Zotero's local API wants it written.
+///
+/// A STRUCT, NOT `json!`. Zotero reads an annotation's fields in the order they arrive and
+/// refuses any `annotation*` property that lands before `annotationType` ("annotationType
+/// must be set before other annotation properties", 400). `serde_json::json!` builds a map
+/// that serialises its keys ALPHABETICALLY unless the crate's `preserve_order` feature is
+/// on — so `annotationColor` went first and every highlight was refused (seen 15 Sep). A
+/// derived struct serialises in declaration order, which is the one guarantee needed, and
+/// it does not depend on a feature flag some other dependency could silently toggle. The
+/// test below holds the order.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ZoteroHighlight<'a> {
+    item_type: &'static str,
+    parent_item: &'a str,
+    annotation_type: &'static str,
+    annotation_text: &'a str,
+    annotation_comment: &'static str,
+    annotation_color: &'static str,
+    annotation_page_label: &'a str,
+    annotation_sort_index: String,
+    annotation_position: String,
+}
+
+impl<'a> ZoteroHighlight<'a> {
+    fn new(key: &'a str, text: &'a str, page_label: &'a str, page_index: u32,
+           rects: &[[f64; 4]], sort_top: u32) -> Self {
+        ZoteroHighlight {
+            item_type: "annotation",
+            parent_item: key,
+            annotation_type: "highlight",
+            annotation_text: text,
+            annotation_comment: "",
+            annotation_color: "#ffd400",
+            annotation_page_label: page_label,
+            annotation_sort_index: format!("{page_index:05}|000000|{sort_top:05}"),
+            annotation_position:
+                serde_json::json!({"pageIndex": page_index, "rects": rects}).to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod zotero_highlight_order {
+    use super::ZoteroHighlight;
+
+    /// The keys, in the order the wire will carry them.
+    fn keys(json: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        let mut rest = json;
+        while let Some(i) = rest.find('"') {
+            let after = &rest[i + 1..];
+            let j = after.find('"').unwrap();
+            let k = &after[..j];
+            let tail = &after[j + 1..];
+            if tail.starts_with(':') { out.push(k.to_string()); }
+            rest = tail;
+            // A value in quotes is skipped whole, so a colon inside one cannot pass as a key.
+            if let Some(v) = rest.strip_prefix(':') {
+                let v = v.trim_start();
+                if let Some(q) = v.strip_prefix('"') {
+                    let end = q.find('"').unwrap();
+                    rest = &q[end + 1..];
+                } else {
+                    rest = v;
+                }
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn annotation_type_precedes_every_other_annotation_property() {
+        let rects = [[72.0, 700.0, 300.0, 712.0]];
+        let h = ZoteroHighlight::new("ABCD1234", "the words: \"quoted\"", "22", 21, &rects, 88);
+        let wire = serde_json::to_string(&[h]).unwrap();
+        let ks = keys(&wire);
+        let at = ks.iter().position(|k| k == "annotationType").expect("annotationType present");
+        for (i, k) in ks.iter().enumerate() {
+            if k.starts_with("annotation") && k != "annotationType" {
+                assert!(i > at, "{k} arrives before annotationType in {wire}");
+            }
+        }
+        // The rest of what Zotero is told, held too: itemType first, the parent, the sheet
+        // index inside the position and the sort index that puts it on the page.
+        assert_eq!(ks[0], "itemType");
+        assert!(wire.contains(r#""parentItem":"ABCD1234""#));
+        assert!(wire.contains("00021|000000|00088"));
+        assert!(wire.contains(r#"\"pageIndex\":21"#), "{wire}");
+    }
+
+    /// The instrument shown able to fail: the same fields through `json!` come out sorted,
+    /// and the check above would have caught exactly that.
+    #[test]
+    fn the_json_macro_would_have_sorted_them() {
+        let via_macro = serde_json::json!({
+            "itemType": "annotation", "annotationType": "highlight",
+            "annotationColor": "#ffd400"}).to_string();
+        let ks = keys(&via_macro);
+        let ty = ks.iter().position(|k| k == "annotationType").unwrap();
+        let color = ks.iter().position(|k| k == "annotationColor").unwrap();
+        assert!(color < ty, "json! no longer sorts keys — the struct is belt and braces now");
+    }
+}
+
 /// Create ONE highlight annotation in Zotero, on the attachment the manuscript was
 /// converted from — the write-back half of docs/ANNOTATIONS-PLAN.md's agreed scope.
 ///
@@ -542,14 +651,7 @@ async fn zotero_create_highlight(key: String, text: String, page_label: String,
         .ok_or_else(|| "This Zotero cannot accept local writes — writing through the \
                         local API needs Zotero 10 or later.".to_string())?;
 
-    let position = serde_json::json!({"pageIndex": page_index, "rects": rects}).to_string();
-    let body = serde_json::json!([{
-        "itemType": "annotation", "parentItem": key,
-        "annotationType": "highlight", "annotationText": text,
-        "annotationComment": "", "annotationColor": "#ffd400",
-        "annotationPageLabel": page_label,
-        "annotationSortIndex": format!("{page_index:05}|000000|{sort_top:05}"),
-        "annotationPosition": position}]);
+    let body = [ZoteroHighlight::new(&key, &text, &page_label, page_index, &rects, sort_top)];
 
     let mut api_key = zotero_stored_key();
     for attempt in 0..2 {

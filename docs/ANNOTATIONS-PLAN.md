@@ -211,6 +211,21 @@ commands cannot drift). Held by rendered-DOM checks: the matcher's edges proven 
 then a real drag over the passage, the button, and the captured annotation's key, page,
 rectangles and sort order asserted to the number.
 
+*Two corrections, later the same day, from the author's first real use.* (1) Every
+highlight came back 400, "annotationType must be set before other annotation properties":
+Zotero reads an annotation's fields in the order they arrive, and `serde_json::json!`
+serialises its keys alphabetically, so `annotationColor` arrived first. The body is now a
+derived struct, which serialises in declaration order, and a Rust unit test holds the
+order — with a second test showing `json!` would still sort. The rendered-DOM check could
+not have caught this: its bridge is faked in JavaScript, and the order was lost in Rust.
+(2) The three-button row read as one confusing menu, because writing a claim and marking
+a passage in Zotero are two workflows. Each door is now offered only where its workflow is
+plausibly the reader's: **Highlight in Zotero** where the text declares its Zotero
+attachment (as before); **Quote** and **Paraphrase** where the reader is *writing* the map
+— a hand-built one, or a machine-written one they have already edited here, the first edit
+being how they say they mean to. A reader of an untouched machine-written map sees the
+Zotero door alone.
+
 **Exact paint — built 15 Sep, off the author's second screenshot pair.** A converted
 paragraph is the *author's* paragraph, and an author's paragraph can run thirty rendered
 lines; the reader's underline stopped five printed lines in ("…Consider again funerals in

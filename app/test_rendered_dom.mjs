@@ -1354,7 +1354,7 @@ async function editorChecks(browser) {
  * the guided checks ever ran). So the box must hold still across a beat before the drag,
  * the selection is verified to have actually appeared, and the whole gesture retries —
  * which is what a person does too, without noticing. */
-async function dragSelect(page, nth, w) {
+async function dragSelect(page, nth, w, doors = true) {
   for (let attempt = 0; attempt < 3; attempt++) {
     let box = null;
     for (let i = 0; i < 12; i++) {
@@ -1370,8 +1370,12 @@ async function dragSelect(page, nth, w) {
       await page.mouse.down();
       await page.mouse.move(box.x + Math.min(w, box.width * 0.6), y, { steps: 8 });
       await page.mouse.up();
+      // What a successful drag leaves: the doors, where they are owed — or, where they
+      // are not (a machine-written map nobody has touched), the selection itself.
       const ok = await page.waitForFunction(
-        () => !document.getElementById("msquote").hidden, { timeout: 2000 }
+        (d) => d ? !document.getElementById("msquote").hidden
+                 : String(getSelection()).length > 3,
+        doors, { timeout: 2000 }
       ).then(() => true, () => false);
       if (ok) return true;
     }
@@ -1422,6 +1426,35 @@ async function quoteChecks(browser) {
   await page.waitForSelector(".alm-n", { timeout: 20000 });
   await page.click('button[data-p="text"]');
   await page.waitForSelector("#mstext [data-l]", { timeout: 20000 });
+
+  /* TWO WORKFLOWS (15 Sep): the Miller map is machine-written (`reconstruction: generated`)
+   * and nobody has edited it here, so a reader selecting its text is reading, and reading
+   * offers no writing doors. The first edit is how the reader says they mean to write —
+   * made here with real keystrokes in the editor, not a dispatched change — and from then
+   * on the same drag offers both doors. */
+  const gen = await page.evaluate(() => {
+    const g = window.__ARGDOWN_PARSE__(window.__ARGDOWN_EDITOR__.view.state.doc.toString());
+    return !!(g.reconstruction && g.reconstruction.generated);
+  });
+  check(gen, "quote: the fixture is a machine-written map", String(gen));
+  const untouched = await dragSelect(page, 0, 260, false);
+  const beforeEdit = await page.evaluate(() => ({
+    sel: String(getSelection()).length,
+    quote: document.getElementById("msquote").hidden,
+    para: document.getElementById("mspara").hidden
+  }));
+  check(untouched && beforeEdit.sel > 3 && beforeEdit.quote && beforeEdit.para,
+        "on an untouched machine-written map, selecting offers no writing doors",
+        JSON.stringify(beforeEdit));
+  await page.click('button[data-p="argdown"]');
+  await page.waitForSelector("#adhost .cm-content", { timeout: 10000 });
+  await page.click("#adhost .cm-content");
+  await page.keyboard.press("End");
+  await page.keyboard.type(" ");
+  await page.keyboard.press("Backspace");
+  const touched = await page.evaluate(() => document.getElementById("adstate").textContent);
+  check(/edited/.test(touched), "  a real keystroke in the editor counts as an edit", touched);
+
   const dragged = await dragSelect(page, 0, 260);
   const afterDrag = await page.evaluate(() => ({
     sel: String(getSelection()).length,
@@ -1429,7 +1462,8 @@ async function quoteChecks(browser) {
     note: document.getElementById("msnote").textContent
   }));
   check(dragged && afterDrag.sel > 3 && afterDrag.btn === false,
-        "dragging over the text offers Quote this passage", JSON.stringify(afterDrag));
+        "  and once the map is touched, dragging over the text offers Quote this passage",
+        JSON.stringify(afterDrag));
   check(afterDrag.note === "",
         "  and the selecting drag lit nothing — a drag that selects is not a click that asks",
         JSON.stringify(afterDrag.note));
@@ -1799,6 +1833,14 @@ async function compareChecks(browser) {
   await page.click('#panes [data-p="text"]');
   await page.waitForSelector("#mscompare:not([hidden])", { timeout: 10000 });
   check(true, "compare: the control appears with the manuscript", "");
+  const glyph = await page.evaluate(() => {
+    const b = document.getElementById("mscompare");
+    return { label: b.querySelector("span") ? b.querySelector("span").textContent : null,
+             name: b.getAttribute("aria-label") || "", title: b.title };
+  });
+  check(glyph.label === null && /compare/i.test(glyph.name) && /compare/i.test(glyph.title),
+        "  as an unlabelled glyph that still says its name to a screen reader and on hover",
+        JSON.stringify(glyph));
 
   /* Shift-click a passage reframes the map on its claims (the author's ask, 14 Sep): the
    * plain click moves the camera only when the lit claims fit at the current zoom, so on a
@@ -2342,6 +2384,31 @@ async function tocChecks(browser) {
         "one Escape folds the list away, before it touches anything larger",
         JSON.stringify(shut));
 
+  // THE LIST'S OWN × (15 Sep), and the button at the corner the list drops from: a button at
+  // one edge opening a panel at the other read as two unrelated things.
+  await page.click("#mstocbtn");
+  await page.waitForSelector("#mstoc:not([hidden])", { timeout: 5000 });
+  const corner = await page.evaluate(() => {
+    const b = document.getElementById("mstocbtn").getBoundingClientRect();
+    const h = document.querySelector("#ms > header").getBoundingClientRect();
+    const t = document.getElementById("mstoc").getBoundingClientRect();
+    const sel = document.getElementById("mschapter").getBoundingClientRect();
+    return { btnLeft: b.left, mid: h.left + h.width / 2, selRight: sel.right,
+             tocRight: t.right, headerRight: h.right };
+  });
+  check(corner.btnLeft > corner.mid && corner.btnLeft > corner.selRight &&
+        corner.tocRight > corner.mid,
+        "the Contents button sits at the right, where its list drops from",
+        JSON.stringify(corner));
+  await page.click("#mstocx");
+  const byX = await page.evaluate(() => ({
+    hidden: document.getElementById("mstoc").hidden,
+    aria: document.getElementById("mstocbtn").getAttribute("aria-expanded")
+  }));
+  check(byX.hidden && byX.aria === "false",
+        "  and the list's own × folds it away, the same fold as the button",
+        JSON.stringify(byX));
+
   // THE COUNTER-CASE: one heading navigates nothing, so the button must not exist for
   // this reader at all.
   fs.writeFileSync(path.join(root, "source", "flat.md"),
@@ -2378,6 +2445,56 @@ async function tocChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ the bar stays home */
+/* The map's control bar is absolutely positioned and sized to its content, and its hashtags
+ * group is one non-wrapping row: on a file with several tags, beside a wide manuscript, the
+ * bar grew past the map pane's edge and its last chips were drawn under the text next door
+ * (15 Sep, a 358px map pane). Measured here on the Miller map — four hashtags plus
+ * untagged — with the manuscript widened until the map is that narrow. */
+async function barChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  if (!miller) { check(false, "bar: the Miller sample built", "no Miller sample"); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + miller.html);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-bar [data-role='facets'] button", { timeout: 20000 });
+  await page.click('#panes [data-p="text"]');
+  await page.waitForSelector("#mstext .mline, #mstext [data-l]", { timeout: 10000 });
+  const squeeze = async (w) => {
+    // On the column, where the divider itself writes it.
+    await page.evaluate((px) => {
+      document.getElementById("side").style.setProperty("--ms-w", px + "px");
+    }, w);
+    await page.waitForTimeout(250);
+    return page.evaluate(() => {
+      const m = document.getElementById("map").getBoundingClientRect();
+      const b = document.querySelector("#map .alm-bar").getBoundingClientRect();
+      const f = document.querySelector("#map .alm-bar [data-role='facets']")
+                        .getBoundingClientRect();
+      const chips = [...document.querySelectorAll("#map .alm-bar [data-role='facets'] button")]
+        .map(c => c.getBoundingClientRect().right);
+      return { map: Math.round(m.width), barRight: Math.round(b.right),
+               mapRight: Math.round(m.right), tags: chips.length,
+               lastChip: Math.round(Math.max(...chips)), rows: Math.round(f.height) };
+    });
+  };
+  const narrow = await squeeze(920);
+  check(narrow.map < 400 && narrow.tags >= 4,
+        "bar: the map pane is squeezed to the reported width with several hashtags showing",
+        JSON.stringify(narrow));
+  check(narrow.barRight <= narrow.mapRight && narrow.lastChip <= narrow.mapRight,
+        "  and the control bar, chips included, stays inside the map pane",
+        JSON.stringify(narrow));
+  check(narrow.rows > 30,
+        "  because the hashtags wrap onto a second row rather than widening the bar",
+        JSON.stringify(narrow));
+  await ctx.close();
+}
+
+await barChecks(browser);
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);

@@ -5777,8 +5777,17 @@ function injectStyle() {
 .alm-bar{position:absolute;left:8px;bottom:8px;display:flex;flex-wrap:wrap;gap:.5rem;
   align-items:center;font:11px system-ui,sans-serif;background:var(--alm-bar-bg,rgba(255,255,255,.92));
   border:1px solid var(--alm-group-line,#ddd);border-radius:7px;padding:.35rem .5rem;
-  color:var(--alm-fg,#222)}
+  color:var(--alm-fg,#222);box-sizing:border-box;max-width:calc(100% - 16px)}
 .alm-bar .alm-grp{display:flex;gap:.25rem;align-items:center}
+/* THE BAR STAYS INSIDE ITS PANE. An absolutely positioned box is sized to its content, and a
+   flex row that cannot wrap is as wide as everything in it: the hashtags group, on a file
+   with four tags and a count on each, was wider than the whole map pane beside a manuscript,
+   so the bar grew past the pane's edge and its last chips were drawn UNDER the text next
+   door (seen 15 Sep: a 358px map pane beside a wide manuscript). The cap above holds the bar
+   to its pane; letting the one open-ended group wrap is what lets the cap be honoured, since
+   the segmented controls are a fixed handful of words each and the hashtags are however many
+   the file declared. */
+.alm-bar .alm-grp[data-role="facets"]{flex-wrap:wrap;row-gap:.3rem}
 /* THE "HOW MUCH" LADDER. Sized against the text beside it rather than left at the UA default,
    which is wide enough to push the rest of the bar off a narrow window on its own. */
 .alm-bar input.alm-range{width:6.5rem;margin:0 .15rem;accent-color:var(--alm-accent,#3a7bd5);
@@ -5804,6 +5813,8 @@ function injectStyle() {
     scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-right:.5rem}
   .alm-bar::-webkit-scrollbar{display:none}
   .alm-bar .alm-grp{flex:0 0 auto}
+  /* One row that scrolls, so the hashtags stay on it too. */
+  .alm-bar .alm-grp[data-role="facets"]{flex-wrap:nowrap}
 }
 /* display:flex above beats the UA rule for [hidden], so setting .hidden on a group did nothing
    and a control the code had decided not to offer stayed on the toolbar. The bar itself is in

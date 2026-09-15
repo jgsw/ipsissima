@@ -449,14 +449,21 @@ window. The pane is there in both arrangements: beside **Argdown** it is what le
   chapter menu names it whenever it would help.
 - **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
   open, shows its passage
-- **Select a passage** — two buttons appear above the text, and they are the fidelity
-  vocabulary's first lesson. **Quote this passage** writes a new claim whose text *is* the
-  selected words — `fidelity: quotation`, the source recorded verbatim, the chapter cited
-  where the front matter does not already say it — with the claim's title arriving selected,
-  ready to be renamed. **Paraphrase it** writes the same provenance but not your words: the
-  restatement is yours to make, so the claim's text arrives as a selected placeholder, ready
-  to be written over. Either way, while words are selected, clicking does not light claims or
-  move the map: a drag that selects is not a click that asks.
+- **Select a passage** — when you are writing the map, two buttons appear above the text,
+  and they are the fidelity vocabulary's first lesson. **Quote this passage** writes a new
+  claim whose text *is* the selected words — `fidelity: quotation`, the source recorded
+  verbatim, the chapter cited where the front matter does not already say it — with the
+  claim's title arriving selected, ready to be renamed. **Paraphrase it** writes the same
+  provenance but not your words: the restatement is yours to make, so the claim's text
+  arrives as a selected placeholder, ready to be written over. Either way, while words are
+  selected, clicking does not light claims or move the map: a drag that selects is not a
+  click that asks.
+
+  *Writing the map* means a map you are building by hand, or a machine-written one
+  (`reconstruction: generated`) that you have already edited here — the first edit is how
+  you say you mean to. On a machine-written map you have only read, selecting a passage
+  offers no writing doors: reading is not editing, and the row above the text stays clear
+  for the one door reading may want, **Highlight in Zotero** (below).
 
 Two kinds of gesture, keeping two different promises. **Selecting** — a plain click on a claim,
 a claim's name in the Argdown, an entry in the margin list — shows the claim in whatever panes
@@ -504,10 +511,11 @@ has no way to make.
 ## The file's contents
 
 A long article or a book is navigated by its own structure, and the Manuscript pane knows it:
-**Contents**, in the pane's header, floats the file's headings over the text, so any section is
-one click away from wherever you are. Click a heading to go there; the section you are reading
-is marked as you scroll, and where the source records printed pages, each entry carries the
-page it falls on. Click the button again — or press Escape — to fold the list away.
+**Contents**, at the right of the pane's header, floats the file's headings over the text
+beneath it, so any section is one click away from wherever you are. Click a heading to go
+there; the section you are reading is marked as you scroll, and where the source records
+printed pages, each entry carries the page it falls on. The list's own **×**, the button again,
+or Escape folds it away.
 
 The headings are the document's own, never invented: the converter's rule is that a `#` in the
 source is there because the document said so, and this list can only show the text's shape as
@@ -587,9 +595,11 @@ that matters.
 
 
 One text legitimately supports more than one reconstruction, and two defensible readings are
-two `.argdown` files. To see where they differ, open one of them, show the Manuscript, and
-press **Compare…** in the Manuscript's header, choosing the other file. The text is the one
-thing the two readings share, so the text is where their disagreement is drawn: each passage's
+two `.argdown` files. To see where they differ, open one of them and choose the other: in the
+desktop application from **File ▸ Compare with Another Reading…**, which shows the Manuscript
+if it is not already up; in the web page from the small two-pages glyph at the right of the
+Manuscript's header. The text is the one thing the two readings share, so the text is where
+their disagreement is drawn: each passage's
 margin shows whether **both** maps read it, only **this** one, or only the **other** — and a
 passage the two read *differently* carries a **⚑** whose hover says how. Three kinds of
 difference are flagged, all from what the maps themselves declare:
@@ -633,8 +643,9 @@ If the button reports that Zotero is not answering: Zotero has to be running, an
 applications on this computer to communicate with Zotero* switched on in its
 Settings ▸ Advanced.
 
-The conversation runs the other way too. Select a passage in the text and a third button
-joins Quote and Paraphrase: **Highlight in Zotero**. The mark is created *in Zotero*, on the
+The conversation runs the other way too. Select a passage in a text that came from Zotero and
+a button appears above it: **Highlight in Zotero** (beside Quote and Paraphrase when you are
+writing the map, on its own when you are reading one). The mark is created *in Zotero*, on the
 PDF itself, at the exact rectangles where those words are printed — the conversion wrote a
 small geometry file beside the text for precisely this — and it lives only there: press
 **Zotero highlights** and it comes back like any mark you made in Zotero's own reader.
