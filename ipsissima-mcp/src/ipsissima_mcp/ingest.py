@@ -67,6 +67,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 import zipfile
 
 PANDOC_CANDIDATES = (
@@ -485,6 +486,13 @@ def from_pdf_structured(path, extras=None):
 
     The generated front matter and header comment are stripped off: ingest writes its own
     of both, from the same measurements, and two headers would each claim to be line 1.
+
+    THE ABSTRACT RIDES OUT IN `extras`, like the geometry. Stripping the converter's front
+    matter used to strip the abstract with it, and nothing put it back: `front_matter` below
+    knew only the Zotero key, so a paper converted through this route reached the model and
+    the reader with its own one-paragraph statement of what it argues silently gone (the
+    Wilson, 15 Sep 2026 -- the sentence the repo sample quotes at its apex was not in the
+    file). The report's `abstract` is the measurement; this is where it changes hands.
     """
     try:
         from .pdf_to_source import Config, convert
@@ -503,6 +511,8 @@ def from_pdf_structured(path, extras=None):
             side = pathlib.Path(str(out) + ".geometry.json")
             if extras is not None and side.exists():
                 extras["geometry"] = side.read_text(encoding="utf-8")
+            if extras is not None and rep.get("abstract"):
+                extras["abstract"] = rep["abstract"]
         except SystemExit as e:
             return None, str(e).split("\n")[0][:160]
         except Exception as e:                                  # noqa: BLE001 -- the fallback
@@ -518,6 +528,14 @@ def from_pdf_structured(path, extras=None):
         notes.append(f"back matter kept for the reader "
                      f"({', '.join(rep['back_headings']) or 'unheaded'}) -- in the file, "
                      f"trimmed from the extraction prompt")
+    if rep.get("abstract"):
+        notes.append(f"abstract kept ({len(rep['abstract'].split())} words) -- in the "
+                     f"file's front matter, which the app shows on the orientation panel "
+                     f"and a claim may quote; it is never trimmed from the extraction prompt")
+    elif rep["boundaries_detected"].get("front"):
+        notes.append("! front matter was cut but no abstract was found in it -- if the "
+                     "paper has one, it did not follow the word 'Abstract'; read the "
+                     "first page before trusting the cut")
     if rep["heading_gaps"]:
         notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
                      f"there before trusting the sections")
@@ -813,28 +831,68 @@ def extract_for_prompt(md):
     return md[:mo.start()].rstrip() + "\n", (mo.group(0).strip(), len(cut.split()))
 
 
-def front_matter(src, md):
-    """YAML front matter for a converted source, FIRST in the file -- the readers of these
-    keys accept nothing else on line one.
+def front_matter_keys(src, md, extras=None):
+    """What the converted source's front matter will carry, as {key: value} -- `zotero`
+    and/or `abstract` -- or nothing, for a file that gets none.
 
-    ONE KEY, MEASURED, NEVER PASSED: a file converted out of Zotero's library lives at
-    `…/storage/<KEY>/…`, and that segment is the attachment key -- the very item the
-    reader's own highlights hang on, and the item the store tool follows to its parent.
-    This used to live only in pdf_to_source's pipeline, so a PDF converted here out of
-    Zotero storage carried no key and both features refused it until a hand-written line
-    supplied one (the Wolff, 15 Sep). A file that already opens with front matter (a
-    passthrough copy of somebody's own markdown) is left exactly as it is.
+    Split from `front_matter` so a caller can SAY what was written without parsing the
+    YAML it just asked for: the reply's note names the keys, and the note and the file
+    cannot then disagree.
     """
     if md.lstrip().startswith("---"):
-        return ""
+        return {}
     try:
         from .pdf_to_source import zotero_key_of
     except ImportError:
         from pdf_to_source import zotero_key_of
+    keys = {}
     key = zotero_key_of(src)
-    if not key:
+    if key:
+        keys["zotero"] = key
+    abstract = (extras or {}).get("abstract")
+    if abstract:
+        keys["abstract"] = abstract
+    return keys
+
+
+def front_matter(src, md, extras=None):
+    """YAML front matter for a converted source, FIRST in the file -- the readers of these
+    keys accept nothing else on line one.
+
+    TWO KEYS, BOTH MEASURED, NEITHER PASSED. The Zotero key: a file converted out of
+    Zotero's library lives at `…/storage/<KEY>/…`, and that segment is the attachment key
+    -- the very item the reader's own highlights hang on, and the item the store tool
+    follows to its parent. This used to live only in pdf_to_source's pipeline, so a PDF
+    converted here out of Zotero storage carried no key and both features refused it until
+    a hand-written line supplied one (the Wolff, 15 Sep). The abstract: what the PDF
+    converter read off the first page, handed over in `extras` (see `from_pdf_structured`),
+    written as the same folded block pdf_to_source writes, which is the one shape the app's
+    front-matter reader and a hand-written source both use. A file that already opens with
+    front matter (a passthrough copy of somebody's own markdown) is left exactly as it is.
+    """
+    keys = front_matter_keys(src, md, extras)
+    if not keys:
         return ""
-    return '---\nzotero: "%s"\n---\n\n' % key
+    lines = ["---"]
+    if "zotero" in keys:
+        lines.append('zotero: "%s"' % keys["zotero"])
+    if "abstract" in keys:
+        lines.append("abstract: >-")
+        lines += ["  " + s for s in textwrap.wrap(keys["abstract"], 92)]
+    lines.append("---")
+    return "\n".join(lines) + "\n\n"
+
+
+def front_matter_note(keys):
+    """The one-line account of what `front_matter` wrote, for the reply and the CLI."""
+    parts = []
+    if "zotero" in keys:
+        parts.append("the zotero: attachment key, read off the storage path -- the item the "
+                     "reader's highlights hang on, and the one zotero_store follows")
+    if "abstract" in keys:
+        parts.append("the paper's abstract, which the app shows on the orientation panel and "
+                     "a claim may quote")
+    return "front matter written with " + "; and ".join(parts) if parts else ""
 
 
 def header(src, notes):
@@ -875,8 +933,9 @@ def main():
     for r in results:
         print(f"\n   {os.path.basename(r['src'])[:62]}")
         print(f"      -> source/{r['name']}   {r['words']} words")
-        if front_matter(r["src"], r["md"]):
-            print("      front matter: zotero attachment key, read off the storage path")
+        fm_keys = front_matter_keys(r["src"], r["md"], r.get("extras"))
+        if fm_keys:
+            print("      " + front_matter_note(fm_keys))
         for n in r["notes"]:
             print(f"      {n}")
         lines = [l for l in r["md"].splitlines() if len(l) >= 120]
@@ -896,7 +955,7 @@ def main():
     os.makedirs(src_dir, exist_ok=True)
     for r in results:
         with open(os.path.join(src_dir, r["name"]), "w", encoding="utf-8") as fh:
-            fh.write(front_matter(r["src"], r["md"]) + header(r["src"], r["notes"])
+            fh.write(front_matter(r["src"], r["md"], r.get("extras")) + header(r["src"], r["notes"])
                      + r["md"].rstrip() + "\n")
         if r.get("extras", {}).get("geometry"):
             # The word-geometry sidecar, beside the file under the same name: what lets a

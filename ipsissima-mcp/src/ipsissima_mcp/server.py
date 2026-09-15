@@ -392,11 +392,10 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         src_dir.mkdir(parents=True, exist_ok=True)
         for r in results:
             target = src_dir / r["name"]
-            fm = ingest.front_matter(r["src"], r["md"])
+            fm = ingest.front_matter(r["src"], r["md"], r.get("extras"))
             if fm:
-                r["notes"].append('front matter written with the zotero: attachment key, '
-                                  'read off the storage path -- the item the reader\'s '
-                                  'highlights hang on, and the one zotero_store follows')
+                r["notes"].append(ingest.front_matter_note(
+                    ingest.front_matter_keys(r["src"], r["md"], r.get("extras"))))
             hdr = ingest.header(r["src"], r["notes"])
             target.write_text(fm + hdr + r["md"].rstrip() + "\n", encoding="utf-8")
             written.append(str(target))

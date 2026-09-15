@@ -155,7 +155,55 @@ def sheet_lines(page, mark_footnotes=True):
             out.append(dict(x0=l["bbox"][0], y0=l["bbox"][1], x1=l["bbox"][2],
                             width=l["bbox"][2] - l["bbox"][0],
                             size=max(s.get("size", 0) for s in spans), text=text))
+    if mark_footnotes:
+        out = join_note_numbers(out)
     return sorted(out, key=lambda l: l["y0"])
+
+
+#: A footnote's own number standing as a line of its own: one or two digits, or the symbol of
+#: an unnumbered first note.
+LONE_NOTE_NUMBER = re.compile(r"^(?:[1-9]\d?|[*†‡])$")
+
+
+def join_note_numbers(lines):
+    """Weld a footnote's own number, set as a superscript LINE, onto the note it numbers.
+
+    `join_spans` handles the number a journal sets inside the note's first line, and
+    `NOTE_OPENING` then reads `1 For one recent...` as note 1. But the extractor can hand the
+    superscript back as a line of its own -- a different block from the note's text, on the
+    same baseline, a few points to its left. Measured on the Wilson (CUP's Philosophy): `1` at
+    6.3pt, x0 75.8, y0 553.9; `For one recent representative...` at 10pt, x0 92.1, y0 554.4.
+    Neither line opens a note -- the digit has nothing after it, the text has no digit before
+    it -- so all eight notes merged into the first note block, which was the leaked `doi:`
+    line, and came out as one paragraph under `# Notes` with no `[^n]:` definitions at all.
+
+    THREE TESTS, and the geometry is the only place they can be made. The line is a bare note
+    number or symbol; it is set well below the size of the line it belongs to, as a superscript
+    is; and that line sits on the same baseline just to its RIGHT -- a note's number precedes
+    its text. A reference mark split off the END of a body line sits to the right of its line
+    and is left alone, as is a lone paragraph number at body size in a judgment's margin.
+    """
+    used, joined = set(), []
+    for n in lines:
+        if id(n) in used or not LONE_NOTE_NUMBER.match(n["text"]):
+            continue
+        best = None
+        for t in lines:
+            if t is n or id(t) in used or LONE_NOTE_NUMBER.match(t["text"]):
+                continue
+            size = t.get("size") or 0
+            if not size or n.get("size", size) >= size - 0.5:
+                continue
+            gap = t["x0"] - n["x1"]
+            if abs(t["y0"] - n["y0"]) <= 0.6 * size and -1 <= gap <= 3 * size:
+                if best is None or gap < best[0]:
+                    best = (gap, t)
+        if best is not None:
+            # The text line keeps its own geometry: the number is a superscript hanging in the
+            # margin, and the bands are measured from where the prose starts.
+            best[1]["text"] = f"{n['text']} {best[1]['text']}"
+            used.add(id(n))
+    return [l for l in lines if id(l) not in used]
 
 
 # --------------------------------------------------------------------------- detection
@@ -664,32 +712,61 @@ def find_abstract(rows, first, sizes, body_size):
 
     That is a real loss for a reader rather than a tidiness question: the abstract is the one
     paragraph written to say what the paper argues, and someone opening an unfamiliar map has
-    nothing else that does. It is not part of the manuscript a claim can cite -- no reconstruction
-    should quote it as though it were the argument -- so it goes in the front matter, not the body.
+    nothing else that does. It goes in the FRONT MATTER, not the body: the app shows it on the
+    orientation panel, the checker verifies a quotation of it like any other line of the file,
+    and it is exactly the sentence a map's apex most often wants to quote (the Wilson sample's
+    contention is its abstract's last sentence). Kept out of the running text only so it is
+    never mistaken for the argument's own prose (the author's ruling, 15 Sep 2026).
 
     STOPS AT THE NEXT PIECE OF APPARATUS. Keywords, a received date and an article-info block all
     follow an abstract and none of them is one.
+
+    THE ABSTRACT IS USUALLY SET SMALLER THAN THE BODY -- CUP's Philosophy puts it at 9pt under
+    an 11pt body -- so "apparatus-sized" cannot mean "not the abstract": that test skipped
+    every line of the Wilson's and returned nothing, and the paper's own statement of its
+    thesis was silently lost. What tells the abstract's lines from a first-page footnote or an
+    affiliation is that they share ONE shape, a size and an apparatus flag, and that shape
+    carries most of the text between the head and the article. So the lines are kept that wear
+    the shape most of that text wears, weighted by characters; a footnote of another size
+    inside a body-sized abstract is still ignored, and a whole abstract set small is kept whole.
     """
-    start, out = None, []
-    for i, (_p, _x, _y, _h, text, _c, _small) in enumerate(rows[:first or len(rows)]):
+    start, out, head_shape = None, [], None
+
+    def shape(i, small):
+        return (round(sizes[i] * 2) / 2 if i < len(sizes) else None, bool(small))
+
+    for i, (_p, _x, _y, _h, text, _c, small) in enumerate(rows[:first or len(rows)]):
         mo = ABSTRACT_HEAD.match(text.strip())
         if mo:
             start = i + 1
             if mo.group(1).strip():          # "Abstract: <the abstract begins here>"
                 out.append(mo.group(1).strip())
+                head_shape = shape(i, small)
             break
     if start is None:
         return None
-    for i in range(start, first or len(rows)):
+    # With no article start detected the scan would run the length of the paper; no abstract
+    # is eighty lines long, structured ones included.
+    stop = first or min(len(rows), start + 80)
+    cands = []
+    for i in range(start, stop):
         _p, x0, _y, _h, text, _c, small = rows[i]
         t = text.strip()
         if not t:
             continue
         if FRONT_MATTER.match(t):           # keywords, received:, article info -- the abstract ended
             break
-        if small:                           # a footnote or an affiliation, not the abstract
-            continue
-        out.append(t)
+        cands.append((shape(i, small), t))
+    weight = Counter()
+    if head_shape is not None and out:
+        weight[head_shape] += len(out[0])
+    for s, t in cands:
+        weight[s] += len(t)
+    if weight:
+        # A tie goes to the body-sized shape: between equal amounts of prose and apparatus,
+        # the prose is the abstract.
+        keep = max(weight, key=lambda s: (weight[s], not s[1]))
+        out += [t for s, t in cands if s == keep]
     text = re.sub(r"\s+", " ", " ".join(out)).strip()
     # A COUPLE OF WORDS IS NOT AN ABSTRACT. A heading with nothing under it, or a stray line that
     # happened to read "abstract", would otherwise be recorded as one.
@@ -1247,6 +1324,40 @@ def is_runover(row):
     return bool(row[6])
 
 
+def licence_lines(lines, doc_size):
+    """ids of the lines of a page's licence block -- the copyright latch, as a function.
+
+    The opener (`© The Author(s)…`, `Creative Commons`, `This is an Open Access article`) is
+    unmistakable; the lines after it carry no marker of their own, so the latch holds while
+    the lines stay apparatus-sized and a body-sized line releases it. See the note at the
+    call site in `convert` for why the block has to be caught here at all.
+
+    AND THE LINE BESIDE THE OPENER. CUP prints the DOI on the opener's own baseline, to its
+    left -- `doi:10.1017/…` then `© The Author(s), 2026` -- so it comes BEFORE the opener in
+    reading order, and a latch that only looks forward never saw it. It went into footnote
+    1's zone and, with nothing opening a note after it, became the first line of the whole
+    notes paragraph (the Wilson, 15 Sep 2026). A small line on the opener's baseline is part
+    of the block whichever side of the © it sits.
+    """
+    def small(l):
+        return bool(doc_size) and round(l["size"], 1) < doc_size - 0.6
+
+    drop, lic = set(), False
+    for l in lines:
+        if COPYRIGHT_OPEN.search(l["text"]):
+            drop.add(id(l))
+            drop |= {id(o) for o in lines
+                     if o is not l and small(o)
+                     and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)}
+            lic = True
+            continue
+        if lic and small(l):
+            drop.add(id(l))
+            continue
+        lic = False
+    return drop
+
+
 def split_footnotes(body, display_edge, low=0.70, margin=None):
     """Separate footnotes from the flow. Returns (flow, notes).
 
@@ -1323,7 +1434,7 @@ def convert(cfg):
         None if cfg.columns == 1 else sheets[0][2] / 2)
     offset = column_offset(every, split) if split is not None else 0
     sheets = [(order_columns(l, split, offset), h, w) for l, h, w in sheets]
-    abstract = None
+    abstract, abstract_keep = None, None
     is_furniture, heads, footers = detect_furniture([(l, h) for l, h, _ in sheets], cfg.furniture)
 
     declared = cfg.first_page if cfg.first_page is not None else cfg.first_sheet + 1
@@ -1373,16 +1484,11 @@ def convert(cfg):
         # unrestricted re-use"). The opener is unmistakable; the lines after it carry no
         # marker of their own, so the latch holds while the lines stay apparatus-sized and
         # a body-sized line releases it.
-        lic = False
+        #
+        lic_drop = licence_lines(lines, doc_size)
         for l in lines:
-            small_l = bool(doc_size) and round(l["size"], 1) < doc_size - 0.6
-            if lic and small_l:
+            if id(l) in lic_drop:
                 dropped["journal licence"] += 1
-                continue
-            lic = False
-            if COPYRIGHT_OPEN.search(l["text"]):
-                dropped["journal licence"] += 1
-                lic = True
                 continue
             why = is_furniture(l["text"], l["y0"], height, alone=id(l) not in beside)
             if why:
@@ -1421,6 +1527,11 @@ def convert(cfg):
         af, ab = find_boundaries(body, bands["margin"], doc_size, body_sizes)
         # BEFORE THE CUT, because after it the abstract is gone. See `find_abstract`.
         abstract = find_abstract(body, af, body_sizes, doc_size)
+        # THE HYPHEN EVIDENCE IS GATHERED BEFORE THE CUT TOO. A compound the abstract breaks
+        # at a line end is often spelled whole only in the TITLE -- Etiévant's "Self-Controlled
+        # Case Series" -- and the title is front matter, gone by the time the body is joined.
+        # Gathered from the body alone, the blunt rule welded it to "SelfControlled".
+        abstract_keep = keep_hyphen(" ".join(row[4] for row in body)) if abstract else None
         if not cfg.starts_at and af:
             auto_front = af
         if not cfg.end_marker and ab < len(body):
@@ -1475,6 +1586,13 @@ def convert(cfg):
     soft_marks = sum(row[4].count("\u00ad") for row in body)
     ascii_breaks = sum(1 for row in body if row[4].rstrip().endswith("-"))
     soft = trust_soft_hyphens(soft_marks, ascii_breaks)
+    # THE ABSTRACT IS BROKEN ACROSS LINES LIKE EVERYTHING ELSE, and was joined before the
+    # convention was known, so it came out reading "activi- ties" and "epis- temology" while
+    # the body beside it read clean (the Wilson, 15 Sep 2026). Same rule, same evidence: the
+    # document's own mid-line compounds decide which breaks are real hyphens.
+    if abstract:
+        keep = None if soft else abstract_keep
+        abstract = re.sub(r"\s+", " ", dehyphenate(abstract, soft, keep)).strip()
     auto_caps = {}
     if not cfg.own_headings:
         auto_caps = caps_heading_map(body, bands["margin"], doc_size, body_sizes,
@@ -1689,8 +1807,9 @@ def header(cfg, r):
     if zkey:
         lines.append(f'zotero: "{zkey}"')
     # THE FRONT MATTER, NOT THE BODY. The abstract says what the paper argues and is exactly what
-    # a reader opening an unfamiliar map wants -- but it is not a passage a claim may cite, and
-    # putting it in the manuscript would invite a reconstruction to quote it as the argument.
+    # a reader opening an unfamiliar map wants; the app shows it on the orientation panel, and a
+    # claim may quote it -- the checker reads the whole file. It sits here rather than in the
+    # running text so nothing mistakes it for the argument's own prose (see `find_abstract`).
     # Folded YAML (`>-`) so a long one stays readable in the file it is written to.
     if r.get("abstract"):
         lines.append("abstract: >-")

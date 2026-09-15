@@ -168,6 +168,58 @@ check("  a file that already opens with front matter is left exactly as it is",
       front_matter("/Users/x/Zotero/storage/AB12CD34/notes.md", "---\ntitle: t\n---\nx"),
       "")
 
+# ---- the abstract, carried out of the converter and into the front matter ----------- #
+# The converter found it and wrote it; ingest stripped the converter's front matter and
+# wrote its own with only the key, so the abstract reached nobody (the Wilson, 15 Sep 2026).
+print("the abstract in the front matter")
+from ingest import front_matter_keys, front_matter_note                     # noqa: E402
+import ingest as _ingest                                                     # noqa: E402
+ABS = ("For Bernard Williams, ethical inquiry is fundamentally about sense-making: it starts "
+       "from what we already care about, and is always local. What is required is less a shift "
+       "from scientistic to humanistic conceptions of philosophy, than for philosophers "
+       "working in value inquiry to better align their aspirations for theory with what it can "
+       "actually deliver.")
+fm = front_matter("/Users/x/Zotero/storage/AB12CD34/paper.pdf", "plain text",
+                  {"abstract": ABS})
+check("an abstract in extras is written as a folded block after the key",
+      fm.startswith('---\nzotero: "AB12CD34"\nabstract: >-\n  For Bernard'), True)
+check("  wrapped, indented, and closed", fm.endswith("actually deliver.\n---\n\n"), True)
+check("  and it reads back as one paragraph",
+      " ".join(l.strip() for l in fm.split("abstract: >-\n")[1].split("\n---")[0].splitlines()),
+      ABS)
+check("  a paper outside Zotero still gets its abstract",
+      front_matter("/Users/x/Papers/paper.pdf", "plain text", {"abstract": ABS})
+      .startswith("---\nabstract: >-\n"), True)
+check("  and the note says both were written",
+      front_matter_note(front_matter_keys("/Users/x/Zotero/storage/AB12CD34/paper.pdf",
+                                          "plain text", {"abstract": ABS})),
+      "front matter written with the zotero: attachment key, read off the storage path -- "
+      "the item the reader's highlights hang on, and the one zotero_store follows; and the "
+      "paper's abstract, which the app shows on the orientation panel and a claim may quote")
+
+# The hand-over itself: what the converter reports as `abstract` lands in `extras`.
+_orig_convert = None
+try:
+    import pdf_to_source as _p2s                                               # noqa: E402
+    _orig_convert = _p2s.convert
+    def _fake_convert(cfg):
+        cfg.out.write_text("---\ntitle: \"t\"\nabstract: >-\n  gone\n---\n\n<!-- hdr -->\n\n"
+                           "# 1 Body\n\nText.\n", encoding="utf-8")
+        return dict(headings_placed=["1 Body"], quotes=0, notes=0, furniture={},
+                    back_matter_kept=False, back_headings=[], heading_gaps=[], suspicious=[],
+                    boundaries_detected=dict(front=3, back=None), abstract=ABS)
+    _p2s.convert = _fake_convert
+    ex = {}
+    body, notes = _ingest.from_pdf_structured("x.pdf", ex)
+    check("the converter's abstract is handed over in extras", ex.get("abstract"), ABS)
+    check("  the converter's own front matter is still stripped from the body",
+          body.startswith("# 1 Body"), True)
+    check("  and the note says the abstract was kept, and where",
+          any(n.startswith("abstract kept (") and "front matter" in n for n in notes), True)
+finally:
+    if _orig_convert is not None:
+        _p2s.convert = _orig_convert
+
 # ---- the unified PDF route: structured first, plain as the loud fallback ------------- #
 # The route itself ran against a real PDF when it was built; what these hold is the CHOICE:
 # the word-count floor that decides when the structured converter's answer is trusted, and

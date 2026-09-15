@@ -411,6 +411,68 @@ check("marking off leaves the line exactly as extracted",
 check("a single span is never touched -- there is nothing to compare it with",
       join_spans(spans(("1", 5.98))), "1")
 
+# THE NOTE'S OWN NUMBER AS A LINE OF ITS OWN. The extractor can hand a footnote's superscript
+# number back as a separate line -- a different block, same baseline, a few points left of the
+# note's text (the Wilson: `1` at 6.3pt, x0 75.8, y0 553.9; the text at 10pt, x0 92.1, y0
+# 554.4). Neither line then opens a note, all eight merged into one paragraph, and no `[^n]:`
+# definition was written. The weld has to happen while the geometry is still in hand.
+print("join_note_numbers (a superscript number standing as its own line)")
+from pdf_to_source import join_note_numbers                                  # noqa: E402
+
+
+def line(text, x0, y0, size, width=None):
+    w = width if width is not None else 5.2 * len(text) * size / 10
+    return dict(x0=x0, y0=y0, x1=x0 + w, width=w, size=size, text=text)
+
+
+page = [line("become ubiquitous even amongst their defenders.[^1]", 65.8, 457.1, 11.0),
+        line("1", 75.8, 553.9, 6.3, width=3.5),
+        line("For one recent representative, much discussed example, see Heller", 92.1, 554.4, 10.0),
+        line("(2023).", 65.8, 565.4, 10.0)]
+got = [l["text"] for l in join_note_numbers(page)]
+check("the number is welded onto the note's first line",
+      got[1], "1 For one recent representative, much discussed example, see Heller")
+check("  and the number's own line is gone", len(got), 3)
+check("  the body line before it is untouched", got[0].endswith("defenders.[^1]"), True)
+check("  and the note now opens as note 1", note_opening(got[1])[0], "1")
+# A reference mark split off the END of a body line sits to the RIGHT of its text: not a note.
+split_mark = [line("even amongst their defenders.", 65.8, 457.1, 11.0, width=200),
+              line("1", 268.0, 456.6, 6.3, width=3.5)]
+check("a mark to the right of its line is left alone",
+      [l["text"] for l in join_note_numbers(split_mark)], ["even amongst their defenders.", "1"])
+# A lone paragraph number in a judgment's margin is body-sized: not a superscript, not a note.
+para = [line("12", 30.0, 300.0, 11.0, width=12), line("The claimant contends that", 60.0, 300.0, 11.0)]
+check("a body-sized number beside its paragraph is left alone",
+      [l["text"] for l in join_note_numbers(para)], ["12", "The claimant contends that"])
+# Same baseline, other column: too far away to be this line's number.
+far = [line("3", 40.0, 500.0, 6.3, width=3.5), line("A second-column line", 320.0, 500.4, 10.0)]
+check("a number a column away is left alone",
+      [l["text"] for l in join_note_numbers(far)], ["3", "A second-column line"])
+
+# THE LICENCE BLOCK, AND THE DOI ON THE OPENER'S OWN BASELINE. CUP prints `doi:…` to the LEFT
+# of `© The Author(s)` on the same line, so it precedes the opener in reading order and a
+# forward-only latch never saw it; it became the first line of the notes paragraph.
+print("licence_lines (the copyright latch, with the line beside the opener)")
+from pdf_to_source import licence_lines                                      # noqa: E402
+first_page = [line("pretation, criticism and argument. In Williams’s words, viewing", 42.8, 503.3, 11.0),
+              line("doi:10.1017/S0031819126101314", 42.8, 544.1, 8.5),
+              line("© The Author(s), 2026. Published by Cambridge", 179.8, 544.1, 8.5),
+              line("University Press on behalf of The Royal Institute of Philosophy. This is an Open", 42.8, 556.0, 8.5),
+              line("re-use, distribution and reproduction, provided the original article is properly cited.", 42.8, 591.9, 8.5),
+              line("Philosophy 101 2026", 42.8, 603.1, 10.0),
+              line("A body-sized line releases the latch.", 42.8, 620.0, 11.0)]
+drop = licence_lines(first_page, 11.0)
+# The journal-volume line rides with the block: at 10pt under an 11pt body it is apparatus,
+# and the latch holds until a BODY-sized line, exactly as the call site's note says.
+check("the opener and the small lines after it are dropped",
+      [l["text"][:12] for l in first_page if id(l) in drop],
+      ["doi:10.1017/", "© The Author", "University P", "re-use, dist", "Philosophy 1"])
+check("  the DOI beside the opener goes with it, though it comes first",
+      any(l["text"].startswith("doi:") for l in first_page if id(l) in drop), True)
+check("  the body line above stands, and a body-sized line below releases the latch",
+      [l["text"][:10] for l in first_page if id(l) not in drop], ["pretation,", "A body-siz"])
+check("a page with no opener drops nothing", licence_lines(first_page[:1], 11.0), set())
+
 print("heading_gaps")
 check("a complete sequence has no gaps", heading_gaps(["1. Intro", "2. Middle", "3. End"]), [])
 check("a torn conversion is reported", heading_gaps(["1. Intro", "3. End"]), [2])
@@ -490,6 +552,26 @@ check("a paper with no abstract gets none",
 # A heading with nothing under it, or a stray line reading "abstract", is not an abstract.
 check("  nor does a heading with nothing under it",
       find_abstract([frow("Abstract"), frow("1 Introduction")], 2, [10.0, 10.0], 10.0), None)
+
+# AN ABSTRACT SET SMALLER THAN THE BODY, which is how CUP's Philosophy (and most journals)
+# print it: every line of the Wilson's was apparatus-sized, the old "small means not the
+# abstract" test skipped them all, and the paper's own statement of its thesis was lost.
+# The lines share one shape; a first-page footnote at yet another size is still left out.
+SMALL = [frow("Williams, Dewey, and the Nature of"), frow("JAMES WILSON"),
+         frow("Abstract", small=True),
+         frow("For Bernard Williams, ethical inquiry is fundamentally about sense-making: "
+              "it starts from what we already care about, and is always local.", small=True),
+         frow("What is required is less a shift from scientistic to humanistic conceptions "
+              "of philosophy, than for philosophers working in value inquiry to better align "
+              "their aspirations for theory with what it can actually deliver.", small=True),
+         frow("1 Department of Philosophy, UCL", small=True),
+         frow("1. Philosophy, Disciplines and Interdisciplinarity"),
+         frow("Philosophy is the oldest academic discipline.")]
+got = find_abstract(SMALL, 6, [18.0, 11.0, 9.0, 9.0, 9.0, 8.0, 11.0, 11.0], 11.0)
+check("an abstract set smaller than the body is still found",
+      got is not None and got.startswith("For Bernard Williams"), True)
+check("  whole, to its last sentence", got.endswith("what it can actually deliver."), True)
+check("  without the affiliation footnote of yet another size", "Department" in got, False)
 
 # ------------------------------------------------------- a numbered paragraph ---- #
 # A JUDGMENT IS CITED BY ITS PARAGRAPH NUMBER -- "Miller (No 2) at [50]" -- so losing the numbers
