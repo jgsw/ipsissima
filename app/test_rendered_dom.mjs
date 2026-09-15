@@ -2012,57 +2012,60 @@ async function zoteroChecks(browser) {
   check(true, "with a host and a declared key the button appears", "");
 
   await page.click("#mszotero");
-  await page.waitForSelector("#mstext .zot-mark", { timeout: 10000 });
+  // data-zot-title marks every touched block, exactly painted or barred; the note (which
+  // has no words) is the one mark that must still carry the block BAR.
+  await page.waitForSelector("#mstext [data-zot-title]", { timeout: 10000 });
   const marked = await page.evaluate(() => {
-    // By content, not by document order: the underline mark sits earlier in the text, so
-    // "the first .zot-mark" stopped meaning "the highlight" the moment kinds arrived.
-    const els = [...document.querySelectorAll("#mstext .zot-mark")];
-    const el = els.find(e => /merely causal/.test(e.textContent || "")) || els[0];
-    return { text: (el.textContent || "").slice(0, 80),
-             color: el.style.getPropertyValue("--zot"),
-             title: el.title,
+    const ex = window.__ZOT_MATCH__.exact();
+    const hl = ex.find(e => /merely causal/.test(e.text));
+    const els = [...document.querySelectorAll("#mstext [data-zot-title]")];
+    const el = els.find(e => /merely causal/.test(e.textContent || ""));
+    return { exact: hl ? hl.text : "", color: hl ? hl.color : "", kind: hl ? hl.kind : "",
+             title: el ? el.title : "",
+             bars: [...document.querySelectorAll("#mstext .zot-mark")]
+               .map(e => e.title).join(" || "),
+             painted: ex.map(e => e.kind + ": " + e.text).join(" || "),
              note: document.getElementById("msnote").textContent };
   });
-  check(/merely causal/.test(marked.text),
-        "the highlight lands on the passage its words sit in", marked.text);
-  check(marked.color === "#5fb236", "and carries its Zotero colour", marked.color);
+  check(marked.exact === "merely causal, a trace with no normative force",
+        "the mark covers the reader's words and ENDS where the reader stopped",
+        marked.exact);
+  check(marked.color === "#5fb236" && marked.kind === "highlight",
+        "and carries its Zotero colour and kind", marked.color + "/" + marked.kind);
   check(/the passage to press on/.test(marked.title) && /p\. 3/.test(marked.title),
         "the hover carries the comment and the printed page", marked.title.slice(0, 120));
-  const kinds = await page.evaluate(() => {
-    const els = [...document.querySelectorAll("#mstext .zot-mark")];
-    return { n: els.length, titles: els.map(e => e.title).join(" || ") };
-  });
-  check(/underlined: .*promise made to the future/.test(kinds.titles),
-        "an underline places by its words like a highlight", kinds.titles.slice(0, 160));
-  check(/note — a thought pinned to the page.*pinned to the page/.test(kinds.titles),
-        "a note is pinned to its printed page's beginning",
-        kinds.titles.slice(-160));
+  check(/underline: functions as a promise made to the future/.test(marked.painted),
+        "an underline paints its own words, as an underline", marked.painted.slice(0, 160));
+  check(/note — a thought pinned to the page/.test(marked.bars) &&
+        !/underlined:|merely causal/.test(marked.bars),
+        "a note, having no words, keeps the block bar at its page's beginning — alone",
+        marked.bars.slice(0, 200));
   check(/5 marks/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
         /1 carry no text/.test(marked.note),
         "unplaceable and wordless marks are counted, never dropped", marked.note);
   const span = await page.evaluate(() => {
-    const els = [...document.querySelectorAll("#mstext .zot-mark")];
-    const both = els.filter(e => /future self\. It binds/.test(e.title));
-    const cross = els.filter(e => /force at all\. The essay closes/.test(e.title));
-    return { blocks: both.length,
-             first: /promise made to the future/.test(both[0] ? both[0].textContent : ""),
-             second: /It binds because/.test(both[1] ? both[1].textContent : ""),
-             cross: cross.length,
-             crossOn: /essay closes by refusing/.test(cross[0] ? cross[0].textContent : "") };
+    const ex = window.__ZOT_MATCH__.exact();
+    const both = ex.find(e => /future self/.test(e.text) && /It binds/.test(e.text));
+    const cross = ex.find(e => /essay closes/.test(e.text));
+    return { both: both ? both.text : "", cross: cross ? cross.text : "" };
   });
-  check(span.blocks === 2 && span.first && span.second,
-        "a mark crossing a paragraph break bars every paragraph its words reach",
-        JSON.stringify(span));
-  check(span.cross === 1 && span.crossOn,
-        "a mark crossing a PRINTED page places by its later sentences, never dropped",
-        JSON.stringify({ cross: span.cross, on: span.crossOn }));
+  check(/^a promise made to the future self\./.test(span.both) &&
+        /It binds because we hold ourselves$/.test(span.both) && !/to it/.test(span.both),
+        "a mark crossing a paragraph break paints into the next paragraph — and stops",
+        span.both);
+  check(/^no normative force at all\./.test(span.cross) &&
+        /The essay closes by refusing$/.test(span.cross.replace(/\s+/g, " ")) &&
+        !/distinction/.test(span.cross),
+        "a mark crossing a PRINTED page recovers its head from the page before",
+        span.cross);
 
   await page.click("#mszotero");
   const off = await page.evaluate(() => ({
-    marks: document.querySelectorAll("#mstext .zot-mark").length,
+    marks: document.querySelectorAll("#mstext [data-zot-title]").length,
+    exact: window.__ZOT_MATCH__.exact().length,
     note: document.getElementById("msnote").textContent
   }));
-  check(off.marks === 0 && off.note === "",
+  check(off.marks === 0 && off.exact === 0 && off.note === "",
         "pressing again puts the marks away", JSON.stringify(off));
 
   // STORE IN ZOTERO, driven the way the menu drives it: the captured menu callback rings

@@ -850,6 +850,9 @@ body.fs #fsexit{display:inline-flex}
 #help .key .lab{color:var(--fg-dim)}
 #help .key b{color:var(--fg);font-weight:600}
 </style>
+<!-- The Zotero exact-paint rules: one ::highlight() rule per mark, written by zotPaint and
+     emptied by zotClearExact. Declared here so the id exists before it is reached for. -->
+<style id="zotexactcss"></style>
 </head>
 <body>
 
@@ -4733,19 +4736,38 @@ function zotPaint(){
       delete el0.dataset.zotTitle;
     }
   }
+  zotClearExact();
   zoteroSyncBtn();
   if (!ZOT) return;
+  var css = "";
   for (var k = 0; k < ZOT.marks.length; k++) {
     var m = ZOT.marks[k];
+    var range = m.text ? zotExactRange(m) : null;
+    if (range) {
+      var name = "ips-zot-" + k;
+      CSS.highlights.set(name, new Highlight(range));
+      ZOT_EXACT.push({ name: name, kind: m.kind || "highlight", color: m.color,
+                       text: range.toString() });
+      css += "::highlight(" + name + "){" +
+        (m.kind === "underline"
+          ? "text-decoration:underline;text-decoration-color:" + (m.color || "#ffd400") +
+            ";text-decoration-thickness:2px;background-color:" + zotWash(m.color, 0.10)
+          : "background-color:" + zotWash(m.color, 0.32)) + "}";
+    }
     for (var ln = m.line; ln <= (m.endLine || m.line); ln++) {
       var el = MSLINES[ln - 1];
       if (!el) continue;
-      el.classList.add("zot-mark");
-      if (m.color) el.style.setProperty("--zot", m.color);
+      if (!range) {
+        // The words could not be anchored (or there are none): the block bar still says
+        // where the mark IS, at the paragraph's grain — counted and shown, never dropped.
+        el.classList.add("zot-mark");
+        if (m.color) el.style.setProperty("--zot", m.color);
+      }
       el.title = (el.title ? el.title + "\n" : "") + "◍ " + m.title;
       el.dataset.zotTitle = "1";
     }
   }
+  $("zotexactcss").textContent = css;
 }
 
 /** The last line a mark's words reach: a highlight often crosses a paragraph break -- the
@@ -4769,6 +4791,117 @@ function zotSpanEnd(text, chText, startLine){
     hops++;
   }
   return last;
+}
+
+/* ---- EXACT PAINT: the mark ends where the reader's pen ended ---------------------------
+ *
+ * A converted paragraph is the AUTHOR'S paragraph, and an author's paragraph can run thirty
+ * rendered lines; a reader's underline usually stops five printed lines in. A bar on the
+ * whole block misreports the mark's extent, so where the annotation's own words can be
+ * anchored in the rendered text, the words themselves are painted — wash for a highlight,
+ * coloured underline for an underline — through the CSS Custom Highlight API, which touches
+ * no DOM (the selection and quotation machinery read the text undisturbed). The block bar
+ * remains for notes, and for any mark whose words this conversion cannot anchor.
+ */
+var ZOT_EXACT = [];       // [{name, kind, color, text}] — the highlights registered now
+
+function zotWash(hex, a){
+  var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  if (!m) return "rgba(255,212,0," + a + ")";
+  var n = parseInt(m[1], 16);
+  return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + "," + a + ")";
+}
+
+function zotClearExact(){
+  if (window.CSS && CSS.highlights)
+    for (var i = 0; i < ZOT_EXACT.length; i++) CSS.highlights.delete(ZOT_EXACT[i].name);
+  ZOT_EXACT = [];
+  $("zotexactcss").textContent = "";
+}
+
+/** The rendered blocks' words, in order, each with the text node and offsets that let a
+ *  Range start or end on it. A word spans text nodes (italics mid-word, a footnote's sup)
+ *  but never a block; keys come from zotWordKey, the same normalisation every other
+ *  matcher here uses. */
+function zotDomWords(els){
+  var out = [];
+  for (var e = 0; e < els.length; e++) {
+    var el = els[e];
+    if (!el) continue;
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), n, cur = null;
+    while ((n = walker.nextNode())) {
+      var s = n.nodeValue || "";
+      for (var i = 0; i < s.length; i++) {
+        if (/\s/.test(s[i])) { cur = null; continue; }
+        if (!cur) { cur = { raw: "", n0: n, o0: i }; out.push(cur); }
+        cur.raw += s[i]; cur.n1 = n; cur.o1 = i + 1;
+      }
+    }
+  }
+  for (var k = 0; k < out.length; k++) out[k].key = zotWordKey(out[k].raw);
+  return out.filter(function(w){ return !!w.key; });
+}
+
+/** ann[j0..j1] matched against dom words from position i; null when they do not run.
+ *  The allowances mirror zotFindWords: a word the PRINTER broke lives split in the
+ *  annotation but joined here, and the reader's first or last grab may be partial. */
+function zotAnchorAt(dw, i, ann, j0, j1, mode){
+  var i0 = i, j = j0;
+  while (j <= j1) {
+    if (i >= dw.length) return null;
+    var have = dw[i].key, want = ann[j];
+    if (have === want
+        || (mode === "start" && j === j0 && have.length > want.length
+            && have.slice(-want.length) === want)
+        || (mode === "end" && j === j1 && j > j0 && have.length > want.length
+            && have.slice(0, want.length) === want)) {
+      i++; j++; continue;
+    }
+    if (j + 1 <= j1 && ann[j] + ann[j + 1] === have) { i++; j += 2; continue; }
+    return null;
+  }
+  return { from: i0, to: i - 1 };
+}
+
+/** A Range over exactly the annotation's words, or null when they cannot be anchored.
+ *  Anchored at both ends — the first few words and the last few — so a footnote marker or
+ *  a ligature MID-annotation cannot spoil the match. Leading words are dropped one at a
+ *  time when unfound (a mark crossing a printed page lost its head to the page marker);
+ *  a dropped-head mark also looks one block BACK, where that head's tail actually sits. */
+function zotExactRange(m){
+  if (!(window.Highlight && window.CSS && CSS.highlights)) return null;
+  var els = [];
+  if (m.dropped)
+    for (var b = m.line - 2; b >= 0; b--) if (MSLINES[b]) { els.push(MSLINES[b]); break; }
+  for (var ln = m.line; ln <= (m.endLine || m.line); ln++)
+    if (MSLINES[ln - 1]) els.push(MSLINES[ln - 1]);
+  if (!els.length) return null;
+  var dw = zotDomWords(els);
+  var ann = String(m.text).replace(/\s+/g, " ").trim().split(" ")
+    .map(zotWordKey).filter(function(w){ return !!w; });
+  if (ann.length < 2 || !dw.length) return null;
+  var start = null, jStart = 0;
+  for (var d0 = 0; d0 <= ann.length - 2 && !start; d0++) {
+    var k0 = Math.min(4, ann.length - d0);
+    for (var i = 0; i < dw.length && !start; i++) {
+      var hit = zotAnchorAt(dw, i, ann, d0, d0 + k0 - 1, "start");
+      if (hit) { start = hit; jStart = d0; }
+    }
+  }
+  if (!start) return null;
+  var end = null;
+  for (var d1 = ann.length - 1; d1 >= jStart + 1 && !end; d1--) {
+    var k1 = Math.min(4, d1 - jStart + 1);
+    for (var i2 = dw.length - 1; i2 >= start.from && !end; i2--) {
+      var h2 = zotAnchorAt(dw, i2, ann, d1 - k1 + 1, d1, "end");
+      if (h2) end = h2;
+    }
+  }
+  if (!end || end.to < start.from) return null;
+  var r = document.createRange();
+  r.setStart(dw[start.from].n0, dw[start.from].o0);
+  r.setEnd(dw[end.to].n1, dw[end.to].o1);
+  return r;
 }
 
 function endZotero(){
@@ -4813,15 +4946,20 @@ function startZotero(){
         // Drop leading sentences until the rest places; the span walk below still extends
         // forward, so at worst the previous page's tail goes unbarred, said by nothing
         // being lost -- the mark is placed, not dropped.
+        var dropped = false;
         if (line == null && window.ArgdownPositions) {
           var sents = text.split(". ");
           for (var sd = 1; sd < sents.length && sd <= 4 && line == null; sd++)
             line = window.ArgdownPositions.findQuote(sents.slice(sd).join(". "), ch.text);
+          dropped = line != null;
         }
         if (line == null) { unplaced++; continue; }
         marks.push({
           line: line,
           endLine: zotSpanEnd(text, ch.text, line),
+          text: text,
+          kind: kind,
+          dropped: dropped,
           color: d.annotationColor || "",
           title: (kind === "underline" ? "underlined: " : "") + "“" + text + "”" +
                  (d.annotationComment ? " — " + d.annotationComment : "") +
@@ -4916,6 +5054,9 @@ function zotMergeRects(ws){
 // Exposed for the test harness, which proves the matcher's edges directly: two pure
 // functions, no state, nothing the page does not already do through the button.
 window.__ZOT_MATCH__ = { findWords: zotFindWords, mergeRects: zotMergeRects,
+                         // What the exact paint covered, as text: the harness proves a mark
+                         // ends where the reader's pen ended without reading pixel colours.
+                         exact: function(){ return ZOT_EXACT; },
                          // The harness's stand-in for a folder open: the sidecar lookup
                          // starts from HOST_ABS, which only hostLoadDir fills for real.
                          absFor: function(rel, abs){ HOST_ABS[rel] = abs; } };

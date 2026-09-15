@@ -614,9 +614,12 @@ becoming a second copy. A text converted out of your Zotero library carries the 
 attachment it came from in its own front matter (`zotero:`, written by the converter from the
 path it actually read), and in the **desktop application** the Manuscript header then offers a
 **Zotero highlights** button. Pressing it asks Zotero — running on this same computer — for
-your highlights of exactly this file, and draws each one as a bar in the left gutter, in its
-Zotero colour, on the passage the highlighted words sit in; the exact words, any comment, and
-the printed page ride the hover. Pressing it again puts them away.
+your highlights of exactly this file, and paints each one **on the very words you marked**,
+in its Zotero colour — a wash for a highlight, an underline for an underline — starting and
+stopping where your pen did, even in the middle of a long paragraph. A note, which has no
+words of its own, appears as a bar in the left gutter at the beginning of its printed page,
+and so does any mark whose words this conversion cannot pin down. The exact words, any
+comment, and the printed page ride the hover. Pressing the button again puts them away.
 
 Three honesty notes. The marks stay **Zotero's**: Ipsissima displays them and keeps no copy,
 so there is nothing to drift out of sync — Zotero remains the one place your marks live.

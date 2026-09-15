@@ -211,5 +211,20 @@ commands cannot drift). Held by rendered-DOM checks: the matcher's edges proven 
 then a real drag over the passage, the button, and the captured annotation's key, page,
 rectangles and sort order asserted to the number.
 
+**Exact paint — built 15 Sep, off the author's second screenshot pair.** A converted
+paragraph is the *author's* paragraph, and an author's paragraph can run thirty rendered
+lines; the reader's underline stopped five printed lines in ("…Consider again funerals in
+South Africa."), and the block-grain bar misreported its extent by the difference. Where a
+mark's own words can be anchored in the rendered text, the words themselves are now
+painted — wash for a highlight, coloured underline for an underline — via the CSS Custom
+Highlight API, which touches no DOM, so the selection and quotation machinery read the
+text undisturbed. Anchored at both ends (first and last few words, with the same
+printer-break and partial-word allowances as the write-back matcher), so a footnote
+marker or ligature mid-annotation cannot spoil the match; a page-crossing mark, placed by
+its later sentences, also recovers its head from the block before. The bar remains for
+notes and for any mark whose words cannot be anchored — counted and shown, never dropped.
+Held by rendered-DOM checks asserting the painted text *verbatim*: it ends where the
+reader stopped.
+
 **Next:** a checker that reads a bundle's own carried sources when the folder lacks them;
 EPUB/HTML attachment keys; the deferred non-Zotero project (§3.3).
