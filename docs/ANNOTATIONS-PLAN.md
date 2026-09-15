@@ -176,7 +176,23 @@ sources as line comments that no carried text can break — so the store tool no
 = newest input's, so unchanged inputs hash unchanged), the exported HTML demoted to
 `--export`. `argdown_bundle.py` is the Python port, and the two homes of the format are
 held together by a byte-identical attach/detach cross-check in the tests (E10, the
-positions py/js precedent). **Next:** the app-side driver (File ▸ Store in Zotero…), then
-write-back with exact rectangles via a per-page word geometry sidecar written at
-conversion; a checker that reads a bundle's own carried sources when the folder lacks
+positions py/js precedent).
+
+**The app-side driver — built 15 Sep.** File ▸ Store in Zotero, the second driver of the
+same machinery: the page assembles the bundle (it alone holds the text and every cited
+source — `ArgdownBundle.attach` over `MS.chapters`, with the same one-key rule and the
+same refusal sentences as the MCP tool), and a Rust command `zotero_store_bundle` speaks
+the protocol — server-ID, Zotero's own consent dialog with the remembered key read from
+the ONE file `zotero_local.py` also uses, so a single "Always Allow" covers both drivers;
+the copy matched by filename and replaced under `If-Match`; the three-phase md5 upload.
+Store-on-gesture semantics: the menu action *is* the request, so it refreshes rather than
+flags (the MCP's `--check` remains the staleness instrument); a copy changed in Zotero
+meanwhile is refused, never overwritten. Promise copy moved with the capability (D6):
+about, README and the site now say the desktop application *converses* with Zotero —
+highlights shown, reconstruction stored — on your gesture, never beyond the machine.
+Held by a rendered-DOM check that rings the real menu doorbell over the faked bridge and
+detaches the very bundle the page assembled; `cargo check` clean.
+
+**Next:** write-back with exact rectangles via a per-page word geometry sidecar written
+at conversion; a checker that reads a bundle's own carried sources when the folder lacks
 them is noted as a natural follow-on.

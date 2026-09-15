@@ -31,8 +31,9 @@ map: the main claims at a glance, the detail where you choose to look, the marks
 writes in the margin, and, when the map was drawn from a text, the passage each claim came
 from beside the claim that reports it. **It runs entirely in your browser and makes no network
 requests of any kind.** (The downloadable application speaks beyond your machine only when you
-choose Help ▸ Check for Updates, and can read your Zotero highlights from Zotero on your own
-computer — a conversation that never leaves it; the page on this site has nothing of the sort.)
+choose Help ▸ Check for Updates, and can converse with Zotero on your own computer — showing
+your highlights, and storing the reconstruction under its source's item with your permission
+— a conversation that never leaves it; the page on this site has nothing of the sort.)
 
 The name is the distinctive half. *ipsissima verba* — the very words themselves, as against
 *ipsissima vox*, the authentic voice: did the author write **these words**, or is this a

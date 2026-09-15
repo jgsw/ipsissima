@@ -93,6 +93,12 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         // learn twice. The same rename was already made on the web side; this was the last of it.
         .item(&item("export", "Export…", Some("CmdOrCtrl+E"))?)
         .separator()
+        // The reconstruction, stored under its source's Zotero item as one bundled
+        // attachment — docs/ANNOTATIONS-PLAN.md §6, the app-side driver of the same
+        // machinery the MCP's zotero_store tool drives. The handler is in the page; the
+        // protocol is `zotero_store_bundle` below.
+        .item(&item("store-zotero", "Store in Zotero…", None)?)
+        .separator()
         .close_window()
         .build()?;
 
@@ -257,6 +263,240 @@ async fn zotero_annotations(key: String) -> Result<serde_json::Value, String> {
     resp.json::<serde_json::Value>().await.map_err(|e| e.to_string())
 }
 
+/// Where the remembered local-API key lives — ONE file shared with the MCP's
+/// `zotero_local.py` (its `key_path()` is the reference spelling), so a single
+/// "Always Allow" in Zotero covers both drivers of the same machinery.
+fn zotero_key_file() -> std::path::PathBuf {
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var("HOME").unwrap_or_default();
+        std::path::PathBuf::from(home)
+            .join("Library/Application Support/Ipsissima/zotero-local-api-key")
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let base = std::env::var("APPDATA")
+            .unwrap_or_else(|_| std::env::var("USERPROFILE").unwrap_or_default());
+        std::path::PathBuf::from(base).join("Ipsissima/zotero-local-api-key")
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let base = std::env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| {
+            format!("{}/.config", std::env::var("HOME").unwrap_or_default())
+        });
+        std::path::PathBuf::from(base).join("ipsissima/zotero-local-api-key")
+    }
+}
+
+const ZOTERO_NOT_RUNNING: &str =
+    "Zotero is not answering on this machine. Is it running — and is 'Allow other \
+     applications on this computer to communicate with Zotero' switched on in its \
+     Settings ▸ Advanced?";
+
+/// Store the reconstruction in Zotero as ONE bundled attachment — the app-side driver of
+/// the machinery `zotero_store.py` drives from the MCP (docs/ANNOTATIONS-PLAN.md §6).
+///
+/// THE SAME RULES AS `zotero_annotations` AND `open_fixed`: host and port compiled in, and
+/// the page may pass only the eight-character attachment key, a bare filename, and the
+/// bundle text itself. Consent is Zotero's own dialog (Allow / Always Allow / Deny, naming
+/// Ipsissima; revocable in its Settings ▸ Advanced); a remembered key is reused from the
+/// one file the MCP shares, a spent or revoked one is re-asked honestly, and nothing here
+/// contacts anything but the Zotero on this machine (C1 as ruled 14 Sep).
+#[tauri::command]
+async fn zotero_store_bundle(key: String, filename: String, bundle: String)
+                             -> Result<String, String> {
+    if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
+        return Err("not a Zotero item key".to_string());
+    }
+    if filename.is_empty() || filename.contains('/') || filename.contains('\\')
+        || filename.len() > 120 {
+        return Err("not a plain filename".to_string());
+    }
+    let base = "http://127.0.0.1:23119";
+    let http = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(20))
+        .build()
+        .map_err(|e| e.to_string())?;
+    // The user may be reading a consent dialog: that one call gets all the time it needs.
+    let slow = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(180))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    // The server id names the RUNNING Zotero and changes on restart: fetched, never stored.
+    let sid = http.get(format!("{base}/api/"))
+        .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?
+        .headers().get("Zotero-Server-ID")
+        .and_then(|v| v.to_str().ok()).map(String::from)
+        .ok_or_else(|| "This Zotero cannot accept local writes — writing through the \
+                        local API needs Zotero 10 or later.".to_string())?;
+
+    let item: serde_json::Value = {
+        let r = http.get(format!("{base}/api/users/0/items/{key}"))
+            .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+        if r.status().as_u16() == 404 {
+            return Err(format!("Zotero has no item with attachment key {key} — the \
+                                source's front matter may be from another library."));
+        }
+        r.json().await.map_err(|e| e.to_string())?
+    };
+    let parent = item["data"]["parentItem"].as_str().map(String::from)
+        .ok_or_else(|| format!("Attachment {key} has no parent item to hang the copy \
+                                under — file it under an item in Zotero first; nothing \
+                                was written."))?;
+
+    let kids: serde_json::Value = http
+        .get(format!("{base}/api/users/0/items/{parent}/children?limit=100"))
+        .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?
+        .json().await.map_err(|e| e.to_string())?;
+    let mut existing: Option<(String, String)> = None; // (item key, md5)
+    if let Some(arr) = kids.as_array() {
+        for k in arr {
+            if k["data"]["itemType"] == "attachment" && k["data"]["filename"] == *filename {
+                existing = Some((
+                    k["data"]["key"].as_str().unwrap_or_default().to_string(),
+                    k["data"]["md5"].as_str().unwrap_or_default().to_string(),
+                ));
+            }
+        }
+    }
+    let bytes = bundle.into_bytes();
+    let digest = format!("{:x}", md5::compute(&bytes));
+    if let Some((_, ref old)) = existing {
+        if *old == digest {
+            return Ok(format!("current — the copy of {filename} in Zotero already \
+                               matches this reconstruction."));
+        }
+    }
+
+    // Consent: a remembered key from the shared file, else Zotero's own dialog; one honest
+    // retry when a stored key turns out spent (single-use "Allow") or revoked.
+    let keyfile = zotero_key_file();
+    let mut api_key = std::fs::read_to_string(&keyfile)
+        .ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    let authorize = || async {
+        let r = slow.post(format!("{base}/api/local/authorize"))
+            .header("Zotero-Server-ID", &sid)
+            .json(&serde_json::json!({"appName": "Ipsissima"}))
+            .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+        match r.status().as_u16() {
+            403 => Err("Zotero asked, and write access for Ipsissima was declined. \
+                        Nothing was written. Choose the menu item again to be asked \
+                        again.".to_string()),
+            429 => Err("Zotero is declining to show another permission dialog just now. \
+                        Wait a minute and choose the menu item again.".to_string()),
+            200 => {
+                let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+                let k = v["key"].as_str().unwrap_or_default().to_string();
+                if v["remember"].as_bool().unwrap_or(false) {
+                    if let Some(dir) = zotero_key_file().parent() {
+                        let _ = std::fs::create_dir_all(dir);
+                    }
+                    let _ = std::fs::write(zotero_key_file(), format!("{k}\n"));
+                }
+                Ok(k)
+            }
+            s => Err(format!("Zotero declined the authorization request ({s}).")),
+        }
+    };
+
+    // One write, with the retry-once rule, shared by every write below.
+    macro_rules! zwrite {
+        ($build:expr) => {{
+            if api_key.is_none() {
+                api_key = Some(authorize().await?);
+            }
+            let mut resp = $build.header("Zotero-Server-ID", &sid)
+                .header("Zotero-API-Key", api_key.clone().unwrap())
+                .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+            if matches!(resp.status().as_u16(), 401 | 403) {
+                let _ = std::fs::remove_file(zotero_key_file());
+                api_key = Some(authorize().await?);
+                resp = $build.header("Zotero-Server-ID", &sid)
+                    .header("Zotero-API-Key", api_key.clone().unwrap())
+                    .send().await.map_err(|_| ZOTERO_NOT_RUNNING.to_string())?;
+            }
+            resp
+        }};
+    }
+
+    let (att_key, made) = match existing.clone() {
+        Some((k, _)) => (k, false),
+        None => {
+            let body = serde_json::json!([{
+                "itemType": "attachment", "linkMode": "imported_file",
+                "parentItem": parent, "title": filename,
+                "filename": filename, "contentType": "text/plain", "charset": "utf-8"}]);
+            let r = zwrite!(http.post(format!("{base}/api/users/0/items")).json(&body));
+            if !r.status().is_success() {
+                return Err(format!("Zotero declined the attachment write ({}).",
+                                   r.status()));
+            }
+            let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+            let k = v["success"]["0"].as_str()
+                .or_else(|| v["successful"]["0"]["key"].as_str())
+                .ok_or("Zotero accepted the attachment but did not name its key")?
+                .to_string();
+            (k, true)
+        }
+    };
+
+    // The three-phase upload, exactly as zotero_local.py speaks it.
+    let cond: (&str, String) = match existing {
+        Some((_, ref old)) if !old.is_empty() => ("If-Match", old.clone()),
+        _ => ("If-None-Match", "*".to_string()),
+    };
+    let mtime = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    // reqwest's .form is not in this feature set; the encoding is four known-safe values
+    // and a filename, percent-encoded by hand.
+    let enc = |s: &str| s.bytes().map(|b| match b {
+        b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'.' | b'_' => (b as char).to_string(),
+        _ => format!("%{b:02X}"),
+    }).collect::<String>();
+    let form = format!("md5={}&filename={}&filesize={}&mtime={}",
+                       digest, enc(&filename), bytes.len(), mtime);
+    let r = zwrite!(http.post(format!("{base}/api/users/0/items/{att_key}/file"))
+        .header(cond.0, cond.1.clone())
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body(form.clone()));
+    if r.status().as_u16() == 412 {
+        return Err("Zotero holds a different version of this file than the one being \
+                    replaced — something changed it since it was last stored. Nothing \
+                    was overwritten; check the copy in Zotero, then try again.".to_string());
+    }
+    if !r.status().is_success() {
+        return Err(format!("Zotero declined the upload announcement ({}).", r.status()));
+    }
+    let phase1: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+    if phase1["exists"].as_i64() == Some(1) {
+        return Ok(format!("current — Zotero already holds these exact bytes of \
+                           {filename}."));
+    }
+    let up_url = phase1["url"].as_str().unwrap_or_default();
+    let up_path = up_url.strip_prefix(base).unwrap_or(up_url).to_string();
+    let upload_key = phase1["uploadKey"].as_str()
+        .map(String::from)
+        .unwrap_or_else(|| up_path.trim_end_matches('/')
+                                  .rsplit('/').next().unwrap_or_default().to_string());
+    let r = zwrite!(http.post(format!("{base}{up_path}"))
+        .header("Content-Type", "application/octet-stream").body(bytes.clone()));
+    if !matches!(r.status().as_u16(), 200 | 201) {
+        return Err(format!("Zotero declined the file bytes ({}).", r.status()));
+    }
+    let confirm = format!("upload={}", enc(&upload_key));
+    let r = zwrite!(http.post(format!("{base}/api/users/0/items/{att_key}/file"))
+        .header(cond.0, cond.1.clone())
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .body(confirm.clone()));
+    if r.status().as_u16() != 204 {
+        return Err(format!("Zotero declined the upload confirmation ({}).", r.status()));
+    }
+    Ok(format!("{} {filename} under the item its source belongs to. The copy travels \
+                with Zotero's own sync from here; nothing else was contacted.",
+               if made { "stored" } else { "refreshed" }))
+}
+
 /// One of two fixed pages, in the reader's own browser.
 ///
 /// NO ARGUMENT ON EITHER COMMAND, DELIBERATELY. Each address is a constant compiled into the
@@ -380,7 +620,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(PendingOpen::default())
-        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page, zotero_annotations])
+        .invoke_handler(tauri::generate_handler![take_pending_open, check_for_updates, open_releases_page, open_download_page, zotero_annotations, zotero_store_bundle])
         .setup(|app| {
             // Windows and Linux deliver the first file this way, before any event fires.
             let queued = argdown_paths(std::env::args());

@@ -7132,6 +7132,55 @@ if (HOST) {
       "help":            function(){ setHelp(!$("help").classList.contains("show")); },
       "walkthrough":     function(){ startWalkthrough(); },
       "key":             openKeyCard,
+      /* STORE IN ZOTERO. Desktop-only like check-updates, and for the same reason: the page
+       * makes no request of its own; the protocol lives in Rust (`zotero_store_bundle`),
+       * behind Zotero's own consent dialog. The page's half is assembling the bundle, which
+       * it alone can do — it holds the text and every cited source. One attachment,
+       * everything inside (docs/ANNOTATIONS-PLAN.md §6). */
+      "store-zotero":    async function(){
+                           if (!HOST || !HOST.zoteroStoreBundle || !window.ArgdownBundle) return;
+                           if (!msAvailable()) {
+                             showErr("Nothing to store: this map reads no manuscript, so " +
+                                     "there is no Zotero item to store it under.");
+                             return;
+                           }
+                           var keys = {}, files = [];
+                           for (var zi = 0; zi < MS.chapters.length; zi++) {
+                             files.push({ path: MS.chapters[zi].path,
+                                          text: MS.chapters[zi].text });
+                             var zk = frontMatterValue(MS.chapters[zi].text, "zotero");
+                             if (zk) keys[zk] = true;
+                           }
+                           var ks = Object.keys(keys);
+                           if (!ks.length) {
+                             showErr("No cited source declares a zotero: key in its front " +
+                                     "matter, so the Zotero item cannot be identified. A " +
+                                     "source converted from a PDF in Zotero's storage " +
+                                     "carries the key automatically; for one converted " +
+                                     "from elsewhere, add zotero: \"KEY\" (the attachment " +
+                                     "key) to the source's front matter.");
+                             return;
+                           }
+                           if (ks.length > 1) {
+                             showErr("The cited sources declare " + ks.length + " different " +
+                                     "Zotero keys — a multi-item book is not yet " +
+                                     "supported; nothing was written.");
+                             return;
+                           }
+                           var zname = HOST_PATH ? HOST_PATH.replace(/^.*[\\/]/, "")
+                                                 : "reconstruction.argdown";
+                           if (!/\.argdown$/i.test(zname)) zname += ".argdown";
+                           var ztext = ED ? ED.getText() : SOURCE;
+                           var zbundle = window.ArgdownBundle.attach(
+                             window.ArgdownBundle.strip(ztext), files,
+                             BUNDLE ? BUNDLE.meta : null);
+                           try {
+                             showNote(await HOST.zoteroStoreBundle(ks[0], zname, zbundle),
+                                      12000);
+                           } catch (e) {
+                             showErr(String(e && e.message || e));
+                           }
+                         },
       /* THE ONLY MENU ITEM THAT IS NOT A SECOND DOORBELL FOR A BUTTON, because there is no
        * button: the web page cannot check for updates and should not pretend it can. The
        * request itself is made in Rust — see `check_for_updates` in src-tauri/src/lib.rs — so

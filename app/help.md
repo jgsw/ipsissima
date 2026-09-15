@@ -630,6 +630,20 @@ If the button reports that Zotero is not answering: Zotero has to be running, an
 applications on this computer to communicate with Zotero* switched on in its
 Settings ▸ Advanced.
 
+## Storing the reconstruction in Zotero
+
+The conversation also runs the other way, on the same terms. **File ▸ Store in Zotero** places
+this reconstruction under the very item its source came from, as **one attachment**: the
+`.argdown` as a bundle, every cited source carried inside it — still a valid Argdown file, so
+a double-click in Zotero opens it here, text and map together, and Zotero's own sync carries
+it to your other devices. Nothing is stored except on this gesture, and the first time Zotero
+itself asks — a dialog naming Ipsissima, with *Allow*, *Always Allow* and *Deny* — and the
+grant stays revocable in Zotero's Settings ▸ Advanced. Choosing plain *Allow* grants one
+write's worth of trust, so a store of several steps may ask more than once; *Always Allow* is
+the natural answer for a workflow you have adopted, and Ipsissima and its MCP tools share the
+one grant. Storing again replaces the stored copy, never duplicates it, and a copy someone
+else changed in the meantime is refused rather than overwritten.
+
 # Working with a reconstruction
 
 ## Opening a reconstruction

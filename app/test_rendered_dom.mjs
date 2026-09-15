@@ -1944,7 +1944,7 @@ async function zoteroChecks(browser) {
   const page = await ctx.newPage();
   await page.addInitScript(() => {
     window.__TAURI__ = {
-      core: { invoke: (cmd) => {
+      core: { invoke: (cmd, arg) => {
         if (cmd === "take_pending_open") return Promise.resolve([]);
         if (cmd === "zotero_annotations") return Promise.resolve([
           { data: { itemType: "annotation", annotationType: "highlight",
@@ -1961,9 +1961,16 @@ async function zoteroChecks(browser) {
                     annotationText: "words that appear in no conversion anywhere" } },
           { data: { itemType: "annotation", annotationType: "image" } }
         ]);
+        if (cmd === "zotero_store_bundle") {
+          window.__storeArgs = arg;
+          return Promise.resolve("stored test.argdown under the item its source belongs to.");
+        }
         return Promise.resolve(null);
       } },
-      fs: {}, dialog: {}, event: { listen: () => {} }
+      fs: {}, dialog: {},
+      event: { listen: (name, cb) => {
+        if (name === "ipsissima://menu") window.__menu = cb;
+      } }
     };
   });
   await page.goto("file://" + out);
@@ -2012,6 +2019,30 @@ async function zoteroChecks(browser) {
   }));
   check(off.marks === 0 && off.note === "",
         "pressing again puts the marks away", JSON.stringify(off));
+
+  // STORE IN ZOTERO, driven the way the menu drives it: the captured menu callback rings
+  // the doorbell, the page assembles the bundle from what it holds, and the fake bridge
+  // records what Rust would have been asked to store.
+  await page.evaluate(() => window.__menu({ payload: "store-zotero" }));
+  await page.waitForFunction(() => window.__storeArgs, { timeout: 5000 });
+  const stored = await page.evaluate(() => {
+    const a = window.__storeArgs;
+    const b = window.ArgdownBundle.detach(a.bundle);
+    return { key: a.key, filename: a.filename,
+             files: b.files.map(f => f.path),
+             sourceCarried: /merely causal, a trace/.test(b.files[0].text),
+             mapCarried: /Memory is promissory/.test(b.argdown),
+             note: document.getElementById("err").textContent };
+  });
+  check(stored.key === "AB12CD34" && /\.argdown$/.test(stored.filename),
+        "the menu stores under the source's own key, as one .argdown",
+        JSON.stringify({ key: stored.key, filename: stored.filename }));
+  check(stored.files.length === 1 && stored.files[0] === "source/essay.md"
+        && stored.sourceCarried && stored.mapCarried,
+        "  and the bundle carries map and source together",
+        JSON.stringify(stored.files));
+  check(/stored test\.argdown/.test(stored.note),
+        "  and Zotero's answer is shown to the reader", stored.note.slice(0, 80));
   await ctx.close();
 }
 

@@ -213,6 +213,14 @@ var API = {
   // machine — the ruled C1 narrowing (docs/ANNOTATIONS-PLAN.md): nothing leaves the
   // machine, and it runs only when the reader presses the button that asks.
   zoteroAnnotations: function (key) { return T.core.invoke("zotero_annotations", { key: key }); },
+  // Store the reconstruction under its source's Zotero item, as ONE bundled attachment —
+  // the app-side driver of the machinery the MCP's zotero_store tool drives. The page
+  // assembles the bundle (it already holds text and sources); Rust speaks the protocol,
+  // and consent is Zotero's own dialog.
+  zoteroStoreBundle: function (key, filename, bundle) {
+    return T.core.invoke("zotero_store_bundle",
+                         { key: key, filename: filename, bundle: bundle });
+  },
   pickDirectory: pickDirectory, pickFile: pickFile, pickSavePath: pickSavePath,
   readText: readText, writeText: writeText, writeBinary: writeBinary, readDirDeep: readDirDeep,
   watch: watch, onOpenPaths: onOpenPaths,

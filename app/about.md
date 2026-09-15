@@ -34,9 +34,11 @@ It runs entirely on your own machine, and nothing is ever uploaded. **As a singl
 makes no network requests of any kind — not for updates, not for fonts, not for analytics;
 disconnect from the internet and it behaves identically. **As the desktop application** it speaks
 beyond your machine exactly once, and only when you ask: Help ▸ Check for Updates asks GitHub for
-the latest release number. It can also show your Zotero highlights beside a text converted from
-your Zotero library — read from Zotero running on this same computer, only when you press the
-button that asks, and never leaving your machine.
+the latest release number. It can also converse with Zotero running on this same computer, only
+when you ask, and never beyond your machine: show your Zotero highlights beside a text
+converted from your library, and — via File ▸ Store in Zotero — store the reconstruction
+under that text's item, after you answer Zotero's own permission dialog (revocable in
+Zotero's Settings ▸ Advanced).
 
 ## Argdown
 

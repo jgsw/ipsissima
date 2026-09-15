@@ -21,10 +21,11 @@ machine.
 one file that works with the network cable out. **The desktop application speaks beyond your
 machine exactly once, and only when you ask for it**: Help ▸ Check for Updates asks GitHub
 whether a newer release exists. It sends nothing about you or your documents, downloads nothing,
-and installs nothing. And on your own machine it can do one more thing: show your **Zotero
-highlights** beside a text converted from your Zotero library — read from Zotero running on the
-same computer, only when you press the button that asks. That conversation never leaves your
-machine.
+and installs nothing. And on your own machine it can converse with Zotero — running on the
+same computer, only when you ask, never beyond your machine: show your **Zotero highlights**
+beside a text converted from your library, and **store the reconstruction back** under that
+text's Zotero item (File ▸ Store in Zotero), after you answer Zotero's own permission dialog,
+which names Ipsissima and is revocable in Zotero's settings.
 
 ---
 
