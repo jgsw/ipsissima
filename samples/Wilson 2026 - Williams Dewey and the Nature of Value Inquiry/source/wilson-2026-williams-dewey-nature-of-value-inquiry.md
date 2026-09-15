@@ -61,7 +61,7 @@ While humanistic scholarship remains crucial for selfunderstanding, the longue d
 
 How should philosophy position itself in this changing intellectual landscape? One obvious move is for philosophers to reframe their discipline as a science – a move that Williams disparages as ‘scientism’. Scientism, on Williams’s account goes beyond a philosopher’s ‘interest or involvement in science’, and involves a
 
-1 For one recent representative, much discussed example, see Heller (2023).
+[^1]: For one recent representative, much discussed example, see Heller (2023).
 
 <!-- p.3 begins here -->
 
@@ -111,7 +111,7 @@ except in the special case where its subject matter requires drawing on scientif
 
 Williams (2006b) acknowledges that a good writer must have a keen awareness of the most likely potential misunderstandings, misinterpretations and objections to their position, and that such awareness will function as scaffolding during the writing process. Nonetheless, he does not think that making all this explicit in published work helps philosophy. Just as good building practices remove the scaffolding once the building is complete, good philosophical writing provides readers with an argument that can be appreciated without going through the explicit enumeration of a swathe of objections and potential misunderstandings which might be raised only by a reader who was ‘malicious… or clinically literal minded’ (Williams 2006b: 183). Williams suggests a potential link between scientism and the mindset in analytic philosophy that he opposes, which ‘seeks precision by total mind control, through issuing continuous and rigid interpretative directions’ (Williams 2006b: 183). Given these features of Williams’s style, arguing with Williams – whether agreeing or disagreeing with him – frequently requires extracting from his texts claims that are more determinate than anything Williams himself explicitly commits to.[^2] My interest here is less in forcing Williams’s views on the nature of philosophy into a form more determinate than he chose to express them, than to argue for a conception of philosophical inquiry in which it is the research problem which should determine the method (rather than the discipline). If we adopt this more flexible approach, there is no reason to think that there is a single answer to where philosophy as a discipline ‘fits’.
 
-2 Anyone who has attempted to read Williams will have experienced the elusiveness of his style, which is evocatively expressed by Miranda Fricker: ‘Everything seems to depend on everything else without any single element being conspicuously primary and, when attempting a summary, one invariably discovers one has neglected to factor in some careful form of words that deftly keeps a generalization just this side of a universal claim, or represents a proposition as sufficiently compelling to steer the argument in a certain direction yet without quite committing to its truth’ (Fricker 2020: 919).
+[^2]: Anyone who has attempted to read Williams will have experienced the elusiveness of his style, which is evocatively expressed by Miranda Fricker: ‘Everything seems to depend on everything else without any single element being conspicuously primary and, when attempting a summary, one invariably discovers one has neglected to factor in some careful form of words that deftly keeps a generalization just this side of a universal claim, or represents a proposition as sufficiently compelling to steer the argument in a certain direction yet without quite committing to its truth’ (Fricker 2020: 919).
 
 <!-- p.8 begins here -->
 
@@ -137,7 +137,7 @@ Williams argues that scientists and philosophers view the history of their disci
 
 In the particular case of the natural sciences, the later theory typically explains in its own terms the appearances which
 
-3 As I discuss in Section 7, Williams’s ways of talking about the absolute conception may be difficult to reconcile with this Deweyan conception of transdisciplinary inquiry. If so, that is a reason to question the necessity of the absolute conception, rather than to abandon a Deweyan model of inquiry.
+[^3]: As I discuss in Section 7, Williams’s ways of talking about the absolute conception may be difficult to reconcile with this Deweyan conception of transdisciplinary inquiry. If so, that is a reason to question the necessity of the absolute conception, rather than to abandon a Deweyan model of inquiry.
 
 <!-- p.10 begins here -->
 
@@ -203,7 +203,7 @@ Despite a common agreement among philosophers that the power of the methods adop
 
 No other discipline exhibits such a discrepancy between its level of progressiveness, and the ambition of the theories advanced. Thus, in anthropology, low progressiveness is matched by low generality. Anthropologists use ethnography and stress that even when competently practised, it will give partial and defeasible insights into some community at some time (Geertz 1983). Chemists make more ambitious claims (though notably only about elements and compounds in this world, and under a range of conditions), but those more ambitious claims are buttressed by an ability to form precise hypotheses and to test them much more definitively than is ever the case in philosophy, and to use such testing to build and refine theories. The
 
-4 Thus, Derek Parfit claims that ‘we can discover some normative truths merely by thinking about them’ (Parfit 2011: 489–490). He simultaneously acknowledges that ‘Most philosophers seem to reject my metaethical and other meta-normative beliefs… Many of these other people don’t even understand what I believe. When I talk to these people, we can’t even disagree.’ (Parfit 2011: 452).
+[^4]: Thus, Derek Parfit claims that ‘we can discover some normative truths merely by thinking about them’ (Parfit 2011: 489–490). He simultaneously acknowledges that ‘Most philosophers seem to reject my metaethical and other meta-normative beliefs… Many of these other people don’t even understand what I believe. When I talk to these people, we can’t even disagree.’ (Parfit 2011: 452).
 
 <!-- p.16 begins here -->
 
@@ -257,7 +257,7 @@ The Beholder’s Share not only poses a methodological challenge for achieving i
 
 Williams’s love of the arts is well known, and his papers are peppered with examples from opera and literature, thereby drawing into
 
-5 For example, even if an author aims to tightly constrain the size of the Beholder’s Share through a deliberately sparse and colourless description, they may not succeed. Given what’s known about implicit bias and the role of stereotypes, it’s hard to imagine that such mechanisms will not often be at play in filling out in imagination what a purportedly generic person, or situation is like (Crain 2023: 430).
+[^5]: For example, even if an author aims to tightly constrain the size of the Beholder’s Share through a deliberately sparse and colourless description, they may not succeed. Given what’s known about implicit bias and the role of stereotypes, it’s hard to imagine that such mechanisms will not often be at play in filling out in imagination what a purportedly generic person, or situation is like (Crain 2023: 430).
 
 <!-- p.21 begins here -->
 
@@ -271,7 +271,7 @@ Other philosophers of ethical freedom have proposed accounts that explore the et
 
 Thinking directly in terms of colors, tones, images, is a different operation technically from thinking in words. But only
 
-6 See for example, the use of Karel ˇCapek’s The Makropoulos Case in Williams (1973), and the extended discussion of agency and responsibility in Homer in Shame and Necessity (Williams 2008). Williams wrote enough opera criticism for it to be collected into a volume by itself (Williams 2006a).
+[^6]: See for example, the use of Karel ˇCapek’s The Makropoulos Case in Williams (1973), and the extended discussion of agency and responsibility in Homer in Shame and Necessity (Williams 2008). Williams wrote enough opera criticism for it to be collected into a volume by itself (Williams 2006a).
 
 <!-- p.22 begins here -->
 
@@ -293,7 +293,7 @@ Thus, notwithstanding his protests to the contrary, there is a good case for tak
 
 Williams (1978) introduced the terminology of the absolute conception of reality, and he continued to use this terminology until the end of his life, though he seems to have shifted both his attitude towards the absolute conception, and perhaps also his understanding of what it entails.[^7] In Williams (1978: 197), the absolute conception of reality appeared as a challenge: knowledge requires us
 
-7 Fricker (2024) argues that the Williams (1978) account of the absolute conception is ‘maximalist’, and contains ‘all the features of the world, and all our representations of them, coherently related to one another’ (Fricker 2024: 307), whereas Williams (2008 [1985]: 138–139) shifts to a ‘minimalist’ view according to which the absolute conception contains ‘only those features of the world that find representation in our concepts and beliefs that are maximally non-perspectival, non-local, or non-“peculiar”’ (Fricker 2024: 307). On the minimalist conception, there is no expectation that local practices will be fully explicable in terms of the absolute conception. For an interpretation which sees continuity in Williams’s understanding of the absolute conception, see Moore (2007).
+[^7]: Fricker (2024) argues that the Williams (1978) account of the absolute conception is ‘maximalist’, and contains ‘all the features of the world, and all our representations of them, coherently related to one another’ (Fricker 2024: 307), whereas Williams (2008 [1985]: 138–139) shifts to a ‘minimalist’ view according to which the absolute conception contains ‘only those features of the world that find representation in our concepts and beliefs that are maximally non-perspectival, non-local, or non-“peculiar”’ (Fricker 2024: 307). On the minimalist conception, there is no expectation that local practices will be fully explicable in terms of the absolute conception. For an interpretation which sees continuity in Williams’s understanding of the absolute conception, see Moore (2007).
 
 <!-- p.24 begins here -->
 
@@ -311,7 +311,7 @@ Looking at philosophy through an outsider’s eyes allowed us to notice how pecu
 
 Both Williams and Dewey share a deep commitment to ethical freedom, to naturalism, and to defending a conception of philosophy that gives significant weight to experience, and to the arts. If Williams and Dewey are correct to think that we do indeed have ethical freedom, then ethical reflection is not a means to truths that can be grasped and established quite separately from experience. While Williams focuses on working through the crisis of legitimacy for our shared ethical values which the acknowledgement of ethical freedom brings, Dewey focuses in a complementary way on the potential of creativity to provide a transformative vision through which experience can be enriched. Despite these commonalities, we saw at various points that it is Dewey who is the nimbler thinker about what philosophy might become, due to his explicit emphasis on a unified, flexible and transdisciplinary approach to inquiry.[^8]
 
-8 Earlier versions of this paper were given at University of Strathclyde, and as my inaugural lecture at UCL. I benefited greatly from discussion with both audiences, and from subsequent discussion with Alan Cribb. Many thanks to the journal’s anonymous reviewers, whose questions, criticisms and suggestions not only brought more nuance to my interpretation of Williams, but encouraged me to explore more fully the relationship between Williams and Dewey.
+[^8]: Earlier versions of this paper were given at University of Strathclyde, and as my inaugural lecture at UCL. I benefited greatly from discussion with both audiences, and from subsequent discussion with Alan Cribb. Many thanks to the journal’s anonymous reviewers, whose questions, criticisms and suggestions not only brought more nuance to my interpretation of Williams, but encouraged me to explore more fully the relationship between Williams and Dewey.
 
 <!-- p.26 begins here -->
 

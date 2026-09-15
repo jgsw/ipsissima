@@ -1259,8 +1259,8 @@ body.fs #fsexit{display:inline-flex}
              long text. Beside the chapter select on purpose -- the select answers "which
              file", this answers "where in it". Hidden when the file has fewer than two
              headings: a list of one entry navigates nothing. -->
-        <button class="plain" id="mstocbtn" hidden aria-expanded="false"
-                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, or press Escape, to fold the list away.">Contents</button>
+        <button class="plain icon" id="mstocbtn" hidden aria-expanded="false"
+                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, or press Escape, to fold the list away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
         <span id="msnote" class="muted"></span>
         <span class="grow"></span>
         <!-- SELECTION-TO-CLAIM (docs/EDITOR-PLAN.md): shown only while words are selected in
@@ -1282,10 +1282,10 @@ body.fs #fsexit{display:inline-flex}
              Zotero attachment it was converted from. Pressing it is the one thing that makes
              the app speak to Zotero — on this machine, per the ruled C1 narrowing — and
              pressing it again puts the marks away. -->
-        <button class="plain" id="mszotero" hidden
-                title="Show your own Zotero highlights of this text, read from Zotero running on this computer — nothing leaves your machine, and it is asked only when you press this. Press again to put them away.">Zotero highlights</button>
-        <button class="plain" id="mscompare" hidden
-                title="Open another reconstruction of this same text, and see in the margin which passages each reading covers — and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have.">Compare…</button>
+        <button class="plain icon" id="mszotero" hidden
+                title="Show your own Zotero highlights of this text, read from Zotero running on this computer — nothing leaves your machine, and it is asked only when you press this. Press again to put them away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 4.5v11"/><path d="M9 6.5h7"/><path d="M9 10h7"/><path d="M9 13.5h4.5"/></svg><span>Zotero highlights</span></button>
+        <button class="plain icon" id="mscompare" hidden
+                title="Open another reconstruction of this same text, and see in the margin which passages each reading covers — and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have."><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="6" height="12" rx="1.2"/><rect x="11" y="4" width="6" height="12" rx="1.2"/></svg><span>Compare…</span></button>
         <input type="file" id="cmpfile" hidden accept=".argdown">
         <span id="cmpnote" hidden></span>
         <button class="plain" id="cmpend" hidden
@@ -4753,33 +4753,54 @@ function startZotero(){
   for (var i = 0; i < MS.chapters.length; i++)
     if (MS.chapters[i].path === MSCHAPTER) ch = MS.chapters[i];
   if (!ch) return;
+  // The printed page each note can be pinned to, from the converter's own markers: a note
+  // annotation carries a comment and a page but no words, so its place in the text is the
+  // page's beginning — the first rendered block at or after the marker's line.
+  var pages = {};
+  pageMarks(ch.text).forEach(function(pm){
+    var li = pm.line;
+    while (li <= MSLINES.length && !MSLINES[li - 1]) li++;
+    if (li <= MSLINES.length) pages[pm.page] = li;
+  });
   HOST.zoteroAnnotations(key).then(function(items){
     items = Array.isArray(items) ? items : [];
-    var marks = [], unplaced = 0, skipped = 0;
+    var marks = [], unplaced = 0, images = 0;
     for (var j = 0; j < items.length; j++) {
       var d = (items[j] && items[j].data) || items[j] || {};
       if (d.itemType !== "annotation") continue;
-      // Only marks that CARRY WORDS can be placed by words. An area (image) annotation has
-      // no text to find; it is counted rather than silently dropped.
       var text = d.annotationText || "";
-      if (!text.trim()) { skipped++; continue; }
-      var line = window.ArgdownPositions
-        ? window.ArgdownPositions.findQuote(text, ch.text) : null;
-      if (line == null) { unplaced++; continue; }
-      marks.push({
-        line: line,
-        color: d.annotationColor || "",
-        title: "“" + text + "”" +
-               (d.annotationComment ? " — " + d.annotationComment : "") +
-               (d.annotationPageLabel ? " (p. " + d.annotationPageLabel + ")" : "")
-      });
+      var page = d.annotationPageLabel || "";
+      var kind = d.annotationType || "highlight";
+      if (text.trim()) {
+        // A highlight and an underline both CARRY WORDS, and words are how a mark is
+        // placed in a converted text (the same rule that places a claim's quotation).
+        var line = window.ArgdownPositions
+          ? window.ArgdownPositions.findQuote(text, ch.text) : null;
+        if (line == null) { unplaced++; continue; }
+        marks.push({
+          line: line,
+          color: d.annotationColor || "",
+          title: (kind === "underline" ? "underlined: " : "") + "“" + text + "”" +
+                 (d.annotationComment ? " — " + d.annotationComment : "") +
+                 (page ? " (p. " + page + ")" : "")
+        });
+      } else if (kind === "note" && (d.annotationComment || "").trim()) {
+        // A note has no words to find, but it has a page, and the converter kept the
+        // page's own beginning. A note whose page this conversion cannot name is counted.
+        if (!pages[page]) { unplaced++; continue; }
+        marks.push({ line: pages[page], color: d.annotationColor || "",
+                     title: "note — " + d.annotationComment +
+                            (page ? " (p. " + page + ", pinned to the page)" : "") });
+      } else {
+        images++;                    // an area mark: no words, nothing to place by
+      }
     }
-    ZOT = { key: key, marks: marks, unplaced: unplaced, skipped: skipped };
+    ZOT = { key: key, marks: marks, unplaced: unplaced, skipped: images };
     zotPaint();
-    $("msnote").textContent = marks.length + " highlight" + (marks.length === 1 ? "" : "s") +
+    $("msnote").textContent = marks.length + " mark" + (marks.length === 1 ? "" : "s") +
       " from Zotero" +
       (unplaced ? " — " + unplaced + " could not be placed in this converted text" : "") +
-      (skipped ? " — " + skipped + " carry no text (area marks)" : "");
+      (images ? " — " + images + " carry no text (area marks)" : "");
   }).catch(function(e){
     showErr(String(e && e.message || e));
   });

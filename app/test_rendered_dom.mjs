@@ -1895,7 +1895,13 @@ async function zoteroChecks(browser) {
     "",
     "The argument of this essay is that memory functions as a promise made to the future self.",
     "",
+    "<!-- p.2 begins here -->",
+    "",
     "Some will say that recollection is merely causal, a trace with no normative force at all.",
+    "",
+    "<!-- p.3 begins here -->",
+    "",
+    "The essay closes by refusing the distinction it began with.",
     ""
   ].join("\n"));
   fs.writeFileSync(path.join(root, "reading.argdown"), [
@@ -1945,6 +1951,12 @@ async function zoteroChecks(browser) {
                     annotationText: "merely causal, a trace with no normative force",
                     annotationComment: "the passage to press on",
                     annotationColor: "#5fb236", annotationPageLabel: "3" } },
+          { data: { itemType: "annotation", annotationType: "underline",
+                    annotationText: "functions as a promise made to the future",
+                    annotationColor: "#2ea8e5", annotationPageLabel: "1" } },
+          { data: { itemType: "annotation", annotationType: "note",
+                    annotationComment: "a thought pinned to the page",
+                    annotationColor: "#ffd400", annotationPageLabel: "3" } },
           { data: { itemType: "annotation", annotationType: "highlight",
                     annotationText: "words that appear in no conversion anywhere" } },
           { data: { itemType: "annotation", annotationType: "image" } }
@@ -1966,7 +1978,10 @@ async function zoteroChecks(browser) {
   await page.click("#mszotero");
   await page.waitForSelector("#mstext .zot-mark", { timeout: 10000 });
   const marked = await page.evaluate(() => {
-    const el = document.querySelector("#mstext .zot-mark");
+    // By content, not by document order: the underline mark sits earlier in the text, so
+    // "the first .zot-mark" stopped meaning "the highlight" the moment kinds arrived.
+    const els = [...document.querySelectorAll("#mstext .zot-mark")];
+    const el = els.find(e => /merely causal/.test(e.textContent || "")) || els[0];
     return { text: (el.textContent || "").slice(0, 80),
              color: el.style.getPropertyValue("--zot"),
              title: el.title,
@@ -1977,7 +1992,16 @@ async function zoteroChecks(browser) {
   check(marked.color === "#5fb236", "and carries its Zotero colour", marked.color);
   check(/the passage to press on/.test(marked.title) && /p\. 3/.test(marked.title),
         "the hover carries the comment and the printed page", marked.title.slice(0, 120));
-  check(/1 highlight/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
+  const kinds = await page.evaluate(() => {
+    const els = [...document.querySelectorAll("#mstext .zot-mark")];
+    return { n: els.length, titles: els.map(e => e.title).join(" || ") };
+  });
+  check(/underlined: .*promise made to the future/.test(kinds.titles),
+        "an underline places by its words like a highlight", kinds.titles.slice(0, 160));
+  check(/note — a thought pinned to the page.*pinned to the page/.test(kinds.titles),
+        "a note is pinned to its printed page's beginning",
+        kinds.titles.slice(-160));
+  check(/3 marks/.test(marked.note) && /1 could not be placed/.test(marked.note) &&
         /1 carry no text/.test(marked.note),
         "unplaceable and wordless marks are counted, never dropped", marked.note);
 

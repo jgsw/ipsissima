@@ -391,15 +391,21 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         src_dir.mkdir(parents=True, exist_ok=True)
         for r in results:
             target = src_dir / r["name"]
+            fm = ingest.front_matter(r["src"], r["md"])
+            if fm:
+                r["notes"].append('front matter written with the zotero: attachment key, '
+                                  'read off the storage path -- the item the reader\'s '
+                                  'highlights hang on, and the one zotero_store follows')
             hdr = ingest.header(r["src"], r["notes"])
-            target.write_text(hdr + r["md"].rstrip() + "\n", encoding="utf-8")
+            target.write_text(fm + hdr + r["md"].rstrip() + "\n", encoding="utf-8")
             written.append(str(target))
             # Line numbers in the notes count the TEXT BODY; the written file opens with this
             # header. Left unsaid, a note's "line 73" was found at line 87 and read as wrong.
+            head_lines = (fm + hdr).count(chr(10))
             if any(re.search(r"\bline\s+\d", n) for n in r["notes"]):
                 r["notes"].append(f"(line numbers above count the text body; the written file "
-                                  f"opens with a {hdr.count(chr(10))}-line header comment, so "
-                                  f"add {hdr.count(chr(10))} when opening it)")
+                                  f"opens with a {head_lines}-line header, so "
+                                  f"add {head_lines} when opening it)")
         if len(results) > 1 and grouping == "one-map":
             proj = Path(out) / "argdown-project.yml"
             if not proj.exists():

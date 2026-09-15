@@ -199,6 +199,45 @@ GUTENBERG_START = re.compile(r"(?im)^.{0,40}START OF (?:THE|THIS) PROJECT GUTENB
 GUTENBERG_END = re.compile(r"(?im)^.{0,40}END OF (?:THE|THIS) PROJECT GUTENBERG.*$")
 
 
+#: A footnote reference as `join_spans` writes it -- not a definition (no colon after).
+FOOTNOTE_REF = re.compile(r"\[\^([1-9]\d?)\](?!:)")
+#: A block opening with a footnote's own number, in either spelling -- bare (`1 For
+#: comments...`) or already rewritten by the superscript rule (`[^1] For comments...`).
+#: The dotted spelling (`1. Introduction`) is deliberately NOT accepted: at body size that
+#: is a numbered section heading, the same trap pdf_to_source.py records at NOTE_OPENING.
+DEF_OPENING = re.compile(r"^(?:\[\^([1-9]\d?)\]|([1-9]\d?))\s+(\S.*)$")
+
+
+def lift_footnote_definitions(md):
+    """Footnote DEFINITIONS out of the page-bottom paragraphs the text layer left inline.
+
+    The span rule in pdf_to_source.join_spans marks the REFERENCES -- `following:1` becomes
+    `following:[^1]` -- because superscript size is the one honest signal, and it exists only
+    at the span level. The note's own text has no such signal by the time it is a paragraph:
+    it arrives as an ordinary block opening with its bare number (`1 For comments, questions
+    ...`), so the reader saw a marked reference pointing at a definition that was never
+    marked (measured on the Wolff, reported by the author 15 Sep). What IS honest at text
+    level: a number that has already appeared as a reference, opening a later block, defines
+    that footnote. Each number converts at most once, is skipped where a `[^N]:` definition
+    already exists (pandoc's routes write real ones), and must follow its reference in
+    reading order. Returns (text, count).
+    """
+    defined = {m.group(1) for m in re.finditer(r"(?m)^\[\^(\d+)\]:", md)}
+    seen, lifted, out = set(), 0, []
+    for line in md.split("\n"):
+        m = DEF_OPENING.match(line)
+        n = m and (m.group(1) or m.group(2))
+        if m and n in seen and n not in defined:
+            out.append("[^%s]: %s" % (n, m.group(3)))
+            defined.add(n)
+            lifted += 1
+            continue
+        for r in FOOTNOTE_REF.finditer(line):
+            seen.add(r.group(1))
+        out.append(line)
+    return "\n".join(out), lifted
+
+
 def strip_data_uris(md):
     """Embedded base64 assets -> a stub URI. Returns (text, count, kilobytes removed).
 
@@ -596,6 +635,14 @@ def ingest_one(path, allow_ocr=True):
     if uris:
         notes.append(f"{uris} embedded base64 asset(s) ({kb} KB) blanked at ingest -- an "
                      f"image is nobody's wording; alt text, where there was any, is kept")
+    # PDF ROUTE ONLY: pandoc's routes write real footnote definitions, and a passthrough
+    # file is somebody's own markdown. Only a text layer leaves the note's text as a bare
+    # numbered paragraph.
+    if ext == ".pdf":
+        md, lifted = lift_footnote_definitions(md)
+        if lifted:
+            notes.append(f"{lifted} footnote definition(s) marked up ([^n]: ...) from the "
+                         f"page-bottom blocks the text layer left inline")
     md, fixed = tidy_headings(md)
     if fixed:
         notes.append(f"{fixed} heading(s) unwrapped from emphasis")
@@ -659,6 +706,30 @@ def extract_for_prompt(md):
     return md[:mo.start()].rstrip() + "\n", (mo.group(0).strip(), len(cut.split()))
 
 
+def front_matter(src, md):
+    """YAML front matter for a converted source, FIRST in the file -- the readers of these
+    keys accept nothing else on line one.
+
+    ONE KEY, MEASURED, NEVER PASSED: a file converted out of Zotero's library lives at
+    `…/storage/<KEY>/…`, and that segment is the attachment key -- the very item the
+    reader's own highlights hang on, and the item the store tool follows to its parent.
+    This used to live only in pdf_to_source's pipeline, so a PDF converted here out of
+    Zotero storage carried no key and both features refused it until a hand-written line
+    supplied one (the Wolff, 15 Sep). A file that already opens with front matter (a
+    passthrough copy of somebody's own markdown) is left exactly as it is.
+    """
+    if md.lstrip().startswith("---"):
+        return ""
+    try:
+        from .pdf_to_source import zotero_key_of
+    except ImportError:
+        from pdf_to_source import zotero_key_of
+    key = zotero_key_of(src)
+    if not key:
+        return ""
+    return '---\nzotero: "%s"\n---\n\n' % key
+
+
 def header(src, notes):
     lines = ["<!-- CONVERTED TEXT - NOT THE PUBLISHED DOCUMENT.",
              f"     Made by ingest.py from {os.path.basename(src)}.",
@@ -696,6 +767,8 @@ def main():
     for r in results:
         print(f"\n   {os.path.basename(r['src'])[:62]}")
         print(f"      -> source/{r['name']}   {r['words']} words")
+        if front_matter(r["src"], r["md"]):
+            print("      front matter: zotero attachment key, read off the storage path")
         for n in r["notes"]:
             print(f"      {n}")
         lines = [l for l in r["md"].splitlines() if len(l) >= 120]
@@ -715,7 +788,8 @@ def main():
     os.makedirs(src_dir, exist_ok=True)
     for r in results:
         with open(os.path.join(src_dir, r["name"]), "w", encoding="utf-8") as fh:
-            fh.write(header(r["src"], r["notes"]) + r["md"].rstrip() + "\n")
+            fh.write(front_matter(r["src"], r["md"]) + header(r["src"], r["notes"])
+                     + r["md"].rstrip() + "\n")
 
     if len(results) > 1:
         proj = os.path.join(a.out, "argdown-project.yml")

@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
 from ingest import (strip_data_uris, strip_gutenberg, ingest_one,            # noqa: E402
-                    pandoc)
+                    lift_footnote_definitions, front_matter, pandoc)
 
 fails = 0
 
@@ -98,6 +98,49 @@ b4, n4 = strip_gutenberg(
     "text\n*** START OF THE PROJECT GUTENBERG EBOOK X ***\n")
 check("markers out of order cut nothing and say so",
       ("text" in b4, "out of order" in (n4 or "")), (True, True))
+
+# ---- footnote definitions lifted from page-bottom blocks ----------------------------- #
+# The span rule marks the REFERENCES; the note's own text arrives as a paragraph opening
+# with its bare number (measured on the Wolff, reported by the author 15 Sep). A number
+# defines a footnote only if it has already appeared as a reference, is not yet defined,
+# and opens a later block -- so years, dotted headings and stray numerals ride through.
+print("footnote definitions")
+FN = "\n".join([
+    "The honour and privilege of the position.[^1] More prose follows here.",
+    "",
+    "In 2026 the Institute expanded. 2 kg of programmes were printed.",
+    "",
+    "1 For comments and questions I am grateful to many colleagues.",
+    "",
+    "1. Introduction",
+])
+out, n = lift_footnote_definitions(FN)
+check("the referenced note's block becomes a definition",
+      "[^1]: For comments and questions I am grateful to many colleagues." in out, True)
+check("  and exactly one was lifted", n, 1)
+check("  a year and a measurement are untouched",
+      ("In 2026 the Institute expanded. 2 kg" in out), True)
+check("  a dotted numbered heading is not a footnote", "1. Introduction" in out, True)
+out2, n2 = lift_footnote_definitions("A bare\n\n1 numbered paragraph with no reference.\n")
+check("a number never referenced defines nothing", n2, 0)
+out3, n3 = lift_footnote_definitions(
+    "Text.[^1]\n\n[^1]: A real definition pandoc wrote.\n\n1 A later numbered line.\n")
+check("an existing definition is not doubled", n3, 0)
+out4, n4 = lift_footnote_definitions(
+    "Text.[^2]\n\n[^2] The note whose own number was superscript too.\n")
+check("the bracketed spelling of a note's own number is lifted",
+      "[^2]: The note whose own number was superscript too." in out4 and n4 == 1, True)
+
+# ---- the zotero key, read off the storage path --------------------------------------- #
+print("the zotero key at the door")
+check("a Zotero storage path yields front matter with its key",
+      front_matter("/Users/x/Zotero/storage/AB12CD34/paper.pdf", "plain text"),
+      '---\nzotero: "AB12CD34"\n---\n\n')
+check("  an ordinary path yields nothing",
+      front_matter("/Users/x/Papers/paper.pdf", "plain text"), "")
+check("  a file that already opens with front matter is left exactly as it is",
+      front_matter("/Users/x/Zotero/storage/AB12CD34/notes.md", "---\ntitle: t\n---\nx"),
+      "")
 
 # ---- the .html route ----------------------------------------------------------------- #
 # The article by text density, the chrome never written. Needs pandoc (html_to_source

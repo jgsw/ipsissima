@@ -232,7 +232,12 @@ async fn zotero_annotations(key: String) -> Result<serde_json::Value, String> {
     if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
         return Err("not a Zotero item key".to_string());
     }
-    let url = format!("http://127.0.0.1:23119/api/users/0/items/{key}/children");
+    // `?itemType=annotation` is load-bearing, not a filter for tidiness: measured on
+    // Zotero 10.0.2, a bare `/children` answers the attachment's notes and files but NOT
+    // its annotations — three marks in the database, zero in the reply — and only the
+    // typed query returns them.
+    let url =
+        format!("http://127.0.0.1:23119/api/users/0/items/{key}/children?itemType=annotation");
     let resp = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
         .build()
