@@ -854,6 +854,54 @@ def find_boundaries(rows, margin, body_size, sizes):
     return first, last
 
 
+def mark_displayed_quotes(flow):
+    """Indices of flow rows that are DISPLAYED-QUOTE lines. Returns a set.
+
+    THE SIGNAL, measured on the Wolff: a displayed quotation is a run of consecutive lines
+    every one of which sits off the page's own margin -- at the very indent a paragraph
+    gives only to its FIRST line (margin 43, quotes wholly at 53; margin 66, quotes wholly
+    at 76 on the facing pages, which is also why this works per page: recto and verso
+    margins differ and a global band cannot see that).
+
+    TWO GUARDS, each against a real confusion. A run must be at least two lines, because one
+    indented line IS a paragraph opening. And the run must carry continuation evidence -- a
+    line after the first starting lowercase -- because two short indented paragraphs in a
+    row would otherwise read as one quotation; a quotation broken across lines almost always
+    resumes mid-sentence, and one that happens to break at every sentence boundary is left
+    alone, which costs a missed blockquote rather than an invented one.
+    """
+    from collections import defaultdict
+    by_page = defaultdict(list)
+    for i, (p, _x, _t) in enumerate(flow):
+        by_page[p].append(i)
+    marked = set()
+    for idxs in by_page.values():
+        xs = Counter(round(flow[i][1]) for i in idxs)
+        if not xs:
+            continue
+        # THE LEFTMOST HEAVILY-USED EDGE, not the modal one: on a page that is mostly
+        # quotation the indent outnumbers the margin, and the mode would call the quote
+        # the margin and the margin an outdent.
+        heavy = [x for x, c in xs.items() if c >= max(2, 0.25 * len(idxs))]
+        margin = min(heavy) if heavy else xs.most_common(1)[0][0]
+
+        def close(run):
+            if len(run) >= 2 and any(flow[i][2][:1].islower() for i in run[1:]):
+                marked.update(run)
+
+        run = []
+        for i in idxs:
+            x0, t = flow[i][1], flow[i][2]
+            off = margin + 6 <= x0 <= margin + 60
+            if off and t.strip() and not NUMBERED.match(t) and not PARA_NUMBER.match(t.strip()):
+                run.append(i)
+            else:
+                close(run)
+                run = []
+        close(run)
+    return marked
+
+
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
               caps_headings=None):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
@@ -877,7 +925,18 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
     """
     blocks = []
     expected = 1                      # the next footnote number the sequence is looking for
-    for page, x0, text in rows:
+    for row in rows:
+        page, x0, text = row[0], row[1], row[2]
+        # A fourth element flags a DISPLAYED-QUOTE line (mark_displayed_quotes); triples
+        # still pass, so every older caller and test reads exactly as before.
+        quote = len(row) > 3 and row[3]
+        if quote and not notes:
+            if blocks and blocks[-1]["kind"] == "quote":
+                blocks[-1]["text"] += " " + text
+                blocks[-1]["pages"].add(page)
+            else:
+                blocks.append(dict(page=page, pages={page}, kind="quote", text=text))
+            continue
         if notes:
             # A NEW NOTE STARTS ONLY AT THE NUMBER THE SEQUENCE IS EXPECTING. Notes run 1, 2,
             # 3 ... through the article, and a footnote's runover is full of numbers that open a
@@ -934,7 +993,11 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             blocks.append(dict(page=page, pages={page}, kind="body",
                                text=text.strip(), awaits_text=True, numbered_para=True))
             continue
-        elif blocks and ((bands["hanging"] and x0 > bands["hanging"] - 5) or text[:1].islower()):
+        elif (blocks and blocks[-1]["kind"] != "quote"
+              and ((bands["hanging"] and x0 > bands["hanging"] - 5) or text[:1].islower())):
+            # NEVER INTO A QUOTE BLOCK: the paragraph a quotation interrupted resumes at the
+            # margin, usually mid-sentence -- merged into the quote it would put the author's
+            # words inside somebody else's quotation marks.
             blocks[-1]["text"] += " " + text
             blocks[-1]["pages"].add(page)
             continue
@@ -942,7 +1005,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             kind = "body"
         elif bands["display"] and x0 > bands["display"] - 2:
             kind = "display"
-        elif blocks and blocks[-1]["kind"] not in ("display", "own-heading"):
+        elif blocks and blocks[-1]["kind"] not in ("display", "own-heading", "quote"):
             blocks[-1]["text"] += " " + text
             blocks[-1]["pages"].add(page)
             continue
@@ -1307,9 +1370,15 @@ def convert(cfg):
         if auto_back is not None:
             auto_back -= auto_front
 
+    # BACK MATTER IS KEPT, NOT CUT (the author's ruling, 15 Sep 2026): a reference list is
+    # useful to the READER and useless to the extraction, so it stays in the file -- emitted
+    # after the notes, under its own `#` heading, which is exactly where the prompt view's
+    # trim (ingest.extract_for_prompt) starts cutting. Footnotes land under `# Notes`, which
+    # that trim deliberately does not match, so notes reach the model and references do not.
+    # The publisher's own voice is a different class and never enters at all.
+    back_rows = []
     if auto_back is not None and auto_back < len(body):
-        dropped["back matter (detected)"] = len(body) - auto_back
-        auto_back_text = body[auto_back][4]
+        back_rows = body[auto_back:]
         body, body_sizes = body[:auto_back], body_sizes[:auto_back]
 
     # NOW the bands, on the article alone. The margin is kept from the provisional pass, where it
@@ -1348,6 +1417,11 @@ def convert(cfg):
     # them was emitted with a `#`.
     headings_now = dict(cfg.own_headings or {})
     headings_now.update(auto_caps)
+    # Displayed quotations, marked per page BEFORE assembly (G6's structure half): a run of
+    # lines all off the page's own margin is somebody being quoted, and it becomes a
+    # `> ` block rather than dissolving into the paragraph around it.
+    qmarks = mark_displayed_quotes(flow)
+    flow = [(p, x, t, i in qmarks) for i, (p, x, t) in enumerate(flow)]
     blocks = finish(to_blocks(flow, bands, headings_now, cfg.end_marker,
                               number_headings=cfg.number_headings, caps_headings=auto_caps),
                     cfg.repairs, applied, soft)
@@ -1356,6 +1430,12 @@ def convert(cfg):
 
     out, used, seen = [], [], set()
     for b in blocks:
+        if b["kind"] == "quote":
+            if b["page"] not in seen:
+                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
+                seen.add(b["page"])
+            out.append("> " + b["text"])
+            continue
         # A NUMBERED PARAGRAPH IS NOT A NUMBERED HEADING, and on the page they are identical:
         # "64. Article 9 provides:" has exactly the shape of "2. Hume and abstraction", and a
         # short paragraph opening a quotation was promoted to a section heading because of it.
@@ -1399,8 +1479,32 @@ def convert(cfg):
             op = note_opening(t, dotted=True)   # a lifted note is apparatus by construction
             out.append(f"[^{op[0]}]: {op[1]}" if (op and op[0] in seen_marks) else t)
 
+    back_headings = []
+    if back_rows:
+        out.append("<!-- Back matter, kept for the reader (the author's ruling, 15 Sep "
+                   "2026): reference lists and their kin stay in the file; the extraction "
+                   "prompt is trimmed from the first back-matter heading below. -->")
+        group = []
+
+        def flush_group():
+            for gb in finish(to_blocks(group, bands, {}, None), cfg.repairs, applied, soft):
+                out.append(gb["text"])
+            del group[:]
+
+        for p, x, _y, _h, t, _c, _s in back_rows:
+            if BACK_MATTER.match(t.strip()):
+                flush_group()
+                head = title_case(t.strip()) if t.strip().isupper() else t.strip()
+                back_headings.append(head)
+                out.append("# " + head)
+            else:
+                group.append((p, x, t))
+        flush_group()
+
     report = dict(
         words=sum(len(b["text"].split()) for b in blocks), blocks=len(blocks),
+        quotes=sum(1 for b in blocks if b["kind"] == "quote"),
+        back_matter_kept=len(back_rows), back_headings=back_headings,
         notes=len(note_blocks), marks=len(FOOTNOTE_MARKS), columns=2 if split else 1,
         column_split=round(split, 1) if split else None, bands=bands,
         headings_placed=used,
@@ -1514,6 +1618,13 @@ def header(cfg, r):
         lines.append(f"     (e) {r['marks']} superscript marker(s) written as `[^n]` references. "
                      "No note block was found at the foot of any page, so they have no "
                      "definitions -- check that this paper prints its notes as footnotes.")
+    if r.get("quotes"):
+        lines.append(f"     (f) {r['quotes']} displayed quotation(s) set as `>` blockquotes -- "
+                     "lines the page indents wholly off its margin are somebody being quoted.")
+    if r.get("back_matter_kept"):
+        lines.append(f"     (h) Back matter kept for the reader "
+                     f"({', '.join(r['back_headings']) or 'unheaded'}): in this file, "
+                     "trimmed from what is sent for extraction.")
     if r.get("band_guess"):
         g = r["band_guess"]
         lines.append(

@@ -329,6 +329,42 @@ check("  a small numbered note is untouched by the guard",
       bool(opens_note(row("1 For comments I thank many colleagues.", True), None, 0.70, 43)),
       True)
 
+print("displayed quotations (G6's structure half)")
+# The signal measured on the Wolff: a quotation is a run of lines ALL off the page's own
+# margin -- the indent a paragraph gives only to its first line. Two guards: one indented
+# line IS a paragraph opening, and a run with no lowercase continuation is two short
+# paragraphs, not a quotation.
+from pdf_to_source import mark_displayed_quotes                               # noqa: E402
+FLOW = [
+    (1, 53, "First paragraph opens indented."),          # 0: a paragraph's own first line
+    (1, 43, "and continues at the margin."),             # 1
+    (1, 53, "The quoted passage begins here"),           # 2: the run
+    (1, 53, "and continues in lower case,"),             # 3
+    (1, 53, "ending where the printer ended it."),       # 4
+    (1, 43, "The paragraph resumes at the margin."),     # 5
+    (1, 43, "More margin prose to anchor the mode."),    # 6
+    (1, 43, "And more, so the margin wins the count."),  # 7
+    (1, 53, "One short indented paragraph."),            # 8: two openings in a row --
+    (1, 53, "Another short indented paragraph."),        # 9: no lowercase evidence
+]
+check("the run is marked, the paragraph openings are not",
+      mark_displayed_quotes(FLOW), {2, 3, 4})
+check("  a single indented line is never a quotation",
+      mark_displayed_quotes(FLOW[:2] + FLOW[5:8]), set())
+
+BANDS = {"margin": 43, "display": None, "paragraph": 53, "hanging": None}
+rows4 = [r + ((i in {2, 3, 4}),) for i, r in enumerate(FLOW)]
+bl = to_blocks(rows4, BANDS, {}, None)
+kinds = [b["kind"] for b in bl]
+check("the run becomes ONE quote block", kinds.count("quote"), 1)
+check("  carrying the whole quotation",
+      [b["text"] for b in bl if b["kind"] == "quote"],
+      ["The quoted passage begins here and continues in lower case, "
+       "ending where the printer ended it."])
+after = bl[[i for i, b in enumerate(bl) if b["kind"] == "quote"][0] + 1]
+check("  and the resuming paragraph is NOT merged into it",
+      after["text"].startswith("The paragraph resumes"), True)
+
 print("join_spans (superscript footnote markers)")
 
 

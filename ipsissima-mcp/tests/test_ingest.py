@@ -168,6 +168,34 @@ check("  a file that already opens with front matter is left exactly as it is",
       front_matter("/Users/x/Zotero/storage/AB12CD34/notes.md", "---\ntitle: t\n---\nx"),
       "")
 
+# ---- the unified PDF route: structured first, plain as the loud fallback ------------- #
+# The route itself ran against a real PDF when it was built; what these hold is the CHOICE:
+# the word-count floor that decides when the structured converter's answer is trusted, and
+# that every refusal is said. Stubbed, because the choice is the unit under test.
+print("the PDF route's choice")
+import ingest as _ingest                                                     # noqa: E402
+_orig = (_ingest.plain_text, _ingest.from_pdf_structured)
+PLAIN = " ".join(["word"] * 300)
+try:
+    _ingest.plain_text = lambda p: PLAIN
+    _ingest.from_pdf_structured = lambda p: (" ".join(["word"] * 280), ["structured note"])
+    md, notes = _ingest.from_pdf("x.pdf")
+    check("a structured result near the layer's word count is used",
+          (len(md.split()), any("structured note" in n for n in notes)), (280, True))
+    check("  and the difference is accounted for aloud",
+          any("difference measured furniture" in n for n in notes), True)
+    _ingest.from_pdf_structured = lambda p: (" ".join(["word"] * 100), ["structured note"])
+    md, notes = _ingest.from_pdf("x.pdf")
+    check("one that lost too many words is refused, and the plain route used",
+          (md == PLAIN, any("more than furniture explains" in n for n in notes)),
+          (True, True))
+    _ingest.from_pdf_structured = lambda p: (None, "the page uses more than two indent levels")
+    md, notes = _ingest.from_pdf("x.pdf")
+    check("a converter refusal is quoted, not swallowed",
+          (md == PLAIN, any("structured route declined" in n for n in notes)), (True, True))
+finally:
+    _ingest.plain_text, _ingest.from_pdf_structured = _orig
+
 # ---- the .html route ----------------------------------------------------------------- #
 # The article by text density, the chrome never written. Needs pandoc (html_to_source
 # renders the found element through it); the suite's environment has it.

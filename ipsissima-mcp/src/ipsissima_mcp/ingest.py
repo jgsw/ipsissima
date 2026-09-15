@@ -473,6 +473,54 @@ def plain_text(path):
     return "\n\n".join(b for b in out if b)
 
 
+def from_pdf_structured(path):
+    """The PDF through the full converter -- pdf_to_source.py, the one with the machinery.
+
+    THE UNIFICATION, ruled by the author 15 Sep 2026: this module's own plain route left a
+    paper reading as the sheet (measured on the Wolff: 25 running heads, 26 footers, the
+    copyright block, no headings), while pdf_to_source has solved furniture, headings,
+    footnote zones, displayed quotations and the licence block once, with a report. So the
+    structured converter goes first and this returns (body, notes); on any refusal it
+    returns (None, why) and the caller falls back to the plain route, loudly.
+
+    The generated front matter and header comment are stripped off: ingest writes its own
+    of both, from the same measurements, and two headers would each claim to be line 1.
+    """
+    try:
+        from .pdf_to_source import Config, convert
+    except ImportError:
+        from pdf_to_source import Config, convert
+    import pathlib
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        out = pathlib.Path(td) / "converted.md"
+        try:
+            rep = convert(Config(pdf=pathlib.Path(path), out=out))
+            text = out.read_text(encoding="utf-8")
+        except SystemExit as e:
+            return None, str(e).split("\n")[0][:160]
+        except Exception as e:                                  # noqa: BLE001 -- the fallback
+            return None, f"{e.__class__.__name__}: {str(e)[:140]}"
+    body = re.sub(r"(?s)\A---\n.*?\n---\n\s*", "", text, count=1)
+    body = re.sub(r"(?s)\A<!--.*?-->\n\s*", "", body, count=1)
+    notes = [f"structured route (pdf_to_source): {len(rep['headings_placed'])} heading(s), "
+             f"{rep['quotes']} displayed quotation(s) as blockquotes, "
+             f"{rep['notes']} footnote(s) under `# Notes`",
+             "dropped: " + (", ".join(f"{k} ({n})" for k, n in rep["furniture"].items())
+                            or "nothing")]
+    if rep["back_matter_kept"]:
+        notes.append(f"back matter kept for the reader "
+                     f"({', '.join(rep['back_headings']) or 'unheaded'}) -- in the file, "
+                     f"trimmed from the extraction prompt")
+    if rep["heading_gaps"]:
+        notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
+                     f"there before trusting the sections")
+    if rep["suspicious"]:
+        notes.append(f"! {len(rep['suspicious'])} line(s) look stretched -- possible dropped "
+                     f"words; the converter's report names them")
+    return body, notes
+
+
 def from_pdf(path, allow_ocr=True):
     """The text layer first; OCR only if the text layer is bad, and only if it beats it.
 
@@ -495,6 +543,23 @@ def from_pdf(path, allow_ocr=True):
     notes = []
     best_name, best = "text layer", plain_text(path)
     if quality(best) >= len(best.split()) and len(best.split()) > 200:
+        # A CLEAN LAYER GOES TO THE STRUCTURED CONVERTER FIRST -- its geometry machinery
+        # assumes trustworthy sizes and edges, which is exactly what a clean layer has and a
+        # scan has not. The floor is the honesty check: structured output holding many fewer
+        # words than the raw layer (beyond the furniture it is meant to drop) means text was
+        # misplaced, and the plain route -- ugly but complete -- wins.
+        body, s_notes = from_pdf_structured(path)
+        if body is not None and len(body.split()) >= 0.85 * len(best.split()):
+            return body, s_notes + [f"(the raw text layer held "
+                                    f"{len(best.split())} words; this keeps "
+                                    f"{len(body.split())}, the difference measured "
+                                    f"furniture and front matter)"]
+        if body is not None:
+            notes.append(f"! structured route kept only {len(body.split())} of the text "
+                         f"layer's {len(best.split())} words -- more than furniture "
+                         f"explains, so the plain route is used instead")
+        elif s_notes:
+            notes.append(f"! structured route declined ({s_notes}); the plain route is used")
         notes.append(f"text layer clean ({len(best.split())} words); no OCR attempted")
         return best, notes
 

@@ -45,16 +45,32 @@ actually uses. The Wolff read as the sheet because it went down the simple road.
   restructured text); the Wilson source blanked in place (© block + the lone running-head
   byline; 139/139 exact).
 
-## 3. Open, in order
+## 3. Ruled and built, 15 Sep — the same day the questions were put
 
-1. **Unify the PDF route.** The recommendation from §1's table: `ingest.from_pdf` should
-   ride `pdf_to_source.convert` (auto-config) and keep `plain_text` as the loud fallback,
-   the same shape as the OCR escalation. One blocker is policy, not code: pdf_to_source
-   **cuts detected back matter at creation** (128 lines on the Wolff — the references),
-   where ingest's standing rule keeps everything on disk and trims only the prompt. A
-   reconstruction can cite a bibliography entry; whether references belong in the file is
-   the author's call, and the wiring waits on it.
-2. **Inset quotations → blockquotes.** Unbuilt in both converters: the display band decides
-   where blocks *start*, and nothing renders `>`. Needs its own measurement pass (indent
-   from both margins, size drop, the bands machinery has the raw material).
-3. The G6 ruling itself.
+1. **The PDF route is unified.** `ingest.from_pdf` sends a clean text layer through
+   `pdf_to_source.convert` first and keeps the plain route as the loud fallback (the OCR
+   escalation's shape): a structured result holding fewer than 85% of the raw layer's
+   words is refused with the shortfall said, and a converter refusal is quoted, never
+   swallowed. Measured on the Wolff through the unified route: 8 headings, 11 blockquotes,
+   the footnote defined, 96% of the raw words kept with the difference named.
+
+2. **The back-matter policy, in the author's ruling.** Three classes: the *publisher's
+   voice* (stamps, © blocks, the Gutenberg licence) enters neither the file nor the
+   prompt; *reader-useful, extraction-irrelevant* matter (reference lists) stays in the
+   file and is trimmed from the prompt; *argument-relevant* matter (endnotes) reaches
+   both. Enacted: detected back matter is now **kept**, emitted after `# Notes` under its
+   own `#` heading — which is exactly where `extract_for_prompt` starts trimming, and
+   `# Notes` is deliberately not in its vocabulary, so the order of emission is the
+   machinery of the ruling. Verified on the Wolff: the note reaches the prompt, the
+   bibliography's 805 words do not, and both reach the reader.
+
+3. **Displayed quotations are blockquotes.** The measured signal: a quotation is a run of
+   lines *all* off the page's own margin — the indent a paragraph gives only to its first
+   line — read per page, because recto and verso margins differ. Two guards: a single
+   indented line is a paragraph opening, and a run with no lowercase continuation is two
+   short paragraphs. Before this, `to_blocks` dissolved the Wolff's Wollheim quotations
+   into one mega-paragraph with the prose around them; they now stand as eleven `>` blocks,
+   and the paragraph a quotation interrupts is never merged into it.
+
+**Still open:** the G6 ruling itself (reworded 15 Sep at the author's ask: *"The author's
+text, with its structure, and nothing else"*).
