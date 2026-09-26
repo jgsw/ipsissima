@@ -492,6 +492,20 @@ def coverage_report(cli, path, source_root=None):
     unknown_data_keys(doc)
 
 
+def _profile_version():
+    """The version of the Ipsissima profile for Argdown this checker implements, from the registry
+    that ships beside it -- read, not restated, so the two cannot disagree."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
+                  encoding="utf-8") as fh:
+            return json.load(fh).get("version")
+    except (OSError, ValueError):
+        return None
+
+
+PROFILE_VERSION = _profile_version()
+
+
 #: Every key that something -- this checker, or the app's views -- actually reads off a node.
 #: PROVENANCE_FIELDS is what the analysis here merges; `pinpoint` and `reviewed` are drawn in
 #: the app; `uses`, `formalization` and `formalized` ride on premise-conclusion lines;
@@ -2417,6 +2431,9 @@ def main():
         # "nothing to fix" beside it -- a claim the checker is not entitled to make about files
         # it never opened. Two booleans, so a caller can tell "clean" from "unexamined".
         print(json.dumps({"file": os.path.basename(path),
+                          # THE PROFILE THIS RUN VALIDATED AGAINST (docs/PROFILE.md): a caller
+                          # can tell which version of the annotation layer "ok" was measured by.
+                          "profile": PROFILE_VERSION,
                           "ok": not any(f["severity"] == "!" for f in FINDINGS),
                           "verified": bool(a.source_root),
                           "findings": FINDINGS,

@@ -1078,6 +1078,9 @@ function create(container, graph, opts) {
         '<div class="amech-row"><span class="k">actor</span><span>' + esc(a.label || s.actor || "") + (a.level ? ' (' + esc(a.level) + ')' : '') + '</span></div>' +
         (s.role ? '<div class="amech-row"><span class="k">role</span><span>' + esc(s.role) + '</span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
+        // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
+        // often make differently (mechanism-pass.md), so the reader is shown it.
+        (s.note ? '<div class="amech-row"><span class="k">note</span><span>' + esc(s.note) + '</span></div>' : '') +
         (s.appraisal ? '<div class="amech-row"><span class="k">layer</span><span>the reconstructor’s appraisal: not in the text</span></div>' : '') +
         (canFold.indexOf(selected.state) >= 0 ? '<div class="amech-state-act"><button type="button" data-fold="' + esc(selected.state) +
           '">Fold into its arrows</button> <span class="amech-q">draws what leads in and what leads out as routes through it</span></div>' : '') +

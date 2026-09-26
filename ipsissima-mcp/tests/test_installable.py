@@ -81,6 +81,7 @@ else:
             names = zipfile.ZipFile(wheels[0]).namelist()
             has = lambda pat: any(n.startswith(f"ipsissima_mcp/{pat}") for n in names)
             check("the wheel carries the parser", has("vendor/argdown-cli.mjs"))
+            check("the wheel carries the profile registry", has("profile.json"))
             for name in named:
                 check(f"the wheel carries docs/{name}", has(f"docs/{name}"))
 

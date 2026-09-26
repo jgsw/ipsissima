@@ -476,6 +476,10 @@ contacts zotero.org.
 
 ## What the server offers
 
+What a map may record, and what the checker holds it to, is specified in
+[`docs/PROFILE.md`](../docs/PROFILE.md), the Ipsissima profile for Argdown; its registry ships in
+the package as `profile.json`, and `argdown_check` reports the profile version it validated against.
+
 | tool | |
 |---|---|
 | `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous; offers the mechanism pass for a text that sets out what brings what about |

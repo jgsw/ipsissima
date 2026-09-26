@@ -1,7 +1,10 @@
 # What Ipsissima records on a claim
 
 Argdown says how to write a map. This says what Ipsissima puts in one, and why. Every field here
-is either drawn on screen or checked by `check_argdown.py`; none is decoration.
+is either drawn on screen or checked by `check_argdown.py`; none is decoration. The fields are
+specified, value by value, in the Ipsissima profile for Argdown (`docs/PROFILE.md` in the
+repository; its registry is `profile.json` beside the checker). This document is the method: how
+to choose them.
 
 The one idea behind all of it: **a reconstruction is a claim about someone else's text, so a
 reader must be able to check it.** That means every claim says where it came from and how far it

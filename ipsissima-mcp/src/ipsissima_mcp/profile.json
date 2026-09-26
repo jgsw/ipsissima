@@ -1,0 +1,114 @@
+{
+  "profile": "Ipsissima profile for Argdown",
+  "version": "1.0",
+  "date": "2026-09-26",
+  "spec": "docs/PROFILE.md",
+  "note": "The registry of every annotation Ipsissima reads. No new syntax: every key rides in Argdown's own front matter and {data} blocks, or in a source file's YAML front matter. tests/test_profile.py holds this file to what the checker and the app actually read.",
+
+  "map_frontmatter": {
+    "title": {"type": "string", "summary": "Author YEAR -- short title."},
+    "reconstruction": {"type": "map", "summary": "The reading policy.", "keys": "reading_policy"},
+    "defaults": {"type": "map", "summary": "Claim metadata declared once for every claim that does not set its own (usually `chapter`); `reviewed` here records a person's pass over the whole map."},
+    "contentions": {"type": "list of titles", "summary": "The text's stated theses, added to the computed apex. Only the author's own."},
+    "text-provenance": {"type": "string", "values": ["generated"], "summary": "Declares that the manuscript itself was machine-generated; shown beside the title."},
+    "author": {"type": "string", "summary": "Who drew a survey map (a map with no source text)."},
+    "date": {"type": "string", "summary": "When a survey map was drawn."},
+    "mechanism": {"type": "map", "summary": "The causal chain the text asserts.", "keys": "mechanism"}
+  },
+
+  "reading_policy": {
+    "generated": {"type": "boolean", "summary": "A model wrote the map; the checker may correct its fidelity markers."},
+    "draft": {"type": "boolean", "summary": "The text is still being written; findings about unfinishedness become observations."},
+    "aim": {"type": "enum", "values": ["fit", "appropriation"], "summary": "fit: what the text says; appropriation: the best philosophy in it."},
+    "unit": {"type": "enum", "values": ["meaning", "commitment"], "summary": "Which sense of the words, or which view is held."},
+    "mode": {"type": "enum", "values": ["coherence", "truth", "soundness", "agreement", "interest"]},
+    "strength": {"type": "enum", "values": ["minimal", "ordinary", "strong"], "summary": "How much better than their words the author is assumed to be."}
+  },
+
+  "claim_data": {
+    "chapter": {"type": "path", "summary": "The source file the claim reads, relative to the source root."},
+    "section": {"type": "string", "summary": "The heading in that file the claim belongs to."},
+    "source": {"type": "string", "summary": "A quotation pinning a claim whose own text is a summary; verified like any quotation."},
+    "pinpoint": {"type": "string", "summary": "Where a reader finds it in print: p. 12, pp. 34, 36, [50]."},
+    "line": {"type": "integer", "summary": "The line in the chapter the claim is placed at, where no quotation places it."},
+    "lineSource": {"type": "string", "summary": "How `line` was arrived at."},
+    "fidelity": {"type": "enum", "values_from": "fidelity", "summary": "How far the claim's own text stands from the author's words."},
+    "warrant": {"type": "string", "suggested_from": "warrants", "summary": "Why a departure (interpretation, imputation) is allowed."},
+    "note": {"type": "string", "summary": "What the notation cannot carry: the limitation, the reading followed, the road not taken."},
+    "reviewed": {"type": "string", "summary": "The date a person reviewed the claim. Never set by a model."},
+    "causes": {"type": "map or list of maps", "summary": "The causal step(s) the claim states.", "keys": "causes"}
+  },
+
+  "pcs_data": {
+    "uses": {"type": "list of line numbers", "on": "inference line", "summary": "Which premises the step uses; required where a structure has two or more steps."},
+    "formalization": {"type": "string", "on": "premise or conclusion line", "summary": "The line's logical form, in NLTK syntax."},
+    "formalized": {"type": "string", "on": "premise or conclusion line", "summary": "The stamp of the words the formula was read against, written by a person with --stamp."}
+  },
+
+  "heading_data": {
+    "isGroup": {"type": "boolean", "summary": "Argdown's own: the heading groups its claims."}
+  },
+
+  "fidelity": ["quotation", "paraphrase", "compression", "interpretation", "imputation"],
+  "fidelity_pattern": {"quotation": "", "paraphrase": "6 2", "compression": "4 3", "interpretation": "2 3", "imputation": "7 2 1.5 2"},
+
+  "warrants": ["enthymeme", "hyperbole", "sloppy-phrasing", "secret-sign", "other-texts", "coherence", "convention"],
+
+  "tags": {
+    "reported": "a view the text sets out but does not hold",
+    "conceded": "something the author grants tells against them",
+    "contested": "an objection voiced in the text that is not the author's view",
+    "authority": "a proposition whose force comes from its source, not its content",
+    "obiter": "said in a judgment, but not a necessary step to the disposal",
+    "crux": "a claim the reconstructor settled by choosing among live readings",
+    "appraisal": "the reconstructor's own reading of the text against the world"
+  },
+
+  "mechanism": {
+    "question": {"type": "string"},
+    "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
+    "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
+    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | outcome", "measured": "string", "appraisal": "boolean", "note": "string"}}
+  },
+
+  "causes": {
+    "from": {"type": "state id"},
+    "to": {"type": "state id"},
+    "sign": {"type": "enum", "values": ["+", "-", "0"], "summary": "+ raises, - lowers, \"0\" a finding of no effect."},
+    "basis": {"type": "enum", "values": ["study", "statistics", "model", "example", "testimony", "asserted"], "summary": "What the text offers for the step."},
+    "lag": {"type": "string"},
+    "given": {"type": "list of strings", "summary": "Conditions the text states, in its words."},
+    "how": {"type": "map", "keys": {"actor": "an actor id", "situation": "string", "habit": "string", "response": "string"}},
+    "reflexive": {"type": "boolean"},
+    "selects": {"type": "boolean", "summary": "A selection link: who ends up on each side, not an effect."},
+    "hedged": {"type": "boolean", "summary": "The text puts the step as a possibility."}
+  },
+
+  "source_frontmatter": {
+    "title": {"type": "string"},
+    "author": {"type": "string"},
+    "source": {"type": "string", "summary": "The publication, with its pages."},
+    "doi": {"type": "string"},
+    "url": {"type": "string"},
+    "licence": {"type": "string", "summary": "An SPDX identifier where there is one."},
+    "licence_url": {"type": "string"},
+    "rights": {"type": "string", "summary": "The rights statement, in words."},
+    "abstract": {"type": "string", "summary": "The text's own abstract, shown on the orientation panel."},
+    "voice": {"type": "string", "summary": "For a wholly dramatised text: whose voice the mapped argument is in."},
+    "facts": {"type": "string", "summary": "For a judgment: the facts of the case."},
+    "facts_source": {"type": "string", "summary": "Where `facts` comes from."},
+    "attribution": {"type": "string", "summary": "For a pasted text: whose it is."},
+    "zotero": {"type": "string", "summary": "The Zotero attachment key the text was converted from."}
+  },
+
+  "source_markup": {
+    "page_marker": "<!-- p.N begins here -->",
+    "back_matter": "the first heading of References, Notes, Bibliography and their kin; kept in the file, never quoted as argument",
+    "project_file": "chapters: a list of files, optionally grouped under `part:`; Quarto's `book: chapters:` is read the same way"
+  },
+
+  "quotation_matching": {
+    "folded": ["runs of whitespace, the non-breaking space among them", "line and paragraph breaks", "single, double, curly and straight quotation marks and guillemets, all as one", "en and em dashes, as a hyphen", "the ellipsis character, as three stops", "markdown emphasis * _ `", "backslash escapes", "the soft hyphen U+00AD"],
+    "minimum_span": 10
+  }
+}

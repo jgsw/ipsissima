@@ -195,6 +195,11 @@ actually does.
 
 ## Reading the code
 
+`docs/PROFILE.md` specifies the **Ipsissima profile for Argdown**: every annotation Ipsissima
+reads — where a claim comes from, how far it stands from the words, whose view it is, the causal
+chain a text asserts — and where each one sits in a standard Argdown file. A file written to it is
+ordinary Argdown that any Argdown tool can read; nothing in it is new syntax.
+
 `docs/NOTES.md` is the record of decisions that were expensive to reach, several of which exist
 because something failed silently. `docs/REVIEW.md` is an outside reading of the whole project
 written just before release — what was found, what was fixed, and what is still open, including

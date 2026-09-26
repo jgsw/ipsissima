@@ -83,4 +83,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 # vendor/*.md is the licence NOTICE for the bundled parser -- it must travel wherever the
 # bundle does, which is the wheel and the .mcpb.
-ipsissima_mcp = ["vendor/*.mjs", "vendor/*.md", "docs/*.md"]
+# profile.json is the registry of the Ipsissima profile for Argdown (docs/PROFILE.md): the checker
+# reports the version it validates against, so the file must travel with it.
+ipsissima_mcp = ["vendor/*.mjs", "vendor/*.md", "docs/*.md", "profile.json"]
