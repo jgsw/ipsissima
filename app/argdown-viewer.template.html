@@ -4402,12 +4402,10 @@ var MSPARA = [];            // line (1-based) -> [firstLine, lastLine] of its pa
  *  page it was on.
  */
 function pageMarks(text) {
-  var out = [], lines = String(text == null ? "" : text).split("\n");
-  for (var i = 0; i < lines.length; i++) {
-    var m = /<!--\s*(?:.*?\s)?p\.\s*(\d+)\s+begins here\s*-->/.exec(lines[i]);
-    if (m) out.push({ line: i + 1, page: m[1] });
-  }
-  return out;
+  // ONE READING OF THE MARKERS, in argdown-positions.js: the exposition view bands a text with no
+  // headings by these same pages, and the page numbers in this margin and the page bands on the
+  // map must never come from two different rules.
+  return window.ArgdownPositions ? window.ArgdownPositions.pageMarks(text) : [];
 }
 
 /** Hang each page number in the right-hand gutter, against the first block of that page.

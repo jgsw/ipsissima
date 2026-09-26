@@ -70,52 +70,151 @@ function sectionSpan(headings, section, totalLines) {
   return null;
 }
 
-/** Which heading level divides this text into bands — the shallowest level with MORE THAN ONE
- *  heading at it, or 0 when nothing divides it.
+/* ------------------------------------------------------------------ bands
  *
- *  WHY NOT SIMPLY LEVEL 1, which is what this used to be. The two converters disagree:
- *  `pdf_to_source.py` writes a paper's sections as `#`, and `html_to_source.py` writes the
- *  article title as `#` and its sections as `##`, because that is what the publisher's own
- *  markup says. So a source converted from a PDF banded correctly and the same paper converted
- *  from the publisher's HTML fell into a single band — the exposition view of a four-section
- *  paper showing one section, with nothing to say why.
- *
- *  MORE THAN ONE, because a single heading is not a division. An HTML-derived source has exactly
- *  one `#` — the title — and banding on it puts the whole paper in one band, which is the same
- *  failure wearing a different number.
+ * HOW A TEXT IS DIVIDED FOR THE EXPOSITION VIEW, in one place: its bands, the line each starts
+ * on, and the prose each holds. Everything else — the band a claim is filed in, the word count
+ * on a band, the empty bands drawn for sections with nothing mapped — reads it from here.
  */
-function bandLevel(headings) {
-  var count = {};
-  for (var i = 0; i < headings.length; i++)
-    count[headings[i].level] = (count[headings[i].level] || 0) + 1;
-  var levels = Object.keys(count).map(Number).sort(function (a, b) { return a - b; });
-  for (var j = 0; j < levels.length; j++) if (count[levels[j]] > 1) return levels[j];
-  return 0;
+
+/** The prose words on each line of a source: 0 for the front matter, the converter's HTML
+ *  comments, fenced code and headings, which are not the author's prose. One count, so the
+ *  word counts drawn on the bands and the counts that decide which headings divide the text
+ *  cannot disagree. Index 0 is line 1. */
+function proseWords(lines) {
+  var out = new Array(lines.length), fence = false, front = false, comment = false;
+  for (var i = 0; i < lines.length; i++) {
+    var line = String(lines[i]), trimmed = line.trim();
+    out[i] = 0;
+    // Front matter only counts as front matter at the very top of the file; a `---` further
+    // down is a horizontal rule and closes nothing.
+    if (i === 0 && trimmed === "---") { front = true; continue; }
+    if (front) { if (trimmed === "---" || trimmed === "...") front = false; continue; }
+    // THE CONVERTER'S NOTES ARE NOT THE TEXT. Every converted source opens with a comment
+    // block saying where it came from and what was repaired — a few hundred words, counted
+    // until 26 Sep 2026 as the author's.
+    if (comment) { if (trimmed.indexOf("-->") >= 0) comment = false; continue; }
+    if (trimmed.indexOf("<!--") === 0) { if (trimmed.indexOf("-->") < 0) comment = true; continue; }
+    if (/^\s*(```|~~~)/.test(line)) { fence = !fence; continue; }
+    if (fence || /^#{1,6}\s/.test(trimmed)) continue;
+    out[i] = trimmed.split(/\s+/).filter(function (w) { return /[A-Za-z0-9]/.test(w); }).length;
+  }
+  return out;
 }
 
-/** The heading a line falls under — the last heading at or above it. Null before the first one.
- *
- *  WHY THIS IS DERIVED AND NOT READ. The band a claim sits in, in the exposition view, is a FACT
- *  ABOUT WHERE ITS LINE IS, and until now it was taken from the `section:` the reconstructor
- *  happened to write. The house rule says to write `section:` only when a claim has no
- *  quotation — because a verified quotation already pins the exact line — and that rule is right
- *  about LOCATING a claim and wrong about BANDING it. A map that quoted 80 of its 82 claims
- *  therefore declared no sections at all, and every claim fell into one undifferentiated band:
- *  the exposition view of a four-section paper showed one section.
- *
- *  Deriving it fixes that for every claim that can be placed at all, needs no metadata, and
- *  cannot disagree with the text. `section:` goes back to being what it is useful as — a hint
- *  that scopes the paragraph search — rather than something the view depends on.
- */
-function sectionOfLine(headings, line) {
-  var lvl = bandLevel(headings);
-  if (!lvl) return null;
-  var found = null;
-  for (var i = 0; i < headings.length; i++) {
-    if (headings[i].line > line) break;
-    if (headings[i].level === lvl) found = headings[i];
+/** Headings that close a text rather than divide it: references, notes, funding, and the
+ *  furniture the SEP and Project Gutenberg append. They never decide how a text is banded, and
+ *  a band of theirs with nothing mapped in it is not a gap in the reconstruction. */
+var BACK_MATTER = new RegExp("^(references|bibliography|works cited|notes|footnotes|endnotes|" +
+  "funding|acknowledg|appendix|conflicts? of interest|competing interests|author contributions|" +
+  "data availability|declarations?|academic tools|other internet resources|related entries|" +
+  "(the )?(full )?project gutenberg)", "i");
+function isBackMatter(heading) { return BACK_MATTER.test(String(heading || "")); }
+
+/** A heading that is nothing but a link is a web page's navigation — "[Environment](https://…)"
+ *  over a news story — and never a section of the text. */
+var LINK_ONLY = /^\[[^\]]*\]\([^)]*\)$/;
+
+/** Below this many words of prose, a heading divides nothing: a title page's "ESSAYS", a judge's
+ *  name set as a heading, a heading the converter broke across two lines. */
+var MIN_BAND_WORDS = 50;
+
+/** The page each printed page begins at: [{ line, page }], from the converters' own markers —
+ *  `<!-- p.514 begins here -->`, or `<!-- Ethics p.514 begins here -->` in a volume. The number
+ *  is READ OFF THE SHEET rather than counted, so it is the number a reader would cite. The
+ *  viewer's Manuscript pane hangs these in its margin and asks this function for them, so the
+ *  page numbers there and the page bands in the exposition view come from one reading. */
+var PAGE_MARK = /<!--\s*(?:.*?\s)?p\.\s*(\d+)\s+begins here\s*-->/;
+function pageMarks(text) {
+  var out = [], lines = String(text == null ? "" : text).split("\n");
+  for (var i = 0; i < lines.length; i++) {
+    var m = PAGE_MARK.exec(lines[i]);
+    if (m) out.push({ line: i + 1, page: m[1] });
   }
-  return found ? found.text : null;
+  return out;
+}
+
+var BANDS = new Map();
+
+/** How a text is divided into bands: { level, paged, bands: [{ heading, line, back, page }] }.
+ *
+ *  THE SHALLOWEST LEVEL WITH MORE THAN ONE HEADING THAT DIVIDES THE TEXT. Not simply level 1:
+ *  `pdf_to_source.py` writes a paper's sections as `#` and `html_to_source.py` writes the title
+ *  as `#` and the sections as `##`, as the publisher's markup does. And more than one, because a
+ *  single heading is not a division — an HTML source's lone `#` is its title.
+ *
+ *  BUT ONLY HEADINGS THAT DIVIDE. The rule used to count every heading, and title pages, web
+ *  pages and licence boilerplate beat it (measured 26 Sep 2026): James's essay was banded on its
+ *  book's title page, "ESSAYS" and "POPULAR PHILOSOPHY.", so its ten sections never appeared;
+ *  the Miller judgment sat in one band called "Court:"; Swift's pamphlet in one called "1729"; a
+ *  Gutenberg copy of it on the licence; a paper whose converter broke a heading across two lines
+ *  put 5,198 of its words "before the first heading". So a heading decides the level only if the
+ *  stretch it heads holds real prose (`MIN_BAND_WORDS`), it is not back matter, and it is not a
+ *  bare link. Back matter still BOUNDS a band once the level is chosen — a claim in the
+ *  references is in the references, not in the conclusion — but a heading with no prose under
+ *  it at all bounds nothing, so a title page's heading cannot swallow the text that follows it.
+ *
+ *  AND WHERE NOTHING DIVIDES IT, THE PRINTED PAGES DO (`paged`). Converters no longer insert
+ *  headings, so a paper printed as continuous prose — Williams, Nagel, Gettier, most of what is
+ *  scanned — used to be one undivided band, the one kind of text where a reader most needs a
+ *  place to stand. Its pages are marked in the source already. A band per page, named for the
+ *  page ("p. 101"), which says plainly that it is the printer's division and not the author's.
+ */
+function bandsOf(text) {
+  var key = String(text == null ? "" : text);
+  var hit = BANDS.get(key);
+  if (hit) return hit;
+  if (BANDS.size >= SRC_CACHE_MAX) BANDS.clear();
+  var lines = key.split("\n"), words = proseWords(lines), heads = headingIndex(key);
+  // The prose under each heading: to the next heading of the same level or higher.
+  var under = new Array(heads.length);
+  for (var i = 0; i < heads.length; i++) {
+    var end = lines.length;
+    for (var j = i + 1; j < heads.length; j++)
+      if (heads[j].level <= heads[i].level) { end = heads[j].line - 1; break; }
+    var n = 0;
+    for (var k = heads[i].line; k < end; k++) n += words[k];
+    under[i] = n;
+  }
+  var count = {};
+  for (var c = 0; c < heads.length; c++)
+    if (under[c] >= MIN_BAND_WORDS && !isBackMatter(heads[c].text) && !LINK_ONLY.test(heads[c].text))
+      count[heads[c].level] = (count[heads[c].level] || 0) + 1;
+  var levels = Object.keys(count).map(Number).sort(function (a, b) { return a - b; });
+  var level = 0;
+  for (var l = 0; l < levels.length; l++) if (count[levels[l]] > 1) { level = levels[l]; break; }
+  var bands = [];
+  for (var b = 0; b < heads.length; b++) {
+    var h = heads[b];
+    if (level && h.level === level && under[b] > 0 && !LINK_ONLY.test(h.text))
+      bands.push({ heading: h.text, line: h.line, back: isBackMatter(h.text), page: false });
+  }
+  var marks = level ? [] : pageMarks(key);
+  var paged = !level && marks.length > 1;
+  if (paged)
+    for (var m = 0; m < marks.length; m++)
+      bands.push({ heading: "p. " + marks[m].page, line: marks[m].line, back: false, page: true });
+  hit = { level: level, paged: paged, bands: bands };
+  BANDS.set(key, hit);
+  return hit;
+}
+
+/** The band a line falls in — the last band starting at or above it. Null before the first one,
+ *  which is the text's opening, and null throughout a text nothing divides.
+ *
+ *  WHY THIS IS DERIVED AND NOT READ. The band a claim sits in is a FACT ABOUT WHERE ITS LINE IS,
+ *  and it used to be taken from the `section:` the reconstructor happened to write. The house
+ *  rule says to write `section:` only when a claim has no quotation, and that rule is right
+ *  about LOCATING a claim and wrong about BANDING it: a map that quoted 80 of its 82 claims
+ *  declared no sections at all, and every claim fell into one band. Deriving it needs no
+ *  metadata and cannot disagree with the text. */
+function sectionAt(bands, line) {
+  var found = null;
+  for (var i = 0; i < bands.length; i++) {
+    if (bands[i].line > line) break;
+    found = bands[i];
+  }
+  return found ? found.heading : null;
 }
 
 /** The line of the paragraph in lines[lo-1..hi-1] that best matches the claim.
@@ -340,6 +439,47 @@ function locateOwnWords(text, lines, chapterText) {
   // Across a line break, exactly — and still not in the front matter or a converter's note.
   var across = findQuote(text, chapterText);
   return across != null && folded[across - 1] ? across : null;
+}
+
+/** Where in its line a claim's words fall — a character offset in the line with punctuation and
+ *  case folded away — or null when the words cannot be found there.
+ *
+ *  THE SOURCES ARE ONE PARAGRAPH TO A LINE, so a line is a paragraph, and every claim drawn from
+ *  one paragraph shares a position. The exposition view stacked such claims by their depth in
+ *  the argument, and measured 26 Sep 2026 that put two-thirds of stacks in an order the text
+ *  does not use — in a view whose one job is the text's order. This is the order within the
+ *  paragraph: where the claim's quotation starts, or its own words where they are the author's.
+ *  A claim read from a note sits where the note's mark is. A claim placed by the paragraph
+ *  search has no words to find, and gets null: the layout puts those after the ones it can
+ *  place, rather than guess.
+ *
+ *  `texts` are the claim's own text and its `source:`, and for an <Argument> its conclusion's
+ *  text and source, which is what placed it. Each quoted span is tried, then the text itself;
+ *  the earliest found wins, as it does for the line. */
+function colInLine(lines, line, note, texts) {
+  var raw = lines[line - 1];
+  if (raw == null) return null;
+  raw = String(raw);
+  if (note != null) {
+    var mark = raw.indexOf("[^" + note + "]");
+    return mark < 0 ? null : foldPunctuation(raw.slice(0, mark)).length;
+  }
+  var folded = foldPunctuation(raw), best = null;
+  var tryText = function (t) {
+    var parts = quoteParts(t);
+    var probe = foldPunctuation(parts.length ? parts[0] : t).slice(0, 60);
+    if (probe.length < 10) return;
+    var at = folded.indexOf(probe);
+    if (at >= 0 && (best === null || at < best)) best = at;
+  };
+  for (var i = 0; i < texts.length; i++) {
+    if (!texts[i]) continue;
+    var blob = String(texts[i]), mo;
+    QUOTED.lastIndex = 0;
+    while ((mo = QUOTED.exec(blob)) !== null) tryText(mo[1]);
+    tryText(blob.replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 "));
+  }
+  return best;
 }
 
 /* ------------------------------------------------------------------ notes
@@ -574,13 +714,13 @@ function positions(nodes, sources, quarto) {
 
   // THE BAND, derived from wherever the line landed, and derived ONCE. This was computed here
   // and then computed AGAIN, differently, by both hosts — the viewer template and the build —
-  // which is how the build came to be banding on `#` headings after the rule had moved on to
-  // `bandLevel`. A paper whose sections are `##`, which is every source converted from a
-  // publisher's HTML, built a viewer with no sections at all.
+  // which is how the build came to be banding on `#` headings after the rule had moved on.
+  // A paper whose sections are `##`, which is every source converted from a publisher's HTML,
+  // built a viewer with no sections at all. The rule is `bandsOf`.
   //
   // A declared `section:` is the FALLBACK, not the winner. The band is a fact about where the
-  // claim's words are, and `sectionOfLine` reads it off the text; `section:` is what a claim
-  // with no line at all has left to go on.
+  // claim's words are, and `sectionAt` reads it off the text; `section:` is what a claim with no
+  // line at all has left to go on.
   //
   // A NOTE IS READ AT ITS MARK (see `notesOf`), and that is settled first, because the band is a
   // fact about the line the claim ends up on: a claim quoted from note 3 belongs to the section
@@ -599,7 +739,9 @@ function positions(nodes, sources, quarto) {
   for (var d = 0; d < nodes.length; d++) {
     var nn = nodes[d], pp = byId[nn.id];
     if (!pp) continue;
-    pp.section = (pp.line != null ? sectionOfLine(headsOf(pp.chapter), pp.line) : null)
+    var banded = sources && sources[pp.chapter] != null
+      ? bandsOf(sources[pp.chapter]) : { bands: [], paged: false };
+    pp.section = (pp.line != null ? sectionAt(banded.bands, pp.line) : null)
       || nn.section || null;
     // THE OPENING: placed, in a file that IS divided into sections, but before the first of
     // them — an abstract, or an introduction its author did not title. It has no heading to be
@@ -607,7 +749,15 @@ function positions(nodes, sources, quarto) {
     // section, which is how the top of the exposition view came to mix the introduction with
     // claims that had no position at all. Flagged rather than given a made-up section name,
     // because `section` is a heading of the text's and this is not one.
-    pp.opening = pp.line != null && !pp.section && bandLevel(headsOf(pp.chapter)) > 0;
+    pp.opening = pp.line != null && !pp.section && banded.bands.length > 0;
+    // A PRINTED PAGE, not a heading of the author's — the layout says so on the band.
+    pp.page = !!(banded.paged && pp.section && pp.line != null);
+    // WHERE IN ITS PARAGRAPH (see `colInLine`), so claims sharing a paragraph can be read in the
+    // order the text makes them.
+    pp.col = pp.line != null && linesOf(pp.chapter)
+      ? colInLine(linesOf(pp.chapter), pp.line, pp.note,
+                  [nn.detail, nn.source, nn.conclusionText, nn.conclusionSource])
+      : null;
   }
   return { byId: byId, order: order };
 }
@@ -625,56 +775,37 @@ function positions(nodes, sources, quarto) {
  *  out. Markdown marks (`*`, `_`, `#`) do not make or break a word, and a bare `---` or `|` is
  *  not one.
  *
- *  THE SECTIONS ARE THE BANDS. A section here is a heading at `bandLevel`, the level the
- *  exposition view draws its bands at — not level 1, which is what this counted until 26 Sep
- *  2026 and which gave no count at all to any band of a paper whose sections are `##`, every
- *  source converted from a publisher's HTML among them. The text before the first such heading
- *  is counted too, under the empty heading `""`: that is the key the opening's band is looked
- *  up by, and no heading of the text's can collide with it.
+ *  THE SECTIONS ARE THE BANDS — `bandsOf`, the division the exposition view draws: the headings
+ *  that divide the text, or its printed pages where no heading does. Not level 1, which is what
+ *  this counted until 26 Sep 2026 and which gave no count at all to any band of a paper whose
+ *  sections are `##`. The text before the first band is counted too, under the empty heading
+ *  `""`: that is the key the opening's band is looked up by, and no heading can collide with it.
  *
- *  `sections` lists them IN ORDER, with the line each starts on, because the exposition view
- *  draws a band for a section with nothing mapped in it and has to know where it falls. An
- *  object's keys cannot carry the order: a heading such as `1729` is an integer-like key, and
- *  JavaScript puts those first whatever order they were written in.
+ *  `sections` lists them IN ORDER, with the line each starts on and whether it is back matter or
+ *  a printed page, because the exposition view draws a band for a section with nothing mapped in
+ *  it and has to know where it falls and whether it is worth drawing. An object's keys cannot
+ *  carry the order: a heading such as `1729` is an integer-like key, and JavaScript puts those
+ *  first whatever order they were written in.
  *
  *    sources  { "path/to/chapter.md": "text" | null }
  *    -> { total, byChapter: {path: n}, bySection: {path: {heading: n}},
- *         sections: {path: [{ heading, line, words }]} }
+ *         sections: {path: [{ heading, line, words, back, page }]} }
  */
 function wordCounts(sources) {
   var byChapter = {}, bySection = {}, sections = {}, total = 0;
   for (var ch in sources) {
     if (!Object.prototype.hasOwnProperty.call(sources, ch) || !sources[ch]) continue;
-    var lines = String(sources[ch]).split("\n");
-    var all = headingIndex(sources[ch]), level = bandLevel(all);
-    var bandAt = {};
-    for (var k = 0; k < all.length; k++) if (all[k].level === level) bandAt[all[k].line] = all[k].text;
-    var list = [], sum = 0, fence = false, front = false, comment = false;
-    var current = level ? { heading: "", line: 0, words: 0 } : null;
-    if (current) list.push(current);
-    for (var i = 0; i < lines.length; i++) {
-      var line = lines[i], trimmed = line.trim();
-      // Front matter only counts as front matter at the very top of the file; a `---` further
-      // down is a horizontal rule and closes nothing.
-      if (i === 0 && trimmed === "---") { front = true; continue; }
-      if (front) { if (trimmed === "---" || trimmed === "...") front = false; continue; }
-      // THE CONVERTER'S NOTES ARE NOT THE TEXT. Every converted source opens with a comment
-      // block saying where it came from and what was repaired — a few hundred words, counted
-      // until now as the author's, which is how a paper came to have an "opening" of several
-      // hundred words that was nothing but the converter talking.
-      if (comment) { if (trimmed.indexOf("-->") >= 0) comment = false; continue; }
-      if (trimmed.indexOf("<!--") === 0) { if (trimmed.indexOf("-->") < 0) comment = true; continue; }
-      if (/^\s*(```|~~~)/.test(line)) { fence = !fence; continue; }
-      if (fence) continue;
-      if (bandAt[i + 1] != null) {
-        current = { heading: bandAt[i + 1], line: i + 1, words: 0 };
-        list.push(current);
-        continue;
-      }
-      if (/^#{1,6}\s/.test(trimmed)) continue;          // a sub-heading is not prose either
-      var words = trimmed.split(/\s+/).filter(function (w) { return /[A-Za-z0-9]/.test(w); }).length;
-      sum += words;
-      if (current) current.words += words;
+    var words = proseWords(String(sources[ch]).split("\n"));
+    var bands = bandsOf(sources[ch]).bands;
+    var list = bands.length ? [{ heading: "", line: 0, words: 0, back: false, page: false }] : [];
+    for (var b = 0; b < bands.length; b++)
+      list.push({ heading: bands[b].heading, line: bands[b].line, words: 0,
+                  back: bands[b].back, page: bands[b].page });
+    var sum = 0, at = list.length ? 0 : -1;
+    for (var i = 0; i < words.length; i++) {
+      while (at >= 0 && at + 1 < list.length && list[at + 1].line <= i + 1) at++;
+      sum += words[i];
+      if (at >= 0) list[at].words += words[i];
     }
     // Two sections under one heading — two `Notes`, say — are one band, so their counts add.
     var here = {};
@@ -735,7 +866,8 @@ function isVerbatim(claim, body) {
 var API = { positions: positions, readingOrder: readingOrder, headingIndex: headingIndex,
             wordCounts: wordCounts,
             sectionSpan: sectionSpan, locateParagraph: locateParagraph,
-            bandLevel: bandLevel, sectionOfLine: sectionOfLine,
+            bandsOf: bandsOf, sectionAt: sectionAt, pageMarks: pageMarks,
+            proseWords: proseWords, isBackMatter: isBackMatter,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA, MIN_VERBATIM: MIN_VERBATIM };

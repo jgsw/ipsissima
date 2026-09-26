@@ -295,16 +295,6 @@ function laneSection(lane) {
 /** What a section band is called: its heading, or — for the opening — what it is. */
 function laneName(section) { return section === "" ? OPENING_LABEL : section; }
 
-/** Headings that close a text rather than divide it. A section with nothing mapped in it is
- *  drawn as an empty band, so that a gap in the reconstruction reads as a gap; a reference list
- *  with nothing mapped in it is not a gap, and a band saying so would be noise on every paper.
- *  The SEP and Project Gutenberg furniture is here because both are common sources and both
- *  append several such sections to the text. */
-const BACK_MATTER = new RegExp("^(references|bibliography|works cited|notes|footnotes|endnotes|" +
-  "funding|acknowledg|appendix|conflicts? of interest|competing interests|author contributions|" +
-  "data availability|declarations?|academic tools|other internet resources|related entries|" +
-  "(the )?(full )?project gutenberg)", "i");
-
 /** Below this many words a section with nothing mapped is not worth a band: the lone heading of
  *  a title page, a subtitle, a judge's name set as a heading. Measured 26 Sep 2026 across the
  *  samples and the private corpus: every would-be empty band under 50 words was one of those,
@@ -318,6 +308,14 @@ const EMPTY_NOTE = "No claim in the map is placed in this part of the text. It i
 /** What the opening band is, since its name is a description rather than a heading. */
 const OPENING_NOTE = "The text before the first heading — an abstract, or an introduction its " +
   "author did not title. Not a heading of the text's own.";
+
+/** What a page band is, since this text has no headings of its own to be banded by. */
+const PAGE_NOTE = "A printed page. The text has no headings that divide it, so the view divides " +
+  "it where the printed pages do — the printer's division, not the author's.";
+
+/** The same, for a run of pages drawn as one empty band. */
+const PAGES_NOTE = "Printed pages. The text has no headings that divide it, so the view divides " +
+  "it where the printed pages do — the printer's division, not the author's.";
 
 /** Why the no-position lane holds what it holds. */
 const GUTTER_NOTE = "Claims with no place in the text: no quotation of theirs was found, no " +
@@ -1229,8 +1227,19 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     if (!colNodes.has(k)) colNodes.set(k, []);
     colNodes.get(k).push(n.id);
   }
+  // IN THE ORDER THE PARAGRAPH MAKES THEM. A column is one paragraph, and its claims used to be
+  // stacked by their depth in the argument — which, measured 26 Sep 2026, put two-thirds of
+  // stacks in an order the text does not use, in the one view whose subject is the text's order.
+  // `pos.col` is where in the paragraph each claim's words fall (argdown-positions `colInLine`);
+  // a claim with none (placed by the paragraph search, so no words to find) goes after those
+  // that have one, and depth decides only between claims the text itself does not order.
+  const inPara = id => { const n = byIdAll.get(id); return n && n.pos && n.pos.col != null ? n.pos.col : null; };
+  const byCol = (a, b) => {
+    const ca = inPara(a), cb = inPara(b);
+    return ca == null ? (cb == null ? 0 : 1) : cb == null ? -1 : ca - cb;
+  };
   for (const ids of colNodes.values())
-    ids.sort((a, b) => (depth.get(a) - depth.get(b)) ||
+    ids.sort((a, b) => byCol(a, b) || (depth.get(a) - depth.get(b)) ||
                        ((kids.get(b) || []).length - (kids.get(a) || []).length) ||
                        String(a).localeCompare(String(b)));
   // THE NO-POSITION LANE TILES, a claim to a column, and wraps like any other lane. As one
@@ -1269,7 +1278,8 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //
   // Only in a file whose sections are showing AS BANDS: shut into blocks along the file's row,
   // there is no band sequence for an empty one to take its place in. Only a section with prose
-  // in it (`MIN_EMPTY_WORDS`), and never the back matter (`BACK_MATTER`). And only where nothing
+  // in it (`MIN_EMPTY_WORDS`), and never the back matter (`back`, which `wordCounts` reads off
+  // the same rule that keeps back matter from deciding the bands). And only where nothing
   // in the whole map is placed (`bandsInUse`) — a section whose claims a filter has hidden is not
   // empty. No claim, so no column: it is placed at its heading's line, which is where the text
   // reaches it.
@@ -1281,12 +1291,32 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     for (const [idx, path] of vis.chapterOfIndex) {
       const chap = "ch:" + idx;
       if (!showing.has(chap)) continue;
+      // A RUN OF UNMAPPED PAGES IS ONE GAP. A text banded by its printed pages has a band a page,
+      // and a map that reads a few passages of a long chapter left dozens of them empty — 208 on
+      // one ten-chapter book, a wall of "nothing here" in which the pages that ARE mapped were
+      // hard to find. Consecutive empty pages are drawn as one band, "pp. 11–34", with their
+      // words added up; the gap is still there to see, at the size it really is.
+      let run = null;
+      const flush = () => {
+        if (run && run.words >= MIN_EMPTY_WORDS) empties.set(run.lane, run);
+        run = null;
+      };
       for (const s of sectionsOf[path] || []) {
         const lane = chap + "|" + s.heading;
-        if (vis.bandsInUse.has(lane) || laneFirst.has(lane) || empties.has(lane)) continue;
-        if (s.words < MIN_EMPTY_WORDS || BACK_MATTER.test(s.heading)) continue;
-        empties.set(lane, { at: posKey({ chapterIndex: idx, line: s.line }), words: s.words });
+        const used = vis.bandsInUse.has(lane) || laneFirst.has(lane);
+        if (used || s.back || !s.page) flush();
+        if (used || s.back || empties.has(lane)) continue;
+        const at = posKey({ chapterIndex: idx, line: s.line });
+        if (s.page) {
+          const num = String(s.heading).replace(/^p\.\s*/, "");
+          if (run) { run.words += s.words; run.label = "pp. " + run.first + "\u2013" + num; }
+          else run = { lane, at, words: s.words, page: true, first: num, label: s.heading };
+          continue;
+        }
+        if (s.words < MIN_EMPTY_WORDS) continue;
+        empties.set(lane, { lane, at, words: s.words, page: false, label: laneName(s.heading) });
       }
+      flush();
     }
   }
   const laneAt = l => empties.has(l) ? empties.get(l).at : laneFirst.get(l);
@@ -1386,7 +1416,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     const section = laneSection(lane);
     if (empties.has(lane)) {
       // As wide as its name needs, so the label is not shrunk to fit a box nobody sized for it.
-      const b = laneBox.get(lane), name = laneName(section);
+      const b = laneBox.get(lane), name = empties.get(lane).label || laneName(section);
       const w = Math.min(560, Math.max(300, 34 + name.length * GROUP_LABEL_SIZE * 0.56 + 90));
       const x0 = b.left - 12, x1 = x0 + w, y0 = b.top - 24, y1 = b.bottom + 12;
       const path = vis.chapterOfIndex.get(Number(laneChapter(lane).slice(3)));
@@ -1395,7 +1425,8 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
       // never mistaken for the band the section becomes once a claim is placed in it.
       expoGroups.push({ id: "gap:" + lane, label: name, parent: "lane:" + laneChapter(lane),
                         fold: false, empty: true, words: empties.get(lane).words,
-                        note: EMPTY_NOTE,
+                        note: !empties.get(lane).page ? EMPTY_NOTE
+                            : (/^pp\./.test(name) ? PAGES_NOTE : PAGE_NOTE) + " " + EMPTY_NOTE,
                         title: name + "\n" + empties.get(lane).words.toLocaleString() + " words" });
       place.set("gap:" + lane, { x: (x0 + x1) / 2, y: (y0 + y1) / 2,
                                  width: x1 - x0, height: y1 - y0 });
@@ -1444,7 +1475,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
                       parent: section != null ? "lane:" + laneChapter(lane) : null,
                       fold: lane !== "gutter",
                       words: wc,
-                      note: lane === "gutter" ? GUTTER_NOTE : section === "" ? OPENING_NOTE : null,
+                      note: lane === "gutter" ? GUTTER_NOTE : section === "" ? OPENING_NOTE
+                          : ids.some(id => { const m = byIdAll.get(id); return m && m.pos && m.pos.page; })
+                          ? PAGE_NOTE : null,
                       title: (section != null ? laneName(section) + "\n" : "") +
                              (names.join("\n") || label) +
                              (wc ? "\n" + wc.toLocaleString() + " words" : "") });

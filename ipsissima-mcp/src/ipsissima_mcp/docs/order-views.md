@@ -61,6 +61,13 @@ the text, which is where a reader meets the note. A claim placed only to its cha
 and the exposition view draws it after the text, in the no-position lane, not at the head of
 its chapter.
 
+**How a text is banded:** by the shallowest heading level at which more than one heading divides
+the text. A heading divides the text if the stretch under it holds real prose (50 words or more),
+it is not back matter, and it is not a bare link. This stops a title page, a web page's
+navigation or a licence from passing for the author's sections. A text that no heading divides
+is banded by its printed pages, from the converters' `<!-- p.N begins here -->` markers.
+Within a band, claims from one paragraph are ordered by where their words fall in it.
+
 The paragraph search is what makes the axis usable. Section metadata is far too coarse on its
 own: on the book map it put 336 claims at 94 distinct positions, stacked 19 of them on one, and
 left 154 of 265 support edges with both ends at the same point. Scoring each paragraph of the
