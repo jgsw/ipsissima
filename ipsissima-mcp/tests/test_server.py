@@ -209,6 +209,28 @@ def test_server(d):
         check("and a real run writes one file", len(out.get("written", [])), 1)
         check_true("into source/", (d / "out" / "source").is_dir())
 
+        # THE GEOMETRY SIDECAR IS WRITTEN, NOT RETURNED. A structured-route PDF used to send
+        # its whole word-geometry JSON back in `extras` -- 396,684 characters for this fixture
+        # -- which overran the client's result limit and lost `next` with it. Shown able to
+        # fail: with the strip in server.py's `_reply` removed, both size checks go red.
+        pdf = REPO / "fixtures" / "ingest" / "miller-2019-uksc-41.pdf"
+        check_true(f"the Miller fixture is where the test expects it ({pdf})",
+                   pdf.is_file(), "a skipped check reads exactly like a passing one")
+        if pdf.is_file():
+            raw = await s.call_tool("extract_text", {"sources": [str(pdf)],
+                                                     "out": str(d / "pdf-out")})
+            out = result(raw)
+            side = d / "pdf-out" / "source" / "miller-2019-uksc-41.md.geometry.json"
+            check_true("a structured-route PDF still writes its geometry sidecar",
+                       side.is_file() and side.stat().st_size > 20_000)
+            check_true("and lists it in `written`", str(side) in out.get("written", []))
+            check_true("but the reply carries no geometry",
+                       all("geometry" not in src.get("extras", {})
+                           for src in out.get("sources", [])))
+            size = len(raw.content[0].text) if raw.content else 0
+            check_true("so the reply stays small enough to reach the model",
+                       0 < size < 30_000, f"the reply was {size} characters")
+
         # The checker's faults come back as data, on a real sample.
         sample = REPO / "samples" / "Darwin 1859 - Natural selection"
         check_true(f"the Darwin sample is where the test expects it ({sample})",

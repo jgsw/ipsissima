@@ -434,9 +434,17 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
     # enough to see that the headings survived and the page markers are there, and nowhere near
     # enough to reconstruct from. That asymmetry is the point: it diagnoses, it does not
     # substitute, and `next` says so in as many words.
+    #
+    # THE GEOMETRY STAYS ON DISK TOO. The word-geometry sidecar is for the app, not the model,
+    # and it is already written beside the text and listed in `written`. Left in `extras` it
+    # rode back whole: 25 Sep 2026, a twelve-page bulletin came back as 235,414 characters and
+    # the Miller fixture as 396,684, past the client's result limit, so `next` and
+    # `conventions` never reached the model at all. The abstract is small and stays.
     def _reply(r):
         d = {k: v for k, v in r.items() if k != "md"}
         d["head"] = r["md"][:600]
+        if "geometry" in d.get("extras", {}):
+            d["extras"] = {k: v for k, v in d["extras"].items() if k != "geometry"}
         return d
 
     return dict(
