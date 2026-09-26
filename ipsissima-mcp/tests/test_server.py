@@ -24,6 +24,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent                           # ipsissima-mcp/
 REPO = HERE.parents[1]                       # the repository root
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(HERE))
 
 from ipsissima_mcp import sources                                        # noqa: E402
 
@@ -215,6 +216,44 @@ def test_server(d):
                       len(t2), int(m.group(2)))
             await _session(no_library,
                            env={"ZOTERO_DATA_DIR": str(d / "no-zotero-here")})
+
+        # THE TOOL, NOT ONLY THE MODULE, against a library built here -- the Merton shape: the
+        # record looked up has no file, and the clean copy is on the reprint's record.
+        # PYTHONPATH pins the server to THIS tree's source, which from a worktree is otherwise
+        # the main checkout's editable install.
+        import sqlite3
+        import synthetic_zotero
+        lib = synthetic_zotero.Library(d / "zotero")
+        lib.record("RD7RL3YD", "The Self-Fulfilling Prophecy", ["Merton"], date="1948",
+                   container="The Antioch Review")
+        scan = lib.attach("SCANPDF1", "RD7RL3YD", "jstor.pdf", "application/pdf",
+                          make=synthetic_zotero.text_pdf)
+        lib.record("KLNGK6S9", "The self-fulfilling prophecy", ["Merton"], date="2010")
+        html = lib.attach("ULF282D5", "KLNGK6S9", "LitRC.html", "text/html")
+        lib.close()
+
+        async def with_library(s3):
+            out = result(await s3.call_tool("zotero_lookup", {"key": "RD7RL3YD"}))
+            check("  zotero_lookup extracts from the sibling record's HTML",
+                  (out.get("pairing") or {}).get("extract_from"), html)
+            check("  and pages it by this record's scan",
+                  (out.get("pairing") or {}).get("page_numbers_from"), scan)
+            # A SCHEMA REFUSAL IS AN ANSWER. It is raised as SystemExit, which `except
+            # Exception` does not catch: it took the whole server down, and the client waited
+            # on a reply that would never come. Hence the timeout -- the fault is a hang.
+            c = sqlite3.connect(d / "zotero" / "zotero.sqlite")
+            c.execute("UPDATE version SET version = 100000")
+            c.commit()
+            c.close()
+            try:
+                out = result(await asyncio.wait_for(
+                    s3.call_tool("zotero_lookup", {"key": "RD7RL3YD"}), 60))
+            except (asyncio.TimeoutError, Exception) as e:
+                out = {"error": f"no answer: {e!r}"}
+            check("  a newer Zotero schema is refused in words",
+                  (out.get("ok"), "SCHEMA_MAX" in out.get("error", "")), (False, True))
+        await _session(with_library, env={"ZOTERO_DATA_DIR": str(d / "zotero"),
+                                          "PYTHONPATH": str(ROOT / "src")})
 
         # The prompt is the file on disk, not a copy compiled into the server.
         p = await s.get_prompt("reconstruct_argument", {"source_path": "source/x.md"})

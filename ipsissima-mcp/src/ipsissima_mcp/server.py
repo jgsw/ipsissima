@@ -557,7 +557,7 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         path: the PDF.
         check_open_access: look the DOI up to see whether a structured version exists.
     """
-    from ipsissima_mcp import ingest
+    from ipsissima_mcp import from_zotero, ingest
     p = Path(path).expanduser()
     if not p.exists():
         return dict(ok=False, error=f"no such file: {p}")
@@ -578,7 +578,7 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
     # project has paid for that before.
     if ingest.quality(layer) >= words and words > 200:
         difficulty, note = "easy", "the text layer is clean; no OCR will be attempted"
-    elif per_page < 40:
+    elif per_page < from_zotero.IMAGE_ONLY_WORDS_PER_PAGE:
         difficulty, note = ("hard",
                             f"only {per_page:.0f} words a page came off the text layer — this is "
                             f"a scan, or an image-only PDF")
@@ -1067,8 +1067,9 @@ def _is_newer(a, b):
 # AN ENHANCEMENT, NEVER A DEPENDENCY. Everything above works with no Zotero installed. What a
 # library adds is that an item usually holds BOTH a PDF and the publisher's HTML snapshot — the
 # snapshot is machine-readable and the PDF has the page numbers, so the pair is better than
-# either. The tool is registered only when there is a library to talk to, so a user without one
-# is not offered a tool that can only fail.
+# either -- and when the two sit on different records of one work, the pair is still there to
+# be found (`from_zotero.lookup`). The tool is registered only when there is a library to talk
+# to, so a user without one is not offered a tool that can only fail.
 
 def _zotero_available():
     # THE SAME RESOLUTION THE READER USES, not a second guess at it. This gates tool
@@ -1086,11 +1087,19 @@ if _zotero_available():
         structured_output=True,
         title="Find a source in Zotero",
         description=(
-            "Look an item up in the local Zotero library by DOI, item key or title fragment, and "
-            "report what is attached to it and which attachment is the best source.\n\n"
-            "An item holding both a PDF and an HTML snapshot is the best case there is: the "
-            "snapshot gives structured text with nothing inferred, and the PDF gives the page "
-            "numbers. Read-only — nothing is ever written into the Zotero storage tree."),
+            "Look an item up in the local Zotero library by DOI, item key (a record's, or one "
+            "of its attachments') or title fragment, and report what is attached to it -- AND "
+            "to the library's other records of the same work: a reprint, a duplicate import, "
+            "a PDF dropped in on its own. Those are found by title (case, punctuation and a "
+            "leading 'The' ignored) with the authors' surnames agreeing where both records "
+            "name any, and, for a record with no title or no author, by an attachment's "
+            "filename. A sibling of a different year or container is said to be a different "
+            "printing, since its wording may differ.\n\n"
+            "`ranked` orders every copy found: Markdown (gold), then EPUB/HTML/.docx "
+            "(silver), then a PDF with a text layer (bronze), then an image-only PDF, named "
+            "as such. Where a structured copy and a paginated PDF both exist, on one record "
+            "or two, `next` says to extract from the first and run add_page_numbers with the "
+            "second. Read-only — nothing is ever written into the Zotero storage tree."),
     )
     def zotero_lookup(doi: str | None = None, key: str | None = None,
                       title: str | None = None) -> dict[str, Any]:
@@ -1098,20 +1107,12 @@ if _zotero_available():
         if not any((doi, key, title)):
             return dict(ok=False, error="give one of doi, key or title")
         try:
-            atts = from_zotero.attachments(item_key=key, doi=doi, title=title)
-        except Exception as e:
+            return from_zotero.lookup(key=key, doi=doi, title=title)
+        # SystemExit TOO: it is how `_check_schema` refuses a layout it has not been read
+        # against, and it is not an Exception -- uncaught, the refusal meant for the user
+        # ended the tool call instead of being the answer to it.
+        except (Exception, SystemExit) as e:
             return dict(ok=False, error=f"could not read the Zotero database: {e}")
-        if not atts:
-            return dict(ok=False, error="nothing in Zotero matches, or its files are not "
-                                        "stored locally")
-        best = from_zotero.best(atts)
-        kinds = {a.get("contentType") for a in atts}
-        return dict(
-            ok=True, attachments=atts, best=best,
-            pairing=("this item has both an HTML snapshot and a PDF — extract from the snapshot "
-                     "and use the PDF for page numbers"
-                     if {"text/html", "application/pdf"} <= kinds else None),
-            next="call argdown_plan with the path from `best`")
 
     @server.tool(
         structured_output=True,

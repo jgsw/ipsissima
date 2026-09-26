@@ -461,6 +461,12 @@ it **by copy** (never the live database — Zotero holds the file open), and can
   is *read off each sheet*, not counted from one, because a paper whose front matter says it
   starts at 511 can print 514 on its first sheet;
 - find snapshots you had forgotten were there, which read far better than the PDF beside them;
+- look past the one record you asked about. The same work often sits on several — a reprint,
+  a duplicate import, a PDF dropped in on its own — and the best copy can be on any of them.
+  The lookup finds the others by title and author (or, for a record with neither, by its
+  file's name), ranks every copy Markdown, then HTML/EPUB/.docx, then PDF, with an image-only
+  scan last and named as one, and says when a sibling is a different printing whose wording
+  may differ. The pairing above then works across records: text from one, pages from another;
 - **store the finished reconstruction back into Zotero**, on your request: one `.argdown`
   attachment lands under the item it reads, carrying the converted source *inside it* (the
   argdown-bundle format — still a valid `.argdown`), so the whole reading survives beside
