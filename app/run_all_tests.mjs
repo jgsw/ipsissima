@@ -47,6 +47,7 @@ const SUITES = [
   // not run `npx playwright install chromium` still runs everything else.
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
+  ["the appraisal, off until asked", "node", [path.join(HERE, "test_appraisal_layer.mjs")]],
   // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
   // the four export defects were invisible in the browser that made the file.
   ["the exports, read back", "node", [path.join(HERE, "test_export_artifacts.mjs")]],

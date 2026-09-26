@@ -1616,7 +1616,7 @@ function openingDepth(graph){
     onLocate: msLocate,
     onMenu: ctxShow, onExplode: explodeShow,
     onMargin: openMargin,
-    onStudy: startStudy, onStateChange: studyOnState,
+    onStudy: startStudy, onStateChange: onMapState,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold
   });
 
@@ -1690,6 +1690,7 @@ function openingDepth(graph){
   // looks like a change and the map jumps once for nothing.
   MAP_SIG = mapSignature(graph);
   if (MECH) { MECH.destroy(); MECH = null; MECH_GRAPH = null; }
+  APPRAISAL_ON = false;
   mechOffer(graph);
   setArrangement("reasons");
   // LAST, and only ever once. The first reconstruction somebody opens is the first moment there
@@ -2508,8 +2509,12 @@ function setArrangement(v, showMap){
   var mech = v === "mechanism";
   $("map").hidden = mech;
   $("mech").hidden = !mech;
-  if (mech) { mechEnsure(); return; }
-  LIVE.setState({ expositionOrder: v === "exposition" }, true);
+  if (mech) {
+    mechEnsure();
+    if (MECH) MECH.setLayer("appraisal", APPRAISAL_ON);
+    return;
+  }
+  LIVE.setState({ expositionOrder: v === "exposition", appraisal: APPRAISAL_ON }, true);
 }
 
 /* ---------------------------------------------------------------- the Mechanism arrangement
@@ -2523,7 +2528,9 @@ function mechEnsure(){
   var layers = MECH ? MECH.getLayers() : null;
   if (MECH) MECH.destroy();
   MECH_GRAPH = CURRENT_GRAPH;
-  MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH, { onClaim: mechShowClaim });
+  MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH,
+    { onClaim: mechShowClaim, appraisal: APPRAISAL_ON,
+      onLayers: function(l){ setAppraisalOn(l.appraisal); } });
   // A rebuild after an edit keeps the reader's layer choices; a new file starts with the defaults
   // (rival views on, appraisal off), because that is where every reader of a new map should start.
   if (MECH && layers && MECH_GRAPH && MECH_KEEP_LAYERS) {
@@ -3491,6 +3498,32 @@ function studyFrontier(){
 }
 
 /** Fired from the renderer on every state change; also the card's own refresh. */
+/* THE APPRAISAL, ONE SWITCH FOR THE WHOLE PAGE (Phase D, ruled 26 Sep 2026). Reasons, Exposition
+ * and Mechanism each draw it, and each has its switch where the reader is looking; this is the one
+ * record of whether it is on, so moving between arrangements never surprises the reader with
+ * additions they had put away -- and so every other surface, the margins included, can keep the
+ * promise that off means off. */
+var APPRAISAL_ON = false;
+function setAppraisalOn(on){
+  on = !!on;
+  if (on === APPRAISAL_ON) return;
+  APPRAISAL_ON = on;
+  // THE LIVE MAP'S OWN STATE FIRST. A switch made in the Mechanism arrangement left the argument
+  // map still holding "on"; closing the now-empty Notes pane below redraws that map, the redraw
+  // reported its stale "on", and the page's switch flipped straight back (caught driving the page,
+  // 26 Sep 2026). Updated here, the map can never report anything but the page's value.
+  if (LIVE && !!LIVE.getState().appraisal !== on) LIVE.setState({ appraisal: on });
+  // The Notes button is offered only when there is something in the margins, and an appraisal
+  // claim's remarks count only while the appraisal is shown -- so the offer follows the switch.
+  $("panes").querySelector('[data-p="notes"]').hidden = !marginalia().length;
+  if (PANES.notes && !marginalia().length) setPane("notes", false);
+  if (PANES.notes) renderNotes();
+}
+function onMapState(st){
+  studyOnState(st);
+  if (st) setAppraisalOn(st.appraisal);
+}
+
 function studyOnState(){
   if (!STUDY) return;
   STUDY.touched = true;
@@ -5476,12 +5509,13 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow,
-    onStudy: startStudy, onStateChange: studyOnState,
+    onStudy: startStudy, onStateChange: onMapState,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
     depth: keep ? keep.depth : null,
     expositionOrder: keep ? keep.expositionOrder : false,
+    appraisal: keep ? !!keep.appraisal : APPRAISAL_ON,
     // The camera comes back too, so a claim added at the bottom of the file does not throw the
     // reader to a fresh fit of the whole map.
     view: keep ? keep.view : null, userMoved: keep ? keep.userMoved : false
@@ -5587,6 +5621,9 @@ function applyComment(label, value){
 function marginalia(){
   var out = [], ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
   for (var i = 0; i < ns.length; i++) {
+    // Off means off in the margins too: an appraisal claim's remarks are not listed while the
+    // reconstructor's appraisal is hidden.
+    if (!APPRAISAL_ON && (ns[i].tags || []).indexOf("appraisal") >= 0) continue;
     if (ns[i].comment) out.push({ node: ns[i], kind: "comment", text: ns[i].comment });
     if (ns[i].note) out.push({ node: ns[i], kind: "note", text: ns[i].note });
   }

@@ -58,10 +58,21 @@ function index(graph) {
   // conclusion of a four-step argument sat at rung 0 beside the text's two definitions. The
   // `concludes` marker on the synthesised edge is exactly the set of such nodes.
   const midConclusion = new Set(edges.filter(e => e.concludes != null).map(e => e.to));
-  const isContention = id => ((outCount.get(id) || 0) === 0 && !midConclusion.has(id))
-                             || declared.has(id);
-  return { nodes, edges, groups, byId, groupById, childrenOf, outCount, declared, isContention };
+  // THE APPRAISAL IS NEVER A CONTENTION (ruled 26 Sep 2026). A claim tagged #appraisal is the
+  // reconstructor's own reading of the text against the world; one that supports nothing would
+  // otherwise be crowned beside the author's thesis, and every measure taken towards contentions
+  // -- spine, load, the depth ladder -- would count the reconstructor's addition as the text's.
+  // The checker excludes it the same way (argdown_provenance.without_appraisal).
+  const appraisal = new Set(nodes.filter(isAppraisal).map(n => n.id));
+  const isContention = id => !appraisal.has(id) &&
+    (((outCount.get(id) || 0) === 0 && !midConclusion.has(id)) || declared.has(id));
+  return { nodes, edges, groups, byId, groupById, childrenOf, outCount, declared, isContention,
+           appraisal };
 }
+
+/** Is this claim the reconstructor's own appraisal? Read from ALL its tags, not the drawn
+ *  facet: a claim tagged `#reported #appraisal` reaches the map with facet `reported`. */
+function isAppraisal(n) { return !!(n && (n.tags || []).indexOf("appraisal") >= 0); }
 
 /** Every group id from a node up to the outermost, innermost first. */
 function groupChain(ix, nodeId) {
@@ -345,6 +356,10 @@ function filterOnce(graph, state, force) {
     // use a tag called `untagged` and a sentinel sharing that namespace would collide with it.
     // Default true: a map opens showing everything.
     untagged:        state.untagged !== false,
+    // THE APPRAISAL, off until asked for: the reconstructor's own additions are not the text's,
+    // and a reader meets the text's argument first. Its own switch, not a hashtag chip, for the
+    // same reason `untagged` is -- and because "off" here is a promise, not a preference.
+    appraisal:       !!state.appraisal,
     // SPINE. When set, only claims holding up at least this many others are drawn — plus the
     // contentions, which are what "holding up" is measured towards. See `loadOf`.
     spine:           state.spine == null ? null : state.spine
@@ -377,7 +392,9 @@ function filterOnce(graph, state, force) {
    *
    * Only the untagged branch is exempt. A contention whose OWN tag has been switched off goes,
    * because there the reader has named the very thing they are hiding. */
-  const facetOk = n => n.facet
+  // An appraisal claim answers to its own switch alone: the hashtag chips do not list it, so a
+  // chip filter would otherwise hide it with no control on screen that could bring it back.
+  const facetOk = n => isAppraisal(n) ? S.appraisal : n.facet
     ? (!S.facets || S.facets.has(n.facet))
     : (S.untagged || ix.isContention(n.id));
   const load    = S.spine == null ? null : loadOf(ix);
@@ -2705,7 +2722,8 @@ function reduceFold(graph, state, action, vis, opt) {
     depth:           state.depth == null ? null : state.depth,
     byText:          !!state.byText,
     facets:          state.facets ? new Set(state.facets) : null,
-    untagged:        state.untagged !== false
+    untagged:        state.untagged !== false,
+    appraisal:       !!state.appraisal
   };
   const childrenOf = id => (graph.edges || []).filter(e => e.to === id).map(e => e.from);
 
@@ -2938,7 +2956,8 @@ function createLiveMap(container, graph, options) {
     collapsedLanes:  new Set(options && options.collapsedLanes  || []),
     depth:           options && options.depth != null ? options.depth : null,
     facets:          options && options.facets ? new Set(options.facets) : null,
-    untagged:        !(options && options.untagged === false)
+    untagged:        !(options && options.untagged === false),
+    appraisal:       !!(options && options.appraisal)
   };
   let textOpen = new Set();          // nodes showing their claim in full
   let allText = !!(options && options.allText);
@@ -2992,8 +3011,18 @@ function createLiveMap(container, graph, options) {
   const parts = opt.controls === true ? { depth: true, facets: true, actions: true }
               : opt.controls ? Object.assign({ depth: true, facets: true, actions: true }, opt.controls)
               : null;
+  // WHICH DRAWN NODES ARE THE APPRAISAL'S, decided once from the full graph. The nodes a render
+  // draws are reduced copies that keep the facet but not every tag, so asking them found none and
+  // the hatching never appeared (caught by driving the page, 26 Sep 2026).
+  const apprIds = new Set((graph.nodes || []).filter(isAppraisal).map(n => n.id));
   const toolbar = parts ? buildToolbar(parts) : null;
   if (toolbar) container.appendChild(toolbar);
+  // A STANDING BANNER while the appraisal is on: a reader who switched it on and scrolled away
+  // must not later take a hatched box for the text's own claim.
+  const apprBanner = document.createElement("div");
+  apprBanner.className = "alm-appr-banner";
+  apprBanner.hidden = true;
+  container.appendChild(apprBanner);
 
   /* The fold's two halves: hide the bar, show the chip that brings it back. `tell` separates
    * the reader's own toggle — which the host may remember — from applying a remembered choice
@@ -3360,6 +3389,7 @@ function createLiveMap(container, graph, options) {
       box.setAttribute("class", "alm-n alm-k-" + n.kind
                        + (n.facet && n.facet !== n.kind ? " alm-k-" + n.facet : "")
                        + (n.fidelity ? " alm-f-" + n.fidelity : "")
+                       + (apprIds.has(n.id) ? " alm-appraisal" : "")
                        + (n.collapsed ? " is-collapsed" : "")
                        // Lit from outside — the reader clicked the passage this claim came from.
                        // Set here rather than by a separate pass so it survives every re-render.
@@ -5010,6 +5040,13 @@ function createLiveMap(container, graph, options) {
         'loses its route to a contention">load-bearing</button>' +
       '</span>' +
       (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "") +
+      // THE APPRAISAL'S OWN SWITCH, drawn unlike every other control: dashed, in the appraisal's
+      // violet, saying in words that what it holds is not in the text and how much of it there
+      // is. Offered only where the map has any.
+      (parts.facets && appraisalCount() ? '<span class="alm-grp" data-role="appraisal">' +
+        '<button class="alm-appr" data-act="appraisal" title="The reconstructor\u2019s own ' +
+        'reading of the text against the world \u2014 never a claim the text makes. Off until ' +
+        'asked for.">appraisal <span class="alm-appr-n"></span></button></span>' : "") +
       // STUDY is a mode, not a filter, so it sits apart from the scales — offered only where
       // the host wires one in (the viewer does; an export with no host machinery does not).
       (opt.onStudy ? '<span class="alm-grp alm-seg" data-role="study">' +
@@ -5037,6 +5074,7 @@ function createLiveMap(container, graph, options) {
       if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
+      if (act === "appraisal") return setState({ appraisal: !state.appraisal });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
                                                                           : "collapseAll" });
       if (b.dataset.depth != null) {
@@ -5056,8 +5094,10 @@ function createLiveMap(container, graph, options) {
   }
 
   function facetValues() {
-    return [...new Set((graph.nodes || []).map(n => n.facet).filter(Boolean))].sort();
+    return [...new Set((graph.nodes || []).filter(n => !isAppraisal(n))
+                                         .map(n => n.facet).filter(Boolean))].sort();
   }
+  function appraisalCount() { return (graph.nodes || []).filter(isAppraisal).length; }
 
   function syncToolbar(vis, info) {
     const depthBox = /** @type {any} */ (toolbar.querySelector('[data-role="depth"]'));
@@ -5179,6 +5219,20 @@ function createLiveMap(container, graph, options) {
           ? state.untagged !== false
           : (!state.facets || state.facets.has(b.dataset.facet))));
     }
+    const aBtn = toolbar.querySelector('[data-act="appraisal"]');
+    if (aBtn) {
+      const n = appraisalCount();
+      aBtn.classList.toggle("on", !!state.appraisal);
+      /** @type {any} */ (aBtn.querySelector(".alm-appr-n")).textContent =
+        "\u00b7 not in the text \u00b7 " + n + (state.appraisal ? " shown" : " hidden");
+    }
+    apprBanner.hidden = !state.appraisal;
+    if (state.appraisal) {
+      const n = appraisalCount();
+      apprBanner.innerHTML = "<b>Appraisal on.</b> " + n + " addition" + (n === 1 ? "" : "s") +
+        " by the reconstructor, drawn in violet with a dashed border \u2014 readings of the text against the " +
+        "world, not claims the text makes.";
+    }
 
     // Both halves are lit or unlit together, like `sections`: a radio pair says which of the two
     // is in force, and a single button that is merely "off" says nothing about what is.
@@ -5250,7 +5304,7 @@ function createLiveMap(container, graph, options) {
              expandedNodes: [...state.expandedNodes], groupFolded: [...state.groupFolded],
              collapsedLanes: [...state.collapsedLanes],
              depth: state.depth, facets: state.facets ? [...state.facets] : null,
-             untagged: state.untagged, allText,
+             untagged: state.untagged, appraisal: state.appraisal, allText,
              // `spine` and `byText` were missing from this snapshot, which meant a host that
              // rebuilt the map — the live editor, after a keystroke — silently lost the spine
              // setting: exactly the dropped-in-silence failure setState's own comment warns
@@ -5271,6 +5325,7 @@ function createLiveMap(container, graph, options) {
     if ("collapsedLanes"  in patch) state.collapsedLanes  = new Set(patch.collapsedLanes);
     if ("facets"          in patch) state.facets          = patch.facets ? new Set(patch.facets) : null;
     if ("untagged"        in patch) state.untagged        = patch.untagged !== false;
+    if ("appraisal"       in patch) state.appraisal       = !!patch.appraisal;
     // SPINE. `setState` copies an explicit list rather than merging the patch, so a key missing
     // from it is dropped in silence — which is what happened when the control was first wired:
     // the button changed nothing and said nothing.
@@ -5531,6 +5586,23 @@ function injectStyle() {
    cream on a dark map. Inheriting the fill fixes both at once.
    (No back-ticks in this comment -- the stylesheet is a template literal.) */
 .alm-n.alm-k-group .alm-box{stroke-dasharray:4 3}
+/* THE APPRAISAL: the reconstructor's own, drawn unlike anything the text says -- violet, dashed,
+   hatched -- and only while its switch is on. */
+.alm-n.alm-appraisal .alm-box{stroke:#6d5ba3;stroke-dasharray:4 3;
+  fill:var(--alm-appraisal-bg,#f1eefa)}
+.alm-bar .alm-appr{border:1px dashed #6d5ba3 !important;color:inherit}
+.alm-bar .alm-appr.on{background:var(--alm-appraisal-bg,#f1eefa)}
+.alm-bar .alm-appr .alm-appr-n{font-weight:400;opacity:.75}
+.alm-appr-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:3;
+  max-width:min(720px,92%);padding:6px 11px;border-radius:7px;font-size:12.5px;
+  background:var(--alm-appraisal-bg,#f1eefa);border:1px dashed #6d5ba3;color:var(--alm-fg,#1a1a1a);
+  pointer-events:none}
+.alm-appr-banner[hidden]{display:none}
+@media (prefers-color-scheme:dark){
+  .alm-n.alm-appraisal .alm-box,.alm-appr-banner,.alm-bar .alm-appr.on{--alm-appraisal-bg:#2a2638}
+  .alm-n.alm-appraisal .alm-box{stroke:#b3a4e6}
+  .alm-appr-banner,.alm-bar .alm-appr{border-color:#b3a4e6 !important}
+}
 /* FIDELITY -- whose words the claim is in. Orthogonal to kind, so it takes the border while
    colour keeps carrying argumentative role. Solid = the source's own words; the line breaks
    up as the reconstruction moves further from them, and imputation -- a premise the
@@ -5986,6 +6058,8 @@ function encodeFoldState(graph, state) {
   if (state.facets != null) out.push("facets=" + sorted(state.facets));
   // Only when OFF: on is the default and every id would otherwise carry a token saying so.
   if (state.untagged === false) out.push("untagged=0");
+  // Only when ON, the reverse of `untagged`: off is the default.
+  if (state.appraisal) out.push("appraisal=1");
   return out.join(" ");
 }
 
@@ -6052,7 +6126,7 @@ function decodeFoldState(graph, text) {
     })]);
   }
   const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
-                 "facets", "untagged"];
+                 "facets", "untagged", "appraisal"];
   for (const key of seen) if (!known.includes(key))
     throw new Error('unknown field "' + key + '" — this identifier may come from a newer build');
   return {
@@ -6065,7 +6139,8 @@ function decodeFoldState(graph, text) {
     spine:           num("spine", 0),
     byText:          fields.view === "pos",
     facets:          "facets" in fields ? new Set(ids("facets", facetIds, "a facet")) : null,
-    untagged:        !("untagged" in fields && fields.untagged === "0")
+    untagged:        !("untagged" in fields && fields.untagged === "0"),
+    appraisal:       "appraisal" in fields && fields.appraisal === "1"
   };
 }
 

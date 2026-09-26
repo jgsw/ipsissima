@@ -440,7 +440,10 @@ function create(container, graph, opts) {
   container.classList.add("amech");
   if (!M) { container.textContent = "This map declares no mechanism."; return null; }
   var G = layout(M);
-  var layers = { rival: true, appraisal: false };
+  // Off unless the host says the page's switch is already on: the view reports its layers back
+  // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
+  // entry, an appraisal the reader had switched on in Reasons.
+  var layers = { rival: true, appraisal: !!opts.appraisal };
   var selected = null;
 
   var bar = document.createElement("div"); bar.className = "amech-bar";
@@ -636,6 +639,7 @@ function create(container, graph, opts) {
     if (selected && selected.edge && selected.edge.layer !== "text" && !layers[selected.edge.layer]) selected = null;
     if (selected && selected.state && obj(M.states[selected.state]).appraisal && !layers.appraisal) selected = null;
     drawEdges(); drawNodes(); renderSide();
+    if (opts.onLayers) opts.onLayers({ rival: layers.rival, appraisal: layers.appraisal });
   }
   Array.prototype.forEach.call(bar.querySelectorAll("input[data-layer]"), function (inp) {
     inp.addEventListener("change", function () { layers[inp.getAttribute("data-layer")] = inp.checked; apply(); });

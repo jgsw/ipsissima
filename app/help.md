@@ -94,9 +94,14 @@ order of reasons, or the order of exposition.
 
 **The reconstructor's appraisal** is off until you ask for it. It is the reconstructor's own
 reading of the text against the world — a confounder the author never mentions, a step the text
-leaves out, a loop it leaves open — and never something the text says. Its switch says how many
-additions it is hiding; switched on, a banner stays across the view and every addition is drawn
-hatched in violet.
+leaves out, a loop it leaves open — and never something the text says. Its switch sits in the
+map's control bar, beside the hashtags, and above the chain in Mechanism, and it is **one switch**:
+turned on in one arrangement, it is on in all three. It says how many additions it is hiding;
+switched on, a banner stays across the view and every addition is drawn in violet — dash-bordered
+on the argument map, hatched on the chain. While
+it is off the additions are nowhere on the page — not on the map, not in the margins — and none of
+them is ever counted as the author's: an appraisal claim is never crowned the main claim, and the
+spine and the depth ladder are measured towards the author's own theses alone.
 
 <p id="helpArrangeNote">They are the same claims twice over. <b>Exposition</b> answers a different
 question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
