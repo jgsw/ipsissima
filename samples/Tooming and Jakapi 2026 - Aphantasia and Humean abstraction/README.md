@@ -110,7 +110,7 @@ Four real defects, none of which the two older papers could have shown, and ever
 | | |
 |---|---|
 | **Footnote zone latched per page, not per column** | In two columns the reading order returns to the top of the sheet, so a footnote at the foot of the left column swallowed the whole right column — **1,364 words and three section headings**, with a plausible word count and well-formed paragraphs either side. Found only because the numbering jumped 1 → 3. |
-| **De-hyphenation destroyed real compounds** | This PDF marks typesetter's breaks with U+00AD and never ends a line with an ASCII hyphen. A blanket rule turned "well-established" into "wellestablished". The converter now trusts soft hyphens where a document uses them, and falls back to the blunt rule for old scans that have none. |
+| **De-hyphenation destroyed real compounds** | This PDF marks the typesetter's breaks with U+00AD, and the two ASCII hyphens it does end a line with are the paper's own ("well-established", "non-sensory"). A blanket rule turned the first into "wellestablished". The converter now COUNTS soft hyphens against ASCII line ends and trusts them only if they win — merely having a few does not settle it, as the Prescott-Couch's four later showed — and where they lose it keeps the hyphen of any pair the paper writes closed up elsewhere. |
 | **Gutter detection was blind to line extents** | Measured on left edges, the widest gap on this page lies *inside* the left column, between its indents and its displayed material. |
 | **`end_marker` ended the page, not the article** | The bibliography survived a cut that reported 48 lines dropped. |
 

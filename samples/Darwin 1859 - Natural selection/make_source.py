@@ -20,7 +20,7 @@ markers exist to prevent.
 ONE LINE PER CLAUSE, AND WHY IT IS NOT THE USUAL CHOICE. The other converters here write one
 line per PARAGRAPH, because the locator's unit is the line and a journal article has enough
 paragraphs to give every claim its own position. This passage has two. Written that way, all
-fourteen of the quoted claims would resolve to one of two lines, the Order view would have two
+twelve of the quoted claims would resolve to one of two lines, the Order view would have two
 columns, and the exposition axis -- the thing these maps are for -- would show nothing at all.
 So the passage is broken at ITS OWN JOINTS: Darwin's semicolons and the "then" / "Therefore" /
 "Thus" hinges, which are where the argument turns anyway. No wording is altered and no
