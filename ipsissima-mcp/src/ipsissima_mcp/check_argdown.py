@@ -1843,7 +1843,7 @@ def provenance_report(cli, path, source_root, fix=None):
         print("      steps to the nearest contention: "
               + ", ".join(f"{k}:{steps[k]}" for k in sorted(steps)))
         remote = sorted((t for t, c in contrib.items() if (c["dist"] or 0) >= 6),
-                        key=lambda t: (-contrib[t]["dist"], -contrib[t]["load"]))
+                        key=lambda t: (-contrib[t]["dist"], -contrib[t]["load"], t))
         if remote:
             print(f"      the {len(remote)} most remote (6+ steps out -- doing the least "
                   f"direct work):")
@@ -2279,9 +2279,12 @@ def _report(cli, path, a):
             loose.update(found)          # a tag with no claim on its line: count each one
     tags = Counter(t for _, t in seen_tag) + loose
     if tags:
-        SHAPE["tags"] = dict(tags)
+        # BY COUNT, THEN NAME. `most_common` breaks ties by insertion order, and `seen_tag`
+        # is a set, so equal counts came out in a different order on every run.
+        ranked = sorted(tags.items(), key=lambda tc: (-tc[1], tc[0]))
+        SHAPE["tags"] = dict(ranked)
         print("\n   TAGS (drive the overview view via selection.selectedTags):")
-        for t, c in tags.most_common():
+        for t, c in ranked:
             print(f"      #{t:<14} {c}")
     else:
         print("\n   TAGS: none -- without tags there is no reliable overview view.")

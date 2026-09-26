@@ -88,6 +88,8 @@ const SUITES = [
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
+  // The same file, the same report: two hash seeds once reshuffled every tie in the census.
+  ["the census, run twice",      PY, [path.join(PYTESTS, "test_census_deterministic.py")]],
   ["two readings, compared",     PY, [path.join(PYTESTS, "test_compare.py")]],
   ["the MCP server's contract", PY, [path.join(PYTESTS, "test_server.py")]],
   // That the server can be INSTALLED, not just run from here — every path that assumes a source

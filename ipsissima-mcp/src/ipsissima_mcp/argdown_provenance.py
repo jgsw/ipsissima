@@ -146,7 +146,8 @@ def find_quote(quote, source_text):
     # a real source it is also far less work than the slide was.
     probe = max(parts, key=len)
     lo_norm, lo_probe = norm.lower(), probe.lower()
-    words = sorted({w for w in re.findall(r"[a-z]{5,}", lo_probe)}, key=len, reverse=True)[:6]
+    words = sorted({w for w in re.findall(r"[a-z]{5,}", lo_probe)},
+                   key=lambda w: (-len(w), w))[:6]
     starts = set()
     for w in words:
         at = lo_norm.find(w)
@@ -402,7 +403,7 @@ def quotation_context(doc, source_root, quote_results):
             body = re.sub(r"(?<!\S)\#[A-Za-z][\w-]*", " ", rec.get("text", ""))
             absent = sorted({w for w in content_words(body)
                              if w not in GLOSS_STOP and _stem(w) not in have},
-                            key=len, reverse=True)
+                            key=lambda w: (-len(w), w))
 
         nxt = raw[z_end:_block_bounds(raw, z_end, z_end)[1]].strip()
         out.append(dict(
@@ -1866,8 +1867,13 @@ def contribution(doc, declared=None):
 
     d_any, d_sup = distances(any_up), distances(up)
 
+    # IN TITLE ORDER, NOT SET ORDER. `titles` is a set, and a set of strings iterates in an
+    # order that changes with every interpreter (hash randomisation), so every caller that
+    # ranks these claims and meets a tie printed the tie differently on each run of the same
+    # file. Found 26 Sep 2026: the "most remote" list reshuffled on Miller, Prescott-Couch,
+    # Swift and Wilson.
     out = {}
-    for t in titles:
+    for t in sorted(titles):
         by_support = t in d_sup
         by_any = t in d_any
         role = ("apex" if t in apex else
@@ -1891,7 +1897,7 @@ def first_use(doc, source_root, quote_results=None):
     """
     pos = text_positions(doc, source_root, quote_results)
     placed = {t: (p["chapter_index"], p["line"]) for t, p in pos.items() if p["line"] is not None}
-    rank = {t: i for i, t in enumerate(sorted(placed, key=lambda t: placed[t]))}
+    rank = {t: i for i, t in enumerate(sorted(placed, key=lambda t: (placed[t], t)))}
     users = {}
     for a, b, kind in title_edges(doc):
         if kind == "support":
@@ -1903,7 +1909,7 @@ def first_use(doc, source_root, quote_results=None):
             continue
         out.append(dict(claim=t, stated=r, first_used=min(seen), gap=min(seen) - r,
                         total=len(rank)))
-    return sorted(out, key=lambda d: -d["gap"])
+    return sorted(out, key=lambda d: (-d["gap"], d["stated"]))
 
 
 def dag_depth(doc):
