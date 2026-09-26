@@ -100,6 +100,12 @@ check("PROFILE.md names every key, tag and value the registry holds", not unname
 check("and carries the registry's version", f"**Version {P['version']} " in DOC)
 check("the checker reports that version", ca.PROFILE_VERSION == P["version"], str(ca.PROFILE_VERSION))
 
+print("\nthe licence travels with both files")
+# CC BY 4.0, ruled 26 Sep 2026 (docs/LICENCE-AUDIT.md §12). The registry lives in a GPL package,
+# so its own licence must be stated in the file itself. Mutation: drop either statement -> fails.
+check("the registry states its licence inside itself", P.get("licence") == "CC-BY-4.0" and P.get("copyright"))
+check("and the document states the same", "CC BY 4.0" in DOC and "creativecommons.org/licenses/by/4.0" in DOC)
+
 print()
 if fails:
     sys.exit(f"{fails} check(s) failed")

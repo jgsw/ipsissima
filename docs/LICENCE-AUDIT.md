@@ -598,6 +598,21 @@ could, not that any judgement in this document became a fact. And `ipsissima-mcp
 position (GPL-3.0-or-later over an AGPL dependency, distributed on PyPI) is exactly as §4 left
 it: unresolved, and now the most important open item in this document.
 
+## 12. The profile under CC BY 4.0 — 26 September 2026
+
+The **Ipsissima profile for Argdown** — `docs/PROFILE.md` and its registry
+`ipsissima-mcp/src/ipsissima_mcp/profile.json` — is licensed **CC BY 4.0** by its sole copyright
+holder, on his instruction. Its main readers are Argdown's maintainers, and a specification
+meant to be adopted is better under an attribution licence than under either of the code
+licences: MIT is a software licence, and the GPL on the MCP package would have followed the
+registry into any tool that copied it.
+
+The registry is data, not code, and travels inside the GPL-licensed package because the checker
+reads it; the licence is stated **inside the file** (`licence`, `licence_url`,
+`licence_note`), the same rule that makes every sample's source carry its own licence, so the
+carve-out goes wherever the file does. `tests/test_profile.py` holds both files to it. Nothing
+else changes: the application stays MIT and `ipsissima-mcp/` stays GPL-3.0-or-later.
+
 ## What this document did not check
 
 Said plainly, because an audit that does not name its own gaps is worse than none:

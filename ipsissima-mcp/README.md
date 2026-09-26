@@ -479,6 +479,7 @@ contacts zotero.org.
 What a map may record, and what the checker holds it to, is specified in
 [`docs/PROFILE.md`](../docs/PROFILE.md), the Ipsissima profile for Argdown; its registry ships in
 the package as `profile.json`, and `argdown_check` reports the profile version it validated against.
+Both are CC BY 4.0, whatever the licence of the package the registry travels in.
 
 | tool | |
 |---|---|

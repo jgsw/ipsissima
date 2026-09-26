@@ -154,7 +154,10 @@ the Argdown team; the reconstruction method of Alec Fisher and Trudy Govier; Tom
 article on charity and quotation, which is why the checks do not stop at verbatim; and Gregor
 Betz and Georg Brun, who named the distinction this program draws before it drew it.
 <a href="https://github.com/jgsw/ipsissima/blob/main/CREDITS.md">CREDITS.md</a> says it properly.
-The source is on <a href="https://github.com/jgsw/ipsissima">GitHub</a>. The samples above are
+The source is on <a href="https://github.com/jgsw/ipsissima">GitHub</a>; what Ipsissima records on
+top of standard Argdown is specified in the
+<a href="https://github.com/jgsw/ipsissima/blob/main/docs/PROFILE.md">Ipsissima profile for
+Argdown</a> (CC BY 4.0). The samples above are
 public domain (Darwin, Carroll), Crown copyright reused under the
 <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open
 Government Licence</a> (Miller), or open access reproduced by their author (Wilson).</small>

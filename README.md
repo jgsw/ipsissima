@@ -169,9 +169,12 @@ Public License v3 or later**, in `ipsissima-mcp/LICENSE`, because its PDF machin
 PyMuPDF, which is AGPL-licensed — a permissive licence there would promise what that dependency
 does not allow. The boundary is deliberate, and `docs/LICENCE-AUDIT.md` is the full account of it:
 the app went permissive precisely so that its layout and rendering work can flow back to MIT
-projects, Argdown first among them. Two carve-outs an MIT badge might otherwise seem to claim: the
-**ArgVu** typeface embedded in every built page stays under its own Bitstream Vera Fonts licence,
-and each text in `samples/` carries its own licence, named in its folder's README.
+projects, Argdown first among them. Three carve-outs an MIT badge might otherwise seem to claim: the
+**ArgVu** typeface embedded in every built page stays under its own Bitstream Vera Fonts licence;
+each text in `samples/` carries its own licence, named in its folder's README; and the
+**Ipsissima profile for Argdown** — `docs/PROFILE.md` and its registry `profile.json`, which
+travels inside the Ipsissima-MCP package — is licensed **CC BY 4.0**, so that Argdown's own
+tools can adopt it freely.
 
 It is a reader and editor for **Argdown**, and would not exist without it. The notation, the
 parser and the model of what a reconstruction *is* are **Christian Voigt's**, and the language has

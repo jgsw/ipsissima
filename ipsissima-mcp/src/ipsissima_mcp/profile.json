@@ -3,6 +3,10 @@
   "version": "1.0",
   "date": "2026-09-26",
   "spec": "docs/PROFILE.md",
+  "copyright": "2026 James Wilson",
+  "licence": "CC-BY-4.0",
+  "licence_url": "https://creativecommons.org/licenses/by/4.0/",
+  "licence_note": "This registry and docs/PROFILE.md are CC BY 4.0, whatever the licence of the package they travel in.",
   "note": "The registry of every annotation Ipsissima reads. No new syntax: every key rides in Argdown's own front matter and {data} blocks, or in a source file's YAML front matter. tests/test_profile.py holds this file to what the checker and the app actually read.",
 
   "map_frontmatter": {

@@ -4,6 +4,12 @@
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
+© 2026 James Wilson. This document and its registry are licensed under
+[Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
+(CC BY 4.0), so that anyone — Argdown's own tools first — may adopt, adapt or build on the
+profile with attribution. The rest of the repository keeps its own licences: MIT for the
+application, GPL-3.0-or-later for Ipsissima-MCP, in whose package the registry travels.
+
 ## What a profile is, and why this is one
 
 [Argdown](https://argdown.org) is the notation Ipsissima reads and writes. Ipsissima needs to
@@ -264,9 +270,34 @@ a meaning; it says how to carry a file across. The registry and this document ch
 commit, and `tests/test_profile.py` holds the registry to what the checker and the app actually
 read — a key the code reads that the profile does not list, or the reverse, fails the test.
 
+## For Argdown's maintainers
+
+The profile needs nothing from Argdown that Argdown does not already provide, and changes
+nothing about how an Argdown file is written or read. What it relies on, so that a change to any
+of these would be worth knowing about in advance:
+
+- **front matter** between `===` lines, parsed as YAML and returned by `@argdown/core` as
+  `frontMatter` — the app reads it there;
+- **`{data}` blocks** on statements, arguments, premise-conclusion lines and inference lines, as
+  YAML, carried through to the JSON export under `data`;
+- **hashtags** in statement text, and **`isGroup`** on headings;
+- **rule names** on inference lines (`-- Modus ponens {uses: [1, 2]} --`);
+- **the parser's own records** of every statement — including one with no relations, which the
+  map's selection drops: a claim that states a causal step and supports nothing is read from the
+  parser's records, not from the drawn map.
+
+Two things would help any tool that layers meaning on Argdown in this way, offered as
+observations rather than requests. The CLI's `argdown json` export omits the front matter the
+core parser returns, so a tool working from the export has to read the file a second time. And
+there is no convention yet for namespacing tool-specific data keys, so two such profiles could in
+principle claim the same key for different meanings; this profile's keys are listed in full in
+its registry so that a collision would at least be visible.
+
+Comments, corrections and objections are welcome as issues on the Ipsissima repository.
+
 ## What the profile is not
 
-It is not a new notation, and it does not ask Argdown's maintainers or users for anything. It is
+It is not a new notation, and it asks nothing of Argdown's users. It is
 not a ranking of readings: nothing in it scores an author or a reconstruction. And it is not
 closed. Keys are added when a reading needs a distinction the notation cannot carry — the
 mechanism keys arrived with the J-PAL and FAST readings of September 2026 — and each arrives with
