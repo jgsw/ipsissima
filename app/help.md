@@ -85,18 +85,30 @@ order of reasons, or the order of exposition.
   steps it sets out, from a cause — often the action it recommends — to the outcomes it cares
   about. Levels of social complexity run top to bottom (macro, meso, micro) and sequence left to
   right; loops are drawn as loops. Every arrow is one or more claims in the map, and it is drawn
-  by what the text offers for it: a heavy line for a study or statistics, a line for a step the
-  text argues, dashed for one it only asserts, dotted gold for one the reconstructor had to supply.
+  the way the rest of Ipsissima draws things. Its **pattern** is how close its claims stand to the
+  words — solid for a quotation, dissolving to dash-dot for an imputation — exactly as on a claim's
+  box. Its **weight** is what the text offers for the step: heavy for a study, statistics or a
+  model, medium for a step the text argues, thin for one it only asserts. Its **colour** is whose
+  step it is: navy for the text's own, slate for a rival view the text reports, violet for the
+  reconstructor's appraisal, teal for a selection link — an association that holds because of who
+  ends up on each side, not an effect.
   Each arrow's label says which way the effect runs: **raises** (more of the first brings more of
   the second) or **lowers** (more of the first, less of the second). These are effects, not the
-  support and attack of the Reasons map, so they are written as words rather than + and −.
-  A faint grey line marked **no effect** is a finding that nothing is brought about — often the
-  text's answer to a rival view's arrow beside it — and a teal **selection** line is an association
-  that holds because of who ends up on each side, not an effect.
+  support and attack of the Reasons map, so they are written as words rather than + and −. A line
+  ending in a bar, marked **no effect**, is a finding that nothing is brought about — often the
+  text's answer to a rival view's arrow beside it.
   Click an arrow to see its claims, and a claim to reach its passage. **Click a state** to see only
   the paths through it — what leads to it and what it leads to — with the rest faded; **Show only
   what the text tested** keeps the steps it backs with a study, statistics or a model; **Fit to
-  width** scales a wide chain to the window. The panel beside the chain
+  width** scales a wide chain to the window.
+  **Folding.** A state can be folded into its arrows (click it, then *Fold into its arrows*): it
+  leaves the drawing, and each pair of steps through it becomes one route, labelled *via* the
+  state. A route says what its steps add up to and never more: raises then lowers is lowers, it is
+  backed only as well as its weakest step, and it stands as far from the words as its most distant
+  claim. Clicking it lists every step's own claims. **Fold to the ends** folds everything between
+  the intervention and its outcomes and sets aside what lies off that line — the other causes the
+  text names, the places its chain stops — naming them in the panel. Nothing moves when you fold:
+  every state keeps its place, so *Unfold all* puts back exactly what you saw. The panel beside the chain
   gives its shape — how many steps, across how many levels, over how long — and its **gaps**:
   where the text's chain stops, or never reaches an outcome. A gap is a finding about the text, not
   a fault in the map.

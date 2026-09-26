@@ -37,6 +37,15 @@ var TIERS = ["evidence", "argued", "asserted", "imputed"];
 var TIER_OF_BASIS = { study: "evidence", statistics: "evidence", model: "evidence",
                       example: "argued", testimony: "argued", asserted: "asserted" };
 var ROUTE_CAP = 200, LOOP_CAP = 50;
+/** THE FIDELITY LADDER, closest first, with the Reasons map's own border patterns. "Fidelity is
+ *  pattern; relation is colour" (brand/README.md, F5): an arrow here is drawn in the pattern of the
+ *  claims behind it, exactly as a box there is, so solidity means closeness to the words in this
+ *  arrangement too. The first build spent pattern on what the text offers for a step instead. */
+var FIDELITY = ["quotation", "paraphrase", "compression", "interpretation", "imputation"];
+var FIDELITY_DASH = { quotation: "", paraphrase: "6 2", compression: "4 3", interpretation: "2 3",
+                      imputation: "7 2 1.5 2" };
+/** WHAT THE TEXT OFFERS, as weight: Gross's light and shadow. */
+var TIER_WIDTH = { evidence: 3.2, argued: 2, asserted: 1.2, imputed: 1.2 };
 
 function obj(x) { return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
 function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
@@ -96,7 +105,7 @@ function model(graph) {
       var sign = raw.sign == null ? "" : String(raw.sign);
       steps.push({
         id: c.title + "#" + i, claim: c, layer: layer, from: raw.from, to: raw.to,
-        sign: sign, basis: raw.basis || null, tier: tier,
+        sign: sign, basis: raw.basis || null, tier: tier, fidelity: FIDELITY.indexOf(c.fidelity) >= 0 ? c.fidelity : "compression",
         // A NULL FINDING (sign 0) and a SELECTION LINK are reported, never walked: see mechanism.py.
         isNull: sign === "0", selects: !!raw.selects, hedged: !!raw.hedged,
         lag: raw.lag == null ? "" : String(raw.lag), given: given.map(String),
@@ -294,7 +303,8 @@ function signWord(signs) {
 
 /** Geometry for the whole chain, every layer included. Pure: the same model gives the same
  *  numbers, and nothing the reader switches changes them. */
-function layout(M) {
+function layout(M, opts) {
+  opts = opts || {};
   var used = {};
   M.steps.forEach(function (s) { used[s.from] = used[s.to] = true; });
   M.ids.forEach(function (i) { if (obj(M.states[i]).role === "intervention") used[i] = true; });
@@ -350,16 +360,44 @@ function layout(M) {
     maxRank = Math.max(maxRank, rank[v]);
   });
 
-  // One drawn edge per (from, to, layer): the claims behind it are listed on the chip.
-  var groups = {}, order = [];
+  // FOLDING DRAWS, IT DOES NOT MOVE. Every state keeps the place the whole chain gives it (F3: a
+  // folded view is a projection of one fixed order); a folded state is simply not drawn, and the
+  // arrows through it are drawn from where they start to where they end.
+  var drawn = foldSteps(M, opts.folded || {}, nodes);
+  drawn.steps.forEach(function (s) { if (s.parts) s.back = nodes[s.to].x <= nodes[s.from].x; });
+  // THE ENDS: only the intervention's routes to the outcomes. Folding every state between them was
+  // not enough on the J-PAL sample, which names four other causes and six places its chain stops:
+  // their routes still filled the page. Everything off that line is set aside -- not drawn, and
+  // counted in the panel -- and comes back with Unfold all.
+  var setAside = [], offMain = 0, noLine = false;
+  var roleOf = function (v) { return obj(M.states[v]).role; };
+  var hasEnds = M.ids.some(function (v) { return roleOf(v) === "intervention"; }) &&
+                M.ids.some(function (v) { return roleOf(v) === "outcome"; });
+  var main = opts.ends && hasEnds ? drawn.steps.filter(function (s) { return roleOf(s.from) === "intervention" && roleOf(s.to) === "outcome"; }) : [];
+  // A text whose chain never runs from its intervention to an outcome has no line to show: that
+  // is a finding (the gaps say so), and setting everything aside would draw an empty page.
+  noLine = !!(opts.ends && hasEnds && !main.length);
+  if (opts.ends && hasEnds && main.length) {
+    offMain = drawn.steps.length - main.length;
+    drawn.steps = main;
+    var touched = {};
+    main.forEach(function (s) { touched[s.from] = touched[s.to] = true; });
+    Object.keys(nodes).forEach(function (v) {
+      if (!drawn.folded[v] && !touched[v] && roleOf(v) !== "intervention" && roleOf(v) !== "outcome") setAside.push(v);
+    });
+  }
+
   // One drawn edge per (from, to, layer, kind): a null finding and a selection link are never
   // folded into the causal arrow beside them, or the drawing would say the opposite of the text.
+  var groups = {}, order = [];
   var kindOf = function (s) { return s.isNull ? "null" : s.selects ? "selection" : "step"; };
   // AND BY SIGN. One arrow labelled "mixed" hid the FAST trial's story: the authors hold that
   // exercise lowers falls, and report an earlier trial where it raised them (26 Sep 2026). Two
-  // findings with opposite signs are two arrows, as the checker already counts them.
-  M.steps.forEach(function (s) {
-    var k = s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" + (kindOf(s) === "step" ? s.sign : "");
+  // findings with opposite signs are two arrows, as the checker already counts them. A route
+  // through folded states is never merged with a step the text states outright.
+  drawn.steps.forEach(function (s) {
+    var k = s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" +
+            (kindOf(s) === "step" ? s.sign : "") + "\u0000" + (s.parts ? "route" : "");
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
   });
@@ -368,7 +406,7 @@ function layout(M) {
   // could follow. Now each arrow has its own point on the side, in the order of where it is going,
   // so arrows leave and arrive already sorted and cross as little as the layout allows.
   var isBackKey = {};
-  order.forEach(function (k) { isBackKey[k] = groups[k].some(function (s) { return back[s.id]; }); });
+  order.forEach(function (k) { isBackKey[k] = groups[k].some(function (s) { return s.parts ? s.back : back[s.id]; }); });
   var outs = {}, ins = {};
   order.forEach(function (k) {
     if (isBackKey[k]) return;
@@ -424,10 +462,13 @@ function layout(M) {
     var isBack = isBackKey[k];
     var kind = kindOf(s0);
     var off = s0.layer === "rival" ? 10 : s0.layer === "appraisal" ? -10 : kind === "null" ? 20 : kind === "selection" ? -20 : 0;
-    var tier = kind !== "step" && s0.layer !== "appraisal" ? kind
-             : s0.layer !== "text" ? s0.layer
-             : ss.map(function (s) { return s.tier; })
+    // THREE CHANNELS, ONE MEANING EACH (F5). Weight: the best the text offers for the step.
+    // Pattern: the closest any of its claims stands to the words. Colour: whose step, and what kind.
+    var tier = ss.map(function (s) { return s.tier; })
                  .sort(function (p, q) { return TIERS.indexOf(p) - TIERS.indexOf(q); })[0];
+    var fidelity = ss.map(function (s) { return s.fidelity; })
+                     .sort(function (p, q) { return FIDELITY.indexOf(p) - FIDELITY.indexOf(q); })[0];
+    var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : "text";
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P;
@@ -454,17 +495,103 @@ function layout(M) {
     var signs = [];
     ss.forEach(function (s) { if (s.sign && signs.indexOf(s.sign) < 0) signs.push(s.sign); });
     var given = ss.some(function (s) { return s.given.length > 0; });
+    var viaName = function (v) { var t = String(obj(M.states[v]).label || v); return t.length > 22 ? t.slice(0, 21) + "…" : t; };
+    var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
+                                            : " · " + ss.length + " routes") : "";
     var label = kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
               : kind === "selection" ? "selection" :
-                signWord(signs) + (ss.length > 1 ? " ×" + ss.length : "") +
+                signWord(signs) + (route || (ss.length > 1 ? " ×" + ss.length : "")) +
                 (given ? " ◇" : "") + (isBack ? " ↻" : "");
-    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, back: isBack,
+    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity,
+             ink: ink, route: !!s0.parts, back: isBack,
              steps: ss, path: d, stub: stub, curve: P,
              chip: { x: 0, y: 0, w: label.length * 6.6 + 14, h: 18, label: label } };
   });
-  placeChips(edges, nodes, lanes);
+  var shown = {};
+  Object.keys(nodes).forEach(function (v) { if (!drawn.folded[v] && setAside.indexOf(v) < 0) shown[v] = nodes[v]; });
+  placeChips(edges, shown, lanes);
   return { width: GUT + maxRank * COL + BW + 40, height: y + 70, lanes: lanes, nodes: nodes,
-           edges: edges, box: { w: BW, h: BH } };
+           edges: edges, box: { w: BW, h: BH },
+           folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
+           ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain };
+}
+
+/** PATH FOLDING. A folded state is taken out of the chain and every pair of steps through it --
+ *  into it, then out of it -- becomes one route from where the first starts to where the second
+ *  ends. What a route says is fixed by what it is made of, never improved by the folding:
+ *
+ *   - its sign is the product of its steps' (raises then lowers is lowers);
+ *   - its backing is its WEAKEST step's, since every step must hold (Gross's point about length);
+ *   - its pattern is its most distant claim's, since the route is only as close to the words;
+ *   - it keeps its layer, and steps of different layers are never joined: a rival view's step and
+ *     the text's own do not make a route either party asserts.
+ *
+ *  What cannot be carried is counted, not dropped silently: a null finding or a selection link
+ *  touching a folded state (neither is a step to walk), a loop that folding would close on a
+ *  single state, and a pair of steps from different layers. The panel says how many. */
+var FOLD_CAP = 2000;
+function mulSign(a, b) {
+  if (!a || !b) return "";
+  if (a === "0" || b === "0") return "0";
+  return a === b ? "+" : "-";
+}
+function foldSteps(M, folded, nodes) {
+  var fold = {}, hidden = { findings: 0, loops: 0, crossLayer: 0, stranded: 0 };
+  Object.keys(folded).forEach(function (v) { if (folded[v] && nodes[v]) fold[v] = true; });
+  var cur = [];
+  M.steps.forEach(function (s) {
+    if ((s.isNull || s.selects) && (fold[s.from] || fold[s.to])) { hidden.findings++; return; }
+    cur.push(s);
+  });
+  // Folded in the order the chain lays them out, so the same folds make the same routes.
+  var seq = Object.keys(fold).sort(function (a, b) { return nodes[a].x - nodes[b].x || nodes[a].y - nodes[b].y || (a < b ? -1 : 1); });
+  seq.forEach(function (v) {
+    var ins = [], outs = [], rest = [];
+    cur.forEach(function (s) { (s.to === v ? ins : s.from === v ? outs : rest).push(s); });
+    // A step into the folded state with nothing of its own voice leaving it (or out of it with
+    // nothing coming in) has no route to join: it goes, and is counted.
+    var sameLayer = function (list, l) { return list.some(function (x) { return x.layer === l; }); };
+    ins.forEach(function (i) { if (!sameLayer(outs, i.layer)) hidden.stranded++; });
+    outs.forEach(function (o) { if (!sameLayer(ins, o.layer)) hidden.stranded++; });
+    ins.forEach(function (i) {
+      outs.forEach(function (o) {
+        if (i.layer !== o.layer) { hidden.crossLayer++; return; }
+        if (i.from === o.to) { hidden.loops++; return; }
+        if (rest.length > FOLD_CAP) return;
+        var parts = (i.parts || [i]).concat(o.parts || [o]);
+        rest.push({
+          id: i.id + " > " + o.id, from: i.from, to: o.to, layer: i.layer, parts: parts,
+          via: (i.via || []).concat([v], o.via || []),
+          sign: mulSign(i.sign, o.sign), isNull: false, selects: false,
+          tier: TIERS[Math.max(TIERS.indexOf(i.tier), TIERS.indexOf(o.tier))],
+          fidelity: FIDELITY[Math.max(FIDELITY.indexOf(i.fidelity), FIDELITY.indexOf(o.fidelity))],
+          hedged: i.hedged || o.hedged, given: i.given.concat(o.given),
+          lag: [i.lag, o.lag].filter(Boolean).join("; "), how: null, reflexive: i.reflexive || o.reflexive,
+          claim: null
+        });
+      });
+    });
+    cur = rest;
+  });
+  return { steps: cur, folded: fold, hidden: hidden };
+}
+/** The states folding can take out: those the text's chain runs into AND out of. An
+ *  intervention or an outcome is where a route starts or ends, so it is never one. */
+function foldable(M, voice) {
+  // ONE VOICE MUST RUN BOTH WAYS. On the planted fixture a state the text's chain starts from had
+  // only an appraisal step into it; offered for folding, it took the text's whole chain with it,
+  // since steps of different voices are never joined into a route.
+  var into = {}, from = {}, out = [];
+  M.steps.forEach(function (s) {
+    if (s.isNull || s.selects) return;
+    into[s.to + "\u0000" + s.layer] = true; from[s.from + "\u0000" + s.layer] = true;
+  });
+  M.ids.forEach(function (v) {
+    var role = obj(M.states[v]).role;
+    if (role === "intervention" || role === "outcome") return;
+    if ((voice ? [voice] : ["text", "rival", "appraisal"]).some(function (l) { return into[v + "\u0000" + l] && from[v + "\u0000" + l]; })) out.push(v);
+  });
+  return out;
 }
 
 /** WHERE EACH CHIP GOES. The first build put every chip at a fixed point along its arrow, and on
@@ -499,7 +626,9 @@ function placeChips(edges, nodes, lanes) {
       var t = CHIP_T[k % CHIP_T.length], dy = CHIP_DY[Math.floor(k / CHIP_T.length)];
       var cx = bez(P[0][0], P[1][0], P[2][0], P[3][0], t), cy = bez(P[0][1], P[1][1], P[2][1], P[3][1], t) + dy;
       var box = { x: cx - e.chip.w / 2, y: cy - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
-      var cost = 0;
+      // Never off the drawing: a route's chip was pushed past the left edge when folding sent
+      // it out of the bottom of a box in the first column.
+      var cost = box.x < 4 ? 1e6 : 0;
       fixed.forEach(function (f) { cost += overlap(box, f); });
       placed.forEach(function (f) { cost += 2 * overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }); });
       if (cost < bestCost) { best = { x: cx, y: cy, box: box }; bestCost = cost; }
@@ -542,14 +671,18 @@ function injectStyle() {
   s.id = "amech-style";
   s.textContent = [
     ".amech{position:relative;width:100%;height:100%;display:flex;flex-direction:column;",
-    "  --mv-evidence:#1f3a5f;--mv-argued:#3f6f9f;--mv-asserted:#7d8b99;--mv-imputed:#9a7b2f;",
-    "  --mv-rival:#b03030;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
-    "  --mv-null:#8a8f98;--mv-selection:#2f8f83;",
+    // COLOUR IS WHOSE STEP, AND WHAT KIND (F5). The text's own steps in the identity's navy; a
+    // rival view the text reports in slate, NOT red -- red is attack everywhere else on the page;
+    // the appraisal in the violet the Reasons map gives it; selection, a different relation, teal.
+    // The light-and-shadow bar is shades of the one navy, as its lines are weights of it.
+    "  --mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
+    "  --mv-selection:#2f8f83;",
+    "  --mv-evidence:#203a6a;--mv-argued:#5a78a8;--mv-asserted:#a7b6cf;--mv-imputed:#dde2ea;",
     "  --mv-lane-a:rgba(0,0,0,.035);--mv-lane-b:rgba(0,0,0,.015);--mv-sel:#e0a800}",
     "@media (prefers-color-scheme:dark){.amech{",
-    "  --mv-evidence:#9cc3ef;--mv-argued:#7fa7d1;--mv-asserted:#8d99a6;--mv-imputed:#d9b45a;",
-    "  --mv-rival:#ef7a7a;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
-    "  --mv-null:#9aa0a8;--mv-selection:#5fc2b5;",
+    "  --mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
+    "  --mv-selection:#5fc2b5;",
+    "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
     ".amech[hidden]{display:none}",
     ".amech-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;",
@@ -558,7 +691,7 @@ function injectStyle() {
     ".amech-tog{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line,#ddd);",
     "  border-radius:7px;padding:4px 9px;background:var(--panel,#fff);cursor:pointer;font-size:13px;user-select:none}",
     ".amech-tog input{margin:0}",
-    ".amech-tog .sw{width:20px;height:0;border-top:2px dashed var(--mv-rival)}",
+    ".amech-tog .sw{width:20px;height:0;border-top:2px solid var(--mv-rival)}",
     ".amech-tog.appr{border-style:dashed;border-color:var(--mv-appraisal)}",
     ".amech-tog.appr .sw{height:9px;border:0;border-radius:2px;",
     "  background:repeating-linear-gradient(45deg,var(--mv-appraisal) 0 2px,transparent 2px 5px)}",
@@ -589,7 +722,7 @@ function injectStyle() {
     ".amech .lane-l{font-size:12px;font-weight:600;fill:var(--fg-dim,#666);paint-order:stroke;stroke:var(--bg,#fff);stroke-width:5px;stroke-linejoin:round}",
     ".amech .actor-l{font-size:11px;fill:var(--fg-dim,#666)}",
     ".amech .st rect.box{fill:var(--alm-node-bg,#fff);stroke:var(--fg,#1a1a1a);stroke-width:1}",
-    ".amech .st.intervention rect.box{fill:var(--mv-evidence);stroke:var(--mv-evidence)}",
+    ".amech .st.intervention rect.box{fill:var(--mv-text);stroke:var(--mv-text)}",
     ".amech .st.intervention text{fill:var(--alm-node-bg,#fff)}",
     ".amech .st.outcome rect.outer{fill:none;stroke:var(--fg,#1a1a1a)}",
     ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal);stroke-dasharray:4 3}",
@@ -599,6 +732,11 @@ function injectStyle() {
     ".amech .sel{stroke:var(--mv-sel)!important;stroke-width:4!important}",
     ".amech .dim{opacity:.1}.amech .faint{opacity:.35}",
     ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
+    ".amech-legend .g{color:var(--fg-dim,#666);font-size:11.5px;margin-top:4px}",
+    ".amech-route{border:1px solid var(--line,#ddd);border-radius:7px;padding:6px 9px;margin:6px 0}",
+    ".amech-route>.t{font-weight:600}.amech-fold{display:flex;flex-wrap:wrap;gap:4px;align-items:center}",
+    ".amech-fold button,.amech-state-act button{font:inherit;font-size:12px;background:none;border:1px solid var(--line,#ddd);",
+    "  border-radius:5px;padding:1px 7px;cursor:pointer;color:var(--fg,#1a1a1a)}",
     ".amech-tog select{font:inherit;font-size:12.5px;border:0;background:none;color:inherit}",
     ".amech-tog.fit{font:inherit;font-size:13px;color:inherit}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
@@ -607,18 +745,14 @@ function injectStyle() {
   document.head.appendChild(s);
 }
 
-var TIER_STYLE = {
-  evidence:  { dash: "",    width: 3 },
-  argued:    { dash: "",    width: 2 },
-  asserted:  { dash: "7 5", width: 1.6 },
-  imputed:   { dash: "2 4", width: 1.6 },
-  rival:     { dash: "8 4", width: 1.8 },
-  appraisal: { dash: "3 4", width: 1.8 },
-  // No effect found: faint, no arrowhead, and a chip that says so.
-  "null":    { dash: "2 6", width: 1.4 },
-  // Who ends up on each side, not what brings what about.
-  selection: { dash: "10 3 2 3", width: 1.4 }
-};
+var INKS = ["text", "rival", "appraisal", "selection"];
+/** How an arrow is drawn: weight from what the text offers, pattern from how close its claims
+ *  stand to the words, colour from whose step it is. A null finding is drawn thin whatever backs
+ *  it -- its chip and its bar say what it is. */
+function edgeStyle(e) {
+  return { color: "var(--mv-" + e.ink + ")", width: e.kind === "null" ? 1.4 : TIER_WIDTH[e.tier],
+           dash: FIDELITY_DASH[e.fidelity] || "" };
+}
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
  *  a claim -- the host takes it to the claim's passage. Returns a small controller. */
@@ -629,7 +763,13 @@ function create(container, graph, opts) {
   container.innerHTML = "";
   container.classList.add("amech");
   if (!M) { container.textContent = "This map declares no mechanism."; return null; }
-  var G = layout(M);
+  // FOLDED STATES. Folding re-draws the arrows and never moves a box: `layout` places every state
+  // from the whole chain whatever is folded.
+  // "Fold to the ends" folds what lies between in the TEXT's own chain; a single state may be
+  // folded wherever any voice runs through it.
+  var folded = {}, canFold = foldable(M), toEnds = foldable(M, "text");
+  var ends = false;
+  var G = layout(M, { folded: folded, ends: ends });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -649,6 +789,8 @@ function create(container, graph, opts) {
       '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
     (anyUntested ? '<label class="amech-tog">Show <select data-show><option value="all">every step</option>' +
       '<option value="tested">only what the text tested</option></select></label>' : '') +
+    // Offered only where there is something to fold (F2: a control is a promise).
+    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Fold every state between the intervention and its outcomes, and set aside what lies off that line">Fold to the ends</button>' : '') +
     '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
@@ -668,10 +810,14 @@ function create(container, graph, opts) {
                             patternTransform: "rotate(45)" }, defs);
   el("rect", { width: 6, height: 6, fill: "var(--mv-appraisal-bg)" }, pat);
   el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "var(--mv-appraisal)", "stroke-width": 1, opacity: 0.35 }, pat);
-  Object.keys(TIER_STYLE).forEach(function (t) {
+  INKS.forEach(function (t) {
     var mk = el("marker", { id: "amech-ar-" + t, viewBox: "0 0 10 10", refX: 9, refY: 5,
                             markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, mk);
+    // A NULL FINDING ENDS IN A BAR: the line reaches the state and nothing passes.
+    var bar = el("marker", { id: "amech-bar-" + t, viewBox: "0 0 4 12", refX: 2, refY: 6,
+                             markerWidth: 4, markerHeight: 12, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
+    el("rect", { x: 0.5, y: 0, width: 3, height: 12, fill: "var(--mv-" + t + ")" }, bar);
   });
   G.lanes.forEach(function (ln, i) {
     el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, svg);
@@ -705,12 +851,15 @@ function create(container, graph, opts) {
     drawnEdges = [];
     G.edges.forEach(function (e) {
       if (!visible(e)) return;
-      var st = TIER_STYLE[e.tier], col = "var(--mv-" + e.tier + ")";
-      var g = el("g", { "data-layer": e.layer, "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gE);
-      var p = el("path", { d: e.path, "class": "ed", stroke: col, "stroke-width": st.width,
-                           "stroke-dasharray": st.dash }, g);
+      var st = edgeStyle(e), col = st.color;
+      var g = el("g", { "data-layer": e.layer, "data-edge": e.from + ">" + e.to, "data-kind": e.kind,
+                        "data-fidelity": e.fidelity, "data-tier": e.tier }, gE);
+      if (e.route) g.setAttribute("data-route", "1");
+      var p = el("path", { d: e.path, "class": "ed", stroke: col, "stroke-width": st.width }, g);
+      if (st.dash) p.setAttribute("stroke-dasharray", st.dash);
+      if (e.kind === "null") p.setAttribute("marker-end", "url(#amech-bar-" + e.ink + ")");
       if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": st.width,
-                               "marker-end": "url(#amech-ar-" + e.tier + ")" }, g);
+                               "marker-end": "url(#amech-ar-" + e.ink + ")" }, g);
       el("path", { d: e.path, "class": "hit" }, g);
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
                            "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gC);
@@ -733,6 +882,7 @@ function create(container, graph, opts) {
     Object.keys(G.nodes).forEach(function (v) {
       var s = obj(M.states[v]), p = G.nodes[v];
       if (s.appraisal && !layers.appraisal) return;
+      if (G.folded.indexOf(v) >= 0 || G.setAside.indexOf(v) >= 0) return;
       var cls = "st" + (s.role ? " " + s.role : "") + (s.appraisal ? " appraisal" : "");
       var g = el("g", { "class": cls, "data-layer": s.appraisal ? "appraisal" : "text", "data-state": v,
                         transform: "translate(" + p.x + "," + p.y + ")" }, gN);
@@ -823,17 +973,57 @@ function create(container, graph, opts) {
    *  paragraph describing them asked the reader to translate; a sample of each line, beside its
    *  meaning, does not. Only the kinds this chain uses are listed. */
   function legendHTML() {
-    var used = {};
-    G.edges.forEach(function (e) { used[e.tier] = true; });
-    var rows = [["evidence", "tested: a study, statistics or a model"], ["argued", "argued for in the text"],
-                ["asserted", "asserted only"], ["imputed", "supplied by the reconstructor"],
-                ["rival", "a rival view the text reports"], ["null", "no effect found"],
-                ["selection", "selection, not an effect"], ["appraisal", "the reconstructor’s appraisal"]];
-    return '<div class="amech-legend">' + rows.filter(function (r) { return used[r[0]]; }).map(function (r) {
-      var st = TIER_STYLE[r[0]];
-      return '<div><svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="44" y2="6" stroke="var(--mv-' + r[0] +
-        ')" stroke-width="' + st.width + '" stroke-dasharray="' + st.dash + '"/></svg><span>' + esc(r[1]) + '</span></div>';
-    }).join("") + '</div>';
+    var ink = {}, fid = {}, tier = {}, isNull = false;
+    G.edges.forEach(function (e) {
+      if (e.layer !== "text" && !layers[e.layer]) return;
+      ink[e.ink] = true; fid[e.fidelity] = true; if (e.kind === "null") isNull = true; else tier[e.tier] = true;
+    });
+    var line = function (color, width, dash, cap) {
+      return '<svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="' + (cap ? 40 : 44) + '" y2="6" stroke="' + color +
+        '" stroke-width="' + width + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>' +
+        (cap ? '<rect x="40" y="0" width="3" height="12" fill="' + color + '"/>' : '') + '</svg>';
+    };
+    var row = function (svg, text) { return '<div>' + svg + '<span>' + esc(text) + '</span></div>'; };
+    var out = '<div class="amech-legend"><div class="g">Weight: what the text offers for the step</div>';
+    [["evidence", "tested: a study, statistics or a model"], ["argued", "argued for in the text"],
+     ["asserted", "asserted only"], ["imputed", "supplied by the reconstructor"]].forEach(function (r) {
+      if (tier[r[0]]) out += row(line("var(--mv-text)", TIER_WIDTH[r[0]], ""), r[1]);
+    });
+    out += '<div class="g">Pattern: how close its claims stand to the words, as on every box</div>';
+    FIDELITY.forEach(function (f) { if (fid[f]) out += row(line("var(--mv-text)", 2, FIDELITY_DASH[f]), f); });
+    out += '<div class="g">Colour: whose step, and what kind</div>';
+    [["text", "the text’s own"], ["rival", "a rival view the text reports"], ["appraisal", "the reconstructor’s appraisal"],
+     ["selection", "selection: who ends up on each side, not an effect"]].forEach(function (r) {
+      if (ink[r[0]]) out += row(line("var(--mv-" + r[0] + ")", 2, ""), r[1]);
+    });
+    if (isNull) out += row(line("var(--mv-text)", 1.4, "", true), "no effect found: nothing passes");
+    return out + '</div>';
+  }
+  /** A route through folded states: the states it passes, what it adds up to, and each step's
+   *  own claims -- so folding never hides what the text actually says. */
+  function stepHTML(s) {
+    if (!s.parts) return claimHTML(s);
+    var names = [s.from].concat(s.via, [s.to]).map(function (v) { return esc(obj(M.states[v]).label || v); });
+    return '<div class="amech-route"><div class="t">' + names.join(" → ") + '</div>' +
+      '<div class="m"><span class="amech-pill">' + esc(signWord(s.sign ? [s.sign] : [])) + '</span>' +
+      'backed as its weakest step: ' + esc(s.tier === "evidence" ? "tested" : s.tier) + ' · as far from the words as its most distant claim: ' +
+      esc(s.fidelity) + '</div>' + s.parts.map(claimHTML).join("") + '</div>';
+  }
+  function foldedHTML() {
+    if (!G.folded.length) return "";
+    var H = G.hidden, notes = [];
+    if (H.findings) notes.push(H.findings + " finding" + (H.findings === 1 ? "" : "s") + " of no effect or selection touching a folded state");
+    if (H.loops) notes.push(H.loops + " loop" + (H.loops === 1 ? "" : "s") + " that folding would close on one state");
+    if (H.crossLayer) notes.push(H.crossLayer + " pair" + (H.crossLayer === 1 ? "" : "s") + " of steps from different voices, never joined");
+    if (H.stranded) notes.push(H.stranded + " step" + (H.stranded === 1 ? "" : "s") + " running into or out of a folded state and no further in the same voice");
+    var aside = G.noLine ? '<div class="amech-q" style="margin:4px 0 6px">No route in the text runs from the intervention to an outcome, so nothing is set aside: the states between are folded, and the rest stays drawn.</div>'
+              : G.ends ? '<div class="amech-q" style="margin:4px 0 6px">Showing only the intervention’s routes to the outcomes.' +
+      (G.setAside.length ? ' Set aside: ' + esc(G.setAside.map(function (v) { return obj(M.states[v]).label || v; }).join("; ")) + '.' : '') +
+      (G.offMain ? ' ' + G.offMain + ' route' + (G.offMain === 1 ? '' : 's') + ' off that line not drawn.' : '') + '</div>' : '';
+    return '<h3>Folded</h3>' + aside + '<div class="amech-fold">' + G.folded.map(function (v) {
+        return '<button type="button" data-unfold="' + esc(v) + '" title="Unfold">' + esc(obj(M.states[v]).label || v) + ' ✕</button>'; }).join("") +
+      '<button type="button" data-unfold="*">Unfold all</button></div>' +
+      (notes.length ? '<div class="amech-q">Not drawn while folded: ' + esc(notes.join("; ")) + '.</div>' : '');
   }
   function profileHTML() {
     var P = M.profile, T = P.tiers, tot = 0;
@@ -848,7 +1038,7 @@ function create(container, graph, opts) {
            : g.kind === "unreached-outcome" ? s + " is not reached by the text’s links from where its chain starts."
            : s + " leads nowhere in the text: the chain stops there.";
     };
-    return '<h3>The chain</h3>' +
+    return foldedHTML() + '<h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       '<div class="amech-row"><span class="k">height</span><span>' + P.levels_spanned.length + ' of ' + P.levels.length + ' levels' +
         (P.levels_spanned.length ? ': ' + esc(P.levels_spanned.join(", ")) : '') + '</span></div>' +
@@ -868,15 +1058,15 @@ function create(container, graph, opts) {
       '<h3>Key</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
       '“raises” (more of the first, more of the second) or “lowers” (more of the first, less of the second). ' +
       'These are effects, not the support and attack of the Reasons map. ' +
-      '×n: claims behind one arrow. ◇: conditions stated. ↻: closes a loop. ' +
-      'Click a state to see only the paths through it.</div>' +
+      '×n: claims behind one arrow. ◇: conditions stated. ↻: closes a loop. “via”: a route through folded states. ' +
+      'Click a state to see only the paths through it, or to fold it into its arrows.</div>' +
       (M.dropped ? '<div class="amech-q" style="color:var(--mv-gap)">' + M.dropped + ' step(s) name an undeclared state and are not drawn; the checker names them.</div>' : '');
   }
   function renderSide() {
     if (selected && selected.edge) {
       var e = selected.edge;
       side.innerHTML = '<h3>' + esc(obj(M.states[e.from]).label || e.from) + ' → ' + esc(obj(M.states[e.to]).label || e.to) + '</h3>' +
-        e.steps.map(claimHTML).join("") +
+        e.steps.map(stepHTML).join("") +
         // OFF MEANS OFF IN THE PANEL TOO: the appraisal's view of a text step is named only while
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +
@@ -889,6 +1079,8 @@ function create(container, graph, opts) {
         (s.role ? '<div class="amech-row"><span class="k">role</span><span>' + esc(s.role) + '</span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         (s.appraisal ? '<div class="amech-row"><span class="k">layer</span><span>the reconstructor’s appraisal: not in the text</span></div>' : '') +
+        (canFold.indexOf(selected.state) >= 0 ? '<div class="amech-state-act"><button type="button" data-fold="' + esc(selected.state) +
+          '">Fold into its arrows</button> <span class="amech-q">draws what leads in and what leads out as routes through it</span></div>' : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
     } else {
       side.innerHTML = profileHTML();
@@ -902,6 +1094,9 @@ function create(container, graph, opts) {
   side.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
+    var fv = t.getAttribute && t.getAttribute("data-fold"), uv = t.getAttribute && t.getAttribute("data-unfold");
+    if (fv) { setFolded(fv, true); return; }
+    if (uv) { if (uv === "*") { folded = {}; ends = false; } else setFolded(uv, false); refold(); return; }
     var title = t.getAttribute && t.getAttribute("data-claim");
     if (title && opts.onClaim) {
       var hit = null;
@@ -932,6 +1127,20 @@ function create(container, graph, opts) {
   Array.prototype.forEach.call(bar.querySelectorAll("input[data-layer]"), function (inp) {
     inp.addEventListener("change", function () { layers[inp.getAttribute("data-layer")] = inp.checked; apply(); });
   });
+  var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
+  function refold() {
+    if (!Object.keys(folded).length) ends = false;
+    G = layout(M, { folded: folded, ends: ends });
+    selected = null;
+    if (foldAll) foldAll.textContent = G.folded.length ? "Unfold all" : "Fold to the ends";
+    apply();
+  }
+  function setFolded(v, on) { if (on) folded[v] = true; else delete folded[v]; refold(); }
+  if (foldAll) foldAll.addEventListener("click", function () {
+    if (G.folded.length) { folded = {}; ends = false; }
+    else { toEnds.forEach(function (v) { folded[v] = true; }); ends = true; }
+    refold();
+  });
   var showSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-show]"));
   if (showSel) showSel.addEventListener("change", function () { show = showSel.value; apply(); });
   var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
@@ -946,7 +1155,9 @@ function create(container, graph, opts) {
   apply();
 
   return {
-    model: M, geometry: G,
+    model: M,
+    // A getter: folding replaces the geometry, and a copy taken at creation would go stale.
+    get geometry() { return G; },
     setLayer: function (name, on) {
       layers[name] = !!on;
       var inp = /** @type {HTMLInputElement|null} */ (bar.querySelector('input[data-layer="' + name + '"]'));
@@ -955,11 +1166,14 @@ function create(container, graph, opts) {
     },
     getLayers: function () { return { rival: layers.rival, appraisal: layers.appraisal }; },
     setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
+    setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
+    getFolded: function () { return G.folded.slice(); },
     destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
   };
 }
 
-var API = { model: model, layout: layout, create: create, TIERS: TIERS, BASES: BASES };
+var API = { model: model, layout: layout, create: create, foldable: foldable, TIERS: TIERS, BASES: BASES,
+            FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;
 })(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));
