@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.3 — 26 September 2026.** The machine-readable registry of everything below is
+**Version 1.4 — 26 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -202,7 +202,7 @@ mechanism:
 | `question` | string | What the chain answers. |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*). |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -224,12 +224,33 @@ substantially reduces adoption".
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
 | `selects` | boolean | A **selection link**: who ends up on each side, not an effect. |
 | `hedged` | boolean | The text puts the step as a possibility. |
+| `jointly` | state id, or list of them | The step holds **only together with** these states: a joint cause, not two causes each sufficient alone (*added in 1.4*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
 view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
 between two parts of one whole is counted rather than drawn. Declare it where the text itself
 groups finer states into one — a box in its own diagram, a typology under one heading, a general
 mechanism and its instances. A whole may be part of a larger whole; it may not contain itself.
+
+**Joint causes (1.4).** "Belief that others comply moves people to comply, but only where they
+wish to fit in" is one step with two causes, neither enough alone. Two steps would say each
+suffices; `given:` would make the wish a condition in words, not a state the chain can reach.
+
+```argdown
+[Belief and desire move people]: Belief that others comply moves people to comply, but only where
+they wish to fit in.
+    {causes: {from: belief, to: act, sign: "+", basis: asserted, jointly: [desire]}}
+```
+
+A co-cause counts as a cause of the step's `to` for routes, loops and gaps — a condition that only
+ever acts jointly is linked, not stranded — but the step is counted once. It is drawn as the
+Reasons map draws linked premises: a stem from each co-cause to a bar across the arrow.
+
+**A state across levels (1.4).** A state an actor holds at one level but that holds at others too
+— the Coleman boat's shared expectation, which is at once many people's belief and a fact about
+society; Wimmer's consensus, negotiated between individuals and holding as a field's — declares
+them: `levels: [macro, micro]`. It is drawn as one box through every lane from its top level to
+its bottom, and it counts toward the chain's height at each. Its actor stays the one that holds it.
 
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
@@ -273,7 +294,46 @@ Nothing else is forgiven: a quotation that differs in a word is a near miss, and
 reports the closest passage. Spans shorter than 10 characters are treated as scare quotes, not
 citations.
 
+## Known limits
+
+What this profile cannot yet say, found by reading real texts with it. Each says where it arose and
+what to do meanwhile; a limit is named here rather than worked round silently (the project's own
+rule: name your gaps).
+
+- **A role is fixed, but some texts' roles change with the phase of a cycle.** In Wimmer (2008,
+  p. 1010) a boundary feature is an outcome in one phase and a condition of the next. A role list
+  says a state is both, not *when*. Say when in the state's `note:`; the loop or feedback system the
+  census reports already shows that the chain turns.
+- **`part_of` is a tree: a state sits in one box.** Where a text's own diagram puts one concept in two
+  boxes — Wimmer's Fig. 2 draws the field's distribution of power and, inside its consensus box, the
+  degree of power inequality — make two states, each in its box, with the step between them. One
+  state in two wholes would count every step through it twice once the boxes are collapsed.
+- **A general mechanism and its instances.** Merton gives one mechanism and illustrates it with the
+  bank and with ethnic out-groups. `part_of` can place each instance's states inside a general
+  state, but a *step* cannot be marked as an instance of a general step.
+- **Direction only, not size.** A `sign` says which way an effect runs; "insufficient but not null"
+  (Merton on education), an effect size or a dose-response stays in the claim's own words. A
+  finding of no effect is `"0"`; a weak effect is `+` or `-` with its note.
+- **A direction that depends on something unstated.** "Empower (or disempower)" has no single sign.
+  Where the text names the condition, make two steps with `given:`; where it does not, leave the
+  step unsigned and say why in the note.
+- **Possibility, not probability.** `hedged: true` says the text puts a step as a possibility;
+  there is no field for a probabilistic claim ("tends to", "raises the chance of").
+- **Every state needs an actor.** A structural state — "the social field" — has to be given one;
+  declare the field itself as an actor at its level.
+- **A step is a property of the claim that states it.** An objection or a piece of evidence can
+  attach to that claim in the argument, never to the step as such, and one step stated by two
+  claims is two records joined only by their `from`, `to` and `sign`.
+- **Causal language is found by a pattern.** The census's coverage report and the plan's offer of
+  the mechanism pass look for causal verbs; a mechanism told as a story (Merton's bank) or reported
+  in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
+
 ## Versioning
+
+**1.4** (26 September 2026) added `jointly` on a step and `levels` on a state, for the Coleman
+boat's situational and transformational steps (Martínez-Peña and Ylikoski 2024): a macro condition
+that works only together with individuals' desires, and an aggregate that is at once micro and
+macro. Every 1.3 file conforms unchanged.
 
 **1.3** (26 September 2026) added `echoes`, the other places the text states a claim. Every 1.2
 file conforms unchanged.

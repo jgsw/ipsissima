@@ -75,6 +75,19 @@ for (const k of Object.keys(py)) {
   check(differ.length === 0, "the page and the checker agree on an explanatory chain with a loop",
         differ.map(k => `${k}: python ${JSON.stringify(pyL[k])} js ${JSON.stringify(ML.profile[k])}`).join("\n          "));
 }
+// AND ON THE PLANTED COLEMAN BOAT (profile 1.4): a joint step and a state across levels.
+// Mutation: leave co-causes out of the page's edges -> `entries`, `routes` and `gaps` differ.
+const JOINTF = path.join(FIXTURE, "joint.argdown");
+{
+  const pyJ = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           JOINTF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MJ = MV.model(graphOf(JOINTF));
+  const differ = Object.keys(pyJ).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MJ.profile.gaps.map(g => g.message) : MJ.profile[k], pyJ[k]));
+  check(differ.length === 0 && pyJ.joint.length === 1 && pyJ.spanning.length === 1,
+        "the page and the checker agree on a joint step and a state across levels",
+        differ.map(k => `${k}: python ${JSON.stringify(pyJ[k])} js ${JSON.stringify(MJ.profile[k])}`).join("\n          "));
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");
@@ -284,6 +297,110 @@ check(same(MV.FIDELITY_DASH, { quotation: "", paraphrase: "6 2", compression: "4
   // as a returning arc.
   const ore = L.edges.find(e => e.from === "order" && e.to === "reoff" && e.layer === "text" && e.kind === "step");
   check(ore && !ore.back, "a loop closed only by the appraisal does not turn the text's own step back on itself");
+}
+
+console.log("\nsteps between states stacked in one column");
+// MERTON'S TWO-WAY LOOP (26 Sep 2026): the in-group's definition and the out-group's defence sat in
+// one column with a box between; both steps were drawn as returning arcs from the boxes' bottoms,
+// down one line and through the boxes, and the reader saw one arrow of the loop. Mutations: treat a
+// column step as a returning arc -> it runs through a box; drop the side-by-side offset -> the two
+// directions of a pair share one line.
+{
+  const SM = MV.model(graphOf(SYSF));
+  const inside = (e, L) => {
+    const P = e.curve, at = (t, k) => { const u = 1 - t; return u*u*u*P[0][k] + 3*u*u*t*P[1][k] + 3*u*t*t*P[2][k] + t*t*t*P[3][k]; };
+    return Object.keys(L.nodes).filter(v => v !== e.from && v !== e.to).filter(v => { const b = L.nodes[v];
+      return Array.from({ length: 19 }, (_, i) => (i + 1) / 20).some(t => at(t, 0) > b.x + 2 && at(t, 0) < b.x + b.w - 2 && at(t, 1) > b.y + 2 && at(t, 1) < b.y + b.h - 2); });
+  };
+  const layouts = [MV.layout(SM), MV.layout(MV.collapseModel(SM))];
+  const col = layouts.flatMap(L => L.edges.filter(e => e.vertical || e.side).map(e => [e, L]));
+  check(col.some(([e]) => e.vertical) && col.some(([e]) => e.side), "the planted system has both kinds: boxes adjacent, and a box between",
+        JSON.stringify(col.map(([e]) => e.from + ">" + e.to + (e.side ? " side" : " straight"))));
+  const through = col.filter(([e, L]) => inside(e, L).length).map(([e, L]) => e.from + ">" + e.to + " through " + inside(e, L).join(","));
+  check(through.length === 0, "no step between two states in one column runs through a box", JSON.stringify(through));
+  // Planted: each of two stacked states answers the institutions back -- one adjacent, one with a box between.
+  const TW = MV.model(graphOf.fromText(fs.readFileSync(SYSF, "utf8") + `
+[Expansion shapes institutions]: Expansion reshapes institutions. {causes: {from: expand, to: inst, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[Contraction shapes institutions]: Contraction reshapes institutions. {causes: {from: contract, to: inst, sign: "+", basis: asserted}}
+    +> [Ends]
+`)), TL = MV.layout(TW);
+  const two = TL.edges.filter(e => (e.vertical || e.side) && TL.edges.some(f => f.from === e.to && f.to === e.from && (f.vertical || f.side)));
+  const kinds = new Set(two.map(e => e.side ? "side" : "straight"));
+  const shared = two.filter(e => two.some(f => f.from === e.to && f.to === e.from && f.curve[0][0] === e.curve[3][0]));
+  check(kinds.size === 2 && shared.length === 0 && two.every(e => inside(e, TL).length === 0),
+        "a pair running both ways is two arrows, side by side or either side of the column, never down one line",
+        JSON.stringify(two.map(e => e.from + ">" + e.to + (e.side ? " side " : " straight ") + e.curve[0][0] + "→" + e.curve[3][0])));
+}
+
+console.log("\njoint causes and states across levels (profile 1.4)");
+{
+  const JM = MV.model(graphOf(JOINTF)), JL = MV.layout(JM);
+  const lane = lv => JL.lanes.find(l => l.level === lv);
+  const n = JL.nodes.norm;
+  // Mutation: place a spanning state in its actor's lane only -> one lane high.
+  check(n.y < lane("macro").y + lane("macro").h && n.y + n.h > lane("micro").y + 26 && same(n.levels, ["macro", "micro"]),
+        "a state across levels is one box running down through both lanes", JSON.stringify({ n, lanes: JL.lanes.map(l => [l.y, l.h]) }));
+  const ids = Object.keys(JL.nodes);
+  check(!ids.some((a, i) => ids.slice(i + 1).some(b => {
+    const p = JL.nodes[a], q = JL.nodes[b];
+    return Math.min(p.x + p.w, q.x + q.w) > Math.max(p.x, q.x) && Math.min(p.y + p.h, q.y + q.h) > Math.max(p.y, q.y); })),
+        "and no box is drawn over another");
+  // CROWDED COLUMN. On the Coleman-boat reading a spanning box was put first in every lane and
+  // covered six states of its top lane that came after it in its column. Planted: a macro state, a
+  // micro state and a second spanning state, all in the shared expectation's column. Mutations: put
+  // spanning states first in every lane -> boxes overlap; drop the side-by-side split -> the two
+  // spanning boxes overlap.
+  const CROWD = MV.model(graphOf.fromText(fs.readFileSync(JOINTF, "utf8")
+    .replace("        norm:", `        law:     {label: "A law", actor: society}
+        habit:   {label: "A habit", actor: person}
+        trust:   {label: "Trust", actor: society, levels: [macro, micro]}
+        norm:`) + `
+[Compliance makes law]: Compliance becomes law. {causes: {from: act, to: law, sign: "+", basis: asserted}}
+    +> [Rules become practice]
+
+[Compliance makes habit]: Compliance becomes habit. {causes: {from: act, to: habit, sign: "+", basis: asserted}}
+    +> [Rules become practice]
+
+[Compliance makes trust]: Compliance builds trust. {causes: {from: act, to: trust, sign: "+", basis: asserted}}
+    +> [Rules become practice]
+`));
+  const CL = MV.layout(CROWD), cids = Object.keys(CL.nodes);
+  const sameCol = ["law", "habit", "trust", "norm"].every(v => Math.abs(CL.nodes[v].x - CL.nodes.norm.x) < 200);
+  const clash = cids.flatMap((a, i) => cids.slice(i + 1).filter(b => { const p = CL.nodes[a], q = CL.nodes[b];
+    return Math.min(p.x + p.w, q.x + q.w) > Math.max(p.x, q.x) && Math.min(p.y + p.h, q.y + q.h) > Math.max(p.y, q.y); }).map(b => a + "/" + b));
+  check(sameCol && clash.length === 0 && CL.nodes.law.y < CL.nodes.norm.y && CL.nodes.habit.y > CL.nodes.norm.y + CL.nodes.norm.h - 1,
+        "in a crowded column, a spanning box sits below its top lane's states and above its bottom lane's, and beside another spanning box",
+        JSON.stringify({ sameCol, clash }));
+  const je = JL.edges.find(e => e.from === "belief" && e.to === "act");
+  check(same(je.jointly, ["desire"]) && je.stems.length === 1 && je.stems[0].state === "desire" && !!je.junction,
+        "a joint step is one arrow with a stem from its co-cause to a bar", JSON.stringify({ j: je.jointly, stems: je.stems.length }));
+  // Mutation: keep only the side route for a stem -> it runs through the belief's box.
+  const pts = je.stems[0].path.match(/-?[\d.]+/g).map(Number);
+  const P = [[pts[0], pts[1]], [pts[2], pts[3]], [pts[4], pts[5]], [pts[6], pts[7]]];
+  const at = (t, k) => { const u = 1 - t; return u*u*u*P[0][k] + 3*u*u*t*P[1][k] + 3*u*t*t*P[2][k] + t*t*t*P[3][k]; };
+  const through = ids.filter(v => v !== "desire" && v !== "act").filter(v => {
+    const b = JL.nodes[v];
+    return Array.from({ length: 19 }, (_, i) => (i + 1) / 20).some(t => at(t, 0) > b.x + 2 && at(t, 0) < b.x + b.w - 2 && at(t, 1) > b.y + 2 && at(t, 1) < b.y + b.h - 2); });
+  check(through.length === 0, "the stem goes round the boxes between, not through them", JSON.stringify(through));
+  // Mutation: key groups without `jointly` -> the joint step and a solo one merge into one arrow.
+  const SOLO = MV.model(graphOf.fromText(fs.readFileSync(JOINTF, "utf8") + `
+[Belief alone]: Belief alone moves people. {causes: {from: belief, to: act, sign: "+", basis: asserted}}
+    +> [Rules become practice]
+`));
+  check(MV.layout(SOLO).edges.filter(e => e.from === "belief" && e.to === "act").length === 2,
+        "a step that holds only with a co-cause is not merged with one that holds alone");
+  // Mutation: drop `jointly` from the routes foldSteps makes -> the route loses its stem.
+  const JF = MV.layout(JM, { folded: { belief: true } });
+  const route = JF.edges.find(e => e.route && e.from === "rule" && e.to === "act");
+  check(!!route && same(route.jointly, ["desire"]) && route.stems.length === 1,
+        "a route through a joint step holds only with its co-cause too", JSON.stringify(route && route.jointly));
+  // A co-cause with no role of its own: nothing else would keep it on the page.
+  const JN = MV.model(graphOf.fromText(fs.readFileSync(JOINTF, "utf8").replace("actor: person, role: condition}", "actor: person}")));
+  const JE = MV.layout(JN, { folded: Object.fromEntries(MV.foldable(JN, "text").map(v => [v, true])), ends: true });
+  check(JE.edges.length === 1 && !JE.setAside.includes("desire") && JE.edges[0].stems.length === 1,
+        "folded to its ends, the co-cause of a route is kept, not set aside", JSON.stringify({ aside: JE.setAside, n: JE.edges.length }));
 }
 
 console.log("\npath folding");
@@ -612,6 +729,28 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
       const q = document.querySelector("#mech .amech-q"), b = document.querySelector("#absbtn");
       return b && q && b.offsetParent ? q.getBoundingClientRect().left - b.getBoundingClientRect().right : null; });
     check(gap !== null && gap >= 0, "the Abstract fold leaves the question uncovered", String(gap));
+
+    // THE BOAT ON SCREEN (profile 1.4). Mutations: test only `from` for the "no link" mark -> the
+    // co-cause is marked; drop co-causes from the focus walk -> clicking it lights nothing.
+    const jointHtml = path.join(tmp, "joint.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), JOINTF, "-o", jointHtml], { stdio: "pipe" });
+    await page.goto("file://" + jointHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    check(await page.locator('#mech .st[data-state="desire"] .gapmark').count() === 0,
+          "a co-cause is not marked as linked to nothing");
+    check(await page.locator('#mech [data-stem="desire"]').count() === 1 && await page.locator("#mech .junction").count() === 1,
+          "its stem and bar are drawn");
+    await page.locator('#mech .st[data-state="desire"]').click();
+    await page.waitForTimeout(200);
+    const litJ = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
+      .filter(g => !g.classList.contains("dim")).map(g => g.getAttribute("data-edge")).sort());
+    check(same(litJ, ["act>norm", "belief>act"]), "clicking the co-cause lights the step it joins and what follows", JSON.stringify(litJ));
+    await page.locator('#mech [data-edge="belief>act"] path.ed').first().click({ force: true });
+    await page.waitForTimeout(200);
+    check(/only together with Desire to fit in/.test(await page.locator(".amech-side").innerText()),
+          "and the step's panel says it holds only together with it");
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {
     await browser.close();

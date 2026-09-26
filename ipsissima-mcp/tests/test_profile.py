@@ -89,6 +89,9 @@ state_keys = set(P["mechanism"]["states"]["keys"])
 js_state = set(re.findall(r'\bs\.(label|actor|role|measured|appraisal|note)\b', MECH_JS))
 if re.search(r'\)\.part_of\b', MECH_JS):
     js_state.add("part_of")
+# A state's levels are read through levelsOf() since profile 1.4.
+if re.search(r'function levelsOf\(state\b.{0,300}?obj\(state\)\.levels\b', MECH_JS, re.S):
+    js_state.add("levels")
 # Roles are read through rolesOf() since profile 1.1, where `role` may be a list.
 if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
     js_state.add("role")
