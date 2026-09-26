@@ -117,6 +117,22 @@ Claims drawn from the same paragraph are stacked in the order the paragraph make
 bottom. A claim placed only by matching its paragraph, with no words of its own to find there,
 goes below the ones that were found.
 
+**The précis.** The first rung of *how much* in Exposition is the **précis**: one claim for each
+section, chosen to be what that section argues, in the order the text makes them. Read down,
+it is the paper in a sentence per section. The choice passes over arguments (they have no words
+of their own), claims read from a note, the reconstructor's imputations and views the text
+reports only to answer. A paper opens at its précis the first time you turn to Exposition, and
+you climb from there. The Reasons view keeps the depth it had.
+
+**Following the reading.** With the Manuscript open beside Exposition, **follow** in the
+Manuscript's header makes the map keep pace with the text. As you scroll, the claims drawn from
+the passage you are reading are lit and brought into view: the passage a third of the way down
+the pane, or the nearest one above it that produced a claim the map is showing. Nothing is
+unfolded; a claim in a folded section is shown by the block that stands for it, and at the
+précis the section's one claim stays lit while you read the section. Clicking a passage lights, as well,
+any claim the passage *announces* (see echoes, below), even though that claim is placed where
+it is argued.
+
 **Two layouts.** Exposition can be laid out in **rows** or as a **column**; the choice is
 *layout* on the control bar. In rows, the paragraphs sit side by side and wrap like lines of
 prose. In the column, every claim has a row of its own, top to bottom in the order the text runs,
@@ -164,9 +180,10 @@ remembered too; this page is its permanent home either way.
 
 <div class="key" id="relkey"></div>
 
-<p id="helpEdgeNote">In <b>Exposition</b> a line also says <em>which way it reaches</em>. Colour
-still means what it means above — the arrangement never changes what a line <em>is</em> — but the
-weight of the ink says when its support arrives:</p>
+<p id="helpEdgeNote">In <b>Exposition</b>, with <b>shape</b> switched on in the control bar, a line
+also says <em>which way it reaches</em>. Colour still means what it means above — the arrangement
+never changes what a line <em>is</em> — but the weight of the ink says when its support
+arrives:</p>
 
 - **Solid** — the reasons were already given by the time the claim was made.
 - **Pale** — the claim is asserted *before* its justification arrives: at the point you meet
@@ -392,8 +409,10 @@ the thesis on trust while it gets there. Building the case first is ordinary too
 taken on trust, and the reader assembles pieces whose purpose arrives later. This view measures
 where each claim's support falls and how far away it sits; it does not score either habit.
 
-So each band carries a **sparkline**, and the whole reconstruction has one in the footer beside
-the claim count, read left to right through the text:
+This is an author's question about a text more than a reader's, so it is a layer you turn on:
+**shape**, on the control bar in Exposition. Off, the default, the lines are drawn plain and
+no sparklines are shown. On, each band carries a **sparkline**, and the whole reconstruction
+has one in the footer beside the claim count, read left to right through the text:
 
 - **below the line** — support *anticipated*: claims stated here whose reasons are still to come
 - **above the line** — support *prepared*: claims made here whose reasons were already given
@@ -887,11 +906,15 @@ border against the corrected copy, or **Start fresh from this text**, which begi
 
 
 - **how much** — how many levels of reasons are showing, from the main claim outwards. The number
-  on each button is how many claims it puts on screen.
+  on each button is how many claims it puts on screen. In Exposition the first rung is the
+  *précis*, one claim per section.
 - **claims** — *short* gives the first few lines with a "more" link; *full* gives every claim's
   whole text.
 - **layout**, in Exposition only — *rows* lays the paragraphs side by side, wrapping like lines of
   prose; *column* gives every claim a row of its own, top to bottom as the text runs.
+- **shape**, in Exposition only — the shape of the argument: whether each claim's reasons come
+  before it or after, and how far they reach, in the ink of the lines and a sparkline on each
+  band. Off until you ask for it.
 - **sections** — whether the argument's sections are folded into blocks or opened out
 - **spine** — *all* shows every claim; *load-bearing* shows only those the argument rests on —
   remove one and part of the argument loses its route to a contention. The number is how many

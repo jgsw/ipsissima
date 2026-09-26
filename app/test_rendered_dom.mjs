@@ -2494,7 +2494,170 @@ async function barChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ exposition's three switches
+ *
+ * The précis, the shape layer and following the reading, each driven as a reader would drive it:
+ * the arrangement chosen from its button, the switch clicked on the bar, the manuscript scrolled.
+ * What is asserted is what each promises — Exposition opens at its first rung and Reasons gets
+ * its own depth back; the shape layer is off until asked for and then draws; and a paused scroll
+ * lights the claims of the passage being read. */
+async function expositionChecks(browser) {
+  const miller = built.find(m => /miller/i.test(m.name));
+  if (!miller) { check(false, "exposition: the Miller sample built", "no Miller sample"); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  /* HOW MANY CLICK HANDLERS EACH CLAIM'S BOX CARRIES, counted as they are added. A box outlives
+   * renders, and its handlers used to be added on every paint: after R renders a click ran R of
+   * them, and go-to-passage — which re-renders from inside the handler — doubled them each time.
+   * The tenth jump on Miller took nine seconds. SHOWN ABLE TO FAIL, 26 Sep 2026: wiring the box
+   * on every paint again reports "the busiest box carries 4 click handlers". */
+  await ctx.addInitScript(() => {
+    const orig = EventTarget.prototype.addEventListener;
+    const clicks = new WeakMap();
+    /** @type {any} */ (window).__boxClicks = 0;
+    EventTarget.prototype.addEventListener = function (type, fn, o) {
+      if (type === "click" && this instanceof Element && this.classList.contains("alm-n")) {
+        const c = (clicks.get(this) || 0) + 1;
+        clicks.set(this, c);
+        /** @type {any} */ (window).__boxClicks = Math.max(/** @type {any} */ (window).__boxClicks, c);
+      }
+      return orig.call(this, type, fn, o);
+    };
+  });
+  const page = await ctx.newPage();
+  await page.goto("file://" + miller.html);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+  await page.click('#panes [data-p="text"]');
+  await page.waitForSelector("#mstext [data-l]", { timeout: 10000 });
+  const rung = () => page.evaluate(() => {
+    const r = /** @type {HTMLInputElement|null} */ (document.querySelector("#map input.alm-range"));
+    return r ? +r.value : null;
+  });
+  const reasonsDepth = await rung();
+  check(!(await page.isVisible("#msfollow")),
+        "exposition: follow is not offered in Reasons", "");
+
+  await page.click('#view [data-v="exposition"]');
+  await page.waitForTimeout(700);
+  const first = await page.evaluate(() => ({
+    boxes: document.querySelectorAll("#map .alm-n").length,
+    shapeClass: document.querySelector("#map svg").classList.contains("alm-shape"),
+    sparks: document.querySelectorAll("#map .alm-spark *").length,
+    footer: /** @type {HTMLElement} */ (document.getElementById("shape")).hidden,
+    button: !!document.querySelector("#map .alm-bar [data-role='shape']:not([hidden]) button")
+  }));
+  check(await rung() === 0, "exposition: the first entry opens at the précis rung",
+        String(await rung()));
+  check(!first.shapeClass && first.sparks === 0 && first.footer && first.button,
+        "  with the shape layer off, and its switch on the bar", JSON.stringify(first));
+  // Left at the précis, Reasons gets its own depth back; and the précis is a first visit's
+  // opening, so coming back to Exposition leaves the depth where the reader has it.
+  await page.click('#view [data-v="reasons"]');
+  await page.waitForTimeout(600);
+  check(await rung() === reasonsDepth, "  and going back to Reasons gives Reasons its depth back",
+        JSON.stringify({ reasonsDepth, now: await rung() }));
+  await page.click('#view [data-v="exposition"]');
+  await page.waitForTimeout(600);
+  check(await rung() === reasonsDepth, "  and a second visit does not impose the précis again",
+        String(await rung()));
+
+  await clickBarButton(page, "shape");
+  await page.waitForTimeout(500);
+  const on = await page.evaluate(() => ({
+    shapeClass: document.querySelector("#map svg").classList.contains("alm-shape"),
+    sparks: document.querySelectorAll("#map .alm-spark *").length,
+    footer: /** @type {HTMLElement} */ (document.getElementById("shape")).hidden,
+    pressed: document.querySelector("#map .alm-bar [data-act='shape']").getAttribute("aria-pressed")
+  }));
+  check(on.shapeClass && on.sparks > 0 && !on.footer && on.pressed === "true",
+        "  and switching shape on draws the sparklines and the footer line", JSON.stringify(on));
+  await clickBarButton(page, "shape");
+  await page.waitForTimeout(300);
+  const off = await page.evaluate(() => document.querySelectorAll("#map .alm-spark *").length);
+  check(off === 0, "  and off again takes them away", String(off));
+
+  // FOLLOWING needs claims on screen to light, so the map is taken to its last rung first:
+  // at the précis only each section's head is drawn, and the passage in view may not hold one.
+  await page.evaluate(() => {
+    const r = /** @type {HTMLInputElement} */ (document.querySelector("#map input.alm-range"));
+    r.value = r.max;
+    r.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.waitForTimeout(500);
+  check(await page.isVisible("#msfollow"), "exposition: follow is offered beside the text", "");
+  await page.click("#msfollow");
+  /* SCROLLED WITH THE WHEEL, a stop at a time, and every distinct set of lit claims counted.
+   * Miller's judgment is one long numbered list, which is what this needs: a paragraph inside a
+   * list item measured its `offsetTop` from the item, and following stalled at the first one —
+   * two sets lit over the whole text. SHOWN ABLE TO FAIL, 26 Sep 2026: with `topWithin` put back
+   * to `offsetTop - host.offsetTop` this reports two sets, not dozens. */
+  const lit = async () => page.evaluate(() =>
+    [...document.querySelectorAll("#map .alm-n.is-lit")].map(b => b.dataset.id).sort().join(","));
+  const text = await page.locator("#mstext").boundingBox();
+  await page.mouse.move(text.x + text.width / 2, text.y + text.height / 2);
+  const seen = new Set();
+  for (let stop = 0; stop < 40; stop++) {
+    await page.mouse.wheel(0, 900);
+    await page.waitForTimeout(260);
+    const now = await lit();
+    if (now) seen.add(now);
+  }
+  check(seen.size >= 8, "  and scrolling the manuscript lights each passage's claims in turn",
+        `${seen.size} distinct sets lit`);
+
+  /* GOING TO A CLAIM'S PASSAGE, for every claim on screen, from a pane scrolled to the top: the
+   * passage it lands on must be in view. The same measurement as following, and the same fault
+   * under it — shift-clicking a claim from Miller's numbered paragraphs said "the paragraph it
+   * came from" and left the pane 13,000px short. Shift+Enter on the focused claim is the
+   * keyboard's form of the shift-click and takes the same path, without panning the map to
+   * reach each box. SHOWN ABLE TO FAIL with the same reversion as above. */
+  await page.click("#msfollow");     // off: this scrolls the pane itself
+  // Checked BEFORE the jumps below, which the defect makes exponential: with it back, the loop
+  // never finishes. A dozen renders have happened by now (arrangements, shape, the rung).
+  const most = await page.evaluate(() => /** @type {any} */ (window).__boxClicks);
+  check(most === 1, "exposition: after a dozen renders each claim still answers a click once",
+        `the busiest box carries ${most} click handlers`);
+  if (most !== 1) { await ctx.close(); return; }
+  const ids = await page.evaluate(() =>
+    [...document.querySelectorAll("#map .alm-n[data-id]")].map(b => b.dataset.id));
+  let tried = 0, nested = 0;
+  const missed = [];
+  for (const id of ids) {
+    await page.evaluate(i => {
+      document.getElementById("mstext").scrollTop = 0;
+      document.querySelectorAll("#mstext .hit").forEach(e => e.classList.remove("hit"));
+      /** @type {HTMLElement} */ (document.querySelector(`#map .alm-n[data-id="${i}"]`))
+        .focus({ preventScroll: true });
+    }, id);
+    await page.keyboard.press("Shift+Enter");
+    await page.waitForTimeout(60);
+    const r = await page.evaluate(() => {
+      const h = document.getElementById("mstext");
+      const hit = h.querySelector(".hit");
+      if (!hit) return null;
+      const a = h.getBoundingClientRect(), b = hit.getBoundingClientRect();
+      return { inView: b.bottom > a.top && b.top < a.bottom,
+               nested: !!(hit.parentElement && hit.parentElement.closest("#mstext [data-l]")) };
+    });
+    if (!r) continue;
+    tried++;
+    if (r.nested) nested++;
+    if (!r.inView) missed.push(id + (r.nested ? " (inside a list)" : ""));
+  }
+  check(tried >= 20 && nested > 0 && !missed.length,
+        "exposition: going to a claim's passage lands it in view, inside a list too",
+        JSON.stringify({ tried, nested, missed: missed.slice(0, 8) }));
+
+  await page.click('#view [data-v="reasons"]');
+  await page.waitForTimeout(600);
+  check(!(await page.isVisible("#msfollow")), "exposition: follow leaves with Exposition", "");
+  await ctx.close();
+}
+
 await barChecks(browser);
+await expositionChecks(browser);
 await keyChecks(browser);
 await genTextChecks(browser);
 await studyChecks(browser);

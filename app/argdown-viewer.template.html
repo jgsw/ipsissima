@@ -1319,6 +1319,11 @@ body.fs #fsexit{display:inline-flex}
              a button at one edge opening a panel at the other read as two unrelated things
              (reported 15 Sep). Hidden when the file has fewer than two headings: a list of
              one entry navigates nothing. -->
+        <!-- FOLLOW THE READING (Exposition only): scroll the text and the map lights the claims
+             of the passage being read and brings them into view. Off until asked for — a map
+             moving under the reader is a thing to choose — and remembered once chosen. -->
+        <button class="plain" id="msfollow" hidden aria-pressed="false"
+                title="Follow the reading: as you scroll the text, the map lights the claims drawn from the passage you are reading and brings them into view. Nothing is unfolded; a claim folded away is shown by the block that stands for it.">follow</button>
         <button class="plain icon" id="mstocbtn" hidden aria-expanded="false"
                 title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, press Escape, or use the list's own × to fold it away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
         <!-- THE READER'S OWN MARKS, from their own store (E10; docs/ANNOTATIONS-PLAN.md).
@@ -1368,6 +1373,8 @@ body.fs #fsexit{display:inline-flex}
 "use strict";
 var $ = function(id){ return document.getElementById(id); };
 var LIVE = null, SOURCE = "", NAME = "", CURRENT_GRAPH = null;
+// Whether the shape of the argument is drawn: the map's switch, echoed here (see onMapState).
+var SHAPE_ON = false;
 
 /* IS THERE A DESKTOP HOST? Declared HERE, at the top, and not beside the code that uses it most.
  *
@@ -1753,7 +1760,9 @@ function statsLine(graph){
     var rs = EXP.reaches(graph.edges || [], rk.rank);
     var v = EXP.verdict(rs, rk.n);
     if (v.centre != null) {
-      shape.hidden = false;
+      // Worked out whatever the switch says — the help panel's statistics quote it — and SHOWN
+      // only with the shape layer on.
+      shape.hidden = !SHAPE_ON;
       shape.innerHTML = EXP.sparkline(rs, rk.n, { width: 120, height: 15 });
       var t = document.createElement("span");
       t.className = "shapetext";
@@ -2504,6 +2513,7 @@ function setArrangement(v, showMap){
   ARRANGEMENT = v;
   Array.prototype.forEach.call($("view").children, function(b){
     b.classList.toggle("on", b.dataset.v === v); });
+  msFollowSync();
   $("helpArrangeNote").style.fontWeight = v === "exposition" ? "600" : "";
   if (!LIVE) return;
   // Choosing an arrangement from the toolbar means "show me the map like this", so it brings the
@@ -3526,6 +3536,13 @@ function setAppraisalOn(on){
 function onMapState(st){
   studyOnState(st);
   if (st) setAppraisalOn(st.appraisal);
+  // THE SHAPE LAYER IS ONE SWITCH, on the map's bar, and the page's own marks of it — the
+  // footer's sparkline and the key's entry — follow it, so the reader never meets the
+  // diagnostic in one place after turning it off in another.
+  if (st && !!st.shape !== SHAPE_ON) {
+    SHAPE_ON = !!st.shape;
+    if (CURRENT_GRAPH) { statsLine(CURRENT_GRAPH); buildKeys(CURRENT_GRAPH); }
+  }
 }
 
 function studyOnState(){
@@ -3681,7 +3698,7 @@ function keyContent(graph){
              'set those claims aside</div>');
   }
 
-  var sp = sparkFor(graph);
+  var sp = SHAPE_ON ? sparkFor(graph) : null;
   if (sp) {
     out.push('<h4>Sparkline — where the reasons fall</h4>');
     out.push('<div>' + window.ArgdownExposition.sparkline(sp.rs, sp.n,
@@ -4338,7 +4355,7 @@ function msTocSpot(){
     // 80px of grace, not a hairline: a heading's own top margin puts it ~30px below the
     // pane's edge, and a section whose heading is anywhere in the pane's first inches is
     // the section being read.
-    if (el.offsetTop - host.offsetTop <= host.scrollTop + 80) here = i;
+    if (topWithin(host, el) <= host.scrollTop + 80) here = i;
     else break;
   }
   var rows = $("mstoclist").children;
@@ -4364,14 +4381,72 @@ $("mstoc").addEventListener("click", function(e){
   // Top-aligned, not centred: a reader going to a section wants to start at its heading,
   // and centring would put the heading mid-pane with the previous section above it.
   var host = $("mstext");
-  host.scrollTop = Math.max(0, el.offsetTop - host.offsetTop - 8);
+  host.scrollTop = Math.max(0, topWithin(host, el) - 8);
   msTocSpot();
 });
 var TOC_RAF = 0;
 $("mstext").addEventListener("scroll", function(){
+  msFollowSoon();
   if (!TOC.length || TOC_RAF) return;
   TOC_RAF = requestAnimationFrame(function(){ TOC_RAF = 0; msTocSpot(); });
 });
+
+/* FOLLOWING THE READING. The Contents list already marks the section being read as the text
+ * scrolls; this makes the map do the same for claims. The passage being read is the one under
+ * a reading line a third of the way down the pane — where the eye rests, not the pane's top
+ * edge — and if that paragraph produced no claim the map is showing, the nearest one above it
+ * that did: what the text has argued by this point. Its claims are lit and brought into view once scrolling pauses,
+ * never mid-flick, and nothing is unfolded (`visibleOnly`): the map follows, it does not
+ * rearrange itself under the reader. Exposition only, where the map's order is the text's.
+ * Claims the passage merely ANNOUNCES (echoes) are left out: following them would throw the
+ * camera to wherever they are argued, which is not where the reader is. */
+var FOLLOW_STORE = makeChoiceStore("ipsissima.follow.v1");
+var FOLLOW = FOLLOW_STORE.ok ? FOLLOW_STORE.get() === "on" : false;
+var FOLLOW_TIMER = 0, FOLLOW_LAST = "";
+function msFollowSync(){
+  var b = $("msfollow");
+  if (!b) return;
+  b.hidden = !(ARRANGEMENT === "exposition" && msAvailable());
+  // `!!`: the arrangement can be set before this part of the page has run, and a toggle
+  // given `undefined` flips instead of setting.
+  b.classList.toggle("on", !!FOLLOW);
+  b.setAttribute("aria-pressed", FOLLOW ? "true" : "false");
+}
+$("msfollow").onclick = function(){
+  FOLLOW = !FOLLOW;
+  if (FOLLOW_STORE.ok) FOLLOW_STORE.set(FOLLOW ? "on" : "off");
+  FOLLOW_LAST = "";
+  msFollowSync();
+  if (FOLLOW) msFollowNow();
+};
+function msFollowSoon(){
+  if (!FOLLOW || ARRANGEMENT !== "exposition") return;
+  clearTimeout(FOLLOW_TIMER);
+  FOLLOW_TIMER = setTimeout(msFollowNow, 160);
+}
+function msFollowNow(){
+  if (!FOLLOW || ARRANGEMENT !== "exposition" || !LIVE || !MSCHAPTER) return;
+  var host = $("mstext"), at = host.scrollTop + host.clientHeight / 3;
+  // The last block starting above the reading line. Blocks come in document order, so their
+  // tops never decrease and the search can halve: a book's pane has thousands of them.
+  var blocks = host.querySelectorAll("[data-l]"), here = -1, lo = 0, hi = blocks.length - 1;
+  while (lo <= hi) {
+    var mid = (lo + hi) >> 1;
+    if (topWithin(host, blocks[mid]) <= at) { here = mid; lo = mid + 1; } else hi = mid - 1;
+  }
+  // Back from there to the nearest passage whose claims are ON SCREEN. At the précis only each
+  // section's head is drawn, and a passage whose claims are hidden lights nothing -- so the
+  // walk goes on to the head, which stays lit while its section is read.
+  for (var j = here; j >= 0 && j > here - 120; j--) {
+    var found = msClaimsAt(+blocks[j].dataset.l);
+    if (!found.ids.length) continue;
+    var key = found.ids.slice().sort().join(",");
+    if (key === FOLLOW_LAST) return;
+    if (LIVE.markClaims(found.ids, { visibleOnly: true }) === null) continue;
+    FOLLOW_LAST = key;
+    return;
+  }
+}
 
 /* WHICH PASSAGE A LINE BELONGS TO. A reader clicking in the manuscript means "this bit of
    text", and the unit they mean is the paragraph, not the line under the pointer: a claim
@@ -4650,18 +4725,30 @@ function msIndexParagraphs(lines){
 }
 
 /** Every claim drawn from the passage containing `line`, in the chapter on screen. */
-function msClaimsAt(line){
-  var span = MSPARA[line] || [line, line], out = [];
+function msClaimsAt(line, withEchoes){
+  var span = MSPARA[line] || [line, line], out = [], echoed = [];
   var nodes = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
   for (var i = 0; i < nodes.length; i++) {
     var p = nodes[i].pos;
-    if (!p || p.chapter !== MSCHAPTER || p.line == null) continue;
+    if (!p || p.line == null) continue;
     // A claim read from a note answers from the note too, not only from its mark: the note is
     // where its words are, and a reader clicking there is asking about exactly this claim.
-    if ((p.line >= span[0] && p.line <= span[1]) ||
-        (p.noteLine != null && p.noteLine >= span[0] && p.noteLine <= span[1])) out.push(nodes[i].id);
+    if (p.chapter === MSCHAPTER &&
+        ((p.line >= span[0] && p.line <= span[1]) ||
+         (p.noteLine != null && p.noteLine >= span[0] && p.noteLine <= span[1]))) {
+      out.push(nodes[i].id);
+      continue;
+    }
+    // AND A CLAIM THIS PASSAGE ANNOUNCES, where the map records it as an echo: the passage
+    // states it, though the claim is placed where it is argued. Only when asked — following
+    // the reading must not throw the camera to wherever the announced claim is argued.
+    if (withEchoes) (p.echoes || []).forEach(function(ec){
+      if (ec.chapter === MSCHAPTER && ec.line >= span[0] && ec.line <= span[1] &&
+          echoed.indexOf(nodes[i].id) < 0) echoed.push(nodes[i].id);
+    });
   }
-  return { ids: out, span: span };
+  return { ids: out.concat(echoed.filter(function(id){ return out.indexOf(id) < 0; })),
+           echoed: echoed, span: span };
 }
 
 /* ================= THE MANUSCRIPT AS COMMON GROUND =====================================
@@ -6127,10 +6214,22 @@ function nearestBlock(line){
   return null;
 }
 
+/** Where `el` sits in `host`'s scrolled content, in pixels from its top.
+ *
+ *  MEASURED FROM THE TWO BOXES ON SCREEN, NOT FROM `offsetTop`. Every block in the prose pane is
+ *  `position:relative` -- the printed page numbers hang from it -- so a paragraph inside a list
+ *  item measures its offsetTop from that item, not from the pane. Miller's judgment is one long
+ *  numbered list: shift-clicking a claim from its paragraph 20-odd said "the paragraph it came
+ *  from" and left the pane at the top, 13,000px short of it, and following the reading stalled
+ *  at the list's first item. Both had been so since the pane was built (found 26 Sep 2026). */
+function topWithin(host, el){
+  return el.getBoundingClientRect().top - host.getBoundingClientRect().top + host.scrollTop;
+}
+
 /** Centre `el` inside `host` by moving the host's own scrollTop, and nothing else's. */
 function scrollWithin(host, el){
   if (!host || !el) return;
-  var top = el.offsetTop - host.offsetTop;
+  var top = topWithin(host, el);
   host.scrollTop = Math.max(0, top - (host.clientHeight - el.offsetHeight) / 2);
 }
 
@@ -6215,7 +6314,7 @@ $("mstext").addEventListener("click", function(e){
   // different questions ("which claim am I working on", "which passage am I looking at") and a
   // reader who is done with one has not necessarily finished with the other.
   if (!line) { msClearSpan(); $("msnote").textContent = ""; return; }
-  var at = msClaimsAt(+line.dataset.l);
+  var at = msClaimsAt(+line.dataset.l, true);
   if (!at.ids.length) {
     msClearSpan();
     $("msnote").textContent = "no claim was drawn from this passage";
@@ -6233,6 +6332,7 @@ $("mstext").addEventListener("click", function(e){
   if (e.shiftKey) centred = LIVE.spotlight(at.ids, { pad: 60 }) || centred;
   $("msnote").textContent = (at.ids.length === 1 ? "1 claim" : at.ids.length + " claims") +
     " from this passage" +
+    (at.echoed.length ? " (" + at.echoed.length + " stated here, argued elsewhere)" : "") +
     (centred ? "" : " — spread too wide to frame; shift-click to reframe the map on them");
 });
 

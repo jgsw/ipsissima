@@ -302,5 +302,40 @@ console.log("\nawkward inputs");
   check("and leaves no fold marks behind", closed.groupFolded.size, 0);
 }
 
+/* THE PRÉCIS: the first rung of the by-position view shows one claim per band, and the claim is
+ * chosen to be what that band ARGUES — a sentence of the text, with reasons of its own in the
+ * band. Each rival below is one the first version picked on some sample: an argument node (a
+ * structure's name), a claim read from a note, an imputation, a reported objection, and a scope
+ * disclaimer that hangs off the thesis with nothing under it. */
+{
+  const pos = (line, section, extra) =>
+    Object.assign({ chapter: "a.md", chapterIndex: 0, line, section }, extra || {});
+  const G = { groups: [], nodes: [
+      { id: "thesis", label: "Thesis", pos: pos(90, "3. End") },
+      { id: "mid",    label: "A step towards it", pos: pos(91, "3. End") },
+      { id: "concl",  label: "What section two concludes", pos: pos(38, "2. Middle") },
+      { id: "why",    label: "Its reason", pos: pos(39, "2. Middle") },
+      { id: "arg",    label: "The argument", kind: "argument", pos: pos(32, "2. Middle") },
+      { id: "prem",   label: "A premise", pos: pos(33, "2. Middle") },
+      { id: "gloss",  label: "A footnote's gloss", pos: pos(34, "2. Middle", { note: "3" }) },
+      { id: "imp",    label: "What the reconstructor supplies", fidelity: "imputation", pos: pos(35, "2. Middle") },
+      { id: "obj",    label: "An objection", tags: ["reported"], pos: pos(36, "2. Middle") },
+      { id: "objwhy", label: "The objection's evidence", pos: pos(37, "2. Middle") },
+      { id: "scope",  label: "The paper does not settle X", pos: pos(29, "2. Middle") }
+    ], edges: [
+      // The conclusion reaches the thesis a step further off than the disclaimer does, which
+      // is the case the "argues for something" rule exists for.
+      { from: "mid", to: "thesis", type: "support" }, { from: "concl", to: "mid", type: "support" },
+      { from: "why", to: "concl", type: "support" },
+      { from: "arg", to: "thesis", type: "support" }, { from: "prem", to: "arg", type: "support" },
+      { from: "gloss", to: "thesis", type: "support" }, { from: "imp", to: "thesis", type: "support" },
+      { from: "obj", to: "thesis", type: "attack" }, { from: "objwhy", to: "obj", type: "support" },
+      { from: "scope", to: "thesis", type: "support" }
+    ] };
+  const v = filterGraph(G, S({ byText: true, depth: 0 }));
+  check("the précis shows, for a section, the claim it argues for — not an argument's name, a " +
+        "note, an imputation, a reported objection or a disclaimer", ids(v), ["concl", "thesis"]);
+}
+
 console.log(failures ? `\n${failures} FAILURE(S)\n` : "\nall checks passed\n");
 process.exit(failures ? 1 : 0);
