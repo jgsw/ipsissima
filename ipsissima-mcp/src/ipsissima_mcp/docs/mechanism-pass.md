@@ -80,6 +80,12 @@ mechanism:
   circle starts (`condition`) and what his remedy is for (`outcome`) — `role: [condition, outcome]`.
   An explanatory text with no recommendation has no intervention, and that is not a gap.
 - **`measured:`** when the text says how a state is measured, especially by a proxy it concedes.
+- **`part_of:`** where the text itself groups finer states into one: a box in its own diagram that
+  several states sit inside (Wimmer's strategies box and the five strategies), a typology under one
+  heading, or a general mechanism and the instances it is illustrated by (Merton's bank and his
+  out-groups). Declare the whole as a state and each finer state `part_of` it. The view then opens
+  at the text's own boxes, with every state one click away. Do not invent a whole the text does not
+  draw or name.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 
@@ -97,7 +103,7 @@ substantially reduces adoption".
 | field | says |
 |---|---|
 | `from`, `to` | declared states |
-| `sign` | `+` or `-`; or `"0"` where the text finds **no effect** (below) |
+| `sign` | `+` or `-`; `"0"` where the text finds **no effect** (below); `which` where the step **decides which** of several alternatives follows — institutions that "determine which" strategy actors pursue — rather than raising or lowering a quantity |
 | `basis` | what the TEXT offers for the step: `study` (a study or trial it reports), `statistics` (data it cites), `model` (a model's estimate), `example` (a case or a country), `testimony` (an authority's word, a consensus), `asserted` (nothing) |
 | `lag` | timing the text states: `"within five years"` |
 | `given` | conditions the text states, in its words: `["as part of a broader rehabilitation agenda"]` |

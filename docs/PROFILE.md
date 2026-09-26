@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.1 — 26 September 2026.** The machine-readable registry of everything below is
+**Version 1.2 — 26 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -201,7 +201,7 @@ mechanism:
 | `question` | string | What the chain answers. |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state. |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -215,7 +215,7 @@ substantially reduces adoption".
 | key | value | meaning |
 |---|---|---|
 | `from`, `to` | state ids | Declared states. |
-| `sign` | `+` \| `-` \| `"0"` | Raises, lowers, or a **finding of no effect**. Quote the zero: YAML reads a bare `0` as a number. |
+| `sign` | `+` \| `-` \| `"0"` \| `which` | Raises, lowers, a **finding of no effect**, or — since 1.2 — **decides which** of several alternatives follows, rather than raising or lowering a quantity. Quote the zero: YAML reads a bare `0` as a number. |
 | `basis` | `study` \| `statistics` \| `model` \| `example` \| `testimony` \| `asserted` | What the **text** offers for the step. The first three count as tested; `example` and `testimony`, and an asserted step the map argues for, as argued. |
 | `lag` | string | Timing the text states. |
 | `given` | list of strings | Conditions the text states, in its words. A moderator is a condition, not a state. |
@@ -223,6 +223,16 @@ substantially reduces adoption".
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
 | `selects` | boolean | A **selection link**: who ends up on each side, not an effect. |
 | `hedged` | boolean | The text puts the step as a possibility. |
+
+**Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
+view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
+between two parts of one whole is counted rather than drawn. Declare it where the text itself
+groups finer states into one — a box in its own diagram, a typology under one heading, a general
+mechanism and its instances. A whole may be part of a larger whole; it may not contain itself.
+
+**Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
+steps. Past a handful of loops through one system of states, the census names the system and
+its shortest loops rather than listing every loop.
 
 A step on a `#reported` claim is the rival view's; on an `#appraisal` claim, the reconstructor's.
 A null finding and a selection link are reported and drawn, never walked as part of the chain.
@@ -263,6 +273,10 @@ reports the closest passage. Spans shorter than 10 characters are treated as sca
 citations.
 
 ## Versioning
+
+**1.2** (26 September 2026) added `part_of` on states and the `which` sign, both for multilevel
+process theories (Wimmer 2008), whose own diagram groups finer states into boxes and whose
+conditions decide *which* strategy follows. Every 1.1 file conforms unchanged.
 
 **1.1** (26 September 2026) added the `condition` role and let `role` be a list — for explanatory
 texts, which set out from causes they do not recommend and often run in a circle. Every 1.0 file

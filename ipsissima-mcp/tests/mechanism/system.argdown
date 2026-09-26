@@ -1,0 +1,66 @@
+// A planted SYSTEM (26 Sep 2026), shaped like Wimmer's theory: conditions and an outcome
+// bound in one dense feedback system (more loops than a reader can follow one by one), three
+// strategies declared as parts of one box the text draws, a step between two of those parts,
+// and steps that decide WHICH strategy follows rather than raising or lowering anything.
+===
+title: "System -- a planted feedback system"
+mechanism:
+    question: "How do the field's conditions shape boundary making, and it them?"
+    levels: [field, actors]
+    actors:
+        field: {label: "The social field", level: field}
+        actors: {label: "Actors in the field", level: actors}
+    states:
+        inst:     {label: "Institutions", actor: field, role: condition}
+        power:    {label: "Distribution of power", actor: field, role: condition}
+        strat:    {label: "Strategies of boundary making", actor: actors}
+        expand:   {label: "Expansion", actor: actors, part_of: strat}
+        contract: {label: "Contraction", actor: actors, part_of: strat}
+        blur:     {label: "Blurring", actor: actors, part_of: strat}
+        nego:     {label: "Negotiation", actor: actors}
+        feat:     {label: "Boundary features", actor: field, role: [outcome, condition]}
+===
+
+[Ends]: The field and its boundaries make one another.
+
+[S0 inst expand]: Inst bears on expand. {causes: {from: inst, to: expand, sign: "which", basis: asserted}}
+    +> [Ends]
+
+[S1 inst contract]: Inst bears on contract. {causes: {from: inst, to: contract, sign: "which", basis: asserted}}
+    +> [Ends]
+
+[S2 power blur]: Power bears on blur. {causes: {from: power, to: blur, sign: "which", basis: asserted}}
+    +> [Ends]
+
+[S3 expand nego]: Expand bears on nego. {causes: {from: expand, to: nego, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S4 contract nego]: Contract bears on nego. {causes: {from: contract, to: nego, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S5 blur nego]: Blur bears on nego. {causes: {from: blur, to: nego, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S6 nego feat]: Nego bears on feat. {causes: {from: nego, to: feat, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S7 feat inst]: Feat bears on inst. {causes: {from: feat, to: inst, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S8 feat power]: Feat bears on power. {causes: {from: feat, to: power, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S9 nego inst]: Nego bears on inst. {causes: {from: nego, to: inst, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S10 nego power]: Nego bears on power. {causes: {from: nego, to: power, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S11 power inst]: Power bears on inst. {causes: {from: power, to: inst, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S12 inst power]: Inst bears on power. {causes: {from: inst, to: power, sign: "+", basis: asserted}}
+    +> [Ends]
+
+[S13 expand contract]: Expand bears on contract. {causes: {from: expand, to: contract, sign: "+", basis: asserted}}
+    +> [Ends]
