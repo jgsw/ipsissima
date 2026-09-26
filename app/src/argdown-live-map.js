@@ -1115,7 +1115,9 @@ function membersOfGroup(graph, gid) {
  * grid directly and returns a DAGRE-SHAPED object — node(), edge(), edges(), graph() — so
  * drawNodes, drawEdges and drawGroups are reused untouched.
  */
-function layoutByText(vis, sizes, wrapWidth, aspect) {
+function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
+  // THE READING COLUMN (see `reading` below): one claim to a row, the text running down the page.
+  const reading = !!(opts && opts.reading);
   const GUTTER_GAP = 90;     // the visible break before the no-position lane
   const COL_GAP = 26, ROW_GAP = 18;
   // Lanes are the main structure now, so they get room. It must also exceed the padding their
@@ -1149,6 +1151,31 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   for (const d of depth.values()) maxD = Math.max(maxD, d);
   for (const n of vis.nodes) if (!depth.has(n.id)) depth.set(n.id, maxD + 1);
 
+  // 1b. ECHOES: the other places the text states a claim (argdown-positions `echoSpans`). Not
+  //     nodes — nothing folds them, nothing relates to them, the Reasons view never sees them —
+  //     but items the layout places in the text's order like any claim, so that a thesis
+  //     announced in the abstract shows THERE, faintly, while the claim stays where it is argued.
+  //     Only for a claim on screen, and only where the echo's own band is open: an echo inside a
+  //     shut band would point into nothing.
+  const shut = new Set(vis.nodes.filter(n => typeof n.lane === "string").map(n => n.lane));
+  const echoItems = [];
+  for (const n of vis.nodes) {
+    const es = n.pos && n.pos.echoes;
+    if (!es || typeof n.lane === "string") continue;
+    es.forEach((e, i) => {
+      const item = { id: "echo:" + n.id + ":" + i, of: n.id, label: String(n.label || n.id),
+                     pos: e };
+      const lane = textLane(item);
+      if (lane === "gutter" || shut.has(lane) || shut.has(laneChapter(lane))) return;
+      echoItems.push(item);
+      depth.set(item.id, maxD + 2);
+    });
+  }
+  const echoSize = new Map(echoItems.map(it =>
+    [it.id, { width: Math.min(236, 58 + it.label.length * 6.2), height: 26 }]));
+  const sizeOf = id => echoSize.get(id) || sizes.get(id);
+  const items = /** @type {any[]} */ (vis.nodes).concat(echoItems);
+
   // 2. Columns: one per distinct position, in reading order, then the gutter.
   //
   //    A COLUMN IS ONE PLACE IN THE TEXT, and that is what a stack of claims means: they were
@@ -1162,14 +1189,18 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //    dialogue (see `textLane`). Such claims go to the no-position lane at the end instead.
   const keyOf = new Map();
   const keys = new Set();
-  for (const n of vis.nodes) {
+  for (const n of items) {
     const k = n.pos && n.pos.line != null ? posKey(n.pos) : null;
     keyOf.set(n.id, k);
     if (k) keys.add(k);
   }
   const cols = [...keys].sort();
-  const colOf = new Map(cols.map((k, i) => [k, i]));
-  const gutter = cols.length;                        // the lane for claims with no position
+  // REACH IS COUNTED IN CLAIMS' PLACES ONLY. An echo takes a column of its own where no claim
+  // stands, and counting it would stretch every relation across it — and move where "far" and
+  // "significant" begin — for a mark that holds no argument.
+  const claimCols = [...new Set(vis.nodes.map(n => keyOf.get(n.id)).filter(k => k != null))].sort();
+  const colOf = new Map(claimCols.map((k, i) => [k, i]));
+  const gutter = claimCols.length;                   // the lane for claims with no position
   const hasGutter = vis.nodes.some(n => !keyOf.get(n.id));
   const colIndex = id => keyOf.get(id) == null ? gutter : colOf.get(keyOf.get(id));
 
@@ -1184,7 +1215,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //    the width of the page. Lanes stack downwards in reading order. The result is a column of
   //    chapters to scroll rather than a ribbon to pan — a better fit for a screen, and closer
   //    to how the thing being mapped is actually read.
-  const byIdAll = new Map(vis.nodes.map(n => [n.id, n]));
+  const byIdAll = new Map(items.map(n => [n.id, n]));
   //    A LANE IS A SECTION, not a whole chapter. Chapters alone were too coarse: a journal
   //    article is one file, so every claim in it landed in a single lane and the section
   //    structure the author navigates by disappeared. Lanes now stack by file, and within a
@@ -1203,17 +1234,21 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //    becoming 1:19, because 81 bands still made 81 rows. Laid along the chapter's row the
   //    same 73 blocks come out about 1:2, which is a page. The block carries its section's name,
   //    so nothing is lost by not drawing a box round it.
+  //    IN THE READING COLUMN A SHUT SECTION KEEPS ITS OWN PLACE: laid along the file's row, the
+  //    blocks of a file would all sit where its first one does, and a column read top to bottom
+  //    would meet section 5 before section 2.
   const laneOfNode = id => {
     const n = byIdAll.get(id);
-    return n && typeof n.lane === "string" ? laneChapter(n.lane) : textLane(n);
+    return n && typeof n.lane === "string" ? (reading ? n.lane : laneChapter(n.lane))
+                                           : textLane(n);
   };
   //    Which chapters HAVE sections — asked of the manuscript, not of the lanes, so that a
   //    chapter whose sections are all shut still gets its band and its name. The lanes cannot
   //    answer it: with the sections shut there are no section lanes left to count.
-  const sectionedChapters = new Set(vis.nodes.map(n => textLane(n))
+  const sectionedChapters = new Set(items.map(n => textLane(n))
     .filter(l => l !== "gutter" && l.indexOf("|") >= 0).map(laneChapter));
   const colLane = new Map();
-  for (const n of vis.nodes) {
+  for (const n of items) {
     const k = keyOf.get(n.id);
     if (k != null && !colLane.has(k)) colLane.set(k, laneOfNode(n.id));
   }
@@ -1221,7 +1256,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
 
   // A column is one distinct position; its claims stack, deepest last.
   const colNodes = new Map();
-  for (const n of vis.nodes) {
+  for (const n of items) {
     const k = keyOf.get(n.id);
     if (k == null) continue;
     if (!colNodes.has(k)) colNodes.set(k, []);
@@ -1257,7 +1292,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   for (const [k, ids] of colNodes) {
     let w = 0, h = 0;
     for (const id of ids) {
-      const sz = sizes.get(id);
+      const sz = sizeOf(id);
       w = Math.max(w, sz.width);
       h += sz.height + ROW_GAP;
     }
@@ -1353,8 +1388,12 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   // (-6, -6) and is clipped away: the frame the map is fitted into starts at the origin, so
   // anything laid out above or left of it is simply not drawn.
   const MARGIN = sectioned.size ? 26 : 16;
+  // Room on the left for the reading column's arcs — the relations whose reasons came first.
+  const ARC_MAX = 180;
+  const ARC_ROOM = reading ? ARC_MAX + 14 : 0;
   const place = new Map();
   const laneBox = new Map();
+  const rowOf = new Map();          // the reading column's rows, in the order they are read
   let y = MARGIN, maxRight = 0, lastChapter = null;
   for (const lane of laneKeys) {
     const empty = empties.has(lane);
@@ -1364,11 +1403,34 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     const chap = lane === "gutter" ? "gutter" : laneChapter(lane);
     if (chap !== lastChapter && sectioned.has(chap)) y += CHAPTER_HEAD;
     lastChapter = chap;
-    const left = MARGIN + (lane === "gutter" ? GUTTER_GAP : 0);
+    const left = MARGIN + ARC_ROOM + (lane === "gutter" && !reading ? GUTTER_GAP : 0);
     const top = y;
     // An empty band is its label strip and one line saying so — no row of claims to lay out.
     if (empty) {
       y += EMPTY_BODY;
+      laneBox.set(lane, { top, bottom: y, left });
+      y += BAND_GAP;
+      continue;
+    }
+    // THE READING COLUMN. The grid below reads two ways at once — along a row of paragraphs,
+    // and down each paragraph's stack — and measured 26 Sep 2026 the two disagreed in most
+    // stacks. The column has one direction: every claim its own row, in the order the text makes
+    // them, left-aligned, so the text runs down the page as it does in the Manuscript pane
+    // beside it. What held a claim beside its neighbours now holds it above or below them, and
+    // the relations move out of the way into the margins (see the arcs at step 6).
+    if (reading) {
+      let cy = y;
+      for (const k of mine) {
+        for (const id of colNodes.get(k)) {
+          const sz = sizeOf(id);
+          place.set(id, { x: left + sz.width / 2, y: cy + sz.height / 2,
+                          width: sz.width, height: sz.height });
+          rowOf.set(id, rowOf.size);
+          cy += sz.height + ROW_GAP;
+          maxRight = Math.max(maxRight, left + sz.width);
+        }
+      }
+      y = cy - ROW_GAP;
       laneBox.set(lane, { top, bottom: y, left });
       y += BAND_GAP;
       continue;
@@ -1379,7 +1441,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
       if (x > left && x + cs.w > wrapAt) { x = left; y += rowH + ROW_GAP * 2; rowH = 0; }
       let cy = y;
       for (const id of colNodes.get(k)) {
-        const sz = sizes.get(id);
+        const sz = sizeOf(id);
         place.set(id, { x: x + cs.w / 2, y: cy + sz.height / 2,
                         width: sz.width, height: sz.height });
         cy += sz.height + ROW_GAP;
@@ -1392,6 +1454,11 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     laneBox.set(lane, { top, bottom: y, left });
     y += BAND_GAP;
   }
+
+  // THE COLUMN HAS ROOM FOR ITS BANDS' NAMES. As wide as its widest claim and no wider, a
+  // section's heading was cut to "1. Why should we want to replace the Soc…" on the one view
+  // that is about the text's own divisions. The arcs on the right swing out from here too.
+  if (reading) maxRight = Math.max(maxRight, MARGIN + ARC_ROOM + 460);
 
   // 4. One band per lane, named for the chapter it holds.
   const expoGroups = [];
@@ -1418,7 +1485,8 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
       // As wide as its name needs, so the label is not shrunk to fit a box nobody sized for it.
       const b = laneBox.get(lane), name = empties.get(lane).label || laneName(section);
       const w = Math.min(560, Math.max(300, 34 + name.length * GROUP_LABEL_SIZE * 0.56 + 90));
-      const x0 = b.left - 12, x1 = x0 + w, y0 = b.top - 24, y1 = b.bottom + 12;
+      const x0 = b.left - 12, y0 = b.top - 24, y1 = b.bottom + 12;
+      const x1 = reading ? Math.max(x0 + w, maxRight + 12) : x0 + w;
       const path = vis.chapterOfIndex.get(Number(laneChapter(lane).slice(3)));
       extendChapter(lane, x0, x1, y0, y1, path != null ? [path] : [], true);
       // `gap:`, not `lane:` — there is nothing to fold, and an id of its own means the box is
@@ -1432,7 +1500,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
                                  width: x1 - x0, height: y1 - y0 });
       continue;
     }
-    const ids = vis.nodes.filter(n => laneOfNode(n.id) === lane).map(n => n.id);
+    const ids = items.filter(n => laneOfNode(n.id) === lane).map(n => n.id);
     // A band shut into a single block needs no band drawn round it: the block already carries
     // the band's name and its size, so the box adds a second copy of the caption and a frame
     // round one node. The block is its own handle — clicking it opens the band again.
@@ -1453,6 +1521,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
       if (n && n.pos) { chapters.add(n.pos.chapter); inBook = n.pos.inBook; }
     }
     if (!(x0 < x1)) continue;
+    // One width for every band of the column, so its edges read as the column's and not as the
+    // accident of which band holds the widest claim.
+    if (reading) x1 = Math.max(x1, maxRight + 12);
     const names = [...chapters];
     // THE SECTION IS THE LABEL WHERE THERE IS ONE. A lane is now a top-level heading, so
     // labelling it with the filename says nothing: a one-file article came out as six lanes all
@@ -1560,7 +1631,32 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //    claim it attacks.
   const EX = (typeof ArgdownExposition !== "undefined") ? ArgdownExposition : null;
   const edgeList = [], edgeData = new Map();
-  const reachLimit = EX ? EX.significant(cols.length) : Math.max(3, cols.length * 0.08);
+  const reachLimit = EX ? EX.significant(claimCols.length) : Math.max(3, claimCols.length * 0.08);
+  // THE READING COLUMN'S RELATIONS, as arcs in its margins. The column has taken away the
+  // second dimension the grid bowed its edges into, so a relation runs out of one claim's side,
+  // round, and into the other's: an arc diagram, the standard picture for a sequence with links
+  // across it. THE SIDE SAYS WHICH WAY IT RUNS — on the left, support the reader has already
+  // met by the time they reach the claim; on the right, support still to come — and the arc
+  // swings wider the further it reaches, which is what a reader has to carry. No new colour and
+  // no new dash: a line still is what it is everywhere else.
+  const arc = (a, b, side, rows) => {
+    const x0 = side === "left" ? a.x - a.width / 2 : a.x + a.width / 2;
+    const x1 = side === "left" ? b.x - b.width / 2 : b.x + b.width / 2;
+    // By ROWS APART, and as its square root: proportional to pixels, every arc longer than a
+    // screen hit the cap and they ran together down one trunk; this keeps a neighbour's arc
+    // tight and still tells a twenty-row reach from a hundred-row one.
+    const bulge = Math.min(ARC_MAX, 16 + 16 * Math.sqrt(Math.max(1, rows || 1)));
+    const ex = side === "left" ? Math.min(x0, x1) - bulge : Math.max(maxRight, x0, x1) + bulge;
+    const pts = [];
+    // Sampled finely, so everything downstream that walks an edge as a polyline — the
+    // direction marks, the dashing where it passes behind a claim — walks the curve itself.
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16, u = 1 - t;
+      pts.push({ x: u * u * u * x0 + 3 * u * u * t * ex + 3 * u * t * t * ex + t * t * t * x1,
+                 y: u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y });
+    }
+    return pts;
+  };
   for (const e of vis.edges) {
     const a = place.get(e.from), b = place.get(e.to);
     if (!a || !b) continue;
@@ -1581,6 +1677,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     const bow = Math.min(70, 12 + len * 0.08) * (debt === true ? 1 : -1);
     const mid = { x: (p0.x + p1.x) / 2 - (dy / len) * bow,
                   y: (p0.y + p1.y) / 2 + (dx / len) * bow };
+    const ra2 = rowOf.get(e.from), rb2 = rowOf.get(e.to);
+    const points = reading && ra2 != null && rb2 != null
+      ? arc(a, b, ra2 > rb2 ? "right" : "left", Math.abs(ra2 - rb2)) : [p0, mid, p1];
     // How far the edge reaches, in columns. This — not its direction — is what the emphasis
     // tracks: a support that arrives forty claims away taxes the reader whichever way round
     // the two sit. Threshold is relative, so it means the same on a paper and on a book.
@@ -1588,10 +1687,29 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     const key = { v: e.from, w: e.to, name: e.type || "support" };
     edgeList.push(key);
     edgeData.set(e.from + " " + e.to + " " + key.name,
-                 { points: [p0, mid, p1], debt: debt, span: span,
+                 { points, debt: debt, span: span,
                    step: e.step == null ? null : e.step,
                    line: e.line == null ? null : e.line,
-                   far: span >= Math.max(5, cols.length * 0.1) });
+                   far: span >= Math.max(5, claimCols.length * 0.1) });
+  }
+
+  // THE ECHOES' TIES to the claims they echo: faint, dotted, never an edge — an echo is not a
+  // relation, and nothing that counts or colours relations may see it.
+  const echoes = [];
+  for (const it of echoItems) {
+    const a = place.get(it.id), b = place.get(it.of);
+    if (!a || !b) continue;
+    let points;
+    if (reading) points = arc(a, b, "left",
+                              Math.abs((rowOf.get(it.id) || 0) - (rowOf.get(it.of) || 0)));
+    else {
+      const p0 = boundary(a, b), p1 = boundary(b, a);
+      const dx = p1.x - p0.x, dy = p1.y - p0.y, len = Math.hypot(dx, dy) || 1;
+      const bow = Math.min(60, 10 + len * 0.06);
+      points = [p0, { x: (p0.x + p1.x) / 2 - (dy / len) * bow,
+                      y: (p0.y + p1.y) / 2 + (dx / len) * bow }, p1];
+    }
+    echoes.push({ id: it.id, of: it.of, label: it.label, points });
   }
 
   // The canvas is the union of everything drawn, bands included. Sizing it from the columns
@@ -1602,15 +1720,19 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     width  = Math.max(width,  q.x + q.width  / 2 + 16);
     height = Math.max(height, q.y + q.height / 2 + 16);
   }
+  // The arcs of the reading column swing out past the claims, and must be inside the canvas.
+  for (const d of [...edgeData.values(), ...echoes])
+    for (const pt of d.points) width = Math.max(width, pt.x + 16);
   return {
     expoGroups,
     node: id => place.get(id),
     edge: e => edgeData.get(e.v + " " + e.w + " " + e.name) || { points: [] },
     edges: () => edgeList,
-    graph: () => ({ width, height }),
+    graph: () => ({ width, height, reading }),
+    echoes,
     // Read by the toolbar, so the reader is told how much of the map is off the axis rather
     // than left to notice a lane at the edge and guess what it means.
-    expo: { columns: cols.length,
+    expo: { columns: claimCols.length,
             unplaced: vis.nodes.filter(n => !keyOf.get(n.id)).length,
             debt: edgeList.filter(k => edgeData.get(
               k.v + " " + k.w + " " + k.name).debt === true).length,
@@ -3150,6 +3272,10 @@ function createLiveMap(container, graph, options) {
   };
   let textOpen = new Set();          // nodes showing their claim in full
   let allText = !!(options && options.allText);
+  // THE EXPOSITION ARRANGEMENT'S TWO LAYOUTS: the grid of paragraphs, and the reading column —
+  // one claim to a row, relations as arcs in the margins (see `layoutByText`). A preference of
+  // the reader's, not a fold state: it changes how the text's order is drawn, not what is shown.
+  let readColumn = !!(options && options.readColumn);
   let lastVis = { nodes: [], edges: [], groups: [] };
   // The exposition-ordered view needs a manuscript position on the nodes, which only a host
   // holding the source files can supply. Without them the toggle is not offered at all, rather
@@ -3187,13 +3313,15 @@ function createLiveMap(container, graph, options) {
   const gHulls   = el("g", { class: "alm-layer-hulls" });
   const gEdges   = el("g", { class: "alm-layer-edges" });
   const gNodes   = el("g", { class: "alm-layer-nodes" });
+  // Echoes of claims (Exposition only): under the claims, over the relations.
+  const gEchoes  = el("g", { class: "alm-layer-echoes" });
   const gMeasure = el("g", { class: "alm-measure" });
   for (const k in REL) defs.appendChild(marker(k));
   // ABOVE the nodes, and only ever holds the dashed stretches of edges that pass behind one.
   // It has to sit on top: the whole point is that the reader sees the line continue across a
   // node instead of appearing to start at it.
   const gUnder = el("g", { class: "alm-layer-under" });
-  viewport.append(gGroups, gHulls, gEdges, gNodes, gUnder);
+  viewport.append(gGroups, gHulls, gEdges, gEchoes, gNodes, gUnder);
   svg.append(defs, viewport, gMeasure);
   container.appendChild(svg);
 
@@ -3484,7 +3612,7 @@ function createLiveMap(container, graph, options) {
 
     let g;
     if (expo) {
-      g = layoutByText(vis, sizes, 0, paneAspect);
+      g = layoutByText(vis, sizes, 0, paneAspect, { reading: readColumn });
     } else {
       g = layoutByArgument(vis, sizes, opt);
     }
@@ -3513,6 +3641,7 @@ function createLiveMap(container, graph, options) {
 
     drawGroups(g, vis);
     drawEdges(g, vis, sizes);
+    drawEchoes(expo ? g : null);
     drawNodes(g, vis, sizes);
 
     const gl = g.graph();
@@ -3526,7 +3655,7 @@ function createLiveMap(container, graph, options) {
       if (!apex || nd.y < apex.y) apex = { x: nd.x, y: nd.y };
     }
     lastG = g;
-    lastFit = { w: gl.width || 1, h: gl.height || 1, apex };
+    lastFit = { w: gl.width || 1, h: gl.height || 1, apex, reading: !!gl.reading };
     // Re-frame on its own unless the reader has taken the camera: mid-talk a fold should leave
     // the result centred without a second click, but while drafting a deliberate pan or zoom
     // must survive the next fold.
@@ -3544,7 +3673,7 @@ function createLiveMap(container, graph, options) {
     const held = pin && !fit && !honourCamera && applyPin(pin);
     pin = null;
     if (opt.fitOnRender && !honourCamera && !held && (fit || !userMoved || stranded(lastFit)))
-      fitTo(lastFit.w, lastFit.h, lastFit.apex);
+      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading);
     // The restored camera still has to be PUT ON THE PAGE. `fitTo` is what normally writes the
     // transform, so skipping it left the viewport with no transform at all and the map drawn at
     // the origin, unscaled.
@@ -4803,6 +4932,51 @@ function createLiveMap(container, graph, options) {
    *  midpoint, end -- one long arc, deliberately. Rounding that to a capped radius would replace
    *  the arc with two straight lines and a small corner, which is the opposite of what it is for.
    */
+  /** THE ECHOES: where else the text states a claim that is placed somewhere else — its thesis
+   *  announced in the abstract, say, and argued three sections later. A small chip with the
+   *  claim's name, dotted, never a claim box: it adds nothing to the argument, carries no badge,
+   *  folds nothing and is found by nothing, and a click on it goes to the claim itself. Its tie
+   *  to the claim is dotted and faint for the same reason — it is not a relation. */
+  const drawnEcho = new Map();
+  function drawEchoes(g) {
+    const list = (g && g.echoes) || [];
+    const keep = new Set();
+    for (const ec of list) {
+      const p = g.node(ec.id); if (!p) continue;
+      keep.add(ec.id);
+      let box = drawnEcho.get(ec.id);
+      if (!box) {
+        box = el("g", { class: "alm-echo", "data-id": ec.id, "data-of": ec.of });
+        box.append(el("path", { class: "alm-echo-tie" }),
+                   el("rect", { class: "alm-echo-box", rx: 9, ry: 9 }),
+                   el("text", { class: "alm-echo-text", "font-size": 10.5 }),
+                   el("title"));
+        box.addEventListener("click", ev => {
+          ev.stopPropagation();
+          setLit([ec.of]);
+          centreOn([ec.of]);
+        });
+        gEchoes.appendChild(box);
+        drawnEcho.set(ec.id, box);
+      }
+      box.querySelector(".alm-echo-tie").setAttribute("d", smooth(ec.points));
+      const rect = box.querySelector(".alm-echo-box");
+      rect.setAttribute("x", p.x - p.width / 2); rect.setAttribute("y", p.y - p.height / 2);
+      rect.setAttribute("width", p.width); rect.setAttribute("height", p.height);
+      const text = box.querySelector(".alm-echo-text");
+      text.setAttribute("x", p.x - p.width / 2 + 9); text.setAttribute("y", p.y + 3.5);
+      text.textContent = fitLabel("echo \u00b7 " + ec.label, p.width - 16, 10.5);
+      box.querySelector("title").textContent =
+        "The text states this claim here too: \u201c" + ec.label + "\u201d. The claim itself " +
+        "is placed where it is argued; click to go to it. Recorded in the claim's `echoes:`.";
+    }
+    for (const [id, box] of drawnEcho) {
+      if (keep.has(id)) continue;
+      box.remove();
+      drawnEcho.delete(id);
+    }
+  }
+
   const CORNER_R = 22;
   function smooth(pts) {
     if (pts.length === 2) return `M${pts[0].x},${pts[0].y}L${pts[1].x},${pts[1].y}`;
@@ -4986,7 +5160,7 @@ function createLiveMap(container, graph, options) {
     return true;
   }
 
-  function fitTo(w, h, apex) {
+  function fitTo(w, h, apex, reading) {
     // clientWidth/Height, not getBoundingClientRect: the rect is measured AFTER any CSS
     // transform, and reveal.js scales the whole slide to the window. Fitting to the scaled
     // numbers leaves the map a fraction of its proper size on a slide.
@@ -5001,7 +5175,14 @@ function createLiveMap(container, graph, options) {
     // Floor the zoom. A book-scale map fitted whole lands around 0.4, where the strokes wash
     // out and nothing can be read — at which point "you can see all of it" is worth nothing.
     // Better to stay legible and let the reader pan, or fold a Part away.
-    const f = frameFor(w, h, cw, ch, opt.minScale, apex);
+    // A READING COLUMN IS READ FROM THE TOP, at a size that can be read. Fitted whole like any
+    // other map it is a tall sliver at the zoom floor, with its middle on screen — the one part
+    // of a text nobody starts from. So it fills the pane's width, starts at its first band, and
+    // is scrolled, as a page is.
+    const f = reading
+      ? { k: Math.max(opt.minScale, Math.min(cw / (w + 32), 1)), x: 0, y: 16 }
+      : frameFor(w, h, cw, ch, opt.minScale, apex);
+    if (reading) f.x = Math.max(16, (cw - w * f.k) / 2);
     view.k = f.k; view.x = f.x; view.y = f.y;
     glide();                      // rather than cutting to the new frame
     userMoved = false;
@@ -5106,7 +5287,10 @@ function createLiveMap(container, graph, options) {
       // inside a section refused to pan -- which on a fully unfolded map left almost nowhere to
       // drag from. Only the things that DO something on a press are excluded now: the boxes,
       // the fold toggles, and the section's own 22px fold strip.
-      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold")) return;
+      // An echo is a press target too: it goes to the claim it echoes. Left out of this list, a
+      // press on one started a pan and captured the pointer, and the click never arrived (found
+      // by clicking one, 26 Sep 2026).
+      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold, .alm-echo")) return;
       // THE LEFT BUTTON ONLY. Without this a right-click started a pan -- and, worse, the
       // preventDefault below suppressed the contextmenu event that was supposed to follow it,
       // so "Fold section" could never appear. A dispatched contextmenu event still worked,
@@ -5228,6 +5412,15 @@ function createLiveMap(container, graph, options) {
         'short</button>' +
         '<button data-act="text" data-full="1" title="Every claim in full">full</button>' +
         '</span>' : "") +
+      // Offered in Exposition only, where there is a text order to lay out two ways.
+      (parts.actions ? '<span class="alm-grp alm-seg" data-role="layout" hidden>' +
+        '<b title="How the text\'s order is laid out">layout</b>' +
+        '<button data-act="layout" data-col="0" title="Paragraphs side by side, wrapping like ' +
+        'lines of prose">rows</button>' +
+        '<button data-act="layout" data-col="1" title="One claim to a row, top to bottom as the ' +
+        'text runs, with the relations as arcs in the margins: on the left, reasons already ' +
+        'given; on the right, reasons still to come">column</button>' +
+        '</span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +
       // SPINE sits with "kinds" rather than with "how much", because it answers WHICH claims
       // rather than how many levels of them — a claim deep in the argument can be spine and a
@@ -5273,6 +5466,7 @@ function createLiveMap(container, graph, options) {
       if (act === "fold")     return setBarFolded(true, true);
       if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
+      if (act === "layout")   return setState({ readColumn: b.dataset.col === "1" });
       if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
       if (act === "appraisal") return setState({ appraisal: !state.appraisal });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
@@ -5436,6 +5630,11 @@ function createLiveMap(container, graph, options) {
 
     // Both halves are lit or unlit together, like `sections`: a radio pair says which of the two
     // is in force, and a single button that is merely "off" says nothing about what is.
+    const layoutBox = /** @type {any} */ (toolbar.querySelector('[data-role="layout"]'));
+    if (layoutBox) layoutBox.hidden = !expo;
+    toolbar.querySelectorAll('[data-act="layout"]').forEach(
+      /** @param {any} b */ b =>
+        b.classList.toggle("on", (b.dataset.col === "1") === !!readColumn));
     toolbar.querySelectorAll('[data-act="text"]').forEach(
       /** @param {any} b */ b =>
         b.classList.toggle("on", (b.dataset.full === "1") === !!allText));
@@ -5504,7 +5703,7 @@ function createLiveMap(container, graph, options) {
              expandedNodes: [...state.expandedNodes], groupFolded: [...state.groupFolded],
              collapsedLanes: [...state.collapsedLanes],
              depth: state.depth, facets: state.facets ? [...state.facets] : null,
-             untagged: state.untagged, appraisal: state.appraisal, allText,
+             untagged: state.untagged, appraisal: state.appraisal, allText, readColumn,
              // `spine` and `byText` were missing from this snapshot, which meant a host that
              // rebuilt the map — the live editor, after a keystroke — silently lost the spine
              // setting: exactly the dropped-in-silence failure setState's own comment warns
@@ -5531,6 +5730,9 @@ function createLiveMap(container, graph, options) {
     // the button changed nothing and said nothing.
     if ("spine"           in patch) state.spine           = patch.spine;
     if ("allText"         in patch) { allText = !!patch.allText; textOpen.clear(); measureCache.clear(); }
+    // Every claim moves when the layout changes, so the camera is re-framed rather than left
+    // looking at wherever the old layout had put things.
+    if ("readColumn"      in patch) { readColumn = !!patch.readColumn; refit = true; }
     // Switching axis moves every node at once. Re-frame rather than leave the reader looking
     // at whatever happens to be under the old camera position.
     if ("expositionOrder" in patch) {
@@ -5726,7 +5928,7 @@ function createLiveMap(container, graph, options) {
       // hidden pane and needs measuring again.
       if (remeasureIfBlind()) { render(true); return; }
       if (framedForReal || !lastFit || container.clientHeight <= 120) return;
-      fitTo(lastFit.w, lastFit.h, lastFit.apex);
+      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading);
     });
     sizeWatch.observe(container);
   }
@@ -5734,7 +5936,7 @@ function createLiveMap(container, graph, options) {
   return {
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
-    fit: () => fitTo(lastFit.w, lastFit.h),
+    fit: () => fitTo(lastFit.w, lastFit.h, null, lastFit.reading),
     // The host calls this when a pane opens or closes. If the last render was measured blind, the
     // sizes have to be thrown away first — otherwise this redraws the slivers exactly as they are.
     redraw: () => { remeasureIfBlind(); render(true); },
@@ -5937,6 +6139,15 @@ function injectStyle() {
 /* A section of the text with nothing mapped in it: the band's outline, finely dotted, and no
    fill — present, so a gap reads as a gap, and plainly holding nothing. */
 .alm-g.is-empty .alm-gbox{fill:none;stroke-dasharray:2 4;stroke-opacity:.7}
+/* An echo: where else the text states a claim. Dotted, unfilled and small — present, and plainly
+   not a claim box; its tie is dotted and faint because it is not a relation. */
+.alm-echo{cursor:pointer}
+.alm-echo-box{fill:var(--alm-bg,#fff);fill-opacity:.6;stroke:var(--alm-fg-dim,#6b6b6b);
+  stroke-width:1;stroke-dasharray:1.5 3;stroke-opacity:.8}
+.alm-echo:hover .alm-echo-box{stroke-width:1.6;stroke-opacity:1}
+.alm-echo-text{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;pointer-events:none}
+.alm-echo-tie{fill:none;stroke:var(--alm-fg-dim,#6b6b6b);stroke-width:1;stroke-dasharray:1 4;
+  stroke-opacity:.55;pointer-events:none}
 .alm-gempty{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;opacity:.85;pointer-events:none}
 /* The hidden-line convention, drawn over the nodes: broken, hairline, and the edge's own colour
    so the eye joins it to the visible line on either side. Never takes a click. */

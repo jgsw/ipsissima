@@ -117,6 +117,22 @@ Claims drawn from the same paragraph are stacked in the order the paragraph make
 bottom. A claim placed only by matching its paragraph, with no words of its own to find there,
 goes below the ones that were found.
 
+**Two layouts.** Exposition can be laid out in **rows** or as a **column**; the choice is
+*layout* on the control bar. In rows, the paragraphs sit side by side and wrap like lines of
+prose. In the column, every claim has a row of its own, top to bottom in the order the text runs,
+so the map reads the way the Manuscript beside it does. The relations move into the margins as
+arcs. On the left are reasons the reader has **already met** when they reach the claim; on the
+right are reasons **still to come**. The wider an arc swings, the further it reaches. The column
+opens at the top of the text, at a size that can be read, and scrolls like a page.
+
+**Echoes.** A claim can record, in `echoes:`, the other places the text states it: its thesis
+announced in the abstract or the roadmap, say, while the claim itself is placed where it is
+argued. Exposition draws a small dotted **echo** at each of those places, tied to the claim by a
+faint dotted line. Click an echo to go to its claim. An echo is not a claim: it carries no
+relation, folds nothing, and the Reasons view never shows it. The checker verifies each echo
+against the text, and `check_argdown.py --echo-candidates` lists places where a claim's words
+recur, for you to confirm or not.
+
 Claims that have no place in the text come **last**, in a lane of their own called *no position
 in the text*. They are the claims whose quotation could not be found, which declare no line, and
 whose words match no paragraph. Most of them are the reconstructor's imputations and
@@ -874,6 +890,8 @@ border against the corrected copy, or **Start fresh from this text**, which begi
   on each button is how many claims it puts on screen.
 - **claims** — *short* gives the first few lines with a "more" link; *full* gives every claim's
   whole text.
+- **layout**, in Exposition only — *rows* lays the paragraphs side by side, wrapping like lines of
+  prose; *column* gives every claim a row of its own, top to bottom as the text runs.
 - **sections** — whether the argument's sections are folded into blocks or opened out
 - **spine** — *all* shows every claim; *load-bearing* shows only those the argument rests on —
   remove one and part of the argument loses its route to a contention. The number is how many

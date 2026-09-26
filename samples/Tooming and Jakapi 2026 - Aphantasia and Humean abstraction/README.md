@@ -79,6 +79,15 @@ assembling premises into a numbered structure is the reconstructor's work even w
 is the author's. An argument with no marker hovers bare, and here it is more likely that the
 marker was not written than that none applies.
 
+**Echoes.** The introduction's roadmap announces two of the paper's central claims before any
+argument for them: that aphantasia "poses a challenge to Hume's account of abstraction", and that
+of the responses to it "none of which, in our view, will succeed". §2.2 anticipates the first
+of these again. The claims are placed where they are argued (§3 and §4), and these three places
+are recorded as `echoes:` on them (26 Sep 2026). The Exposition view draws a small dotted echo
+at each, so a reader meets the paper's thesis where the paper first states it. They were
+proposed by `check_argdown.py --echo-candidates` and chosen by hand from its list. Its other
+candidates for this paper mostly share vocabulary rather than state a claim.
+
 **Provenance.** Every claim carries a `chapter`; 102 of 104 are pinned by a verified quotation
 and the other two located to a paragraph. `section` is carried only where a claim has no quotation to pin it,
 and every one cites the authors' own numbered sections rather than the converter — this is the

@@ -119,10 +119,13 @@ function checkGeometry(name, graph, vis, g) {
   }
 
   // 1. No two node boxes overlap. The layout stacks within a cell and bands across, so any
-  //    overlap means a cell height or column width was computed short.
-  for (let i = 0; i < boxes.length; i++) {
-    for (let j = i + 1; j < boxes.length; j++) {
-      const a = boxes[i], b = boxes[j];
+  //    overlap means a cell height or column width was computed short. Echoes count here too:
+  //    they are placed like claims, and one drawn over a claim would hide it.
+  const solid = boxes.concat((g.echoes || []).map(ec => ({ id: ec.id, ...g.node(ec.id) }))
+    .filter(b => num(b.x)));
+  for (let i = 0; i < solid.length; i++) {
+    for (let j = i + 1; j < solid.length; j++) {
+      const a = solid[i], b = solid[j];
       const ox = Math.min(a.x + a.width / 2, b.x + b.width / 2) -
                  Math.max(a.x - a.width / 2, b.x - b.width / 2);
       const oy = Math.min(a.y + a.height / 2, b.y + b.height / 2) -
@@ -278,7 +281,9 @@ function checkGeometry(name, graph, vis, g) {
   // the edge points to follow. On a block that moved a long way the shear used to leave the
   // interior points somewhere that was never on a route between anything, and the line went out
   // to one side and curved all the way back: 3.0x, 3.8x and 4.1x on the three sample maps.
-  for (const e of g.edges()) {
+  // (The reading column's arcs swing out into the margin and back BY DESIGN, so they are held
+  // to the other rules here and not to this one.)
+  for (const e of (g.graph().reading ? [] : g.edges())) {
     const d = g.edge(e);
     if (!d || !d.points || d.points.length < 3) continue;
     const p = d.points, end = p[p.length - 1];
@@ -301,6 +306,29 @@ function checkGeometry(name, graph, vis, g) {
     if (b.x - b.width / 2 < -0.5 || b.y - b.height / 2 < -0.5)
       return fail(where("no box sits at negative coordinates"), b.id);
   }
+}
+
+/** The reading column's own promises: one claim to a row, left-aligned, top to bottom in the
+ *  order of the text — chapter, line, then where in the paragraph. */
+function checkColumn(name, vis, g) {
+  const rows = vis.nodes.map(n => ({ n, p: g.node(n.id) }))
+    .filter(x => x.p && x.n.pos && x.n.pos.line != null)
+    .sort((a, b) => a.p.y - b.p.y);
+  for (let i = 1; i < rows.length; i++) {
+    const a = rows[i - 1], b = rows[i];
+    if (b.p.y - b.p.height / 2 < a.p.y + a.p.height / 2 - 0.5)
+      return fail(`${name}: one claim to a row`, `${a.n.id} and ${b.n.id} share a row`);
+    const pa = a.n.pos, pb = b.n.pos;
+    const before = (pb.chapterIndex - pa.chapterIndex) || (pb.line - pa.line) ||
+                   ((pb.col == null ? Infinity : pb.col) - (pa.col == null ? Infinity : pa.col));
+    if (before < 0 && !(pa.col == null && pb.col == null && pa.line === pb.line))
+      return fail(`${name}: rows follow the text`,
+                  `${b.n.id} (ch${pb.chapterIndex}:${pb.line}) is drawn below ${a.n.id} ` +
+                  `(ch${pa.chapterIndex}:${pa.line})`);
+  }
+  const lefts = new Set(rows.map(x => Math.round(x.p.x - x.p.width / 2)));
+  if (lefts.size > 1)
+    return fail(`${name}: the column is left-aligned`, `${lefts.size} different left edges`);
 }
 
 /* ---------------------------------------------------------------- awkward inputs */
@@ -510,6 +538,18 @@ function exercise(name, raw) {
     }
     layouts++;
     checkGeometry(`${name} [state ${i}]`, graph, vis, g);
+    // THE READING COLUMN: the same invariants, and its own — every claim on a row of its own,
+    // and the rows in the order the text makes them.
+    let rc;
+    try { rc = layoutByText(vis, sizesFor(vis), 0, 1.6, { reading: true }); }
+    catch (e) {
+      fail(`${name} [state ${i}] reading column`,
+           "threw: " + (e && e.stack || e).toString().split("\n")[0]);
+      continue;
+    }
+    layouts++;
+    checkGeometry(`${name} [state ${i}] reading column`, graph, vis, rc);
+    checkColumn(`${name} [state ${i}] reading column`, vis, rc);
     // ...and the other arrangement, which shares the map but not the layout.
     const byArg = layoutByArgumentSafe(vis, sizesFor(vis));
     if (byArg) { layouts++; checkShared(`${name} [state ${i}] by argument`, vis, byArg); }
