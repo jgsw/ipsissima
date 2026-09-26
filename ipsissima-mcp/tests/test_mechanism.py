@@ -272,6 +272,41 @@ check("an unknown role is named, with the three that are read",
       any("the roles read are `intervention`, `condition` and `outcome`" in f["message"]
           for f in by(bad, "mechanism")), True)
 
+# --------------------------------------------------------------------------- #
+print("\nprofile 1.2: a feedback system, the text's own boxes, and decides-which")
+# THE WIMMER TEST (26 Sep 2026): simple cycles through one dense system hit the cap of 50 and
+# listed nothing a reader could use; the census found a different 50 on each run, because the
+# edges were walked in set order; five strategies sat as parts of one box the text drew, with no
+# way to say so; and "determine which" had no sign.
+SYSTEM = (FIXTURE / "system.argdown").read_text(encoding="utf-8")
+rs = run(SYSTEM)
+chs = rs["shape"].get("chain") or {}
+fb = chs.get("feedback", [])
+check("one feedback system binds the field and the actors' conduct", len(fb), 1)
+check("with more loops than are listed one by one", fb and fb[0]["loops"] > 4, True)
+# (Found directly by breadth-first search; on Wimmer, whose loops pass the cap of 50, taking the
+# shortest from the capped sample missed every two-state loop. This fixture stays under the cap.)
+check("its shortest loop is found directly: institutions and power, each on the other",
+      fb and fb[0]["shortest"][0]["states"], ["inst", "power"])
+check("the parts of a whole are listed", chs.get("wholes"), [["strat", ["blur", "contract", "expand"]]])
+check("decides-which is a sign, not a fault",
+      [f for f in by(rs, "mechanism") if "is not `+`" in f["message"]], [])
+env_runs = set()
+td = tempfile.mkdtemp(prefix="mechanism-seed-")
+sp = os.path.join(td, "system.argdown"); open(sp, "w", encoding="utf-8").write(SYSTEM)
+for seed in ("1", "7", "42"):
+    r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), sp, "--format", "json"],
+                       capture_output=True, text=True, env={**os.environ, "PYTHONHASHSEED": seed})
+    env_runs.add(json.dumps(json.loads(r.stdout)["shape"]["chain"], sort_keys=True))
+# Mutation: build adjacency from the edge set unsorted -> the capped walks differ by seed.
+check("the census is the same whatever the hash seed", len(env_runs), 1)
+for bad, why in ((SYSTEM.replace("part_of: strat}", "part_of: nowhere}", 1), "not a declared state"),
+                 (SYSTEM.replace("{label: \"Expansion\", actor: actors, part_of: strat}",
+                                 "{label: \"Expansion\", actor: actors, part_of: expand}"), "is `part_of` itself"),
+                 (SYSTEM.replace("{label: \"Strategies of boundary making\", actor: actors}",
+                                 "{label: \"Strategies of boundary making\", actor: actors, part_of: expand}"), "runs in a circle")):
+    check(f"a bad part_of is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

@@ -61,6 +61,18 @@ BASES = ("study", "statistics", "model", "example", "testimony", "asserted")
 #: could not say, so `role` may be a list.
 ROLES = ("intervention", "condition", "outcome")
 
+#: THE SIGNS. `+` raises, `-` lowers, `"0"` a finding of no effect -- and, since profile 1.2,
+#: `which`: the step DECIDES WHICH of several alternatives follows, rather than raising or lowering
+#: a quantity. Wimmer's institutions "determine which" strategy actors pursue; written unsigned,
+#: dozens of his steps were drawn as a bare "link" that said nothing (26 Sep 2026).
+SIGNS = ("+", "-", "0", "which")
+
+#: Past this many loops through one system of states, the census names the SYSTEM and its
+#: shortest loops rather than listing every loop: Wimmer's feedback is one densely connected
+#: system, and listing its simple cycles hit the cap of 50 and said nothing a reader could use.
+#: Below it every loop is listed, in order -- which is why cycles replaced components at first.
+LOOPS_LISTED = 4
+
 
 def roles_of(state):
     """The set of roles a state declares; `role` may be one name or a list of them."""
@@ -145,10 +157,26 @@ def declared(fm):
         if s.get("actor") not in actors:
             problems.append(("!", f"state `{sid}` names actor `{s.get('actor')}`, which is not "
                                   f"declared under `actors:`", {"state": str(sid)}))
+        whole = s.get("part_of")
+        if whole is not None and whole not in states:
+            problems.append(("!", f"state `{sid}` is `part_of: {whole}`, which is not a declared "
+                                  f"state", {"state": str(sid)}))
+        elif whole == sid:
+            problems.append(("!", f"state `{sid}` is `part_of` itself", {"state": str(sid)}))
         bad = roles_of(s) - set(ROLES)
         if bad:
             problems.append(("?", f"state `{sid}` has role `{sorted(bad)[0]}`; the roles read "
                                   f"are `intervention`, `condition` and `outcome`", {"state": str(sid)}))
+    # A WHOLE MAY NOT CONTAIN ITSELF, however far round: the view collapses parts into their
+    # outermost whole, and a cycle has none.
+    for sid in states:
+        seen, cur = {sid}, (states.get(sid) or {}).get("part_of") if isinstance(states.get(sid), dict) else None
+        while cur in states and isinstance(states.get(cur), dict):
+            if cur in seen:
+                problems.append(("!", f"`part_of` runs in a circle through `{sid}`", {"state": str(sid)}))
+                break
+            seen.add(cur)
+            cur = states[cur].get("part_of")
     return m, levels, actors, states, problems
 
 
@@ -209,7 +237,48 @@ def _reach(start, edges):
     return seen
 
 
-def _loops(ids, edges, cap=50):
+LOOP_CAP = 50
+
+
+def _systems(ids, edges):
+    """The feedback systems: sets of states each reachable from every other (Tarjan), in the
+    declared order, two or more states each. Reported beside the loops, not instead of them."""
+    adj = _adjacency(edges, ids)
+    index, low, on, stack, out, n = {}, {}, set(), [], [], [0]
+
+    def strong(v):
+        index[v] = low[v] = n[0]; n[0] += 1
+        stack.append(v); on.add(v)
+        for w in adj.get(v, []):
+            if w not in index:
+                strong(w); low[v] = min(low[v], low[w])
+            elif w in on:
+                low[v] = min(low[v], index[w])
+        if low[v] == index[v]:
+            comp = []
+            while True:
+                w = stack.pop(); on.discard(w); comp.append(w)
+                if w == v:
+                    break
+            if len(comp) > 1:
+                out.append(sorted(comp, key=ids.index))
+    for v in ids:
+        if v not in index:
+            strong(v)
+    return sorted(out, key=lambda c: ids.index(c[0]))
+
+
+def _wholes(states):
+    """Each whole, and the states declared `part_of` it (immediate parts only)."""
+    out = {}
+    for sid, st in states.items():
+        w = st.get("part_of") if isinstance(st, dict) else None
+        if w in states and w != sid:
+            out.setdefault(w, []).append(sid)
+    return out
+
+
+def _loops(ids, edges, cap=LOOP_CAP):
     """Every simple cycle, in order along the loop, each listed once from its first state.
 
     CYCLES, NOT COMPONENTS. The first version reported strongly connected components, and two
@@ -217,9 +286,7 @@ def _loops(ids, edges, cap=50):
     sentence -> reoffending -- came back as one sorted blob of four states: a loop count that was
     wrong and a loop whose order, the whole point of drawing it, was gone."""
     order = {v: i for i, v in enumerate(ids)}
-    adj = {}
-    for a, b in edges:
-        adj.setdefault(a, []).append(b)
+    adj = _adjacency(edges, ids)
     out = []
 
     def walk(start, v, path):
@@ -238,17 +305,65 @@ def _loops(ids, edges, cap=50):
     return out
 
 
-def _routes(start, goal, edges):
-    """(number of simple routes, shortest, longest), each route counted in steps."""
+def _adjacency(edges, ids):
+    """Successors of each state IN DECLARED ORDER. The edges arrive as a set, whose order moves
+    with Python's string hashing from run to run; while every route and loop was found that did not
+    matter, but past a cap WHICH routes and loops are found depends on it, and the same file gave a
+    different census on each run (Wimmer, 26 Sep 2026). The page walks in the same order."""
+    rank = {v: i for i, v in enumerate(ids)}
     adj = {}
     for a, b in edges:
-        adj.setdefault(a, set()).add(b)
+        adj.setdefault(a, []).append(b)
+    for a in adj:
+        adj[a] = sorted(set(adj[a]), key=lambda v: (rank.get(v, len(rank)), str(v)))
+    return adj
+
+
+def _shortest_loops(comp, edges, ids, k=3):
+    """The k shortest loops through a feedback system, found directly -- not from the capped
+    sample of all loops, which can miss them. Each is started at its earliest-declared state."""
+    members, rank = set(comp), {v: i for i, v in enumerate(ids)}
+    adj = _adjacency([(a, b) for a, b in edges if a in members and b in members], ids)
+    found = {}
+    for v in comp:
+        prev, q, hit = {v: None}, [v], None
+        while q and hit is None:
+            nq = []
+            for x in q:
+                for w in adj.get(x, []):
+                    if w == v:
+                        hit = x
+                        break
+                    if w not in prev:
+                        prev[w] = x
+                        nq.append(w)
+                if hit is not None:
+                    break
+            q = nq
+        if hit is None:
+            continue
+        path, x = [], hit
+        while x is not None:
+            path.append(x)
+            x = prev[x]
+        path.reverse()
+        i = min(range(len(path)), key=lambda j: rank[path[j]])
+        loop = path[i:] + path[:i]
+        found[tuple(loop)] = loop
+    return sorted(found.values(), key=lambda l: (len(l), [rank[v] for v in l]))[:k]
+
+
+def _routes(start, goal, edges, ids=()):
+    """(number of simple routes, shortest, longest), each route counted in steps."""
+    adj = _adjacency(edges, list(ids) or sorted({x for e in edges for x in e}))
     lengths = []
 
     def walk(v, seen):
-        if len(lengths) >= ROUTE_CAP:
-            return
-        for w in adj.get(v, ()):
+        for w in adj.get(v, []):
+            # The cap is checked per successor, as the page checks it, so both stop at the same
+            # count: checked only on entry this counted 201 where the page counted 200.
+            if len(lengths) >= ROUTE_CAP:
+                return
             if w == goal:
                 lengths.append(len(seen))
             elif w not in seen:
@@ -330,10 +445,10 @@ def analyse(fm, doc):
                              f"basis `{s['basis']}` is not one of {', '.join(BASES)}; the step is "
                              f"shaded as asserted",
                              {"title": s["title"]}))
-        if s["sign"] not in (None, "+", "-", "0"):
+        if s["sign"] not in (None,) + SIGNS:
             findings.append(("?", "mechanism",
-                             f"sign `{s['sign']}` is not `+`, `-` or `0` (no effect)",
-                             {"title": s["title"]}))
+                             f"sign `{s['sign']}` is not `+`, `-`, `0` (no effect) or `which` "
+                             f"(decides which)", {"title": s["title"]}))
         if s["null"] and s["selects"]:
             findings.append(("?", "mechanism",
                              "a step cannot be both a null finding and a selection link",
@@ -428,13 +543,20 @@ def analyse(fm, doc):
 
     pool_all = [s for s in causal if s["layer"] != "rival"]
     loops_text = _loops(ids, text_edges)
+    feedback = []
+    for comp in _systems(ids, text_edges):
+        members = set(comp)
+        inside = [l for l in loops_text if set(l) <= members]
+        shortest = _shortest_loops(comp, text_edges, ids)
+        feedback.append(dict(states=comp, loops=len(inside), capped=len(loops_text) >= LOOP_CAP,
+                             shortest=[dict(states=l, reflexive=reflexive(l, text)) for l in shortest]))
     loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all})
     routes = []
     for e in entries:
         for o in outcomes:
             if o == e:        # a state that is both where the circle starts and what it explains
                 continue
-            n, lo, hi = _routes(e, o, text_edges)
+            n, lo, hi = _routes(e, o, text_edges, ids)
             if n:
                 routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))
 
@@ -447,6 +569,8 @@ def analyse(fm, doc):
         lags=sorted({str(s["lag"]) for s in text if s["lag"]}),
         entries=entries, routes=routes,
         loops_text=[dict(states=l, reflexive=reflexive(l, text)) for l in loops_text],
+        feedback=feedback,
+        wholes=sorted([k, sorted(v)] for k, v in _wholes(states).items()),
         loops_with_appraisal=[dict(states=l, reflexive=reflexive(l, pool_all))
                               for l in loops_all],
         tiers=tiers, gaps=[g["message"] for g in gaps],
@@ -502,7 +626,18 @@ def census(profile):
     else:
         lines.append("      route   no outcome is reached by the text's steps")
     if p["loops_text"]:
+        big = [f for f in p.get("feedback", []) if f["loops"] > LOOPS_LISTED]
+        inbig = [set(f["states"]) for f in big]
+        for f in big:
+            lines.append(f"      system  {len(f['states'])} states bound in one feedback system, "
+                         f"{f['loops']}{'+' if f['capped'] else ''} loops through them: "
+                         + ", ".join(f["states"]))
+            for l in f["shortest"]:
+                lines.append("        e.g.  " + " -> ".join(l["states"] + l["states"][:1])
+                             + ("  (reflexive)" if l["reflexive"] else ""))
         for l in p["loops_text"]:
+            if any(set(l["states"]) <= b for b in inbig):
+                continue
             lines.append("      loop    " + " -> ".join(l["states"] + l["states"][:1])
                          + ("  (reflexive: runs through a classification or representation)"
                             if l["reflexive"] else ""))
@@ -514,6 +649,8 @@ def census(profile):
             lines.append("      loop    " + " -> ".join(l["states"] + l["states"][:1])
                          + "  (closed only by the appraisal"
                          + ("; reflexive" if l["reflexive"] else "") + ")")
+    for w, parts in p.get("wholes", []):
+        lines.append(f"      whole   {w}: {', '.join(parts)} -- drawn as one box at the text's own level")
     t = p["tiers"]
     lines.append(f"      light   {t['evidence']} backed by a study, statistics or a model; "
                  f"{t['argued']} argued; {t['asserted']} asserted only; {t['imputed']} imputed")

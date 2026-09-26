@@ -436,7 +436,16 @@ in Merton's essay, prejudice is both where the circle starts and what his remedy
 marked ↻, and **every state in the loop carries a ↻ badge** (numbered when there is more than
 one loop). Click a badge, or the loop in the panel, to see that loop alone, its steps and claims
 listed in order. A loop marked *reflexive* runs through a belief, a prediction or a
-classification that the loop itself acts on — a prophecy that fulfils itself.
+classification that the loop itself acts on — a prophecy that fulfils itself. Where many loops
+run through the same states — a theory whose every part feeds back on every other — they are
+shown as one **feedback system**, marked ⟳A on each of its states: click it to see the system
+alone, with its shortest loops offered one by one.
+
+**The text's own boxes.** Where a map says that some states are parts of a larger one — the boxes
+of the author's own diagram, a typology under one heading — the chain opens with each part drawn
+inside its whole, at the level the text itself draws. **Show every state** draws the parts apart;
+**The text's own boxes** puts them back. An arrow's label **decides which** says that a state
+settles which of several alternatives follows, rather than raising or lowering anything.
 
 ### What an arrow says
 

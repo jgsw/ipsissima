@@ -80,9 +80,15 @@ read = set(re.findall(r'c\.get\("(\w+)"\)', MECH_PY)) - {"arguments"}
 check("the causes fields are exactly those mechanism.py reads", read == set(P["causes"]),
       f"only read: {sorted(read - set(P['causes']))}; only listed: {sorted(set(P['causes']) - read)}")
 basis = re.search(r"_TIER_OF_BASIS = \{(.*?)\}", MECH_PY, re.S).group(1)
+import mechanism  # noqa: E402
+# Mutation: add a sign to mechanism.SIGNS without the registry -> fails.
+check("the signs are mechanism.py's", P["causes"]["sign"]["values"] == list(mechanism.SIGNS),
+      f"{P['causes']['sign']['values']} vs {list(mechanism.SIGNS)}")
 check("the bases are mechanism.py's", sorted(re.findall(r'"(\w+)":', basis)) == sorted(P["causes"]["basis"]["values"]))
 state_keys = set(P["mechanism"]["states"]["keys"])
 js_state = set(re.findall(r'\bs\.(label|actor|role|measured|appraisal|note)\b', MECH_JS))
+if re.search(r'\)\.part_of\b', MECH_JS):
+    js_state.add("part_of")
 # Roles are read through rolesOf() since profile 1.1, where `role` may be a list.
 if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
     js_state.add("role")

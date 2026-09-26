@@ -144,10 +144,79 @@ function reach(start, edges) {
 
 /** Every simple cycle, in order along the loop, listed once from its first state -- cycles, not
  *  strongly connected components, for the reason mechanism.py gives. */
+/** Successors of each state in DECLARED ORDER, as mechanism.py's `_adjacency`: past a cap, which
+ *  routes and loops are found depends on the order they are walked, and checker and page must walk
+ *  the same way to agree. */
+function adjacency(edges, ids) {
+  var rank = {}; ids.forEach(function (v, i) { rank[v] = i; });
+  var key = function (v) { return has(rank, v) ? rank[v] : ids.length; };
+  var adj = {};
+  edges.forEach(function (e) { var l = adj[e[0]] = adj[e[0]] || []; if (l.indexOf(e[1]) < 0) l.push(e[1]); });
+  Object.keys(adj).forEach(function (a) {
+    adj[a].sort(function (p, q) { return key(p) - key(q) || (p < q ? -1 : p > q ? 1 : 0); });
+  });
+  return adj;
+}
+
+/** The feedback systems (Tarjan): states each reachable from every other, two or more. */
+function systems(ids, edges) {
+  var adj = adjacency(edges, ids), index = {}, low = {}, on = {}, stack = [], out = [], n = 0;
+  var pos = function (v) { return ids.indexOf(v); };
+  function strong(v) {
+    index[v] = low[v] = n++; stack.push(v); on[v] = true;
+    (adj[v] || []).forEach(function (w) {
+      if (!has(index, w)) { strong(w); low[v] = Math.min(low[v], low[w]); }
+      else if (on[w]) low[v] = Math.min(low[v], index[w]);
+    });
+    if (low[v] === index[v]) {
+      var comp = [], w;
+      do { w = stack.pop(); on[w] = false; comp.push(w); } while (w !== v);
+      if (comp.length > 1) out.push(comp.sort(function (a, b) { return pos(a) - pos(b); }));
+    }
+  }
+  ids.forEach(function (v) { if (!has(index, v)) strong(v); });
+  return out.sort(function (a, b) { return pos(a[0]) - pos(b[0]); });
+}
+
+/** The k shortest loops through a system, by breadth-first search from each of its states. */
+function shortestLoops(comp, edges, ids, k) {
+  var inC = {}; comp.forEach(function (v) { inC[v] = true; });
+  var rank = {}; ids.forEach(function (v, i) { rank[v] = i; });
+  var adj = adjacency(edges.filter(function (e) { return inC[e[0]] && inC[e[1]]; }), ids);
+  var found = {}, list = [];
+  comp.forEach(function (v) {
+    var prev = {}; prev[v] = null;
+    var q = [v], hit = null;
+    while (q.length && hit === null) {
+      var nq = [];
+      for (var i = 0; i < q.length && hit === null; i++) {
+        var x = q[i], succ = adj[x] || [];
+        for (var j = 0; j < succ.length; j++) {
+          var w = succ[j];
+          if (w === v) { hit = x; break; }
+          if (!has(prev, w)) { prev[w] = x; nq.push(w); }
+        }
+      }
+      q = nq;
+    }
+    if (hit === null) return;
+    var path = [], x2 = hit;
+    while (x2 !== null) { path.push(x2); x2 = prev[x2]; }
+    path.reverse();
+    var at = 0; path.forEach(function (s2, i2) { if (rank[s2] < rank[path[at]]) at = i2; });
+    var loop = path.slice(at).concat(path.slice(0, at)), key = loop.join("\u0000");
+    if (!found[key]) { found[key] = true; list.push(loop); }
+  });
+  return list.sort(function (a, b) {
+    if (a.length !== b.length) return a.length - b.length;
+    for (var i = 0; i < a.length; i++) if (rank[a[i]] !== rank[b[i]]) return rank[a[i]] - rank[b[i]];
+    return 0;
+  }).slice(0, k);
+}
+
 function loops(ids, edges) {
   var order = {}; ids.forEach(function (v, i) { order[v] = i; });
-  var adj = {};
-  edges.forEach(function (e) { (adj[e[0]] = adj[e[0]] || []).push(e[1]); });
+  var adj = adjacency(edges, ids);
   var out = [];
   function walk(start, v, path) {
     (adj[v] || []).forEach(function (w) {
@@ -162,9 +231,8 @@ function loops(ids, edges) {
   return out;
 }
 
-function routes(start, goal, edges) {
-  var adj = {};
-  edges.forEach(function (e) { (adj[e[0]] = adj[e[0]] || []).push(e[1]); });
+function routes(start, goal, edges, ids) {
+  var adj = adjacency(edges, ids);
   var lengths = [];
   function walk(v, seen) {
     (adj[v] || []).forEach(function (w) {
@@ -250,10 +318,11 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
     return pool.some(function (s) { return s.reflexive && hop[s.from + "\u0000" + s.to]; });
   }
   var pool = causal.filter(function (s) { return s.layer !== "rival"; });
+  var loopsText = loops(ids, edges);
   var rs = [];
   entries.forEach(function (e) { outcomes.forEach(function (o) {
     if (o === e) return;          // both where the circle starts and what it explains
-    var r = routes(e, o, edges);
+    var r = routes(e, o, edges, ids);
     if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
   }); });
   var levelOf = function (i) { return obj(actors[obj(states[i]).actor]).level; };
@@ -266,8 +335,21 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
     states: ids.length, steps: Object.keys(best).length,
     claims: Object.keys(claimTitles).length,
     lags: Object.keys(lags).sort(), entries: entries, routes: rs,
-    loops_text: loops(ids, edges).map(function (l) {
+    loops_text: loopsText.map(function (l) {
       return { states: l, reflexive: isReflexive(l, text) }; }),
+    feedback: systems(ids, edges).map(function (comp) {
+      var inC = {}; comp.forEach(function (v) { inC[v] = true; });
+      var inside = loopsText.filter(function (l) { return l.every(function (v) { return inC[v]; }); });
+      return { states: comp, loops: inside.length, capped: loopsText.length >= LOOP_CAP,
+               shortest: shortestLoops(comp, edges, ids, 3).map(function (l) {
+                 return { states: l, reflexive: isReflexive(l, text) }; }) };
+    }),
+    wholes: (function () {
+      var w = {};
+      ids.forEach(function (sid) { var p = obj(states[sid]).part_of;
+        if (p != null && has(states, p) && p !== sid) (w[p] = w[p] || []).push(sid); });
+      return Object.keys(w).sort().map(function (k) { return [k, w[k].sort()]; });
+    })(),
     loops_with_appraisal: loops(ids, uniqEdges(pool)).map(function (l) {
       return { states: l, reflexive: isReflexive(l, pool) }; }),
     tiers: tiers, gaps: gaps,
@@ -322,7 +404,8 @@ function overlap(a, b) {
 function signWord(signs) {
   if (!signs.length) return "link";
   if (signs.length > 1) return "mixed";
-  return signs[0] === "+" ? "raises" : signs[0] === "-" ? "lowers" : signs[0] === "0" ? "no effect" : signs[0];
+  return signs[0] === "+" ? "raises" : signs[0] === "-" ? "lowers" : signs[0] === "0" ? "no effect"
+       : signs[0] === "which" ? "decides which" : signs[0];
 }
 
 /** Geometry for the whole chain, every layer included. Pure: the same model gives the same
@@ -557,6 +640,8 @@ function layout(M, opts) {
 var FOLD_CAP = 2000;
 function mulSign(a, b) {
   if (!a || !b) return "";
+  // A route through a step that decides WHICH alternative follows is itself a matter of which.
+  if (a === "which" || b === "which") return "which";
   if (a === "0" || b === "0") return "0";
   return a === b ? "+" : "-";
 }
@@ -786,15 +871,79 @@ function edgeStyle(e) {
            dash: FIDELITY_DASH[e.fidelity] || "" };
 }
 
+/** Past this many loops, a feedback system is shown as one system, not loop by loop (as
+ *  mechanism.py's LOOPS_LISTED). */
+var LOOPS_LISTED = 4;
+
+function outermost(states, v) {
+  var seen = {};
+  for (;;) {
+    var p = obj(states[v]).part_of;
+    if (p == null || !has(states, p) || p === v || seen[p]) return v;
+    seen[v] = true; v = p;
+  }
+}
+/** THE TEXT'S OWN BOXES. A state declared `part_of` another is drawn inside it: every step from or
+ *  to a part becomes the whole's, and a step between two parts of one whole is not drawn (it is
+ *  counted). Wimmer's five strategies are parts of his Fig. 2's strategies box, and at that level
+ *  his 21 states are the handful of boxes he drew himself -- the right level to open at (F7). */
+function collapseModel(M) {
+  var top = {};
+  M.ids.forEach(function (v) { top[v] = outermost(M.states, v); });
+  var ids = M.ids.filter(function (v) { return top[v] === v; });
+  var states = {}; ids.forEach(function (v) { states[v] = M.states[v]; });
+  var inside = 0, steps = [];
+  M.steps.forEach(function (s) {
+    var a = top[s.from], b = top[s.to];
+    if (a === b && (a !== s.from || b !== s.to)) { inside++; return; }
+    var c = {}; for (var k in s) if (has(s, k)) c[k] = s[k];
+    c.from = a; c.to = b;
+    if (a !== s.from || b !== s.to) { c.partFrom = s.from; c.partTo = s.to; }
+    steps.push(c);
+  });
+  return { levels: M.levels, actors: M.actors, states: states, ids: ids, steps: steps,
+           dropped: M.dropped, appraisalClaims: M.appraisalClaims, question: M.question,
+           profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims),
+           collapsed: { inside: inside, parts: M.ids.length - ids.length,
+                        wholes: M.profile.wholes.length } };
+}
+
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
  *  a claim -- the host takes it to the claim's passage. Returns a small controller. */
 function create(container, graph, opts) {
   opts = opts || {};
   injectStyle();
-  var M = model(graph);
+  var FULL = model(graph);
   container.innerHTML = "";
   container.classList.add("amech");
-  if (!M) { container.textContent = "This map declares no mechanism."; return null; }
+  if (!FULL) { container.textContent = "This map declares no mechanism."; return null; }
+  // A SHELL AND A MOUNT. What persists across the two levels of detail -- the layer switches, and
+  // which level is showing -- lives here; everything drawn from one model lives in `mount`, and
+  // moving between the text's own boxes and every state mounts afresh. The host holds this one
+  // controller throughout.
+  var hasWholes = FULL.profile.wholes.length > 0;
+  var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal };
+  var cur = null;
+  function remount() {
+    container.innerHTML = "";
+    cur = mount(keep.boxes ? collapseModel(FULL) : FULL);
+  }
+  remount();
+  return {
+    get model() { return cur.model; },
+    // A getter: folding replaces the geometry, and a copy taken at creation would go stale.
+    get geometry() { return cur.geometry; },
+    setLayer: function (name, on) { keep[name] = !!on; cur.setLayer(name, on); },
+    getLayers: function () { return cur.getLayers(); },
+    setShow: function (v) { cur.setShow(v); },
+    setFolded: function (list) { cur.setFolded(list); },
+    getFolded: function () { return cur.getFolded(); },
+    setBoxes: function (on) { keep.boxes = !!on && hasWholes; remount(); },
+    getBoxes: function () { return keep.boxes; },
+    destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
+  };
+
+  function mount(M) {
   // FOLDED STATES. Folding re-draws the arrows and never moves a box: `layout` places every state
   // from the whole chain whatever is folded.
   // "Intervention -> outcomes" folds what lies between in the TEXT's own chain, and is offered
@@ -813,10 +962,15 @@ function create(container, graph, opts) {
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
-  var layers = { rival: true, appraisal: !!opts.appraisal };
+  var layers = { rival: keep.rival, appraisal: keep.appraisal };
   var selected = null;
-  // The loops the text closes, in its own voice (the census's `loops_text`).
-  var LOOPS = M.profile.loops_text;
+  // THE LOOPS AND THE SYSTEMS the text closes, in its own voice. A few loops are listed and marked
+  // one by one, in order; a system with more than a reader can follow is marked as ONE system,
+  // with its shortest loops offered -- Wimmer's feedback came to 50+ loops and 410 badges.
+  var SYS = M.profile.feedback.filter(function (f) { return f.loops > LOOPS_LISTED; });
+  var inBig = function (l) { return SYS.some(function (f) { return l.states.every(function (v) { return f.states.indexOf(v) >= 0; }); }); };
+  var LOOPS = M.profile.loops_text.filter(function (l) { return !inBig(l); });
+  var sysName = function (i) { return String.fromCharCode(65 + i); };
   function loopNames(l) {
     return l.states.concat(l.states[0]).map(function (v) { return obj(M.states[v]).label || v; }).join(" → ");
   }
@@ -838,6 +992,9 @@ function create(container, graph, opts) {
     // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
     // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
     (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from where the chain starts to its outcomes: the states between are folded, and what lies off that line is set aside">' + endsLabel + '</button>' : '') +
+    // Offered only where the map declares wholes (F2). Named for what a click will show.
+    (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
+      (M === FULL ? "The text’s own boxes" : "Show every state") + '</button>' : '') +
     '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
@@ -951,7 +1108,18 @@ function create(container, graph, opts) {
         el("circle", { r: 10 }, mk);
         el("text", { "text-anchor": "middle", y: 4 }, mk).textContent = "↻" + (LOOPS.length > 1 ? li + 1 : "");
         el("title", {}, mk).textContent = "In loop " + (li + 1) + ": " + loopNames(LOOPS[li]) + " — click to see it alone";
-        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ loop: li }); });
+        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ cycle: LOOPS[li], name: "Loop " + (li + 1) }); });
+      });
+      var sysOf = [];
+      SYS.forEach(function (f, fi) { if (f.states.indexOf(v) >= 0) sysOf.push(fi); });
+      sysOf.forEach(function (fi, j) {
+        var mk = el("g", { "class": "loopmark sys", "data-system": fi,
+                           transform: "translate(" + (p.w - 10 - (inLoops.length + j) * 26) + ",-5)" }, g);
+        el("circle", { r: 10 }, mk);
+        el("text", { "text-anchor": "middle", y: 4 }, mk).textContent = "⟳" + sysName(fi);
+        el("title", {}, mk).textContent = "In feedback system " + sysName(fi) + ": " + SYS[fi].states.length +
+          " states, " + SYS[fi].loops + (SYS[fi].capped ? "+" : "") + " loops — click to see it alone";
+        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: fi }); });
       });
       if (isStart(s) && !M.steps.some(function (x) { return x.from === v && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
@@ -966,8 +1134,13 @@ function create(container, graph, opts) {
   function focusSets() {
     var vis = drawnEdges.map(function (d) { return d.e; });
     if (!selected) return null;
-    if (selected.loop != null) {
-      var L = LOOPS[selected.loop], hops = {}, ln = {};
+    if (selected.system != null) {
+      var F = SYS[selected.system], inF = {};
+      F.states.forEach(function (v) { inF[v] = true; });
+      return { nodes: inF, edge: function (e) { return e.layer === "text" && e.kind === "step" && inF[e.from] && inF[e.to]; } };
+    }
+    if (selected.cycle) {
+      var L = selected.cycle, hops = {}, ln = {};
       L.states.forEach(function (v, i) { ln[v] = true; hops[v + "\u0000" + L.states[(i + 1) % L.states.length]] = true; });
       return { nodes: ln, edge: function (e) { return e.layer === "text" && e.kind === "step" && !!hops[e.from + "\u0000" + e.to]; } };
     }
@@ -1026,6 +1199,8 @@ function create(container, graph, opts) {
       (s.selects ? " · <b>a selection link, not an effect</b>" : "") +
       (s.hedged ? " · hedged: the text says it may" : "") +
       (s.supports ? " · " + s.supports + " supporting claim" + (s.supports === 1 ? "" : "s") + " in the map" : "");
+    if (s.partFrom) meta += ' · inside the boxes: ' + esc(obj(FULL.states[s.partFrom]).label || s.partFrom) + ' → ' +
+      esc(obj(FULL.states[s.partTo]).label || s.partTo);
     return '<div class="amech-claim' + (s.layer === "appraisal" ? " appr" : "") + '">' +
       '<div class="t">' + esc(c.title) + '</div><div>' + esc(c.text) + '</div>' +
       '<div class="m">' + meta + '</div>' +
@@ -1095,8 +1270,11 @@ function create(container, graph, opts) {
     tot = tot || 1;
     var label = function (i) { return obj(M.states[i]).label || i; };
     // Each loop is a button that shows it alone.
-    var loopText = P.loops_text.length ? P.loops_text.map(function (l, i) {
-        return '<button type="button" class="amech-loop" data-loop="' + i + '">↻' + (P.loops_text.length > 1 ? (i + 1) : "") + ' ' +
+    var loopText = (LOOPS.length || SYS.length) ? SYS.map(function (f, i) {
+        return '<button type="button" class="amech-loop" data-system="' + i + '">⟳' + sysName(i) + ' a feedback system: ' +
+          f.states.length + ' states, ' + f.loops + (f.capped ? '+' : '') + ' loops</button>'; }).join("") +
+      LOOPS.map(function (l, i) {
+        return '<button type="button" class="amech-loop" data-loop="' + i + '">↻' + (LOOPS.length > 1 ? (i + 1) : "") + ' ' +
           esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
                                        : "none closed in the text";
     var gapText = function (g) {
@@ -1105,7 +1283,11 @@ function create(container, graph, opts) {
            : g.kind === "unreached-outcome" ? s + " is not reached by the text’s links from where its chain starts."
            : s + " leads nowhere in the text: the chain stops there.";
     };
-    return foldedHTML() + '<h3>The chain</h3>' +
+    var boxesNote = M.collapsed ? '<div class="amech-focus">Showing the text’s own boxes: ' + M.collapsed.parts + ' state' +
+      (M.collapsed.parts === 1 ? '' : 's') + ' drawn inside ' + M.collapsed.wholes + ' of them' +
+      (M.collapsed.inside ? '; ' + M.collapsed.inside + ' step' + (M.collapsed.inside === 1 ? '' : 's') + ' between parts of one box not drawn' : '') +
+      '. <b>Show every state</b> draws each apart; the counts below are of what is drawn.</div>' : '';
+    return boxesNote + foldedHTML() + '<h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       '<div class="amech-row"><span class="k">height</span><span>' + P.levels_spanned.length + ' of ' + P.levels.length + ' levels' +
         (P.levels_spanned.length ? ': ' + esc(P.levels_spanned.join(", ")) : '') + '</span></div>' +
@@ -1138,13 +1320,24 @@ function create(container, graph, opts) {
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
-    } else if (selected && selected.loop != null) {
-      var L = LOOPS[selected.loop];
+    } else if (selected && selected.system != null) {
+      var F = SYS[selected.system];
+      side.innerHTML = '<h3>Feedback system ' + sysName(selected.system) + '</h3>' +
+        '<div class="amech-focus">' + F.states.length + ' states, each reachable from every other: ' + F.loops +
+        (F.capped ? ' or more' : '') + ' loops run through them. Too many to follow one by one, so the system is shown ' +
+        'whole; its shortest loops are below, each shown alone on a click.</div>' +
+        '<h3>Its shortest loops</h3>' + F.shortest.map(function (l, j) {
+          return '<button type="button" class="amech-loop" data-sys="' + selected.system + '" data-short="' + j + '">' +
+            esc(loopNames(l)) + (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("") +
+        '<h3>Its states</h3><div class="amech-q">' + F.states.map(function (v) { return esc(obj(M.states[v]).label || v); }).join(" · ") + '</div>' +
+        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
+    } else if (selected && selected.cycle) {
+      var L = selected.cycle;
       var hopEdges = L.states.map(function (v, i) {
         var w = L.states[(i + 1) % L.states.length];
         return G.edges.filter(function (e) { return e.layer === "text" && e.kind === "step" && e.from === v && e.to === w; });
       });
-      side.innerHTML = '<h3>Loop ' + (selected.loop + 1) + '</h3>' +
+      side.innerHTML = '<h3>' + esc(selected.name || "Loop") + '</h3>' +
         '<div class="amech-focus">Showing one loop the text closes: ' + esc(loopNames(L)) + '.' +
         (L.reflexive ? ' It is <b>reflexive</b>: it runs through a belief, a prediction or a classification that the loop itself acts on.' : '') +
         '</div>' +
@@ -1156,6 +1349,14 @@ function create(container, graph, opts) {
         '<div class="amech-focus">Showing only the paths through this state: what leads to it, and what it leads to.</div>' +
         '<div class="amech-row"><span class="k">actor</span><span>' + esc(a.label || s.actor || "") + (a.level ? ' (' + esc(a.level) + ')' : '') + '</span></div>' +
         (rolesOf(s).length ? '<div class="amech-row"><span class="k">role</span><span>' + esc(rolesOf(s).join(", ")) + '</span></div>' : '') +
+        (function () {
+          var parts = FULL.profile.wholes.filter(function (w) { return w[0] === selected.state; })[0];
+          var whole = obj(FULL.states[selected.state]).part_of;
+          return (parts ? '<div class="amech-row"><span class="k">made of</span><span>' + parts[1].map(function (v) {
+                    return esc(obj(FULL.states[v]).label || v); }).join("; ") + '</span></div>' : '') +
+                 (whole != null && has(FULL.states, whole) ? '<div class="amech-row"><span class="k">part of</span><span>' +
+                    esc(obj(FULL.states[whole]).label || whole) + '</span></div>' : '');
+        })() +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
         // often make differently (mechanism-pass.md), so the reader is shown it.
@@ -1177,7 +1378,12 @@ function create(container, graph, opts) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
     var lp = t.closest ? t.closest("[data-loop]") : null;
-    if (lp) { select({ loop: +lp.getAttribute("data-loop") }); return; }
+    if (lp) { var li2 = +lp.getAttribute("data-loop"); select({ cycle: LOOPS[li2], name: "Loop " + (li2 + 1) }); return; }
+    var sp = t.closest ? t.closest("[data-short]") : null;
+    if (sp) { var fi2 = +sp.getAttribute("data-sys");
+      select({ cycle: SYS[fi2].shortest[+sp.getAttribute("data-short")], name: "A loop in feedback system " + sysName(fi2) }); return; }
+    var sy = t.closest ? t.closest("[data-system]") : null;
+    if (sy) { select({ system: +sy.getAttribute("data-system") }); return; }
     var fv = t.getAttribute && t.getAttribute("data-fold"), uv = t.getAttribute && t.getAttribute("data-unfold");
     if (fv) { setFolded(fv, true); return; }
     if (uv) { if (uv === "*") { folded = {}; ends = false; } else setFolded(uv, false); refold(); return; }
@@ -1209,8 +1415,11 @@ function create(container, graph, opts) {
     if (opts.onLayers) opts.onLayers({ rival: layers.rival, appraisal: layers.appraisal });
   }
   Array.prototype.forEach.call(bar.querySelectorAll("input[data-layer]"), function (inp) {
-    inp.addEventListener("change", function () { layers[inp.getAttribute("data-layer")] = inp.checked; apply(); });
+    inp.addEventListener("change", function () {
+      layers[inp.getAttribute("data-layer")] = inp.checked; keep[inp.getAttribute("data-layer")] = inp.checked; apply(); });
   });
+  var boxesBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-boxes]"));
+  if (boxesBtn) boxesBtn.addEventListener("click", function () { keep.boxes = !keep.boxes; remount(); });
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
@@ -1240,7 +1449,6 @@ function create(container, graph, opts) {
 
   return {
     model: M,
-    // A getter: folding replaces the geometry, and a copy taken at creation would go stale.
     get geometry() { return G; },
     setLayer: function (name, on) {
       layers[name] = !!on;
@@ -1251,12 +1459,12 @@ function create(container, graph, opts) {
     getLayers: function () { return { rival: layers.rival, appraisal: layers.appraisal }; },
     setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
     setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
-    getFolded: function () { return G.folded.slice(); },
-    destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
+    getFolded: function () { return G.folded.slice(); }
   };
+  }
 }
 
-var API = { model: model, layout: layout, create: create, foldable: foldable, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, create: create, foldable: foldable, collapseModel: collapseModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;

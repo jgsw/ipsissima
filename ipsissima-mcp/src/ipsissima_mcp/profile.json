@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.2",
+  "version": "1.3",
   "date": "2026-09-26",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -73,13 +73,13 @@
     "question": {"type": "string"},
     "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
-    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string"}}
+    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)"}}
   },
 
   "causes": {
     "from": {"type": "state id"},
     "to": {"type": "state id"},
-    "sign": {"type": "enum", "values": ["+", "-", "0"], "summary": "+ raises, - lowers, \"0\" a finding of no effect."},
+    "sign": {"type": "enum", "values": ["+", "-", "0", "which"], "summary": "+ raises, - lowers, \"0\" a finding of no effect, which decides which alternative follows (since 1.2)."},
     "basis": {"type": "enum", "values": ["study", "statistics", "model", "example", "testimony", "asserted"], "summary": "What the text offers for the step."},
     "lag": {"type": "string"},
     "given": {"type": "list of strings", "summary": "Conditions the text states, in its words."},

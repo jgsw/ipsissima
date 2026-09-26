@@ -75,6 +75,29 @@ for (const k of Object.keys(py)) {
   check(differ.length === 0, "the page and the checker agree on an explanatory chain with a loop",
         differ.map(k => `${k}: python ${JSON.stringify(pyL[k])} js ${JSON.stringify(ML.profile[k])}`).join("\n          "));
 }
+// AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
+// build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
+const SYSF = path.join(FIXTURE, "system.argdown");
+{
+  const pyS = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           SYSF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MS = MV.model(graphOf(SYSF));
+  const differ = Object.keys(pyS).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MS.profile.gaps.map(g => g.message) : MS.profile[k], pyS[k]));
+  check(differ.length === 0, "the page and the checker agree on a feedback system, its wholes and its signs",
+        differ.map(k => `${k}: python ${JSON.stringify(pyS[k]).slice(0, 200)} js ${JSON.stringify(MS.profile[k]).slice(0, 200)}`).join("\n          "));
+  // THE TEXT'S OWN BOXES. Mutation: keep a part's steps under the part -> the parts stay drawn.
+  const C = MV.collapseModel(MS);
+  check(!C.ids.some(v => ["expand", "contract", "blur"].includes(v)) && C.ids.includes("strat"),
+        "collapsed, the parts are drawn inside their whole", JSON.stringify(C.ids));
+  check(C.steps.every(x => !["expand", "contract", "blur"].includes(x.from) && !["expand", "contract", "blur"].includes(x.to)) &&
+        C.steps.some(x => x.from === "inst" && x.to === "strat" && x.partTo === "expand"),
+        "every step from or to a part becomes the whole's, remembering which part it was");
+  check(C.collapsed.inside === 1, "and the step between two parts of the box is counted, not drawn", C.collapsed.inside);
+  const CL = MV.layout(C);
+  check(CL.edges.some(e => e.chip.label.startsWith("decides which")), "a step that decides which says so on its chip",
+        JSON.stringify(CL.edges.map(e => e.chip.label)));
+}
 // AND ON EVERY SAMPLE THAT DECLARES A CHAIN. The planted fixture has no premise-conclusion
 // structure, and the J-PAL sample showed what that hid: a step on an intermediary conclusion is
 // argued for (its premises infer it), which the checker counted and the page, reading only drawn
@@ -514,6 +537,37 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     // Mutation: hard-code the ends label again -> it says Intervention on a chain with none.
     check(await page.locator("#mech [data-foldall]").innerText() === "Conditions → outcomes",
           "and the ends are named for what this text has: conditions, not an intervention");
+
+    // THE PLANTED SYSTEM, DRIVEN. It opens at the text's own boxes; its feedback system is one
+    // lettered mark on each state in it, not a badge per loop; the mark shows the system alone.
+    const sysHtml = path.join(tmp, "system.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), SYSF, "-o", sysHtml], { stdio: "pipe" });
+    await page.goto("file://" + sysHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    // Mutation: open with keep.boxes false -> the parts are drawn.
+    check(await page.locator('#mech .st[data-state="strat"]').count() === 1 && await page.locator('#mech .st[data-state="expand"]').count() === 0,
+          "a map that declares wholes opens at the text's own boxes");
+    await page.locator("#mech [data-boxes]").click();
+    await page.waitForTimeout(400);
+    check(await page.locator('#mech .st[data-state="expand"]').count() === 1 && await page.locator("#mech [data-boxes]").innerText() === "The text’s own boxes",
+          "and Show every state draws each part, offering the boxes back");
+    // Mutation: drop the LOOPS_LISTED filter -> a badge per loop again.
+    const sysMarks = await page.evaluate(() => [...document.querySelectorAll("#mech .loopmark > text")].map(m => m.textContent));
+    check(sysMarks.length > 0 && sysMarks.every(t => t === "⟳A"), "the feedback system is one lettered mark per state, not a badge per loop",
+          JSON.stringify(sysMarks.slice(0, 6)));
+    await page.locator('#mech .st[data-state="nego"] .loopmark').click();
+    await page.waitForTimeout(200);
+    // Mutation: drop the system branch of the side panel -> it shows the chain's profile instead.
+    check(/Feedback system A/i.test(await page.locator(".amech-side").innerText()) &&
+          /\b17 loops run through them/.test(await page.locator(".amech-side").innerText()),
+          "and it shows the system, naming it and how many loops run through it");
+    await page.locator(".amech-side button[data-short]").first().click();
+    await page.waitForTimeout(200);
+    const litS = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
+      .filter(g => !g.classList.contains("dim")).map(g => g.getAttribute("data-edge")).sort());
+    check(same(litS, ["inst>power", "power>inst"]), "its shortest loop is offered, and shown alone", JSON.stringify(litS));
 
     // THE ABSTRACT'S FOLD DOES NOT COVER THE QUESTION. The J-PAL sample carries an abstract; the
     // fixture does not. Mutation: drop the #stage:has(#abs) rule from the template -> fails.
