@@ -151,6 +151,10 @@ main.swapped{flex-direction:row-reverse}
   align-items:flex-start;gap:.3rem;min-height:0;
   max-width:min(32rem,calc(100% - 16px));max-height:min(calc(100% - 4.5rem),62%)}
 #absbtn{background:var(--panel);font-size:11.5px;padding:.2rem .5rem;flex:0 0 auto}
+/* The Mechanism arrangement opens with its question in a bar across the top-left corner -- the
+   corner the Abstract fold floats in, which covered the question's first words (26 Sep 2026).
+   While the fold is offered, the bar starts clear of it. */
+#stage:has(> #abs:not([hidden])) #mech .amech-bar{padding-left:118px}
 /* The chevron IS the affordance: it points right when there is something folded away and down
    when it is open, so the button says what a click will do without a second label. */
 #absbtn .chev{transition:transform .18s ease}

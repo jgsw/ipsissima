@@ -271,7 +271,26 @@ function nullsOf(textAll, steps) {
 
 /* ============================================================ the layout, pure */
 
-var BW = 168, BH = 56, COL = 250, GUT = 150, ROW = 80, PADY = 22, TOP = 34;
+// COL leaves 132px between columns. At 82px (the first build) an arrow between neighbouring
+// columns in different lanes was nearly vertical, its arrowhead still pointing sideways, and every
+// chip on it sat beside some other arrow's head (J-PAL sample, 26 Sep 2026).
+// LANE HEADS ARE A STRIP ABOVE THE BOXES, not a column beside them: the actors' names ran under
+// the first column's boxes whenever they were longer than the gutter.
+var BW = 168, BH = 56, COL = 300, GUT = 40, ROW = 80, PADY = 16, TOP = 34, HEAD = 26, STUB = 12;
+
+/** A point at `t` along a cubic. */
+function bez(p0, p1, p2, p3, t) { var u = 1 - t; return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3; }
+function overlap(a, b) {
+  var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+  return w > 0 && h > 0 ? w * h : 0;
+}
+/** THE WORDS ON A CHIP. "+" and "-" say support and attack everywhere else on this page; here a
+ *  sign is a direction of effect, as in a causal loop diagram. Words say which without a key. */
+function signWord(signs) {
+  if (!signs.length) return "link";
+  if (signs.length > 1) return "mixed";
+  return signs[0] === "+" ? "raises" : signs[0] === "-" ? "lowers" : signs[0] === "0" ? "no effect" : signs[0];
+}
 
 /** Geometry for the whole chain, every layer included. Pure: the same model gives the same
  *  numbers, and nothing the reader switches changes them. */
@@ -315,10 +334,11 @@ function layout(M) {
   ids.forEach(function (v) { var k = levelOf(v) + "|" + rank[v]; (slots[k] = slots[k] || []).push(v); });
   var lanes = [], y = TOP;
   M.levels.forEach(function (lv) {
-    var rows = 1;
+    var rows = 0;
     ids.forEach(function (v) { if (levelOf(v) === lv) rows = Math.max(rows, slots[lv + "|" + rank[v]].length); });
-    var h = rows * ROW + PADY * 2;
-    lanes.push({ level: lv, y: y, h: h,
+    // A level nothing in the text reaches is a thin strip that says so, not an empty band.
+    var h = rows ? HEAD + rows * ROW + PADY : HEAD + 4;
+    lanes.push({ level: lv, y: y, h: h, empty: !rows,
                  actors: Object.keys(M.actors).filter(function (a) { return obj(M.actors[a]).level === lv; })
                            .map(function (a) { return obj(M.actors[a]).label || a; }) });
     y += h;
@@ -326,7 +346,7 @@ function layout(M) {
   var nodes = {}, maxRank = 0;
   ids.forEach(function (v) {
     var li = M.levels.indexOf(levelOf(v)), k = levelOf(v) + "|" + rank[v];
-    nodes[v] = { x: GUT + rank[v] * COL, y: lanes[li].y + PADY + slots[k].indexOf(v) * ROW, w: BW, h: BH };
+    nodes[v] = { x: GUT + rank[v] * COL, y: lanes[li].y + HEAD + PADY / 2 + slots[k].indexOf(v) * ROW, w: BW, h: BH };
     maxRank = Math.max(maxRank, rank[v]);
   });
 
@@ -335,51 +355,159 @@ function layout(M) {
   // One drawn edge per (from, to, layer, kind): a null finding and a selection link are never
   // folded into the causal arrow beside them, or the drawing would say the opposite of the text.
   var kindOf = function (s) { return s.isNull ? "null" : s.selects ? "selection" : "step"; };
+  // AND BY SIGN. One arrow labelled "mixed" hid the FAST trial's story: the authors hold that
+  // exercise lowers falls, and report an earlier trial where it raised them (26 Sep 2026). Two
+  // findings with opposite signs are two arrows, as the checker already counts them.
   M.steps.forEach(function (s) {
-    var k = s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s);
+    var k = s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" + (kindOf(s) === "step" ? s.sign : "");
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
   });
+  // PORTS. Every arrow leaving a state used to leave from the middle of its right side, and the
+  // J-PAL intervention, with a dozen steps out of it, sent them all from one point: a knot no one
+  // could follow. Now each arrow has its own point on the side, in the order of where it is going,
+  // so arrows leave and arrive already sorted and cross as little as the layout allows.
+  var isBackKey = {};
+  order.forEach(function (k) { isBackKey[k] = groups[k].some(function (s) { return back[s.id]; }); });
+  var outs = {}, ins = {};
+  order.forEach(function (k) {
+    if (isBackKey[k]) return;
+    var s0 = groups[k][0];
+    (outs[s0.from] = outs[s0.from] || []).push(k);
+    (ins[s0.to] = ins[s0.to] || []).push(k);
+  });
+  var cyOf = function (v) { return nodes[v].y + BH / 2; };
+  var portY = {}, portIn = {}, portSide = {}, portX = {};
+  // AN ARROW TO A STATE WELL BELOW OR ABOVE LEAVES FROM THE BOX'S BOTTOM OR TOP. Seven arrows
+  // leaving the FAST intervention's right side and dropping into the lane below ran as one tight
+  // bundle, their chips unattributable. From the bottom they fan like a tree: the arrow going
+  // furthest leaves from furthest left, so none crosses another.
+  Object.keys(outs).forEach(function (v) {
+    var n = nodes[v], below = [], above = [], side = [];
+    // Only where the way down (or up) is clear: a box stacked above or below it in its own column
+    // would have the arrows run straight through it.
+    var blocked = function (toward) {
+      return Object.keys(nodes).some(function (w) {
+        var m = nodes[w];
+        return w !== v && m.x === n.x && (toward > 0 ? m.y > n.y && m.y < n.y + toward + BH
+                                                     : m.y < n.y && m.y > n.y + toward - BH);
+      });
+    };
+    outs[v].forEach(function (k) {
+      var t = groups[k][0].to, dy = cyOf(t) - cyOf(v);
+      if (dy > BH + 12 && nodes[t].x > n.x && !blocked(dy)) below.push(k);
+      else if (dy < -(BH + 12) && nodes[t].x > n.x && !blocked(dy)) above.push(k);
+      else side.push(k);
+    });
+    var fan = function (list, where) {
+      list.sort(function (p, q) {
+        var a = cyOf(groups[p][0].to), b = cyOf(groups[q][0].to);
+        return (where === "bottom" ? b - a : a - b) || (p < q ? -1 : p > q ? 1 : 0);
+      });
+      list.forEach(function (k, i) { portSide[k] = where; portX[k] = n.x + 14 + (BW - 28) * (i + 0.5) / list.length; });
+    };
+    fan(below, "bottom"); fan(above, "top");
+    outs[v] = side;
+  });
+  var spread = function (list, key, other, into) {
+    list.sort(function (p, q) {
+      var a = groups[p][0], b = groups[q][0];
+      return cyOf(a[other]) - cyOf(b[other]) || nodes[a[other]].x - nodes[b[other]].x || (p < q ? -1 : p > q ? 1 : 0);
+    });
+    list.forEach(function (k, i) { into[k] = nodes[groups[k][0][key]].y + 8 + (BH - 16) * (i + 0.5) / list.length; });
+  };
+  Object.keys(outs).forEach(function (v) { spread(outs[v], "from", "to", portY); });
+  Object.keys(ins).forEach(function (v) { spread(ins[v], "to", "from", portIn); });
+
   var edges = order.map(function (k) {
     var ss = groups[k], s0 = ss[0], a = nodes[s0.from], b = nodes[s0.to];
-    var isBack = ss.some(function (s) { return back[s.id]; });
+    var isBack = isBackKey[k];
     var kind = kindOf(s0);
     var off = s0.layer === "rival" ? 10 : s0.layer === "appraisal" ? -10 : kind === "null" ? 20 : kind === "selection" ? -20 : 0;
     var tier = kind !== "step" && s0.layer !== "appraisal" ? kind
              : s0.layer !== "text" ? s0.layer
              : ss.map(function (s) { return s.tier; })
                  .sort(function (p, q) { return TIERS.indexOf(p) - TIERS.indexOf(q); })[0];
-    var d, cx, cy;
+    // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
+    // wherever the dash pattern happened to end -- often after a gap, floating off its line.
+    var d, stub, P;
     if (isBack) {
       var x1 = a.x + BW / 2 + off, y1 = a.y + BH, x2 = b.x + BW / 2 + off, y2 = b.y + BH;
       var dip = Math.max(y1, y2) + 46 + Math.abs(off) * 2;
-      d = "M" + x1 + "," + y1 + " C" + x1 + "," + dip + " " + x2 + "," + dip + " " + x2 + "," + (y2 + 6);
-      cx = (x1 + x2) / 2; cy = dip - 12;
+      P = [[x1, y1], [x1, dip], [x2, dip], [x2, y2 + STUB + 2]];
+      stub = "M" + x2 + "," + (y2 + STUB + 2) + " L" + x2 + "," + (y2 + 2);
     } else {
-      var X1 = a.x + BW, Y1 = a.y + BH / 2 + off, X2 = b.x - 4, Y2 = b.y + BH / 2 + off;
-      var c = Math.max(40, (X2 - X1) / 2);
-      d = "M" + X1 + "," + Y1 + " C" + (X1 + c) + "," + Y1 + " " + (X2 - c) + "," + Y2 + " " + X2 + "," + Y2;
-      // The chip sits near the TARGET, so arrows fanning out of one state keep their labels apart;
-      // and the layers' chips stand at different points along their arrows, because parallel
-      // arrows run only 10px apart and chips at the same point sat on top of one another -- on the
-      // spike the rival view's "+ x2" hid the text's own "- x7" at the step that matters most.
-      var t = kind === "null" ? 0.5 : kind === "selection" ? 0.4
-            : s0.layer === "text" ? 0.84 : s0.layer === "rival" ? 0.6 : 0.72, u = 1 - t;
-      var bz = function (p0, p1, p2, p3) { return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3; };
-      cx = bz(X1, X1 + c, X2 - c, X2); cy = bz(Y1, Y1, Y2, Y2);
+      var X2 = b.x - 2, Y2 = portIn[k], XE = X2 - STUB;
+      if (portSide[k]) {
+        var BX = portX[k], BY = portSide[k] === "bottom" ? a.y + BH : a.y;
+        var c2 = Math.max(30, (XE - BX) / 2);
+        P = [[BX, BY], [BX, BY + (Y2 - BY) * 0.75], [XE - c2, Y2], [XE, Y2]];
+      } else {
+        var X1 = a.x + BW, Y1 = portY[k], c = Math.max(40, (XE - X1) / 2);
+        P = [[X1, Y1], [X1 + c, Y1], [XE - c, Y2], [XE, Y2]];
+      }
+      stub = "M" + XE + "," + Y2 + " L" + X2 + "," + Y2;
     }
+    d = "M" + P[0][0] + "," + P[0][1] + " C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1];
+    // A null finding has no head, so no stub: its line runs all the way in.
+    if (kind === "null") { d += " L" + (isBack ? P[3][0] + "," + (P[3][1] - STUB) : (P[3][0] + STUB) + "," + P[3][1]); stub = null; }
     var signs = [];
     ss.forEach(function (s) { if (s.sign && signs.indexOf(s.sign) < 0) signs.push(s.sign); });
     var given = ss.some(function (s) { return s.given.length > 0; });
-    var label = kind === "null" ? "0 no effect" + (ss.length > 1 ? " ×" + ss.length : "")
+    var label = kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
               : kind === "selection" ? "selection" :
-                (signs.join("/") || "·") + (ss.length > 1 ? " ×" + ss.length : "") +
+                signWord(signs) + (ss.length > 1 ? " ×" + ss.length : "") +
                 (given ? " ◇" : "") + (isBack ? " ↻" : "");
     return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, back: isBack,
-             steps: ss, path: d, chip: { x: cx, y: cy, label: label } };
+             steps: ss, path: d, stub: stub, curve: P,
+             chip: { x: 0, y: 0, w: label.length * 6.6 + 14, h: 18, label: label } };
   });
-  return { width: GUT + (maxRank + 1) * COL, height: y + 70, lanes: lanes, nodes: nodes,
+  placeChips(edges, nodes, lanes);
+  return { width: GUT + maxRank * COL + BW + 40, height: y + 70, lanes: lanes, nodes: nodes,
            edges: edges, box: { w: BW, h: BH } };
+}
+
+/** WHERE EACH CHIP GOES. The first build put every chip at a fixed point along its arrow, and on
+ *  the J-PAL sample chips sat under other arrows' heads, on top of each other where arrows
+ *  converge, and over boxes. Now each is tried at a run of points along its own curve and takes the
+ *  first clear of every box, every arrowhead and every chip already placed -- the text's
+ *  best-backed steps first, so they get the clearest places -- or the least crowded if none is
+ *  clear. Deterministic: the same chain places its chips the same way. */
+var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9];
+var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
+function placeChips(edges, nodes, lanes) {
+  var fixed = [];
+  (lanes || []).forEach(function (ln) { fixed.push({ x: 0, y: ln.y, w: 100000, h: HEAD - 2 }); });
+  Object.keys(nodes).forEach(function (v) { var n = nodes[v]; fixed.push({ x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 }); });
+  edges.forEach(function (e) {
+    if (!e.stub) return;
+    var P = e.curve, x = P[3][0], y = P[3][1];
+    fixed.push(e.back ? { x: x - 9, y: y - STUB - 12, w: 18, h: STUB + 14 } : { x: x - 4, y: y - 9, w: STUB + 12, h: 18 });
+  });
+  var rankOf = function (e) {
+    return (e.layer === "text" ? 0 : e.layer === "rival" ? 10 : 20) +
+           (e.kind === "step" ? TIERS.indexOf(e.tier) : 5);
+  };
+  var order = edges.map(function (e, i) { return i; })
+                   .sort(function (i, j) { return rankOf(edges[i]) - rankOf(edges[j]) || i - j; });
+  var placed = [];
+  order.forEach(function (i) {
+    var e = edges[i], P = e.curve, best = null, bestCost = Infinity;
+    // On the line first, at every point tried; only then a step above or below it, which still
+    // reads as the arrow's own label where the line is crowded.
+    for (var k = 0; k < CHIP_T.length * CHIP_DY.length; k++) {
+      var t = CHIP_T[k % CHIP_T.length], dy = CHIP_DY[Math.floor(k / CHIP_T.length)];
+      var cx = bez(P[0][0], P[1][0], P[2][0], P[3][0], t), cy = bez(P[0][1], P[1][1], P[2][1], P[3][1], t) + dy;
+      var box = { x: cx - e.chip.w / 2, y: cy - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
+      var cost = 0;
+      fixed.forEach(function (f) { cost += overlap(box, f); });
+      placed.forEach(function (f) { cost += 2 * overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }); });
+      if (cost < bestCost) { best = { x: cx, y: cy, box: box }; bestCost = cost; }
+      if (!cost) break;
+    }
+    e.chip.x = Math.round(best.x * 10) / 10; e.chip.y = Math.round(best.y * 10) / 10;
+    placed.push(best.box);
+  });
 }
 
 /* ============================================================ drawing */
@@ -458,7 +586,7 @@ function injectStyle() {
     ".amech-pill{display:inline-block;font-size:11px;padding:0 6px;border-radius:9px;border:1px solid var(--line,#ddd);margin-right:4px}",
     ".amech-how{border:1px solid var(--line,#ddd);border-radius:6px;padding:5px 7px;margin-top:5px;font-size:12px}",
     ".amech svg text{fill:var(--fg,#1a1a1a)}",
-    ".amech .lane-l{font-size:12px;font-weight:600;fill:var(--fg-dim,#666)}",
+    ".amech .lane-l{font-size:12px;font-weight:600;fill:var(--fg-dim,#666);paint-order:stroke;stroke:var(--bg,#fff);stroke-width:5px;stroke-linejoin:round}",
     ".amech .actor-l{font-size:11px;fill:var(--fg-dim,#666)}",
     ".amech .st rect.box{fill:var(--alm-node-bg,#fff);stroke:var(--fg,#1a1a1a);stroke-width:1}",
     ".amech .st.intervention rect.box{fill:var(--mv-evidence);stroke:var(--mv-evidence)}",
@@ -469,6 +597,11 @@ function injectStyle() {
     ".amech .ed{fill:none;cursor:pointer}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
     ".amech .sel{stroke:var(--mv-sel)!important;stroke-width:4!important}",
+    ".amech .dim{opacity:.1}.amech .faint{opacity:.35}",
+    ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
+    ".amech-tog select{font:inherit;font-size:12.5px;border:0;background:none;color:inherit}",
+    ".amech-tog.fit{font:inherit;font-size:13px;color:inherit}",
+    ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
     ".amech .st.intervention text.gapmark,.amech .gapmark{fill:var(--mv-gap);font-size:11px;font-weight:600}"
   ].join("\n");
   document.head.appendChild(s);
@@ -502,6 +635,10 @@ function create(container, graph, opts) {
   // entry, an appraisal the reader had switched on in Reasons.
   var layers = { rival: true, appraisal: !!opts.appraisal };
   var selected = null;
+  // WHAT IS SHOWN. "tested" keeps only the steps the text backs with a study, statistics or a
+  // model -- nulls included, since a null is a finding -- so the evidence can be read on its own.
+  var show = "all", fit = false;
+  var anyUntested = G.edges.some(function (e) { return !e.steps.some(function (x) { return x.tier === "evidence"; }); });
 
   var bar = document.createElement("div"); bar.className = "amech-bar";
   bar.innerHTML =
@@ -509,7 +646,10 @@ function create(container, graph, opts) {
     (M.profile.rival_steps ? '<label class="amech-tog rival"><input type="checkbox" data-layer="rival" checked>' +
       '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
     (M.appraisalClaims ? '<label class="amech-tog appr"><input type="checkbox" data-layer="appraisal">' +
-      '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '');
+      '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
+    (anyUntested ? '<label class="amech-tog">Show <select data-show><option value="all">every step</option>' +
+      '<option value="tested">only what the text tested</option></select></label>' : '') +
+    '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
   banner.innerHTML = '<b>Appraisal layer on.</b> ' + M.appraisalClaims + ' addition' +
@@ -535,18 +675,28 @@ function create(container, graph, opts) {
   });
   G.lanes.forEach(function (ln, i) {
     el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, svg);
-    el("text", { x: 12, y: ln.y + 20, "class": "lane-l" }, svg).textContent = ln.level.toUpperCase();
-    ln.actors.forEach(function (a, j) { el("text", { x: 12, y: ln.y + 38 + j * 14, "class": "actor-l" }, svg).textContent = a; });
   });
-  el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent = "sequence →";
-
   // THREE LAYERS, and the chips on top. Each arrow carries a 14px invisible hit stroke so it can
   // be clicked at all, and where arrows run close -- a rival view beside the text's own step --
   // one arrow's stroke lay over the other's chip: driving the page with real clicks, the "x7"
   // chip of the text's busiest step opened the RIVAL arrow instead. The chip is the unambiguous
-  // target, so every chip is drawn above every stroke.
-  var gE = el("g", {}, svg), gC = el("g", {}, svg), gN = el("g", {}, svg);
-  var drawnEdges = [];
+  // target, so every chip is drawn above every stroke. The lanes' headings sit between the two,
+  // on a halo, so an arrow crossing a heading never runs through its words.
+  var gE = el("g", {}, svg), gH = el("g", {}, svg), gC = el("g", {}, svg), gN = el("g", {}, svg);
+  G.lanes.forEach(function (ln) {
+    var head = el("text", { x: 12, y: ln.y + 17, "class": "lane-l" }, gH);
+    head.textContent = ln.level.toUpperCase();
+    var who = el("tspan", { "class": "actor-l", dx: 10 }, head);
+    who.textContent = ln.empty ? "nothing in the text at this level" : ln.actors.join(" · ");
+  });
+  el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent = "in sequence, left to right →";
+
+  var drawnEdges = [], drawnNodes = {};
+  function visible(e) {
+    if (e.layer !== "text" && !layers[e.layer]) return false;
+    if (show === "tested" && !e.steps.some(function (x) { return x.tier === "evidence"; })) return false;
+    return true;
+  }
   function drawEdges() {
     // FILTER AT DRAW TIME, DO NOT HIDE. An appraisal element that is merely display:none is
     // still in the DOM, and "off means off" is a promise about what the page carries.
@@ -554,16 +704,17 @@ function create(container, graph, opts) {
     while (gC.firstChild) gC.removeChild(gC.firstChild);
     drawnEdges = [];
     G.edges.forEach(function (e) {
-      if (e.layer !== "text" && !layers[e.layer]) return;
+      if (!visible(e)) return;
       var st = TIER_STYLE[e.tier], col = "var(--mv-" + e.tier + ")";
       var g = el("g", { "data-layer": e.layer, "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gE);
       var p = el("path", { d: e.path, "class": "ed", stroke: col, "stroke-width": st.width,
                            "stroke-dasharray": st.dash }, g);
-      if (e.kind !== "null") p.setAttribute("marker-end", "url(#amech-ar-" + e.tier + ")");
+      if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": st.width,
+                               "marker-end": "url(#amech-ar-" + e.tier + ")" }, g);
       el("path", { d: e.path, "class": "hit" }, g);
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
                            "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gC);
-      var tw = e.chip.label.length * 6.6 + 12;
+      var tw = e.chip.w;
       el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - 9, width: tw, height: 18, rx: 9 }, chip);
       el("text", { x: e.chip.x, y: e.chip.y + 4, "text-anchor": "middle" }, chip).textContent = e.chip.label;
       var title = el("title", {}, g);
@@ -572,17 +723,18 @@ function create(container, graph, opts) {
       g.addEventListener("click", pick);
       chip.addEventListener("click", pick);
       chip.setAttribute("cursor", "pointer");
-      drawnEdges.push({ e: e, p: p });
+      drawnEdges.push({ e: e, p: p, g: g, chip: chip });
       if (selected && selected.edge && selected.edge.key === e.key) { p.classList.add("sel"); selected.path = p; }
     });
   }
   function drawNodes() {
     while (gN.firstChild) gN.removeChild(gN.firstChild);
+    drawnNodes = {};
     Object.keys(G.nodes).forEach(function (v) {
       var s = obj(M.states[v]), p = G.nodes[v];
       if (s.appraisal && !layers.appraisal) return;
       var cls = "st" + (s.role ? " " + s.role : "") + (s.appraisal ? " appraisal" : "");
-      var g = el("g", { "class": cls, "data-layer": s.appraisal ? "appraisal" : "text",
+      var g = el("g", { "class": cls, "data-layer": s.appraisal ? "appraisal" : "text", "data-state": v,
                         transform: "translate(" + p.x + "," + p.y + ")" }, gN);
       if (s.role === "outcome") el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: 9 }, g);
       el("rect", { "class": "box", width: p.w, height: p.h, rx: 7 }, g);
@@ -590,10 +742,57 @@ function create(container, graph, opts) {
       lines.forEach(function (t, i) {
         el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * 14 + 4, "text-anchor": "middle" }, g).textContent = t;
       });
-      var tt = el("title", {}, g); tt.textContent = s.label || v;
+      var tt = el("title", {}, g); tt.textContent = (s.label || v) + " — click to see only the paths through it";
+      drawnNodes[v] = g;
       if (s.role === "intervention" && !M.steps.some(function (x) { return x.from === v && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
+    });
+  }
+
+  /** FOCUS, the arrangement's folding. A busy chain is read a state at a time: choosing one fades
+   *  everything that is not on a path through it -- what leads to it and what it leads to -- and
+   *  choosing an arrow fades all but that step. Nothing is re-laid out, so the reader's bearings
+   *  hold when they go back to the whole. */
+  function focusSets() {
+    var vis = drawnEdges.map(function (d) { return d.e; });
+    if (!selected) return null;
+    if (selected.edge) {
+      var k = {}; k[selected.edge.from] = k[selected.edge.to] = true;
+      return { nodes: k, edge: function (e) { return e.key === selected.edge.key; } };
+    }
+    var v = selected.state, up = {}, down = {};
+    var walk = function (seed, dir, into) {
+      var stack = [seed];
+      while (stack.length) {
+        var x = stack.pop();
+        vis.forEach(function (e) {
+          var from = dir > 0 ? e.from : e.to, to = dir > 0 ? e.to : e.from;
+          if (from === x && !into[to] && to !== v) { into[to] = true; stack.push(to); }
+        });
+      }
+    };
+    walk(v, 1, down); walk(v, -1, up);
+    var nodes = {}; nodes[v] = true;
+    Object.keys(up).forEach(function (x) { nodes[x] = true; });
+    Object.keys(down).forEach(function (x) { nodes[x] = true; });
+    return { nodes: nodes, edge: function (e) {
+      return (up[e.from] && (up[e.to] || e.to === v)) || ((e.from === v || down[e.from]) && down[e.to]);
+    } };
+  }
+  function applyFocus() {
+    var f = focusSets(), lit = {};
+    drawnEdges.forEach(function (d) {
+      var on = !f || f.edge(d.e);
+      d.g.classList.toggle("dim", !on); d.chip.classList.toggle("dim", !on);
+      if (on) { lit[d.e.from] = lit[d.e.to] = true; }
+    });
+    Object.keys(drawnNodes).forEach(function (v) {
+      var g = drawnNodes[v];
+      g.classList.toggle("dim", !!f && !f.nodes[v]);
+      // With some steps hidden, a state no shown step touches is faded rather than left looking
+      // like a gap in the text.
+      g.classList.toggle("faint", !f && show !== "all" && !lit[v]);
     });
   }
 
@@ -604,7 +803,8 @@ function create(container, graph, opts) {
         .map(function (k) { var v = k === "actor" ? (obj(M.actors[s.how[k]]).label || s.how[k]) : s.how[k];
           return '<div><span class="k">' + k + '</span> ' + esc(v) + '</div>'; }).join("") + '</div>';
     }
-    var meta = ['<span class="amech-pill">' + esc(c.fidelity || "compression") + '</span>',
+    var meta = ['<span class="amech-pill">' + esc(s.isNull ? "no effect" : s.selects ? "selection" : signWord(s.sign ? [s.sign] : [])) + '</span>',
+                '<span class="amech-pill">' + esc(c.fidelity || "compression") + '</span>',
                 '<span class="amech-pill">' + esc(s.basis || (s.tier === "imputed" ? "imputed" : "asserted")) + '</span>']
       .join("") + (c.pinpoint ? esc(c.pinpoint) : "") + (s.lag ? " · lag: " + esc(s.lag) : "") +
       (s.given.length ? " · given: " + s.given.map(esc).join("; ") : "") +
@@ -618,6 +818,22 @@ function create(container, graph, opts) {
       (c.warrant ? '<div class="m">warrant: ' + esc(c.warrant) + '</div>' : '') + how +
       (c.id != null && opts.onClaim ? '<button type="button" data-claim="' + esc(c.title) + '">Show in the text</button>' : '') +
       '</div>';
+  }
+  /** THE KEY, DRAWN. Line weight and dash carry what the text offers for each step, and a
+   *  paragraph describing them asked the reader to translate; a sample of each line, beside its
+   *  meaning, does not. Only the kinds this chain uses are listed. */
+  function legendHTML() {
+    var used = {};
+    G.edges.forEach(function (e) { used[e.tier] = true; });
+    var rows = [["evidence", "tested: a study, statistics or a model"], ["argued", "argued for in the text"],
+                ["asserted", "asserted only"], ["imputed", "supplied by the reconstructor"],
+                ["rival", "a rival view the text reports"], ["null", "no effect found"],
+                ["selection", "selection, not an effect"], ["appraisal", "the reconstructor’s appraisal"]];
+    return '<div class="amech-legend">' + rows.filter(function (r) { return used[r[0]]; }).map(function (r) {
+      var st = TIER_STYLE[r[0]];
+      return '<div><svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="44" y2="6" stroke="var(--mv-' + r[0] +
+        ')" stroke-width="' + st.width + '" stroke-dasharray="' + st.dash + '"/></svg><span>' + esc(r[1]) + '</span></div>';
+    }).join("") + '</div>';
   }
   function profileHTML() {
     var P = M.profile, T = P.tiers, tot = 0;
@@ -649,10 +865,11 @@ function create(container, graph, opts) {
       '</div><div class="amech-q">' + T.evidence + ' backed by a study or statistics · ' + T.argued + ' argued · ' +
       T.asserted + ' asserted only · ' + T.imputed + ' imputed</div>' +
       (P.gaps.length ? '<h3>Gaps</h3><ul class="amech-gaps">' + P.gaps.map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
-      '<h3>Key</h3><div class="amech-q">Heavy line: backed by a study or statistics. Line: argued. Dashed: asserted only. ' +
-      'Dotted gold: imputed. Dashed red: a rival view the text reports. Faint grey “0 no effect”: the text ' +
-      'finds no effect. Teal “selection”: who ends up on each side, not an effect. ×n: claims behind one arrow. ' +
-      '◇: conditions stated. ↻: closes a loop.</div>' +
+      '<h3>Key</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
+      '“raises” (more of the first, more of the second) or “lowers” (more of the first, less of the second). ' +
+      'These are effects, not the support and attack of the Reasons map. ' +
+      '×n: claims behind one arrow. ◇: conditions stated. ↻: closes a loop. ' +
+      'Click a state to see only the paths through it.</div>' +
       (M.dropped ? '<div class="amech-q" style="color:var(--mv-gap)">' + M.dropped + ' step(s) name an undeclared state and are not drawn; the checker names them.</div>' : '');
   }
   function renderSide() {
@@ -667,11 +884,12 @@ function create(container, graph, opts) {
     } else if (selected && selected.state) {
       var s = obj(M.states[selected.state]), a = obj(M.actors[s.actor]);
       side.innerHTML = '<h3>' + esc(s.label || selected.state) + '</h3>' +
+        '<div class="amech-focus">Showing only the paths through this state: what leads to it, and what it leads to.</div>' +
         '<div class="amech-row"><span class="k">actor</span><span>' + esc(a.label || s.actor || "") + (a.level ? ' (' + esc(a.level) + ')' : '') + '</span></div>' +
         (s.role ? '<div class="amech-row"><span class="k">role</span><span>' + esc(s.role) + '</span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         (s.appraisal ? '<div class="amech-row"><span class="k">layer</span><span>the reconstructor’s appraisal: not in the text</span></div>' : '') +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
     } else {
       side.innerHTML = profileHTML();
     }
@@ -696,6 +914,7 @@ function create(container, graph, opts) {
     selected = x;
     if (x && x.path) x.path.classList.add("sel");
     renderSide();
+    applyFocus();
   }
   svg.addEventListener("click", function () { select(null); });
 
@@ -706,11 +925,23 @@ function create(container, graph, opts) {
     // A selection that the switch has just taken off the page goes with it.
     if (selected && selected.edge && selected.edge.layer !== "text" && !layers[selected.edge.layer]) selected = null;
     if (selected && selected.state && obj(M.states[selected.state]).appraisal && !layers.appraisal) selected = null;
-    drawEdges(); drawNodes(); renderSide();
+    if (selected && selected.edge && !visible(selected.edge)) selected = null;
+    drawEdges(); drawNodes(); renderSide(); applyFocus();
     if (opts.onLayers) opts.onLayers({ rival: layers.rival, appraisal: layers.appraisal });
   }
   Array.prototype.forEach.call(bar.querySelectorAll("input[data-layer]"), function (inp) {
     inp.addEventListener("change", function () { layers[inp.getAttribute("data-layer")] = inp.checked; apply(); });
+  });
+  var showSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-show]"));
+  if (showSel) showSel.addEventListener("change", function () { show = showSel.value; apply(); });
+  var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
+  svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
+  fitBtn.addEventListener("click", function () {
+    fit = !fit;
+    // Style over the attributes: the drawing's own size stays what the layout says.
+    var sv = /** @type {SVGElement} */ (svg);
+    sv.style.width = fit ? "100%" : ""; sv.style.height = fit ? "auto" : "";
+    fitBtn.textContent = fit ? "Actual size" : "Fit to width";
   });
   apply();
 
@@ -723,6 +954,7 @@ function create(container, graph, opts) {
       apply();
     },
     getLayers: function () { return { rival: layers.rival, appraisal: layers.appraisal }; },
+    setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
     destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
   };
 }
