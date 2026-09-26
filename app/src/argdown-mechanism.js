@@ -444,16 +444,65 @@ function layout(M, opts) {
   }
   ids.forEach(function (v) { r(v, {}); });
 
+  // SEQUENCE BETWEEN SYSTEMS, A BLOCK WITHIN ONE. Left to right means "comes after" -- which is
+  // true between feedback systems and meaningless inside one, where every state reaches every
+  // other and the depth-first order above only decides where each loop is cut. Laid out by that
+  // order alone, Wimmer's one system of 17 states ran across a dozen columns and 3,848 pixels
+  // (26 Sep 2026). So the columns are worked out on the chain with each system as ONE node, and
+  // a system's states keep their order inside it but are packed into a block about as many
+  // columns wide as the square root of its size.
+  // Every step orders the columns; only the TEXT's own causal steps make a system a block -- the
+  // systems the census reports. Taken from every layer, a loop closed only by the reconstructor's
+  // appraisal packed the text's own "orders lower reoffending" into one column and drew it as a
+  // returning arc; the appraisal must never reshape what the text says.
+  var pairs = [], seenPair = {}, textPairs = [];
+  M.steps.forEach(function (s) {
+    var k = s.from + "\u0000" + s.to;
+    if (!used[s.from] || !used[s.to] || s.from === s.to) return;
+    if (!seenPair[k]) { seenPair[k] = true; pairs.push([s.from, s.to]); }
+    if (s.layer === "text" && !s.isNull && !s.selects) textPairs.push([s.from, s.to]);
+  });
+  var comps = systems(ids, textPairs), unitOf = {}, span = {}, local = {};
+  ids.forEach(function (v) { unitOf[v] = v; span[v] = 1; local[v] = 0; });
+  comps.forEach(function (c, ci) {
+    var u = "\u0000system" + ci, lo = Infinity, hi = 0;
+    c.forEach(function (v) { lo = Math.min(lo, rank[v]); hi = Math.max(hi, rank[v]); });
+    var width = Math.min(hi - lo + 1, Math.max(2, Math.ceil(Math.sqrt(c.length))));
+    c.forEach(function (v) { unitOf[v] = u; local[v] = Math.floor((rank[v] - lo) * width / (hi - lo + 1)); });
+    span[u] = width;
+  });
+  // Between units, only the steps the depth-first walk above does not mark as closing a loop set
+  // the order: a loop the TEXT closes is inside one unit already, but one closed only by a rival
+  // view or the appraisal is not, and following it round put the fixture's `order` after the
+  // step it starts.
+  var preds = {};
+  M.steps.forEach(function (st) {
+    if (back[st.id] || !used[st.from] || !used[st.to]) return;
+    var a = unitOf[st.from], b = unitOf[st.to];
+    if (a !== b) (preds[b] = preds[b] || []).push(a);
+  });
+  var start = {};
+  function offset(u, guard) {
+    if (has(start, u)) return start[u];
+    if (guard[u]) return 0;
+    guard[u] = true;
+    var best = 0;
+    (preds[u] || []).forEach(function (p) { best = Math.max(best, offset(p, guard) + span[p]); });
+    return (start[u] = best);
+  }
+  var col = {};
+  ids.forEach(function (v) { col[v] = offset(unitOf[v], {}) + local[v]; });
+
   var levelOf = function (i) {
     var lv = obj(M.actors[obj(M.states[i]).actor]).level;
     return M.levels.indexOf(lv) >= 0 ? lv : M.levels[M.levels.length - 1];
   };
   var slots = {};
-  ids.forEach(function (v) { var k = levelOf(v) + "|" + rank[v]; (slots[k] = slots[k] || []).push(v); });
+  ids.forEach(function (v) { var k = levelOf(v) + "|" + col[v]; (slots[k] = slots[k] || []).push(v); });
   var lanes = [], y = TOP;
   M.levels.forEach(function (lv) {
     var rows = 0;
-    ids.forEach(function (v) { if (levelOf(v) === lv) rows = Math.max(rows, slots[lv + "|" + rank[v]].length); });
+    ids.forEach(function (v) { if (levelOf(v) === lv) rows = Math.max(rows, slots[lv + "|" + col[v]].length); });
     // A level nothing in the text reaches is a thin strip that says so, not an empty band.
     var h = rows ? HEAD + rows * ROW + PADY : HEAD + 4;
     lanes.push({ level: lv, y: y, h: h, empty: !rows,
@@ -463,9 +512,9 @@ function layout(M, opts) {
   });
   var nodes = {}, maxRank = 0;
   ids.forEach(function (v) {
-    var li = M.levels.indexOf(levelOf(v)), k = levelOf(v) + "|" + rank[v];
-    nodes[v] = { x: GUT + rank[v] * COL, y: lanes[li].y + HEAD + PADY / 2 + slots[k].indexOf(v) * ROW, w: BW, h: BH };
-    maxRank = Math.max(maxRank, rank[v]);
+    var li = M.levels.indexOf(levelOf(v)), k = levelOf(v) + "|" + col[v];
+    nodes[v] = { x: GUT + col[v] * COL, y: lanes[li].y + HEAD + PADY / 2 + slots[k].indexOf(v) * ROW, w: BW, h: BH };
+    maxRank = Math.max(maxRank, col[v]);
   });
 
   // FOLDING DRAWS, IT DOES NOT MOVE. Every state keeps the place the whole chain gives it (F3: a
@@ -503,8 +552,16 @@ function layout(M, opts) {
   // exercise lowers falls, and report an earlier trial where it raised them (26 Sep 2026). Two
   // findings with opposite signs are two arrows, as the checker already counts them. A route
   // through folded states is never merged with a step the text states outright.
+  // AT THE TEXT'S OWN BOXES, ONE ARROW PER PAIR AND DIRECTION. Collapsing Wimmer's parts into
+  // Fig. 2's boxes turned seventeen part-to-part steps into seventeen parallel arrows between the
+  // same two boxes, kept apart by sign and kind -- right when every state is drawn, and noise at the
+  // level of the text's own diagram (F7). There, the steps of one voice between two boxes are one
+  // arrow whose label counts what it holds and whose panel lists them apart; nothing is merged in
+  // the full view, where the separation says something the file says.
+  var merge = !!M.collapsed;
   drawn.steps.forEach(function (s) {
-    var k = s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" +
+    var k = merge ? s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000\u0000\u0000" + (s.parts ? "route" : "")
+                  : s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" +
             (kindOf(s) === "step" ? s.sign : "") + "\u0000" + (s.parts ? "route" : "");
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
@@ -514,7 +571,9 @@ function layout(M, opts) {
   // could follow. Now each arrow has its own point on the side, in the order of where it is going,
   // so arrows leave and arrive already sorted and cross as little as the layout allows.
   var isBackKey = {};
-  order.forEach(function (k) { isBackKey[k] = groups[k].some(function (s) { return s.parts ? s.back : back[s.id]; }); });
+  // An arrow that does not run rightwards returns: drawn as an arc under the boxes. With systems
+  // laid out as blocks that happens only inside a feedback system, where every step is on a loop.
+  order.forEach(function (k) { var s0 = groups[k][0]; isBackKey[k] = nodes[s0.to].x <= nodes[s0.from].x; });
   var outs = {}, ins = {};
   order.forEach(function (k) {
     if (isBackKey[k]) return;
@@ -568,7 +627,13 @@ function layout(M, opts) {
   var edges = order.map(function (k) {
     var ss = groups[k], s0 = ss[0], a = nodes[s0.from], b = nodes[s0.to];
     var isBack = isBackKey[k];
-    var kind = kindOf(s0);
+    // A merged arrow is a null or a selection only if everything in it is; otherwise it is a step.
+    var kinds = {}; ss.forEach(function (x) { kinds[kindOf(x)] = true; });
+    var kind = Object.keys(kinds).length === 1 ? kindOf(s0) : "step";
+    var wordOf = function (x) { return x.isNull ? "no effect" : x.selects ? "selection" : signWord(x.sign ? [x.sign] : []); };
+    var tally = {}; ss.forEach(function (x) { tally[wordOf(x)] = (tally[wordOf(x)] || 0) + 1; });
+    var breakdown = Object.keys(tally).map(function (w) { return { word: w, count: tally[w] }; })
+      .sort(function (p, q) { return q.count - p.count || (p.word < q.word ? -1 : p.word > q.word ? 1 : 0); });
     var off = s0.layer === "rival" ? 10 : s0.layer === "appraisal" ? -10 : kind === "null" ? 20 : kind === "selection" ? -20 : 0;
     // THREE CHANNELS, ONE MEANING EACH (F5). Weight: the best the text offers for the step.
     // Pattern: the closest any of its claims stands to the words. Colour: whose step, and what kind.
@@ -576,7 +641,7 @@ function layout(M, opts) {
                  .sort(function (p, q) { return TIERS.indexOf(p) - TIERS.indexOf(q); })[0];
     var fidelity = ss.map(function (s) { return s.fidelity; })
                      .sort(function (p, q) { return FIDELITY.indexOf(p) - FIDELITY.indexOf(q); })[0];
-    var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : "text";
+    var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : "text";   // kind is "step" when mixed
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P;
@@ -606,12 +671,16 @@ function layout(M, opts) {
     var viaName = function (v) { var t = String(obj(M.states[v]).label || v); return t.length > 22 ? t.slice(0, 21) + "…" : t; };
     var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
                                             : " · " + ss.length + " routes") : "";
-    var label = kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
+    var label = breakdown.length > 1
+              ? breakdown.slice(0, 2).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
+                (breakdown.length > 2 ? " · +" + (breakdown.length - 2) + " more" : "") +
+                (given ? " ◇" : "") + (isBack ? " ↻" : "")
+              : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
               : kind === "selection" ? "selection" :
                 signWord(signs) + (route || (ss.length > 1 ? " ×" + ss.length : "")) +
                 (given ? " ◇" : "") + (isBack ? " ↻" : "");
     return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity,
-             ink: ink, route: !!s0.parts, back: isBack,
+             ink: ink, route: !!s0.parts, back: isBack, mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P,
              chip: { x: 0, y: 0, w: label.length * 6.6 + 14, h: 18, label: label } };
   });
@@ -1315,7 +1384,11 @@ function create(container, graph, opts) {
     if (selected && selected.edge) {
       var e = selected.edge;
       side.innerHTML = '<h3>' + esc(obj(M.states[e.from]).label || e.from) + ' → ' + esc(obj(M.states[e.to]).label || e.to) + '</h3>' +
-        e.steps.map(stepHTML).join("") +
+        (e.mixed ? e.breakdown.map(function (b) {
+            return '<h3>' + esc(b.word) + ' (' + b.count + ')</h3>' + e.steps.filter(function (x) {
+              return (x.isNull ? "no effect" : x.selects ? "selection" : signWord(x.sign ? [x.sign] : [])) === b.word;
+            }).map(stepHTML).join("");
+          }).join("") : e.steps.map(stepHTML).join("")) +
         // OFF MEANS OFF IN THE PANEL TOO: the appraisal's view of a text step is named only while
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +

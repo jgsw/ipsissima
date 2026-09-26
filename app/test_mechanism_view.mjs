@@ -95,6 +95,20 @@ const SYSF = path.join(FIXTURE, "system.argdown");
         "every step from or to a part becomes the whole's, remembering which part it was");
   check(C.collapsed.inside === 1, "and the step between two parts of the box is counted, not drawn", C.collapsed.inside);
   const CL = MV.layout(C);
+  // ONE ARROW PER PAIR OF THE TEXT'S BOXES. A mixed pair is planted: two steps that decide which
+  // strategy follows and one that raises. Mutation: turn `merge` off -> two arrows between the boxes.
+  const MIX = MV.model(graphOf.fromText(fs.readFileSync(SYSF, "utf8") + `
+[Mixed]: Institutions encourage blurring. {causes: {from: inst, to: blur, sign: "+", basis: asserted}}
+    +> [Ends]
+`));
+  const MXL = MV.layout(MV.collapseModel(MIX));
+  const between = MXL.edges.filter(e => e.from === "inst" && e.to === "strat" && e.layer === "text");
+  check(between.length === 1 && between[0].chip.label.startsWith("decides which ×2 · raises ×1"),
+        "at the text's own boxes, the steps between two boxes are one arrow that counts what it holds",
+        JSON.stringify(between.map(e => e.chip.label)));
+  check(MV.layout(MIX).edges.filter(e => e.from === "inst" && e.to === "blur").length === 1 &&
+        MV.layout(MIX).edges.filter(e => e.from === "inst" && e.to === "expand").length === 1,
+        "while every state is drawn, nothing is merged");
   check(CL.edges.some(e => e.chip.label.startsWith("decides which")), "a step that decides which says so on its chip",
         JSON.stringify(CL.edges.map(e => e.chip.label)));
 }
@@ -254,6 +268,22 @@ check(same(MV.FIDELITY_DASH, { quotation: "", paraphrase: "6 2", compression: "4
   const ladder = Object.fromEntries([...css.matchAll(/\.alm-f-(\w+) \.alm-box\{stroke-dasharray:([\d. ]+)[;}]/g)].map(m => [m[1], m[2]]));
   check(["paraphrase", "compression", "interpretation", "imputation"].every(f => ladder[f] === MV.FIDELITY_DASH[f]),
         "read from the Reasons map's own stylesheet, so the two cannot drift apart", JSON.stringify(ladder));
+}
+
+// A FEEDBACK SYSTEM IS A BLOCK, and sequence runs between systems. Laid out by depth-first order
+// alone, Wimmer's one system ran across a dozen columns. Mutation: drop the system packing -> the
+// planted system's seven states spread over more than three columns.
+{
+  const SM = MV.model(graphOf(path.join(FIXTURE, "system.argdown")));
+  const SL = MV.layout(SM);
+  const xs = SM.profile.feedback[0].states.map(v => SL.nodes[v].x);
+  check((Math.max(...xs) - Math.min(...xs)) / 300 + 1 <= Math.ceil(Math.sqrt(xs.length)),
+        "a feedback system is laid out as a block about the square root of its size wide", JSON.stringify(xs));
+  // THE APPRAISAL NEVER RESHAPES THE TEXT. The fixture's only loop through `order` is closed by the
+  // appraisal. Mutation: find the blocks from every layer's steps -> the text's own step is drawn
+  // as a returning arc.
+  const ore = L.edges.find(e => e.from === "order" && e.to === "reoff" && e.layer === "text" && e.kind === "step");
+  check(ore && !ore.back, "a loop closed only by the appraisal does not turn the text's own step back on itself");
 }
 
 console.log("\npath folding");

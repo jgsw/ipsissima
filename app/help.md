@@ -443,8 +443,12 @@ alone, with its shortest loops offered one by one.
 
 **The text's own boxes.** Where a map says that some states are parts of a larger one — the boxes
 of the author's own diagram, a typology under one heading — the chain opens with each part drawn
-inside its whole, at the level the text itself draws. **Show every state** draws the parts apart;
-**The text's own boxes** puts them back. An arrow's label **decides which** says that a state
+inside its whole, at the level the text itself draws. At that level the steps of one voice between
+two boxes are drawn as **one arrow**, whose label counts what it holds — *decides which ×18 ·
+raises ×17* — and whose panel lists them kind by kind. **Show every state** draws the parts, and
+every step, apart; **The text's own boxes** puts them back. A feedback system is laid out as a
+compact block: left to right means "comes after" between systems, not inside one, where every
+state leads round to every other. An arrow's label **decides which** says that a state
 settles which of several alternatives follows, rather than raising or lowering anything.
 
 ### What an arrow says
