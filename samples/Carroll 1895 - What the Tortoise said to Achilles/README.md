@@ -30,8 +30,8 @@ concealing it would be.
 
 36 nodes, 7 of them arguments. 7 quotation · 14 paraphrase · 7 compression · 6 interpretation ·
 2 imputation, and all eight departures warranted `coherence`. **27 of 27 quotations verify.** One
-contention, nothing disconnected, nothing inert. Tags: 14 `#reported`, 4 `#conceded`,
-3 `#contested`.
+contention, nothing disconnected, nothing inert. Tags: 17 `#reported`, 4 `#conceded`,
+1 `#crux`.
 
 **It is the only map in the corpus that uses all seven relation constructs**, and each is earned
 rather than collected. The one worth knowing about is the contradiction. Achilles grants that
@@ -40,11 +40,14 @@ A and B but not C is *as yet* under no logical necessity to accept Z. Neither is
 other, so no inference bar can hold them — `><` is the only construct that can record it, and the
 whole joke turns on that "as yet".
 
-**Having imputed a conclusion, the map argues against itself.** `<A different moral>` is tagged
-`#contested` and undercuts the apex argument: it grants the regress, grants that A and B compel Z,
-and denies that this licenses any conclusion about the *status of a rule* rather than about a
-reasoner who will not infer. A reconstruction whose conclusion is its own should show the reader
-where it could be wrong, and this is what that looks like.
+**Having imputed a conclusion, the map sets the rival reading beside it.** The apex is marked
+`#crux`, and `<A different moral>` sets out the road not taken, tagged `#reported`: it undercuts the
+apex argument, granting the regress and that A and B compel Z, and denying that this licenses any
+conclusion about the *status of a rule* rather than about a reasoner who will not infer. A
+reconstruction whose conclusion is its own should show the reader where it could be wrong, and this
+is what that looks like. (It was tagged `#contested` until 26 Sep 2026, when that tag was narrowed
+to objections the text itself voices: this one is a rival reading, and the conventions already had
+a place for a local rival.)
 
 ### Where the dialogue fights the form
 

@@ -431,7 +431,8 @@ every reconstruction:
 | *(no hashtag)* | **the author's own, asserted.** The common case |
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — a counterconsideration, or a scope limit the author sets on their own thesis |
-| `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
+| `#contested` | **an objection voiced in the text that is not the author's view** — a critic's, an interlocutor's, or one the author raises against their own position and answers. Never the author's own view, even where it opposes a persona or a position the text sets out; and never the reconstruction's own objection, which is a rival reading (`#crux`, with the rival set out as `#reported`) or, where one was asked for, the appraisal |
+| `#appraisal` | **the reconstructor's own reading of the text against the world** — written only when asked for, and hidden until its switch is turned on (see *The arrangements*) |
 | `#authority` | **a proposition whose force comes from its source, not its content** — a decided case, a statute. Chiefly in legal texts |
 
 Each names something the shape of the graph cannot: nothing about how a claim is wired reveals

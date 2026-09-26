@@ -258,7 +258,7 @@ from one they are attacking.
 | *(untagged)* | **the author's own, asserted.** The common case, and it costs nothing |
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — Govier's *counterconsideration*, and the scope limits an author sets on their own thesis |
-| `#contested` | **an objection that is not the author's** — a critic's, or the reconstruction's own |
+| `#contested` | **an objection voiced in the text that is not the author's view** — a critic's, an interlocutor's, or one the author raises against their own position and answers. Never the author's own view, even where it opposes a persona or a position the text sets out (in a satire the author's real point is untagged, an `imputation` with its warrant). Never the reconstruction's own objection either: a rival reading is a `#crux` with the rival `#reported` beside it (below), and a reading of the text against the world is `#appraisal`. Narrowed 26 Sep 2026 after an audit of every use: 46 of 50 were objections the text voices, 3 were a rival reading, 1 was a satirist's own point |
 | `#authority` | **a proposition whose force comes from its source, not from its content** — a decided case, a statute, a constitutional instrument. Chiefly for legal texts |
 | `#obiter` | **said in a legal judgment, but not a necessary step to the disposal** — the court's own remarks *by the way*. The untagged steps on the route to the order the court made are its *ratio*; this marks what sits off that route |
 | `#crux` | **a claim the reconstructor settled by choosing among live readings** — the text underdetermines it, interpreters divide over it, and the claim's `note:` names the reading followed and the road not taken |
@@ -333,8 +333,9 @@ reading policy (§4) declares which — so multiplicity is carried differently a
   terms. Two defensible readings of one text are two `.argdown` files, each coherent, each
   checked, disagreeing with each other in the open.
 
-Distinguish it from `#contested`: `#contested` marks an objection *within* the argument being
-mapped; `#crux` marks a disagreement *about the mapping itself*.
+Distinguish it from `#contested`: `#contested` marks an objection the text itself voices, *within*
+the argument being mapped; `#crux` marks a disagreement *about the mapping itself*, and a local rival
+reading set out beside it is `#reported`, never `#contested`.
 
 ### Why there is no `#core`
 

@@ -16,8 +16,8 @@ defaults:
 // 1. CARROLL STATES NO CONCLUSION. The dialogue ends in two puns and the narrator leaving
 //    for the Bank. Nothing in it says what the regress shows, so every reading of what it
 //    SHOWS is the reader's own. The apex here is therefore marked imputation and carries a
-//    warrant; the objection that a different moral fits the same regress just as well is
-//    entered against it rather than left out.
+//    warrant, and it is a crux: the rival reading, that a different moral fits the same regress
+//    just as well, is set out against it rather than left out.
 //
 // 2. THE SPEAKERS ARE CHARACTERS. What the Tortoise asserts is not what Carroll asserts.
 //    The Tortoise's position -- that a principle of inference binds nobody until it has been
@@ -25,7 +25,9 @@ defaults:
 //    exhibits rather than endorses, and it is tagged reported throughout, along with
 //    Achilles's two moments of premature triumph. The conceded tag marks what Achilles
 //    grants that tells against his own attempt, and the two acceptances the dialogue raises
-//    and never returns to. The contested tag marks the reconstruction's own objection.
+//    and never returns to. The rival reading of what the regress shows is tagged reported too,
+//    set out beside the reading the map follows -- a local rival, since it undercuts the
+//    reductio without moving the apex (ruled 26 Sep 2026; it was tagged contested before).
 //    Untagged are the claims Carroll's construction plainly stands behind: Euclid's step,
 //    what accepting A and B commits a reader to, and the narrator's report of how it ended.
 //
@@ -37,11 +39,11 @@ defaults:
 //   The Tortoise's refusal         -- the same undercut again, one level up
 //   The unending race-course       -- infinite regress
 //   What the race-course shows     -- reductio, and it is the reconstruction's, not Carroll's
-//   A different moral              -- the reconstruction's own undercut on its own apex
+//   A different moral              -- the rival reading, reported: an undercut on the apex
 
 # What the dialogue shows {isGroup: true}
 
-[A rule of inference is not a further premise]: What licenses the step from A and B to Z cannot do that work by being added to A and B as one more proposition the reasoner must first accept. {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "CARROLL SAYS NOTHING OF THE KIND, and the map should not pretend otherwise. The piece states no moral at all: it closes with the Tortoise asking to be renamed Taught-Us, Achilles asking to be renamed A Kill-Ease, and the narrator away at the Bank. This apex is the reconstruction's own, imputed on coherence: it is what makes the Tortoise's opening announcement of a race-course with infinitely many ever-longer steps, the three iterations that follow, and the narrator's thousand and one hang together as one point rather than as a running joke about a note-book."}
+[A rule of inference is not a further premise]: What licenses the step from A and B to Z cannot do that work by being added to A and B as one more proposition the reasoner must first accept. #crux {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "CARROLL SAYS NOTHING OF THE KIND, and the map should not pretend otherwise. The piece states no moral at all: it closes with the Tortoise asking to be renamed Taught-Us, Achilles asking to be renamed A Kill-Ease, and the narrator away at the Bank. This apex is the reconstruction's own, imputed on coherence: it is what makes the Tortoise's opening announcement of a race-course with infinitely many ever-longer steps, the three iterations that follow, and the narrator's thousand and one hang together as one point rather than as a running joke about a note-book. READING FOLLOWED: the regress as a point about the status of a rule of inference. ROAD NOT TAKEN: the regress as a fact about a reasoner who declines to infer, which is reported beside it as A different moral."}
 
 <What the race-course shows>: The regress ends in something the dialogue has already granted, so the demand that generated it must be refused. {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "A reductio, and the assembling of it is the reconstruction's work. Premise 3 is the Tortoise's demand, entertained rather than asserted -- it is the thing the argument refuses. The dialogue never runs this argument; it runs the regress and stops."}
 
@@ -56,15 +58,15 @@ defaults:
 <A different moral>
     _> <What the race-course shows>
 
-<A different moral>: The regress is equally well read as a fact about a reasoner rather than about the status of a rule. #contested {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 693", note: "The reconstruction's own objection, entered because the apex above is imputed and a reader is owed the alternative. It grants the regress and grants that accepting A and B compels Z, and denies that the two together license a conclusion about what a rule of inference is -- which makes it an undercut and not an attack."}
+<A different moral>: The regress is equally well read as a fact about a reasoner rather than about the status of a rule. #reported {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 693", note: "The rival reading, reported beside the one this map follows, because the apex above is imputed and a reader is owed the alternative. It grants the regress and grants that accepting A and B compels Z, and denies that the two together license a conclusion about what a rule of inference is -- which makes it an undercut and not an attack."}
 
 <A different moral>
 
 (1) [The dialogue ends without a moral]: The dialogue ends with two puns and the narrator's departure, and draws no lesson from the regress. #conceded {fidelity: "compression", pinpoint: "p. 693", source: "\"Here the narrator, having pressing business at the Bank, was obliged to leave the happy pair\"; \"in the hollow tones of despair, as he buried his face in his hands\"", note: "Recorded rather than completed. The piece raises the question of what its colloquy teaches and drops it."}
     <+ [The instruction is left to the logicians]: The dialogue names its own lesson only as something the Logicians of the Nineteenth Century will have to draw out of it. #conceded {fidelity: "paraphrase", pinpoint: "p. 693", source: "\"considering what a lot of instruction this colloquy of ours will provide for the Logicians of the Nineteenth Century\"", note: "The nearest thing in the text to a statement of a moral, and it is a request that somebody else find one. This is the ground on which the apex above is marked as an imputation."}
-(2) [The regress shows only a reasoner who will not infer]: What the dialogue exhibits is a reasoner who declines to draw an inference, which shows that assenting to premises and inferring are different acts. #contested {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 692-93", note: "On this reading the Tortoise's obtuseness, which Achilles calls phenomenal and grants to be possible, is the whole content of the piece: nothing follows about whether a licence could in principle be a premise."}
+(2) [The regress shows only a reasoner who will not infer]: What the dialogue exhibits is a reasoner who declines to draw an inference, which shows that assenting to premises and inferring are different acts. #reported {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 692-93", note: "On this reading the Tortoise's obtuseness, which Achilles calls phenomenal and grants to be possible, is the whole content of the piece: nothing follows about whether a licence could in principle be a premise."}
 -----
-(3) [The regress does not settle what the licence is]: That the demand generates an unending series does not by itself show what a rule of inference is. #contested {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 691-93"}
+(3) [The regress does not settle what the licence is]: That the demand generates an unending series does not by itself show what a rule of inference is. #reported {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 691-93"}
 
 # The regress {isGroup: true}
 

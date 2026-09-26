@@ -161,8 +161,9 @@ defaults:
 // Every claim still needs `section` OR a `source:` quotation, or it cannot be placed in the text.
 //
 // Tags say WHOSE claim it is: #reported (a view the author sets out but does not hold),
-// #conceded (the author grants it tells against them), #contested (an objection that is
-// not the author's). The author's own asserted claims are untagged.
+// #conceded (the author grants it tells against them), #contested (an objection the text
+// voices that is not the author's view -- never the reconstruction's own). The author's own
+// asserted claims are untagged.
 
 {sections}
 

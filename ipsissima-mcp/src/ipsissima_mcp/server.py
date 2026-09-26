@@ -294,7 +294,8 @@ the one level with a fact of the matter, so the checker computes it and names ev
 Every interpretation and imputation carries `warrant:` -- one line saying why the
 departure is allowed (enthymeme, hyperbole, sloppy-phrasing, secret-sign, other-texts,
 coherence, convention; any short reason is accepted). WHOSE view a claim is, is a TAG,
-not a fidelity level: #reported (set out, not held), #conceded, #contested, #authority.
+not a fidelity level: #reported (set out, not held), #conceded, #contested (an objection
+the TEXT voices, never your own), #authority.
 A claim you settled by choosing among live scholarly readings is a CRUX: tag it #crux
 and let its note: name the reading followed and the road not taken. A rival reading
 that is local may be #reported beside your own; one that would re-wire the argument or
