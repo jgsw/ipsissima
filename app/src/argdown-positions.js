@@ -441,6 +441,60 @@ function locateOwnWords(text, lines, chapterText) {
   return across != null && folded[across - 1] ? across : null;
 }
 
+/* ------------------------------------------------------------------ echoes
+ *
+ * THE OTHER PLACES THE TEXT STATES A CLAIM. A text states its thesis more than once — announced
+ * in the abstract or the roadmap, argued in the body, restated at the end — and a claim is one
+ * node, placed once, so the exposition view showed a thesis only where it happened to be quoted,
+ * which was often the conclusion (measured 26 Sep 2026: the main contention sat 88–100% of the
+ * way through Williams, Nagel, Wolff, Kant, Tooming, Prescott-Couch and James). `echoes:` records
+ * the other places, as the author's words, and the view draws a faint echo there, tied to the
+ * claim, which stays where it is argued. Reasons is untouched: an echo is not a node.
+ *
+ * RECORDED, NOT GUESSED: `check_argdown.py --echo-candidates` proposes, a person confirms, and the
+ * checker verifies what is confirmed. An echo is a quotation, so it is matched exactly (as a
+ * quoted span is, after `normalise`), never in the front matter or a converter's comment, and
+ * looked for in the claim's own file first, then in the others — a book's introduction may
+ * announce what its fifth chapter argues. Twin of `check_echoes` in argdown_provenance.py.
+ */
+
+/** An `echoes:` value as the spans it holds — a string or a list of strings — with surrounding
+ *  quotation marks taken off, and anything too short to be told from coincidence dropped. */
+function echoSpans(value) {
+  var items = Array.isArray(value) ? value : [value], out = [];
+  for (var i = 0; i < items.length; i++) {
+    if (items[i] == null) continue;
+    var span = String(items[i]).trim();
+    var m = /^[“"«]([\s\S]*)[”"»]$/.exec(span);
+    if (m) span = m[1].trim();
+    if (span.length >= MIN_QUOTE) out.push(span);
+  }
+  return out;
+}
+
+/** The first line of the TEXT where a quotation stands, exactly (after `normalise`): like
+ *  `findQuote`, but an occurrence in the front matter or a converter's comment does not count,
+ *  and the search goes on past it. */
+function findInText(quote, lines, chapterText) {
+  var parts = quoteParts(quote);
+  if (!parts.length || !lines) return null;
+  var n = normaliseSource(chapterText), hay = n.lower || (n.lower = n.text.toLowerCase());
+  var textual = foldedLines(lines), first = parts[0].toLowerCase(), from = 0;
+  for (;;) {
+    var start = hay.indexOf(first, from);
+    if (start < 0) return null;
+    var pos = start + parts[0].length, ok = true;
+    for (var i = 1; i < parts.length && ok; i++) {
+      var idx = hay.indexOf(parts[i].toLowerCase(), pos);
+      if (idx < 0) ok = false; else pos = idx + parts[i].length;
+    }
+    if (!ok) return null;
+    var line = n.lineOf[start];
+    if (textual[line - 1]) return line;
+    from = start + 1;
+  }
+}
+
 /** Where in its line a claim's words fall — a character offset in the line with punctuation and
  *  case folded away — or null when the words cannot be found there.
  *
@@ -759,6 +813,44 @@ function positions(nodes, sources, quarto) {
                   [nn.detail, nn.source, nn.conclusionText, nn.conclusionSource])
       : null;
   }
+  // ECHOES, placed last, with the same rules as the claim's own line: a note is read at its mark,
+  // the band is where the line is, the offset is where in the paragraph. An echo in the claim's
+  // own paragraph says nothing the claim does not, and is left out; so is one that cannot be
+  // found, which the checker reports.
+  var chaptersInOrder = order.slice();
+  for (var sc in (sources || {}))
+    if (Object.prototype.hasOwnProperty.call(sources, sc) && chaptersInOrder.indexOf(sc) < 0)
+      chaptersInOrder.push(sc);
+  for (var e = 0; e < nodes.length; e++) {
+    var en = nodes[e], ep = byId[en.id];
+    if (!ep || en.echoes == null || en.kind === "argument") continue;
+    var spans = echoSpans(en.echoes), found = [];
+    for (var sp2 = 0; sp2 < spans.length; sp2++) {
+      var tries = [ep.chapter].concat(chaptersInOrder.filter(function (c) { return c !== ep.chapter; }));
+      var at = null;
+      for (var t = 0; t < tries.length && !at; t++) {
+        var ch = tries[t];
+        if (!sources || sources[ch] == null || !linesOf(ch)) continue;
+        var ln = findInText(spans[sp2], linesOf(ch), sources[ch]);
+        if (ln != null) at = { chapter: ch, line: ln };
+      }
+      if (!at) continue;
+      var eNotes = notesOf(linesOf(at.chapter)), eNote = eNotes.noteOf[at.line - 1], eLine = at.line;
+      if (eNote != null && eNote in eNotes.markOf) eLine = eNotes.markOf[eNote];
+      else eNote = null;
+      if (at.chapter === ep.chapter && eLine === ep.line) continue;
+      if (found.some(function (x) { return x.chapter === at.chapter && x.line === eLine; })) continue;
+      var eBands = bandsOf(sources[at.chapter]);
+      var eSection = sectionAt(eBands.bands, eLine);
+      found.push({ chapter: at.chapter, line: eLine, note: eNote,
+                   chapterIndex: (at.chapter in index) ? index[at.chapter] : order.length,
+                   inBook: at.chapter in index,
+                   section: eSection, opening: !eSection && eBands.bands.length > 0,
+                   page: !!(eBands.paged && eSection),
+                   col: colInLine(linesOf(at.chapter), eLine, eNote, [spans[sp2]]) });
+    }
+    if (found.length) ep.echoes = found;
+  }
   return { byId: byId, order: order };
 }
 
@@ -867,7 +959,7 @@ var API = { positions: positions, readingOrder: readingOrder, headingIndex: head
             wordCounts: wordCounts,
             sectionSpan: sectionSpan, locateParagraph: locateParagraph,
             bandsOf: bandsOf, sectionAt: sectionAt, pageMarks: pageMarks,
-            proseWords: proseWords, isBackMatter: isBackMatter,
+            proseWords: proseWords, isBackMatter: isBackMatter, echoSpans: echoSpans,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA, MIN_VERBATIM: MIN_VERBATIM };

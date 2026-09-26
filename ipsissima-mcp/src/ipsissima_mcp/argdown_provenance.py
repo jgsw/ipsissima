@@ -944,7 +944,7 @@ def iter_members(doc):
 
 
 PROVENANCE_FIELDS = ("chapter", "section", "line", "lineSource", "source",
-                     "fidelity", "warrant", "note")
+                     "fidelity", "warrant", "note", "echoes")
 
 
 def read_frontmatter(path):
@@ -1255,6 +1255,196 @@ def check_quotations(doc, source_root):
                         rec["moved_to"], rec["moved_line"] = found
                 results.append(rec)
     return results
+
+
+# --------------------------------------------------------------------------- #
+# Echoes: the other places the text states a claim
+# --------------------------------------------------------------------------- #
+#
+# A text states its thesis more than once -- announced in the abstract or the roadmap, argued in
+# the body, restated in the conclusion -- and a claim is one node, placed once. `echoes:` records
+# the other places, as the author's words, so the exposition view can draw a faint echo of the
+# claim where the text announces it while the claim itself stays where it is argued. Reasons is
+# untouched: an echo is not a node, and adds no relation.
+#
+# RECORDED, NOT GUESSED. An overlap test finds candidates (`echo_candidates`), and some of them
+# are wrong in a way no overlap can see -- a counsel's submission that the advice is NOT
+# justiciable shares every content word with the court's finding that it is. So the checker
+# proposes, a person confirms, and what is confirmed is verified like any quotation.
+
+def echo_spans(value):
+    """An `echoes:` value as the spans it holds: a string or a list of strings, each the
+    author's words. Surrounding quotation marks are taken off -- the field IS a quotation, so
+    they are optional -- and a span too short to be told from coincidence is dropped."""
+    items = value if isinstance(value, list) else [value]
+    out = []
+    for it in items:
+        if it is None:
+            continue
+        span = str(it).strip()
+        m = re.fullmatch(r'[\u201c"\u00ab](.*)[\u201d"\u00bb]', span, re.S)
+        if m:
+            span = m.group(1).strip()
+        if len(span) >= MIN_QUOTE:
+            out.append(span)
+    return out
+
+
+def _find_in_text(quote, text):
+    """(status, line) for a quotation in a source's TEXT: exact after `normalise`, like
+    `find_quote`, but an occurrence in the YAML front matter or a converter's HTML comment does
+    not count and the search goes on past it -- a converter copies the abstract into the front
+    matter, and an echo found there would point at the copy. Twin of `findInText` in
+    argdown-positions.js."""
+    parts = quote_parts(quote)
+    if not parts:
+        return "absent", None
+    lines = text.splitlines()
+    textual = _folded_text_lines(lines)
+    norm, line_of = normalise(text)
+    hay, first, start = norm.lower(), parts[0].lower(), 0
+    while True:
+        at = hay.find(first, start)
+        if at < 0:
+            return "absent", None
+        spans = _locate_parts(parts, hay[at:])
+        if not spans:
+            return "absent", None
+        line = line_of[at]
+        if line - 1 < len(textual) and textual[line - 1]:
+            return "exact", line
+        start = at + 1
+
+
+def check_echoes(doc, source_root):
+    """Verify every `echoes:` span against the text, as `check_quotations` does a quotation.
+
+    KEPT APART FROM `check_quotations` on purpose. Its results are read as "this claim is pinned
+    by a verified quotation" in four places -- where the claim is placed, whether its fidelity
+    marker is rewritten, the quotation-context checks, the comparison of two readings -- and an
+    echo is none of those: it says where ELSE the text states the claim. Mixed in, an echo in
+    the abstract would have moved the claim to the abstract, which is the very thing it exists
+    to avoid.
+
+    An echo may be in another file than the claim -- a book's introduction announcing a thesis
+    its fifth chapter argues -- so a span not in the claim's own chapter is looked for in the
+    others, and found there it is a found echo, not a fault.
+    """
+    results, cache = [], {}
+    order = None
+    for title, rec in merged_statements(doc).items():
+        data = rec["data"]
+        spans = echo_spans(data.get("echoes"))
+        if not spans:
+            continue
+        chapter = data.get("chapter")
+        for q in spans:
+            if not chapter:
+                results.append(dict(title=title, quote=q, chapter=None, status="no-chapter",
+                                    line=None, detail="claim cites no chapter"))
+                continue
+            path = os.path.join(source_root, chapter)
+            if path not in cache:
+                try:
+                    with open(path, encoding="utf-8", errors="replace") as fh:
+                        cache[path] = fh.read()
+                except OSError:
+                    cache[path] = None
+            text = cache[path]
+            if text:
+                status, line = _find_in_text(q, text)
+                detail = None if status == "exact" else find_quote(q, text)[2]
+            else:
+                status, line, detail = "missing-file", None, "the cited file cannot be read"
+            out = dict(title=title, quote=q, chapter=chapter, status=status, line=line,
+                       detail=detail)
+            if status != "exact":
+                if order is None:
+                    order = _chapter_order(doc, source_root)
+                found = locate_elsewhere(q, source_root, chapter, order)
+                if found:
+                    out.update(status="exact", chapter=found[0], line=found[1], detail=None)
+            results.append(out)
+    return results
+
+
+def _sentences(paragraph):
+    """A paragraph cut into sentences, roughly: enough to offer one as an echo's span."""
+    parts = re.split(r'(?<=[.!?])["\u201d\u2019)]?\s+(?=[A-Z\u201c"(])', paragraph.strip())
+    return [p.strip() for p in parts if len(p.strip()) >= 30]
+
+
+def echo_candidates(doc, source_root, positions=None, limit=2):
+    """Places the text may state a claim a second time -- for a PERSON to confirm or reject.
+
+    For each placed statement with enough words of its own, every other paragraph of its file is
+    scored by the share of the claim's content words it contains, and a paragraph holding 60% or
+    more, some distance from where the claim is placed, is a candidate. Offered with the sentence
+    that shares the most, which is what `echoes:` would quote. Earlier ones first: an
+    announcement ahead of the argument is what the exposition view most needs to show.
+
+    Measured on the samples, 26 Sep 2026: about 60 candidates, some plainly right (Tooming's
+    "none of which, in our view, will succeed" in the roadmap; Akhlaghi's thesis in her abstract)
+    and some plainly wrong (Miller's counsel submitting the opposite of the court's finding). That
+    is why this is a list and not a rewrite.
+    """
+    positions = positions or text_positions(doc, source_root)
+    bodies, out = {}, []
+    for title, rec in merged_statements(doc).items():
+        pos = positions.get(title)
+        text = re.sub(r"(?<!\S)\#[A-Za-z][\w-]*", " ", rec.get("text") or "")
+        want = content_words(text)
+        if not pos or pos.get("line") is None or len(set(want)) < 4:
+            continue
+        chapter = pos["chapter"]
+        if chapter not in bodies:
+            try:
+                with open(os.path.join(source_root, chapter), encoding="utf-8",
+                          errors="replace") as fh:
+                    bodies[chapter] = fh.read().splitlines()
+            except OSError:
+                bodies[chapter] = []
+        lines = bodies[chapter]
+        already = [_fold(x) for x in echo_spans((rec["data"] or {}).get("echoes"))]
+        found = []
+        front = comment = False
+        heading = None
+        for i, raw in enumerate(lines, start=1):
+            t = raw.strip()
+            if i == 1 and t == "---":
+                front = True
+                continue
+            if front:
+                front = t not in ("---", "...")
+                continue
+            if comment:
+                comment = "-->" not in t
+                continue
+            if t.startswith("<!--"):
+                comment = "-->" not in t
+                continue
+            if t.startswith("#"):
+                heading = t.lstrip("#").strip()
+                continue
+            if len(t) < MIN_PARA or abs(i - pos["line"]) <= 2:
+                continue
+            if heading and re.match(r"(references|bibliography|notes|footnotes|endnotes)\b",
+                                    heading, re.I):
+                continue
+            have = set(content_words(t))
+            score = sum(1 for w in want if w in have) / len(want)
+            if score < 0.6:
+                continue
+            if any(a and a in _fold(t) for a in already):
+                continue                      # already recorded as an echo
+            best = max(_sentences(t) or [t],
+                       key=lambda sn: sum(1 for w in want if w in set(content_words(sn))))
+            found.append(dict(title=title, chapter=chapter, line=i, score=round(score, 2),
+                              where="earlier" if i < pos["line"] else "later",
+                              claim_line=pos["line"], sentence=best))
+        found.sort(key=lambda c: (c["where"] != "earlier", -c["score"], c["line"]))
+        out.extend(found[:limit])
+    return out
 
 
 def _chapter_order(doc, source_root, _cache={}):

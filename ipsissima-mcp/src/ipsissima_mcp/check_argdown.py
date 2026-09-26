@@ -1551,7 +1551,7 @@ def fidelity_report(cli, path):
               + (" \u2026" if len(il["inferences"]) > 6 else ""))
 
 
-def provenance_report(cli, path, source_root, fix=None):
+def provenance_report(cli, path, source_root, fix=None, echo_candidates=False):
     """Verify quotations against their sources, and measure justification debt.
 
     Both need the manuscript, not just the .argdown, which is why they are opt-in behind
@@ -1615,6 +1615,39 @@ def provenance_report(cli, path, source_root, fix=None):
         print("      but not in the file the claim names. Correcting `chapter:` restores them.")
 
     quotation_context_report(prov, doc, source_root, quotes)
+
+    # ---- echoes: the other places the text states a claim ------------------- #
+    # Verified like quotations and reported beside them, but never mixed into `quotes`: every
+    # reader of that list takes an exact result to mean "this claim is pinned here", and an echo
+    # says where ELSE the text states it.
+    echoes = prov.check_echoes(doc, source_root)
+    if echoes:
+        found = sum(1 for e in echoes if e["status"] == "exact")
+        SHAPE["echoes"] = {"checked": len(echoes), "found": found}
+        print(f"\n   ECHOES ({len(echoes)} checked against the sources): {found} found")
+        for e in echoes:
+            if e["status"] == "exact":
+                continue
+            finding("echo", "!",
+                    f"an echo does not verify against the source ({e['status']})",
+                    title=e["title"], quote=e["quote"], chapter=e.get("chapter"),
+                    detail=e.get("detail"),
+                    fix="quote the author's words exactly, or drop the echo")
+            print(f"      ! [{e['status']}] {e['title']}")
+            print(f"           \u201c{e['quote'][:74]}\u201d")
+    if echo_candidates:
+        cands = prov.echo_candidates(doc, source_root)
+        SHAPE["echo_candidates"] = cands
+        print(f"\n   ECHO CANDIDATES ({len(cands)}) -- for a person to confirm, never to paste "
+              "unread")
+        print("      Places the text may state a claim a second time: the same words, mostly,")
+        print("      some distance from where the claim is placed. Some are the text announcing")
+        print("      its thesis; some only share vocabulary -- an objection to the claim uses the")
+        print("      claim's words too. Confirm by adding the sentence to the claim's `echoes:`.")
+        for c in cands:
+            print(f"      [{c['title']}] {c['where']}, line {c['line']} "
+                  f"(claim at {c['claim_line']}; {int(c['score'] * 100)}% of its words)")
+            print(f"           echoes: [\"{c['sentence'][:110]}\"]")
 
     # ---- claims that join distant passages without marking the join -------- #
     splices = prov.spliced_claims(doc, source_root)
@@ -1999,6 +2032,9 @@ def _parse_args():
                          "CLI runs, about 2.8s, and nothing in it can fail -- so it is on for "
                          "a plain run and off whenever the output is being consumed.")
     ap.add_argument("--no-selection-modes", dest="modes", action="store_false")
+    ap.add_argument("--echo-candidates", action="store_true",
+                    help="list places the text may state a claim a second time, for a person "
+                         "to confirm as `echoes:` -- needs --source-root")
     ap.add_argument("--no-census", dest="census", action="store_false", default=True,
                     help="omit the census from --format json. The census is there so a fix loop "
                          "need not run the checker a second time on the same file; drop it only "
@@ -2347,7 +2383,7 @@ def _report(cli, path, a):
     # ---- 5c. provenance: quotations, debt, contribution ------------------- #
     if a.source_root:
         provenance_report(cli, path, os.path.abspath(os.path.expanduser(a.source_root)),
-                          fix=a.fix)
+                          fix=a.fix, echo_candidates=a.echo_candidates)
     else:
         print("\n   (pass --source-root DIR to verify quotations and measure justification "
               "debt)")

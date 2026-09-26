@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.1 — 26 September 2026.** The machine-readable registry of everything below is
+**Version 1.2 — 26 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -112,6 +112,7 @@ On any claim or argument, in its `{data}` block:
 | `chapter` | path | The source file the claim reads, relative to the source root. |
 | `section` | string | The heading in that file the claim belongs to. |
 | `source` | string | A quotation pinning a claim whose own text has to be a summary. Verified like any quotation. |
+| `echoes` | string, or list of strings | Where **else** the text states the claim, in the author's words: the thesis announced in the abstract or the roadmap, say, while the claim is placed where it is argued. Verified like any quotation, and found in another file of the manuscript if not in the claim's own. It never pins the claim; the exposition view draws a faint echo at each place (*added in 1.2*). |
 | `pinpoint` | string | Where a reader finds it in print: `p. 12`, `pp. 34, 36`, `[50]`. Shown, not checked. |
 | `line`, `lineSource` | integer, string | Where in the chapter the claim sits when no quotation places it, and how that was arrived at. |
 | `fidelity` | the fidelity ladder | How far the claim's **own text** stands from the author's words. |
@@ -263,6 +264,9 @@ reports the closest passage. Spans shorter than 10 characters are treated as sca
 citations.
 
 ## Versioning
+
+**1.2** (26 September 2026) added `echoes`, the other places the text states a claim. Every 1.1
+file conforms unchanged.
 
 **1.1** (26 September 2026) added the `condition` role and let `role` be a list — for explanatory
 texts, which set out from causes they do not recommend and often run in a circle. Every 1.0 file

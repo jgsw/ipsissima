@@ -441,6 +441,38 @@ console.log("\npositions: where in its paragraph a claim falls");
      JSON.stringify([byId.note.line, byId.note.col]));
 }
 
+console.log("\npositions: echoes — where else the text states a claim");
+{
+  const prose = w => w + " " + "and the argument continues through ordinary prose ".repeat(8);
+  const src = {
+    "E.md": ["---", "abstract: We argue that small fees sharply reduce take-up among the poor.",
+             "---", "", "# 1. Introduction", "",
+             prose("We argue that small fees sharply reduce take-up among the poor."), "",
+             "# 2. Evidence", "",
+             prose("Ten trials show that small fees sharply reduce the take-up of products."), "",
+             "# 3. Notes on method", "",
+             prose("Prices were set by lottery.[^1]"), "",
+             "[^1]: The lottery is where the claim is restated once more, in a note.", ""].join("\n"),
+    "B.md": prose("Chapter five will show that small fees sharply reduce take-up.")
+  };
+  const yml = 'chapters:\n  - "B.md"\n  - "E.md"\n';
+  const { byId } = P.positions([{ id: "c", chapter: "E.md",
+    detail: '"small fees sharply reduce the take-up of products"',
+    echoes: ["We argue that small fees sharply reduce take-up among the poor.",
+             "“The lottery is where the claim is restated once more”",
+             "Chapter five will show that small fees sharply reduce take-up.",
+             "small fees sharply reduce the take-up of products",
+             "words that are not in the text anywhere at all"] }], src, yml);
+  const e = byId.c.echoes || [];
+  eq("an echo is placed in the text, not in the front matter's copy of the abstract",
+     [e[0] && e[0].line, e[0] && e[0].section], [7, "1. Introduction"]);
+  eq("an echo in a note sits at the note's mark", [e[1] && e[1].line, e[1] && e[1].note], [15, "1"]);
+  eq("an echo in another file is found there — a book announcing a later chapter",
+     [e[2] && e[2].chapter, e[2] && e[2].chapterIndex], ["B.md", 0]);
+  eq("an echo in the claim's own paragraph, and one not in the text, are left out", e.length, 3);
+  eq("the claim itself stays where it is argued", [byId.c.line, byId.c.section], [11, "2. Evidence"]);
+}
+
 console.log("\nword counts: the bands, the opening, and not the converter's notes");
 {
   const w = P.wordCounts(FIX);
@@ -463,7 +495,7 @@ console.log("\nthe note and own-words rules agree with Python");
   for (const [f, text] of Object.entries(FIX)) fs.writeFileSync(path.join(dir, f), text);
   const map = [
     "[own]: small fees sharply reduce the take-up of useful products among the poor",
-    '    {chapter: "P.md"}',
+    '    {chapter: "P.md", echoes: ["compared free distribution with a range of small prices"]}',
     "  + [n1]: The note says \"the pooled estimate hides a great deal of variation\".",
     '      {chapter: "P.md"}',
     "  + [n2b]: Its second paragraph is \"indented as Markdown requires, says more\".",
@@ -483,7 +515,16 @@ console.log("\nthe note and own-words rules agree with Python");
   const py = JSON.parse(execFileSync("python3",
     [path.join(SKILL, "argdown_provenance.py"), path.join(dir, "rules.json"), dir],
     { encoding: "utf8" }));
+  // Where each language finds the echo: the JS places it for the view, the Python verifies it
+  // for the checker, and they must be talking about the same line.
+  const pyEcho = JSON.parse(execFileSync("python3", ["-c",
+    "import json,sys; sys.path.insert(0, sys.argv[1]); import argdown_provenance as p; " +
+    "d = json.load(open(sys.argv[2])); " +
+    "print(json.dumps([[e['title'], e['status'], e['line']] for e in p.check_echoes(d, sys.argv[3])]))",
+    SKILL, path.join(dir, "rules.json"), dir], { encoding: "utf8" }));
   fs.rmSync(dir, { recursive: true, force: true });
+  eq("an echo is found at the same line in both languages",
+     pyEcho, [["own", "exact", (js.own.echoes || [])[0] && js.own.echoes[0].line]]);
   const titles = ["own", "n1", "n2b", "html"];
   eq("both languages place every fixture claim at the same line, with the same precision",
      titles.map(t => [t, py[t] && py[t].line, py[t] && py[t].precision]),

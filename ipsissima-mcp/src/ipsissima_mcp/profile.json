@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.1",
+  "version": "1.2",
   "date": "2026-09-26",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -33,6 +33,7 @@
     "chapter": {"type": "path", "summary": "The source file the claim reads, relative to the source root."},
     "section": {"type": "string", "summary": "The heading in that file the claim belongs to."},
     "source": {"type": "string", "summary": "A quotation pinning a claim whose own text is a summary; verified like any quotation."},
+    "echoes": {"type": "string or list of strings", "summary": "Where else the text states the claim -- its thesis announced in the abstract, say -- as the author's words. Verified like any quotation; never pins the claim, which stays where it is argued."},
     "pinpoint": {"type": "string", "summary": "Where a reader finds it in print: p. 12, pp. 34, 36, [50]."},
     "line": {"type": "integer", "summary": "The line in the chapter the claim is placed at, where no quotation places it."},
     "lineSource": {"type": "string", "summary": "How `line` was arrived at."},
