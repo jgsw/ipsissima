@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.0 — 26 September 2026.** The machine-readable registry of everything below is
+**Version 1.1 — 26 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -201,7 +201,7 @@ mechanism:
 | `question` | string | What the chain answers. |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note}` | A change in an actor's condition or conduct. `role` is `intervention` (where the chain starts) or `outcome` (what it is for); `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state. |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state. |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -263,6 +263,10 @@ reports the closest passage. Spans shorter than 10 characters are treated as sca
 citations.
 
 ## Versioning
+
+**1.1** (26 September 2026) added the `condition` role and let `role` be a list — for explanatory
+texts, which set out from causes they do not recommend and often run in a circle. Every 1.0 file
+conforms unchanged.
 
 The profile is versioned `MAJOR.MINOR`. A **minor** version adds a key, a value or a tag;
 every file that conformed still conforms. A **major** version renames or removes one, or changes

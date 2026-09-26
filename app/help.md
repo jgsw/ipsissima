@@ -382,10 +382,22 @@ as the contention arrives already paid for.
 
 ## Reading a mechanism
 
-The Mechanism arrangement draws the causal chain a text sets out: from a cause — usually what the
-text recommends — through the states it says change, to the outcomes it is for. Levels of social
-complexity run top to bottom (macro, meso, micro) and sequence runs left to right; loops are drawn
-as loops. Every state is a box and every arrow is one or more claims in the map.
+The Mechanism arrangement draws the causal chain a text sets out: from a cause, through the states
+it says change, to the outcomes it is for. Levels of social complexity run top to bottom (macro,
+meso, micro, or the text's own) and sequence runs left to right. Every state is a box and every
+arrow is one or more claims in the map.
+
+Where a chain starts is drawn by what the text does with it. A **solid navy** box is an
+*intervention* — what the text recommends doing. A **tinted** box is a *condition* — a cause an
+explanatory text sets out from without recommending anything. An outcome — what the chain is for,
+or what the text explains — has a **double border**. A state can be more than one of these:
+in Merton's essay, prejudice is both where the circle starts and what his remedy is for.
+
+**Loops.** Where the text closes a loop, the arrow that closes it dips under the chain and returns,
+marked ↻, and **every state in the loop carries a ↻ badge** (numbered when there is more than
+one loop). Click a badge, or the loop in the panel, to see that loop alone, its steps and claims
+listed in order. A loop marked *reflexive* runs through a belief, a prediction or a
+classification that the loop itself acts on — a prophecy that fulfils itself.
 
 ### What an arrow says
 

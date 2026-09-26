@@ -83,6 +83,9 @@ basis = re.search(r"_TIER_OF_BASIS = \{(.*?)\}", MECH_PY, re.S).group(1)
 check("the bases are mechanism.py's", sorted(re.findall(r'"(\w+)":', basis)) == sorted(P["causes"]["basis"]["values"]))
 state_keys = set(P["mechanism"]["states"]["keys"])
 js_state = set(re.findall(r'\bs\.(label|actor|role|measured|appraisal|note)\b', MECH_JS))
+# Roles are read through rolesOf() since profile 1.1, where `role` may be a list.
+if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
+    js_state.add("role")
 # Mutation: stop the page showing a state's note -> fails: a key the profile defines must reach a reader.
 check("every state key the profile defines is read by the page", state_keys <= js_state, f"unread: {sorted(state_keys - js_state)}")
 

@@ -53,6 +53,23 @@ import re
 
 DEFAULT_LEVELS = ["macro", "meso", "micro"]
 BASES = ("study", "statistics", "model", "example", "testimony", "asserted")
+#: WHAT A STATE IS TO THE CHAIN. `intervention`: the action the text recommends or the cause it
+#: manipulates. `condition` (added in profile 1.1, 26 Sep 2026): a cause the text sets out from
+#: without recommending it -- the explanans of an explanatory text. `outcome`: what the chain is
+#: for -- the end a recommendation serves, or what an explanatory text explains. Merton's
+#: prejudice is both the outcome his remedy is for and where his circle begins, which one role
+#: could not say, so `role` may be a list.
+ROLES = ("intervention", "condition", "outcome")
+
+
+def roles_of(state):
+    """The set of roles a state declares; `role` may be one name or a list of them."""
+    r = (state or {}).get("role") if isinstance(state, dict) else None
+    if r is None:
+        return set()
+    return {str(x) for x in (r if isinstance(r, list) else [r])}
+
+
 #: Light and shadow, best first. `argued` also covers an asserted step the map gives support to.
 TIERS = ("evidence", "argued", "asserted", "imputed")
 _TIER_OF_BASIS = {"study": "evidence", "statistics": "evidence", "model": "evidence",
@@ -128,9 +145,10 @@ def declared(fm):
         if s.get("actor") not in actors:
             problems.append(("!", f"state `{sid}` names actor `{s.get('actor')}`, which is not "
                                   f"declared under `actors:`", {"state": str(sid)}))
-        if s.get("role") not in (None, "intervention", "outcome"):
-            problems.append(("?", f"state `{sid}` has role `{s.get('role')}`; the roles read "
-                                  f"are `intervention` and `outcome`", {"state": str(sid)}))
+        bad = roles_of(s) - set(ROLES)
+        if bad:
+            problems.append(("?", f"state `{sid}` has role `{sorted(bad)[0]}`; the roles read "
+                                  f"are `intervention`, `condition` and `outcome`", {"state": str(sid)}))
     return m, levels, actors, states, problems
 
 
@@ -340,13 +358,17 @@ def analyse(fm, doc):
     text = [s for s in causal if s["layer"] == "text"]
     text_edges = {(s["src"], s["dst"]) for s in text}
     ids = list(states)
-    interventions = [i for i in ids if (states[i] or {}).get("role") == "intervention"]
-    outcomes = [i for i in ids if (states[i] or {}).get("role") == "outcome"]
+    interventions = [i for i in ids if "intervention" in roles_of(states[i])]
+    conditions = [i for i in ids if "condition" in roles_of(states[i])]
+    outcomes = [i for i in ids if "outcome" in roles_of(states[i])]
     # WHERE THE TEXT'S CHAIN STARTS. The intervention if the text links it; otherwise every state
     # the text leads out of and never into. Reachability from an unlinked intervention reported
     # every outcome unreached on the spike, burying the two gaps that mattered under the one
     # already named.
-    entries = sorted({i for i in interventions if any(a == i for a, _ in text_edges)}
+    # A CONDITION IS A STARTING POINT TOO: an explanatory text sets out from causes it does not
+    # recommend, and in a chain that is all loop -- Merton's circle, Wimmer's process -- no state
+    # is led out of and never into, so without it nothing would count as where the chain starts.
+    entries = sorted({i for i in interventions + conditions if any(a == i for a, _ in text_edges)}
                      | {i for i in ids if any(a == i for a, _ in text_edges)
                         and not any(b == i for _, b in text_edges)})
     reached = set()
@@ -360,6 +382,11 @@ def analyse(fm, doc):
             gaps.append(dict(kind="unlinked-intervention", state=i,
                              message=f"the intervention `{i}` has no step in the text: nothing "
                                      f"says how it brings about anything"))
+    for c in conditions:
+        if not any(a == c for a, _ in text_edges):
+            gaps.append(dict(kind="unlinked-condition", state=c,
+                             message=f"the condition `{c}` has no step in the text: nothing "
+                                     f"says what it brings about"))
     for o in outcomes:
         if o not in reached:
             gaps.append(dict(kind="unreached-outcome", state=o,
@@ -370,10 +397,10 @@ def analyse(fm, doc):
                 and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
-    if block is not None and not interventions:
+    if block is not None and not interventions and not conditions:
         gaps.append(dict(kind="no-intervention", state=None,
-                         message="no state has `role: intervention`, so the chain has no stated "
-                                 "cause to run from"))
+                         message="no state has `role: intervention` or `role: condition`, so the "
+                                 "chain has no stated cause to run from"))
     if block is not None and not outcomes:
         gaps.append(dict(kind="no-outcome", state=None,
                          message="no state has `role: outcome`, so nothing says what the chain is "
@@ -405,6 +432,8 @@ def analyse(fm, doc):
     routes = []
     for e in entries:
         for o in outcomes:
+            if o == e:        # a state that is both where the circle starts and what it explains
+                continue
             n, lo, hi = _routes(e, o, text_edges)
             if n:
                 routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))

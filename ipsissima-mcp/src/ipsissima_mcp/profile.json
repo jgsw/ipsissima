@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.0",
+  "version": "1.1",
   "date": "2026-09-26",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -72,7 +72,7 @@
     "question": {"type": "string"},
     "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
-    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | outcome", "measured": "string", "appraisal": "boolean", "note": "string"}}
+    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string"}}
   },
 
   "causes": {

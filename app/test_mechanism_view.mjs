@@ -62,6 +62,19 @@ for (const k of Object.keys(py)) {
   const js = k === "gaps" ? M.profile.gaps.map(g => g.message) : M.profile[k];
   check(same(js, py[k]), `\`${k}\` is the same in both`, `python ${JSON.stringify(py[k])}\n          js     ${JSON.stringify(js)}`);
 }
+// AND ON THE PLANTED EXPLANATORY CHAIN (profile 1.1): conditions, a state with two roles, a
+// loop, and the gaps a chain with no intervention reports. Mutation: drop the conditions from
+// the page's entries -> `entries` and `routes` differ from the checker's.
+{
+  const LOOPF = path.join(FIXTURE, "loop.argdown");
+  const pyL = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           LOOPF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const ML = MV.model(graphOf(LOOPF));
+  const differ = Object.keys(pyL).filter(k => k !== "question" &&
+    !same(k === "gaps" ? ML.profile.gaps.map(g => g.message) : ML.profile[k], pyL[k]));
+  check(differ.length === 0, "the page and the checker agree on an explanatory chain with a loop",
+        differ.map(k => `${k}: python ${JSON.stringify(pyL[k])} js ${JSON.stringify(ML.profile[k])}`).join("\n          "));
+}
 // AND ON EVERY SAMPLE THAT DECLARES A CHAIN. The planted fixture has no premise-conclusion
 // structure, and the J-PAL sample showed what that hid: a step on an intermediary conclusion is
 // argued for (its premises infer it), which the checker counted and the page, reading only drawn
@@ -470,6 +483,37 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(300);
     check(await page.locator("#map").isVisible() && await page.locator("#mech").isHidden(),
           "Reasons brings the map back");
+
+    // AN EXPLANATORY CHAIN, DRIVEN: the loop marked on every state in it, shown alone on a click,
+    // the condition drawn apart from an intervention, the ends named for what the text has.
+    const loopHtml = path.join(tmp, "loop.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(FIXTURE, "loop.argdown"), "-o", loopHtml], { stdio: "pipe" });
+    await page.goto("file://" + loopHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    // Mutation: drop the badge loop in drawNodes -> no marks.
+    const loopMarked = await page.evaluate(() => [...document.querySelectorAll("#mech .loopmark")].map(m => m.closest(".st").getAttribute("data-state")).sort());
+    check(same(loopMarked, ["check", "worry"]), "every state in the loop carries the loop's mark", JSON.stringify(loopMarked));
+    await page.locator('#mech .st[data-state="check"] .loopmark').click();
+    await page.waitForTimeout(200);
+    const litL = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
+      .filter(g => !g.classList.contains("dim")).map(g => g.getAttribute("data-edge")).sort());
+    // Mutation: drop the loop branch in focusSets -> everything stays lit.
+    check(same(litL, ["check>worry", "worry>check"]), "clicking it shows that loop alone", JSON.stringify(litL));
+    check(/Showing one loop/.test(await page.locator(".amech-side").innerText()) && /reflexive/.test(await page.locator(".amech-side").innerText()),
+          "and the panel names it, and says it is reflexive");
+    await page.locator(".amech-side button[data-back]").click();
+    await page.waitForTimeout(200);
+    await page.locator(".amech-side button.amech-loop").first().click();
+    await page.waitForTimeout(200);
+    check(await page.evaluate(() => document.querySelectorAll("#mech svg g[data-edge].dim:not(.chip)").length) > 0,
+          "the chain panel's loop row does the same");
+    check(await page.evaluate(() => document.querySelector('#mech .st[data-state="worry"]').classList.contains("condition")),
+          "a condition is drawn as one");
+    // Mutation: hard-code the ends label again -> it says Intervention on a chain with none.
+    check(await page.locator("#mech [data-foldall]").innerText() === "Conditions → outcomes",
+          "and the ends are named for what this text has: conditions, not an intervention");
 
     // THE ABSTRACT'S FOLD DOES NOT COVER THE QUESTION. The J-PAL sample carries an abstract; the
     // fixture does not. Mutation: drop the #stage:has(#abs) rule from the template -> fails.

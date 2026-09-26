@@ -69,11 +69,16 @@ mechanism:
 - **Deciding which states are one is interpretation.** Where the text uses several words for what
   you take to be one state, say so in the state's `note:`, as above. Where you split what the text
   runs together, say that too. These decisions are where two annotators most often part company.
-- **Roles:** `intervention` for the action the text recommends or the cause it sets out from;
-  `outcome` for what that recommendation is **for** — the ends the text argues the action serves
-  (health, access, reoffending), not every state it measures along the way. Take-up, use and cost
-  per person are usually steps on the way, not outcomes. Most chains have one intervention and two
-  to five outcomes; if you are marking more, ask of each what the text says the policy is for.
+- **Roles:** `intervention` for the action the text **recommends**; `condition` for a cause the
+  text **sets out from without recommending it** — the explanans of an explanatory text (the
+  institutional environment of a theory, the situation of a narrative); `outcome` for what the
+  chain is **for** — the ends a recommendation serves (health, access, reoffending), or what an
+  explanatory text explains — not every state it measures along the way. Take-up, use and cost per
+  person are usually steps on the way, not outcomes. Most policy chains have one intervention and
+  two to five outcomes; if you are marking more, ask of each what the text says the policy is for.
+  A state may take a **list** of roles where it is honestly both: Merton's prejudice is where his
+  circle starts (`condition`) and what his remedy is for (`outcome`) — `role: [condition, outcome]`.
+  An explanatory text with no recommendation has no intervention, and that is not a gap.
 - **`measured:`** when the text says how a state is measured, especially by a proxy it concedes.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.

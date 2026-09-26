@@ -48,6 +48,16 @@ var FIDELITY_DASH = { quotation: "", paraphrase: "6 2", compression: "4 3", inte
 var TIER_WIDTH = { evidence: 3.2, argued: 2, asserted: 1.2, imputed: 1.2 };
 
 function obj(x) { return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
+/** The roles a state declares -- `role` may be one name or a list (profile 1.1): Merton's
+ *  prejudice is both what his remedy is for and where his circle begins. As mechanism.py. */
+function rolesOf(state) {
+  var r = obj(state).role;
+  if (r == null) return [];
+  return (Array.isArray(r) ? r : [r]).map(String);
+}
+function hasRole(state, name) { return rolesOf(state).indexOf(name) >= 0; }
+/** Where a chain may start: what the text recommends, or a condition it sets out from. */
+function isStart(state) { return hasRole(state, "intervention") || hasRole(state, "condition"); }
 function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
 
 /* ============================================================ the model */
@@ -182,13 +192,13 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   var textAll = steps.filter(function (s) { return s.layer === "text"; });
   var text = causal.filter(function (s) { return s.layer === "text"; });
   var edges = uniqEdges(text);
-  var role = function (i) { return obj(states[i]).role; };
-  var interventions = ids.filter(function (i) { return role(i) === "intervention"; });
-  var outcomes = ids.filter(function (i) { return role(i) === "outcome"; });
+  var interventions = ids.filter(function (i) { return hasRole(states[i], "intervention"); });
+  var conditions = ids.filter(function (i) { return hasRole(states[i], "condition"); });
+  var outcomes = ids.filter(function (i) { return hasRole(states[i], "outcome"); });
   var from = {}, to = {};
   edges.forEach(function (e) { from[e[0]] = true; to[e[1]] = true; });
   var entrySet = {};
-  interventions.forEach(function (i) { if (from[i]) entrySet[i] = true; });
+  interventions.concat(conditions).forEach(function (i) { if (from[i]) entrySet[i] = true; });
   ids.forEach(function (i) { if (from[i] && !to[i]) entrySet[i] = true; });
   var entries = Object.keys(entrySet).sort();
   var reached = {};
@@ -201,6 +211,11 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
       message: "the intervention `" + i + "` has no step in the text: nothing says how it " +
                "brings about anything" });
   });
+  conditions.forEach(function (c) {
+    if (!from[c]) gaps.push({ kind: "unlinked-condition", state: c,
+      message: "the condition `" + c + "` has no step in the text: nothing says what it " +
+               "brings about" });
+  });
   outcomes.forEach(function (o) {
     if (!reached[o]) gaps.push({ kind: "unreached-outcome", state: o,
       message: "the outcome `" + o + "` is not reached by the text's steps from where its " +
@@ -211,6 +226,14 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
+  // As the checker: a chain with no stated cause, or nothing it is for, says so.
+  if (!interventions.length && !conditions.length)
+    gaps.push({ kind: "no-intervention", state: null,
+                message: "no state has `role: intervention` or `role: condition`, so the chain has " +
+                         "no stated cause to run from" });
+  if (!outcomes.length)
+    gaps.push({ kind: "no-outcome", state: null,
+                message: "no state has `role: outcome`, so nothing says what the chain is for" });
 
   // Keyed by SIGN as well: fee -> health (-) and (+, under a condition) are two steps.
   var best = {};
@@ -229,6 +252,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   var pool = causal.filter(function (s) { return s.layer !== "rival"; });
   var rs = [];
   entries.forEach(function (e) { outcomes.forEach(function (o) {
+    if (o === e) return;          // both where the circle starts and what it explains
     var r = routes(e, o, edges);
     if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
   }); });
@@ -307,7 +331,7 @@ function layout(M, opts) {
   opts = opts || {};
   var used = {};
   M.steps.forEach(function (s) { used[s.from] = used[s.to] = true; });
-  M.ids.forEach(function (i) { if (obj(M.states[i]).role === "intervention") used[i] = true; });
+  M.ids.forEach(function (i) { if (isStart(M.states[i])) used[i] = true; });
   var ids = M.ids.filter(function (i) { return used[i]; });
 
   // Back edges by depth-first search from the interventions first, so a loop is drawn as a loop
@@ -323,7 +347,8 @@ function layout(M, opts) {
     });
     mark[v] = 2;
   }
-  ids.filter(function (i) { return obj(M.states[i]).role === "intervention"; }).forEach(function (i) { if (!mark[i]) dfs(i); });
+  ids.filter(function (i) { return hasRole(M.states[i], "intervention"); }).forEach(function (i) { if (!mark[i]) dfs(i); });
+  ids.filter(function (i) { return hasRole(M.states[i], "condition"); }).forEach(function (i) { if (!mark[i]) dfs(i); });
   ids.forEach(function (i) { if (!mark[i]) dfs(i); });
   var rank = {};
   function r(v, seen) {
@@ -370,10 +395,10 @@ function layout(M, opts) {
   // their routes still filled the page. Everything off that line is set aside -- not drawn, and
   // counted in the panel -- and comes back with Unfold all.
   var setAside = [], offMain = 0, noLine = false;
-  var roleOf = function (v) { return obj(M.states[v]).role; };
-  var hasEnds = M.ids.some(function (v) { return roleOf(v) === "intervention"; }) &&
-                M.ids.some(function (v) { return roleOf(v) === "outcome"; });
-  var main = opts.ends && hasEnds ? drawn.steps.filter(function (s) { return roleOf(s.from) === "intervention" && roleOf(s.to) === "outcome"; }) : [];
+  var startOf = function (v) { return isStart(M.states[v]); };
+  var endOf = function (v) { return hasRole(M.states[v], "outcome"); };
+  var hasEnds = M.ids.some(startOf) && M.ids.some(endOf);
+  var main = opts.ends && hasEnds ? drawn.steps.filter(function (s) { return startOf(s.from) && endOf(s.to) && s.from !== s.to; }) : [];
   // A text whose chain never runs from its intervention to an outcome has no line to show: that
   // is a finding (the gaps say so), and setting everything aside would draw an empty page.
   noLine = !!(opts.ends && hasEnds && !main.length);
@@ -383,7 +408,7 @@ function layout(M, opts) {
     var touched = {};
     main.forEach(function (s) { touched[s.from] = touched[s.to] = true; });
     Object.keys(nodes).forEach(function (v) {
-      if (!drawn.folded[v] && !touched[v] && roleOf(v) !== "intervention" && roleOf(v) !== "outcome") setAside.push(v);
+      if (!drawn.folded[v] && !touched[v] && !startOf(v) && !endOf(v)) setAside.push(v);
     });
   }
 
@@ -587,8 +612,7 @@ function foldable(M, voice) {
     into[s.to + "\u0000" + s.layer] = true; from[s.from + "\u0000" + s.layer] = true;
   });
   M.ids.forEach(function (v) {
-    var role = obj(M.states[v]).role;
-    if (role === "intervention" || role === "outcome") return;
+    if (rolesOf(M.states[v]).length) return;      // an end of the chain is never folded away
     if ((voice ? [voice] : ["text", "rival", "appraisal"]).some(function (l) { return into[v + "\u0000" + l] && from[v + "\u0000" + l]; })) out.push(v);
   });
   return out;
@@ -675,12 +699,12 @@ function injectStyle() {
     // rival view the text reports in slate, NOT red -- red is attack everywhere else on the page;
     // the appraisal in the violet the Reasons map gives it; selection, a different relation, teal.
     // The light-and-shadow bar is shades of the one navy, as its lines are weights of it.
-    "  --mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
+    "  --mv-cond-bg:#dfe7f3;--mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
     "  --mv-selection:#2f8f83;",
     "  --mv-evidence:#203a6a;--mv-argued:#5a78a8;--mv-asserted:#a7b6cf;--mv-imputed:#dde2ea;",
     "  --mv-lane-a:rgba(0,0,0,.035);--mv-lane-b:rgba(0,0,0,.015);--mv-sel:#e0a800}",
     "@media (prefers-color-scheme:dark){.amech{",
-    "  --mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
+    "  --mv-cond-bg:#23324a;--mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
     "  --mv-selection:#5fc2b5;",
     "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
@@ -725,6 +749,14 @@ function injectStyle() {
     ".amech .st.intervention rect.box{fill:var(--mv-text);stroke:var(--mv-text)}",
     ".amech .st.intervention text{fill:var(--alm-node-bg,#fff)}",
     ".amech .st.outcome rect.outer{fill:none;stroke:var(--fg,#1a1a1a)}",
+    // A CONDITION is a starting point the text does not recommend: the intervention's navy, but
+    // as a tint, so what the text would DO and what it takes as given read apart at a glance.
+    ".amech .st.condition rect.box{fill:var(--mv-cond-bg);stroke:var(--mv-text)}",
+    ".amech .loopmark{cursor:pointer}.amech .loopmark circle{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
+    ".amech .loopmark text{font-size:10.5px;font-weight:700;fill:var(--mv-text)}",
+    ".amech-loop{display:block;text-align:left;font:inherit;background:none;border:1px solid var(--line,#ddd);border-radius:6px;",
+    "  padding:3px 7px;margin:0 0 4px;cursor:pointer;color:var(--fg,#1a1a1a);width:100%}",
+    ".amech-loop:hover{border-color:var(--mv-text)}",
     ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal);stroke-dasharray:4 3}",
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
     ".amech .ed{fill:none;cursor:pointer}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
@@ -769,8 +801,12 @@ function create(container, graph, opts) {
   // only where the map declares both ends -- a label that names an intervention and outcomes must
   // not be offered on a chain that has neither (F2). A single state may be folded wherever any
   // voice runs through it.
-  var hasEnds = M.ids.some(function (v) { return obj(M.states[v]).role === "intervention"; }) &&
-                M.ids.some(function (v) { return obj(M.states[v]).role === "outcome"; });
+  var hasIntervention = M.ids.some(function (v) { return hasRole(M.states[v], "intervention"); });
+  var hasEnds = M.ids.some(function (v) { return isStart(M.states[v]); }) &&
+                M.ids.some(function (v) { return hasRole(M.states[v], "outcome"); });
+  // What the ends are called follows what the text has: a recommendation's intervention, or the
+  // conditions an explanation starts from.
+  var endsLabel = (hasIntervention ? "Intervention" : "Conditions") + " → outcomes";
   var folded = {}, canFold = foldable(M), toEnds = hasEnds ? foldable(M, "text") : [];
   var ends = false;
   var G = layout(M, { folded: folded, ends: ends });
@@ -779,6 +815,11 @@ function create(container, graph, opts) {
   // entry, an appraisal the reader had switched on in Reasons.
   var layers = { rival: true, appraisal: !!opts.appraisal };
   var selected = null;
+  // The loops the text closes, in its own voice (the census's `loops_text`).
+  var LOOPS = M.profile.loops_text;
+  function loopNames(l) {
+    return l.states.concat(l.states[0]).map(function (v) { return obj(M.states[v]).label || v; }).join(" → ");
+  }
   // WHAT IS SHOWN. "tested" keeps only the steps the text backs with a study, statistics or a
   // model -- nulls included, since a null is a finding -- so the evidence can be read on its own.
   var show = "all", fit = false;
@@ -796,7 +837,7 @@ function create(container, graph, opts) {
     // Offered only where there is something to fold (F2: a control is a promise).
     // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
     // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
-    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from the intervention to its outcomes: the states between are folded, and what lies off that line is set aside">Intervention → outcomes</button>' : '') +
+    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from where the chain starts to its outcomes: the states between are folded, and what lies off that line is set aside">' + endsLabel + '</button>' : '') +
     '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
@@ -889,10 +930,10 @@ function create(container, graph, opts) {
       var s = obj(M.states[v]), p = G.nodes[v];
       if (s.appraisal && !layers.appraisal) return;
       if (G.folded.indexOf(v) >= 0 || G.setAside.indexOf(v) >= 0) return;
-      var cls = "st" + (s.role ? " " + s.role : "") + (s.appraisal ? " appraisal" : "");
+      var cls = "st" + rolesOf(s).map(function (r) { return " " + r; }).join("") + (s.appraisal ? " appraisal" : "");
       var g = el("g", { "class": cls, "data-layer": s.appraisal ? "appraisal" : "text", "data-state": v,
                         transform: "translate(" + p.x + "," + p.y + ")" }, gN);
-      if (s.role === "outcome") el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: 9 }, g);
+      if (hasRole(s, "outcome")) el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: 9 }, g);
       el("rect", { "class": "box", width: p.w, height: p.h, rx: 7 }, g);
       var lines = wrapWords(s.label || v, 24);
       lines.forEach(function (t, i) {
@@ -900,7 +941,19 @@ function create(container, graph, opts) {
       });
       var tt = el("title", {}, g); tt.textContent = (s.label || v) + " — click to see only the paths through it";
       drawnNodes[v] = g;
-      if (s.role === "intervention" && !M.steps.some(function (x) { return x.from === v && x.layer === "text"; }))
+      // A LOOP IS MARKED ON EVERY STATE IN IT, not only on the arrow that closes it: the closing
+      // arc alone was easy to miss, and a reader tracing Merton's circle across the page could
+      // not tell where it began. The badge is also a control (F2): it shows that loop alone.
+      var inLoops = [];
+      LOOPS.forEach(function (l, li) { if (l.states.indexOf(v) >= 0) inLoops.push(li); });
+      inLoops.forEach(function (li, j) {
+        var mk = el("g", { "class": "loopmark", "data-loop": li, transform: "translate(" + (p.w - 10 - j * 26) + ",-5)" }, g);   // on the border, clear of the label
+        el("circle", { r: 10 }, mk);
+        el("text", { "text-anchor": "middle", y: 4 }, mk).textContent = "↻" + (LOOPS.length > 1 ? li + 1 : "");
+        el("title", {}, mk).textContent = "In loop " + (li + 1) + ": " + loopNames(LOOPS[li]) + " — click to see it alone";
+        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ loop: li }); });
+      });
+      if (isStart(s) && !M.steps.some(function (x) { return x.from === v && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
     });
@@ -913,6 +966,11 @@ function create(container, graph, opts) {
   function focusSets() {
     var vis = drawnEdges.map(function (d) { return d.e; });
     if (!selected) return null;
+    if (selected.loop != null) {
+      var L = LOOPS[selected.loop], hops = {}, ln = {};
+      L.states.forEach(function (v, i) { ln[v] = true; hops[v + "\u0000" + L.states[(i + 1) % L.states.length]] = true; });
+      return { nodes: ln, edge: function (e) { return e.layer === "text" && e.kind === "step" && !!hops[e.from + "\u0000" + e.to]; } };
+    }
     if (selected.edge) {
       var k = {}; k[selected.edge.from] = k[selected.edge.to] = true;
       return { nodes: k, edge: function (e) { return e.key === selected.edge.key; } };
@@ -1036,7 +1094,10 @@ function create(container, graph, opts) {
     TIERS.forEach(function (t) { tot += T[t]; });
     tot = tot || 1;
     var label = function (i) { return obj(M.states[i]).label || i; };
-    var loopText = P.loops_text.length ? P.loops_text.map(function (l) { return esc(l.states.concat(l.states[0]).map(label).join(" → ")); }).join("<br>")
+    // Each loop is a button that shows it alone.
+    var loopText = P.loops_text.length ? P.loops_text.map(function (l, i) {
+        return '<button type="button" class="amech-loop" data-loop="' + i + '">↻' + (P.loops_text.length > 1 ? (i + 1) : "") + ' ' +
+          esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
                                        : "none closed in the text";
     var gapText = function (g) {
       var s = g.state ? "“" + label(g.state) + "”" : "";
@@ -1077,12 +1138,24 @@ function create(container, graph, opts) {
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
+    } else if (selected && selected.loop != null) {
+      var L = LOOPS[selected.loop];
+      var hopEdges = L.states.map(function (v, i) {
+        var w = L.states[(i + 1) % L.states.length];
+        return G.edges.filter(function (e) { return e.layer === "text" && e.kind === "step" && e.from === v && e.to === w; });
+      });
+      side.innerHTML = '<h3>Loop ' + (selected.loop + 1) + '</h3>' +
+        '<div class="amech-focus">Showing one loop the text closes: ' + esc(loopNames(L)) + '.' +
+        (L.reflexive ? ' It is <b>reflexive</b>: it runs through a belief, a prediction or a classification that the loop itself acts on.' : '') +
+        '</div>' +
+        hopEdges.map(function (es) { return es.map(function (e) { return e.steps.map(stepHTML).join(""); }).join(""); }).join("") +
+        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
     } else if (selected && selected.state) {
       var s = obj(M.states[selected.state]), a = obj(M.actors[s.actor]);
       side.innerHTML = '<h3>' + esc(s.label || selected.state) + '</h3>' +
         '<div class="amech-focus">Showing only the paths through this state: what leads to it, and what it leads to.</div>' +
         '<div class="amech-row"><span class="k">actor</span><span>' + esc(a.label || s.actor || "") + (a.level ? ' (' + esc(a.level) + ')' : '') + '</span></div>' +
-        (s.role ? '<div class="amech-row"><span class="k">role</span><span>' + esc(s.role) + '</span></div>' : '') +
+        (rolesOf(s).length ? '<div class="amech-row"><span class="k">role</span><span>' + esc(rolesOf(s).join(", ")) + '</span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
         // often make differently (mechanism-pass.md), so the reader is shown it.
@@ -1103,6 +1176,8 @@ function create(container, graph, opts) {
   side.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
+    var lp = t.closest ? t.closest("[data-loop]") : null;
+    if (lp) { select({ loop: +lp.getAttribute("data-loop") }); return; }
     var fv = t.getAttribute && t.getAttribute("data-fold"), uv = t.getAttribute && t.getAttribute("data-unfold");
     if (fv) { setFolded(fv, true); return; }
     if (uv) { if (uv === "*") { folded = {}; ends = false; } else setFolded(uv, false); refold(); return; }
@@ -1141,7 +1216,7 @@ function create(container, graph, opts) {
     if (!Object.keys(folded).length) ends = false;
     G = layout(M, { folded: folded, ends: ends });
     selected = null;
-    if (foldAll) foldAll.textContent = G.folded.length ? "Show the whole chain" : "Intervention → outcomes";
+    if (foldAll) foldAll.textContent = G.folded.length ? "Show the whole chain" : endsLabel;
     apply();
   }
   function setFolded(v, on) { if (on) folded[v] = true; else delete folded[v]; refold(); }

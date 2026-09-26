@@ -1,0 +1,30 @@
+// A planted EXPLANATORY chain (26 Sep 2026): no intervention, a condition it sets out from,
+// a state that is both where the circle starts and what it explains (Merton's prejudice), a
+// reflexive loop the text closes, and a declared condition the text links to nothing.
+===
+title: "Loop -- a planted explanatory chain"
+mechanism:
+    question: "How does worry sustain itself?"
+    levels: [macro, meso, micro]
+    actors:
+        person: {label: "The worrier", level: micro}
+    states:
+        worry:  {label: "Worry", actor: person, role: [condition, outcome]}
+        check:  {label: "Checking", actor: person}
+        relief: {label: "Momentary relief", actor: person, role: outcome}
+        habit:  {label: "A habit of worry", actor: person, role: condition}
+===
+
+[Worry sustains itself]: Worry sustains itself through the checking it prompts.
+
+[Worry drives checking]: Worry drives checking.
+    {causes: {from: worry, to: check, sign: "+", basis: asserted}}
+    +> [Worry sustains itself]
+
+[Checking feeds worry]: Checking, by treating the danger as real, feeds the worry.
+    {causes: {from: check, to: worry, sign: "+", basis: asserted, reflexive: true}}
+    +> [Worry sustains itself]
+
+[Checking brings relief]: Checking brings a moment of relief.
+    {causes: {from: check, to: relief, sign: "+", basis: asserted}}
+    +> [Worry sustains itself]

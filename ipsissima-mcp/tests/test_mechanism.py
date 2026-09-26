@@ -246,6 +246,32 @@ check("leaving only the sentence nothing of the text's quotes",
       [u["text"] for u in cov3.get("uncovered", [])],
       ["Short prison terms cause people to lose their jobs."])
 
+# --------------------------------------------------------------------------- #
+print("\nan explanatory chain: a condition to start from, a state with two roles, a loop")
+# PROFILE 1.1 (26 Sep 2026). Merton's essay is mostly a circle, and Wimmer's theory has no
+# intervention at all: the roles grew up on policy texts and could not say where an explanation
+# starts, nor that prejudice is both where Merton's circle begins and what his remedy is for.
+LOOP = (FIXTURE / "loop.argdown").read_text(encoding="utf-8")
+rl = run(LOOP)
+chl = rl["shape"].get("chain") or {}
+gl = [g for g in chl.get("gaps", [])]
+# Mutation: drop `conditions` from the entries -> worry is not where the chain starts.
+check("a condition is where the chain starts", chl.get("entries"), ["worry"])
+# Mutation: require an intervention again -> the no-cause gap fires.
+check("a chain with a condition and no intervention has a stated cause",
+      any("no stated cause" in g for g in gl), False)
+check("a condition the text links to nothing is a gap, named",
+      any("the condition `habit` has no step in the text" in g for g in gl), True)
+check("a state that is both condition and outcome routes to the other outcome, not to itself",
+      sorted((r["start"], r["outcome"]) for r in chl.get("routes", [])), [("worry", "relief")])
+check("the loop the text closes is found, and it is reflexive",
+      [(l["states"], l["reflexive"]) for l in chl.get("loops_text", [])], [(["worry", "check"], True)])
+check("and a list of roles is no fault", [f for f in by(rl, "mechanism") if "role" in f["message"]], [])
+bad = run(LOOP.replace("role: outcome}", "role: explanandum}"))
+check("an unknown role is named, with the three that are read",
+      any("the roles read are `intervention`, `condition` and `outcome`" in f["message"]
+          for f in by(bad, "mechanism")), True)
+
 print()
 if fails:
     sys.exit(f"{fails} check(s) failed")
