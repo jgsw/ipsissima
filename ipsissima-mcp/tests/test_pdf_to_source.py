@@ -573,6 +573,310 @@ check("an abstract set smaller than the body is still found",
 check("  whole, to its last sentence", got.endswith("what it can actually deliver."), True)
 check("  without the affiliation footnote of yet another size", "Department" in got, False)
 
+# ------------------------------------------------------ a structured abstract ---- #
+# NO "ABSTRACT" TO FOLLOW. Trial reports (BMJ, Lancet, JAMA, PLOS Medicine) print the abstract
+# as labelled sections -- OBJECTIVE, DESIGN, ... RESULTS, CONCLUSION -- often with no word
+# "Abstract" over it, and the front cut lands on the first label because a caps line at the
+# margin is what a heading looks like. On Clemson et al. 2026 (BMJ) the report said "front
+# matter was cut but no abstract was found" and the app offered no Abstract fold.
+
+from pdf_to_source import abstract_label, find_structured_abstract, STRUCTURED_STOP  # noqa: E402
+
+check("a caps label alone on its line is a label", abstract_label("OBJECTIVE"), "OBJECTIVE")
+check("  and run into the text in capitals",
+      abstract_label("RESULTS Between two dates, forty people"), "RESULTS")
+check("  and before a colon, in any case", abstract_label("Background: Falls are common"),
+      "Background")
+check("  and compound, as JAMA prints them",
+      abstract_label("DESIGN, SETTING, AND PARTICIPANTS This cohort study"),
+      "DESIGN, SETTING, AND PARTICIPANTS")
+check("  and PLOS's whole-line form", abstract_label("Methods and findings"),
+      "Methods and findings")
+# BMJ's 2019 house style sets the labels in title case, whole-line: "Main outcome measures"
+# matched only as far as "Main outcome", and with "measures" left over it was not a label at all.
+check("  and BMJ's title-case 'Main outcome measures'", abstract_label("Main outcome measures"),
+      "Main outcome measures")
+# The words are ordinary English; how the line is SET is what makes a label.
+check("prose opening with a label word is not a label",
+      abstract_label("Results of the survey were mixed"), None)
+check("  nor a wrapped line in lower case", abstract_label("methods"), None)
+check("  nor a longer word that begins with one", abstract_label("DESIGNER NOTES"), None)
+check("the trial registration is a stop, not a label",
+      (abstract_label("TRIAL REGISTRATION"), bool(abstract_label("TRIAL REGISTRATION",
+                                                                 STRUCTURED_STOP))),
+      (None, True))
+
+
+def srow(text, x=141.0, page=1, col=0):
+    return (page, x, 0.0, 10.0, text, col, False)
+
+
+# RUN-IN LABELS, the Lancet/PLOS form, with a funding line after: kept to the conclusion.
+RUNIN = [srow("A trial of something", x=141), srow("Background: Falls are common after a "
+                                                   "stroke and cost the health service a great "
+                                                   "deal every year."),
+         srow("Methods: We randomly assigned two hundred people to one of two arms."),
+         srow("Findings: The rate of falls was lower in the intervention arm."),
+         srow("Interpretation: A tailored programme can prevent falls."),
+         srow("Funding: A national research council."),
+         srow("Introduction"), srow("Falls are common.")]
+got = find_structured_abstract(RUNIN, 6, [10.0] * len(RUNIN))
+check("run-in labels make a structured abstract",
+      got is not None and got.startswith("Background: Falls"), True)
+check("  ending at its conclusion, before the funding line",
+      got.endswith("can prevent falls."), True)
+# A PAPER'S OWN SECTIONS carry the same words. Background and Methods with no results or
+# conclusion label is an article opening, not an abstract, and the prose reading is left to it.
+OWN = [srow("BACKGROUND"), srow("Falls are common after a stroke and cost a great deal."),
+       srow("METHODS"), srow("We randomly assigned two hundred people to one of two arms "
+                             "and followed them for a year to count their falls.")]
+check("the article's own Background and Methods are not an abstract",
+      find_structured_abstract(OWN, 0, [10.0] * len(OWN)), None)
+# A label seen twice is the article's own section, and ends the abstract there.
+TWICE = RUNIN[:5] + [srow("Results: this must not be read as the abstract's."),
+                     srow("Background: the article's own first section begins here.")]
+got = find_structured_abstract(TWICE, 0, [10.0] * len(TWICE))
+check("a label seen a second time ends it", "own first section" in (got or ""), False)
+# The run must open no later than the article's detected start. (AT it is allowed: that is
+# where the front cut lands when it mistakes the first caps label for a heading.)
+check("  and labels after the article's start are the article's",
+      find_structured_abstract([srow("A title"), srow("Some prose opens the paper.")]
+                               + RUNIN[1:5], 1, [10.0] * 6) is not None, False)
+check("  but a run the front cut landed on is still the abstract",
+      find_structured_abstract([srow("A title")] + RUNIN[1:5], 1, [10.0] * 5) is not None,
+      True)
+
+# EACH WAY IT CAN END, ALONE. Labels set larger than their text (9pt over 8pt) so that keeping
+# them is the labels' doing and not their size's, and no registration line, so the ending under
+# test is the only one there is.
+LAB = [("A title", 14.0), ("OBJECTIVE", 9.0),
+       ("To test whether a home programme works for people after a stroke.", 8.0),
+       ("RESULTS", 9.0), ("Falls were fewer by a third in the arm that had the programme.", 8.0),
+       ("CONCLUSION", 9.0), ("The programme prevented falls in people at home after a stroke.",
+                             8.0)]
+AFTER = ("Prose that follows the abstract and is not the abstract's own.", 8.0)
+
+
+def labelled(extra=()):
+    spec = LAB + list(extra)
+    rows = [srow(s[0], page=s[2] if len(s) > 2 else 1) for s in spec]
+    return find_structured_abstract(rows, 0, [s[1] for s in spec]) or ""
+
+
+got = labelled()
+check("labels set larger than their text are kept in it",
+      [lab for lab in ("OBJECTIVE", "RESULTS", "CONCLUSION") if lab not in got], [])
+check("a line of another size inside the column is not the abstract's",
+      "stamp" in labelled([("a download stamp in the margin", 6.0)]), False)
+check("it ends at a caps heading that is not a label",
+      "not the abstract's" in labelled([("WHAT THIS STUDY ADDS", 8.0), AFTER]), False)
+check("  and at the article's Introduction",
+      "not the abstract's" in labelled([("Introduction", 8.0), AFTER]), False)
+check("  and at prose set larger than its labels",
+      "larger" in labelled([("Article prose set larger than the abstract begins here and runs "
+                             "on.", 10.0)] * 4), False)
+check("  and it does not run on past the next sheet",
+      "not the abstract's" in labelled([AFTER[:2] + (3,)]), False)
+# Elsevier prints its copyright line in the abstract's column, at its size, after the
+# conclusion; on Zahl et al. 2024 it ran on as the abstract's last sentence.
+check("  and at the publisher's copyright line",
+      "Published by" in labelled([("© 2023 The Author(s). Published by an imagined "
+                                   "press on behalf of a society.", 8.0)]), False)
+# Social Science & Medicine opens on "Rationale:"; without it Harari and Lee lost a section.
+check("Social Science & Medicine's 'Rationale:' opens one",
+      abstract_label("Rationale: Quantitative research has"),
+      "Rationale")
+# Boaz et al. 2015: the article opens on "BACKGROUND" right after an abstract that had none.
+check("a bare label after the conclusion is the article's heading, not the abstract's",
+      labelled([("BACKGROUND", 9.0)]).endswith("after a stroke."), True)
+# Run-in labels make their whole line as large as the bold label, and the article's body can be
+# that size too (Boaz et al. 2015: 10pt label lines, 9pt text, a 10pt article after it).
+RUN10 = [srow("Objective: To test whether a home programme works."),
+         srow("for people after a stroke, in a trial of two arms."),
+         srow("Results: Falls were fewer by a third with the programme."),
+         srow("Conclusions: The programme prevented falls in people."),
+         srow("at home after a stroke."), srow("BACKGROUND"),
+         srow("Article prose begins here, set as large as the labels."),
+         srow("and runs on for the rest of the page.")]
+got = find_structured_abstract(RUN10, 0, [10.0, 9.0, 10.0, 10.0, 9.0, 10.0, 10.0, 10.0]) or ""
+check("the article's body, as large as run-in label lines, is not the abstract's",
+      (got.endswith("at home after a stroke."), "Article prose" in got), (True, False))
+# WHERE THE ARTICLE STARTS is where the abstract ended, or the next heading past apparatus.
+from pdf_to_source import read_structured_abstract                            # noqa: E402
+
+rows = [srow(s[0]) for s in LAB] + [srow("Introduction"), srow(AFTER[0])]
+check("an abstract ended by the article's heading puts the cut on that heading",
+      read_structured_abstract(rows, 0, [s[1] for s in LAB] + [8.0, 8.0])[1], len(LAB))
+rows = [srow(s[0]) for s in LAB] + [srow("BACKGROUND"), srow(AFTER[0])]
+check("  and a bare label left over is that heading (Boaz: the article set larger)",
+      read_structured_abstract(rows, 0, [s[1] for s in LAB] + [9.0, 10.0])[1], len(LAB))
+# Past apparatus to the next heading -- in any column, since Elsevier sets the abstract right of
+# the article-info block and "Introduction" back at the margin (Zahl et al. 2024).
+rows = ([srow(s[0], x=203) for s in LAB]
+        + [srow("\u00a9 2023 The Author(s). Published by an imagined press.", x=203),
+           srow("a margin line set large", x=500), srow("1. Introduction", x=37),
+           srow(AFTER[0], x=37)])
+check("past the copyright line, the cut is the next heading, whatever its column",
+      read_structured_abstract(rows, 0, [s[1] for s in LAB] + [8.0, 12.0, 8.0, 8.0])[1],
+      len(LAB) + 2)
+# BMJ prints the registry number on a line of its own: capitals, but no heading.
+rows = ([srow(s[0]) for s in LAB] + [srow("TRIAL REGISTRATION"), srow("ACTRN00000000000000."),
+                                     srow("Introduction", x=141), srow(AFTER[0])])
+check("  and a registry number is not that heading",
+      read_structured_abstract(rows, 0, [s[1] for s in LAB] + [9.0, 8.0, 8.5, 8.0])[1],
+      len(LAB) + 2)
+check("  nor is the abstract's own text, however it is set, in the abstract's column",
+      read_structured_abstract([srow(s[0]) for s in LAB]
+                               + [srow("TRIAL REGISTRATION"), srow("A registry, 2019."),
+                                  srow("Article prose set larger.")], 0,
+                               [s[1] for s in LAB] + [9.0, 8.0, 10.0])[1], len(LAB) + 2)
+from pdf_to_source import past_structured_abstract                           # noqa: E402
+
+check("the front cut moves past a structured abstract",
+      past_structured_abstract(8, 400, 500, ("an abstract", 122)), 122)
+check("  but never back from a cut already past it",
+      past_structured_abstract(40, 400, 500, ("an abstract", 30)), 40)
+check("  nor to where it would leave almost nothing of the article",
+      past_structured_abstract(8, 150, 500, ("an abstract", 122)), 8)
+check("  and with no abstract, or no word on where it ended, the cut is as it was",
+      (past_structured_abstract(8, 400, 500, None),
+       past_structured_abstract(0, 400, 500, ("an abstract", None))), (8, None))
+# A line of data inside the abstract has a numbered heading's shape; it is not the article.
+rows = ([srow(s[0]) for s in LAB[:3]] + [srow("PARTICIPANTS"),
+                                         srow("5325 Scottish households, 54 807 English"),
+                                         srow("households as controls.")]
+        + [srow(s[0]) for s in LAB[3:]] + [srow("Introduction")])
+got = read_structured_abstract(rows, 0, [s[1] for s in LAB[:3]] + [9.0, 8.0, 8.0]
+                               + [s[1] for s in LAB[3:]] + [8.0])
+check("a line of data that looks like a numbered heading does not end the abstract",
+      (got[0].endswith("after a stroke."), got[1]), (True, len(rows) - 1))
+# Autism in Adulthood: keywords, a lay summary, then "Background" set small over a drop cap.
+rows = ([srow(s[0]) for s in LAB] + [srow("Keywords: falls, stroke"), srow("Community Brief"),
+                                     srow("A lay summary of the study."), srow("Background"),
+                                     srow("\u2018\u2018W"), srow(AFTER[0])])
+check("past the keywords, a label word standing alone is the article's first heading",
+      read_structured_abstract(rows, 0, [s[1] for s in LAB] + [8.0, 6.0, 8.0, 6.0, 26.0, 8.0])[1],
+      len(LAB) + 3)
+check("an abstract the page ran out under says nothing about the cut",
+      read_structured_abstract([srow(s[0]) for s in LAB], 0, [s[1] for s in LAB])[1], None)
+check("two labels and a word each is not an abstract",
+      find_structured_abstract([srow("RESULTS"), srow("None."), srow("CONCLUSION"),
+                                srow("None.")], 0, [9.0, 8.0, 9.0, 8.0]), None)
+
+# THE WHOLE CONVERTER, ON A PAGE SHAPED LIKE BMJ'S. The abstract runs in one column BESIDE the
+# author affiliations (smaller, further left), with a "What is already known" box under it in
+# the same page column; the text layer interleaves them line by line. No word "Abstract" at all.
+# The wording is invented -- the fixture is the LAYOUT, not any paper's text.
+import tempfile                                                               # noqa: E402
+import pymupdf                                                                # noqa: E402
+from pdf_to_source import Config, convert                                    # noqa: E402
+
+PROSE = ("Falls are a frequent and costly event in later life, and people who have had a stroke "
+         "fall more often than their peers of the same age. The programme tested here combines "
+         "exercise woven into daily routines with a review of hazards in the home and coaching "
+         "for getting about in the local area. Each part has been tried alone before and none "
+         "has reduced falls on its own, which is the reason for testing them together here. ")
+
+
+def wrap(text, width):
+    out, line = [], ""
+    for w in text.split():
+        if line and len(line) + 1 + len(w) > width:
+            out.append(line)
+            line = w
+        else:
+            line = (line + " " + w).strip()
+    return out + [line] if line else out
+
+
+SECTIONS = [("OBJECTIVE", "To test whether a home exercise and safety programme reduces "
+             "falls in people living at home after a stroke."),
+            ("DESIGN", "Two armed, randomised trial with masked assessors."),
+            ("SETTING", "Four community health services in two regions."),
+            ("PARTICIPANTS", "Adults over fifty who had a stroke within the last five years "
+             "and could walk ten metres with or without an aid."),
+            ("INTERVENTION", "Six months of habit based exercise, a home hazard review, and "
+             "coaching for community mobility; the control arm received usual care."),
+            ("MAIN OUTCOME MEASURES", "The primary outcome was the rate of falls over one "
+             "year.")]
+RIGHT = [("RESULTS", "Two hundred people were enrolled. The rate of falls was a third lower "
+          "in the intervention arm than in the control arm over the year of follow up."),
+         ("CONCLUSION", "A tailored home programme prevented falls in people living at home "
+          "after a stroke.")]
+AFFIL = ["1 School of Health", "Sciences, An Imagined", "University, Somewhere", "2 Department of",
+         "Rehabilitation, Another", "Imagined University", "Correspondence to: A Author",
+         "Accepted: 01 March 2026", "Cite this as: an imagined", "journal 2026;1:e1"] * 3
+
+doc = pymupdf.open()
+p1 = doc.new_page(width=595, height=842)
+p1.insert_text((141, 70), "A home exercise and safety programme after stroke", fontsize=17)
+p1.insert_text((141, 115), "A Author, B Author, C Author", fontsize=11)
+y = 183.0
+for label, text in SECTIONS:
+    for line in [label] + wrap(text, 44):
+        p1.insert_text((141, y), line, fontsize=8.7)
+        y += 11
+for i, a in enumerate(AFFIL[:int((y - 170) / 9)]):
+    p1.insert_text((34, 170 + 9 * i), a, fontsize=7.5)     # beside the abstract, interleaving
+yb = 555.0
+p1.insert_text((38, yb), "WHAT IS ALREADY KNOWN ON THIS TOPIC", fontsize=10)
+for line in wrap("Nothing yet shown to work prevents falls after a stroke, and three earlier "
+                 "trials of single measures found no effect on the rate of falls.", 70):
+    yb += 12
+    p1.insert_text((38, yb), line, fontsize=8.5)
+y = 168.0
+for label, text in RIGHT:
+    for line in [label] + wrap(text, 44):
+        p1.insert_text((360, y), line, fontsize=8.7)
+        y += 11
+for line in ["TRIAL REGISTRATION", "An imagined trials registry 000000001."]:
+    p1.insert_text((360, y), line, fontsize=8.7)
+    y += 11
+y += 14
+p1.insert_text((360, y), "Introduction", fontsize=9.5)
+for line in wrap(PROSE * 3, 44):
+    y += 11
+    if y > 780:
+        break
+    p1.insert_text((360, y), line, fontsize=8.7)
+for _ in range(3):
+    pg = doc.new_page(width=595, height=842)
+    lines = wrap(PROSE * 12, 44)
+    for n, line in enumerate(lines[:120]):
+        x, yy = (141, 70 + 11 * n) if n < 60 else (360, 70 + 11 * (n - 60))
+        pg.insert_text((x, yy), line, fontsize=8.7)
+with tempfile.TemporaryDirectory() as tmp:
+    pdf = Path(tmp) / "trial.pdf"
+    doc.save(pdf)
+    report = convert(Config(pdf=pdf, out=Path(tmp) / "source" / "trial.md"))
+    written = (Path(tmp) / "source" / "trial.md").read_text(encoding="utf-8")
+got = report.get("abstract") or ""
+check("a BMJ-shaped structured abstract with no 'Abstract' is found",
+      got.startswith("OBJECTIVE To test whether a home exercise"), True)
+check("  with its labels kept in the text",
+      all(f" {lab} " in got for lab in ("DESIGN", "SETTING", "MAIN OUTCOME MEASURES",
+                                        "RESULTS", "CONCLUSION")), True)
+check("  across both columns, to the conclusion's last sentence",
+      got.endswith("living at home after a stroke."), True)
+check("  without the affiliations it was interleaved with",
+      [w for w in ("School", "Imagined", "Correspondence", "Accepted") if w in got], [])
+check("  or the box beside it", "ALREADY KNOWN" in got or "earlier trials" in got, False)
+check("  and stops at the trial registration", "registry" in got, False)
+check("  and it is written to the front matter", "\nabstract: >-\n  OBJECTIVE To test" in written,
+      True)
+# THE FRONT CUT GOES PAST IT, not onto its first label (the author's ruling, 26 Sep 2026). Cut
+# at the label, the abstract stayed in the body as well, with DESIGN, SETTING and the rest
+# promoted to headings of the article.
+article = written.split("\n---\n", 1)[1]
+article = "\n".join(l for l in article.splitlines()
+                    if l.strip() and not l.startswith(("<!--", " ")) and "-->" not in l)
+check("the article starts at its Introduction, past the abstract",
+      article.startswith("Introduction Falls are a frequent"), True)
+check("  with none of the abstract, its labels, or the registration left in the body",
+      [w for w in ("OBJECTIVE", "# Design", "RESULTS", "A tailored home programme",
+                   "TRIAL REGISTRATION", "registry", "Correspondence") if w in article], [])
+check("  and the report counts the cut", report["boundaries_detected"]["front"] > 20, True)
+
 # ------------------------------------------------------- a numbered paragraph ---- #
 # A JUDGMENT IS CITED BY ITS PARAGRAPH NUMBER -- "Miller (No 2) at [50]" -- so losing the numbers
 # loses the only address a claim in such a document has. All 71 were lost on the Miller, in FOUR

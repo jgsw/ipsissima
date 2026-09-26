@@ -701,6 +701,222 @@ FRONT_MATTER = re.compile(
 ABSTRACT_HEAD = re.compile(r"^\W{0,3}a\s*b\s*s\s*t\s*r\s*a\s*c\s*t\b\s*[:.\u2014-]?\s*(.*)$",
                            re.I)
 
+#: The section labels of a STRUCTURED abstract, the form medical and trial journals print (BMJ,
+#: Lancet, JAMA, PLOS Medicine). A label may be compound -- JAMA's "DESIGN, SETTING, AND
+#: PARTICIPANTS", "MAIN OUTCOMES AND MEASURES", PLOS's "Methods and findings" -- so it is read as
+#: label words joined by commas and "and" rather than listed whole. Social Science & Medicine
+#: opens on "Rationale:", and missing that one word cost Harari and Lee 2021 its first section.
+_LABEL_WORD = (r"(?:objectives?|background|rationale|context|aims?|importance|purpose|design|"
+               r"methods?|settings?|"
+               r"participants|patients|interventions?|exposures?|main\s+outcomes?(?:\s+measures?)?|outcomes?|"
+               r"measures?|results|findings|interpretation|conclusions?|relevance)")
+STRUCTURED_LABEL = re.compile(
+    r"^\W{0,3}(" + _LABEL_WORD + r"(?:(?:\s*,\s*(?:and\s+)?|\s+and\s+|\s*&\s*)" + _LABEL_WORD
+    + r")*)(?![A-Za-z])\s*([:.\u2014]?)\s*(.*)$", re.I | re.S)
+#: What ENDS a structured abstract: the trial's registration and its funding are printed under
+#: labels of the same shape, but they are apparatus, not a statement of what the paper found.
+STRUCTURED_STOP = re.compile(
+    r"^\W{0,3}((?:clinical\s+)?trials?\s+registration(?:\s+numbers?)?|registration|funding)"
+    r"(?![A-Za-z])\s*([:.\u2014]?)\s*(.*)$", re.I | re.S)
+#: ...and so does the publisher's copyright line, which Elsevier prints in the abstract's own
+#: column, at its size, straight after the conclusion: "© 2023 The Author(s). Published by
+#: Elsevier Ltd on behalf of..." ran on as the abstract's last sentence on Zahl et al. 2024.
+ABSTRACT_COPYRIGHT = re.compile(r"^\W{0,2}(?:\u00a9|\(c\)\s*\d{4}|copyright\b)", re.I)
+
+
+def abstract_label(text, vocab=STRUCTURED_LABEL):
+    """The label a line opens with, if it is set AS a label, else None.
+
+    THE WORDS ARE ORDINARY ENGLISH, so the vocabulary alone would call "Results of the survey
+    were..." a label. What makes one is how it is set: the whole line ("OBJECTIVE", "Methods and
+    findings"), or run into the text in capitals ("OBJECTIVE To investigate...") or before a
+    colon ("Background: Falls are..."). A capital initial is required in every form, because a
+    wrapped line of prose can begin with any of these words in lower case.
+    """
+    m = vocab.match(text.strip())
+    if not m or not m.group(1)[:1].isupper():
+        return None
+    label, punct, rest = m.group(1), m.group(2), m.group(3).strip()
+    if not rest and punct in ("", ":"):
+        return label
+    if rest and (punct or label.isupper()):
+        return label
+    return None
+
+
+def find_structured_abstract(rows, first, sizes):
+    """A structured abstract, labels and all, or None.
+
+    NO "ABSTRACT" TO FOLLOW. A trial report prints its abstract as a run of labelled sections --
+    OBJECTIVE, DESIGN, SETTING, ... RESULTS, CONCLUSION -- often with no word "Abstract" over it,
+    and where the word is printed the front cut lands on the first label, because a caps line at
+    the margin is exactly what a heading looks like. Either way `find_abstract` had nothing to
+    read, and the paper's own summary of its trial was dropped (Clemson et al. 2026, BMJ, the
+    FAST falls-after-stroke trial: "front matter was cut but no abstract was found").
+
+    THE LABELS SAY WHICH LINES ARE THE ABSTRACT'S. On BMJ's first page the abstract runs in one
+    column BESIDE the author affiliations, and the "What is already known" box sits below it in
+    the same page column, so the text layer interleaves all three line by line: an affiliation
+    arrives between the last two words of one of the abstract's sentences. The
+    labels are set in the abstract's own column, so the column they share -- their left edge --
+    is the abstract's, and a line starting elsewhere is someone else's. Size then drops what
+    rides inside that column at another size (a superscript, a stamp), as in `find_abstract`.
+
+    THE LABELS STAY IN THE TEXT. "RESULTS <the findings>" is how the authors wrote it,
+    and a claim that quotes the conclusion should be able to say which section it came from.
+
+    FOUR GUARDS, each against a real confusion. The run must open on the article's first page
+    and no later than the article's detected start, because a paper's own "Methods" and
+    "Results" sections carry the same words. It must include a results label and a conclusion
+    label, which every structured abstract has and a stray pair of caps lines does not. A label
+    seen a second time ends it -- that is the article's own section. And it ends at the trial
+    registration, the funding line, keywords, the publisher's copyright line, a caps heading
+    that is not a label, or a line set larger than the abstract's text: all of those follow an
+    abstract and none of them is one.
+    """
+    found = read_structured_abstract(rows, first, sizes)
+    return found[0] if found else None
+
+
+def _opens_article(t):
+    """Is this line the article's first heading, as it follows an abstract: a caps heading that
+    is not an abstract label, or "Introduction", numbered or not?
+
+    NOT ANY NUMBERED LINE. `NUMBERED` is a section heading's shape in running text, but inside
+    a trial abstract it is also a line of data: "5325 Scottish households, 54 807 English" (the
+    O'Donnell, BMJ 2019) matched it and ended the abstract at PARTICIPANTS.
+
+    A CAPS HEADING HAS NO DIGITS. A trial registry number is capitals too -- BMJ prints
+    (an "ACTRN..." number) on a line of its own under TRIAL REGISTRATION -- and read as a
+    heading it put the article's start one line early, on the registration."""
+    letters = re.sub(r"[^A-Za-z]", "", t)
+    return bool((len(letters) >= 4 and letters.isupper() and len(t.split()) <= 8
+                 and not re.search(r"\d", t) and not abstract_label(t))
+                or re.match(r"^(?:\d+\.?\s*)?introduction$", t, re.I))
+
+
+def read_structured_abstract(rows, first, sizes):
+    """(text, cut) for a structured abstract, or None. `cut` is the row the ARTICLE starts at,
+    or None where the page does not say.
+
+    THE FRONT CUT BELONGS PAST THE ABSTRACT, not on its first label. `find_boundaries` cuts at
+    the first heading-shaped line after the front matter, and on a trial report that is
+    "OBJECTIVE": the whole abstract was then left in the body as well as the front matter, with
+    DESIGN, SETTING and the rest promoted to `#` headings of the article (Clemson et al. 2026,
+    BMJ -- the author's ruling, 26 Sep 2026, was to cut past it). Where the abstract ended says
+    where the article begins:
+
+      * at the article's own first line -- a heading, a label seen again, text set larger --
+        that line is the start;
+      * at apparatus -- a trial registration, keywords, a copyright line -- the start is the
+        next heading after it, which need not be in the abstract's column: Elsevier sets the
+        abstract to the right of the article-info block and "Introduction" back at the margin;
+      * at neither -- the page ran out -- nothing is said, and the cut stays where it was.
+    """
+    if not rows:
+        return None
+    page0 = rows[0][0]
+    head = None
+    for i in range(min(len(rows), first + 1 if first else len(rows))):
+        if rows[i][0] != page0:
+            break
+        if abstract_label(rows[i][4]):
+            head = i
+            break
+    if head is None:
+        return None
+    anchor, lsize = rows[head][1], sizes[head] if head < len(sizes) else 0
+    reach = max(12.0, 1.5 * (lsize or 8))
+    seen, kept, tsize, end, kind = set(), [], None, None, None
+    for i in range(head, len(rows)):
+        p, x0, _y, _h, text, _c, _s = rows[i]
+        t = text.strip()
+        if p > page0 + 1 or len(kept) >= 80:
+            break
+        if not t or abs(x0 - anchor) > reach:
+            continue                    # another column's line: an affiliation, a box, a stamp
+        size = sizes[i] if i < len(sizes) else lsize
+        if (abstract_label(t, STRUCTURED_STOP) or FRONT_MATTER.match(t)
+                or ABSTRACT_COPYRIGHT.match(t) or COPYRIGHT_OPEN.search(t)):
+            end, kind = i, "apparatus"
+            break
+        label = abstract_label(t)
+        if label:
+            key = re.sub(r"\s+", " ", label.lower())
+            if key in seen:
+                end, kind = i, "article"
+                break
+            seen.add(key)
+            kept.append((True, t, size, i))
+            continue
+        # LARGER THAN THE ABSTRACT'S TEXT, once that is known, not than its labels. A run-in
+        # label makes its whole line as large as the bold label: Boaz et al. 2015 set those
+        # lines at 10pt over 9pt text, and the article's own 10pt body passed as more abstract.
+        ref = tsize if tsize is not None else lsize
+        if _opens_article(t) or (ref and size >= ref + 0.25):
+            end, kind = i, "article"    # the article's first heading, or its first paragraph
+            break
+        kept.append((False, t, size, i))
+        tsize = size if tsize is None else tsize
+    # A LABEL WITH NOTHING UNDER IT, LAST, IS THE ARTICLE'S FIRST HEADING. Boaz et al. 2015 open
+    # the article on "BACKGROUND" straight after an abstract that had no Background section, so
+    # it arrived as a new label and came out as the abstract's last word.
+    while kept and kept[-1][0] and abstract_label(kept[-1][1]) == kept[-1][1].strip(" :"):
+        end, kind = kept.pop()[3], "article"
+    labels = " ".join(seen)
+    if not (re.search(r"results|findings", labels) and re.search(r"conclusion|interpretation",
+                                                                  labels)):
+        return None
+    weight = Counter()
+    for is_label, t, size, _i in kept:
+        if not is_label:
+            weight[round(size * 2) / 2] += len(t)
+    body = max(weight, key=weight.get) if weight else None
+    out = [t for is_label, t, size, _i in kept
+           if is_label or body is None or round(size * 2) / 2 == body]
+    text = re.sub(r"\s+", " ", " ".join(out)).strip()
+    if len(text.split()) < 20:
+        return None
+    cut = end if kind == "article" else None
+    if kind == "apparatus":
+        # Past the registration or the licence to the next thing that opens an article: in the
+        # abstract's column, a heading or text set larger than the abstract's (BMJ's
+        # "Introduction"); anywhere else, only a heading, because a margin stamp or an
+        # affiliation beside the column can be set larger too. A LABEL WORD STANDING ALONE is
+        # the article's own first section, at any size: Autism in Adulthood sets "Background"
+        # small, after a lay summary, and without this the cut passed it and landed on the
+        # drop cap of the paragraph under it (Rapaport et al. 2024).
+        for j in range(end + 1, len(rows)):
+            p, x0, _y, _h, line, _c, small = rows[j]
+            t = line.strip()
+            if p > page0 + 1:
+                break
+            if t and abstract_label(t) == t.strip(" :"):
+                cut = j
+                break
+            if not t or small:
+                continue
+            size = sizes[j] if j < len(sizes) else 0
+            if _opens_article(t) or (abs(x0 - anchor) <= reach and tsize
+                                     and size >= tsize + 0.25):
+                cut = j
+                break
+    return text, cut
+
+
+def past_structured_abstract(first, last, n, found):
+    """The front cut, moved past a structured abstract where one was read; else `first` as
+    `find_boundaries` gave it (None for no cut).
+
+    NEVER SHORT OF WHERE THE CUT ALREADY WAS. The move is only ever later: a cut already past
+    the abstract (Elsevier's, at "1. Introduction") is kept. And the same sanity bound as
+    `find_boundaries` -- a cut that would leave (almost) nothing of the article is not a cut.
+    """
+    cut = found[1] if found else None
+    if cut and cut > (first or 0) and last - cut >= max(40, n * 0.25):
+        return cut
+    return first or None
+
 
 def find_abstract(rows, first, sizes, body_size):
     """The article's abstract, or None.
@@ -729,7 +945,14 @@ def find_abstract(rows, first, sizes, body_size):
     carries most of the text between the head and the article. So the lines are kept that wear
     the shape most of that text wears, weighted by characters; a footnote of another size
     inside a body-sized abstract is still ignored, and a whole abstract set small is kept whole.
+
+    A STRUCTURED ABSTRACT IS ASKED FOR FIRST, and only a run of section labels ending in results
+    and a conclusion answers, so a paper with ordinary prose under "Abstract" reaches the reading
+    below exactly as before. See `find_structured_abstract`.
     """
+    structured = find_structured_abstract(rows, first, sizes)
+    if structured:
+        return structured
     start, out, head_shape = None, [], None
 
     def shape(i, small):
@@ -1532,8 +1755,9 @@ def convert(cfg):
         # Case Series" -- and the title is front matter, gone by the time the body is joined.
         # Gathered from the body alone, the blunt rule welded it to "SelfControlled".
         abstract_keep = keep_hyphen(" ".join(row[4] for row in body)) if abstract else None
-        if not cfg.starts_at and af:
-            auto_front = af
+        if not cfg.starts_at:
+            auto_front = past_structured_abstract(
+                af, ab, len(body), read_structured_abstract(body, af, body_sizes))
         if not cfg.end_marker and ab < len(body):
             auto_back = ab
 
