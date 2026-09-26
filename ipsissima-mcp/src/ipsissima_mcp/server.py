@@ -172,7 +172,9 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "If the result has `questions`, ask the user those questions before going further. They "
         "are the things that cannot be inferred from the files: whether several sources are one "
         "work or several, and which of two drafts is the current one. `advice` reports a source "
-        "available in a better format than the one offered."),
+        "available in a better format than the one offered. `offers` are things to MENTION to "
+        "the user, not to do: the mechanism pass, for a text that sets out what brings what about, "
+        "runs only if the user says yes."),
 )
 def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
@@ -222,9 +224,15 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
 
     if intent == "extract":
         plan["questions"] = [q for q in plan["questions"] if q["id"] != "grouping"]
+        # Extraction alone is a complete request: nothing is to be mapped, so nothing is offered.
+        plan["offers"] = []
 
     plan["next"] = ("ask the user the questions above, then call extract_text with `grouping` set"
                     if plan["questions"] else "call extract_text")
+    if plan["offers"]:
+        plan["next"] += ("; and tell the user of the mechanism pass in `offers` -- in a sentence, "
+                         "without running it. If they want it, run it after the map checks ok "
+                         "and verified")
     return plan
 
 

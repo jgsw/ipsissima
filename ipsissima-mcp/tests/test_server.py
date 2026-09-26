@@ -62,6 +62,30 @@ def build(tmp):
 
     (d / "one").mkdir()
     (d / "one" / "paper.md").write_text("# A paper\n\n" + "word " * 300, encoding="utf-8")
+
+    # A POLICY BRIEF, which says what brings what about sentence after sentence, and an essay that
+    # says "because" twice in twenty sentences. The first earns the mechanism offer; the second not.
+    (d / "brief").mkdir()
+    (d / "brief" / "brief.md").write_text("# Community sentences\n\n" + " ".join([
+        "Short prison terms cause people to lose their jobs and homes.",
+        "Losing a job increases the risk of reoffending.",
+        "Community orders reduce reoffending because people keep their work.",
+        "Keeping work leads to stable housing.",
+        "Stable housing in turn reduces contact with offending peers.",
+        "Fewer people in prison lowers the cost to the state.",
+        "Lower costs enable investment in probation.",
+        "Better probation encourages compliance with orders.",
+        "Compliance raises public confidence in community sentences.",
+        "Confidence makes courts more likely to use them.",
+        "Courts should therefore prefer community orders for short terms.",
+        "The government should fund probation accordingly."]) + "\n\n# References\n\n"
+        + "Leads to nothing. Causes nothing. " * 20, encoding="utf-8")
+    (d / "essay").mkdir()
+    (d / "essay" / "essay.md").write_text("# On reasons\n\n" + " ".join(
+        ["A reason is a consideration that counts in favour of something."] * 9 +
+        ["We say so because the agent could deliberate to it."] +
+        ["An external reason statement is false or incoherent on this view."] * 9 +
+        ["That is because nothing in the motivational set answers to it."]), encoding="utf-8")
     return d
 
 
@@ -91,6 +115,18 @@ def test_sources(d):
     check("one source: nothing to ask", plan["questions"], [])
     check("one source: nothing to advise", plan["advice"], [])
     check("markdown is gold", plan["sources"][0]["metal"], "gold")
+
+    # THE MECHANISM PASS IS OFFERED FOR A TEXT THAT SETS OUT WHAT BRINGS WHAT ABOUT, and only there.
+    # Mutation: CAUSAL_PER_KW = 0 -> the essay is offered it; drop the offers block -> the brief is not.
+    plan = sources.describe([str(d / "brief")])
+    check("a causal brief draws the mechanism offer", [o["id"] for o in plan["offers"]], ["mechanism"])
+    check("naming the source", plan["offers"][0]["sources"], ["brief.md"])
+    check("eleven causal sentences, the references not counted",
+          plan["sources"][0]["causal"]["causal_sentences"], 11)
+    check("an offer is not a question", plan["questions"], [])
+    plan = sources.describe([str(d / "essay")])
+    check("an essay that says `because` twice draws none", plan["offers"], [])
+    check("nor does a text with no sentences", sources.describe([str(d / "one")])["offers"], [])
 
     # A path that is not there is reported rather than treated as an empty folder.
     plan = sources.describe([str(d / "nope")])
@@ -245,6 +281,18 @@ def test_server(d):
                        all(f.get("title") or f.get("line") is not None
                            for f in out.get("findings", [])),
                        "a fault with no location cannot be acted on")
+
+        # THE OFFER REACHES THE CLIENT, and `next` says to mention it and not to run it.
+        # Extraction alone is a complete request, so it offers nothing.
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")]}))
+        check("the plan carries the mechanism offer", [o["id"] for o in out.get("offers", [])],
+              ["mechanism"])
+        check_true("and `next` says to mention it without running it",
+                   "without running it" in out.get("next", ""), out.get("next"))
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")],
+                                                        "intent": "extract"}))
+        check("an extraction-only plan offers nothing", out.get("offers"), [])
+        check("and its `next` says nothing of it", "mechanism" in out.get("next", ""), False)
 
         # A file that does not exist is an answer, not a crash.
         out = result(await s.call_tool("argdown_check", {"path": str(d / "no.argdown")}))

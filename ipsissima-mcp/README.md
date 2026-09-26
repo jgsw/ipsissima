@@ -478,7 +478,7 @@ contacts zotero.org.
 
 | tool | |
 |---|---|
-| `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous |
+| `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous; offers the mechanism pass for a text that sets out what brings what about |
 | `extract_text` | documents to structured Markdown, with page markers |
 | `assess_pdf` | how hard is this PDF, and does a machine-readable version exist? |
 | `page_images` | crops of damaged passages, for the cases a converter cannot do |

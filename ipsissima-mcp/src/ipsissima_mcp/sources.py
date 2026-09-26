@@ -171,6 +171,82 @@ def resolve(paths, recursive=True, max_files=500):
     return found, unreadable, skipped
 
 
+#: CAUSAL LANGUAGE, PER THOUSAND WORDS OF RUNNING TEXT, above which the plan offers the mechanism
+#: pass. Measured 26 Sep 2026 with mechanism.CAUSAL over every sample in the repository and the
+#: private corpus: the three policy briefs of the causal-diagrams research ran 11.5-13.3 and
+#: Darwin's natural selection 10.3; every philosophy paper ran 7.2 or below (Nagel on death the
+#: highest, Carroll 3.0), and a polemic or a speech lower still. Nine sits in the gap.
+CAUSAL_PER_KW = 9.0
+#: ...and a floor, so that a paragraph that happens to say "because" twice offers nothing.
+CAUSAL_MIN_SENTENCES = 8
+#: How much is read. A policy text shows its hand early; a book's first chapters are enough.
+_SAMPLE_CHARS, _SAMPLE_PAGES = 120_000, 25
+_BACK_MATTER = re.compile(r"^(\d+\.?\s*)?(notes|endnotes|references|bibliography|works cited)\s*$", re.I)
+
+
+def _sample_text(path):
+    """Running text enough to judge, cheaply. None where nothing can be read without converting."""
+    name, _ = tier_of(path)
+    ext = os.path.splitext(path)[1].lower()
+    try:
+        if name == "pdf":
+            import pymupdf
+            pages = []
+            with pymupdf.open(path) as d:
+                for i in range(min(d.page_count, _SAMPLE_PAGES)):
+                    lines = [l.strip() for l in d[i].get_text().split("\n") if l.strip()]
+                    # THE BACK MATTER STOPS THE SAMPLE, as a heading does in Markdown. Unstopped,
+                    # four pages of endnotes took the SMF brief from 11.5 to 8.3 and under the bar.
+                    end = next((j for j, l in enumerate(lines) if len(l) < 30 and _BACK_MATTER.match(l)),
+                               None)
+                    # A PDF's lines break mid-sentence; each page is one paragraph for this purpose.
+                    pages.append(" ".join(lines[:end]))
+                    if end is not None:
+                        break
+            return "\n\n".join(pages)
+        if ext in ZIP_TEXT_MEMBERS:
+            import zipfile
+            parts, read = [], 0
+            with zipfile.ZipFile(path) as z:
+                for member in z.namelist():
+                    if not any(member.lower().endswith(x) for x in ZIP_TEXT_MEMBERS[ext]):
+                        continue
+                    raw = z.read(member)[:_SAMPLE_CHARS].decode("utf-8", "replace")
+                    # Paragraph ends survive as blank lines; the rest of the markup goes.
+                    raw = re.sub(r"</(w:p|p|h\d|li|div|text:p|text:h)>", "\n\n", raw)
+                    parts.append(re.sub(r"<[^>]+>", " ", raw))
+                    read += len(raw)
+                    if read >= _SAMPLE_CHARS:
+                        break
+            return "\n\n".join(parts)
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            text = fh.read(_SAMPLE_CHARS)
+        if ext in (".html", ".htm"):
+            text = re.sub(r"<[^>]+>", " ", re.sub(r"</(p|h\d|li|div)>", "\n\n", text, flags=re.I))
+        return text
+    except Exception:
+        return None
+
+
+def causal_signal(path):
+    """How much of a source's running text says that something brings something about.
+
+    A SIGNAL FOR AN OFFER, NEVER A VERDICT. It decides only whether the plan mentions the mechanism
+    pass; the reader decides whether to have it. Counted with the same pattern the checker's
+    coverage aid uses, over the same sentences, so the offer and the later coverage report agree
+    about what causal language is."""
+    from ipsissima_mcp import mechanism
+    text = _sample_text(path)
+    if not text:
+        return None
+    sents = mechanism._sentences(text)
+    words = sum(len(s.split()) for _, s in sents)
+    n = sum(1 for _, s in sents if mechanism.CAUSAL.search(s))
+    per_kw = round(1000 * n / words, 1) if words else 0.0
+    return dict(causal_sentences=n, sentences=len(sents), words_read=words, per_1000_words=per_kw,
+                looks_causal=per_kw >= CAUSAL_PER_KW and n >= CAUSAL_MIN_SENTENCES)
+
+
 def describe(paths, recursive=True):
     """The full reading of a request: every source, its route, and everything ambiguous.
 
@@ -186,7 +262,8 @@ def describe(paths, recursive=True):
         rec = dict(path=p, name=os.path.basename(p), tier=name, metal=spec["metal"],
                    rank=spec["rank"], why=spec["why"], words=n, words_estimated=est,
                    modified=datetime.fromtimestamp(_mtime(p), timezone.utc)
-                   .strftime("%Y-%m-%d"))
+                   .strftime("%Y-%m-%d"),
+                   causal=causal_signal(p))
         sources.append(rec)
         by_stem.setdefault(_stem_key(p), []).append(rec)
 
@@ -232,11 +309,33 @@ def describe(paths, recursive=True):
             why="chapters of one work belong in one map; separate articles belong in separate "
                 "maps. Nothing in the files themselves settles which this is."))
 
+    # ---- the mechanism pass, offered ---------------------------------------- #
+    # DECIDED 26 SEP 2026: the pass runs only on request, on a finished and verified map. A text
+    # that says, sentence after sentence, what brings what about is the one where a reader is
+    # likely to want it and unlikely to know it exists -- so the plan SAYS it exists. An offer,
+    # not a question: nothing waits on the answer, and the map is made the same way either way.
+    offers = []
+    causal = [r for r in sources if (r["causal"] or {}).get("looks_causal")]
+    if causal:
+        names = [r["name"] for r in causal]
+        offers.append(dict(
+            id="mechanism", sources=names,
+            message=(f"{', '.join(names)} {'sets' if len(names) == 1 else 'set'} out what brings "
+                     f"what about -- causal language in "
+                     f"{max(r['causal']['per_1000_words'] for r in causal):g} sentences per "
+                     f"thousand words, where an argumentative paper runs under 7. Once the map "
+                     f"checks ok and verified, Ipsissima can also mark the causal chain the text "
+                     f"asserts -- actors, steps, what each step rests on, and where the chain "
+                     f"stops -- and draw it in the Mechanism view. It is a separate pass that "
+                     f"re-reads the source, and it changes nothing in the argument."),
+            how="only if the user says yes: argdown_method with `mechanism`, after the map "
+                "checks ok and verified"))
+
     total = sum(r["words"] for r in sources)
     return dict(
         sources=sorted(sources, key=lambda r: r["path"]),
         count=len(sources), total_words=total,
         unreadable=unreadable, skipped=skipped,
-        questions=questions, advice=advice,
+        questions=questions, advice=advice, offers=offers,
         hierarchy_note="Markdown is gold, pandoc-readable is silver, PDF is bronze. Where you "
                        "have a document in more than one format, give Ipsissima the best one.")
