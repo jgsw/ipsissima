@@ -1795,15 +1795,31 @@ def provenance_report(cli, path, source_root, fix=None):
     # ---- what earns its place ------------------------------------------- #
     declared_here, _ = prov.declared_contentions(prov.read_frontmatter(path), doc)
     contrib = prov.contribution(doc, declared_here)
+    # THE CHAIN'S OWN MATERIAL IS NOT INERT (Phase C, 26 Sep 2026). The mechanism pass may add a
+    # claim quoting a step the text states but the argument never needed; it asserts a step
+    # (`causes:`) and supports nothing, by design. Counted apart, so "inert" keeps meaning a
+    # claim whose place in the ARGUMENT is not settled.
+    try:
+        import mechanism as _mech
+        _steps = _mech.step_titles(doc)
+    except ImportError:
+        _steps = set()
+    chain_only = sorted(t for t, c in contrib.items() if c["role"] == "inert" and t in _steps)
+    for t in chain_only:
+        contrib[t]["role"] = "chain"
     roles = Counter(c["role"] for c in contrib.values())
     apex = sorted(t for t, c in contrib.items() if c["apex"])
     SHAPE["contentions"] = apex
     SHAPE["contribution"] = {"supports": roles.get("supports", 0),
                              "engages": roles.get("engages", 0),
-                             "inert": roles.get("inert", 0), "total": len(contrib)}
+                             "inert": roles.get("inert", 0), "chain": roles.get("chain", 0),
+                             "total": len(contrib)}
     print(f"\n   CONTRIBUTION: {roles.get('supports', 0)} claims support a contention, "
           f"{roles.get('engages', 0)} engage one by objecting,")
     print(f"      {roles.get('inert', 0)} reach none at all, of {len(contrib)}.")
+    if chain_only:
+        print(f"      {len(chain_only)} more stand outside the argument as the chain's own "
+              f"material: they assert a step and support nothing, as a mechanism-only claim does.")
     print(f"      the contentions are: {', '.join(apex) if apex else '(none found)'}")
     if declared_here:
         bears = {a for a, _, _ in prov.title_edges(doc)}
@@ -1863,7 +1879,7 @@ def provenance_report(cli, path, source_root, fix=None):
                   f"stated {g['stated']}/{g['total']}, first used {g['first_used']}")
 
 
-def mechanism_report(cli, path):
+def mechanism_report(cli, path, source_root=None):
     """The chain the text asserts: declarations checked, gaps and loops found, light and shadow.
 
     See mechanism.py for the notation and for why this is Gross's causal chain and not Pearl's
@@ -1897,6 +1913,22 @@ def mechanism_report(cli, path):
             for sev, _c, message, where in faults:
                 print(f"      {sev} {where.get('title', '')[:60]}  {message[:90]}")
         return
+    # WHAT THE CHAIN RESTS ON, when the text is to hand: the text's causal sentences that no step
+    # quotes. Candidates for the annotation pass, never faults -- see mech.coverage.
+    if source_root:
+        steps_all = [s for s in mech.steps(doc, prov.appraisal_titles(doc))]
+        cov = mech.coverage(doc, source_root, steps_all)
+        if cov:
+            profile["coverage"] = cov
+            if cov["uncovered_count"]:
+                finding("mechanism-coverage", "?",
+                        f"{cov['uncovered_count']} of {cov['causal_sentences']} sentences in the "
+                        f"text use causal language and no step quotes them"
+                        + (f" ({cov['near']} of them share a paragraph with a step)"
+                           if cov.get("near") else ""),
+                        fix="read each (listed in the census and in shape.chain.coverage): mark a "
+                            "step where it states one the chain lacks, quoting it; leave it where "
+                            "it states none")
     SHAPE["chain"] = profile
     print()
     for line in mech.census(profile):
@@ -2317,7 +2349,8 @@ def _report(cli, path, a):
     # what they say HAPPENS. Silent for a file with no `mechanism:` block and no `causes:` step,
     # which is most files. The appraisal layer's own rules are checked here too, whether or not
     # there is a chain.
-    mechanism_report(cli, path)
+    mechanism_report(cli, path, os.path.abspath(os.path.expanduser(a.source_root))
+                     if a.source_root else None)
 
     # ---- 5e. the shape of the premise-conclusion structures --------------- #
     # After fidelity, because these are questions about the ARGUMENT rather than about whose

@@ -137,7 +137,20 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(same(before, await textBoxes()), "switching the layer moves none of the text's own states");
 
     // The appraisal's view of a text step is named in the panel only while the layer is on.
-    const clickChip = async (layer, edge) => page.locator(`#mech .chip[data-layer="${layer}"][data-edge="${edge}"]`).first().click();
+    const clickChip = async (layer, edge) => page.locator(`#mech .chip[data-layer="${layer}"][data-edge="${edge}"][data-kind="step"]`).first().click();
+
+    // A NULL FINDING AND A SELECTION LINK ARE DRAWN APART from the causal step between the same
+    // states. Mutation: drop `kindOf(s)` from the layout's group key -> the null and the selection
+    // fold into the "-" arrow and these fail.
+    // textContent, not innerText: Playwright's innerText reads nothing from SVG text.
+    const chipText = kind => page.evaluate(k => {
+      const e = document.querySelector(`#mech .chip[data-layer="text"][data-edge="order>reoff"][data-kind="${k}"] text`);
+      return e ? e.textContent : ""; }, kind);
+    check((await chipText("step")).startsWith("-"), "the text's own step is drawn as its step", await chipText("step"));
+    check(/0 no effect/.test(await chipText("null")), "the text's null finding is drawn apart, saying so", await chipText("null"));
+    check(/selection/.test(await chipText("selection")), "and the selection link apart again", await chipText("selection"));
+    check(await page.evaluate(() => { const p = document.querySelector('#mech g[data-kind="null"] path.ed'); return p && !p.getAttribute("marker-end"); }),
+          "a null finding carries no arrowhead: nothing is brought about");
     await clickChip("text", "order>reoff");
     await page.waitForTimeout(150);
     check(/appraisal on this step/i.test(await page.locator(".amech-side").innerText()),

@@ -1,0 +1,191 @@
+# The mechanism pass — marking the chain a text asserts
+
+A SEPARATE PASS, AND ONLY ON REQUEST. It runs when a reader has asked for the mechanism of a text —
+"map its mechanism too", or yes to `argdown_plan`'s offer — and never as part of an ordinary
+reconstruction. It takes a map that is already finished (`argdown_check` reports `ok` and
+`verified`) and adds to it. Ruled 26 Sep 2026.
+
+## What it is for
+
+Ipsissima's argument map says what holds a claim up. The Mechanism arrangement says what the text
+says **happens**: the chain of steps it sets out from a cause — often the action it recommends — to
+the outcomes it cares about; which actors take them, at which levels of social complexity, in what
+order, under what conditions; and which of those steps the text actually backs. The chain is in
+Gross's sense (Sociological Theory 36, 2018), not Pearl's: steps enacted by actors, loops allowed.
+
+The pass exists because the argument map alone cannot supply the chain. Reconstruction keeps what
+serves as a reason for the contention and leaves the rest, and much of a mechanism is the rest:
+
+- an **explanation** that argues nothing — why people are so sensitive to small fees — is left out;
+- a step can live only in an **inference**: an arrow from "fewer return to prison" to "less
+  pressure on prisons" with no claim stating it;
+- a **compression** can fold three steps into one sentence and lose the states between them.
+
+So the pass goes back to the SOURCE. An annotation made from the map alone would report as the
+author's gaps what extraction had discarded — the one error Ipsissima exists to prevent.
+
+## What it may and may not change
+
+It may **add**:
+
+1. the `mechanism:` block in the front matter;
+2. `causes:` in the metadata of claims that already state a step;
+3. **mechanism-only claims**: steps the text states and the argument never needed, each in the
+   text's own words, under a section of their own;
+4. a claim stating a step the text's own **inference** relies on, marked as an imputation.
+
+It may **not**: change any claim's words, fidelity or tags; add, remove or rewire any support,
+attack or undercut among the existing claims; wire a mechanism-only claim into the argument; or
+write any `#appraisal`. The argument map must come out of the pass exactly as it went in, apart
+from the metadata and the new section — check it with `argdown_check`: the apex, contribution and
+interpretive load must be unchanged.
+
+## 1. Read the source again, all of it
+
+Not the map. List every passage that says something brings something about: what the recommended
+action will do, why it will, what happens to whom and in what order, what it depends on, and what
+goes wrong. Explanatory sections and asides count; footnotes count when they carry the reasoning.
+
+## 2. Declare the cast
+
+```yaml
+mechanism:
+    question: "How would free distribution raise use of preventive health products?"
+    levels: [macro, meso, micro]          # top to bottom; declare the text's own if it has them
+    actors:
+        ngo:       {label: "Governments and NGOs distributing products", level: meso}
+        household: {label: "Poor household", level: micro}
+    states:
+        price:   {label: "User fee charged", actor: ngo, role: intervention}
+        takeup:  {label: "Household takes the product up", actor: household,
+                  note: "the text's 'take-up', 'adoption' and 'access' read as one state"}
+        use:     {label: "Product used", actor: household,
+                  measured: "surveyors' observation: nets hung, chlorine in the water"}
+        health:  {label: "Health of the household", actor: household, role: outcome}
+```
+
+- **Actors** are positions the text names — "the offender", "courts", "employers" — not individuals.
+- **A state** is a change in an actor's condition or conduct. Name it as the text does.
+- **Deciding which states are one is interpretation.** Where the text uses several words for what
+  you take to be one state, say so in the state's `note:`, as above. Where you split what the text
+  runs together, say that too. These decisions are where two annotators most often part company.
+- **Roles:** `intervention` for the action the text recommends or the cause it sets out from;
+  `outcome` for what that recommendation is **for** — the ends the text argues the action serves
+  (health, access, reoffending), not every state it measures along the way. Take-up, use and cost
+  per person are usually steps on the way, not outcomes. Most chains have one intervention and two
+  to five outcomes; if you are marking more, ask of each what the text says the policy is for.
+- **`measured:`** when the text says how a state is measured, especially by a proxy it concedes.
+- **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
+  that names individuals, networks, organisations, the state, the field — declares them, top first.
+
+## 3. Mark the steps
+
+On a claim that states a step, add `causes:` — one map, or a list when the claim states several:
+
+```argdown
+[Small fees cut take-up]: Relative to free distribution, "charging even very small user fees
+substantially reduces adoption".
+    {fidelity: "compression", pinpoint: "p. 1",
+     causes: {from: price, to: takeup, sign: "-", basis: study}}
+```
+
+| field | says |
+|---|---|
+| `from`, `to` | declared states |
+| `sign` | `+` or `-`; or `"0"` where the text finds **no effect** (below) |
+| `basis` | what the TEXT offers for the step: `study` (a study or trial it reports), `statistics` (data it cites), `model` (a model's estimate), `example` (a case or a country), `testimony` (an authority's word, a consensus), `asserted` (nothing) |
+| `lag` | timing the text states: `"within five years"` |
+| `given` | conditions the text states, in its words: `["as part of a broader rehabilitation agenda"]` |
+| `how` | Gross's decomposition, **only where the text gives it**: `{actor, situation, habit, response}` |
+| `reflexive` | `true` where the step runs through a classification, a prediction or a model the step itself acts on |
+| `selects` | `true` where the link holds because of WHO ends up on each side, not because one brings the other about (below) |
+| `hedged` | `true` where the text puts the step as a possibility — "fees *may* worsen targeting" |
+
+- A claim tagged `#reported` keeps its tag: its steps are the rival view's, drawn apart.
+- **A finding of no effect is a step with `sign: "0"`**, with the basis the text gives it. A policy
+  text's central results are often nulls — paying does not raise use; fees do not target the needy —
+  and they are usually aimed at a rival view's step on the same pair of states. Mark both: the rival's
+  `+` on its `#reported` claim, the text's `"0"` on the claim that reports the finding. The
+  arrangement draws the null apart, without an arrowhead, and the census reports it against the rival
+  step it answers. A null carries nothing: it is never walked as part of the chain.
+- **A selection effect is not a step.** Where an association holds because of who ends up on each
+  side — charging screens out households that were unlikely to use the product anyway, so owners who
+  paid use it more — mark `selects: true` on it. It is reported and drawn apart, and never walked. The
+  text usually says which it is ("a screening effect"); where it does not, mark the step as the text
+  presents it and say in the claim's `note:` that it could be selection.
+- **Two findings with opposite signs on one pair of states are two steps** — fee → use `+` among
+  owners (screening, or given a condition) and `-` overall. Mark both; state the condition in `given:`.
+  They are counted apart.
+- **A moderator is a condition on a step, not a state.** "Demand fell less steeply when households had
+  time to pay" says the step fee → take-up is weaker under a condition: put `given: ["households given
+  three months to redeem the voucher"]` on that step. Mark the condition as a cause of its own only
+  where the text says it brings something about in its own right (cash in hand raises willingness to
+  pay: cash → take-up).
+- **Hedged steps.** A step the text puts as a possibility ("may", "might", "could") is the text's own,
+  marked `hedged: true`. A step the text sets out only to reject is the rival's (`#reported`).
+- Where two groups respond differently to the same situation — heavy drinkers cut down, dependent
+  drinkers cut food instead — mark two steps from the same state, with `how:` naming each actor.
+  Do not invent a "moderator" state.
+
+## 4. Add what the argument never needed
+
+A step the text states and no claim carries gets a claim of its own, under
+
+```argdown
+# The mechanism, as the text states it {isGroup: true}
+
+[Cash constrains purchase]: "a lack of cash on hand explains at least part of the drop in demand
+seen with user fees"
+    {fidelity: "quotation", pinpoint: "p. 8",
+     causes: {from: cash, to: takeup, sign: "+", basis: study}}
+```
+
+Quote the text: these claims are verified like every other. They support nothing and attack
+nothing, which is right — they are the chain's material, not the argument's, and the checker counts
+them apart. Argdown leaves them off the Reasons map; the Mechanism arrangement draws them.
+
+## 5. Steps carried by an inference
+
+Where the text's own inference relies on a causal step no claim states — the argument runs from "fewer
+reoffend" to "less pressure on prisons" and nothing says reoffenders fill the prisons — add a claim
+stating it, `fidelity: "imputation"`, `warrant: "enthymeme"`, in the mechanism section. **Only**
+where the text's inference relies on it.
+
+## 6. Never close a gap to complete the chain
+
+The checker reports where the text's chain stops, where an outcome is never reached, and where the
+recommended action is linked to nothing. **Those are findings about the text.** A step the text does
+not state and its argument does not need stays out, however obvious. Closing it would turn the
+author's gap into the reconstructor's invention — and a reader asking what the text shows could no
+longer tell.
+
+The reconstructor's own view of the chain — a confounder, a loop the text leaves open, how a policy
+would actually reach the people it names — is the **appraisal**, a separate request, written as
+`#appraisal` claims. Not in this pass.
+
+## 7. Check, and read the coverage
+
+Run `argdown_check` with `source_root` until `ok` and `verified`. Then read the CHAIN section of the
+census:
+
+- **the profile** — steps, levels, lags, routes, loops — and **light and shadow**: how many steps the
+  text backs with a study, statistics or a model;
+- **the gaps**, which you leave;
+- **the nulls and selection links**: each null should face the rival step it answers, where there is
+  one;
+- **the coverage**: the sentences in the text that use causal language and that no step QUOTES. Those
+  sharing a paragraph with a step are marked `*` and counted apart, never as covered: a converted
+  source can run a whole page as one paragraph. They are candidates, not faults. For each: does it state a step the chain lacks? If it
+  does, mark it (§3 or §4). If it states none — a "because" in a methods paragraph, "increasing" as a
+  mere description — leave it.
+
+Then report back: the profile, the gaps, how much of the text's causal language the chain covers,
+and the decisions about which states are one.
+
+## For a dense, multilevel text
+
+Annotate section by section, and declare the text's own levels. Expect many actors, loops that
+return through institutions, and strategies that are alternatives rather than steps; mark each
+alternative as its own step from the same situation. Keep `how:` for where the text actually says
+what an actor faces and does — in a text of that kind it usually does, and that is where the chain
+becomes intelligible.

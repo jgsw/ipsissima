@@ -25,6 +25,12 @@ and a claim (or argument) that asserts a step says so in its metadata, one map o
      basis: study, lag: "within five years", given: ["..."],
      how: {actor: offender, situation: "...", habit: "...", response: "..."}}}
 
+`sign` may be "0": the text finds NO effect -- a finding, reported against the rival step it
+answers and never walked. `selects: true` marks a selection link (who ends up on each side), also
+reported and never walked. `hedged: true` marks a step the text puts as a possibility. All three
+came out of the first trial of the mechanism pass (J-PAL bulletin, two blind annotators, 26 Sep
+2026), whose central results are nulls the notation could not otherwise hold.
+
 `causes:`, not `link:` -- the spike used `link:` and the checker's own typo detector read it as
 `line:`. `basis` says what the TEXT offers for the step, which the argument map cannot say:
 study, statistics, model, example, testimony, asserted. `how` is Gross's pragmatist
@@ -41,6 +47,9 @@ probabilities of a chain firing. It reports the chain's STRUCTURE -- Gross's dim
 LIGHT AND SHADOW: which steps the text backs with evidence, which it only argues or asserts, and
 which the reconstructor supplied.
 """
+
+import os
+import re
 
 DEFAULT_LEVELS = ["macro", "meso", "micro"]
 BASES = ("study", "statistics", "model", "example", "testimony", "asserted")
@@ -146,6 +155,8 @@ def steps(doc, appraisal):
                 c = c if isinstance(c, dict) else {}
                 imputed = d.get("fidelity") == "imputation"
                 basis = c.get("basis")
+                # `sign: 0` arrives from YAML as an int, `sign: "0"` as a string: one meaning.
+                sign = None if c.get("sign") is None else str(c.get("sign"))
                 tier = "imputed" if imputed else _TIER_OF_BASIS.get(basis, "asserted")
                 if tier == "asserted" and supports.get(title):
                     tier = "argued"
@@ -153,7 +164,15 @@ def steps(doc, appraisal):
                 out.append(dict(
                     title=title, kind=kind, layer=layer, tags=sorted(tags),
                     fidelity=d.get("fidelity"), warrant=d.get("warrant"),
-                    src=c.get("from"), dst=c.get("to"), sign=c.get("sign"),
+                    src=c.get("from"), dst=c.get("to"), sign=sign,
+                    # NULL: the text finds NO effect here -- a finding, not an absence (trial of
+                    # 26 Sep: the J-PAL bulletin's central results are nulls, and without a form
+                    # for them the chain drew only the rival steps they refute).
+                    null=(sign == "0"),
+                    # SELECTION: a link that holds because of WHO ends up on each side -- the
+                    # screening effect -- not because one state brings the other about.
+                    selects=bool(c.get("selects")),
+                    hedged=bool(c.get("hedged")),
                     basis=basis, tier=tier, lag=c.get("lag"),
                     given=given if isinstance(given, list) else [given],
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
@@ -293,9 +312,14 @@ def analyse(fm, doc):
                              f"basis `{s['basis']}` is not one of {', '.join(BASES)}; the step is "
                              f"shaded as asserted",
                              {"title": s["title"]}))
-        if s["sign"] not in (None, "+", "-"):
+        if s["sign"] not in (None, "+", "-", "0"):
             findings.append(("?", "mechanism",
-                             f"sign `{s['sign']}` is not `+` or `-`", {"title": s["title"]}))
+                             f"sign `{s['sign']}` is not `+`, `-` or `0` (no effect)",
+                             {"title": s["title"]}))
+        if s["null"] and s["selects"]:
+            findings.append(("?", "mechanism",
+                             "a step cannot be both a null finding and a selection link",
+                             {"title": s["title"]}))
         if isinstance(s["how"], dict):
             extra = set(s["how"]) - {"actor", "situation", "habit", "response"}
             if extra:
@@ -309,7 +333,11 @@ def analyse(fm, doc):
 
     # ---- the chain, in the text's own layer ------------------------------ #
     ok = [s for s in all_steps if s["src"] in states and s["dst"] in states]
-    text = [s for s in ok if s["layer"] == "text"]
+    # ONLY CAUSAL STEPS CARRY THE CHAIN. A null finding says nothing is carried; a selection link
+    # says the association is not an effect. Both are reported, neither is walked.
+    causal = [s for s in ok if not s["null"] and not s["selects"]]
+    text_all = [s for s in ok if s["layer"] == "text"]
+    text = [s for s in causal if s["layer"] == "text"]
     text_edges = {(s["src"], s["dst"]) for s in text}
     ids = list(states)
     interventions = [i for i in ids if (states[i] or {}).get("role") == "intervention"]
@@ -358,10 +386,11 @@ def analyse(fm, doc):
                                  "`imputation` with `warrant: enthymeme`), never to complete the "
                                  "chain"}))
 
-    # light and shadow, per distinct step: its best-backed claim decides
+    # light and shadow, per distinct SIGNED step: its best-backed claim decides. Keyed by sign as
+    # well, since fee -> health (-) and fee -> health (+, under a condition) are two steps.
     best = {}
     for s in text:
-        k = (s["src"], s["dst"])
+        k = (s["src"], s["dst"], s["sign"])
         if k not in best or TIERS.index(s["tier"]) < TIERS.index(best[k]):
             best[k] = s["tier"]
     tiers = {t: sum(1 for v in best.values() if v == t) for t in TIERS}
@@ -370,7 +399,7 @@ def analyse(fm, doc):
         hops = set(zip(loop, loop[1:] + loop[:1]))
         return any(s["reflexive"] and (s["src"], s["dst"]) in hops for s in pool)
 
-    pool_all = [s for s in ok if s["layer"] != "rival"]
+    pool_all = [s for s in causal if s["layer"] != "rival"]
     loops_text = _loops(ids, text_edges)
     loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all})
     routes = []
@@ -393,12 +422,30 @@ def analyse(fm, doc):
                               for l in loops_all],
         tiers=tiers, gaps=[g["message"] for g in gaps],
         rival_steps=sum(1 for s in ok if s["layer"] == "rival"),
+        null_steps=_nulls(text_all, ok),
+        selection_steps=sorted({(s["src"], s["dst"]) for s in text_all if s["selects"]}),
+        hedged=sum(1 for s in text_all if s["hedged"]),
         appraisal_claims=len(appraisal),
         appraisal_steps=sum(1 for s in ok if s["layer"] == "appraisal"),
         with_how=sum(1 for s in text if isinstance(s["how"], dict)),
         with_given=sum(1 for s in text if s["given"]),
     )
     return findings, profile
+
+
+def _nulls(text_all, ok):
+    """The text's null findings, each saying whether it answers a rival view's step on the same
+    pair of states -- the dispute the J-PAL bulletin is about, made visible."""
+    out, seen = [], set()
+    for s in text_all:
+        if not s["null"] or (s["src"], s["dst"]) in seen:
+            continue
+        seen.add((s["src"], s["dst"]))
+        against = sorted({r["sign"] for r in ok if r["layer"] == "rival" and not r["null"]
+                          and (r["src"], r["dst"]) == (s["src"], s["dst"]) and r["sign"]})
+        out.append(dict(**{"from": s["src"], "to": s["dst"]}, basis=s["basis"],
+                        refutes=against))
+    return out
 
 
 def census(profile):
@@ -441,8 +488,31 @@ def census(profile):
     t = p["tiers"]
     lines.append(f"      light   {t['evidence']} backed by a study, statistics or a model; "
                  f"{t['argued']} argued; {t['asserted']} asserted only; {t['imputed']} imputed")
+    for n in p.get("null_steps", []):
+        lines.append(f"      null    {n['from']} -> {n['to']}: the text finds no effect"
+                     + (f" ({n['basis']})" if n["basis"] else "")
+                     + (f", against the rival view's {'/'.join(n['refutes'])}"
+                        if n["refutes"] else ""))
+    for a, b in p.get("selection_steps", []):
+        lines.append(f"      select  {a} -> {b}: a selection link, not an effect -- not walked")
+    if p.get("hedged"):
+        lines.append(f"      hedged  {p['hedged']} step(s) the text puts as a possibility (\"may\")")
     for g in p["gaps"]:
         lines.append(f"      ? gap   {g}")
+    cov = p.get("coverage")
+    if cov:
+        lines.append(f"      cover   {cov['covered']} of {cov['causal_sentences']} sentences in the "
+                     f"text that use causal language are quoted by a step"
+                     + (f"; {cov['near']} more share a paragraph with one (weaker)"
+                        if cov.get("near") else ""))
+        if cov["uncovered_count"]:
+            lines.append(f"              the other {cov['uncovered_count']} are candidates, not "
+                         f"faults -- does each state a step the chain lacks?")
+            for u in cov["uncovered"][:8]:
+                lines.append(f"              line {u['line']:>4}{'*' if u.get('near') else ' '} "
+                             f"{u['text'][:86]}")
+            if cov["uncovered_count"] > 8:
+                lines.append(f"              ... and {cov['uncovered_count'] - 8} more")
     if p["rival_steps"]:
         lines.append(f"      rival   {p['rival_steps']} step(s) in views the text reports "
                      f"(#reported)")
@@ -451,3 +521,124 @@ def census(profile):
                      f"step(s) -- the reconstructor's own, excluded from every measure of the "
                      f"author's argument")
     return lines
+
+
+def step_titles(doc):
+    """Titles of every claim or argument that asserts a step (`causes:`)."""
+    out = set()
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            if "causes" in _data(node):
+                out.add(title)
+    return out
+
+
+# ------------------------------------------------------------------ coverage (Phase C)
+#
+# WHY A COVERAGE AID. The gap report says what the text's chain leaves out -- and that is a finding
+# about the TEXT only if the annotation captured every step the text states. Annotating the
+# argument map alone does not: extraction keeps what serves as a reason and drops the rest, and
+# much of a mechanism is the rest (on the J-PAL bulletin, the section on WHY small fees deter was
+# left out as "explains rather than argues"). So the pass returns to the source, and this lists the
+# sentences there that use causal language and that no step quotes or is placed at. They are
+# CANDIDATES, not faults: a sentence may use "because" and state no step the chain needs. What the
+# list guarantees is that nothing was passed over unseen, and the census says how much of the
+# text's causal talk the chain rests on.
+
+CAUSAL = re.compile(
+    r"\b(because|therefore|thereby|consequently|as a result|hence|"
+    r"results? in|resulted in|resulting in|leads? to|led to|leading to|"
+    r"causes?|caused|causing|due to|owing to|"
+    r"drives?|driven|driving|reduces?|reduced|reducing|increases?|increased|increasing|"
+    r"raises?|raised|raising|lowers?|lowered|lowering|prevents?|prevented|preventing|"
+    r"contributes? to|contributed to|contributing to|so that|in order to|"
+    r"enables?|enabled|enabling|encourages?|encouraged|encouraging|"
+    r"deters?|deterred|deterring|discourages?|discouraged|"
+    r"promotes?|promoted|promoting|undermines?|undermined|undermining|"
+    r"more likely|less likely|effects? of|impacts? on|in turn)\b", re.I)
+_STOP_HEADING = re.compile(r"^#+\s*(notes|references|bibliography|further reading|works cited|"
+                           r"endnotes|acknowledg)", re.I)
+# Two fixed-width lookbehinds, because Python's `re` refuses a variable-width one: a stop, or a
+# stop followed by a closing quote or bracket.
+_SENT_END = re.compile(r"(?:(?<=[.!?])|(?<=[.!?][\"'\u201d\u2019)]))\s+(?=[A-Z\"\u201c(\[])")
+
+
+def _sentences(text):
+    """(line, sentence) for every sentence of running text: headings, the converter's comments,
+    footnote definitions and the back matter left out."""
+    text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
+    out, para, start = [], [], None
+    lines = text.split("\n")
+    for i, raw in enumerate(lines + [""], 1):
+        line = raw.strip()
+        if _STOP_HEADING.match(line):
+            break
+        if not line or line.startswith("#") or line.startswith("[^") or line.startswith("==="):
+            if para:
+                joined = " ".join(para)
+                for sent in _SENT_END.split(joined):
+                    if len(sent.split()) >= 5:
+                        out.append((start, sent.strip()))
+                para, start = [], None
+            continue
+        if start is None:
+            start = i
+        para.append(line.lstrip("> ").strip())
+    return out
+
+
+def coverage(doc, source_root, steps_all):
+    """How much of the text's causal language the chain's steps quote or are placed at.
+
+    Returns None when there is nothing to measure. Steps in the text's own layer and in rival
+    views count; the appraisal's do not, since the reconstructor quoting a sentence is not the
+    text's chain capturing it."""
+    import argdown_provenance as prov
+    titles = {s["title"] for s in steps_all if s["layer"] in ("text", "rival")}
+    if not titles or not source_root:
+        return None
+    quotes = prov.check_quotations(doc, source_root)
+    spans = {}
+    for q in quotes:
+        if q["title"] in titles and q["status"] == "exact" and q.get("chapter"):
+            spans.setdefault(q["chapter"], []).append(prov.normalise(q["quote"])[0].lower())
+    placed = {}
+    try:
+        pos = prov.text_positions(doc, source_root, quotes)
+    except Exception:
+        pos = {}
+    for t in titles:
+        p = pos.get(t) or {}
+        if p.get("chapter") and p.get("line"):
+            placed.setdefault(p["chapter"], set()).add(p["line"])
+    chapters = sorted({(m.get("data") or {}).get("chapter")
+                       for _, m in prov.iter_members(doc) if (m.get("data") or {}).get("chapter")})
+    total, covered, near, uncovered = 0, 0, 0, []
+    for ch in chapters:
+        try:
+            with open(os.path.join(source_root, ch), encoding="utf-8", errors="replace") as fh:
+                raw = fh.read()
+        except OSError:
+            continue
+        sents = _sentences(raw)
+        para_lines = sorted({ln for ln, _ in sents})
+        for ln, sent in sents:
+            if not CAUSAL.search(sent):
+                continue
+            total += 1
+            norm = prov.normalise(sent)[0].lower()
+            if any(q in norm or (len(norm) > 40 and norm in q) for q in spans.get(ch, [])):
+                covered += 1
+                continue
+            # ONLY A QUOTATION COVERS. Being placed in the same paragraph as a step was counted as
+            # covering at first, and on a source converted with page-long paragraphs one placed
+            # claim covered a whole page: both trial annotators of the J-PAL bulletin found 66-67
+            # of 76 "covered" and said their own reading had done the work. It is reported apart.
+            nxt = [x for x in para_lines if x > ln]
+            is_near = any(ln <= p < (nxt[0] if nxt else 10 ** 9) for p in placed.get(ch, ()))
+            near += int(is_near)
+            uncovered.append(dict(chapter=ch, line=ln, text=sent[:220], near=is_near))
+    if not total:
+        return None
+    return dict(causal_sentences=total, covered=covered, near=near, uncovered=uncovered[:40],
+                uncovered_count=len(uncovered))

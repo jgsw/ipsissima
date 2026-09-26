@@ -50,6 +50,14 @@ mechanism:
      causes: {from: order, to: reoff, sign: "+", basis: asserted}}
     -> [Recommend]
 
+[No deterrence found]: "A second study found no deterrent effect of prison terms on reoffending."
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "0", basis: study}}
+    -> [Prison deters]
+
+[Orders go to the less risky]: "Courts may give orders to people who were less likely to reoffend in any case." #conceded
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", selects: true, hedged: true}}
+    -> [Fewer reoffend after orders]
+
 [Crowding feeds reoffending]: Crowded prisons rehabilitate no one, so a fuller prison means more reoffending on release. #appraisal
     {fidelity: "imputation", warrant: "closes the loop the brief leaves open",
      causes: {from: prison, to: reoff, sign: "+"}}

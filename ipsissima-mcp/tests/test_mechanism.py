@@ -41,11 +41,11 @@ SOURCE = (FIXTURE / "source" / "brief.md").read_text(encoding="utf-8")
 CHAIN = (FIXTURE / "chain.argdown").read_text(encoding="utf-8")
 
 
-def run(text, name="brief.argdown", extra=None):
+def run(text, name="brief.argdown", extra=None, source=None):
     """Write the fixture beside its source, run the checker in json mode, return the report."""
     td = tempfile.mkdtemp(prefix="mechanism-test-")
     os.makedirs(os.path.join(td, "source"))
-    open(os.path.join(td, "source", "brief.md"), "w", encoding="utf-8").write(SOURCE)
+    open(os.path.join(td, "source", "brief.md"), "w", encoding="utf-8").write(source or SOURCE)
     path = os.path.join(td, name)
     open(path, "w", encoding="utf-8").write(text)
     r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), path,
@@ -115,6 +115,12 @@ check("one of them runs through the risk score and is reflexive",
 check("and each loop keeps its order",
       sorted(l["states"] for l in loops), [["order", "reoff", "risk"], ["reoff", "prison"]])
 check("the rival view's step is counted apart from the text's", chain.get("rival_steps"), 1)
+check("a null finding is reported, and answers the rival view's step on the same pair",
+      chain.get("null_steps"), [{"from": "order", "to": "reoff", "basis": "study", "refutes": ["+"]}])
+check("a selection link is reported apart", chain.get("selection_steps"), [["order", "reoff"]])
+check("and neither is counted as a step of the chain, nor walked", chain.get("steps"), 4)
+check("the text's \"may\" is counted as hedged", chain.get("hedged"), 1)
+check("steps are counted by sign", sorted(chain.get("tiers", {}).values()), [0, 1, 1, 2])
 check("the rival step does not thicken the text's chain",
       (routes.get(("order", "reoff")) or {}).get("routes"), 1)
 
@@ -175,6 +181,52 @@ check("the author's argument may not rest on an appraisal premise",
 broken = run(CHAIN.replace("levels: [macro, meso, micro]", "levels: [macro, meso, micro"))
 check("front matter that is not valid YAML is named, not silently read as nothing",
       any("not valid YAML" in f["message"] for f in by(broken, "mechanism")), True)
+
+# --------------------------------------------------------------------------- #
+print("\nthe mechanism pass: the chain's own material, and what the text's causal talk it covers")
+# PHASE C. The pass returns to the source: it may add a claim quoting a step the text states but
+# the argument never needed, and it is shown which of the text's causal sentences no step quotes.
+MORE_TEXT = SOURCE.rstrip() + """
+
+Keeping a job reduces reoffending. Losing that job again raises the risk.
+
+Short prison terms cause people to lose their jobs.
+"""
+PASS = CHAIN + """
+# The mechanism, as the text states it {isGroup: true}
+
+[Work reduces reoffending]: "Keeping a job reduces reoffending."
+    {fidelity: "quotation", causes: {from: work, to: reoff, sign: "-", basis: asserted}}
+
+[Losing the job, read against the text]: "Short prison terms cause people to lose their jobs." #appraisal
+    {fidelity: "imputation", warrant: "quoted here only to show an appraisal covers nothing",
+     causes: {from: order, to: work, sign: "-"}}
+"""
+rep2 = run(PASS, source=MORE_TEXT)
+ch2 = rep2["shape"].get("chain") or {}
+cov = ch2.get("coverage") or {}
+check("a mechanism-only claim is the chain's material, not inert",
+      "Work reduces reoffending" in rep2["shape"].get("inert", []), False)
+check("and is counted as such", rep2["shape"].get("contribution", {}).get("chain"), 1)
+check("with no `inert` finding against it",
+      [f for f in by(rep2, "inert") if f.get("title") == "Work reduces reoffending"], [])
+check("its step joins the chain: reintegration is no longer the only way on from work",
+      any("`work`" in g for g in ch2.get("gaps", [])), False)
+check("five sentences in the text use causal language", cov.get("causal_sentences"), 5)
+check("the three a step quotes are covered", cov.get("covered"), 3)
+# Mutation: count `near` as covered again -> covered 4.
+check("one more shares a paragraph with a step, and that is reported, not counted as covered",
+      cov.get("near"), 1)
+check("the other is listed as a candidate, and an appraisal quoting it does not cover it",
+      [(u["text"], u["near"]) for u in cov.get("uncovered", [])],
+      [("Losing that job again raises the risk.", True),
+       ("Short prison terms cause people to lose their jobs.", False)])
+check("which is an observation (?), not a fault",
+      {f["severity"] for f in by(rep2, "mechanism-coverage")}, {"?"})
+check("and the file stays ok", rep2["ok"], True)
+check("without the text to hand there is no coverage to report",
+      "coverage" in (run(PASS, extra=["--source-root", "/nonexistent"])["shape"].get("chain") or {}),
+      False)
 
 print()
 if fails:

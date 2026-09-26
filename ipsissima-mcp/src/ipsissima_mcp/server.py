@@ -483,7 +483,14 @@ METHOD_DOCS = {
     "conventions": ("ipsissima-conventions.md",
                     "what Ipsissima records on a claim: provenance, fidelity, warrants, "
                     "tags, front matter"),
+    # A SEPARATE PASS, served only when asked for by name (ruled 26 Sep 2026): the mechanism a
+    # text asserts, marked on a finished map. Not named in the replies to the other four, so a
+    # reconstruction in progress is never pointed at it unasked.
+    "mechanism": ("mechanism-pass.md",
+                  "the mechanism pass: mark the causal chain a text asserts on a FINISHED map -- "
+                  "only when the user has asked for the mechanism"),
 }
+_ON_REQUEST = {"mechanism"}
 
 
 @server.tool(
@@ -499,18 +506,26 @@ METHOD_DOCS = {
         "language -- do not write Argdown from memory), \"method\" (how to reconstruct), "
         "\"conventions\" (what goes on a claim). The `conventions` digest in extract_text's "
         "reply is the compressed form of these documents; this tool serves what it "
-        "compresses."),
+        "compresses. A fifth, \"mechanism\", is a separate pass that marks the causal chain a "
+        "text asserts on a finished, checked map: serve it ONLY when the user has asked for the "
+        "mechanism of a text, never as part of an ordinary reconstruction."),
 )
 def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     """
     Args:
-        document: which document — "extraction-prompt", "syntax", "method" or "conventions".
+        document: which document — "extraction-prompt", "syntax", "method" or "conventions";
+            or "mechanism", the separate pass, only when the user has asked for it.
     """
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
                     documents={k: v[1] for k, v in METHOD_DOCS.items()})
     fname, _ = METHOD_DOCS[document]
-    others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document)
+    if document in _ON_REQUEST:
+        return dict(ok=True, document=document, text=_doc(fname),
+                    next=("the map must already check ok and verified; mark the chain as this "
+                          "says, then run argdown_check with source_root until ok and verified, "
+                          "and read the CHAIN section of the census"))
+    others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document and k not in _ON_REQUEST)
     return dict(ok=True, document=document, text=_doc(fname),
                 next=(f"read it before writing any node; {others} are served here too, and "
                       "the extraction prompt says which to read and in what order"))

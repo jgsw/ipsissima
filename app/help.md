@@ -87,6 +87,9 @@ order of reasons, or the order of exposition.
   right; loops are drawn as loops. Every arrow is one or more claims in the map, and it is drawn
   by what the text offers for it: a heavy line for a study or statistics, a line for a step the
   text argues, dashed for one it only asserts, dotted gold for one the reconstructor had to supply.
+  A faint grey line marked **0 no effect** is a finding that nothing is brought about — often the
+  text's answer to a rival view's arrow beside it — and a teal **selection** line is an association
+  that holds because of who ends up on each side, not an effect.
   Click an arrow to see its claims, and a claim to reach its passage. The panel beside the chain
   gives its shape — how many steps, across how many levels, over how long — and its **gaps**:
   where the text's chain stops, or never reaches an outcome. A gap is a finding about the text, not
