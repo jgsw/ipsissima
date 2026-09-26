@@ -44,6 +44,7 @@ openly licensed instead.
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 161 nodes, 28 pages | Creative Commons, by the author of Ipsissima |
 | **James**, "The Will to Believe" (1896) | 69 nodes, 31 pages | public domain |
 | **Swift**, *A Modest Proposal* (1729) | 53 nodes, one pamphlet | public domain |
+| **Bates, Glennerster, Gumede & Duflo**, "The Price is Wrong" (2012) | 97 nodes, 8 pages, and a mechanism | CC BY 3.0 |
 
 **The middle column counts nodes, not claims, and the difference is not cosmetic.** A node is a
 claim *or* an argument, and an argument with a premise-conclusion structure is a node in its own
@@ -101,6 +102,15 @@ being examined, and the critic's own conclusion.
 **Wilson** is the long one: three contentions rather than a single thesis, themes that recur and
 modulate. It is what the layout and folding behaviour is hardest on, and what the exposition
 sparkline has most to say about.
+
+**Bates et al.** is the policy text, and the first sample with a **mechanism**: besides the
+argument, the chain the text says runs from charging a small fee to health, schooling and the
+community, drawn in the Mechanism arrangement. Its central results are findings of *no effect* —
+paying does not raise use, fees do not target the needy — each drawn against the rival view's arrow
+it answers, and its one screening effect is drawn as selection, not as an effect of the price. It is
+also the one sample whose text comes from a two-column reprint with boxes, a table and charts, so
+its `make_source.py` shows the repairs such a layout needs, with a check that none of them changes a
+word.
 
 Every one of these is run by the test suite. `app/test_fold_invariants.mjs` walks this folder
 rather than naming files, so **adding a sample strengthens the suite by itself** — which is the

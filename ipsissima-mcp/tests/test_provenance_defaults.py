@@ -267,5 +267,12 @@ if _os.path.exists(_cli):
 else:
     print("  SKIP  the Argdown CLI is not installed; sketched-argument edges not checked")
 
+# A SOFT HYPHEN IS NOT CONTENT. Typeset PDFs keep U+00AD mid-line; a quotation typed without it
+# is the same words. Mutation: drop "\u00ad" from _INVISIBLE -> the first check fails.
+check("a soft hyphen in the source does not break a quotation",
+      prov.normalise("should be \u00adoffered for free")[0], prov.normalise("should be offered for free")[0])
+check("  and the line map still lines up with the text",
+      len(prov.normalise("a\u00adb\nc")[0]), len(prov.normalise("a\u00adb\nc")[1]))
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

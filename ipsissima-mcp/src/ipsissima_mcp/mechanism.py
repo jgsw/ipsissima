@@ -567,6 +567,12 @@ def _sentences(text):
     """(line, sentence) for every sentence of running text: headings, the converter's comments,
     footnote definitions and the back matter left out."""
     text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
+    # THE SOURCE'S OWN FRONT MATTER IS NOT RUNNING TEXT. A converted paper carries its abstract
+    # there, and read as prose it put the J-PAL abstract's four causal sentences on line 1 as
+    # "uncovered", beside the same sentences in the body (26 Sep 2026). Blanked, lines kept.
+    fm = re.match(r"---\n.*?\n---\n", text, flags=re.S)
+    if fm:
+        text = "\n" * fm.group(0).count("\n") + text[fm.end():]
     out, para, start = [], [], None
     lines = text.split("\n")
     for i, raw in enumerate(lines + [""], 1):
@@ -602,6 +608,26 @@ def coverage(doc, source_root, steps_all):
     for q in quotes:
         if q["title"] in titles and q["status"] == "exact" and q.get("chapter"):
             spans.setdefault(q["chapter"], []).append(prov.normalise(q["quote"])[0].lower())
+    # A CLAIM THAT IS A QUOTATION WHOLE QUOTES TOO. Most of a verbatim map's claims are the
+    # author's words with no quotation marks round them -- `fidelity: quotation` says so, and the
+    # checker holds the marker to the text -- so counting marked spans alone reported 5 of 77
+    # causal sentences covered on the J-PAL reprint, 29 of the rest being the exact words of claims
+    # that carry the step. The claim's own text counts, but only where it is in the chapter.
+    texts = {}
+    for title, m in prov.iter_members(doc):
+        d = m.get("data") or {}
+        if title in titles and d.get("fidelity") == "quotation" and d.get("chapter"):
+            body = re.sub(r"(?<!\S)#[A-Za-z][\w-]*", " ", m.get("text") or "")
+            n = prov.normalise(body)[0].lower().strip(' ."')
+            if len(n) >= 20:
+                texts.setdefault(d["chapter"], []).append(n)
+    for ch, ns in texts.items():
+        try:
+            with open(os.path.join(source_root, ch), encoding="utf-8", errors="replace") as fh:
+                whole = prov.normalise(fh.read())[0].lower()
+        except OSError:
+            continue
+        spans.setdefault(ch, []).extend(n for n in ns if n in whole)
     placed = {}
     try:
         pos = prov.text_positions(doc, source_root, quotes)

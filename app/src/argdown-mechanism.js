@@ -65,6 +65,20 @@ function model(graph) {
     if ((tagsOfId[e.from] || []).indexOf("appraisal") >= 0) return;
     supportsOf[e.to] = (supportsOf[e.to] || 0) + 1;
   });
+  // A CONCLUSION INSIDE A PREMISE-CONCLUSION STRUCTURE IS ARGUED FOR: its premises infer it. An
+  // intermediary conclusion is never a drawn node, so no drawn edge reaches it, and the J-PAL
+  // sample's "Giving away yields more social benefit" read as asserted here and argued in the
+  // checker, whose edges come from the structure itself (26 Sep 2026). Keyed by title for that
+  // reason; the appraisal's own arguments are excepted, as its edges are above.
+  var concluded = {};
+  (graph.nodes || []).forEach(function (n) {
+    if ((n.tags || []).indexOf("appraisal") >= 0) return;
+    var seen = false;
+    (n.pcs || []).forEach(function (l) {
+      if (l.role === "premise") { seen = true; return; }
+      if (seen && l.title) concluded[l.title] = true;
+    });
+  });
 
   var steps = [], appraisalClaims = 0;
   (m.claims || []).forEach(function (c) {
@@ -72,7 +86,7 @@ function model(graph) {
     var layer = tags.indexOf("appraisal") >= 0 ? "appraisal"
               : tags.indexOf("reported") >= 0 ? "rival" : "text";
     if (layer === "appraisal") appraisalClaims++;
-    var supports = c.id != null ? (supportsOf[c.id] || 0) : 0;
+    var supports = (c.id != null ? (supportsOf[c.id] || 0) : 0) + (concluded[c.title] ? 1 : 0);
     (c.causes || []).forEach(function (raw, i) {
       raw = obj(raw);
       var tier = c.fidelity === "imputation" ? "imputed"

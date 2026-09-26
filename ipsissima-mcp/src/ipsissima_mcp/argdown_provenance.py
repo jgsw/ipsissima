@@ -49,7 +49,12 @@ _SUBS = {
 # "near miss": the manuscript says _obscure_ or *contrast* and the reconstruction quotes the
 # bare word, which is a faithful quotation of what the sentence says. Argdown's own backslash
 # escaping of `_` in statement text lands here too.
-_INVISIBLE = set("*_`\\")
+#
+# The SOFT HYPHEN (U+00AD) is invisible by definition -- it shows only where a line breaks -- and
+# typeset PDFs keep it in the text layer mid-line: the FACTS Reports reprint of "The Price is
+# Wrong" carries thirteen, so "should be offered for free" was a 90% near miss of a sentence
+# that says exactly that (26 Sep 2026).
+_INVISIBLE = set("*_`\\\u00ad")
 
 
 def normalise(text):

@@ -56,6 +56,26 @@ for (const k of Object.keys(py)) {
   const js = k === "gaps" ? M.profile.gaps.map(g => g.message) : M.profile[k];
   check(same(js, py[k]), `\`${k}\` is the same in both`, `python ${JSON.stringify(py[k])}\n          js     ${JSON.stringify(js)}`);
 }
+// AND ON EVERY SAMPLE THAT DECLARES A CHAIN. The planted fixture has no premise-conclusion
+// structure, and the J-PAL sample showed what that hid: a step on an intermediary conclusion is
+// argued for (its premises infer it), which the checker counted and the page, reading only drawn
+// edges, did not -- "1 argued" beside the census's "2" (26 Sep 2026).
+const SAMPLES = path.join(REPO, "samples");
+for (const dir of fs.readdirSync(SAMPLES)) {
+  const d = path.join(SAMPLES, dir);
+  if (!fs.statSync(d).isDirectory()) continue;
+  for (const f of fs.readdirSync(d).filter(f => f.endsWith(".argdown"))) {
+    const file = path.join(d, f);
+    if (!/^mechanism:/m.test(fs.readFileSync(file, "utf8"))) continue;
+    const pyS = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                             file, "--format", "json"], { encoding: "utf8" })).shape.chain;
+    const MS = MV.model(graphOf(file));
+    const differ = Object.keys(pyS).filter(k => k !== "question" &&
+      !same(k === "gaps" ? MS.profile.gaps.map(g => g.message) : MS.profile[k], pyS[k]));
+    check(differ.length === 0, `${dir.slice(0, 40)}: the page and the checker agree on its chain`,
+          differ.map(k => `${k}: python ${JSON.stringify(pyS[k])} js ${JSON.stringify(MS.profile[k])}`).join("\n          "));
+  }
+}
 // Every appraisal claim in the fixture is wired to something, so the case is planted here: a claim
 // with a step and no relation, which Argdown's map selection drops from the drawn nodes.
 const lone = toGraph(argdown.run({ input: fs.readFileSync(CHAIN, "utf8") + `

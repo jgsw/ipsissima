@@ -228,6 +228,24 @@ check("without the text to hand there is no coverage to report",
       "coverage" in (run(PASS, extra=["--source-root", "/nonexistent"])["shape"].get("chain") or {}),
       False)
 
+# TWO DEFECTS THE J-PAL SAMPLE FOUND (26 Sep 2026). A claim that is the author's words whole, with
+# no quotation marks, quotes as surely as a marked span -- and a source's own front matter, where a
+# converted paper keeps its abstract, is not running text to be covered.
+# Mutations: drop the whole-claim spans -> covered 3; drop the front-matter blanking -> 6 sentences.
+FM_TEXT = "---\nabstract: >-\n  Short prison terms cause people to lose their jobs.\n---\n" + MORE_TEXT
+rep3 = run(PASS + """
+[Losing it again]: Losing that job again raises the risk.
+    {fidelity: "quotation", causes: {from: work, to: reoff, sign: "-", basis: asserted}}
+""", source=FM_TEXT)
+cov3 = (rep3["shape"].get("chain") or {}).get("coverage") or {}
+check("the source's front matter is not counted as the text's causal language",
+      cov3.get("causal_sentences"), 5)
+check("a claim that is a quotation whole covers its sentence, quotation marks or none",
+      (cov3.get("covered"), cov3.get("near")), (4, 0))
+check("leaving only the sentence nothing of the text's quotes",
+      [u["text"] for u in cov3.get("uncovered", [])],
+      ["Short prison terms cause people to lose their jobs."])
+
 print()
 if fails:
     sys.exit(f"{fails} check(s) failed")
