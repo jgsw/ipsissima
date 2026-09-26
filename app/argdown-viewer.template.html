@@ -4178,6 +4178,10 @@ function msAvailable(){ return !!(MS && MS.chapters && MS.chapters.length); }
 function msPrecisionNote(p){
   if (!p) return "";
   if (p.line == null) return "somewhere in this file — no line recorded";
+  // A claim read from a note is placed at the note's mark, so the passage lit is the sentence
+  // the note glosses — and the words themselves are in the note. Saying so is the difference
+  // between a highlight and a misdirection.
+  if (p.note != null) return "from note " + p.note + ", shown where the text marks it";
   return { quotation: "found by its quotation",
            inference: "where the argument lands — an <Argument> has no words of its own",
            paragraph: "the paragraph it came from",
@@ -4654,7 +4658,10 @@ function msClaimsAt(line){
   for (var i = 0; i < nodes.length; i++) {
     var p = nodes[i].pos;
     if (!p || p.chapter !== MSCHAPTER || p.line == null) continue;
-    if (p.line >= span[0] && p.line <= span[1]) out.push(nodes[i].id);
+    // A claim read from a note answers from the note too, not only from its mark: the note is
+    // where its words are, and a reader clicking there is asking about exactly this claim.
+    if ((p.line >= span[0] && p.line <= span[1]) ||
+        (p.noteLine != null && p.noteLine >= span[0] && p.noteLine <= span[1])) out.push(nodes[i].id);
   }
   return { ids: out, span: span };
 }

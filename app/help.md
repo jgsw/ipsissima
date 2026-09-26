@@ -100,6 +100,19 @@ spine and the depth ladder are measured towards the author's own theses alone.
 question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
 there is a claim and its support far apart in the text.</p>
 
+In **Exposition** every section of the text has a band, including a section with nothing in the
+map placed in it. That band is drawn empty and dotted, with its word count and *nothing in the
+map is placed here*, so that a gap in the reconstruction reads as a gap and not as a section the
+text does not have. References, notes and other back matter get no empty band. Text that comes
+before the first heading, such as an abstract or an untitled introduction, has a band of its own
+called *before the first heading*. That is a description, not one of the text's headings.
+
+Claims that have no place in the text come **last**, in a lane of their own called *no position
+in the text*. They are the claims whose quotation could not be found, which declare no line, and
+whose words match no paragraph. Most of them are the reconstructor's imputations and
+interpretations, which have no words in the text to be placed by. A claim quoted from a
+**footnote** is placed where the text marks the note, beside the sentence the note glosses.
+
 The **Map**, **Argdown**, **Notes** and **Manuscript** buttons beside them are something else
 again — those are panes, and any combination of them can be open at once.
 
@@ -572,9 +585,12 @@ reconstructor's own sentence, and it takes the panel ahead of an abstract becaus
 against misreading outranks a courtesy summary. None of these is part of the reconstruction,
 and the panel says so. A file offering none of them has no panel.
 
-The note above the passage says how precisely the claim was placed — *found by its quotation* is
-exact, *the paragraph it came from* is as close as an unquoted claim can be pinned. A claim
-located only to its file has no line to highlight, and says so.
+The note above the passage says how precisely the claim was placed. *Found by its quotation* is
+exact. That includes a claim whose own text is the author's words, with or without quotation
+marks. *The paragraph it came from* is as close as an unquoted claim can be pinned. A claim
+quoted from a footnote is shown where the text marks the note, and says *from note 3*.
+Clicking the note itself lights the claim too. A claim located only to its file has no line to
+highlight, and says so.
 
 The two marks come off separately. Clicking the map's background clears the mark on the map;
 clicking past the passage in the manuscript clears the mark there. Neither touches the other, so

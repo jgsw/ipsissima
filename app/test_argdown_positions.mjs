@@ -267,6 +267,137 @@ console.log("\npositions: the band, derived once");
      [byId.misdeclared.precision, byId.misdeclared.section], ["quotation", "1. First"]);
   eq("a claim whose source is missing falls back to its declared section",
      [byId.unplaced.line, byId.unplaced.section], [null, "3. Third"]);
+  eq("  and the text before the first section is flagged as the opening",
+     [byId.front.opening, byId.s1.opening], [true, false]);
+  eq("  which a claim with no line never is", byId.unplaced.opening, false);
+}
+
+/* THE THREE PLACEMENT RULES OF 26 SEP 2026, each with the case that prompted it. The first two
+ * exist in Python too, and are cross-checked against it below on a fixture of their own — the
+ * book that the big cross-check reads has neither an unquoted verbatim claim nor a note. */
+const FIX = {
+  "P.md": [
+    "---", "title: A paper",
+    "abstract: >-", "  Small fees sharply reduce the take-up of useful products among the poor.",
+    "---", "",
+    "<!-- converted text; repaired: Small fees sharply reduce the take-up of useful products among the poor -->",
+    "", "# 1. Findings", "",
+    "We find that small fees sharply reduce the take-up of useful products among the poor, " +
+      "and the effect is large across ten evaluations in four countries of the world.[^1]",
+    "", "# 2. Notes on method", "",
+    "Randomised evaluations compared free distribution with a range of small prices charged " +
+      "at the point of sale, so the comparison isolates the effect of price itself.[^2]",
+    "", "# Notes", "",
+    "[^1]: Ten evaluations were pooled, and the pooled estimate hides a great deal of variation.",
+    "", "[^2]: The prices were set by lottery in each village and never announced in advance.",
+    "    A second paragraph of the second note, indented as Markdown requires, says more.",
+    "", "Unindented text after the notes is not a note at all, and is the text proper again.",
+    ""
+  ].join("\n"),
+  "H.md": [
+    "## 1. Body", "",
+    "The body sentence carries the mark of the first note, as a publisher's page would do.[^1]",
+    "", "## Footnotes", "", "[[[1]]]", "",
+    "The note's words are a paragraph of their own, not indented, as the HTML route writes them.",
+    ""
+  ].join("\n")
+};
+
+console.log("\npositions: the claim's own words are a quotation");
+{
+  const yml = 'chapters:\n  - "P.md"\n';
+  const { byId } = P.positions([
+    // Written as the author's sentence with no quotation marks — the house style — and
+    // punctuation differing. It used to fall through to the paragraph search.
+    { id: "own", chapter: "P.md",
+      detail: "small fees sharply reduce the take-up of useful products among the poor" },
+    // The same words in the front matter's abstract and in a converter's note must NOT win: the
+    // claim goes to the text, where the paragraph at line 11 has them.
+    { id: "short", chapter: "P.md", detail: "small fees" },
+    { id: "arg", kind: "argument", chapter: "P.md",
+      detail: "small fees sharply reduce the take-up of useful products among the poor" }
+  ], FIX, yml);
+  eq("a claim whose text IS the author's words is placed as a quotation",
+     [byId.own.precision, byId.own.line], ["quotation", 11]);
+  ok("  not in the front matter's copy of the abstract, nor in the converter's note",
+     byId.own.line > 7, "placed at line " + byId.own.line);
+  ok("a claim too short to be told from coincidence is not placed by its words",
+     byId.short.precision !== "quotation", byId.short.precision);
+  ok("an <Argument>'s text is its reconstructor's summary, not a passage",
+     byId.arg.precision !== "quotation", byId.arg.precision);
+}
+
+console.log("\npositions: a note is read at its mark");
+{
+  const yml = 'chapters:\n  - "P.md"\n  - "H.md"\n';
+  const { byId } = P.positions([
+    { id: "n1", chapter: "P.md", detail: 'The note says "the pooled estimate hides a great deal of variation".' },
+    { id: "n2b", chapter: "P.md", detail: 'Its second paragraph "indented as Markdown requires, says more".' },
+    { id: "after", chapter: "P.md", detail: '"is not a note at all, and is the text proper again"' },
+    { id: "html", chapter: "H.md", detail: '"a paragraph of their own, not indented"' },
+    { id: "body", chapter: "P.md", detail: '"compared free distribution with a range of small prices"' }
+  ], FIX, yml);
+  eq("a claim quoted from a note is placed at the note's mark",
+     [byId.n1.line, byId.n1.note, byId.n1.noteLine], [11, "1", 19]);
+  eq("  and banded by the section that marks it, not by Notes", byId.n1.section, "1. Findings");
+  eq("  and keeps its precision: the words are still found", byId.n1.precision, "quotation");
+  eq("an indented second paragraph belongs to its note", [byId.n2b.line, byId.n2b.note], [15, "2"]);
+  eq("an unindented line ends a Markdown note", [byId.after.note, byId.after.section],
+     [undefined, "Notes"]);
+  eq("the HTML route's [[[n]]] notes are read at their mark too",
+     [byId.html.line, byId.html.note, byId.html.section], [3, "1", "1. Body"]);
+  eq("a claim in the text proper is left alone", [byId.body.line, byId.body.note], [15, undefined]);
+}
+
+console.log("\nword counts: the bands, the opening, and not the converter's notes");
+{
+  const w = P.wordCounts(FIX);
+  eq("sections are the band-level headings, in order, with the line each starts on",
+     w.sections["P.md"].map(s => [s.heading, s.line]),
+     [["", 0], ["1. Findings", 9], ["2. Notes on method", 13], ["Notes", 17]]);
+  eq("the front matter and the HTML comment are not counted as the author's words",
+     w.bySection["P.md"][""], 0);
+  eq("## sections are counted, as they are banded", Object.keys(w.bySection["H.md"]),
+     ["", "1. Body", "Footnotes"]);
+  eq("the total is the sum of the sections",
+     w.byChapter["P.md"], w.sections["P.md"].reduce((a, s) => a + s.words, 0));
+}
+
+console.log("\nthe note and own-words rules agree with Python");
+{
+  // One rule in two languages, on a fixture of its own: the book cross-check further down reads
+  // a manuscript with no notes and no unquoted verbatim claims, so it cannot see these.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "argpos-rules-"));
+  for (const [f, text] of Object.entries(FIX)) fs.writeFileSync(path.join(dir, f), text);
+  const map = [
+    "[own]: small fees sharply reduce the take-up of useful products among the poor",
+    '    {chapter: "P.md"}',
+    "  + [n1]: The note says \"the pooled estimate hides a great deal of variation\".",
+    '      {chapter: "P.md"}',
+    "  + [n2b]: Its second paragraph is \"indented as Markdown requires, says more\".",
+    '      {chapter: "P.md"}',
+    "  + [html]: The HTML note is \"a paragraph of their own, not indented\" here.",
+    '      {chapter: "H.md"}',
+    ""
+  ].join("\n");
+  const file = path.join(dir, "rules.argdown");
+  fs.writeFileSync(file, map);
+  const graph = toGraph(await argdown.runAsync({ input: map, ...RUN }));
+  const { byId } = P.positions(graph.nodes, FIX, 'chapters:\n  - "P.md"\n  - "H.md"\n');
+  const js = {};
+  for (const n of graph.nodes) if (byId[n.id]) js[n.label] = byId[n.id];
+  const cli = path.join(HERE, "node_modules", ".bin", "argdown");
+  execFileSync(cli, ["json", file, "--outputDir", dir], { stdio: "ignore" });
+  const py = JSON.parse(execFileSync("python3",
+    [path.join(SKILL, "argdown_provenance.py"), path.join(dir, "rules.json"), dir],
+    { encoding: "utf8" }));
+  fs.rmSync(dir, { recursive: true, force: true });
+  const titles = ["own", "n1", "n2b", "html"];
+  eq("both languages place every fixture claim at the same line, with the same precision",
+     titles.map(t => [t, py[t] && py[t].line, py[t] && py[t].precision]),
+     titles.map(t => [t, js[t] && js[t].line, js[t] && js[t].precision]));
+  eq("  and both say which note a claim was read from",
+     titles.map(t => (py[t] && py[t].note) || null), titles.map(t => (js[t] && js[t].note) || null));
 }
 
 console.log("\nthe band is derived in ONE place");

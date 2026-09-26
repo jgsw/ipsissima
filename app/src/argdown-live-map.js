@@ -249,6 +249,17 @@ function posKey(p) {
  *  Sub-headings deliberately get no band of their own — one lane per file and per top-level
  *  section. A lane per subsection shreds a long chapter into slivers and stops being a picture
  *  of the manuscript's shape.
+ *
+ *  A CLAIM WITH NO LINE IS IN THE NO-POSITION LANE, even when its file is known. It used to sit
+ *  in its file's band, keyed as if it came from line 0, which filed it AHEAD of everything the
+ *  text says: the whole first row of the Carroll dialogue was six of the reconstructor's own
+ *  interpretations, before the dialogue's opening line, and three more led off the Swift (found
+ *  26 Sep 2026). Such a claim is almost always an imputation or an interpretation — it has no
+ *  words in the text to be placed by — and its natural place in a reading is at the end, where
+ *  the reader draws the moral, not at the head, where it reads as the text's own opening.
+ *
+ *  The text before a file's first heading is a band too, keyed with an empty section — `ch:0|` —
+ *  when the file has headings to come before (see `OPENING_LABEL`).
  */
 function textLane(node) {
   if (!node) return "gutter";
@@ -256,9 +267,63 @@ function textLane(node) {
   // the lane its earliest claim would put it in, which for a folded CHAPTER is that chapter's
   // first section, i.e. inside itself.
   if (typeof node.lane === "string") return node.lane;
-  if (!node.pos) return "gutter";
-  return "ch:" + node.pos.chapterIndex + (node.pos.section ? "|" + node.pos.section : "");
+  if (!node.pos || node.pos.line == null) return "gutter";
+  return "ch:" + node.pos.chapterIndex +
+         (node.pos.section ? "|" + node.pos.section : node.pos.opening ? "|" : "");
 }
+
+/** THE TEXT BEFORE THE FIRST HEADING, as a band of its own: an abstract, or an introduction its
+ *  author did not title. It used to share the file's unlabelled row with the claims that had no
+ *  position at all, so the top of the exposition view of Prescott-Couch mixed the introduction
+ *  with an imputation that is in no passage of the paper.
+ *
+ *  Its lane is the file's key with an EMPTY section after the bar — `ch:0|` — which no heading
+ *  can collide with, because a heading with no words gives a claim no section at all. And its
+ *  name is a description, lower-case like "no position in the text", not a heading: the headings
+ *  on the bands are the document's own, and this one the document never wrote. */
+const OPENING_LABEL = "before the first heading";
+
+/** The section part of a lane: null for a whole file or the no-position lane, `""` for the
+ *  opening, otherwise the heading. ONE READING, because `""` is falsy and every `section ? …`
+ *  written before the opening existed would quietly take it for the file itself. */
+function laneSection(lane) {
+  if (!lane || lane === "gutter") return null;
+  const bar = lane.indexOf("|");
+  return bar < 0 ? null : lane.slice(bar + 1);
+}
+
+/** What a section band is called: its heading, or — for the opening — what it is. */
+function laneName(section) { return section === "" ? OPENING_LABEL : section; }
+
+/** Headings that close a text rather than divide it. A section with nothing mapped in it is
+ *  drawn as an empty band, so that a gap in the reconstruction reads as a gap; a reference list
+ *  with nothing mapped in it is not a gap, and a band saying so would be noise on every paper.
+ *  The SEP and Project Gutenberg furniture is here because both are common sources and both
+ *  append several such sections to the text. */
+const BACK_MATTER = new RegExp("^(references|bibliography|works cited|notes|footnotes|endnotes|" +
+  "funding|acknowledg|appendix|conflicts? of interest|competing interests|author contributions|" +
+  "data availability|declarations?|academic tools|other internet resources|related entries|" +
+  "(the )?(full )?project gutenberg)", "i");
+
+/** Below this many words a section with nothing mapped is not worth a band: the lone heading of
+ *  a title page, a subtitle, a judge's name set as a heading. Measured 26 Sep 2026 across the
+ *  samples and the private corpus: every would-be empty band under 50 words was one of those,
+ *  and every one above it was prose — an abstract, an introduction, a section of method. */
+const MIN_EMPTY_WORDS = 50;
+
+/** What an empty band says, beside its word count. */
+const EMPTY_NOTE = "No claim in the map is placed in this part of the text. It is drawn so that " +
+  "a gap in the reconstruction reads as a gap, not as a part of the text that is not there.";
+
+/** What the opening band is, since its name is a description rather than a heading. */
+const OPENING_NOTE = "The text before the first heading — an abstract, or an introduction its " +
+  "author did not title. Not a heading of the text's own.";
+
+/** Why the no-position lane holds what it holds. */
+const GUTTER_NOTE = "Claims with no place in the text: no quotation of theirs was found, no " +
+  "line was declared, and no paragraph matched their words. Most are the reconstructor's own — " +
+  "imputations and interpretations have no words in the text to be placed by — so they come " +
+  "after the text rather than before it.";
 
 /** How many words of manuscript a band covers.
  *
@@ -276,7 +341,7 @@ function bandWords(words, lane, chapterOfIndex) {
   if (path == null) return null;
   if (bar < 0) return words.byChapter && words.byChapter[path] != null
     ? words.byChapter[path] : null;
-  const sec = lane.slice(bar + 1);
+  const sec = lane.slice(bar + 1);          // "" is the opening, which wordCounts keys the same way
   const inFile = words.bySection && words.bySection[path];
   return inFile && inFile[sec] != null ? inFile[sec] : null;
 }
@@ -805,16 +870,16 @@ function filterOnce(graph, state, force) {
     // A folded band is named by the band, not by the id it is keyed on: the section's own
     // heading where it has one, and otherwise the file, which is what the band would have been
     // captioned with had it stayed open.
-    const laneName = !isLane ? null
+    const blockName = !isLane ? null
       : gid === "gutter" ? "no position in the text"
-      : gid.indexOf("|") >= 0 ? gid.slice(gid.indexOf("|") + 1)
+      : laneSection(gid) != null ? laneName(laneSection(gid))
       : chapterLabel((ix.byId.get(members[0]).pos || {}).chapter);
     // A shut band shows its size in claims AND in words. In the by-chapter view of a book the
     // blocks are the whole picture, so a count that lived only on the band would be a count the
     // reader could not see at the one setting where they most want it.
     const laneWords = isLane ? bandWords(graph.words, gid, chapterOfIndex) : null;
     outNodes.push({
-      id: synth, label: laneName || (g && g.label) || gid,
+      id: synth, label: blockName || (g && g.label) || gid,
       detail: count + (count === 1 ? " claim" : " claims") +
               (laneWords ? " · " + laneWords.toLocaleString() + " words" : ""),
       kind: "group", facet: null, order: (g && g.order != null) ? g.order : null,
@@ -972,8 +1037,18 @@ function filterOnce(graph, state, force) {
   // The manuscript's word counts ride along with the filtered graph rather than being looked up
   // from the full one: the layout and the toolbar both draw them, and neither is handed the
   // original. Passed through untouched — filtering claims does not change how long a section is.
+  //
+  // `bandsInUse` rides along for the same reason, and must be read off the WHOLE map: the layout
+  // draws an empty band for a section of the text with nothing mapped in it, and "nothing
+  // mapped" is a fact about the reconstruction, not about what a depth or a hashtag filter has
+  // left on screen. A section whose claims are all filtered out is not empty; it is filtered.
+  // The appraisal is the exception, because while it is off it is promised to be nowhere on the
+  // page — a band kept from reading "nothing mapped here" only by hidden appraisal claims would
+  // be pointing at them.
+  const bandsInUse = new Set(ix.nodes.filter(n => S.appraisal || !isAppraisal(n))
+    .map(textLane).filter(l => l !== "gutter"));
   return { nodes: outNodes, edges: outEdges, groups: outGroups, rescues,
-           words: graph.words || null, chapterOfIndex };
+           words: graph.words || null, chapterOfIndex, bandsInUse };
 }
 
 /** The nearest enclosing group that is still drawn as a cluster (not folded into a node). */
@@ -1049,6 +1124,8 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   // boxes carry — 12 below one lane plus 24 above the next for its label — or consecutive lanes
   // overlap by a couple of pixels, which reads as a rendering fault rather than a tight gap.
   const BAND_GAP = 56;
+  // The body of an empty band: one line of small text under its label strip. See `empties`.
+  const EMPTY_BODY = 16;
 
   // 1. Depth in the DAG, from the roots of what is currently visible. This is the y-axis, and
   //    it is recomputed per render because folding changes which nodes are roots.
@@ -1080,19 +1157,15 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   //    all reconstructed from the same line. It is worth seeing — six claims off one paragraph
   //    of Williams is a dense paragraph, and the picture should say so.
   //
-  //    But a claim located only to its CHAPTER has no line, and `posKey` reads a missing line as
-  //    line 0. Every such claim therefore landed in ONE column at the head of its chapter, in a
-  //    pile that asserted two things that are not true: that they come from the same place, and
-  //    that the place is the chapter's first line. On Carroll that was 5 of 20 claims — the
-  //    reconstructor's own commentary, which has no position in the text at all. They are given
-  //    a column each instead, so they tile along the head of the chapter. Still an approximation,
-  //    but it no longer claims co-location it cannot know.
+  //    A CLAIM WITH NO LINE HAS NO COLUMN. It used to be keyed as line 0 of its chapter — first
+  //    as one pile, then tiled a column each "along the head of the chapter", an approximation
+  //    this comment already admitted to. The head was the worst place it could have chosen: on
+  //    Carroll it made the reconstructor's own commentary the whole first row, ahead of the
+  //    dialogue (see `textLane`). Such claims go to the no-position lane at the end instead.
   const keyOf = new Map();
   const keys = new Set();
-  let unlocated = 0;
   for (const n of vis.nodes) {
-    let k = posKey(n.pos);
-    if (k && n.pos.line == null) k += "#" + (unlocated++);
+    const k = n.pos && n.pos.line != null ? posKey(n.pos) : null;
     keyOf.set(n.id, k);
     if (k) keys.add(k);
   }
@@ -1151,7 +1224,8 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   // A column is one distinct position; its claims stack, deepest last.
   const colNodes = new Map();
   for (const n of vis.nodes) {
-    const k = keyOf.get(n.id) == null ? "gutter" : keyOf.get(n.id);
+    const k = keyOf.get(n.id);
+    if (k == null) continue;
     if (!colNodes.has(k)) colNodes.set(k, []);
     colNodes.get(k).push(n.id);
   }
@@ -1159,6 +1233,16 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     ids.sort((a, b) => (depth.get(a) - depth.get(b)) ||
                        ((kids.get(b) || []).length - (kids.get(a) || []).length) ||
                        String(a).localeCompare(String(b)));
+  // THE NO-POSITION LANE TILES, a claim to a column, and wraps like any other lane. As one
+  // column it was a stack, and a stack here means "these came from one place in the text" —
+  // the one thing claims with no place in the text cannot be said to share. Nearest the
+  // contention first, then in the order the reconstruction writes them, which is the only order
+  // they have.
+  const docLineOf = id => { const n = byIdAll.get(id); return n && n.docLine != null ? n.docLine : Infinity; };
+  const gutterKeys = vis.nodes.filter(n => keyOf.get(n.id) == null).map(n => n.id)
+    .sort((a, b) => (depth.get(a) - depth.get(b)) || (docLineOf(a) - docLineOf(b)) ||
+                    String(a).localeCompare(String(b)))
+    .map((id, i) => { const k = "gutter#" + i; colNodes.set(k, [id]); return k; });
 
   const colSize = new Map();
   for (const [k, ids] of colNodes) {
@@ -1171,8 +1255,43 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     colSize.set(k, { w, h: Math.max(0, h - ROW_GAP) });
   }
 
-  const laneKeys = [];
-  for (const k of cols) { const l = laneOfCol(k); if (!laneKeys.includes(l)) laneKeys.push(l); }
+  // Each lane sits where its earliest column does — which is where the text reaches it.
+  const laneFirst = new Map();
+  for (const k of cols) { const l = laneOfCol(k); if (!laneFirst.has(l)) laneFirst.set(l, k); }
+
+  // EMPTY SECTIONS ARE DRAWN. A band used to exist only where a claim landed, so a section of the
+  // text with nothing mapped in it was simply absent — and a reader could not tell a gap in the
+  // reconstruction from a section the text does not have. Measured 26 Sep 2026: Akhlaghi's
+  // abstract and introduction, and Bates's account of its own ten evaluations, vanished that way,
+  // in a view whose one job is to show the text's order. The filter's own rule is that "a
+  // section of the article going missing from the view whose subject IS the article is a
+  // misreport of the article"; this applies it to sections that never had a claim.
+  //
+  // Only in a file whose sections are showing AS BANDS: shut into blocks along the file's row,
+  // there is no band sequence for an empty one to take its place in. Only a section with prose
+  // in it (`MIN_EMPTY_WORDS`), and never the back matter (`BACK_MATTER`). And only where nothing
+  // in the whole map is placed (`bandsInUse`) — a section whose claims a filter has hidden is not
+  // empty. No claim, so no column: it is placed at its heading's line, which is where the text
+  // reaches it.
+  const empties = new Map();
+  const sectionsOf = vis.words && vis.words.sections;
+  if (sectionsOf && vis.chapterOfIndex && vis.bandsInUse) {
+    const showing = new Set([...laneFirst.keys()]
+      .filter(l => laneSection(l) != null).map(laneChapter));
+    for (const [idx, path] of vis.chapterOfIndex) {
+      const chap = "ch:" + idx;
+      if (!showing.has(chap)) continue;
+      for (const s of sectionsOf[path] || []) {
+        const lane = chap + "|" + s.heading;
+        if (vis.bandsInUse.has(lane) || laneFirst.has(lane) || empties.has(lane)) continue;
+        if (s.words < MIN_EMPTY_WORDS || BACK_MATTER.test(s.heading)) continue;
+        empties.set(lane, { at: posKey({ chapterIndex: idx, line: s.line }), words: s.words });
+      }
+    }
+  }
+  const laneAt = l => empties.has(l) ? empties.get(l).at : laneFirst.get(l);
+  const laneKeys = [...laneFirst.keys(), ...empties.keys()]
+    .sort((a, b) => (laneAt(a) < laneAt(b) ? -1 : laneAt(a) > laneAt(b) ? 1 : 0));
   if (hasGutter) laneKeys.push("gutter");
 
   // How far a lane runs before wrapping. Aim at a page rather than a ribbon: fold the total
@@ -1208,14 +1327,22 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   const laneBox = new Map();
   let y = MARGIN, maxRight = 0, lastChapter = null;
   for (const lane of laneKeys) {
-    const mine = (lane === "gutter" ? ["gutter"] : cols.filter(k => laneOfCol(k) === lane))
+    const empty = empties.has(lane);
+    const mine = (lane === "gutter" ? gutterKeys : cols.filter(k => laneOfCol(k) === lane))
                  .filter(k => colNodes.has(k));
-    if (!mine.length) continue;
+    if (!mine.length && !empty) continue;
     const chap = lane === "gutter" ? "gutter" : laneChapter(lane);
     if (chap !== lastChapter && sectioned.has(chap)) y += CHAPTER_HEAD;
     lastChapter = chap;
     const left = MARGIN + (lane === "gutter" ? GUTTER_GAP : 0);
     const top = y;
+    // An empty band is its label strip and one line saying so — no row of claims to lay out.
+    if (empty) {
+      y += EMPTY_BODY;
+      laneBox.set(lane, { top, bottom: y, left });
+      y += BAND_GAP;
+      continue;
+    }
     let x = left, rowH = 0;
     for (const k of mine) {
       const cs = colSize.get(k);
@@ -1239,8 +1366,41 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   // 4. One band per lane, named for the chapter it holds.
   const expoGroups = [];
   const chapExtent = new Map();     // chapter lane -> the box its section bands need
+  const extendChapter = (lane, x0, x1, y0, y1, names, inBook) => {
+    const c = chapExtent.get(laneChapter(lane)) ||
+              { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity,
+                names: new Set(), inBook: true };
+    c.x0 = Math.min(c.x0, x0 - 10); c.x1 = Math.max(c.x1, x1 + 10);
+    c.y0 = Math.min(c.y0, y0 - 24); c.y1 = Math.max(c.y1, y1 + 10);
+    names.forEach(n => c.names.add(n));
+    c.inBook = c.inBook && inBook;
+    chapExtent.set(laneChapter(lane), c);
+  };
   for (const lane of laneKeys) {
     if (!laneBox.has(lane)) continue;
+    // The heading comes off the LANE ID, which is what the band is, rather than off the claims
+    // inside it. A folded file sits in its own band carrying the position of its first claim, so
+    // reading the section back off the members would caption the whole file with its first
+    // section — the band would be lying about its own extent at exactly the moment it is shut.
+    // `laneSection` rather than a truth test: the opening's section is "", which is falsy.
+    const section = laneSection(lane);
+    if (empties.has(lane)) {
+      // As wide as its name needs, so the label is not shrunk to fit a box nobody sized for it.
+      const b = laneBox.get(lane), name = laneName(section);
+      const w = Math.min(560, Math.max(300, 34 + name.length * GROUP_LABEL_SIZE * 0.56 + 90));
+      const x0 = b.left - 12, x1 = x0 + w, y0 = b.top - 24, y1 = b.bottom + 12;
+      const path = vis.chapterOfIndex.get(Number(laneChapter(lane).slice(3)));
+      extendChapter(lane, x0, x1, y0, y1, path != null ? [path] : [], true);
+      // `gap:`, not `lane:` — there is nothing to fold, and an id of its own means the box is
+      // never mistaken for the band the section becomes once a claim is placed in it.
+      expoGroups.push({ id: "gap:" + lane, label: name, parent: "lane:" + laneChapter(lane),
+                        fold: false, empty: true, words: empties.get(lane).words,
+                        note: EMPTY_NOTE,
+                        title: name + "\n" + empties.get(lane).words.toLocaleString() + " words" });
+      place.set("gap:" + lane, { x: (x0 + x1) / 2, y: (y0 + y1) / 2,
+                                 width: x1 - x0, height: y1 - y0 });
+      continue;
+    }
     const ids = vis.nodes.filter(n => laneOfNode(n.id) === lane).map(n => n.id);
     // A band shut into a single block needs no band drawn round it: the block already carries
     // the band's name and its size, so the box adds a second copy of the caption and a frame
@@ -1249,17 +1409,11 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     const chapters = new Set();
     let inBook = true;
-    // The heading comes off the LANE ID, which is what the band is, rather than off the claims
-    // inside it. A folded file sits in its own band carrying the position of its first claim, so
-    // reading the section back off the members would caption the whole file with its first
-    // section — the band would be lying about its own extent at exactly the moment it is shut.
-    const section = lane === "gutter" || lane.indexOf("|") < 0
-                  ? null : lane.slice(lane.indexOf("|") + 1);
     // A chapter's OWN row inside a chapter that has sections: it holds the blocks of the shut
     // ones. It gets no band — the chapter band around it says which chapter this is, and the
     // blocks say which sections — but its extent has to reach the chapter band, or the band
     // would be drawn around the open sections only and leave the shut ones outside it.
-    const ownRow = !section && lane !== "gutter" && sectionedChapters.has(lane);
+    const ownRow = section == null && lane !== "gutter" && sectionedChapters.has(lane);
     for (const id of ids) {
       const q = place.get(id); if (!q) continue;
       x0 = Math.min(x0, q.x - q.width / 2 - 12); x1 = Math.max(x1, q.x + q.width / 2 + 12);
@@ -1277,25 +1431,22 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     // file" — the same words on the outer band and on each band inside it, which said nothing
     // about any of them. The note belongs on the file band, which is what it is about.
     const label = lane === "gutter" ? `no position in the text (${ids.length})`
-                : section ? section
+                : section != null ? laneName(section)
                 : !inBook ? `not listed in the project file — ${names.length} file${names.length === 1 ? "" : "s"}`
                 : chapterLabel(names[0]);
-    if (section || ownRow) {
-      const c = chapExtent.get(laneChapter(lane)) ||
-                { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity,
-                  names: new Set(), inBook: true };
-      c.x0 = Math.min(c.x0, x0 - 10); c.x1 = Math.max(c.x1, x1 + 10);
-      c.y0 = Math.min(c.y0, y0 - 24); c.y1 = Math.max(c.y1, y1 + 10);
-      names.forEach(n => c.names.add(n));
-      c.inBook = c.inBook && inBook;
-      chapExtent.set(laneChapter(lane), c);
-    }
+    if (section != null || ownRow) extendChapter(lane, x0, x1, y0, y1, names, inBook);
     if (ownRow) continue;                       // its extent counted, no box of its own
     const wc = bandWords(vis.words, lane, vis.chapterOfIndex);
+    // THE NO-POSITION LANE IS A RULER, NOT A CONTROL: `filterGraph` never folds it, so a fold
+    // strip on it would be a button that does nothing. It says what it holds instead, always —
+    // the lane is only honest if the reader knows why these claims are down here.
     expoGroups.push({ id: "lane:" + lane, label,
-                      parent: section ? "lane:" + laneChapter(lane) : null, fold: true,
+                      parent: section != null ? "lane:" + laneChapter(lane) : null,
+                      fold: lane !== "gutter",
                       words: wc,
-                      title: (section ? section + "\n" : "") + (names.join("\n") || label) +
+                      note: lane === "gutter" ? GUTTER_NOTE : section === "" ? OPENING_NOTE : null,
+                      title: (section != null ? laneName(section) + "\n" : "") +
+                             (names.join("\n") || label) +
                              (wc ? "\n" + wc.toLocaleString() + " words" : "") });
     place.set("lane:" + lane, { x: (x0 + x1) / 2, y: (y0 + y1) / 2,
                                 width: x1 - x0, height: y1 - y0 });
@@ -1336,6 +1487,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     const all = EXP.reaches(vis.edges, rk.rank);
     const laneById = new Map(vis.nodes.map(n => [n.id, textLane(n)]));
     for (const gr of expoGroups) {
+      if (/** @type {any} */ (gr).empty) continue;     // nothing placed, so no shape to draw
       const lane = gr.id.slice(5);
       const mine = all.filter(x => {
         const l = laneById.get(x.to) || "";
@@ -1379,7 +1531,11 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
   for (const e of vis.edges) {
     const a = place.get(e.from), b = place.get(e.to);
     if (!a || !b) continue;
-    const ra = colIndex(e.from), rb = colIndex(e.to);
+    // A claim with no position has no reach either: measured to the no-position lane, every
+    // relation touching one would come out as spanning most of the text and be drawn heavy for
+    // a distance that is only the width of the page.
+    const placedEnds = keyOf.get(e.from) != null && keyOf.get(e.to) != null;
+    const ra = placedEnds ? colIndex(e.from) : null, rb = placedEnds ? colIndex(e.to) : null;
     const reach = (ra == null || rb == null) ? null : ra - rb;
     const debt = (e.type || "support") !== "support" || reach == null ||
                  Math.abs(reach) < reachLimit
@@ -1395,7 +1551,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect) {
     // How far the edge reaches, in columns. This — not its direction — is what the emphasis
     // tracks: a support that arrives forty claims away taxes the reader whichever way round
     // the two sit. Threshold is relative, so it means the same on a paper and on a book.
-    const span = Math.abs(colIndex(e.from) - colIndex(e.to));
+    const span = reach == null ? 0 : Math.abs(reach);
     const key = { v: e.from, w: e.to, name: e.type || "support" };
     edgeList.push(key);
     edgeData.set(e.from + " " + e.to + " " + key.name,
@@ -4017,7 +4173,8 @@ function createLiveMap(container, graph, options) {
                    el("text", { class: "alm-glabel", "font-size": GROUP_LABEL_SIZE,
                                 "font-weight": "600" }),
                    el("g", { class: "alm-spark" }),
-                   el("text", { class: "alm-gwords", "font-size": 10, "text-anchor": "end" }));
+                   el("text", { class: "alm-gwords", "font-size": 10, "text-anchor": "end" }),
+                   el("text", { class: "alm-gempty", "font-size": 11 }));
         box.appendChild(el("title"));
         // AND THE BAND KEEPS A WAY TO FOLD ITSELF, because taking the click away would
         // otherwise make a section harder to shut than it was. Right-click is the gesture that
@@ -4043,6 +4200,13 @@ function createLiveMap(container, graph, options) {
       gGroups.appendChild(box);          // painting order = array order; see the note above
       box.classList.toggle("is-fixed", gr.fold === false);
       box.classList.toggle("is-strip", strip);
+      // A SECTION OF THE TEXT WITH NOTHING MAPPED IN IT says so in its body, in the words a
+      // reader would use — the band is otherwise an empty box, which looks like a fault.
+      const isEmpty = !!(/** @type {any} */ (gr).empty);
+      box.classList.toggle("is-empty", isEmpty);
+      const emptyText = box.querySelector(".alm-gempty");
+      emptyText.textContent = isEmpty ? "nothing in the map is placed here" : "";
+      emptyText.setAttribute("x", 10); emptyText.setAttribute("y", 38);
       const x = p.x - p.width / 2, y = p.y - p.height / 2;
       // Select by class, not position: a <title> child was appended for the tooltip, so
       // firstChild/lastChild no longer name the rect and the text.
@@ -4123,6 +4287,9 @@ function createLiveMap(container, graph, options) {
       if (label.textContent !== nameText) gbits.push(gr.title || gr.label);
       if (wtext && !showWords) gbits.push(wtext);
       if (/** @type {any} */ (gr).verdict) gbits.push(/** @type {any} */ (gr).verdict);
+      // And what a band IS, where its name alone cannot say — the no-position lane, the opening,
+      // an empty section. Always, on the same rule as the verdict: it is never on the header.
+      if (/** @type {any} */ (gr).note) gbits.push(/** @type {any} */ (gr).note);
       box.querySelector("title").textContent = gbits.join("\n");
       box.style.transform = `translate(${x}px,${y}px)`;      // style, not attribute: see above
     }
@@ -5734,6 +5901,10 @@ function injectStyle() {
 .alm-g.is-fixed{cursor:default}
 .alm-g.is-fixed .alm-gbox{stroke-dasharray:none;stroke-opacity:.5}
 .alm-g.is-fixed:hover .alm-gbox{stroke-width:1}
+/* A section of the text with nothing mapped in it: the band's outline, finely dotted, and no
+   fill — present, so a gap reads as a gap, and plainly holding nothing. */
+.alm-g.is-empty .alm-gbox{fill:none;stroke-dasharray:2 4;stroke-opacity:.7}
+.alm-gempty{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;opacity:.85;pointer-events:none}
 /* The hidden-line convention, drawn over the nodes: broken, hairline, and the edge's own colour
    so the eye joins it to the visible line on either side. Never takes a click. */
 /* The bar that gathers the linked premises of one inference step. Heavier than the lines it
