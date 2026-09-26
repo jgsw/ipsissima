@@ -952,11 +952,21 @@ def read_frontmatter(path):
     Deliberately a small hand parser rather than a YAML dependency: what it has to understand is
     `defaults:` and one level of `key: "value"` beneath it.
     """
+    block = frontmatter_block(path)
+    if block is None:
+        return {}
+    return _parse_frontmatter(block)
+
+
+def frontmatter_block(path):
+    """The raw text between the `===` fences, or None. Shared by the hand parser below and by
+    the one reader that needs real YAML (the `mechanism:` block, whose nested maps the hand
+    parser was never meant to understand)."""
     try:
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
     except OSError:
-        return {}
+        return None
     # SKIP A COMMENT HEADER FIRST. Every reconstruction in this repo opens with a `//` block
     # explaining the argument's form, and `re.match` anchored at index 0 silently returned {}
     # for any such file -- so `defaults:` stopped applying the moment a file was documented,
@@ -967,10 +977,12 @@ def read_frontmatter(path):
     head = re.match(r"(?:\s*(?://[^\n]*\n|/\*.*?\*/\s*))*", text, re.S)
     text = text[head.end():] if head else text
     mo = re.match(r"\s*===\s*\n(.*?)\n===\s*(\n|$)", text, re.S)
-    if not mo:
-        return {}
+    return mo.group(1) if mo else None
+
+
+def _parse_frontmatter(block):
     out, section, indent = {}, None, None
-    for line in mo.group(1).splitlines():
+    for line in block.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         lead = len(line) - len(line.lstrip())
@@ -1074,6 +1086,74 @@ def merged_statements(doc):
             for k in PROVENANCE_FIELDS:
                 if rec["data"].get(k) is None and d.get(k) is not None:
                     rec["data"][k] = d[k]
+    return out
+
+
+#: The reconstructor's own layer (ruled 26 Sep 2026). A claim tagged with it is a reading of the
+#: text against the world -- a confounder the author never mentions, a missing link, a loop the
+#: text leaves open -- and never something the text says.
+APPRAISAL_TAG = "appraisal"
+
+
+def node_tags(node):
+    """Every tag on a claim or argument, gathered across its members.
+
+    An argument's tags are not on the argument record: the export keeps them on its description
+    members, so reading `node["tags"]` alone found no tag on any argument."""
+    tags = set(node.get("tags") or [])
+    for m in node.get("members") or []:
+        tags.update(m.get("tags") or [])
+    return tags
+
+
+def appraisal_titles(doc):
+    """Titles of every claim and argument in the appraisal layer."""
+    out = set()
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            if APPRAISAL_TAG in node_tags(node):
+                out.add(title)
+    return out
+
+
+def without_appraisal(doc):
+    """The map as the AUTHOR'S argument: the document with the appraisal layer taken out.
+
+    WHY THE MEASURES NEED THIS, AND NOT ONLY THE VIEW. Found on the first notation spike (SMF
+    briefing, 26 Sep 2026): with six appraisal claims in the file, three were reported `inert`,
+    and one -- an appraisal claim supporting one of the author's findings -- was listed among the
+    load-bearing assumptions in the INTERPRETIVE LOAD of the author's own contention. Every
+    measure of what the text argues was answering about text plus critic. Hiding the layer on
+    screen would have left the census still counting it.
+
+    Quotation checks do NOT use this: an appraisal claim may quote the text, and a quotation
+    anywhere in the file is verified against the source like any other.
+    """
+    gone = appraisal_titles(doc)
+    if not gone:
+        return doc
+
+    def keep_rel(r):
+        return r.get("from") not in gone and r.get("to") not in gone
+
+    out = dict(doc)
+    out["statements"] = {}
+    for title, st in (doc.get("statements") or {}).items():
+        if title in gone:
+            continue
+        st = dict(st)
+        if st.get("relations"):
+            st["relations"] = [r for r in st["relations"] if keep_rel(r)]
+        out["statements"][title] = st
+    out["arguments"] = {}
+    for title, arg in (doc.get("arguments") or {}).items():
+        if title in gone:
+            continue
+        arg = dict(arg)
+        if arg.get("relations"):
+            arg["relations"] = [r for r in arg["relations"] if keep_rel(r)]
+        out["arguments"][title] = arg
+    out["relations"] = [r for r in (doc.get("relations") or []) if keep_rel(r)]
     return out
 
 

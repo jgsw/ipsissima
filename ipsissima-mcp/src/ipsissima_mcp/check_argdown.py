@@ -496,7 +496,8 @@ def coverage_report(cli, path, source_root=None):
 #: PROVENANCE_FIELDS is what the analysis here merges; `pinpoint` and `reviewed` are drawn in
 #: the app; `uses`, `formalization` and `formalized` ride on premise-conclusion lines;
 #: `isGroup` on headings.
-EXTRA_DATA_KEYS = ("pinpoint", "reviewed", "uses", "formalization", "formalized", "isGroup")
+EXTRA_DATA_KEYS = ("pinpoint", "reviewed", "uses", "formalization", "formalized", "isGroup",
+                   "causes")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
@@ -1244,6 +1245,12 @@ def fidelity_report(cli, path):
         return
     fm_here = prov.read_frontmatter(path)
     prov.apply_defaults(doc, fm_here)
+    # EVERYTHING BELOW IS ABOUT THE AUTHOR'S ARGUMENT, so it is measured without the appraisal
+    # layer: the reconstructor's own claims must not count as the author's words, raise the
+    # author's interpretive load, or be crowned a contention. Their rules are checked in the
+    # CHAIN section instead.
+    appraisal_n = len(prov.appraisal_titles(doc))
+    doc = prov.without_appraisal(doc)
 
     # ---- declared contentions (ruled 10 Sep 2026) ------------------------- #
     # Additive only: the declaration can raise a used thesis to contention rank beside the
@@ -1358,6 +1365,10 @@ def fidelity_report(cli, path):
         for c in il["contentions"]]
     print(f"\n   FIDELITY: {il['marked']}/{il['total']} nodes marked -- "
           + ", ".join(f"{v} {k}" for k, v in census.items()))
+    if appraisal_n:
+        SHAPE["appraisal"] = appraisal_n
+        print(f"      (and {appraisal_n} #appraisal claim(s), the reconstructor's own, left out "
+              f"of this and every measure of the author's argument)")
 
     # ---- a map that never shows the author's words ------------------------ #
     # RULED 8 Sep 2026: quotations live in the claim text. Both homes are verified, but only
@@ -1725,6 +1736,10 @@ def provenance_report(cli, path, source_root, fix=None):
             n = sum(1 for _, c in outside if c == f)
             print(f"           {n:>3} claims  {f}")
 
+    # FROM HERE THE QUESTIONS ARE ABOUT THE AUTHOR'S ARGUMENT -- its order, what earns its
+    # place, what is carried longest -- so the appraisal layer is set aside. Quotations above
+    # were checked on everything, the appraisal's included.
+    doc = prov.without_appraisal(doc)
     debts, unplaced = prov.justification_debt(doc, source_root, quotes)
     fwd = sorted([d for d in debts if d["chapters"] > 0], key=lambda d: -d["chapters"])
     back = sorted([d for d in debts if d["chapters"] < 0], key=lambda d: d["chapters"])
@@ -1846,6 +1861,49 @@ def provenance_report(cli, path, source_root, fix=None):
         for g in long_carry[:8]:
             print(f"        +{g['gap']:>3} claims  {g['claim'][:34]:36} "
                   f"stated {g['stated']}/{g['total']}, first used {g['first_used']}")
+
+
+def mechanism_report(cli, path):
+    """The chain the text asserts: declarations checked, gaps and loops found, light and shadow.
+
+    See mechanism.py for the notation and for why this is Gross's causal chain and not Pearl's
+    diagram. A gap is reported as an observation, never a fault: a step the text leaves out is a
+    finding about the TEXT, and a checker that demanded it be closed would have the reconstructor
+    invent it -- which would destroy the finding."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as prov
+        import mechanism as mech
+    except ImportError:
+        return
+    doc = export_json(cli, path)
+    if not doc:
+        return
+    fm_here = dict(prov.read_frontmatter(path) or {})
+    prov.apply_defaults(doc, fm_here)
+    fm_here.pop("mechanism", None)          # the hand parser's flattened copy is not the block
+    block, why = mech.read_block(prov.frontmatter_block(path))
+    if why:
+        finding("mechanism", "!", why, fix="write the front matter as valid YAML")
+    if block is not None:
+        fm_here["mechanism"] = block
+    found, profile = mech.analyse(fm_here, doc)
+    for sev, check, message, where in found:
+        finding(check, sev, message, **{k: v for k, v in where.items() if v is not None})
+    faults = [f for f in found if f[1] != "mechanism-gap"]
+    if profile is None:
+        if faults:
+            print("\n   APPRAISAL:")
+            for sev, _c, message, where in faults:
+                print(f"      {sev} {where.get('title', '')[:60]}  {message[:90]}")
+        return
+    SHAPE["chain"] = profile
+    print()
+    for line in mech.census(profile):
+        print(line)
+    for sev, _c, message, where in faults:
+        at = where.get("title") or where.get("state") or where.get("actor") or ""
+        print(f"      {sev} {at[:48]}  {message[:100]}")
 
 
 def _parse_args():
@@ -2051,9 +2109,14 @@ def _report(cli, path, a):
                 to_title[_norm(title)] = title
                 if rec.get("text"):
                     to_title[_norm(rec["text"])] = title
+            # THE APPRAISAL IS NEVER THE APEX. A reconstructor's own objection or observation
+            # that supports nothing would otherwise be crowned the paper's conclusion.
+            appraisal = _prov.appraisal_titles(doc_for_apex)
             kept = []
             for t in terminal:
                 title = to_title.get(_norm(t))
+                if title and title in appraisal:
+                    continue
                 if title and title in bears:
                     carried.append((t, title))
                 else:
@@ -2245,6 +2308,13 @@ def _report(cli, path, a):
     # --source-root; they come after the source checks because they are what was MADE of the
     # text, and reading them before it inverts the reconstruction's own order.
     fidelity_report(cli, path)
+
+    # ---- 5d2. the mechanism the text asserts ------------------------------ #
+    # After fidelity, because it reads the same claims a second way: not what holds them up but
+    # what they say HAPPENS. Silent for a file with no `mechanism:` block and no `causes:` step,
+    # which is most files. The appraisal layer's own rules are checked here too, whether or not
+    # there is a chain.
+    mechanism_report(cli, path)
 
     # ---- 5e. the shape of the premise-conclusion structures --------------- #
     # After fidelity, because these are questions about the ARGUMENT rather than about whose
