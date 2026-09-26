@@ -622,6 +622,41 @@ def _sentences(text):
     return out
 
 
+def _quoted(sent, q):
+    """Does quotation `q` quote sentence `sent` (both normalised, lower-case)?
+
+    WHOLE, OR THE HALF OF IT WHERE THE QUOTATION STARTS OR ENDS. The first version asked only
+    whether one contained the other, with the quotation's closing stop stripped and the
+    sentence's kept -- so a quotation running across two sentences quoted neither, and one that
+    began part-way into a sentence never matched it. Found by the Wimmer pass (26 Sep 2026),
+    which counted some six quoted sentences among the "uncovered"."""
+    s, q = sent.strip(' ."'), q.strip(' ."')
+    if not s or not q:
+        return False
+    if q in s or (len(s) > 20 and s in q):
+        return True
+    need = max(30, len(s) // 2)
+    # The quotation begins inside the sentence and runs on past its end.
+    head, start = q[:30], 0
+    while len(head) == 30:
+        at = s.find(head, start)
+        if at < 0:
+            break
+        if q.startswith(s[at:]) and len(s) - at >= need:
+            return True
+        start = at + 1
+    # The quotation ends inside the sentence, having begun before it.
+    tail, start = q[-30:], 0
+    while len(tail) == 30:
+        at = s.find(tail, start)
+        if at < 0:
+            break
+        if q.endswith(s[:at + 30]) and at + 30 >= need:
+            return True
+        start = at + 1
+    return False
+
+
 def coverage(doc, source_root, steps_all):
     """How much of the text's causal language the chain's steps quote or are placed at.
 
@@ -682,7 +717,7 @@ def coverage(doc, source_root, steps_all):
                 continue
             total += 1
             norm = prov.normalise(sent)[0].lower()
-            if any(q in norm or (len(norm) > 40 and norm in q) for q in spans.get(ch, [])):
+            if any(_quoted(norm, q) for q in spans.get(ch, [])):
                 covered += 1
                 continue
             # ONLY A QUOTATION COVERS. Being placed in the same paragraph as a step was counted as

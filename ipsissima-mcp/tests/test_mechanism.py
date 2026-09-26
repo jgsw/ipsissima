@@ -272,6 +272,16 @@ check("an unknown role is named, with the three that are read",
       any("the roles read are `intervention`, `condition` and `outcome`" in f["message"]
           for f in by(bad, "mechanism")), True)
 
+print("\nwhat counts as a quoted sentence")
+# THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
+import mechanism as mech  # noqa: E402
+_n = lambda t: t.lower()
+S1, S2 = "alpha beta gamma delta epsilon zeta eta theta iota kappa.", "lambda mu nu xi omicron pi rho sigma tau upsilon."
+Q = "gamma delta epsilon zeta eta theta iota kappa. lambda mu nu xi omicron pi rho sigma tau upsilon"
+check("a quotation running across two sentences quotes the second, its stop stripped", mech._quoted(S2, Q), True)
+check("and the first, which it begins part-way into, where it takes most of it", mech._quoted(S1, Q), True)
+check("a quotation inside a sentence quotes it, as before", mech._quoted(S1, "delta epsilon zeta"), True)
+
 print()
 if fails:
     sys.exit(f"{fails} check(s) failed")
