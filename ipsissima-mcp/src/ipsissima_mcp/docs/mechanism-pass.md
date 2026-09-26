@@ -86,6 +86,11 @@ mechanism:
   out-groups). Declare the whole as a state and each finer state `part_of` it. The view then opens
   at the text's own boxes, with every state one click away. Do not invent a whole the text does not
   draw or name.
+- **`levels:`** on a state that holds at more than its actor's level: an aggregate that is at once
+  many individuals' belief and a fact about the society (the Coleman boat's transformational step),
+  a consensus negotiated between individuals that holds as the field's. `levels: [macro, micro]`
+  draws it across both. Its `actor` stays the one that holds it. Use it where the text says the
+  state is at both levels, not merely that it is caused at one and felt at another — that is a step.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 
@@ -111,7 +116,13 @@ substantially reduces adoption".
 | `reflexive` | `true` where the step runs through a classification, a prediction or a model the step itself acts on |
 | `selects` | `true` where the link holds because of WHO ends up on each side, not because one brings the other about (below) |
 | `hedged` | `true` where the text puts the step as a possibility — "fees *may* worsen targeting" |
+| `jointly` | states the step holds **only together with**: `jointly: [desire]` where belief moves people to act "only where they wish to fit in" |
 
+- **A joint cause is one step, not two.** Where the text says two things bring something about only
+  together — a belief and a desire, a rule and the means to enforce it, an opportunity and a motive —
+  mark the step from one with `jointly:` naming the others. Two separate steps would say each is
+  enough alone. Where the text gives the second only as a qualification in words ("in a tight labour
+  market"), it is a `given:`, not a state. Pick as `from` the cause the text leads with.
 - A claim tagged `#reported` keeps its tag: its steps are the rival view's, drawn apart.
 - **A finding of no effect is a step with `sign: "0"`**, with the basis the text gives it. A policy
   text's central results are often nulls — paying does not raise use; fees do not target the needy —

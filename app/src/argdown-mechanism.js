@@ -59,6 +59,18 @@ function hasRole(state, name) { return rolesOf(state).indexOf(name) >= 0; }
 /** Where a chain may start: what the text recommends, or a condition it sets out from. */
 function isStart(state) { return hasRole(state, "intervention") || hasRole(state, "condition"); }
 function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+function asList(v) { return v == null ? [] : (Array.isArray(v) ? v : [v]).map(String); }
+
+/** The levels a state is drawn across: its own `levels:` (profile 1.4) where it declares them,
+ *  otherwise its actor's level -- mechanism.py's levels_of. */
+function levelsOf(state, actors, levels) {
+  var own = {};
+  asList(obj(state).levels).forEach(function (lv) { if (levels.indexOf(lv) >= 0) own[lv] = true; });
+  var list = levels.filter(function (lv) { return own[lv]; });
+  if (list.length) return list;
+  var lv = obj(actors[obj(state).actor]).level;
+  return lv ? [lv] : [];
+}
 
 /* ============================================================ the model */
 
@@ -120,7 +132,9 @@ function model(graph) {
         isNull: sign === "0", selects: !!raw.selects, hedged: !!raw.hedged,
         lag: raw.lag == null ? "" : String(raw.lag), given: given.map(String),
         how: raw.how && typeof raw.how === "object" ? raw.how : null,
-        reflexive: !!raw.reflexive, supports: supports
+        reflexive: !!raw.reflexive, supports: supports,
+        // JOINTLY (profile 1.4): the states together with which alone the step holds.
+        jointly: asList(raw.jointly)
       });
     });
   });
@@ -260,6 +274,11 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   var textAll = steps.filter(function (s) { return s.layer === "text"; });
   var text = causal.filter(function (s) { return s.layer === "text"; });
   var edges = uniqEdges(text);
+  // A CO-CAUSE IS A CAUSE, as the checker has it: routes, loops and dead ends run through it.
+  var seenEdge = {}; edges.forEach(function (e) { seenEdge[e[0] + "\u0000" + e[1]] = true; });
+  text.forEach(function (s) { s.jointly.forEach(function (j) {
+    var k = j + "\u0000" + s.to;
+    if (has(states, j) && j !== s.to && !seenEdge[k]) { seenEdge[k] = true; edges.push([j, s.to]); } }); });
   var interventions = ids.filter(function (i) { return hasRole(states[i], "intervention"); });
   var conditions = ids.filter(function (i) { return hasRole(states[i], "condition"); });
   var outcomes = ids.filter(function (i) { return hasRole(states[i], "outcome"); });
@@ -325,8 +344,9 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
     var r = routes(e, o, edges, ids);
     if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
   }); });
-  var levelOf = function (i) { return obj(actors[obj(states[i]).actor]).level; };
-  var spanned = {}; Object.keys(used).forEach(function (i) { spanned[levelOf(i)] = true; });
+  var spanned = {};
+  Object.keys(used).forEach(function (i) {
+    levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
   var lags = {}; text.forEach(function (s) { if (s.lag) lags[s.lag] = true; });
   var claimTitles = {}; text.forEach(function (s) { claimTitles[s.claim.title] = true; });
   return {
@@ -350,6 +370,16 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
         if (p != null && has(states, p) && p !== sid) (w[p] = w[p] || []).push(sid); });
       return Object.keys(w).sort().map(function (k) { return [k, w[k].sort()]; });
     })(),
+    joint: (function () {
+      var seen = {}, out = [];
+      text.forEach(function (s) { if (!s.jointly.length) return;
+        var row = [s.from, s.to, s.sign, s.jointly.slice()], k = [s.from, s.to, s.sign].concat(s.jointly).join("\u0000");
+        if (!seen[k]) { seen[k] = true; out.push([k, row]); } });
+      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; })
+                .map(function (r) { return r[1]; });
+    })(),
+    spanning: ids.slice().sort().filter(function (i) { return levelsOf(states[i], actors, levels).length > 1; })
+                 .map(function (i) { return [i, levelsOf(states[i], actors, levels)]; }),
     loops_with_appraisal: loops(ids, uniqEdges(pool)).map(function (l) {
       return { states: l, reflexive: isReflexive(l, pool) }; }),
     tiers: tiers, gaps: gaps,
@@ -412,15 +442,26 @@ function signWord(signs) {
  *  numbers, and nothing the reader switches changes them. */
 function layout(M, opts) {
   opts = opts || {};
+  // A CO-CAUSE ORDERS THE CHAIN AS A CAUSE DOES (profile 1.4): "belief moves people to act only
+  // with a wish to fit in" puts the wish before the act, as the checker's routes have it. So the
+  // columns, the systems and the depth-first walk see each co-cause as a step of its own; only
+  // the drawing keeps it one arrow, with a stem.
+  var ordering = M.steps.slice();
+  M.steps.forEach(function (s) {
+    (s.jointly || []).forEach(function (j) {
+      if (has(M.states, j) && j !== s.to) ordering.push({ id: s.id + " & " + j, from: j, to: s.to, layer: s.layer,
+                                                          isNull: s.isNull, selects: s.selects });
+    });
+  });
   var used = {};
-  M.steps.forEach(function (s) { used[s.from] = used[s.to] = true; });
+  ordering.forEach(function (s) { used[s.from] = used[s.to] = true; });
   M.ids.forEach(function (i) { if (isStart(M.states[i])) used[i] = true; });
   var ids = M.ids.filter(function (i) { return used[i]; });
 
   // Back edges by depth-first search from the interventions first, so a loop is drawn as a loop
   // returning to where the chain began, not as the chain's first step.
   var out = {};
-  M.steps.forEach(function (s) { (out[s.from] = out[s.from] || []).push(s); });
+  ordering.forEach(function (s) { (out[s.from] = out[s.from] || []).push(s); });
   var back = {}, mark = {};
   function dfs(v) {
     mark[v] = 1;
@@ -439,7 +480,7 @@ function layout(M, opts) {
     if (seen[v]) return 0;
     seen[v] = true;
     var best = 0;
-    M.steps.forEach(function (s) { if (s.to === v && !back[s.id]) best = Math.max(best, r(s.from, seen) + 1); });
+    ordering.forEach(function (s) { if (s.to === v && !back[s.id]) best = Math.max(best, r(s.from, seen) + 1); });
     return (rank[v] = best);
   }
   ids.forEach(function (v) { r(v, {}); });
@@ -456,7 +497,7 @@ function layout(M, opts) {
   // appraisal packed the text's own "orders lower reoffending" into one column and drew it as a
   // returning arc; the appraisal must never reshape what the text says.
   var pairs = [], seenPair = {}, textPairs = [];
-  M.steps.forEach(function (s) {
+  ordering.forEach(function (s) {
     var k = s.from + "\u0000" + s.to;
     if (!used[s.from] || !used[s.to] || s.from === s.to) return;
     if (!seenPair[k]) { seenPair[k] = true; pairs.push([s.from, s.to]); }
@@ -476,7 +517,7 @@ function layout(M, opts) {
   // view or the appraisal is not, and following it round put the fixture's `order` after the
   // step it starts.
   var preds = {};
-  M.steps.forEach(function (st) {
+  ordering.forEach(function (st) {
     if (back[st.id] || !used[st.from] || !used[st.to]) return;
     var a = unitOf[st.from], b = unitOf[st.to];
     if (a !== b) (preds[b] = preds[b] || []).push(a);
@@ -493,16 +534,34 @@ function layout(M, opts) {
   var col = {};
   ids.forEach(function (v) { col[v] = offset(unitOf[v], {}) + local[v]; });
 
-  var levelOf = function (i) {
-    var lv = obj(M.actors[obj(M.states[i]).actor]).level;
-    return M.levels.indexOf(lv) >= 0 ? lv : M.levels[M.levels.length - 1];
+  // A STATE ACROSS LEVELS (profile 1.4) is one box running down through every lane from its top
+  // level to its bottom one: the Coleman boat's shared expectation, at once many people's belief
+  // and a macro fact. It takes a row in each lane it crosses: the LAST row of its top lane and the
+  // FIRST of its bottom one, so the states of its column sit above it and below it, never under it.
+  // (Put first everywhere, as it was, the Coleman-boat reading's two spanning boxes covered six
+  // states of the top lane that came after them in their column.) A lane it runs right through is
+  // its alone in that column; spanning states that share a column share its width, side by side.
+  var laneRange = function (i) {
+    var lvs = levelsOf(M.states[i], M.actors, M.levels).filter(function (lv) { return M.levels.indexOf(lv) >= 0; });
+    if (!lvs.length) return [M.levels.length - 1, M.levels.length - 1];
+    return [M.levels.indexOf(lvs[0]), M.levels.indexOf(lvs[lvs.length - 1])];
   };
+  var range = {};
+  ids.forEach(function (v) { range[v] = laneRange(v); });
+  var spans = function (v) { return range[v][1] > range[v][0]; };
   var slots = {};
-  ids.forEach(function (v) { var k = levelOf(v) + "|" + col[v]; (slots[k] = slots[k] || []).push(v); });
+  var place = function (v, li) { var k = M.levels[li] + "|" + col[v]; (slots[k] = slots[k] || []).push(v); };
+  M.levels.forEach(function (lv, li) {
+    // Ending here (from above) first, then this lane's own states, then those going on below.
+    ids.forEach(function (v) { if (spans(v) && range[v][1] === li) place(v, li); });
+    ids.forEach(function (v) { if (spans(v) && range[v][0] < li && range[v][1] > li) place(v, li); });
+    ids.forEach(function (v) { if (!spans(v) && range[v][0] === li) place(v, li); });
+    ids.forEach(function (v) { if (spans(v) && range[v][0] === li) place(v, li); });
+  });
   var lanes = [], y = TOP;
   M.levels.forEach(function (lv) {
     var rows = 0;
-    ids.forEach(function (v) { if (levelOf(v) === lv) rows = Math.max(rows, slots[lv + "|" + col[v]].length); });
+    Object.keys(slots).forEach(function (k) { if (k.slice(0, lv.length + 1) === lv + "|") rows = Math.max(rows, slots[k].length); });
     // A level nothing in the text reaches is a thin strip that says so, not an empty band.
     var h = rows ? HEAD + rows * ROW + PADY : HEAD + 4;
     lanes.push({ level: lv, y: y, h: h, empty: !rows,
@@ -512,9 +571,27 @@ function layout(M, opts) {
   });
   var nodes = {}, maxRank = 0;
   ids.forEach(function (v) {
-    var li = M.levels.indexOf(levelOf(v)), k = levelOf(v) + "|" + col[v];
-    nodes[v] = { x: GUT + col[v] * COL, y: lanes[li].y + HEAD + PADY / 2 + slots[k].indexOf(v) * ROW, w: BW, h: BH };
+    var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + slots[M.levels[li] + "|" + col[v]].indexOf(v) * ROW; };
+    var top = rowY(range[v][0]), bottom = rowY(range[v][1]) + BH;
+    nodes[v] = { x: GUT + col[v] * COL, y: top, w: BW, h: bottom - top };
+    if (spans(v)) nodes[v].levels = M.levels.slice(range[v][0], range[v][1] + 1);
     maxRank = Math.max(maxRank, col[v]);
+  });
+  // Spanning boxes in one column whose heights meet stand side by side, each a share of the width.
+  var spanCols = {};
+  ids.filter(spans).forEach(function (v) { (spanCols[col[v]] = spanCols[col[v]] || []).push(v); });
+  Object.keys(spanCols).forEach(function (c) {
+    var list = spanCols[c], groups2 = [];
+    list.forEach(function (v) {
+      var g = groups2.filter(function (gr) { return gr.some(function (w) {
+        return nodes[w].y < nodes[v].y + nodes[v].h && nodes[v].y < nodes[w].y + nodes[w].h; }); })[0];
+      if (g) g.push(v); else groups2.push([v]);
+    });
+    groups2.forEach(function (gr) {
+      if (gr.length < 2) return;
+      var w = (BW - 8 * (gr.length - 1)) / gr.length;
+      gr.forEach(function (v, i) { nodes[v].x += i * (w + 8); nodes[v].w = w; });
+    });
   });
 
   // FOLDING DRAWS, IT DOES NOT MOVE. Every state keeps the place the whole chain gives it (F3: a
@@ -538,7 +615,8 @@ function layout(M, opts) {
     offMain = drawn.steps.length - main.length;
     drawn.steps = main;
     var touched = {};
-    main.forEach(function (s) { touched[s.from] = touched[s.to] = true; });
+    main.forEach(function (s) { touched[s.from] = touched[s.to] = true;
+                                (s.jointly || []).forEach(function (j) { touched[j] = true; }); });
     Object.keys(nodes).forEach(function (v) {
       if (!drawn.folded[v] && !touched[v] && !startOf(v) && !endOf(v)) setAside.push(v);
     });
@@ -562,7 +640,9 @@ function layout(M, opts) {
   drawn.steps.forEach(function (s) {
     var k = merge ? s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000\u0000\u0000" + (s.parts ? "route" : "")
                   : s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" +
-            (kindOf(s) === "step" ? s.sign : "") + "\u0000" + (s.parts ? "route" : "");
+            (kindOf(s) === "step" ? s.sign : "") + "\u0000" + (s.parts ? "route" : "") +
+            // "raises" and "raises only together with a wish" say different things: two arrows.
+            ((s.jointly || []).length ? "\u0000&" + s.jointly.join(",") : "");
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
   });
@@ -573,15 +653,37 @@ function layout(M, opts) {
   var isBackKey = {};
   // An arrow that does not run rightwards returns: drawn as an arc under the boxes. With systems
   // laid out as blocks that happens only inside a feedback system, where every step is on a loop.
-  order.forEach(function (k) { var s0 = groups[k][0]; isBackKey[k] = nodes[s0.to].x <= nodes[s0.from].x; });
+  // STACKED IN ONE COLUMN, AN ARROW RUNS STRAIGHT BETWEEN THE BOXES. Merton's in-group defining
+  // the out-group, and the out-group's defensive response to it, sat one above the other in a
+  // feedback block; each step was drawn as a returning arc from a box's bottom, both down the same
+  // line and through the lower box, and the reader saw one arrow of a two-way loop (26 Sep 2026).
+  // Where nothing stands between them, each step is a straight arrow from facing edge to facing
+  // edge, and a pair running both ways is drawn side by side. Where a box does stand between them
+  // (Merton's case: the exclusion from unions sat between the two), a step runs down beside the
+  // column's left edge or up beside its right, so a pair both ways reads as one circuit.
+  var between = function (a, b) {
+    var lo = Math.min(a.y, b.y), hi = Math.max(a.y, b.y);
+    return Object.keys(nodes).some(function (w) { var m = nodes[w];
+      return m !== a && m !== b && m.x === a.x && m.y > lo && m.y < hi; });
+  };
+  var isVertKey = {}, isSideKey = {}, pairKeys = {}, sideKeys = {};
+  order.forEach(function (k) {
+    var s0 = groups[k][0], a = nodes[s0.from], b = nodes[s0.to];
+    var column = s0.from !== s0.to && a.x === b.x;
+    isVertKey[k] = column && !between(a, b);
+    isSideKey[k] = column && !isVertKey[k];
+    isBackKey[k] = !column && b.x <= a.x;
+    if (isSideKey[k]) (sideKeys[a.x + (b.y > a.y ? "L" : "R")] = sideKeys[a.x + (b.y > a.y ? "L" : "R")] || []).push(k);
+    if (isVertKey[k]) (pairKeys[[s0.from, s0.to].sort().join("\u0000")] = pairKeys[[s0.from, s0.to].sort().join("\u0000")] || []).push(k);
+  });
   var outs = {}, ins = {};
   order.forEach(function (k) {
-    if (isBackKey[k]) return;
+    if (isBackKey[k] || isVertKey[k] || isSideKey[k]) return;
     var s0 = groups[k][0];
     (outs[s0.from] = outs[s0.from] || []).push(k);
     (ins[s0.to] = ins[s0.to] || []).push(k);
   });
-  var cyOf = function (v) { return nodes[v].y + BH / 2; };
+  var cyOf = function (v) { return nodes[v].y + nodes[v].h / 2; };
   var portY = {}, portIn = {}, portSide = {}, portX = {};
   // AN ARROW TO A STATE WELL BELOW OR ABOVE LEAVES FROM THE BOX'S BOTTOM OR TOP. Seven arrows
   // leaving the FAST intervention's right side and dropping into the lane below ran as one tight
@@ -594,14 +696,15 @@ function layout(M, opts) {
     var blocked = function (toward) {
       return Object.keys(nodes).some(function (w) {
         var m = nodes[w];
-        return w !== v && m.x === n.x && (toward > 0 ? m.y > n.y && m.y < n.y + toward + BH
-                                                     : m.y < n.y && m.y > n.y + toward - BH);
+        return w !== v && m.x === n.x && (toward > 0 ? m.y > n.y && m.y < n.y + toward + n.h
+                                                     : m.y < n.y && m.y > n.y + toward - n.h);
       });
     };
     outs[v].forEach(function (k) {
       var t = groups[k][0].to, dy = cyOf(t) - cyOf(v);
-      if (dy > BH + 12 && nodes[t].x > n.x && !blocked(dy)) below.push(k);
-      else if (dy < -(BH + 12) && nodes[t].x > n.x && !blocked(dy)) above.push(k);
+      var clear = (n.h + nodes[t].h) / 2 + 12;
+      if (dy > clear && nodes[t].x > n.x && !blocked(dy)) below.push(k);
+      else if (dy < -clear && nodes[t].x > n.x && !blocked(dy)) above.push(k);
       else side.push(k);
     });
     var fan = function (list, where) {
@@ -609,7 +712,7 @@ function layout(M, opts) {
         var a = cyOf(groups[p][0].to), b = cyOf(groups[q][0].to);
         return (where === "bottom" ? b - a : a - b) || (p < q ? -1 : p > q ? 1 : 0);
       });
-      list.forEach(function (k, i) { portSide[k] = where; portX[k] = n.x + 14 + (BW - 28) * (i + 0.5) / list.length; });
+      list.forEach(function (k, i) { portSide[k] = where; portX[k] = n.x + 14 + (n.w - 28) * (i + 0.5) / list.length; });
     };
     fan(below, "bottom"); fan(above, "top");
     outs[v] = side;
@@ -619,7 +722,7 @@ function layout(M, opts) {
       var a = groups[p][0], b = groups[q][0];
       return cyOf(a[other]) - cyOf(b[other]) || nodes[a[other]].x - nodes[b[other]].x || (p < q ? -1 : p > q ? 1 : 0);
     });
-    list.forEach(function (k, i) { into[k] = nodes[groups[k][0][key]].y + 8 + (BH - 16) * (i + 0.5) / list.length; });
+    list.forEach(function (k, i) { var n = nodes[groups[k][0][key]]; into[k] = n.y + 8 + (n.h - 16) * (i + 0.5) / list.length; });
   };
   Object.keys(outs).forEach(function (v) { spread(outs[v], "from", "to", portY); });
   Object.keys(ins).forEach(function (v) { spread(ins[v], "to", "from", portIn); });
@@ -645,28 +748,49 @@ function layout(M, opts) {
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P;
-    if (isBack) {
-      var x1 = a.x + BW / 2 + off, y1 = a.y + BH, x2 = b.x + BW / 2 + off, y2 = b.y + BH;
+    if (isVertKey[k]) {
+      // Downward arrows to the left of the centre, upward ones to the right, spread if several.
+      var down = b.y > a.y, mine = pairKeys[[s0.from, s0.to].sort().join("\u0000")];
+      var ways = mine.filter(function (q) { return (nodes[groups[q][0].to].y > nodes[groups[q][0].from].y) === down; });
+      var both = mine.length > ways.length;
+      var vx = a.x + a.w / 2 + (both ? (down ? -14 : 14) : 0) + (ways.indexOf(k) - (ways.length - 1) / 2) * 10 * (down ? -1 : 1);
+      var vy1 = down ? a.y + a.h : a.y, vy2 = down ? b.y - 2 : b.y + b.h + 2, vyE = down ? vy2 - STUB : vy2 + STUB;
+      P = [[vx, vy1], [vx, vy1 + (vyE - vy1) / 3], [vx, vy1 + 2 * (vyE - vy1) / 3], [vx, vyE]];
+      stub = "M" + vx + "," + vyE + " L" + vx + "," + vy2;
+    } else if (isSideKey[k]) {
+      var goesDown = b.y > a.y, lane = sideKeys[a.x + (goesDown ? "L" : "R")];
+      var bulge = 26 + lane.indexOf(k) * 12, sgn = goesDown ? -1 : 1;
+      var ex = goesDown ? a.x : a.x + a.w, ya = a.y + a.h / 2 + (goesDown ? 8 : -8), yb = b.y + b.h / 2 + (goesDown ? -8 : 8);
+      var sx2 = goesDown ? b.x - 2 : b.x + b.w + 2, sxE = sx2 + sgn * STUB;
+      P = [[ex, ya], [ex + sgn * bulge, ya], [sxE + sgn * (bulge - STUB), yb], [sxE, yb]];
+      stub = "M" + sxE + "," + yb + " L" + sx2 + "," + yb;
+    } else if (isBack) {
+      var x1 = a.x + a.w / 2 + off, y1 = a.y + a.h, x2 = b.x + b.w / 2 + off, y2 = b.y + b.h;
       var dip = Math.max(y1, y2) + 46 + Math.abs(off) * 2;
       P = [[x1, y1], [x1, dip], [x2, dip], [x2, y2 + STUB + 2]];
       stub = "M" + x2 + "," + (y2 + STUB + 2) + " L" + x2 + "," + (y2 + 2);
     } else {
       var X2 = b.x - 2, Y2 = portIn[k], XE = X2 - STUB;
       if (portSide[k]) {
-        var BX = portX[k], BY = portSide[k] === "bottom" ? a.y + BH : a.y;
+        var BX = portX[k], BY = portSide[k] === "bottom" ? a.y + a.h : a.y;
         var c2 = Math.max(30, (XE - BX) / 2);
         P = [[BX, BY], [BX, BY + (Y2 - BY) * 0.75], [XE - c2, Y2], [XE, Y2]];
       } else {
-        var X1 = a.x + BW, Y1 = portY[k], c = Math.max(40, (XE - X1) / 2);
+        var X1 = a.x + a.w, Y1 = portY[k], c = Math.max(40, (XE - X1) / 2);
         P = [[X1, Y1], [X1 + c, Y1], [XE - c, Y2], [XE, Y2]];
       }
       stub = "M" + XE + "," + Y2 + " L" + X2 + "," + Y2;
     }
     d = "M" + P[0][0] + "," + P[0][1] + " C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1];
     // A null finding has no head, so no stub: its line runs all the way in.
-    if (kind === "null") { d += " L" + (isBack ? P[3][0] + "," + (P[3][1] - STUB) : (P[3][0] + STUB) + "," + P[3][1]); stub = null; }
+    if (kind === "null") { d += " L" + (isVertKey[k] ? P[3][0] + "," + (P[3][1] + (b.y > a.y ? STUB : -STUB))
+                                        : isSideKey[k] ? (P[3][0] + (b.y > a.y ? STUB : -STUB)) + "," + P[3][1]
+                                        : isBack ? P[3][0] + "," + (P[3][1] - STUB) : (P[3][0] + STUB) + "," + P[3][1]); stub = null; }
     var signs = [];
     ss.forEach(function (s) { if (s.sign && signs.indexOf(s.sign) < 0) signs.push(s.sign); });
+    // ↻ marks the step that closes a loop: an arc that returns, or a step in one column that the
+    // depth-first walk found closing one.
+    var closes = isBack || ((isVertKey[k] || isSideKey[k]) && ss.some(function (x) { return back[x.id]; }));
     var given = ss.some(function (s) { return s.given.length > 0; });
     var viaName = function (v) { var t = String(obj(M.states[v]).label || v); return t.length > 22 ? t.slice(0, 21) + "…" : t; };
     var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
@@ -674,18 +798,22 @@ function layout(M, opts) {
     var label = breakdown.length > 1
               ? breakdown.slice(0, 2).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
                 (breakdown.length > 2 ? " · +" + (breakdown.length - 2) + " more" : "") +
-                (given ? " ◇" : "") + (isBack ? " ↻" : "")
+                (given ? " ◇" : "") + (closes ? " ↻" : "")
               : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
               : kind === "selection" ? "selection" :
                 signWord(signs) + (route || (ss.length > 1 ? " ×" + ss.length : "")) +
-                (given ? " ◇" : "") + (isBack ? " ↻" : "");
-    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity,
-             ink: ink, route: !!s0.parts, back: isBack, mixed: breakdown.length > 1, breakdown: breakdown,
+                (given ? " ◇" : "") + (closes ? " ↻" : "");
+    var jointly = [];
+    ss.forEach(function (x) { (x.jointly || []).forEach(function (j) {
+      if (has(M.states, j) && nodes[j] && j !== s0.to && jointly.indexOf(j) < 0) jointly.push(j); }); });
+    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
+             ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P,
              chip: { x: 0, y: 0, w: label.length * 6.6 + 14, h: 18, label: label } };
   });
   var shown = {};
   Object.keys(nodes).forEach(function (v) { if (!drawn.folded[v] && setAside.indexOf(v) < 0) shown[v] = nodes[v]; });
+  edges.forEach(function (e) { stemsOf(e, shown); });
   placeChips(edges, shown, lanes);
   return { width: GUT + maxRank * COL + BW + 40, height: y + 70, lanes: lanes, nodes: nodes,
            edges: edges, box: { w: BW, h: BH },
@@ -746,6 +874,9 @@ function foldSteps(M, folded, nodes) {
           fidelity: FIDELITY[Math.max(FIDELITY.indexOf(i.fidelity), FIDELITY.indexOf(o.fidelity))],
           hedged: i.hedged || o.hedged, given: i.given.concat(o.given),
           lag: [i.lag, o.lag].filter(Boolean).join("; "), how: null, reflexive: i.reflexive || o.reflexive,
+          // A route holds only with every co-cause of every step on it.
+          jointly: (i.jointly || []).concat((o.jointly || []).filter(function (j) { return (i.jointly || []).indexOf(j) < 0; }))
+                     .filter(function (j) { return j !== o.to; }),
           claim: null
         });
       });
@@ -780,6 +911,47 @@ function foldable(M, voice) {
  *  clear. Deterministic: the same chain places its chips the same way. */
 var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9];
 var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
+/** JOINT CAUSES, DRAWN AS THE REASONS MAP DRAWS LINKED PREMISES. Each co-cause sends a stem to a
+ *  bar across the arrow near its head: the effect passes the bar only with every stem in. Drawn
+ *  only from a co-cause on the page; the panel names every one whatever is drawn. */
+var JUNCTION_T = 0.8;
+function stemsOf(e, shown) {
+  if (!e.jointly.length) return;
+  var P = e.curve, t = e.back ? 0.5 : JUNCTION_T;
+  var at = function (u) { return [bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)]; };
+  var J = at(t), J1 = at(t - 0.02), J2 = at(Math.min(1, t + 0.02));
+  var dx = J2[0] - J1[0], dy = J2[1] - J1[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
+  var nx = -dy / len * 8, ny = dx / len * 8;
+  e.junction = { x: J[0], y: J[1], bar: "M" + (J[0] - nx) + "," + (J[1] - ny) + " L" + (J[0] + nx) + "," + (J[1] + ny) };
+  // THE STEM GOES ROUND, NOT THROUGH. On the planted boat the wish sat in the row of the belief it
+  // joins, one column back, and a stem from its right side ran straight through the belief's box.
+  // Three ways are tried -- from the side, under the row, over it -- and the first that crosses
+  // no box is taken, else the one that crosses least.
+  var others = Object.keys(shown).filter(function (v) { return v !== e.to; });
+  e.jointly.forEach(function (j) {
+    var n = shown[j];
+    if (!n) return;
+    var cands = [];
+    var sx = n.x + n.w, sy = n.y + n.h / 2;
+    if (sx + 20 < J[0]) cands.push([[sx, sy], [sx + Math.max(30, (J[0] - sx) / 2), sy], [J[0], J[1] + (sy < J[1] ? -12 : 12)]]);
+    var low = Math.max(n.y + n.h, J[1]) + 28, high = Math.min(n.y, J[1]) - 28;
+    cands.push([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [J[0], low]]);
+    cands.push([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [J[0], high]]);
+    var best = cands[0], bestHits = Infinity;
+    cands.forEach(function (c) {
+      var hits = 0;
+      for (var i = 1; i < 20; i++) {
+        var u = i / 20, px = bez(c[0][0], c[1][0], c[2][0], J[0], u), py = bez(c[0][1], c[1][1], c[2][1], J[1], u);
+        others.forEach(function (v) { var m = shown[v];
+          if (px > m.x + 2 && px < m.x + m.w - 2 && py > m.y + 2 && py < m.y + m.h - 2) hits++; });
+      }
+      if (hits < bestHits) { best = c; bestHits = hits; }
+    });
+    e.stems.push({ state: j, path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
+                                   best[2][0] + "," + best[2][1] + " " + J[0] + "," + J[1] });
+  });
+}
+
 function placeChips(edges, nodes, lanes) {
   var fixed = [];
   (lanes || []).forEach(function (ln) { fixed.push({ x: 0, y: ln.y, w: 100000, h: HEAD - 2 }); });
@@ -787,7 +959,8 @@ function placeChips(edges, nodes, lanes) {
   edges.forEach(function (e) {
     if (!e.stub) return;
     var P = e.curve, x = P[3][0], y = P[3][1];
-    fixed.push(e.back ? { x: x - 9, y: y - STUB - 12, w: 18, h: STUB + 14 } : { x: x - 4, y: y - 9, w: STUB + 12, h: 18 });
+    fixed.push(e.vertical ? { x: x - 9, y: Math.min(y, P[0][1] < y ? y : y - STUB) - 2, w: 18, h: STUB + 6 }
+             : e.back ? { x: x - 9, y: y - STUB - 12, w: 18, h: STUB + 14 } : { x: x - 4, y: y - 9, w: STUB + 12, h: 18 });
   });
   var rankOf = function (e) {
     return (e.layer === "text" ? 0 : e.layer === "rival" ? 10 : 20) +
@@ -913,7 +1086,7 @@ function injectStyle() {
     ".amech-loop:hover{border-color:var(--mv-text)}",
     ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal);stroke-dasharray:4 3}",
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
-    ".amech .ed{fill:none;cursor:pointer}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
+    ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
     ".amech .sel{stroke:var(--mv-sel)!important;stroke-width:4!important}",
     ".amech .dim{opacity:.1}.amech .faint{opacity:.35}",
@@ -967,6 +1140,9 @@ function collapseModel(M) {
     if (a === b && (a !== s.from || b !== s.to)) { inside++; return; }
     var c = {}; for (var k in s) if (has(s, k)) c[k] = s[k];
     c.from = a; c.to = b;
+    c.jointly = [];
+    (s.jointly || []).forEach(function (j) { var t = has(top, j) ? top[j] : j;
+      if (t !== b && c.jointly.indexOf(t) < 0) c.jointly.push(t); });
     if (a !== s.from || b !== s.to) { c.partFrom = s.from; c.partTo = s.to; }
     steps.push(c);
   });
@@ -1134,13 +1310,22 @@ function create(container, graph, opts) {
       if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": st.width,
                                "marker-end": "url(#amech-ar-" + e.ink + ")" }, g);
       el("path", { d: e.path, "class": "hit" }, g);
+      e.stems.forEach(function (sm) {
+        if (obj(M.states[sm.state]).appraisal && !layers.appraisal) return;
+        var sp = el("path", { d: sm.path, "class": "ed stem", stroke: col, "stroke-width": st.width, "data-stem": sm.state }, g);
+        if (st.dash) sp.setAttribute("stroke-dasharray", st.dash);
+        el("path", { d: sm.path, "class": "hit" }, g);
+      });
+      if (e.junction) el("path", { d: e.junction.bar, "class": "junction", stroke: col, "stroke-width": st.width + 2 }, g);
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
                            "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gC);
       var tw = e.chip.w;
       el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - 9, width: tw, height: 18, rx: 9 }, chip);
       el("text", { x: e.chip.x, y: e.chip.y + 4, "text-anchor": "middle" }, chip).textContent = e.chip.label;
       var title = el("title", {}, g);
-      title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") + " — click to see";
+      title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
+        (e.jointly.length ? ", holding only together with " + e.jointly.map(function (j) { return obj(M.states[j]).label || j; }).join(" and ") : "") +
+        " — click to see";
       var pick = function (ev) { ev.stopPropagation(); select({ edge: e, path: p }); };
       g.addEventListener("click", pick);
       chip.addEventListener("click", pick);
@@ -1161,7 +1346,7 @@ function create(container, graph, opts) {
                         transform: "translate(" + p.x + "," + p.y + ")" }, gN);
       if (hasRole(s, "outcome")) el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: 9 }, g);
       el("rect", { "class": "box", width: p.w, height: p.h, rx: 7 }, g);
-      var lines = wrapWords(s.label || v, 24);
+      var lines = wrapWords(s.label || v, Math.max(8, Math.round(24 * p.w / BW)));
       lines.forEach(function (t, i) {
         el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * 14 + 4, "text-anchor": "middle" }, g).textContent = t;
       });
@@ -1190,7 +1375,8 @@ function create(container, graph, opts) {
           " states, " + SYS[fi].loops + (SYS[fi].capped ? "+" : "") + " loops — click to see it alone";
         mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: fi }); });
       });
-      if (isStart(s) && !M.steps.some(function (x) { return x.from === v && x.layer === "text"; }))
+      // A co-cause is linked: its step is the one it joins (profile 1.4).
+      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0) && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
     });
@@ -1215,6 +1401,7 @@ function create(container, graph, opts) {
     }
     if (selected.edge) {
       var k = {}; k[selected.edge.from] = k[selected.edge.to] = true;
+      selected.edge.jointly.forEach(function (j) { k[j] = true; });
       return { nodes: k, edge: function (e) { return e.key === selected.edge.key; } };
     }
     var v = selected.state, up = {}, down = {};
@@ -1223,8 +1410,10 @@ function create(container, graph, opts) {
       while (stack.length) {
         var x = stack.pop();
         vis.forEach(function (e) {
-          var from = dir > 0 ? e.from : e.to, to = dir > 0 ? e.to : e.from;
-          if (from === x && !into[to] && to !== v) { into[to] = true; stack.push(to); }
+          [e.from].concat(e.jointly).forEach(function (src) {
+            var from = dir > 0 ? src : e.to, to = dir > 0 ? e.to : src;
+            if (from === x && !into[to] && to !== v) { into[to] = true; stack.push(to); }
+          });
         });
       }
     };
@@ -1233,7 +1422,8 @@ function create(container, graph, opts) {
     Object.keys(up).forEach(function (x) { nodes[x] = true; });
     Object.keys(down).forEach(function (x) { nodes[x] = true; });
     return { nodes: nodes, edge: function (e) {
-      return (up[e.from] && (up[e.to] || e.to === v)) || ((e.from === v || down[e.from]) && down[e.to]);
+      return [e.from].concat(e.jointly).some(function (src) {
+        return (up[src] && (up[e.to] || e.to === v)) || ((src === v || down[src]) && down[e.to]); });
     } };
   }
   function applyFocus() {
@@ -1241,7 +1431,7 @@ function create(container, graph, opts) {
     drawnEdges.forEach(function (d) {
       var on = !f || f.edge(d.e);
       d.g.classList.toggle("dim", !on); d.chip.classList.toggle("dim", !on);
-      if (on) { lit[d.e.from] = lit[d.e.to] = true; }
+      if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.forEach(function (j) { lit[j] = true; }); }
     });
     Object.keys(drawnNodes).forEach(function (v) {
       var g = drawnNodes[v];
@@ -1267,6 +1457,7 @@ function create(container, graph, opts) {
       (s.isNull ? " · <b>the text finds no effect</b>" : "") +
       (s.selects ? " · <b>a selection link, not an effect</b>" : "") +
       (s.hedged ? " · hedged: the text says it may" : "") +
+      ((s.jointly || []).length ? " · <b>only together with</b> " + s.jointly.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") : "") +
       (s.supports ? " · " + s.supports + " supporting claim" + (s.supports === 1 ? "" : "s") + " in the map" : "");
     if (s.partFrom) meta += ' · inside the boxes: ' + esc(obj(FULL.states[s.partFrom]).label || s.partFrom) + ' → ' +
       esc(obj(FULL.states[s.partTo]).label || s.partTo);
@@ -1281,9 +1472,10 @@ function create(container, graph, opts) {
    *  paragraph describing them asked the reader to translate; a sample of each line, beside its
    *  meaning, does not. Only the kinds this chain uses are listed. */
   function legendHTML() {
-    var ink = {}, fid = {}, tier = {}, isNull = false;
+    var ink = {}, fid = {}, tier = {}, isNull = false, joint = false;
     G.edges.forEach(function (e) {
       if (e.layer !== "text" && !layers[e.layer]) return;
+      if (e.stems.length) joint = true;
       ink[e.ink] = true; fid[e.fidelity] = true; if (e.kind === "null") isNull = true; else tier[e.tier] = true;
     });
     var line = function (color, width, dash, cap) {
@@ -1305,6 +1497,9 @@ function create(container, graph, opts) {
       if (ink[r[0]]) out += row(line("var(--mv-" + r[0] + ")", 2, ""), r[1]);
     });
     if (isNull) out += row(line("var(--mv-text)", 1.4, "", true), "no effect found: nothing passes");
+    if (joint) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C14,14 20,8 24,8" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
+      '<line x1="2" y1="8" x2="44" y2="8" stroke="var(--mv-text)" stroke-width="2"/><line x1="24" y1="1" x2="24" y2="15" stroke="var(--mv-text)" stroke-width="4"/></svg>',
+      "a stem to a bar: the step holds only together with that state");
     return out + '</div>';
   }
   /** A route through folded states: the states it passes, what it adds up to, and each step's

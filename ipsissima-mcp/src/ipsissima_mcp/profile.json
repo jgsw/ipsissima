@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.3",
+  "version": "1.4",
   "date": "2026-09-26",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -73,7 +73,7 @@
     "question": {"type": "string"},
     "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
-    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)"}}
+    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)"}}
   },
 
   "causes": {
@@ -86,7 +86,8 @@
     "how": {"type": "map", "keys": {"actor": "an actor id", "situation": "string", "habit": "string", "response": "string"}},
     "reflexive": {"type": "boolean"},
     "selects": {"type": "boolean", "summary": "A selection link: who ends up on each side, not an effect."},
-    "hedged": {"type": "boolean", "summary": "The text puts the step as a possibility."}
+    "hedged": {"type": "boolean", "summary": "The text puts the step as a possibility."},
+    "jointly": {"type": "state id or list of state ids", "summary": "The step holds only together with these states: a joint cause (since 1.4)."}
   },
 
   "source_frontmatter": {

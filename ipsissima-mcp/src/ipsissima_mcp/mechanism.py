@@ -157,6 +157,12 @@ def declared(fm):
         if s.get("actor") not in actors:
             problems.append(("!", f"state `{sid}` names actor `{s.get('actor')}`, which is not "
                                   f"declared under `actors:`", {"state": str(sid)}))
+        # A STATE ACROSS LEVELS (profile 1.4): Wimmer's consensus, reached in micro-level
+        # negotiation and holding as a macro-level fact; the Coleman boat's transformational step.
+        for lv in _as_list(s.get("levels")):
+            if lv not in levels:
+                problems.append(("!", f"state `{sid}` names level `{lv}`, which is not one of the "
+                                      f"declared levels", {"state": str(sid)}))
         whole = s.get("part_of")
         if whole is not None and whole not in states:
             problems.append(("!", f"state `{sid}` is `part_of: {whole}`, which is not a declared "
@@ -222,6 +228,8 @@ def steps(doc, appraisal):
                     basis=basis, tier=tier, lag=c.get("lag"),
                     given=given if isinstance(given, list) else [given],
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
+                    # JOINTLY (profile 1.4): the states together with which alone the step holds.
+                    jointly=_as_list(c.get("jointly")),
                     supports=supports.get(title, 0), raw=c))
     return out
 
@@ -266,6 +274,22 @@ def _systems(ids, edges):
         if v not in index:
             strong(v)
     return sorted(out, key=lambda c: ids.index(c[0]))
+
+
+def _as_list(v):
+    if v is None:
+        return []
+    return [str(x) for x in (v if isinstance(v, list) else [v])]
+
+
+def levels_of(state, actors, levels):
+    """The levels a state is drawn across: its own `levels:` (profile 1.4) if it declares them,
+    otherwise its actor's level."""
+    own = [lv for lv in _as_list((state or {}).get("levels") if isinstance(state, dict) else None) if lv in levels]
+    if own:
+        return sorted(set(own), key=levels.index)
+    lv = (actors.get((state or {}).get("actor")) or {}).get("level") if isinstance(state, dict) else None
+    return [lv] if lv else []
 
 
 def _wholes(states):
@@ -421,6 +445,13 @@ def analyse(fm, doc):
         findings.append((sev, "mechanism", msg, where))
 
     for s in all_steps:
+        for j in s["jointly"]:
+            if j not in states:
+                findings.append(("!", "mechanism", f"`jointly: {j}` is not a declared state",
+                                 {"title": s["title"]}))
+            elif j in (s["src"], s["dst"]):
+                findings.append(("?", "mechanism", f"`jointly: {j}` names the step's own "
+                                 f"`from` or `to`", {"title": s["title"]}))
         for end in ("src", "dst"):
             sid = s[end]
             label = "from" if end == "src" else "to"
@@ -472,6 +503,9 @@ def analyse(fm, doc):
     text_all = [s for s in ok if s["layer"] == "text"]
     text = [s for s in causal if s["layer"] == "text"]
     text_edges = {(s["src"], s["dst"]) for s in text}
+    # A CO-CAUSE IS A CAUSE. "A and C jointly bring about B" makes C a cause of B as surely as A, so
+    # the routes, loops and dead ends run through it; only the step count keeps the one step.
+    text_edges |= {(j, s["dst"]) for s in text for j in s["jointly"] if j in states and j != s["dst"]}
     ids = list(states)
     interventions = [i for i in ids if "intervention" in roles_of(states[i])]
     conditions = [i for i in ids if "condition" in roles_of(states[i])]
@@ -560,10 +594,10 @@ def analyse(fm, doc):
             if n:
                 routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))
 
-    level_of = {i: ((actors.get((states[i] or {}).get("actor")) or {}).get("level")) for i in ids}
+    spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
     profile = dict(
         question=(block or {}).get("question"),
-        levels=levels, levels_spanned=[lv for lv in levels if lv in {level_of[i] for i in used}],
+        levels=levels, levels_spanned=[lv for lv in levels if lv in spans],
         states=len(states), steps=len(best),
         claims=len({s["title"] for s in text}),
         lags=sorted({str(s["lag"]) for s in text if s["lag"]}),
@@ -571,6 +605,9 @@ def analyse(fm, doc):
         loops_text=[dict(states=l, reflexive=reflexive(l, text)) for l in loops_text],
         feedback=feedback,
         wholes=sorted([k, sorted(v)] for k, v in _wholes(states).items()),
+        joint=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["jointly"])) for s in text if s["jointly"]}),
+        spanning=sorted([i, levels_of(states[i], actors, levels)] for i in ids
+                        if len(levels_of(states[i], actors, levels)) > 1),
         loops_with_appraisal=[dict(states=l, reflexive=reflexive(l, pool_all))
                               for l in loops_all],
         tiers=tiers, gaps=[g["message"] for g in gaps],
@@ -649,6 +686,10 @@ def census(profile):
             lines.append("      loop    " + " -> ".join(l["states"] + l["states"][:1])
                          + "  (closed only by the appraisal"
                          + ("; reflexive" if l["reflexive"] else "") + ")")
+    for a, b, sg, with_ in p.get("joint", []):
+        lines.append(f"      joint   {a} -> {b}{' (' + sg + ')' if sg else ''} only together with {', '.join(with_)}")
+    for st, lvs in p.get("spanning", []):
+        lines.append(f"      span    {st} runs across {', '.join(lvs)}")
     for w, parts in p.get("wholes", []):
         lines.append(f"      whole   {w}: {', '.join(parts)} -- drawn as one box at the text's own level")
     t = p["tiers"]

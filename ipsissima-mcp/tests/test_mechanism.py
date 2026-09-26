@@ -307,6 +307,30 @@ for bad, why in ((SYSTEM.replace("part_of: strat}", "part_of: nowhere}", 1), "no
                                  "{label: \"Strategies of boundary making\", actor: actors, part_of: expand}"), "runs in a circle")):
     check(f"a bad part_of is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
+print("\nprofile 1.4: a joint effect, and a state across levels")
+# THE COLEMAN BOAT (26 Sep 2026). "Belief moves people to act only where they wish to fit in" had
+# no notation: two separate arrows claimed each cause suffices alone. And Wimmer's consensus,
+# negotiated among individuals and holding as a macro fact, had to be put on one level.
+JOINT = (FIXTURE / "joint.argdown").read_text(encoding="utf-8")
+rj = run(JOINT)
+chj = rj["shape"].get("chain") or {}
+check("the joint step is listed with the state it needs", chj.get("joint"), [["belief", "act", "+", ["desire"]]])
+# Mutation: leave co-causes out of text_edges -> the condition is "linked to nothing".
+check("a co-cause counts as a cause: the condition is not linked to nothing",
+      [g for g in chj.get("gaps", []) if "`desire`" in str(g)], [])
+check("routes run from the co-cause too", any(r["start"] == "desire" for r in chj.get("routes", [])), True)
+check("still one step, not two", chj.get("steps"), 3)
+check("the spanning state is listed with its levels", chj.get("spanning"), [["norm", ["macro", "micro"]]])
+one = run(JOINT.replace("act:     {label: \"Compliance\", actor: person}", "act:     {label: \"Compliance\", actor: society}")
+          .replace("belief:  {label: \"Belief that others comply\", actor: person}", "belief:  {label: \"Belief that others comply\", actor: society}")
+          .replace("desire:  {label: \"Desire to fit in\", actor: person, role: condition}", "desire:  {label: \"Desire to fit in\", actor: society, role: condition}"))
+# Mutation: read levels_spanned from the actor only -> micro drops out.
+check("a spanning state brings its levels into the height", (one["shape"].get("chain") or {}).get("levels_spanned"), ["macro", "micro"])
+for bad, why in ((JOINT.replace("jointly: [desire]", "jointly: [wish]"), "`jointly: wish` is not a declared state"),
+                 (JOINT.replace("jointly: [desire]", "jointly: [act]"), "names the step's own"),
+                 (JOINT.replace("levels: [macro, micro], role", "levels: [macro, mezzo], role"), "names level `mezzo`")):
+    check(f"a bad 1.4 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

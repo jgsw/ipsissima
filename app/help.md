@@ -452,7 +452,8 @@ or what the text explains — has a **double border**. A state can be more than 
 in Merton's essay, prejudice is both where the circle starts and what his remedy is for.
 
 **Loops.** Where the text closes a loop, the arrow that closes it dips under the chain and returns,
-marked ↻, and **every state in the loop carries a ↻ badge** (numbered when there is more than
+marked ↻ — or, between two states drawn one above the other, the steps run down one side of the
+column and back up the other, so a loop between them reads as a circuit — and **every state in the loop carries a ↻ badge** (numbered when there is more than
 one loop). Click a badge, or the loop in the panel, to see that loop alone, its steps and claims
 listed in order. A loop marked *reflexive* runs through a belief, a prediction or a
 classification that the loop itself acts on — a prophecy that fulfils itself. Where many loops
@@ -469,6 +470,13 @@ every step, apart; **The text's own boxes** puts them back. A feedback system is
 compact block: left to right means "comes after" between systems, not inside one, where every
 state leads round to every other. An arrow's label **decides which** says that a state
 settles which of several alternatives follows, rather than raising or lowering anything.
+
+**Joint causes and states across levels.** Where the text says two things bring something about
+only *together* — a belief and a desire, say — the step is one arrow, and a **stem** runs from the
+second cause to a **bar** across the arrow near its head: the effect passes the bar only with every
+stem in, as linked premises join in the Reasons map. The step's panel says *only together with*.
+A state the text puts at more than one level at once — an expectation that is both many people's
+belief and a fact about their society — is drawn as one tall box through every level it holds at.
 
 ### What an arrow says
 

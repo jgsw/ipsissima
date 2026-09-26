@@ -1,0 +1,33 @@
+// A planted COLEMAN BOAT (26 Sep 2026, profile 1.4): a macro rule reaches the individual as a
+// belief; the belief moves the individual to act only TOGETHER WITH a desire the text sets out as
+// a condition, which no step leads into; and the acts aggregate into a shared expectation that
+// is at once many people's belief and a macro fact, drawn across both levels.
+===
+title: "Joint -- a planted Coleman boat"
+mechanism:
+    question: "How does a rule become a practice?"
+    levels: [macro, micro]
+    actors:
+        society: {label: "Society", level: macro}
+        person:  {label: "The individual", level: micro}
+    states:
+        rule:    {label: "A new rule", actor: society, role: intervention}
+        belief:  {label: "Belief that others comply", actor: person}
+        desire:  {label: "Desire to fit in", actor: person, role: condition}
+        act:     {label: "Compliance", actor: person}
+        norm:    {label: "A shared expectation", actor: society, levels: [macro, micro], role: outcome}
+===
+
+[Rules become practice]: A rule becomes a practice through what each person believes others do.
+
+[Rules shape belief]: A rule makes people believe others comply.
+    {causes: {from: rule, to: belief, sign: "+", basis: asserted}}
+    +> [Rules become practice]
+
+[Belief and desire move people]: Belief that others comply moves people to comply, but only where they wish to fit in.
+    {causes: {from: belief, to: act, sign: "+", basis: asserted, jointly: [desire]}}
+    +> [Rules become practice]
+
+[Compliance aggregates]: Compliance, seen by all, becomes a shared expectation.
+    {causes: {from: act, to: norm, sign: "+", basis: asserted}}
+    +> [Rules become practice]
