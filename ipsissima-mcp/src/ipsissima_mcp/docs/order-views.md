@@ -54,8 +54,12 @@ support edge, how far the support sits from the claim it supports:
 - **carried longest** — how many claims separate a claim from the first thing that draws on it.
 
 **How a claim is placed**, best precision first: the exact line where one of its quotations was
-found · a hand-written `{line: N}` · the **best-matching paragraph of its own section** · the
-section heading · the chapter alone.
+found, or where its own text stands when that text is the author's words, quotation marks or
+not · a hand-written `{line: N}` · the **best-matching paragraph of its own section** · the
+section heading · the chapter alone. A line inside a footnote then moves to the note's mark in
+the text, which is where a reader meets the note. A claim placed only to its chapter has no line,
+and the exposition view draws it after the text, in the no-position lane, not at the head of
+its chapter.
 
 The paragraph search is what makes the axis usable. Section metadata is far too coarse on its
 own: on the book map it put 336 claims at 94 distinct positions, stacked 19 of them on one, and

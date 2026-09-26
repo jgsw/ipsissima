@@ -1402,11 +1402,13 @@ def locate_paragraph(claim_text, lines, lo, hi):
 def resolve_lines(doc, source_root, quote_results=None, locate=True):
     """Best available source line for every claim.
 
-    Precision, best first: a located quotation gives the exact line; a hand-written `{line: N}`
-    is taken as declared; otherwise the claim's section is found and the best-matching
-    PARAGRAPH within it located; failing that the section heading gives the top of the passage.
-    Every position is labelled with how it was got, so a reader can tell how much weight it
-    bears -- and so the map can draw the difference.
+    Precision, best first: a located quotation gives the exact line -- a quoted span, or the
+    claim's own text where that is the author's words; a hand-written `{line: N}` is taken as
+    declared; otherwise the claim's section is found and the best-matching PARAGRAPH within it
+    located; failing that the section heading gives the top of the passage. Every position is
+    labelled with how it was got, so a reader can tell how much weight it bears -- and so the
+    map can draw the difference. A line inside a footnote then moves to the note's mark in the
+    text, with `note` and `note_line` saying so (see `note_index`).
 
     `locate=False` disables the paragraph search and restores heading-level positions, which
     is what the cross-check against the JS implementation compares against.
@@ -1416,7 +1418,7 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
         if r["status"] == "exact" and r["line"]:
             exact.setdefault(r["title"], r["line"])
 
-    headings, bodies = {}, {}
+    headings, bodies, folded, joined, notes = {}, {}, {}, {}, {}
 
     def source_lines(chapter):
         if chapter not in bodies:
@@ -1435,6 +1437,18 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
         if title in exact:
             out[title] = dict(line=exact[title], source="quotation", chapter=chapter)
             continue
+        # THE CLAIM'S OWN WORDS, with the standing of a quoted span: where the claim's text IS
+        # the author's words it is a quotation, marks or no marks. See `own_words_line`.
+        if chapter and source_lines(chapter):
+            if chapter not in folded:
+                folded[chapter] = _folded_text_lines(source_lines(chapter))
+                norm, line_of = normalise("\n".join(source_lines(chapter)))
+                joined[chapter] = (norm.lower(), line_of)
+            own = own_words_line(rec["text"], source_lines(chapter), folded[chapter],
+                                 joined[chapter])
+            if own:
+                out[title] = dict(line=own, source="quotation", chapter=chapter)
+                continue
         if data.get("line"):
             out[title] = dict(line=int(data["line"]), source=data.get("lineSource", "declared"),
                               chapter=chapter)
@@ -1474,7 +1488,125 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
                 continue
         if chapter:
             out[title] = dict(line=None, source="chapter-only", chapter=chapter)
+    # A NOTE IS READ AT ITS MARK, whatever placed the claim. Settled last, as in the JS twin,
+    # because it moves a line that everything above agreed on.
+    for info in out.values():
+        ln, chapter = info.get("line"), info.get("chapter")
+        if not ln or not chapter or not source_lines(chapter):
+            continue
+        if chapter not in notes:
+            notes[chapter] = note_index(source_lines(chapter))
+        note_of, mark_of = notes[chapter]
+        label = note_of[ln - 1] if ln - 1 < len(note_of) else None
+        if label is not None and label in mark_of:
+            info.update(note=label, note_line=ln, line=mark_of[label])
     return out
+
+
+# --------------------------------------------------------------------------- #
+# A note is read where its mark is
+# --------------------------------------------------------------------------- #
+#
+# Twin of `notesOf` in argdown-positions.js, which carries the full reasoning. In short: a claim
+# quoted from a footnote is placed at the sentence carrying the note's mark, not where the
+# converter parked the note after the conclusion, because that is where a reader meets it.
+# Two shapes of note: Markdown's `[^3]: text` (a later paragraph is indented, so the first
+# unindented line ends it) and the HTML route's `[[[3]]]` on a line of its own (its paragraphs
+# are not indented, so it runs to the next marker or heading). The mark is `[^3]` in both.
+
+_NOTE_DEF = re.compile(r"^\[\^([^\]\s]+)\]:")
+_NOTE_BLOCK = re.compile(r"^\s*\[\[\[([^\]\s]+)\]\]\]\s*$")
+_NOTE_REF = re.compile(r"\[\^([^\]\s]+)\](?!:)")
+_HEADING_LINE = re.compile(r"^#{1,6}\s")
+
+
+def note_index(lines):
+    """(note_of, mark_of): the note each line belongs to (None for the text proper, index 0 =
+    line 1), and the first line of the text proper carrying each note's mark."""
+    note_of, mark_of = [None] * len(lines), {}
+    current, markdown = None, False
+    for i, t in enumerate(lines):
+        m = _NOTE_DEF.match(t)
+        b = None if m else _NOTE_BLOCK.match(t)
+        if m:
+            current, markdown = m.group(1), True
+        elif b:
+            current, markdown = b.group(1), False
+        elif _HEADING_LINE.match(t):
+            current = None
+        elif markdown and current is not None and t.strip() and not t[:1].isspace():
+            current = None
+        note_of[i] = current
+        if current is None:
+            for r in _NOTE_REF.finditer(t):
+                mark_of.setdefault(r.group(1), i + 1)
+    return note_of, mark_of
+
+
+# --------------------------------------------------------------------------- #
+# The claim's own words
+# --------------------------------------------------------------------------- #
+#
+# Twin of `locateOwnWords` in argdown-positions.js, which carries the full reasoning. A claim
+# whose text is the author's words is a quotation whether or not it wears quotation marks --
+# the house style asks for exactly that -- and is placed as one: punctuation and case folded
+# away as `_is_verbatim` folds them, one line at a time, earliest first, then the exact search a
+# quotation gets for a sentence broken across a hard line break. Only the text is searched: the
+# YAML front matter and the converter's HTML comments fold to nothing, because a converter
+# copies the abstract into the one and quotes repaired sentences in the other.
+
+def _fold(text):
+    """Punctuation and case folded away -- the rule `_is_verbatim` applies."""
+    return " ".join(_PUNCT.sub(" ", normalise(text)[0].lower()).split())
+
+
+def _folded_text_lines(lines):
+    """Every line folded, with the front matter and HTML comments left empty."""
+    out, front, comment = [], False, False
+    for i, raw in enumerate(lines):
+        t, skip = raw.strip(), False
+        if i == 0 and t == "---":
+            front = skip = True
+        elif front:
+            skip = True
+            if t in ("---", "..."):
+                front = False
+        elif comment:
+            skip = True
+            if "-->" in t:
+                comment = False
+        elif t.startswith("<!--"):
+            skip = True
+            if "-->" not in t:
+                comment = True
+        out.append("" if skip else _fold(raw))
+    return out
+
+
+def own_words_line(text, lines, folded, joined=None):
+    """The line where a claim's own text stands in its source, when that text is the author's
+    words; else None. `folded` is `_folded_text_lines(lines)` and `joined` the normalised source
+    as `normalise` returns it -- both cached by the caller, because both are the same for every
+    claim citing the file, and normalising a whole source per claim is the cost the JS twin was
+    profiled out of."""
+    text = re.sub(r"(?<!\S)\#[A-Za-z][\w-]*", " ", text or "").strip()
+    if len(text) < MIN_VERBATIM or not lines:
+        return None
+    want = _fold(text)
+    if not want:
+        return None
+    for i, f in enumerate(folded):
+        if want in f:
+            return i + 1
+    parts = quote_parts(text)
+    if not parts:
+        return None
+    norm, line_of = joined if joined is not None else normalise("\n".join(lines))
+    spans = _locate_parts(parts, norm.lower())
+    if not spans:
+        return None
+    line = line_of[spans[0][0]]
+    return line if folded[line - 1] else None
 
 
 # --------------------------------------------------------------------------- #
@@ -1617,6 +1749,9 @@ def text_positions(doc, source_root, quote_results=None, locate=True):
             out[title] = dict(chapter=chapter, chapter_index=len(order),
                               line=info.get("line"), precision=info["source"],
                               in_book=False)
+        # A claim read from a note says so, and where the note itself is.
+        if title in out and info.get("note") is not None:
+            out[title].update(note=info["note"], note_line=info["note_line"])
     return out
 
 

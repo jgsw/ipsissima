@@ -42,16 +42,25 @@ const POS = require(path.join(HERE, "src", "argdown-positions.js"));
  *  until the shape of the output gave it away. */
 function withPositions(graph, file) {
   const root = path.dirname(file);
-  const quarto = path.join(root, "_quarto.yml");
-  if (!fs.existsSync(quarto)) return graph;
   const sources = {};
   for (const n of graph.nodes) {
     if (!n.chapter || n.chapter in sources) continue;
     const f = path.join(root, n.chapter);
     sources[n.chapter] = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
   }
-  const { byId } = POS.positions(graph.nodes, sources, fs.readFileSync(quarto, "utf8"));
+  // NO PROJECT FILE IS THE COMMON CASE, and the builder does not need one: it takes the reading
+  // order from the chapters the map cites. This used to return the graph unpositioned instead,
+  // so the two real maps below — neither has a project file — reached the layout with every
+  // claim in the no-position lane, and the exposition layout was never run on a real paper.
+  const quarto = path.join(root, "_quarto.yml");
+  const cited = [...new Set(graph.nodes.map(n => n.chapter).filter(Boolean))];
+  const project = fs.existsSync(quarto) ? fs.readFileSync(quarto, "utf8")
+    : "chapters:\n" + cited.map(c => `  - "${c}"`).join("\n") + "\n";
+  const { byId } = POS.positions(graph.nodes, sources, project);
   for (const n of graph.nodes) if (byId[n.id]) n.pos = byId[n.id];
+  // The word counts too, as the builder bakes them: they carry the sections the empty bands are
+  // drawn from, and without them that half of the layout is never exercised.
+  graph.words = POS.wordCounts(sources);
   return graph;
 }
 
@@ -165,8 +174,11 @@ function checkGeometry(name, graph, vis, g) {
   }
 
   // 3. The no-position lane sits BELOW everything that has a position, so a reader scrolling
-  //    the chapters in order meets it at the end rather than finding it interleaved.
-  const unplaced = boxes.filter(b => !b.pos), placedB = boxes.filter(b => b.pos);
+  //    the chapters in order meets it at the end rather than finding it interleaved. A claim
+  //    whose file is known but whose LINE is not is unplaced too: filed at line 0 of its file,
+  //    it used to lead the whole view (the top row of the Carroll, 26 Sep 2026).
+  const unplaced = boxes.filter(b => !b.pos || b.pos.line == null);
+  const placedB = boxes.filter(b => b.pos && b.pos.line != null);
   if (unplaced.length && placedB.length) {
     const lowestPlaced = Math.max(...placedB.map(b => b.y + b.height / 2));
     const highestUnplaced = Math.min(...unplaced.map(b => b.y - b.height / 2));
@@ -181,13 +193,41 @@ function checkGeometry(name, graph, vis, g) {
   for (const { gr, p } of bands)
     if (!num(p.x) || !num(p.width) || p.width <= 0)
       return fail(where("bands have real extent"), `${gr.id} -> ${JSON.stringify(p)}`);
-  // Lanes stack DOWN the page now, so they must not overlap vertically.
-  const sorted = bands.slice().sort((a, b) => (a.p.y - a.p.height / 2) - (b.p.y - b.p.height / 2));
-  for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1].p, cur = sorted[i].p;
-    if (cur.y - cur.height / 2 < prev.y + prev.height / 2 - 0.5)
-      return fail(where("chapter lanes do not overlap"),
-                  `${sorted[i - 1].gr.label} overlaps ${sorted[i].gr.label}`);
+  // Lanes stack DOWN the page now, so SIBLING lanes must not overlap vertically. Siblings, not
+  // all bands: a file divided into sections is a band drawn round its section bands, and a band
+  // overlaps whatever it encloses by design.
+  const byParent = new Map();
+  for (const x of bands) {
+    const k = x.gr.parent || "";
+    if (!byParent.has(k)) byParent.set(k, []);
+    byParent.get(k).push(x);
+  }
+  for (const sibs of byParent.values()) {
+    const sorted = sibs.slice().sort((a, b) => (a.p.y - a.p.height / 2) - (b.p.y - b.p.height / 2));
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = sorted[i - 1].p, cur = sorted[i].p;
+      if (cur.y - cur.height / 2 < prev.y + prev.height / 2 - 0.5)
+        return fail(where("chapter lanes do not overlap"),
+                    `${sorted[i - 1].gr.label} overlaps ${sorted[i].gr.label}`);
+    }
+  }
+  // A section band lies inside the file band that encloses it — the empty ones included, which
+  // have no claims of their own to pull the file band out to them.
+  const bandById = new Map(bands.map(x => [x.gr.id, x.p]));
+  for (const { gr, p } of bands) {
+    const outer = gr.parent && bandById.get(gr.parent);
+    if (!outer) continue;
+    if (p.x - p.width / 2 < outer.x - outer.width / 2 - 0.5 ||
+        p.x + p.width / 2 > outer.x + outer.width / 2 + 0.5 ||
+        p.y - p.height / 2 < outer.y - outer.height / 2 - 0.5 ||
+        p.y + p.height / 2 > outer.y + outer.height / 2 + 0.5)
+      return fail(where("a section band lies inside its file band"), `${gr.label} spills out`);
+  }
+  // An empty band holds no claim: it is drawn BECAUSE nothing is placed there.
+  for (const { gr, p } of bands) {
+    if (!gr.empty) continue;
+    const inside = boxes.find(b => Math.abs(b.x - p.x) < p.width / 2 && Math.abs(b.y - p.y) < p.height / 2);
+    if (inside) return fail(where("an empty band holds no claim"), `${inside.id} is inside ${gr.label}`);
   }
 
   // 5. Edges: at least two finite points, and both ends touching the boxes they join.
@@ -258,6 +298,35 @@ function fixtures() {
   add("everything in the gutter", {
     nodes: [0, 1, 2].map(i => ({ id: "n" + i, label: "N" + i })),
     edges: [{ from: "n1", to: "n0", type: "support" }], groups: [] });
+  // A claim whose FILE is known and whose line is not. It used to be keyed as line 0 of its file
+  // and so led the whole view; it belongs with the other unplaced claims, after the text.
+  add("a file but no line", {
+    nodes: [{ id: "a", label: "A", pos: pos(0, 5) },
+            { id: "b", label: "B", pos: { ...pos(0, null), precision: "chapter-only" } },
+            { id: "c", label: "C", pos: pos(0, 9) }],
+    edges: [{ from: "a", to: "b", type: "support" }, { from: "c", to: "b", type: "support" }],
+    groups: [] });
+  // The opening and the empty sections: a file divided into three sections, the first of which
+  // has nothing mapped in it, a claim before the first heading, and back matter that must NOT
+  // come out as an empty band.
+  {
+    const sec = (line, section) => ({ ...pos(0, line), section });
+    add("an opening, and a section with nothing in it", {
+      nodes: [{ id: "o", label: "Opening claim", pos: { ...pos(0, 3), opening: true } },
+              { id: "b1", label: "B1", pos: sec(22, "2. Second") },
+              { id: "b2", label: "B2", pos: sec(24, "2. Second") },
+              { id: "c1", label: "C1", pos: sec(41, "3. Third") }],
+      edges: [{ from: "b1", to: "o", type: "support" }, { from: "c1", to: "b2", type: "support" }],
+      groups: [],
+      words: { total: 900, byChapter: { "c0.md": 900 },
+               bySection: { "c0.md": { "": 60, "1. First": 300, "2. Second": 200,
+                                       "3. Third": 200, "References": 140 } },
+               sections: { "c0.md": [{ heading: "", line: 0, words: 60 },
+                                     { heading: "1. First", line: 10, words: 300 },
+                                     { heading: "2. Second", line: 20, words: 200 },
+                                     { heading: "3. Third", line: 40, words: 200 },
+                                     { heading: "References", line: 60, words: 140 }] } } });
+  }
   add("a pure cycle", {
     nodes: [{ id: "a", label: "A", pos: pos(0, 1) }, { id: "b", label: "B", pos: pos(0, 2) }],
     edges: [{ from: "a", to: "b", type: "support" }, { from: "b", to: "a", type: "attack" }],
@@ -790,6 +859,11 @@ const FILES = [
      "Wilson 2026 - Williams Dewey and the Nature of Value Inquiry", "wilson-williams-dewey.argdown")],
   ["Carroll", path.join(HERE, "..", "samples",
      "Carroll 1895 - What the Tortoise said to Achilles", "carroll-tortoise-achilles.argdown")],
+  // Sections with nothing mapped in them (its abstract and introduction), and claims read from
+  // footnotes — both exercised by nothing else here.
+  ["Akhlaghi", path.join(HERE, "..", "samples",
+     "Akhlaghi 2023 - Transformative experience and revelatory autonomy",
+     "akhlaghi-revelatory-autonomy.argdown")],
   ...corpusFiles()
 ];
 for (const [name, file] of FILES) {

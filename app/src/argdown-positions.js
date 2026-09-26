@@ -283,6 +283,117 @@ function locateQuotation(node, chapterText) {
   return best;
 }
 
+/* ------------------------------------------------------------------ the claim's own words
+ *
+ * A CLAIM WHOSE TEXT IS THE AUTHOR'S WORDS IS A QUOTATION, whether or not it wears quotation
+ * marks. The house style asks for exactly that — "the author's words quoted verbatim in the
+ * claim's own text" — and the border already honours it: `isVerbatim` below draws such a claim
+ * solid. Placement did not. `locateQuotation` looks only for QUOTED spans, so a claim written
+ * as the author's sentence with no marks round it fell through to the paragraph search, where
+ * ties go to the earliest paragraph. Measured 26 Sep 2026 on the Bates bulletin: 84 of 97 claims
+ * placed by that fuzzy match, and the abstract — which repeats the findings word for word — took
+ * six of them from the Results section that argues them.
+ *
+ * Found the way `isVerbatim` finds it: punctuation and case folded away, one line at a time,
+ * earliest first. A sentence broken across a hard line break is not on any one line, so the exact
+ * search a quotation gets follows as a fallback. Statements only: an <Argument> is placed where
+ * it lands (see `positions`), and its text is the reconstructor's summary, not a passage.
+ *
+ * Twin of `own_words_line` in argdown_provenance.py.
+ */
+var FOLDED_LINES = typeof WeakMap === "function" ? new WeakMap() : null;
+
+/** Every line of one source with punctuation and case folded away, computed once per source —
+ *  the same economy as `lineWordSets`, and for the same reason.
+ *
+ *  ONLY THE TEXT IS SEARCHED. The YAML front matter and the converter's HTML comments come back
+ *  empty, so nothing can be found in them: a converter copies the abstract into the front matter
+ *  and quotes repaired sentences in its notes, and a claim found THERE is placed ahead of the
+ *  very passage it came from. Measured on Bates, where the front-matter abstract took two claims
+ *  before the published abstract could. The paragraph search never sees these lines either — they
+ *  are hard-wrapped, and under its length threshold. */
+function foldedLines(lines) {
+  var hit = FOLDED_LINES && FOLDED_LINES.get(lines);
+  if (hit) return hit;
+  hit = new Array(lines.length);
+  var front = false, comment = false;
+  for (var i = 0; i < lines.length; i++) {
+    var t = String(lines[i]).trim(), skip = false;
+    if (i === 0 && t === "---") front = skip = true;
+    else if (front) { skip = true; if (t === "---" || t === "...") front = false; }
+    else if (comment) { skip = true; if (t.indexOf("-->") >= 0) comment = false; }
+    else if (t.indexOf("<!--") === 0) { skip = true; if (t.indexOf("-->") < 0) comment = true; }
+    hit[i] = skip ? "" : foldPunctuation(lines[i]);
+  }
+  if (FOLDED_LINES) FOLDED_LINES.set(lines, hit);
+  return hit;
+}
+
+/** The line where a claim's own text stands in its source, or null. `text` has its inline
+ *  hashtags already stripped, as for the border. */
+function locateOwnWords(text, lines, chapterText) {
+  if (!text || text.length < MIN_VERBATIM || !lines) return null;
+  var want = foldPunctuation(text);
+  if (!want) return null;
+  var folded = foldedLines(lines);
+  for (var i = 0; i < folded.length; i++) if (folded[i].indexOf(want) >= 0) return i + 1;
+  // Across a line break, exactly — and still not in the front matter or a converter's note.
+  var across = findQuote(text, chapterText);
+  return across != null && folded[across - 1] ? across : null;
+}
+
+/* ------------------------------------------------------------------ notes
+ *
+ * A NOTE IS READ WHERE ITS MARK IS. A claim quoted from a footnote used to be placed where the
+ * converter had put the note — after the conclusion, under `# Notes` or `## Footnotes` — so the
+ * exposition view drew it in a band of its own at the end of the paper and ran a long line back
+ * to the sentence it glosses. Measured 26 Sep 2026: 27 claims across three samples (Akhlaghi 6,
+ * Prescott-Couch 18, Tooming 3), every one of them traceable to the body sentence carrying its
+ * mark. A reader meets a note at its mark, so that is where the claim is placed. The note's own
+ * line is kept beside it (`noteLine`), so the Manuscript pane can still light the claim from the
+ * note itself, and the note's label (`note`) so the pane can say where the words really are.
+ *
+ * TWO SHAPES OF NOTE, because the converters write two:
+ *   * `[^3]: text` — Markdown's own, which `pdf_to_source.py` writes. A later paragraph of the
+ *     same note is INDENTED, so the first unindented line after it ends the note.
+ *   * `[[[3]]]` on a line of its own, followed by the note's paragraphs — what the HTML route
+ *     writes for a publisher's footnote list. Those paragraphs are not indented, so the note
+ *     runs until the next marker or the next heading.
+ * The mark in the text is `[^3]` in both.
+ *
+ * Twin of `note_index` in argdown_provenance.py. One pass per source, remembered like the
+ * paragraph words: a book's worth of claims asks the same question of the same file.
+ */
+var NOTE_DEF = /^\[\^([^\]\s]+)\]:/;
+var NOTE_BLOCK = /^\s*\[\[\[([^\]\s]+)\]\]\]\s*$/;
+var NOTE_REF = /\[\^([^\]\s]+)\](?!:)/g;
+var HEADING_LINE = /^#{1,6}\s/;
+var NOTES = typeof WeakMap === "function" ? new WeakMap() : null;
+
+/** Which note each line belongs to (null for the text proper, index 0 = line 1), and the first
+ *  line of the text proper that carries each note's mark. */
+function notesOf(lines) {
+  var hit = NOTES && NOTES.get(lines);
+  if (hit) return hit;
+  var noteOf = new Array(lines.length), markOf = Object.create(null);
+  var current = null, markdown = false;
+  for (var i = 0; i < lines.length; i++) {
+    var t = String(lines[i]), m;
+    if ((m = NOTE_DEF.exec(t))) { current = m[1]; markdown = true; }
+    else if ((m = NOTE_BLOCK.exec(t))) { current = m[1]; markdown = false; }
+    else if (HEADING_LINE.test(t)) current = null;
+    else if (markdown && current != null && t.trim() && !/^\s/.test(t)) current = null;
+    noteOf[i] = current;
+    if (current == null) {
+      NOTE_REF.lastIndex = 0;
+      while ((m = NOTE_REF.exec(t)) !== null) if (!(m[1] in markOf)) markOf[m[1]] = i + 1;
+    }
+  }
+  hit = { noteOf: noteOf, markOf: markOf };
+  if (NOTES) NOTES.set(lines, hit);
+  return hit;
+}
+
 /** The manuscript's own chapter order, from _quarto.yml.
  *  Authoritative: file paths sort alphabetically, which is not reading order. */
 /** The ordered source files in a project file, Quarto's shape or the native one.
@@ -316,10 +427,12 @@ function readingOrder(projectText) {
  *   quarto   the text of _quarto.yml
  *
  * Returns { byId, order } where byId[id] = { chapter, chapterIndex, line, precision, section,
- * inBook }. Precision, best first: `quotation`, `declared` (a hand-written {line: N}),
- * `inference` (an <Argument>, placed at the claims it is made of), `paragraph`, `heading`,
- * `chapter-only`. Claims citing a file the book does not list are placed after everything and
- * flagged, because a claim sourced outside the manuscript is worth noticing on its own account.
+ * opening, inBook }, plus `note` and `noteLine` for a claim read from a note. Precision, best
+ * first: `quotation` (a quoted span, or the claim's own text where that is the author's words),
+ * `declared` (a hand-written {line: N}), `inference` (an <Argument>, placed at the claims it is
+ * made of), `paragraph`, `heading`, `chapter-only`. Claims citing a file the book does not list
+ * are placed after everything and flagged, because a claim sourced outside the manuscript is
+ * worth noticing on its own account.
  */
 function positions(nodes, sources, quarto) {
   var order = readingOrder(quarto);
@@ -345,10 +458,20 @@ function positions(nodes, sources, quarto) {
     var place = { chapter: n.chapter, line: null, precision: "chapter-only",
                   chapterIndex: (n.chapter in index) ? index[n.chapter] : order.length,
                   inBook: n.chapter in index };
-    var quoted = sources && sources[n.chapter] != null
-      ? locateQuotation(n, sources[n.chapter]) : null;
-    if (quoted != null) {
-      place.line = quoted;
+    var chapterText = sources ? sources[n.chapter] : null;
+    // The claim's words as the border reads them: inline hashtags are chips, not words.
+    var vtext = String(n.detail || n.label || "")
+      .replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim();
+    var quoted = chapterText != null ? locateQuotation(n, chapterText) : null;
+    // Its own words next, with the same standing as a quoted span — they ARE a quotation. From
+    // `detail` alone, which is what the Python twin reads: a claim with no text of its own has
+    // only its title, and a title is the reconstructor's name for the claim, not a passage.
+    var own = quoted == null && chapterText != null && n.kind !== "argument" && n.detail
+      ? locateOwnWords(String(n.detail).replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim(),
+                       linesOf(n.chapter), chapterText)
+      : null;
+    if (quoted != null || own != null) {
+      place.line = quoted != null ? quoted : own;
       place.precision = "quotation";
     } else if (n.line) {
       place.line = +n.line;
@@ -389,9 +512,6 @@ function positions(nodes, sources, quarto) {
     // adjudicating host leaves them alone, writes nothing back to the .argdown, and says on
     // the status line which state the page is in — the checker stays where a discrepancy is
     // REPORTED so the file itself can be corrected.
-    var chapterText = sources[n.chapter];
-    var vtext = String(n.detail || n.label || "")
-      .replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim();
     place.verbatim = (chapterText == null || vtext.length < MIN_VERBATIM) ? null
                    : isVerbatim(vtext, chapterText);
     byId[n.id] = place;
@@ -461,11 +581,33 @@ function positions(nodes, sources, quarto) {
   // A declared `section:` is the FALLBACK, not the winner. The band is a fact about where the
   // claim's words are, and `sectionOfLine` reads it off the text; `section:` is what a claim
   // with no line at all has left to go on.
+  //
+  // A NOTE IS READ AT ITS MARK (see `notesOf`), and that is settled first, because the band is a
+  // fact about the line the claim ends up on: a claim quoted from note 3 belongs to the section
+  // that marks note 3, not to `Footnotes`. Whatever placed the claim — its quotation, a declared
+  // line, the paragraph search, an argument's conclusion — a line inside a note moves to the mark,
+  // and a note the text never marks leaves the claim where it was found.
+  for (var f = 0; f < nodes.length; f++) {
+    var fp = byId[nodes[f].id];
+    if (!fp || fp.line == null || !linesOf(fp.chapter)) continue;
+    var notes = notesOf(linesOf(fp.chapter)), label = notes.noteOf[fp.line - 1];
+    if (label == null || !(label in notes.markOf)) continue;
+    fp.note = label;
+    fp.noteLine = fp.line;
+    fp.line = notes.markOf[label];
+  }
   for (var d = 0; d < nodes.length; d++) {
     var nn = nodes[d], pp = byId[nn.id];
     if (!pp) continue;
     pp.section = (pp.line != null ? sectionOfLine(headsOf(pp.chapter), pp.line) : null)
       || nn.section || null;
+    // THE OPENING: placed, in a file that IS divided into sections, but before the first of
+    // them — an abstract, or an introduction its author did not title. It has no heading to be
+    // banded under, and it used to share the file's own unlabelled row with whatever else had no
+    // section, which is how the top of the exposition view came to mix the introduction with
+    // claims that had no position at all. Flagged rather than given a made-up section name,
+    // because `section` is a heading of the text's and this is not one.
+    pp.opening = pp.line != null && !pp.section && bandLevel(headsOf(pp.chapter)) > 0;
   }
   return { byId: byId, order: order };
 }
@@ -479,40 +621,71 @@ function positions(nodes, sources, quarto) {
  *
  *  What counts as a word is the plain-prose reading, which is what an author means by "how long
  *  is this chapter": whitespace-separated runs containing a letter or a digit, with the fenced
- *  code blocks, the YAML front matter and the heading lines themselves left out. Markdown marks
- *  (`*`, `_`, `#`) do not make or break a word, and a bare `---` or `|` is not one.
+ *  code blocks, the YAML front matter, the HTML comments and the heading lines themselves left
+ *  out. Markdown marks (`*`, `_`, `#`) do not make or break a word, and a bare `---` or `|` is
+ *  not one.
+ *
+ *  THE SECTIONS ARE THE BANDS. A section here is a heading at `bandLevel`, the level the
+ *  exposition view draws its bands at — not level 1, which is what this counted until 26 Sep
+ *  2026 and which gave no count at all to any band of a paper whose sections are `##`, every
+ *  source converted from a publisher's HTML among them. The text before the first such heading
+ *  is counted too, under the empty heading `""`: that is the key the opening's band is looked
+ *  up by, and no heading of the text's can collide with it.
+ *
+ *  `sections` lists them IN ORDER, with the line each starts on, because the exposition view
+ *  draws a band for a section with nothing mapped in it and has to know where it falls. An
+ *  object's keys cannot carry the order: a heading such as `1729` is an integer-like key, and
+ *  JavaScript puts those first whatever order they were written in.
  *
  *    sources  { "path/to/chapter.md": "text" | null }
- *    -> { total, byChapter: {path: n}, bySection: {path: {heading: n}} }
+ *    -> { total, byChapter: {path: n}, bySection: {path: {heading: n}},
+ *         sections: {path: [{ heading, line, words }]} }
  */
 function wordCounts(sources) {
-  var byChapter = {}, bySection = {}, total = 0;
+  var byChapter = {}, bySection = {}, sections = {}, total = 0;
   for (var ch in sources) {
     if (!Object.prototype.hasOwnProperty.call(sources, ch) || !sources[ch]) continue;
     var lines = String(sources[ch]).split("\n");
-    var heads = headingIndex(sources[ch]).filter(function (h) { return h.level === 1; });
-    var here = {}, sum = 0, current = null, fence = false, front = false;
+    var all = headingIndex(sources[ch]), level = bandLevel(all);
+    var bandAt = {};
+    for (var k = 0; k < all.length; k++) if (all[k].level === level) bandAt[all[k].line] = all[k].text;
+    var list = [], sum = 0, fence = false, front = false, comment = false;
+    var current = level ? { heading: "", line: 0, words: 0 } : null;
+    if (current) list.push(current);
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i], trimmed = line.trim();
       // Front matter only counts as front matter at the very top of the file; a `---` further
       // down is a horizontal rule and closes nothing.
       if (i === 0 && trimmed === "---") { front = true; continue; }
       if (front) { if (trimmed === "---" || trimmed === "...") front = false; continue; }
+      // THE CONVERTER'S NOTES ARE NOT THE TEXT. Every converted source opens with a comment
+      // block saying where it came from and what was repaired — a few hundred words, counted
+      // until now as the author's, which is how a paper came to have an "opening" of several
+      // hundred words that was nothing but the converter talking.
+      if (comment) { if (trimmed.indexOf("-->") >= 0) comment = false; continue; }
+      if (trimmed.indexOf("<!--") === 0) { if (trimmed.indexOf("-->") < 0) comment = true; continue; }
       if (/^\s*(```|~~~)/.test(line)) { fence = !fence; continue; }
       if (fence) continue;
-      var h = null;
-      for (var k = 0; k < heads.length; k++) if (heads[k].line === i + 1) h = heads[k].text;
-      if (h != null) { current = h; if (!(h in here)) here[h] = 0; continue; }
+      if (bandAt[i + 1] != null) {
+        current = { heading: bandAt[i + 1], line: i + 1, words: 0 };
+        list.push(current);
+        continue;
+      }
       if (/^#{1,6}\s/.test(trimmed)) continue;          // a sub-heading is not prose either
       var words = trimmed.split(/\s+/).filter(function (w) { return /[A-Za-z0-9]/.test(w); }).length;
       sum += words;
-      if (current != null) here[current] += words;
+      if (current) current.words += words;
     }
+    // Two sections under one heading — two `Notes`, say — are one band, so their counts add.
+    var here = {};
+    for (var s = 0; s < list.length; s++)
+      here[list[s].heading] = (here[list[s].heading] || 0) + list[s].words;
     byChapter[ch] = sum;
     bySection[ch] = here;
+    sections[ch] = list;
     total += sum;
   }
-  return { total: total, byChapter: byChapter, bySection: bySection };
+  return { total: total, byChapter: byChapter, bySection: bySection, sections: sections };
 }
 
 /** Is this claim the source's WORDS — allowing punctuation and case to differ, but nothing else?
