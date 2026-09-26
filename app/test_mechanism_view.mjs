@@ -33,7 +33,12 @@ const require = createRequire(import.meta.url);
 const MV = require("./src/argdown-mechanism.js");
 const FIXTURE = path.join(REPO, "ipsissima-mcp", "tests", "mechanism");
 const CHAIN = path.join(FIXTURE, "chain.argdown");
-const VENV = path.join(REPO, "ipsissima-mcp", ".venv", "bin", "python");
+// THE VENV AT THE REPOSITORY ROOT, where CI builds it and `run_all_tests.mjs` looks. This looked
+// in `ipsissima-mcp/.venv`, which nothing creates, so on CI it fell back to the runner's bare
+// `python3`: no PyYAML, the checker could not read the `mechanism:` block, its census came back
+// empty, and every field "disagreed" with the page (26 Sep 2026). Locally Homebrew's python3
+// happened to have PyYAML, which is why it passed here and failed there.
+const VENV = path.join(REPO, ".venv", "bin", "python3");
 const PY = fs.existsSync(VENV) ? VENV : "python3";
 
 let fails = 0, checks = 0;

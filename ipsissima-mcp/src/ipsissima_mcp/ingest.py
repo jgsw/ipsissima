@@ -534,8 +534,9 @@ def from_pdf_structured(path, extras=None):
                      f"and a claim may quote; it is never trimmed from the extraction prompt")
     elif rep["boundaries_detected"].get("front"):
         notes.append("! front matter was cut but no abstract was found in it -- if the "
-                     "paper has one, it did not follow the word 'Abstract'; read the "
-                     "first page before trusting the cut")
+                     "paper has one, it neither followed the word 'Abstract' nor opened "
+                     "with a structured abstract's labels (OBJECTIVE ... RESULTS ... "
+                     "CONCLUSION); read the first page before trusting the cut")
     if rep["heading_gaps"]:
         notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
                      f"there before trusting the sections")
