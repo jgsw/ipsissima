@@ -460,9 +460,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(await page.locator('#mech .st[data-state="work"]').count() === 1 && await nEdges() === all, "and Unfold all restores the whole chain");
     await page.locator("#mech [data-foldall]").click();
     await page.waitForTimeout(250);
-    check(await page.locator("#mech [data-foldall]").innerText() === "Unfold all" &&
+    check(await page.locator("#mech [data-foldall]").innerText() === "Show the whole chain" &&
           await page.evaluate(() => document.querySelectorAll("#mech svg g[data-route]").length) > 0,
-          "Fold to the ends folds every state between, and offers to undo it");
+          "Intervention → outcomes folds every state between, and offers the whole chain back");
     await page.locator("#mech [data-foldall]").click();
     await page.waitForTimeout(250);
 

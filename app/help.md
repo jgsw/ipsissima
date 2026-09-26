@@ -81,37 +81,9 @@ order of reasons, or the order of exposition.
   level
 - **Exposition** — the same claims, placed where they occur in the text: file by file, section by
   section, in reading order
-- **Mechanism** — offered only when a map declares one: what the text says *happens*. The chain of
-  steps it sets out, from a cause — often the action it recommends — to the outcomes it cares
-  about. Levels of social complexity run top to bottom (macro, meso, micro) and sequence left to
-  right; loops are drawn as loops. Every arrow is one or more claims in the map, and it is drawn
-  the way the rest of Ipsissima draws things. Its **pattern** is how close its claims stand to the
-  words — solid for a quotation, dissolving to dash-dot for an imputation — exactly as on a claim's
-  box. Its **weight** is what the text offers for the step: heavy for a study, statistics or a
-  model, medium for a step the text argues, thin for one it only asserts. Its **colour** is whose
-  step it is: navy for the text's own, slate for a rival view the text reports, violet for the
-  reconstructor's appraisal, teal for a selection link — an association that holds because of who
-  ends up on each side, not an effect.
-  Each arrow's label says which way the effect runs: **raises** (more of the first brings more of
-  the second) or **lowers** (more of the first, less of the second). These are effects, not the
-  support and attack of the Reasons map, so they are written as words rather than + and −. A line
-  ending in a bar, marked **no effect**, is a finding that nothing is brought about — often the
-  text's answer to a rival view's arrow beside it.
-  Click an arrow to see its claims, and a claim to reach its passage. **Click a state** to see only
-  the paths through it — what leads to it and what it leads to — with the rest faded; **Show only
-  what the text tested** keeps the steps it backs with a study, statistics or a model; **Fit to
-  width** scales a wide chain to the window.
-  **Folding.** A state can be folded into its arrows (click it, then *Fold into its arrows*): it
-  leaves the drawing, and each pair of steps through it becomes one route, labelled *via* the
-  state. A route says what its steps add up to and never more: raises then lowers is lowers, it is
-  backed only as well as its weakest step, and it stands as far from the words as its most distant
-  claim. Clicking it lists every step's own claims. **Fold to the ends** folds everything between
-  the intervention and its outcomes and sets aside what lies off that line — the other causes the
-  text names, the places its chain stops — naming them in the panel. Nothing moves when you fold:
-  every state keeps its place, so *Unfold all* puts back exactly what you saw. The panel beside the chain
-  gives its shape — how many steps, across how many levels, over how long — and its **gaps**:
-  where the text's chain stops, or never reaches an outcome. A gap is a finding about the text, not
-  a fault in the map.
+- **Mechanism** — offered only when a map declares one: not the argument but what the text says
+  *happens* — the chain of steps from a cause, often the action it recommends, to the outcomes it
+  is for. *Reading a mechanism*, below, says how to read it
 
 **The reconstructor's appraisal** is off until you ask for it. It is the reconstructor's own
 reading of the text against the world — a confounder the author never mentions, a step the text
@@ -407,6 +379,56 @@ Their sparklines say it without words: Horton opens deep below the line — the 
 first and the reader carries them — and climbs out across the first third. Williams runs near the
 line for most of the paper, earning each step as it goes, and then rises sharply at the very end
 as the contention arrives already paid for.
+
+## Reading a mechanism
+
+The Mechanism arrangement draws the causal chain a text sets out: from a cause — usually what the
+text recommends — through the states it says change, to the outcomes it is for. Levels of social
+complexity run top to bottom (macro, meso, micro) and sequence runs left to right; loops are drawn
+as loops. Every state is a box and every arrow is one or more claims in the map.
+
+### What an arrow says
+
+Each arrow is drawn the way the rest of Ipsissima draws things:
+
+- its **pattern** is how close its claims stand to the author's words — solid for a quotation,
+  dissolving to dash-dot for an imputation — exactly as on a claim's box;
+- its **weight** is what the text offers for the step: heavy for a study, statistics or a model,
+  medium for a step the text argues, thin for one it only asserts;
+- its **colour** is whose step it is: navy for the text's own, slate for a rival view the text
+  reports, violet for the reconstructor's appraisal, teal for a *selection* link — an association
+  that holds because of who ends up on each side, not an effect.
+
+Its label says which way the effect runs: **raises** (more of the first brings more of the
+second) or **lowers** (more of the first, less of the second). These are effects, not the support
+and attack of the Reasons map, so they are written as words rather than + and −. A line ending in
+a bar, marked **no effect**, is a finding that nothing is brought about — often the text's answer
+to a rival view's arrow beside it. The key beside the chain shows each kind of line this map uses.
+
+### Studying the chain
+
+Click an arrow to see its claims, and a claim to reach its passage in the text. **Click a state**
+to see only the paths through it — what leads to it and what it leads to — with the rest faded.
+**Show only what the text tested** keeps the steps backed by a study, statistics or a model.
+**Fit to width** scales a wide chain to the window.
+
+The panel beside the chain gives its shape — how many steps, across how many levels, over how
+long — and its **gaps**: where the text's chain stops, or never reaches an outcome. A gap is a
+finding about the text, not a fault in the map.
+
+### Folding
+
+A long chain can be folded. Click a state, then **Fold into its arrows**: the state leaves the
+drawing, and each pair of steps through it becomes one route, labelled *via* the state. A route
+says what its steps add up to and never more — raises then lowers is lowers; it is backed only as
+well as its weakest step; it stands as far from the words as its most distant claim — and
+clicking it lists every step's own claims.
+
+**Intervention → outcomes** does this for the whole chain at once: it folds everything between
+the intervention and its outcomes, and sets aside what lies off that line — other causes the text
+names, places its chain stops — naming them in the panel. **Show the whole chain** puts it back.
+Nothing moves when you fold: every state keeps its place, so unfolding returns exactly what you
+saw.
 
 # Whose words are these?
 

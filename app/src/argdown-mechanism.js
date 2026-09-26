@@ -765,9 +765,13 @@ function create(container, graph, opts) {
   if (!M) { container.textContent = "This map declares no mechanism."; return null; }
   // FOLDED STATES. Folding re-draws the arrows and never moves a box: `layout` places every state
   // from the whole chain whatever is folded.
-  // "Fold to the ends" folds what lies between in the TEXT's own chain; a single state may be
-  // folded wherever any voice runs through it.
-  var folded = {}, canFold = foldable(M), toEnds = foldable(M, "text");
+  // "Intervention -> outcomes" folds what lies between in the TEXT's own chain, and is offered
+  // only where the map declares both ends -- a label that names an intervention and outcomes must
+  // not be offered on a chain that has neither (F2). A single state may be folded wherever any
+  // voice runs through it.
+  var hasEnds = M.ids.some(function (v) { return obj(M.states[v]).role === "intervention"; }) &&
+                M.ids.some(function (v) { return obj(M.states[v]).role === "outcome"; });
+  var folded = {}, canFold = foldable(M), toEnds = hasEnds ? foldable(M, "text") : [];
   var ends = false;
   var G = layout(M, { folded: folded, ends: ends });
   // Off unless the host says the page's switch is already on: the view reports its layers back
@@ -790,7 +794,9 @@ function create(container, graph, opts) {
     (anyUntested ? '<label class="amech-tog">Show <select data-show><option value="all">every step</option>' +
       '<option value="tested">only what the text tested</option></select></label>' : '') +
     // Offered only where there is something to fold (F2: a control is a promise).
-    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Fold every state between the intervention and its outcomes, and set aside what lies off that line">Fold to the ends</button>' : '') +
+    // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
+    // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
+    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from the intervention to its outcomes: the states between are folded, and what lies off that line is set aside">Intervention → outcomes</button>' : '') +
     '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
@@ -1135,7 +1141,7 @@ function create(container, graph, opts) {
     if (!Object.keys(folded).length) ends = false;
     G = layout(M, { folded: folded, ends: ends });
     selected = null;
-    if (foldAll) foldAll.textContent = G.folded.length ? "Unfold all" : "Fold to the ends";
+    if (foldAll) foldAll.textContent = G.folded.length ? "Show the whole chain" : "Intervention → outcomes";
     apply();
   }
   function setFolded(v, on) { if (on) folded[v] = true; else delete folded[v]; refold(); }
