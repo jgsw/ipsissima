@@ -120,6 +120,10 @@ main.swapped{flex-direction:row-reverse}
 #side.solo{flex:1 1 auto;width:auto;max-width:none}
 #stage{flex:1;min-width:0;position:relative}
 #map{position:absolute;inset:0}
+/* The Mechanism arrangement draws into its own container in the same stage: it is a different
+   graph (states as boxes, claims on the arrows), so it is not a layout of the live map. */
+#mech{position:absolute;inset:0;background:var(--bg);overflow:hidden}
+#mech[hidden],#map[hidden]{display:none}
 
 /* THE ARTICLE'S OWN ABSTRACT, on a fold at the map's top-left.
  *
@@ -901,6 +905,14 @@ body.fs #fsexit{display:inline-flex}
     <button class="icon" data-v="exposition" id="textbtn" hidden
             title="The same claims, ordered by where the reader meets them in the text">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 2.5v15"/><path d="M6.5 5h11M6.5 8.5h11M6.5 12h7M6.5 15.5h11"/></svg><span>Exposition</span></button>
+    <!-- THE THIRD ARRANGEMENT (ruled 26 Sep 2026): not what holds a claim up, nor where the reader
+         meets it, but what the text says HAPPENS -- the causal chain it sets out, in bands by
+         level of social complexity, every arrow a claim shaded by what the text offers for it.
+         Offered only when the map declares a chain (`mechanism:` in its front matter), which
+         is a separate pass a reader asks for, so most maps never show it. -->
+    <button class="icon" data-v="mechanism" id="mechbtn" hidden
+            title="What the text says happens: the chain of steps it sets out, and which of them it backs">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="1.5" y="3" width="5" height="4" rx="1"/><rect x="13.5" y="3" width="5" height="4" rx="1"/><rect x="7.5" y="13" width="5" height="4" rx="1"/><path d="M6.5 5h7M4 7v3.5c0 2 1.5 4.5 3.5 4.5M16 7v3.5c0 2-1.5 4.5-3.5 4.5"/></svg><span>Mechanism</span></button>
   </div>
   <!-- WHAT IS ON SCREEN, as three independent switches rather than one exclusive choice. The
        map and the two texts answer different questions and people want them together: the
@@ -954,6 +966,7 @@ body.fs #fsexit{display:inline-flex}
        the passage it came from at the same time. -->
   <div id="stage">
   <div id="map"></div>
+  <div id="mech" hidden></div>
   <!-- THE KEY. Offered once, in the workbench only, on a map that uses several encodings at
        once; dismissed in one action and remembered dismissed; always under How to use. The
        card's body is written by keyContent() from the open reconstruction, so it shows only
@@ -1676,6 +1689,8 @@ function openingDepth(graph){
   // The baseline the first edit is compared against. Without it the first keystroke always
   // looks like a change and the map jumps once for nothing.
   MAP_SIG = mapSignature(graph);
+  if (MECH) { MECH.destroy(); MECH = null; MECH_GRAPH = null; }
+  mechOffer(graph);
   setArrangement("reasons");
   // LAST, and only ever once. The first reconstruction somebody opens is the first moment there
   // is anything for a walkthrough to point at; every later `render` is a file they chose while
@@ -2478,6 +2493,9 @@ function openLayoutMenu(anchorEl){
 }
 
 function setArrangement(v, showMap){
+  // A map with no chain has no Mechanism arrangement; asked for one anyway (a remembered layout,
+  // a stale button), it falls back to the order of reasons rather than to an empty stage.
+  if (v === "mechanism" && !(CURRENT_GRAPH && CURRENT_GRAPH.mechanism)) v = "reasons";
   ARRANGEMENT = v;
   Array.prototype.forEach.call($("view").children, function(b){
     b.classList.toggle("on", b.dataset.v === v); });
@@ -2487,7 +2505,52 @@ function setArrangement(v, showMap){
   // map back if it is off. A LAYOUT passes false: "Check" is the Argdown against the source with
   // no map at all, and forcing one on would undo the thing the reader just asked for.
   if (showMap !== false && !PANES.map) { PANES.map = true; applyPanes(); }
+  var mech = v === "mechanism";
+  $("map").hidden = mech;
+  $("mech").hidden = !mech;
+  if (mech) { mechEnsure(); return; }
   LIVE.setState({ expositionOrder: v === "exposition" }, true);
+}
+
+/* ---------------------------------------------------------------- the Mechanism arrangement
+ * Built on first use and rebuilt whenever the graph it was built from is replaced -- a new file,
+ * or a live edit -- so the chain on screen is never the previous file's. The live map keeps its
+ * own state untouched underneath: switching back to Reasons finds it exactly as it was left. */
+var MECH = null, MECH_GRAPH = null;
+function mechEnsure(){
+  if (!window.ArgdownMechanism || !CURRENT_GRAPH || !CURRENT_GRAPH.mechanism) return;
+  if (MECH && MECH_GRAPH === CURRENT_GRAPH) return;
+  var layers = MECH ? MECH.getLayers() : null;
+  if (MECH) MECH.destroy();
+  MECH_GRAPH = CURRENT_GRAPH;
+  MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH, { onClaim: mechShowClaim });
+  // A rebuild after an edit keeps the reader's layer choices; a new file starts with the defaults
+  // (rival views on, appraisal off), because that is where every reader of a new map should start.
+  if (MECH && layers && MECH_GRAPH && MECH_KEEP_LAYERS) {
+    MECH.setLayer("rival", layers.rival); MECH.setLayer("appraisal", layers.appraisal);
+  }
+  MECH_KEEP_LAYERS = false;
+}
+var MECH_KEEP_LAYERS = false;
+/** A claim asked for from the chain: its passage in the manuscript, and its line in the Argdown,
+ *  by the same route a shift-click on the map takes. */
+function mechShowClaim(claim){
+  var n = null;
+  ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).forEach(function(x){ if (x.id === claim.id) n = x; });
+  if (!n) return;
+  if (msAvailable() && !PANES.text) setPane("text", true);
+  msLocate(n);
+}
+function mechOffer(graph){
+  var has = !!(graph && graph.mechanism && window.ArgdownMechanism);
+  $("mechbtn").hidden = !has;
+  if (!has && ARRANGEMENT === "mechanism") setArrangement("reasons");
+  if (MECH && MECH_GRAPH !== graph) {
+    // The graph changed under an open chain: rebuild in place if it is the arrangement on screen,
+    // keeping the reader's layers, since an edit is not a new map.
+    if (ARRANGEMENT === "mechanism" && has) { MECH_KEEP_LAYERS = true; mechEnsure(); }
+    else { MECH.destroy(); MECH = null; MECH_GRAPH = null; }
+  }
 }
 
 Array.prototype.forEach.call($("view").children, function(b){
@@ -5383,6 +5446,11 @@ function mapSignature(g){
   (g.edges || []).forEach(function(e){ parts.push([e.from, e.to, e.type, e.step].join("\u0001")); });
   parts.push("|");
   (g.groups || []).forEach(function(gr){ parts.push([gr.id, gr.label, gr.parent].join("\u0001")); });
+  // THE CHAIN IS PART OF THE PICTURE. A `causes:` step or a state in the `mechanism:` block
+  // changes nothing on the live map, and without this an edit to one was judged not to touch
+  // the drawing -- so the Mechanism arrangement kept showing the chain from before the edit.
+  parts.push("|");
+  parts.push(JSON.stringify(g.mechanism || null));
   return parts.join("\u0002");
 }
 var MAP_SIG = null;
@@ -5402,6 +5470,7 @@ function redrawFrom(graph){
   zotPaint();
   if (sig === MAP_SIG) return;            // the edit did not touch the picture
   MAP_SIG = sig;
+  mechOffer(graph);
   var keep = LIVE ? LIVE.getState() : null;
   if (LIVE) { LIVE.destroy(); LIVE = null; }
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {

@@ -357,6 +357,54 @@ export function withComment(text, label, value){
 /** Argdown's IMap nests groups and carries no tags on its nodes; the live map wants a flat node
  *  list plus a `facet` to filter on. Tags are joined back on by title, which is the key
  *  `response.statements` / `response.arguments` are indexed under. */
+/** The `mechanism:` block and every claim or argument that asserts a step, or null.
+ *
+ *  Each claim comes with what the mechanism arrangement needs to draw and explain it: all its
+ *  tags (the layer is decided by #appraisal and #reported), its fidelity and warrant, its words,
+ *  its steps (`causes:`, one map or a list), and the id of its node on the map where it has one
+ *  -- the click-through from an arrow to the claim, and from the claim to its passage. */
+export function mechanismOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const block = (fm.mechanism && typeof fm.mechanism === "object") ? fm.mechanism : null;
+  const claims = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const members = (rec && rec.members) || [];
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of members) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.causes == null) continue;
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of members) for (const t of (m.tags || [])) tags.add(t);
+      let text = "";
+      for (const m of members) {
+        const t = m.text == null ? "" : stripMentionMarkup(String(m.text).trim());
+        if (t.length > text.length) text = t;
+      }
+      claims.push({
+        title, kind: kind === "arguments" ? "argument" : "statement",
+        id: titleToId && titleToId.has(title) ? titleToId.get(title) : null,
+        tags: [...tags], text,
+        fidelity: data.fidelity == null ? null : String(data.fidelity),
+        warrant: data.warrant == null ? null : String(data.warrant),
+        pinpoint: data.pinpoint == null ? null : String(data.pinpoint),
+        causes: (Array.isArray(data.causes) ? data.causes : [data.causes])
+                  .filter(c => c && typeof c === "object")
+      });
+    }
+  }
+  // How many claims the appraisal holds in all -- including those that assert no step, which the
+  // chain never draws but the census counts. The toggle shows how many IT hides; this is the total.
+  let appraisal = 0;
+  for (const kind of ["statements", "arguments"]) {
+    for (const rec of Object.values(res[kind] || {})) {
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const t of (m.tags || [])) tags.add(t);
+      if (tags.has("appraisal")) appraisal++;
+    }
+  }
+  return (block || claims.length) ? { block, claims, appraisal } : null;
+}
+
 export function toGraph(res) {
   const nodes = [], groups = [], edges = [];
   const titleToId = new Map();
@@ -905,6 +953,12 @@ export function toGraph(res) {
     }
   }
   return { nodes, groups, edges,
+           // THE CHAIN THE TEXT ASSERTS (ruled 26 Sep 2026; see ipsissima-mcp's mechanism.py).
+           // Read from the parser's own records, NOT from `nodes`: Argdown's map selection
+           // drops a claim with no relations, and an appraisal claim may carry nothing but a
+           // `causes:` step, so a chain read off the drawn nodes silently lost it (found on the
+           // notation spike). Null for the great majority of maps, which declare no chain.
+           mechanism: mechanismOf(res, titleToId),
            // The map's own declaration about the TEXT it reads (front matter
            // `text-provenance:`), carried to the page so the reader meets it beside the
            // title. `generated` is the documented value; any other declared value travels

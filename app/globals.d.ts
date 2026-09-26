@@ -28,6 +28,8 @@ interface Window {
   ArgdownLiveMap?: any;
   ArgdownPositions?: any;
   ArgdownExposition?: any;
+  /** The Mechanism arrangement: the chain the text asserts. */
+  ArgdownMechanism?: any;
   ArgdownBundle?: any;
   /** The section list a page is assembled from, shared with the builder. */
   ArgdownPage?: any;
@@ -38,6 +40,7 @@ interface Window {
 declare var ArgdownLiveMap: any;
 declare var ArgdownPositions: any;
 declare var ArgdownExposition: any;
+declare var ArgdownMechanism: any;
 declare var ArgdownBundle: any;
 declare var ArgdownPage: any;
 declare var ArgdownHost: any;

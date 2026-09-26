@@ -194,6 +194,9 @@ function liveMapDeps() {
          // `ArgdownExposition` at layout time to put a sparkline on every band header, and a
          // classic script that is not there yet is simply undefined.
          wrap("argdown-exposition.js", readScript("argdown-exposition.js"), "LIVEMAP_DEPS") +
+         // The Mechanism arrangement: the chain the text asserts, drawn from `graph.mechanism`.
+         // Inert on every map that declares no chain, which is nearly all of them.
+         wrap("argdown-mechanism.js", readScript("argdown-mechanism.js"), "LIVEMAP_DEPS") +
          // What a page is made of, so that the page can build one. In EVERY build, and before
          // the main script: `exportPage` asks it which of this page's own sections a copy
          // carries, and a classic script that is not there yet is simply undefined.

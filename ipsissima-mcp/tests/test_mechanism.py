@@ -36,77 +36,9 @@ def check(name, got, want):
           ("" if ok else f"\n          got  {got!r}\n          want {want!r}"))
 
 
-SOURCE = """# A policy brief
-
-Community orders keep people in work. People in work reintegrate. Fewer people reoffend after
-community orders than after short prison terms, a study found. Reoffending sends people back to
-prison, and crowded prisons rehabilitate no one. Risk scores decide who goes to prison.
-"""
-
-HEAD = """===
-title: "Planted -- a chain"
-reconstruction:
-    generated: true
-defaults:
-    chapter: "source/brief.md"
-mechanism:
-    question: "How would community orders reduce reoffending?"
-    levels: [macro, meso, micro]
-    actors:
-        state:    {label: "Government", level: macro}
-        courts:   {label: "Courts", level: meso}
-        prisons:  {label: "Prisons", level: meso}
-        person:   {label: "Offender", level: micro}
-    states:
-        policy:  {label: "More community orders", actor: state, role: intervention}
-        order:   {label: "Community order given", actor: courts}
-        work:    {label: "Stays in work", actor: person}
-        reint:   {label: "Reintegrates", actor: person}
-        reoff:   {label: "Reoffends", actor: person, role: outcome}
-        prison:  {label: "Prison population", actor: prisons, role: outcome}
-        cost:    {label: "Cost", actor: state, role: outcome}
-        risk:    {label: "Risk score", actor: person, appraisal: true}
-===
-"""
-
-CHAIN = HEAD + """
-[Recommend]: The government should use more community orders.
-
-[Orders keep people in work]: Community orders keep people in work.
-    {fidelity: "quotation", causes: {from: order, to: work, sign: "+", basis: asserted,
-     how: {actor: person, situation: "serving an order at home", response: "keeps the job"}}}
-    +> [Recommend]
-
-[Work helps reintegration]: People in work reintegrate.
-    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: asserted}}
-    +> [Orders keep people in work]
-
-[Fewer reoffend after orders]: Fewer people reoffend after community orders than after short prison terms, a study found.
-    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", basis: study, lag: "two years"}}
-    +> [Recommend]
-
-[Reoffending fills prisons]: Reoffending sends people back to prison.
-    {fidelity: "quotation", causes: {from: reoff, to: prison, sign: "+", basis: asserted}}
-    +> [Recommend]
-
-[Prison deters]: Prison deters reoffending, so fewer orders means less reoffending. #reported
-    {fidelity: "imputation", warrant: "the view the brief sets out to reject",
-     causes: {from: order, to: reoff, sign: "+", basis: asserted}}
-    -> [Recommend]
-
-[Crowding feeds reoffending]: Crowded prisons rehabilitate no one, so a fuller prison means more reoffending on release. #appraisal
-    {fidelity: "imputation", warrant: "closes the loop the brief leaves open",
-     causes: {from: prison, to: reoff, sign: "+"}}
-    +> [Fewer reoffend after orders]
-
-[Risk scores make themselves true]: Risk scores decide who goes to prison, and prison raises the reoffending that validates them. #appraisal
-    {fidelity: "imputation", warrant: "performativity",
-     causes: [{from: risk, to: order, sign: "-"}, {from: reoff, to: risk, sign: "+", reflexive: true}]}
-
-[Scores are opaque]: Nobody sentenced on a risk score is told what raised it. #appraisal
-    {fidelity: "imputation", warrant: "a reason for the appraisal above, not the text's"}
-    +> [Risk scores make themselves true]
-"""
+FIXTURE = HERE / "mechanism"
+SOURCE = (FIXTURE / "source" / "brief.md").read_text(encoding="utf-8")
+CHAIN = (FIXTURE / "chain.argdown").read_text(encoding="utf-8")
 
 
 def run(text, name="brief.argdown", extra=None):
@@ -188,8 +120,8 @@ check("the rival step does not thicken the text's chain",
 
 # --------------------------------------------------------------------------- #
 print("\nthe appraisal never counts as the author's")
-check("three appraisal claims, three appraisal steps",
-      (chain.get("appraisal_claims"), chain.get("appraisal_steps")), (3, 3))
+check("four appraisal claims, four appraisal steps",
+      (chain.get("appraisal_claims"), chain.get("appraisal_steps")), (4, 4))
 # The dangerous case: an appraisal claim that something SUPPORTS is drawn on the map and supports
 # nothing itself, so without the rule it would be crowned the paper's conclusion.
 check("an appraisal claim is never the apex, even one the map draws and nothing sits above",
@@ -198,7 +130,7 @@ check("the author's recommendation is the only apex", len(rep["shape"].get("apex
 check("nor inert", any("Risk scores" in t for t in rep["shape"].get("inert", [])), False)
 check("the fidelity census counts only the author's claims",
       rep["shape"].get("fidelity", {}).get("imputation"), 1)
-check("and says how many it left out", rep["shape"].get("appraisal"), 3)
+check("and says how many it left out", rep["shape"].get("appraisal"), 4)
 load = rep.get("census", "")
 check("the appraisal is not a load-bearing assumption of the author's argument",
       "Crowding feeds reoffending" in load.split("INTERPRETIVE LOAD")[-1].split("CHAIN")[0],

@@ -71,16 +71,32 @@ Folding and unfolding **hold still**: whatever you pressed stays where it was un
 while the rest of the map moves around it. A section that opens does not throw the map somewhere
 else and leave you to find your place again.
 
-## The two arrangements
+## The arrangements
 
 
-Both are the argument. What differs is what *orders* the claims — the order of reasons, or the
-order of exposition.
+Reasons and Exposition are both the argument. What differs is what *orders* the claims — the
+order of reasons, or the order of exposition.
 
 - **Reasons** — the main claim at the apex, and beneath it what supports or attacks it, level by
   level
 - **Exposition** — the same claims, placed where they occur in the text: file by file, section by
   section, in reading order
+- **Mechanism** — offered only when a map declares one: what the text says *happens*. The chain of
+  steps it sets out, from a cause — often the action it recommends — to the outcomes it cares
+  about. Levels of social complexity run top to bottom (macro, meso, micro) and sequence left to
+  right; loops are drawn as loops. Every arrow is one or more claims in the map, and it is drawn
+  by what the text offers for it: a heavy line for a study or statistics, a line for a step the
+  text argues, dashed for one it only asserts, dotted gold for one the reconstructor had to supply.
+  Click an arrow to see its claims, and a claim to reach its passage. The panel beside the chain
+  gives its shape — how many steps, across how many levels, over how long — and its **gaps**:
+  where the text's chain stops, or never reaches an outcome. A gap is a finding about the text, not
+  a fault in the map.
+
+**The reconstructor's appraisal** is off until you ask for it. It is the reconstructor's own
+reading of the text against the world — a confounder the author never mentions, a step the text
+leaves out, a loop it leaves open — and never something the text says. Its switch says how many
+additions it is hiding; switched on, a banner stays across the view and every addition is drawn
+hatched in violet.
 
 <p id="helpArrangeNote">They are the same claims twice over. <b>Exposition</b> answers a different
 question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
