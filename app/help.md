@@ -107,6 +107,16 @@ text does not have. References, notes and other back matter get no empty band. T
 before the first heading, such as an abstract or an untitled introduction, has a band of its own
 called *before the first heading*. That is a description, not one of the text's headings.
 
+The bands are the headings that actually divide the text. A heading with almost nothing under
+it, such as a title page's heading, does not count, and neither does back matter or a heading
+that is only a link. A text that no heading divides is banded by its **printed pages** instead:
+*p. 101*, *p. 102*. That is the printer's division, not the author's, and the band's tooltip says
+so. A run of pages with nothing mapped in it is one empty band, *pp. 11–34*.
+
+Claims drawn from the same paragraph are stacked in the order the paragraph makes them, top to
+bottom. A claim placed only by matching its paragraph, with no words of its own to find there,
+goes below the ones that were found.
+
 Claims that have no place in the text come **last**, in a lane of their own called *no position
 in the text*. They are the claims whose quotation could not be found, which declare no line, and
 whose words match no paragraph. Most of them are the reconstructor's imputations and

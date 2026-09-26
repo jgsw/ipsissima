@@ -173,6 +173,30 @@ function checkGeometry(name, graph, vis, g) {
     }
   }
 
+  // 2b. WITHIN A PARAGRAPH, the order the text makes them. Claims sharing a line are one
+  //     paragraph's, stacked in one column; top to bottom must follow `pos.col`, where in the
+  //     paragraph each one's words fall. Band on the column, as above. A claim with no offset
+  //     (placed by the paragraph search) may sit anywhere after those that have one.
+  {
+    const cols = new Map();
+    for (const b of boxes) {
+      if (!b.pos || b.pos.line == null || b.pos.col == null) continue;
+      const k = b.pos.chapterIndex + ":" + b.pos.line;
+      if (!cols.has(k)) cols.set(k, []);
+      cols.get(k).push(b);
+    }
+    for (const [k, bs] of cols) {
+      const byText = bs.slice().sort((p, q) => p.pos.col - q.pos.col);
+      for (let i = 1; i < byText.length; i++) {
+        if (byText[i].pos.col === byText[i - 1].pos.col) continue;
+        if (byText[i].y < byText[i - 1].y - 0.5)
+          return fail(where("a paragraph's claims read in its own order"),
+                      `at ${k}, ${byText[i].id} (col ${byText[i].pos.col}) is drawn above ` +
+                      `${byText[i - 1].id} (col ${byText[i - 1].pos.col})`);
+      }
+    }
+  }
+
   // 3. The no-position lane sits BELOW everything that has a position, so a reader scrolling
   //    the chapters in order meets it at the end rather than finding it interleaved. A claim
   //    whose file is known but whose LINE is not is unplaced too: filed at line 0 of its file,
@@ -327,6 +351,16 @@ function fixtures() {
                                      { heading: "3. Third", line: 40, words: 200 },
                                      { heading: "References", line: 60, words: 140 }] } } });
   }
+  // One paragraph, three claims, and the argument's depth the other way round from the text:
+  // the conclusion (depth 0) comes LAST in the paragraph, its reasons first.
+  add("a paragraph whose order is not the argument's", {
+    nodes: [{ id: "concl", label: "Conclusion", pos: { ...pos(0, 7), col: 90 } },
+            { id: "r1", label: "Reason one", pos: { ...pos(0, 7), col: 5 } },
+            { id: "r2", label: "Reason two", pos: { ...pos(0, 7), col: 40 } },
+            { id: "unfound", label: "Placed by paragraph", pos: pos(0, 7) }],
+    edges: [{ from: "r1", to: "concl", type: "support" }, { from: "r2", to: "concl", type: "support" },
+            { from: "unfound", to: "r1", type: "support" }],
+    groups: [] });
   add("a pure cycle", {
     nodes: [{ id: "a", label: "A", pos: pos(0, 1) }, { id: "b", label: "B", pos: pos(0, 2) }],
     edges: [{ from: "a", to: "b", type: "support" }, { from: "b", to: "a", type: "attack" }],

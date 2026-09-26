@@ -138,7 +138,7 @@ console.log("\npositions: precision order");
 {
   const sources = {
     "A.md": ["# Top", "x".repeat(140),
-             "# S", "ritual opacity ceremony " + "filler ".repeat(30)].join("\n")
+             "# S", "ritual opacity ceremony " + "filler ".repeat(60)].join("\n")
   };
   const yml = 'book:\n  chapters:\n    - "A.md"\n';
   const nodes = [
@@ -167,7 +167,7 @@ console.log("\npositions: an argument is placed by its conclusion");
 {
   // An <Argument> has no words of its own, so nothing above places it. Its main conclusion has
   // words, and an argument is made where it LANDS.
-  const para = w => w + " " + "filler ".repeat(30);
+  const para = w => w + " " + "filler ".repeat(60);
   const sources = {
     "A.md": ["## 1. First", para("ritual opacity ceremony"),
              "## 2. Second", para("kinship exchange reciprocity"),
@@ -239,7 +239,7 @@ console.log("\npositions: the band, derived once");
   // `##` SECTIONS. `pdf_to_source.py` writes a paper's sections as `#`; `html_to_source.py`
   // writes the article title as `#` and its sections as `##`, because that is what the
   // publisher's markup says. Banding on level 1 puts such a paper in a single band.
-  const para = w => w + " " + "filler ".repeat(30);
+  const para = w => w + " " + "filler ".repeat(60);
   const sources = {
     "A.md": ["# The Article", para("abstract words before any section"),
              "## 1. First", para("ritual opacity ceremony"),
@@ -283,10 +283,10 @@ const FIX = {
     "<!-- converted text; repaired: Small fees sharply reduce the take-up of useful products among the poor -->",
     "", "# 1. Findings", "",
     "We find that small fees sharply reduce the take-up of useful products among the poor, " +
-      "and the effect is large across ten evaluations in four countries of the world.[^1]",
+      "and the effect is large across ten evaluations in four countries of the world.[^1]" + " " + "These words make the section a stretch of real prose rather than a heading alone. ".repeat(5),
     "", "# 2. Notes on method", "",
     "Randomised evaluations compared free distribution with a range of small prices charged " +
-      "at the point of sale, so the comparison isolates the effect of price itself.[^2]",
+      "at the point of sale, so the comparison isolates the effect of price itself.[^2]" + " " + "These words make the section a stretch of real prose rather than a heading alone. ".repeat(5),
     "", "# Notes", "",
     "[^1]: Ten evaluations were pooled, and the pooled estimate hides a great deal of variation.",
     "", "[^2]: The prices were set by lottery in each village and never announced in advance.",
@@ -296,7 +296,8 @@ const FIX = {
   ].join("\n"),
   "H.md": [
     "## 1. Body", "",
-    "The body sentence carries the mark of the first note, as a publisher's page would do.[^1]",
+    "The body sentence carries the mark of the first note, as a publisher's page would do.[^1]" + " " + "These words make the section a stretch of real prose rather than a heading alone. ".repeat(5),
+    "", "## 2. More", "", "A second section, because one heading alone does not divide a text." + " " + "These words make the section a stretch of real prose rather than a heading alone. ".repeat(5),
     "", "## Footnotes", "", "[[[1]]]", "",
     "The note's words are a paragraph of their own, not indented, as the HTML route writes them.",
     ""
@@ -349,6 +350,97 @@ console.log("\npositions: a note is read at its mark");
   eq("a claim in the text proper is left alone", [byId.body.line, byId.body.note], [15, undefined]);
 }
 
+console.log("\nbands: only headings that divide the text decide the level");
+{
+  const prose = w => w + " " + "and the argument runs on through a sentence of ordinary prose ".repeat(8);
+  // A BOOK'S TITLE PAGE ABOVE AN ESSAY: two `##` headings with nothing under them, and the
+  // essay's own sections at `####`. Counting every heading banded the essay on the title page.
+  const james = ["## ESSAYS", "", "#### IN", "", "## POPULAR PHILOSOPHY.", "",
+                 "### THE WILL TO BELIEVE.", "", prose("a dedication before the first section"), "",
+                 "#### I.", "", prose("live and dead hypotheses"), "",
+                 "#### II.", "", prose("the option is forced"), ""].join("\n");
+  const b = P.bandsOf(james);
+  eq("a title page's headings, with no prose under them, do not decide the level",
+     [b.level, b.bands.map(x => x.heading)], [4, ["I.", "II."]]);
+  eq("  and a heading with nothing under it bounds nothing — the text after it is the opening",
+     P.sectionAt(b.bands, 9), null);
+
+  // A WEB PAGE: navigation set as headings that are nothing but links.
+  const web = ["### [Environment](https://example.org/env)", "", prose("site furniture"), "",
+               "# Transcript", "", prose("the speech itself"), "",
+               "### [National](https://example.org/nat)", "", prose("more furniture"), ""].join("\n");
+  eq("headings that are only links are navigation, not sections", P.bandsOf(web).bands, []);
+
+  // BACK MATTER: never decides, still bounds once the level is chosen.
+  const one = ["# 1. The only section", "", prose("the argument"), "",
+               "# References", "", prose("a list of works"), ""].join("\n");
+  eq("one section and a reference list is not a divided text", P.bandsOf(one).level, 0);
+  const two = ["# 1. First", "", prose("the argument"), "", "# 2. Second", "", prose("more"), "",
+               "# Notes", "", prose("the notes"), ""].join("\n");
+  eq("  but where the text IS divided, back matter bounds a band of its own, marked as such",
+     P.bandsOf(two).bands.map(x => [x.heading, x.back]),
+     [["1. First", false], ["2. Second", false], ["Notes", true]]);
+
+  // A HEADING BROKEN ACROSS TWO LINES by the converter: its "section" is the rest of its title.
+  const broken = ["# 3 In funding interventions, start by funding the most cost-",
+                  "effective interventions first, and keep going", "",
+                  "# 4 If the budget changes", "", prose("the whole paper"), ""].join("\n");
+  eq("a heading with only a few words under it does not decide the level either",
+     P.bandsOf(broken).level, 0);
+}
+
+console.log("\nbands: a text no heading divides is banded by its printed pages");
+{
+  const prose = w => w + " " + "the essay continues without a single heading of its own ".repeat(8);
+  const text = ["Title of the essay", "", prose("an opening before any page marker"), "",
+                "<!-- p.101 begins here -->", "", prose("the first printed page"), "",
+                "<!-- p.102 begins here -->", "", prose("the second printed page"), "",
+                "<!-- Ethics p.103 begins here -->", "", prose("a page marked with its volume"), ""
+               ].join("\n");
+  eq("the converters' page markers are read, with or without a volume's name",
+     P.pageMarks(text).map(m => m.page), ["101", "102", "103"]);
+  const b = P.bandsOf(text);
+  eq("with no heading to divide it, the text is banded by page, named for the page",
+     [b.paged, b.bands.map(x => x.heading)], [true, ["p. 101", "p. 102", "p. 103"]]);
+  const { byId } = P.positions([
+    { id: "p2", chapter: "E.md", detail: '"the second printed page"' },
+    { id: "pre", chapter: "E.md", detail: '"an opening before any page marker"' }
+  ], { "E.md": text }, 'chapters:\n  - "E.md"\n');
+  eq("a claim is banded by the page it is on, and flagged as on a printed page",
+     [byId.p2.section, byId.p2.page], ["p. 102", true]);
+  eq("  and what comes before the first page is the opening",
+     [byId.pre.section, byId.pre.opening], [null, true]);
+  eq("a single page is not a division",
+     P.bandsOf(["<!-- p.1 begins here -->", prose("one page only")].join("\n")).bands, []);
+  const w = P.wordCounts({ "E.md": text });
+  eq("the word counts follow the pages, and say they are pages",
+     w.sections["E.md"].map(x => [x.heading, x.page]),
+     [["", false], ["p. 101", true], ["p. 102", true], ["p. 103", true]]);
+}
+
+console.log("\npositions: where in its paragraph a claim falls");
+{
+  const line = "First the author defines ritual opacity with care. Then the author argues that " +
+               "ceremony differs from routine, and finally concludes that opacity marks ceremony.[^1]";
+  const text = ["# 1. One", "", line + " " + "and more prose follows here ".repeat(10), "",
+                "# 2. Two", "", "a second section of prose ".repeat(15), "",
+                "[^1]: A note on the concluding sentence."].join("\n");
+  const { byId } = P.positions([
+    { id: "last", chapter: "C.md", detail: '"concludes that opacity marks ceremony"' },
+    { id: "first", chapter: "C.md", detail: '"defines ritual opacity with care"' },
+    { id: "mid", chapter: "C.md", detail: "the author argues that ceremony differs from routine" },
+    { id: "note", chapter: "C.md", detail: '"A note on the concluding sentence"' }
+  ], { "C.md": text }, 'chapters:\n  - "C.md"\n');
+  eq("claims from one paragraph share its line", [byId.first.line, byId.mid.line, byId.last.line],
+     [3, 3, 3]);
+  ok("  and their offsets follow the order the paragraph makes them in",
+     byId.first.col < byId.mid.col && byId.mid.col < byId.last.col,
+     JSON.stringify([byId.first.col, byId.mid.col, byId.last.col]));
+  ok("a claim read from a note sits where the note's mark is, after the sentence it glosses",
+     byId.note.line === 3 && byId.note.col > byId.last.col,
+     JSON.stringify([byId.note.line, byId.note.col]));
+}
+
 console.log("\nword counts: the bands, the opening, and not the converter's notes");
 {
   const w = P.wordCounts(FIX);
@@ -358,7 +450,7 @@ console.log("\nword counts: the bands, the opening, and not the converter's note
   eq("the front matter and the HTML comment are not counted as the author's words",
      w.bySection["P.md"][""], 0);
   eq("## sections are counted, as they are banded", Object.keys(w.bySection["H.md"]),
-     ["", "1. Body", "Footnotes"]);
+     ["", "1. Body", "2. More", "Footnotes"]);
   eq("the total is the sum of the sections",
      w.byChapter["P.md"], w.sections["P.md"].reduce((a, s) => a + s.words, 0));
 }

@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const tpl = fs.readFileSync(path.join(HERE, "argdown-viewer.template.html"), "utf8");
@@ -43,7 +44,10 @@ function lift(name, needs = []) {
   const src = needs.concat([name]).map(sourceOf).join("\n");
   return new Function(src + "; return " + name + ";")();
 }
-const pageMarks = lift("pageMarks");
+// THE PAGE MARKERS ARE READ IN ONE PLACE, argdown-positions.js, because the exposition view bands
+// a text with no headings by these same pages and the two must never disagree. The pane's own
+// `pageMarks` hands the job there; the rule is tested where it lives, and the hand-off below.
+const pageMarks = createRequire(import.meta.url)(path.join(HERE, "src", "argdown-positions.js")).pageMarks;
 const splitWidth = lift("splitWidth");
 const soleWinner = lift("soleWinner");
 const sideLayout = lift("sideLayout", ["sideAxis"]);
@@ -137,6 +141,9 @@ check("the conversion log is not mistaken for a page marker",
 check("  nor an ordinary comment", pageMarks("<!-- a note to self -->"), []);
 check("a manuscript with no markers gives none", pageMarks("Just prose.\n\nMore prose."), []);
 check("empty input is safe", pageMarks(""), []);
+check("the pane reads its page numbers through the one reader, not a copy of its own",
+      /ArgdownPositions\.pageMarks\(/.test(sourceOf("pageMarks")) &&
+        !/begins here/.test(sourceOf("pageMarks")), true);
 
 // The marker's own line is blanked for rendering, so the number has to attach to the first
 // block AFTER it -- which is what keeps it beside the text that page actually starts with.
