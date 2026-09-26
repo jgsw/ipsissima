@@ -539,10 +539,43 @@ function filterOnce(graph, state, force) {
       // best local root gives 8 -> 25 -> 33 -> 38 -> 42, and the eight it picks are the claims
       // each section is actually making.
       const local = ids.filter(id => !parentsIn(id, mine));
+      // A PRÉCIS, NOT MERELY A ROOT. Read down, the heads should be the paper in a sentence per
+      // section, so a head is chosen for being a SENTENCE OF THE TEXT before it is chosen for
+      // being near the contention: an <Argument> is a structure's name and has no words of its
+      // own; a claim read from a note is a gloss on the section, not what it argues; an
+      // imputation is the reconstructor's words; a claim tagged `#reported` is someone else's
+      // view, set out to be answered. Each is passed over while the section has a local root
+      // that is none of these (measured 26 Sep 2026: footnote claims and a position-less
+      // imputation had been standing for whole sections of three samples, and the objection a
+      // section answers could stand for the section that answers it).
+      const standing = id => {
+        const n = ix.byId.get(id);
+        return (n.kind === "argument" ? 4 : 0) + (n.pos && n.pos.note != null ? 2 : 0) +
+               (n.fidelity === "imputation" ? 2 : 0) +
+               ((n.tags || []).indexOf("reported") >= 0 ? 1 : 0);
+      };
+      // AND SOMETHING THE SECTION ARGUES FOR. "Nearest the contention" alone picked a section's
+      // scope disclaimer — "The paper does not settle the philosophy of science" hangs straight
+      // off the thesis and has nothing under it — over the conclusion the section spends its
+      // pages reaching. So a claim with reasons in its own section comes first; among those,
+      // nearest the contention, as before; then the one with more of the section beneath it.
+      const beneath = new Map();
+      const under = id => {
+        if (beneath.has(id)) return beneath.get(id);
+        const seen = new Set(), q = [id];
+        while (q.length) for (const c of kids(q.shift())) if (mine.has(c) && !seen.has(c)) { seen.add(c); q.push(c); }
+        beneath.set(id, seen.size);
+        return seen.size;
+      };
       const head = (local.length ? local : ids).slice().sort((a, b) => {
+        const sa = standing(a), sb = standing(b);
+        if (sa !== sb) return sa - sb;                     // a sentence of the text leads
+        const ua = under(a), ub = under(b);
+        if ((ua > 0) !== (ub > 0)) return ua > 0 ? -1 : 1; // then something the section argues
         const ra = rank.has(a) ? rank.get(a) : Infinity;
         const rb = rank.has(b) ? rank.get(b) : Infinity;
-        if (ra !== rb) return ra - rb;                     // nearest the contention leads
+        if (ra !== rb) return ra - rb;                     // then nearest the contention
+        if (ua !== ub) return ub - ua;                     // then more of the section beneath it
         const pa = posKey(ix.byId.get(a).pos), pb = posKey(ix.byId.get(b).pos);
         return pa == null ? 1 : pb == null ? -1 : pa < pb ? -1 : pa > pb ? 1 : 0;
       })[0];
@@ -3276,6 +3309,13 @@ function createLiveMap(container, graph, options) {
   // one claim to a row, relations as arcs in the margins (see `layoutByText`). A preference of
   // the reader's, not a fold state: it changes how the text's order is drawn, not what is shown.
   let readColumn = !!(options && options.readColumn);
+  // THE SHAPE OF THE ARGUMENT, as a layer the reader turns on. Where each claim's reasons fall —
+  // before it or after, and how far away — is drawn in the lines' ink and in a sparkline on every
+  // band, and it is a diagnostic: an author's question about a draft ("does this come too late?")
+  // rather than a reader's question about a paper ("take me through it"). Drawn all the time it
+  // made the reading view busy with marks about the writing; off by default, like the appraisal,
+  // it keeps the view quiet enough to read and is one press away (26 Sep 2026).
+  let showShape = !!(options && options.shape);
   let lastVis = { nodes: [], edges: [], groups: [] };
   // The exposition-ordered view needs a manuscript position on the nodes, which only a host
   // holding the source files can supply. Without them the toggle is not offered at all, rather
@@ -3294,6 +3334,7 @@ function createLiveMap(container, graph, options) {
   // state to put numbers on the buttons — cannot quietly disagree with what gets drawn.
   state.byText = expo;
   let expoOpened = false;
+  let depthBeforePrecis = null;   // the Reasons depth to hand back after the first précis
   if (expo && multiFile) {
     expoOpened = true;
     Object.assign(state, reduceFold(graph, state, { type: "byChapter" }, null, opt));
@@ -3390,6 +3431,7 @@ function createLiveMap(container, graph, options) {
   let pin = null;
   let glideDur = (opt && opt.duration) || 350;  // this render's shared clock; see the --alm-dur note
   const drawn = new Map();     // node id -> <g>
+  const boxNode = new WeakMap(); // <g> -> the node it last painted, for its gestures
   const drawnEdge = new Map();
   const drawnDir  = new Map();   // chevrons, keyed like drawnEdge // key    -> <path>
   const drawnLineNo = new Map(); // line numbers, keyed like drawnEdge // key -> <text>
@@ -3639,6 +3681,9 @@ function createLiveMap(container, graph, options) {
     svg.style.setProperty("--alm-dur", effDur + "ms");
     glideDur = effDur;
 
+    // The shape layer is a class on the drawing, so the ink it adds to the lines comes and goes
+    // with one switch and nothing that lays out or routes a line has to know about it.
+    svg.classList.toggle("alm-shape", expo && showShape);
     drawGroups(g, vis);
     drawEdges(g, vis, sizes);
     drawEchoes(expo ? g : null);
@@ -4165,7 +4210,21 @@ function createLiveMap(container, graph, options) {
     box.setAttribute("tabindex", "0");
     box.setAttribute("role", "button");
     box.setAttribute("aria-label", String(n.label || n.id));
+    // THE LISTENERS GO ON ONCE PER BOX, NOT ONCE PER PAINT. A box outlives renders -- `drawNodes`
+    // keeps it and repaints its insides -- and these used to be added on every paint, so after
+    // R renders one click ran R handlers. Shift-click and Shift-Enter re-render the map from
+    // inside the handler (opening the Manuscript pane redraws), so each go-to-passage doubled the
+    // handlers for the next: measured on Miller, 112 registrations, then 224, 448, 896, and the
+    // tenth jump took nine seconds. Present since the first commit; found 26 Sep 2026 driving
+    // the rendered suite. The handlers read the claim the box draws NOW, from `boxNode`.
+    boxNode.set(box, n);
+    if (fresh) wireBox(box);
+  }
+
+  /** The gestures on a claim's box, wired the one time the box is made. */
+  function wireBox(box) {
     box.addEventListener("keydown", ev => {
+      const n = boxNode.get(box);
       if (ev.key === "Enter" || ev.key === " ") {
         ev.preventDefault();
         setLit(marksFor(n));
@@ -4189,6 +4248,7 @@ function createLiveMap(container, graph, options) {
     // first thought and reads as arbitrary: closing a claim, or asking where it came from, is
     // just as much a way of saying "this is the one I am working on".
     box.addEventListener("click", ev => {
+      const n = boxNode.get(box);
       setLit(marksFor(n));
       if ((ev.shiftKey || ev.altKey) && opt.onLocate) { ev.stopPropagation(); return opt.onLocate(n); }
       if (opt.onSelect) opt.onSelect(n);
@@ -4197,6 +4257,7 @@ function createLiveMap(container, graph, options) {
     // clicks underneath it fold and unfold, which cancel out, so the claim is left as it was.
     box.addEventListener("dblclick", ev => {
       if (!opt.onLocate) return;
+      const n = boxNode.get(box);
       ev.preventDefault(); ev.stopPropagation();
       setLit(marksFor(n));
       opt.onLocate(n);
@@ -4206,6 +4267,7 @@ function createLiveMap(container, graph, options) {
     // offers choices, and a right-click that acts is a right-click you cannot take back.
     box.addEventListener("contextmenu", ev => {
       if (!opt.onMenu) return;
+      const n = boxNode.get(box);
       ev.preventDefault(); ev.stopPropagation();
       setLit(marksFor(n));
       opt.onMenu(n, ev);
@@ -4412,7 +4474,7 @@ function createLiveMap(container, graph, options) {
       const spark = box.querySelector(".alm-spark");
       spark.textContent = "";
       const sroom = gr.spark ? gr.spark.width + 16 : 0;
-      const showSpark = !!gr.spark &&
+      const showSpark = showShape && !!gr.spark &&
                         p.width - 20 - (showWords ? wroom : 0) - sroom >= nameRoom;
       if (showSpark) {
         const sx = p.width - 10 - (showWords ? wroom : 0) - gr.spark.width;
@@ -4448,7 +4510,7 @@ function createLiveMap(container, graph, options) {
       const gbits = [];
       if (label.textContent !== nameText) gbits.push(gr.title || gr.label);
       if (wtext && !showWords) gbits.push(wtext);
-      if (/** @type {any} */ (gr).verdict) gbits.push(/** @type {any} */ (gr).verdict);
+      if (showShape && /** @type {any} */ (gr).verdict) gbits.push(/** @type {any} */ (gr).verdict);
       // And what a band IS, where its name alone cannot say — the no-position lane, the opening,
       // an empty section. Always, on the same rule as the verdict: it is never on the header.
       if (/** @type {any} */ (gr).note) gbits.push(/** @type {any} */ (gr).note);
@@ -5421,6 +5483,11 @@ function createLiveMap(container, graph, options) {
         'text runs, with the relations as arcs in the margins: on the left, reasons already ' +
         'given; on the right, reasons still to come">column</button>' +
         '</span>' : "") +
+      (parts.actions ? '<span class="alm-grp alm-seg" data-role="shape" hidden>' +
+        '<button data-act="shape" title="The shape of the argument: whether each claim\'s ' +
+        'reasons come before it or after, and how far they reach \u2014 drawn in the ink of the ' +
+        'lines and as a sparkline on each band. Off, the lines are drawn plain.">shape</button>' +
+        '</span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +
       // SPINE sits with "kinds" rather than with "how much", because it answers WHICH claims
       // rather than how many levels of them — a claim deep in the argument can be spine and a
@@ -5467,6 +5534,7 @@ function createLiveMap(container, graph, options) {
       if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "layout")   return setState({ readColumn: b.dataset.col === "1" });
+      if (act === "shape")    return setState({ shape: !showShape });
       if (act === "spine")    return setState({ spine: b.dataset.on === "1" ? 1 : null });
       if (act === "appraisal") return setState({ appraisal: !state.appraisal });
       if (act === "sections") return apply({ type: b.dataset.open === "1" ? "expandGroups"
@@ -5509,7 +5577,7 @@ function createLiveMap(container, graph, options) {
       // cost stay beside it, because the cost is what the reader is deciding about.
       if (!depthBox.childElementCount || depthBox.dataset.mode !== mode) {
         const md = maxDepth(graph);
-        const labels = expo ? ["section claims", "+ reasons", "+ detail"]
+        const labels = expo ? ["précis", "+ reasons", "+ detail"]
                             : ["main claim", "+ reasons", "+ detail"];
         const rungs = [];
         if (expo && multiFile)
@@ -5517,7 +5585,10 @@ function createLiveMap(container, graph, options) {
                        title: "Each section shut into one block, so a whole manuscript can be " +
                               "taken in at once" });
         for (let d = 0; d <= Math.min(md, 2); d++)
-          rungs.push({ key: String(d), label: labels[d] || "level " + d });
+          rungs.push({ key: String(d), label: labels[d] || "level " + d,
+                       title: expo && d === 0
+                         ? "One claim per section — what each section argues, in the order " +
+                           "the text makes them: the paper in a sentence per section" : "" });
         rungs.push({ key: "all", label: "everything" });
         depthBox.innerHTML =
           '<b title="' + (expo
@@ -5632,6 +5703,11 @@ function createLiveMap(container, graph, options) {
     // is in force, and a single button that is merely "off" says nothing about what is.
     const layoutBox = /** @type {any} */ (toolbar.querySelector('[data-role="layout"]'));
     if (layoutBox) layoutBox.hidden = !expo;
+    const shapeBox = /** @type {any} */ (toolbar.querySelector('[data-role="shape"]'));
+    if (shapeBox) shapeBox.hidden = !expo;
+    toolbar.querySelectorAll('[data-act="shape"]').forEach(
+      /** @param {any} b */ b => { b.classList.toggle("on", !!showShape);
+                                   b.setAttribute("aria-pressed", showShape ? "true" : "false"); });
     toolbar.querySelectorAll('[data-act="layout"]').forEach(
       /** @param {any} b */ b =>
         b.classList.toggle("on", (b.dataset.col === "1") === !!readColumn));
@@ -5704,6 +5780,7 @@ function createLiveMap(container, graph, options) {
              collapsedLanes: [...state.collapsedLanes],
              depth: state.depth, facets: state.facets ? [...state.facets] : null,
              untagged: state.untagged, appraisal: state.appraisal, allText, readColumn,
+             shape: showShape,
              // `spine` and `byText` were missing from this snapshot, which meant a host that
              // rebuilt the map — the live editor, after a keystroke — silently lost the spine
              // setting: exactly the dropped-in-silence failure setState's own comment warns
@@ -5733,6 +5810,7 @@ function createLiveMap(container, graph, options) {
     // Every claim moves when the layout changes, so the camera is re-framed rather than left
     // looking at wherever the old layout had put things.
     if ("readColumn"      in patch) { readColumn = !!patch.readColumn; refit = true; }
+    if ("shape"           in patch) showShape = !!patch.shape;
     // Switching axis moves every node at once. Re-frame rather than leave the reader looking
     // at whatever happens to be under the old camera position.
     if ("expositionOrder" in patch) {
@@ -5744,6 +5822,19 @@ function createLiveMap(container, graph, options) {
       if (expo && multiFile && !expoOpened) {
         expoOpened = true;
         Object.assign(state, reduceFold(graph, state, { type: "byChapter" }, lastVis, opt));
+      }
+      // A PAPER OPENS AT ITS PRÉCIS: one claim per section, in the text's order — the paper
+      // in brief, from which the reader climbs the ladder as far as they want. Once, on first
+      // entry, like a book's chapters. The depth the Reasons view had is kept and handed back
+      // on leaving, unless the reader has chosen another in the meantime: the first visit to
+      // one arrangement must not quietly re-set the other.
+      else if (expo && !multiFile && !expoOpened) {
+        expoOpened = true;
+        depthBeforePrecis = { depth: state.depth };
+        Object.assign(state, reduceFold(graph, state, { type: "depth", value: 0 }, lastVis, opt));
+      } else if (!expo && depthBeforePrecis) {
+        if (state.depth === 0) state.depth = depthBeforePrecis.depth;
+        depthBeforePrecis = null;
       }
     }
     if ("depth" in patch) {
@@ -5896,6 +5987,21 @@ function createLiveMap(container, graph, options) {
   function markClaims(ids, opts) {
     const want = new Set(ids || []);
     if (!want.size) { setLit([]); return false; }
+    // FOLLOWING, NOT FETCHING. A reader scrolling the manuscript with the map following along
+    // has not asked for anything to be unfolded, and a map that opened sections under them as
+    // they read would be rearranging itself on every paragraph. So `visibleOnly` marks what is
+    // on screen (or the block standing for it) and moves the camera there, and unfolds nothing.
+    // When NONE of it is on screen — at the précis most claims are not drawn — it returns null
+    // and leaves the lights as they were, so the caller can look further back for a passage
+    // whose claims are: the section's head, lit while its section is being read.
+    if (opts && opts.visibleOnly) {
+      const shown = [...want].filter(id => drawn.has(id) ||
+        lastVis.nodes.some(n => (n.members || []).includes(id)));
+      if (!shown.length) return null;
+      lit = want;
+      applyLit();
+      return centreOn(shown, true);
+    }
     lit = want;                    // set before `reveal`, whose render paints from it
     // `reveal` renders when it had to unfold something. When it did not, repainting the marks
     // is enough — re-rendering would re-lay the map out to change a stroke.
@@ -6076,7 +6182,7 @@ function injectStyle() {
    without being scored.
    NB any dimming must use stroke-opacity, NOT opacity: the draw code sets element.style.opacity
    to fade an edge in, and an inline style beats any rule on the same property. */
-.alm-e.is-far{stroke-width:2.8}
+.alm-shape .alm-e.is-far{stroke-width:2.8}
 /* DIRECTION MARKS. Open chevrons repeating the arrowhead along a long line, because one head at
    the far end is not enough to follow an edge that crosses the map, and because the head itself
    is the thing most likely to be crowded. Open rather than solid so they read as "still going
@@ -6084,7 +6190,7 @@ function injectStyle() {
    stroke and must not eat its hover or its clicks. */
 .alm-dir{fill:none;pointer-events:none;transition:opacity var(--alm-dur,350ms) ease}
 .alm-dir path{fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.alm-dir.is-far path{stroke-width:2.4}
+.alm-shape .alm-dir.is-far path{stroke-width:2.4}
 /* Direction of the relation along the text was carried by a DASH, which was a mistake: dashes
    already mean undercut and contradiction, so a plain support looked like a different kind of
    relation the moment the arrangement changed. It is carried by weight now — a reach that runs
@@ -6123,9 +6229,9 @@ function injectStyle() {
    Pale for an unpaid justification joins that grammar instead of starting a second one.
 
    Both keep the colour that says whether they support or attack; only the value changes. */
-.alm-e.is-prepared{stroke-opacity:1}
-.alm-e.is-anticipated{stroke-opacity:.45}
-.alm-dir.is-anticipated path{stroke-opacity:.45}
+.alm-shape .alm-e.is-prepared{stroke-opacity:1}
+.alm-shape .alm-e.is-anticipated{stroke-opacity:.45}
+.alm-shape .alm-dir.is-anticipated path{stroke-opacity:.45}
 .alm-bar .alm-note{opacity:.7;font-variant-numeric:tabular-nums}
 .alm-g{cursor:pointer;transition:transform var(--alm-dur,350ms) cubic-bezier(.4,0,.2,1),
   opacity 220ms ease}

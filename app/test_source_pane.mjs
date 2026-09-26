@@ -51,7 +51,7 @@ const pageMarks = createRequire(import.meta.url)(path.join(HERE, "src", "argdown
 const splitWidth = lift("splitWidth");
 const soleWinner = lift("soleWinner");
 const sideLayout = lift("sideLayout", ["sideAxis"]);
-const scrollWithin = lift("scrollWithin");
+const scrollWithin = lift("scrollWithin", ["topWithin"]);
 const frontMatterAbstract = lift("frontMatterAbstract");
 
 let fails = 0;
@@ -265,29 +265,49 @@ console.log("scrollWithin (the pane scrolls, the page does not)");
 // `overflow:hidden` does not stop it — it forbids the reader scrolling, not the browser. One call
 // could push the whole page up and take the toolbar off the top of the window, which loses every
 // control in the app and cannot be scrolled back. So the pane is scrolled by hand instead.
-const host = (clientHeight, offsetTop = 0) => ({ clientHeight, offsetTop, scrollTop: 0 });
-const el = (offsetTop, offsetHeight = 20) => ({ offsetTop, offsetHeight });
+// Positions are read from the boxes on screen, as the browser reports them: a box's top moves up
+// as its pane scrolls. `offsetTop` is given too, set to what a list item would report, and must
+// be ignored -- see the list case below.
+const host = (clientHeight, top = 0) => ({ clientHeight, scrollTop: 0,
+                                           getBoundingClientRect: () => ({ top }) });
+const el = (hh, pageTop, offsetHeight = 20) => ({
+  offsetHeight, offsetTop: -8,
+  getBoundingClientRect: () => ({ top: pageTop - (hh ? hh.scrollTop : 0) }) });
 
 let h = host(400);
-scrollWithin(h, el(1000));
+scrollWithin(h, el(h, 1000));
 check("the target is centred in the pane", h.scrollTop, 1000 - (400 - 20) / 2);
 
 h = host(400);
-scrollWithin(h, el(10));
+scrollWithin(h, el(h, 10));
 check("a target near the top does not scroll past it", h.scrollTop, 0);
 
 h = host(400, 100);
-scrollWithin(h, el(1100));
+scrollWithin(h, el(h, 1100));
 check("the host's own offset is taken off", h.scrollTop, 1000 - (400 - 20) / 2);
 
 h = host(400);
-scrollWithin(h, el(500, 600));
+h.scrollTop = 3000;
+scrollWithin(h, el(h, 1000));
+check("from a pane already scrolled, the same place", h.scrollTop, 1000 - (400 - 20) / 2);
+
+// THE LIST CASE. Every block in the prose pane is position:relative (the page numbers hang from
+// it), so a paragraph inside a list item reports its offsetTop from the ITEM -- the -8 above --
+// and measuring by it sent 63 of Miller's 66 claims to the top of the pane. Every element here
+// carries that -8; only the screen position can land them.
+h = host(400);
+scrollWithin(h, el(h, 13500));
+check("a paragraph inside a list item is found where it is on screen", h.scrollTop,
+      13500 - (400 - 20) / 2);
+
+h = host(400);
+scrollWithin(h, el(h, 500, 600));
 check("an element taller than the pane is put at its top", h.scrollTop, 500 + (600 - 400) / 2);
 
 h = host(400);
 scrollWithin(h, null);
 check("a missing element is harmless", h.scrollTop, 0);
-scrollWithin(null, el(100));
+scrollWithin(null, el(null, 100));
 check("  and so is a missing host", true, true);
 
 /* THE ABSTRACT, out of the front matter the same cleanup blanks.
