@@ -5019,13 +5019,17 @@ function zotPaint(){
  *  and a bar on the first paragraph alone misreports where the mark IS. Walk forward while
  *  the annotation still holds the next block's opening words; capped, so a runaway match
  *  under-marks rather than painting the page. */
+var ZOT_PAGE_LINE = /^\s*<!--\s*(?:.*?\s)?p\.\s*\d+\s+begins here\s*-->\s*$/;
 function zotSpanEnd(text, chText, startLine){
   var norm = " " + String(text).replace(/\s+/g, " ").trim().toLowerCase() + " ";
   var lines = chText.split("\n");
   var last = startLine, i = startLine, hops = 0;
   while (hops < 10) {
     var j = i;                                  // the next non-empty line after block i
-    while (j < lines.length && !(lines[j] || "").trim()) j++;
+    // A page marker is where a page turns, not a block: a mark running onto the next page runs
+    // past it. (Stopping at it lost a crossing mark's tail once quotations began to match
+    // across markers, 27 Sep 2026.)
+    while (j < lines.length && (!(lines[j] || "").trim() || ZOT_PAGE_LINE.test(lines[j]))) j++;
     if (j >= lines.length) break;
     var opening = (lines[j] || "").replace(/\s+/g, " ").trim()
       .split(" ").slice(0, 5).join(" ").toLowerCase();
@@ -5185,11 +5189,12 @@ function startZotero(){
         // placed in a converted text (the same rule that places a claim's quotation).
         var line = window.ArgdownPositions
           ? window.ArgdownPositions.findQuote(text, ch.text) : null;
-        // A mark that crosses a PRINTED page break cannot match whole: the converted text
-        // carries a `<!-- p.N -->` marker between its halves and the annotation does not.
-        // Drop leading sentences until the rest places; the span walk below still extends
-        // forward, so at worst the previous page's tail goes unbarred, said by nothing
-        // being lost -- the mark is placed, not dropped.
+        // A mark that still cannot match whole -- its head spoiled by something the page
+        // carried and the conversion did not (a running head, a hyphen split across sheets):
+        // drop leading sentences until the rest places; the span walk below still extends
+        // forward, so at worst the previous page's tail goes unbarred, said by nothing being
+        // lost -- the mark is placed, not dropped. (A page marker between its halves no
+        // longer stops a match: findQuote folds it to a space, since 27 Sep 2026.)
         var dropped = false;
         if (line == null && window.ArgdownPositions) {
           var sents = text.split(". ");

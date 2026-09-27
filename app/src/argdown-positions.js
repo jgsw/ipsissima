@@ -276,7 +276,11 @@ var MIN_QUOTE = 10;
 var QUOTED = /[“”"«]([^“”"»]{10,})[“”"»]/g;
 var SUBS = { "‘": "'", "’": "'", "“": '"', "”": '"', "«": '"',
              "»": '"', "–": "-", "—": "-", "…": "...", " ": " " };
-var INVISIBLE = "*_`\\";
+var INVISIBLE = "*_`\\\u00ad";   // the soft hyphen as argdown_provenance.py has it
+/** A page marker folds to one space: it is where a page turns, not words on it, and read as
+ *  characters it made a sentence running across a page break unquotable (the Coleman-boat
+ *  reading, 27 Sep 2026). Twin of _PAGE_MARKER in argdown_provenance.py. */
+var PAGE_MARKER = /<!--\s*(?:[^\n]*?\s)?p\.\s*\d+\s+begins here\s*-->/g;
 
 /** Fold the differences that do not matter, and remember where each character came from, so a
  *  match can be turned back into a line number. Mirrors normalise() in argdown_provenance.py:
@@ -285,11 +289,17 @@ var INVISIBLE = "*_`\\";
  *  word, and treating the underscores as content turns a faithful quotation into a near miss. */
 function normalise(text) {
   var out = [], lines = [], line = 1, prevSpace = false, s = String(text || "");
+  var markerEnd = {}, mo;
+  if (s.indexOf("begins here") >= 0) {
+    PAGE_MARKER.lastIndex = 0;
+    while ((mo = PAGE_MARKER.exec(s)) !== null) markerEnd[mo.index] = mo.index + mo[0].length;
+  }
   for (var i = 0; i < s.length; i++) {
     var ch = s[i];
     if (ch === "\n") line++;
     if (INVISIBLE.indexOf(ch) >= 0) continue;
     var rep = SUBS[ch] != null ? SUBS[ch] : ch;
+    if (markerEnd[i] != null) { rep = " "; i = markerEnd[i] - 1; }
     if (ch === "\n" || /\s/.test(rep)) {
       if (prevSpace) continue;
       out.push(" "); lines.push(line); prevSpace = true;

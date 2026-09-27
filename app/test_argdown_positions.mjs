@@ -132,6 +132,17 @@ console.log("\nquotation location");
      P.findQuote("He wrote that culture ... this matters", src), 3);
   eq("a quotation that is not there gives nothing",
      P.findQuote("culture is a fixed inheritance", src), null);
+  // A PAGE MARKER IS WHERE A PAGE TURNS (twin of test_provenance_defaults.py). Mutation: stop
+  // folding markers in normalise -> the first three fail.
+  const paged = "The first page ends in the middle of a\n\n<!-- p.5 begins here -->\n\n" +
+                "sentence that runs on.\n\n<!-- Ethics p.6 begins here -->\nA volume's page.";
+  eq("a quotation runs across a page marker", P.findQuote("the middle of a sentence that runs on", paged), 1);
+  eq("  and across one that names its volume", P.findQuote("sentence that runs on. A volume's page", paged), 5);
+  eq("  and a claim that is the author's sentence across the break is still their words",
+     P.isVerbatim("ends in the middle of a sentence that runs on", paged), true);
+  eq("  but the marker's own words are not the text's", P.findQuote("p.5 begins here sentence that", paged), null);
+  eq("  and a soft hyphen is not content, as the checker has it",
+     P.findQuote("should be offered for free", "it should be \u00adoffered for free"), 1);
 }
 
 console.log("\npositions: precision order");
