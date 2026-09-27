@@ -274,5 +274,25 @@ check("a soft hyphen in the source does not break a quotation",
 check("  and the line map still lines up with the text",
       len(prov.normalise("a\u00adb\nc")[0]), len(prov.normalise("a\u00adb\nc")[1]))
 
+# A PAGE MARKER IS WHERE A PAGE TURNS. A sentence running across a page break has the marker in its
+# middle; read as characters, it made that sentence unquotable (the Coleman-boat reading, 27 Sep
+# 2026). Mutation: stop folding markers in normalise_indexed -> the first three fail.
+_PAGED = ("The first page ends in the middle of a\n\n<!-- p.5 begins here -->\n\n"
+          "sentence that runs on.\n\n<!-- Ethics p.6 begins here -->\nA volume's page.")
+check("a quotation runs across a page marker",
+      prov.find_quote("the middle of a sentence that runs on", _PAGED)[:2], ("exact", 1))
+check("  and across one that names its volume",
+      prov.find_quote("sentence that runs on. A volume's page", _PAGED)[0], "exact")
+check("  and a claim that is the author's sentence across the break is still their words",
+      prov._is_verbatim("ends in the middle of a sentence that runs on", _PAGED), True)
+check("  but the marker's own words are not the text's",
+      prov.find_quote("p.5 begins here sentence that", _PAGED)[0] == "exact", False)
+_n, _l = prov.normalise(_PAGED)
+check("  and the line map still lines up with the text", len(_n), len(_l))
+check("  with the words after a marker on their own line",
+      _l[_n.index("sentence")], _PAGED.split("\n").index("sentence that runs on.") + 1)
+check("an ordinary HTML comment is left alone",
+      "repaired" in prov.normalise("a <!-- repaired: x --> b")[0], True)
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

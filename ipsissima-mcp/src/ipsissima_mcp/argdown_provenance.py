@@ -56,6 +56,14 @@ _SUBS = {
 # that says exactly that (26 Sep 2026).
 _INVISIBLE = set("*_`\\\u00ad")
 
+# A PAGE MARKER IS WHERE A PAGE TURNS, NOT WORDS ON IT. `<!-- p.N begins here -->` sits in the
+# text at the break, and a sentence running from one page onto the next has the marker in its
+# middle. Read as characters, it made that sentence unquotable: on the Coleman-boat reading
+# (27 Sep 2026) three quotations failed until the markers were moved to sentence ends, which
+# made every pinpoint near a break a little wrong. A marker folds to one space, like the line
+# breaks around it. The same pattern as paginate.py and the app's PAGE_MARK.
+_PAGE_MARKER = re.compile(r"<!--\s*(?:[^\n]*?\s)?p\.\s*\d+\s+begins here\s*-->")
+
 
 def normalise(text):
     """Fold the differences that do not matter, and report where each character came from.
@@ -82,12 +90,18 @@ def normalise_indexed(text):
     out, lines, src = [], [], []
     line = 1
     prev_space = False
+    marker_end = {m.start(): m.end() for m in _PAGE_MARKER.finditer(text)} if "begins here" in text else {}
+    skip_to = 0
     for i, ch in enumerate(text):
+        if i < skip_to:
+            continue
         if ch == "\n":
             line += 1
         if ch in _INVISIBLE:
             continue
         rep = _SUBS.get(ch, ch)
+        if i in marker_end:
+            skip_to, rep = marker_end[i], " "
         if rep.isspace() or ch == "\n":
             if prev_space:
                 continue
