@@ -1,0 +1,47 @@
+// Planted GENERAL AND ITS CASES (27 Sep 2026, profile 1.7): a general claim that migration thins
+// the forest, and two regions where it did. Each kind names its general state, so the census
+// should find each region's step a CASE of the general step -- and the two regions' steps the same
+// step in two cases, as equals.
+===
+title: "Generals -- a general claim and two cases"
+mechanism:
+    question: "Does migration thin the forest, and did it in the north and the south?"
+    levels: [macro, micro]
+    actors:
+        region:   {label: "A region", level: macro}
+        herders:  {label: "Herding families", level: micro}
+        migrants: {label: "Rural migrants, in general", level: micro}
+    kinds:
+        migration: {label: "Rural-urban migration", general: migr}
+        forest:    {label: "Forest cover", general: forest}
+    states:
+        migr:     {label: "Rural-urban migration", actor: migrants, kind: migration, role: condition}
+        forest:   {label: "Forest cover", actor: region, kind: forest, role: outcome}
+        drought:  {label: "Drought in the north", actor: region, role: condition}
+        nmigr:    {label: "Northern herders' migration", actor: herders, kind: migration}
+        nforest:  {label: "The north's forest cover", actor: region, kind: forest, role: outcome}
+        smigr:    {label: "Southern migration", actor: herders, kind: migration, role: condition}
+        sforest:  {label: "The south's forest cover", actor: region, kind: forest, role: outcome}
+    chains:
+        general: {label: "The general claim", question: "Does migration thin the forest?"}
+        north:   {label: "The north", question: "What did drought do to the north's forest?"}
+        south:   {label: "The south", question: "Did migration thin the south's forest?"}
+===
+
+[Migration and forests]: Migration thins forests, in general and in two regions.
+
+[Migration thins forests]: Rural-urban migration thins the forest.
+    {causes: {from: migr, to: forest, sign: "-", basis: asserted, chain: general}}
+    +> [Migration and forests]
+
+[Drought drove herders out]: Drought drove northern herders to migrate.
+    {causes: {from: drought, to: nmigr, sign: "+", basis: asserted, chain: north}}
+    +> [Migration and forests]
+
+[Their going thinned the north's forest]: Their going thinned the north's forest.
+    {causes: {from: nmigr, to: nforest, sign: "-", basis: asserted, chain: north}}
+    +> [Migration and forests]
+
+[Migration thinned the south's forest]: Migration thinned the south's forest too.
+    {causes: {from: smigr, to: sforest, sign: "-", basis: asserted, chain: south}}
+    +> [Migration and forests]

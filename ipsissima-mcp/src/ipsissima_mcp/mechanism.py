@@ -195,6 +195,18 @@ def declared(fm):
                                   f"`mechanism: kinds:`", {"state": str(sid)}))
         else:
             of_kind.setdefault(str(k), []).append(sid)
+    # THE GENERAL AND ITS CASES (profile 1.7). A kind may name its general state: the paper's claim
+    # about rural-urban migration in general, of which the Kenyan herders' is a case.
+    for kid, k in kinds.items():
+        gen = k.get("general") if isinstance(k, dict) else None
+        if gen is None:
+            continue
+        if gen not in states:
+            problems.append(("!", f"kind `{kid}` is `general: {gen}`, which is not a declared state",
+                             {"kind": str(kid)}))
+        elif gen not in of_kind.get(str(kid), []):
+            problems.append(("!", f"kind `{kid}` is `general: {gen}`, but `{gen}` is not of kind "
+                                  f"`{kid}` -- give it `kind: {kid}`", {"kind": str(kid)}))
     for kid in kinds:
         if len(of_kind.get(str(kid), [])) < 2:
             problems.append(("?", f"kind `{kid}` has {len(of_kind.get(str(kid), []))} state(s): a "
@@ -515,25 +527,42 @@ def _kinds(block, states):
         k = k if isinstance(k, dict) else {}
         members = [i for i, st in states.items()
                    if isinstance(st, dict) and st.get("kind") is not None and str(st.get("kind")) == str(kid)]
+        gen = k.get("general")
         out.append(dict(id=str(kid), label=None if k.get("label") is None else str(k.get("label")),
-                        states=members))
+                        states=members, general=str(gen) if gen is not None and str(gen) in members else None))
     return out
 
 
-def _akin_steps(edges, kind_of):
+def _akin_steps(edges, kind_of, general=None, chains_of=None):
     """THE SAME STEP IN TWO CASES, computed rather than declared: two of the text's steps whose
     ends are each the same state or states of the same kind, and which are not one step. Merton's
     bank and his out-groups are one mechanism twice; the Coleman-boat paper's general migration
     and its Kenyan herders' are one kind of state in two cases. Nothing is walked between them."""
     def alike(x, y):
         return x == y or (kind_of.get(x) is not None and kind_of.get(x) == kind_of.get(y))
+    # A GENERAL STEP AND ITS CASE (profile 1.7): of two akin steps, one generalises the other when
+    # each of its ends is either the other's end or the general state of that end's kind.
+    general = general or {}
+    # TWO CASES ARE TWO CHAINS. Where steps say which chain they are in, two steps that share one
+    # are alternatives within one case, not the same step in two: the Coleman-boat reading's
+    # fishers who follow the fish and fishers who diversify locally were paired as two cases.
+    chains_of = chains_of or {}
+    def one_case(e, f):
+        return bool(chains_of.get(e, set()) & chains_of.get(f, set()))
+    def over(e, f):
+        return all(x == y or general.get(kind_of.get(y)) == x for x, y in zip(e, f))
     es = sorted(set(edges))
-    out = []
+    akin, instances = [], []
     for i, (a, b) in enumerate(es):
         for c, d in es[i + 1:]:
             if alike(a, c) and alike(b, d):
-                out.append([[a, b], [c, d]])
-    return out
+                if over((a, b), (c, d)):
+                    instances.append([[a, b], [c, d]])
+                elif over((c, d), (a, b)):
+                    instances.append([[c, d], [a, b]])
+                elif not one_case((a, b), (c, d)):
+                    akin.append([[a, b], [c, d]])
+    return akin, sorted(instances)
 
 
 def _chains(block):
@@ -705,7 +734,12 @@ def analyse(fm, doc):
     kinds = _kinds(block, states)
     kind_of = {i: str(st.get("kind")) for i, st in states.items()
                if isinstance(st, dict) and st.get("kind") is not None and any(k["id"] == str(st.get("kind")) for k in kinds)}
-    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of)
+    general = {k["id"]: k["general"] for k in kinds if k["general"]}
+    chains_of = {}
+    for s in text:
+        chains_of.setdefault((s["src"], s["dst"]), set()).update(s["chain"])
+    akin_steps, instances = _akin_steps({(s["src"], s["dst"]) for s in text}, kind_of, general, chains_of)
+    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of, instances)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
     profile = dict(
@@ -733,7 +767,7 @@ def analyse(fm, doc):
         with_how=sum(1 for s in text if isinstance(s["how"], dict)),
         with_given=sum(1 for s in text if s["given"]),
         chains=chain_profiles, unchained=unchained,
-        kinds=kinds, akin_steps=_akin_steps({(s["src"], s["dst"]) for s in text}, kind_of),
+        kinds=kinds, akin_steps=akin_steps, instances=instances,
     )
     for cp in chain_profiles:
         if not cp["steps"]:
@@ -742,7 +776,7 @@ def analyse(fm, doc):
     return findings, profile
 
 
-def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None):
+def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=()):
     """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
 
     A chain is its steps: the states it touches are those its steps run through (a co-cause
@@ -786,6 +820,14 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None):
             if there:
                 akin.append([i, kind_of[i], there])
         cp["akin"] = akin
+    # A CHAIN THAT IS A CASE OF ANOTHER (profile 1.7): how many of its steps are cases of a general
+    # step in each other chain.
+    edges_of = {c: {(s["src"], s["dst"]) for s in text if c in s["chain"]} for c in chains}
+    for cp in out:
+        mine = edges_of[cp["id"]]
+        cp["case_of"] = [[o["id"], n] for o in out if o["id"] != cp["id"]
+                         for n in [len({tuple(case) for gen, case in instances
+                                        if tuple(case) in mine and tuple(gen) in edges_of[o["id"]]})] if n]
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -876,13 +918,19 @@ def census(profile):
         for st, k, there in ch.get("akin", []):
             lines.append(f"              akin    {st} is {k}, as " +
                          "; ".join(f"{j} in {o}" for o, j in there))
+        for o, n in ch.get("case_of", []):
+            lines.append(f"              case of {o}: {n} of its steps {'is a case' if n == 1 else 'are cases'} "
+                         f"of a general step there")
     for k in p.get("kinds", []):
         if len(k["states"]) > 1:
             lines.append(f"      kind    {k['id']}" + (f" \"{k['label']}\"" if k.get("label") else "")
-                         + f": {', '.join(k['states'])} -- the same kind in different cases, not the "
-                         f"same state: nothing is walked between them")
+                         + f": {', '.join(k['states'])}"
+                         + (f" ({k['general']} the general, the rest its cases)" if k.get("general") else "")
+                         + " -- not the same state: nothing is walked between them")
     for (a, b), (c, d) in p.get("akin_steps", []):
         lines.append(f"      akin    {a} -> {b}  ~  {c} -> {d}: the same step in two cases")
+    for (a, b), (c, d) in p.get("instances", []):
+        lines.append(f"      case    {c} -> {d} is a case of the general step {a} -> {b}")
     if p.get("unchained"):
         lines.append(f"      chain   {p['unchained']} step(s) of the text's own belong to no chain")
     t = p["tiers"]

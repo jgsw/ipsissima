@@ -114,6 +114,29 @@ const KINDSF = path.join(FIXTURE, "kinds.argdown");
         "the page and the checker agree on kinds across cases and the step they share",
         differ.map(k => `${k}: python ${JSON.stringify(pyK[k])} js ${JSON.stringify(MK.profile[k])}`).join("\n          "));
 }
+// AND ON A GENERAL CLAIM AND TWO CASES (profile 1.7). Mutation: drop the orientation in
+// akinSteps -> `instances` and `akin_steps` differ from the checker's.
+const GENERALSF = path.join(FIXTURE, "generals.argdown");
+{
+  const pyG = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           GENERALSF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MG = MV.model(graphOf(GENERALSF));
+  const differ = Object.keys(pyG).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MG.profile.gaps.map(g => g.message) : MG.profile[k], pyG[k]));
+  // Two alternatives within one case are not two cases. Mutation: drop oneCase -> the pair appears.
+  const ALT = MV.model(graphOf.fromText(fs.readFileSync(GENERALSF, "utf8").replace("        smigr:",
+    "        nmove:    {label: \"Northern moves to town\", actor: herders, kind: migration}\n        smigr:") + `
+[Some moved to town]: Some northern herders moved to town, and that too thinned the forest.
+    {causes: {from: nmove, to: nforest, sign: "-", basis: asserted, chain: north}}
+    +> [Migration and forests]
+`));
+  check(!ALT.profile.akin_steps.some(pr => ["nmigr", "nmove"].includes(pr[0][0]) && ["nmigr", "nmove"].includes(pr[1][0])) &&
+        ALT.profile.akin_steps.length === 2,
+        "two alternatives within one case are not the same step in two cases", JSON.stringify(ALT.profile.akin_steps));
+  check(differ.length === 0 && pyG.instances.length === 2 && pyG.akin_steps.length === 1,
+        "the page and the checker agree on the general step, its cases, and the chains that are cases",
+        differ.map(k => `${k}: python ${JSON.stringify(pyG[k])} js ${JSON.stringify(MG.profile[k])}`).join("\n          "));
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");
@@ -840,6 +863,22 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(await page.locator("#mech select[data-chain]").inputValue() === "north" &&
           /Herders' migration/i.test(await page.locator(".amech-side h3").first().innerText()),
           "and opens the other case's chain at its state of that kind");
+
+    // THE GENERAL AND ITS CASES ON SCREEN (profile 1.7). Mutation: drop the instance list from the
+    // kind panel -> the check fails.
+    const genHtml = path.join(tmp, "generals.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), GENERALSF, "-o", genHtml], { stdio: "pipe" });
+    await page.goto("file://" + genHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    await page.locator('#mech .st[data-state="migr"] .kin').click();
+    await page.waitForTimeout(200);
+    const genSide = await page.locator(".amech-side").innerText();
+    check(/general\s+Rural-urban migration/i.test(genSide) && /a case\s+Northern herders' migration/i.test(genSide) &&
+          /The general step, and its cases/i.test(genSide) &&
+          /Northern herders' migration → The north's forest cover is a case of Rural-urban migration → Forest cover/.test(genSide),
+          "the kind's panel names the general state, its cases, and each case of the general step", genSide.slice(0, 400));
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {
     await browser.close();

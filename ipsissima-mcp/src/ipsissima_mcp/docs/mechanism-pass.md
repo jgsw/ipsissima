@@ -81,9 +81,10 @@ mechanism:
   An explanatory text with no recommendation has no intervention, and that is not a gap.
 - **`measured:`** when the text says how a state is measured, especially by a proxy it concedes.
 - **`part_of:`** where the text itself groups finer states into one: a box in its own diagram that
-  several states sit inside (Wimmer's strategies box and the five strategies), a typology under one
-  heading, or a general mechanism and the instances it is illustrated by (Merton's bank and his
-  out-groups). Declare the whole as a state and each finer state `part_of` it. The view then opens
+  several states sit inside (Wimmer's strategies box and the five strategies), or a typology under
+  one heading. Declare the whole as a state and each finer state `part_of` it. NOT for a general
+  mechanism and the cases it is illustrated by (Merton's bank and his out-groups): those are
+  `kinds:` with a `general:` state (below), since a case is not a part of the general claim. The view then opens
   at the text's own boxes, with every state one click away. Do not invent a whole the text does not
   draw or name.
 - **`levels:`** on a state that holds at more than its actor's level: an aggregate that is at once
@@ -104,7 +105,9 @@ mechanism:
   and in another. Declare the kind once, and give each such state `kind: <id>`. Keep them two
   states: making them one would walk from the case into the general claim, a step the text never
   takes. Use a kind only where the text itself treats the two as the same kind of thing — the
-  same word is not enough.
+  same word is not enough. Where one of them is the text's GENERAL claim and the others cases of
+  it (a general mechanism and the examples it is illustrated by), name it: `general: <state>`.
+  Leave it out where the cases are equals.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 

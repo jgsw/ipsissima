@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.6 — 27 September 2026.** The machine-readable registry of everything below is
+**Version 1.7 — 27 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -203,7 +203,7 @@ mechanism:
 | `chains.<id>` | `{label, question, roles}` | One of **several** chains the text sets out, each answering its own question; `roles` maps a state id to the role it plays in this chain, where that differs from its own (*added in 1.5*). |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
-| `kinds.<id>` | `{label}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*). |
+| `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
@@ -232,8 +232,9 @@ substantially reduces adoption".
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
 view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
 between two parts of one whole is counted rather than drawn. Declare it where the text itself
-groups finer states into one — a box in its own diagram, a typology under one heading, a general
-mechanism and its instances. A whole may be part of a larger whole; it may not contain itself.
+groups finer states into one — a box in its own diagram, a typology under one heading. A whole may
+be part of a larger whole; it may not contain itself. A general mechanism and its cases are not
+parts and a whole: since 1.6 and 1.7 they are states of one kind, with the general one named.
 
 **Joint causes (1.4).** "Belief that others comply moves people to comply, but only where they
 wish to fit in" is one step with two causes, neither enough alone. Two steps would say each
@@ -304,8 +305,19 @@ mechanism:
 Nothing is walked between states of one kind: routes, loops and gaps are what they were. What the
 census adds is computed, not declared — each kind with its states; each pair of the text's steps
 whose ends are each one state or states of one kind, **the same step in two cases**; and, for each
-chain, which of its states have kin in another. The view marks such a state ≈, and a click shows
+chain, which of its states have kin in another. Where steps say which chain they are in, two steps
+in one chain are alternatives within one case, not two cases, and are not paired. The view marks such a state ≈, and a click shows
 its kind, with each state of it and the chain it is in.
+
+**The general and its cases (1.7).** A kind is symmetric: its states are pairs of equals. Where one
+of them is the text's GENERAL claim and the others are cases of it — the paper's rural–urban
+migration and its Kenyan herders' — the kind names it: `migration: {label: "Rural-urban
+migration", general: migr}`. The census then orients what it finds. Of two steps the same across
+cases, one is the **general step** and the other **a case of it** when each end of the first is
+either the other's end or the general state of that end's kind; two cases of it remain the same
+step in two cases, as equals. A chain whose steps are cases of a general step in another chain is
+reported as a case of that chain. Nothing is declared on a step: Merton's bank and his out-groups
+become cases of his general mechanism by their states alone.
 
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
@@ -375,8 +387,9 @@ rule: name your gaps).
   state in two wholes would count every step through it twice once the boxes are collapsed.
 - **A general mechanism and its instances.** Merton gives one mechanism and illustrates it with the
   bank and with ethnic out-groups. Since 1.6, states of one `kind` make the census find the same
-  step in each case; what cannot be said is that one step is the *general* one and the others its
-  instances — the census pairs them as equals.
+  step in each case, and since 1.7 a kind's `general` state makes the general step the one the
+  others are cases of. What remains is a general step whose ends are not states the text names —
+  a mechanism stated only schematically — which has no general states to point to.
 - **Direction only, not size.** A `sign` says which way an effect runs; "insufficient but not null"
   (Merton on education), an effect size or a dose-response stays in the claim's own words. A
   finding of no effect is `"0"`; a weak effect is `+` or `-` with its note.
@@ -395,6 +408,11 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.7** (27 September 2026) added `general` on a kind: the state that is the general claim, of
+which the kind's other states are cases, so that the census reports a case of a general step, and
+a chain that is a case of another, rather than pairing them as equals. Every 1.6 file conforms
+unchanged.
 
 **1.6** (27 September 2026) added `kinds:` in the mechanism block and `kind` on a state: the same
 kind of state in different cases, never walked as one, with the steps two cases share found by
