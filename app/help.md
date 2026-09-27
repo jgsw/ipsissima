@@ -506,7 +506,9 @@ same state may play a different part — what one chain explains can be where th
 **The same kind in different cases.** A state marked **≈** is the same kind of thing as a state in
 another case — a general claim's rural–urban migration and one region's herders' migration — but
 not the same state: nothing runs from one to the other. Click ≈ to see every state of that kind,
-which chain each is in (with a button to open it), and any step the cases share.
+which chain each is in (with a button to open it), and any step the cases share. Where the text
+makes one of them the **general** claim and the others its cases, the panel says so, and lists each
+step that is a case of the general step.
 
 **Joint causes and states across levels.** Where the text says two things bring something about
 only *together* — a belief and a desire, say — the step is one arrow, and a **stem** runs from the

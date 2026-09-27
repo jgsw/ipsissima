@@ -280,7 +280,8 @@ function kindsOf(block) {
   var raw = obj(block.kinds);
   return Object.keys(raw).map(function (id) {
     var k = obj(raw[id]);
-    return { id: String(id), label: k.label == null ? null : String(k.label) };
+    return { id: String(id), label: k.label == null ? null : String(k.label),
+             general: k.general == null ? null : String(k.general) };
   });
 }
 
@@ -294,16 +295,30 @@ function kindMap(kinds, states, ids) {
 
 /** THE SAME STEP IN TWO CASES -- mechanism.py's _akin_steps: two steps whose ends are each the
  *  same state or states of one kind, and which are not one step. Nothing is walked between them. */
-function akinSteps(edges, kindOf) {
+function akinSteps(edges, kindOf, general, chainsOf) {
   var alike = function (x, y) { return x === y || (kindOf[x] != null && kindOf[x] === kindOf[y]); };
+  // A GENERAL STEP AND ITS CASE (profile 1.7) -- mechanism.py's `over`.
+  general = general || {};
+  // TWO CASES ARE TWO CHAINS -- mechanism.py's one_case.
+  chainsOf = chainsOf || {};
+  var oneCase = function (e, f) { var a = chainsOf[e[0] + "\u0000" + e[1]] || [], b = chainsOf[f[0] + "\u0000" + f[1]] || [];
+    return a.some(function (c) { return b.indexOf(c) >= 0; }); };
+  var over = function (e, f) { return [0, 1].every(function (p) { return e[p] === f[p] || general[kindOf[f[p]]] === e[p]; }); };
   var seen = {}, es = [];
   edges.forEach(function (e) { var k = e[0] + "\u0000" + e[1]; if (!seen[k]) { seen[k] = true; es.push(e); } });
   es.sort(function (p, q) { return p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0; });
-  var out = [];
+  var akin = [], instances = [];
   for (var i = 0; i < es.length; i++)
-    for (var j = i + 1; j < es.length; j++)
-      if (alike(es[i][0], es[j][0]) && alike(es[i][1], es[j][1])) out.push([es[i], es[j]]);
-  return out;
+    for (var j = i + 1; j < es.length; j++) {
+      if (!(alike(es[i][0], es[j][0]) && alike(es[i][1], es[j][1]))) continue;
+      if (over(es[i], es[j])) instances.push([es[i], es[j]]);
+      else if (over(es[j], es[i])) instances.push([es[j], es[i]]);
+      else if (!oneCase(es[i], es[j])) akin.push([es[i], es[j]]);
+    }
+  var key = function (pr) { return [pr[0][0], pr[0][1], pr[1][0], pr[1][1]]; };
+  instances.sort(function (p, q) { var a = key(p), b = key(q);
+    for (var k = 0; k < 4; k++) if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1; return 0; });
+  return { akin: akin, instances: instances };
 }
 
 /** Where a chain starts, what it reaches, its gaps and its routes -- mechanism.py's _walk, run
@@ -390,7 +405,7 @@ function chainIds(c, states, ids, mine) {
 
 /** Each chain walked on its own steps with its own roles, what it shares, and how many of the
  *  text's steps sit in no chain -- mechanism.py's _chain_profiles. */
-function chainProfiles(chains, states, ids, text, isReflexive, kindOf) {
+function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances) {
   var out = [], member = {};
   chains.forEach(function (c) {
     var mine = text.filter(function (s) { return s.chain.indexOf(c.id) >= 0; });
@@ -423,6 +438,22 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf) {
       out.forEach(function (o) { if (o.id === cp.id) return;
         o.states.forEach(function (j) { if (j !== i && kindOf[j] === kindOf[i]) there.push([o.id, j]); }); });
       if (there.length) cp.akin.push([i, kindOf[i], there]);
+    });
+  });
+  // A CHAIN THAT IS A CASE OF ANOTHER (profile 1.7): how many of its steps are cases of a general
+  // step in each other chain.
+  var edgesOf = {};
+  chains.forEach(function (c) { edgesOf[c.id] = {};
+    text.forEach(function (s) { if (s.chain.indexOf(c.id) >= 0) edgesOf[c.id][s.from + "\u0000" + s.to] = true; }); });
+  out.forEach(function (cp) {
+    cp.case_of = [];
+    out.forEach(function (o) {
+      if (o.id === cp.id) return;
+      var n = {};
+      (instances || []).forEach(function (pr) {
+        var g = pr[0][0] + "\u0000" + pr[0][1], c = pr[1][0] + "\u0000" + pr[1][1];
+        if (edgesOf[cp.id][c] && edgesOf[o.id][g]) n[c] = true; });
+      if (Object.keys(n).length) cp.case_of.push([o.id, Object.keys(n).length]);
     });
   });
   var loose = {};
@@ -466,7 +497,17 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   var loopsText = loops(ids, edges);
   var rs = W.routes;
   var kindOf = kindMap(kinds, states, ids);
-  var CP = chainProfiles(chains || [], states, ids, text, isReflexive, kindOf);
+  var kindList = (kinds || []).map(function (k) {
+    var members = ids.filter(function (i) { return kindOf[i] === k.id; });
+    return { id: k.id, label: k.label, states: members,
+             general: k.general != null && members.indexOf(k.general) >= 0 ? k.general : null }; });
+  var generalOf = {};
+  kindList.forEach(function (k) { if (k.general) generalOf[k.id] = k.general; });
+  var chainsOfEdge = {};
+  text.forEach(function (s) { var k = s.from + "\u0000" + s.to, l = chainsOfEdge[k] = chainsOfEdge[k] || [];
+    s.chain.forEach(function (c) { if (l.indexOf(c) < 0) l.push(c); }); });
+  var AK = akinSteps(uniqEdges(text), kindOf, generalOf, chainsOfEdge);
+  var CP = chainProfiles(chains || [], states, ids, text, isReflexive, kindOf, AK.instances);
   var spanned = {};
   Object.keys(used).forEach(function (i) {
     levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
@@ -520,9 +561,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     with_how: text.filter(function (s) { return !!s.how; }).length,
     with_given: text.filter(function (s) { return s.given.length > 0; }).length,
     chains: CP.chains, unchained: CP.unchained,
-    kinds: (kinds || []).map(function (k) {
-      return { id: k.id, label: k.label, states: ids.filter(function (i) { return kindOf[i] === k.id; }) }; }),
-    akin_steps: akinSteps(uniqEdges(text), kindOf)
+    kinds: kindList, akin_steps: AK.akin, instances: AK.instances
   };
 }
 
@@ -1343,6 +1382,7 @@ function create(container, graph, opts) {
     return KINDS.filter(function (x) { return x.id === k; })[0].states.filter(function (w) { return w !== v; }); };
   var chainsOfState = function (v) { return FULL.profile.chains.filter(function (c) { return c.states.indexOf(v) >= 0; })
     .map(function (c) { return c.id; }); };
+  var generalOfKind = function (k) { var x = KINDS.filter(function (y) { return y.id === k; })[0]; return x ? x.general : null; };
   var chainLabel = function (id) { var c = CHAINS.filter(function (x) { return x.id === id; })[0]; return c && c.label || id; };
   var cur = null;
   function remount() {
@@ -1580,7 +1620,9 @@ function create(container, graph, opts) {
                            transform: "translate(" + (elsewhere && elsewhere.length ? 36 : 10) + ",-5)" }, g);
         el("circle", { r: 10 }, km);
         el("text", { "text-anchor": "middle", y: 4 }, km).textContent = "≈";
-        el("title", {}, km).textContent = "The same kind of thing as " + kin.map(function (w) {
+        var gk = generalOfKind(kindOfState(v));
+        el("title", {}, km).textContent = (gk === v ? "The general case of which these are cases: " : gk ? "A case of the general " +
+          "“" + (obj(FULL.states[gk]).label || gk) + "”; the same kind of thing as " : "The same kind of thing as ") + kin.map(function (w) {
           var cs = chainsOfState(w); return "“" + (obj(FULL.states[w]).label || w) + "”" + (cs.length ? " (" + cs.map(chainLabel).join(", ") + ")" : ""); }).join(" and ") +
           " — a different state, in a different case; click to see them";
         km.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
@@ -1810,18 +1852,23 @@ function create(container, graph, opts) {
         '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
     } else if (selected && selected.kind) {
       var K = KINDS.filter(function (x) { return x.id === selected.kind; })[0];
-      var akin = (FULL.profile.akin_steps || []).filter(function (pr) {
-        return [pr[0][0], pr[0][1], pr[1][0], pr[1][1]].some(function (v) { return kindOfState(v) === selected.kind; }); });
+      var touches = function (pr) {
+        return [pr[0][0], pr[0][1], pr[1][0], pr[1][1]].some(function (v) { return kindOfState(v) === selected.kind; }); };
+      var akin = (FULL.profile.akin_steps || []).filter(touches), inst = (FULL.profile.instances || []).filter(touches);
       var nm = function (v) { return esc(obj(FULL.states[v]).label || v); };
       side.innerHTML = '<h3>' + esc(K.label || K.id) + '</h3>' +
-        '<div class="amech-focus">' + K.states.length + ' states of one kind: the same kind of thing in different cases, ' +
-        'not one state. The text never joins them, so no route runs from one to another.</div>' +
+        '<div class="amech-focus">' + K.states.length + ' states of one kind: ' +
+        (K.general ? 'a general state and its cases' : 'the same kind of thing in different cases') +
+        ', not one state. The text never joins them, so no route runs from one to another.</div>' +
         K.states.filter(function (v) { return !!G.nodes[v]; }).concat(K.states.filter(function (v) { return !G.nodes[v]; })).map(function (v) {
           var cs = chainsOfState(v), here = !!G.nodes[v];
-          return '<div class="amech-row"><span class="k">' + (here ? 'shown' : 'elsewhere') + '</span><span>' + nm(v) +
+          return '<div class="amech-row"><span class="k">' + (K.general ? (K.general === v ? '<b>general</b>' : 'a case') : (here ? 'shown' : 'elsewhere')) +
+            '</span><span>' + nm(v) +
             (cs.length ? ' <span class="amech-q">(' + cs.map(function (c) { return esc(chainLabel(c)); }).join(", ") + ')</span>' : '') +
             (!here && cs.length ? ' <button type="button" data-open-chain="' + esc(cs[0]) + '" data-open-state="' + esc(v) + '">Open ' +
               esc(chainLabel(cs[0])) + '</button>' : '') + '</span></div>'; }).join("") +
+        (inst.length ? '<h3>The general step, and its cases</h3>' + inst.map(function (pr) {
+          return '<div class="amech-q">' + nm(pr[1][0]) + ' → ' + nm(pr[1][1]) + ' is a case of ' + nm(pr[0][0]) + ' → ' + nm(pr[0][1]) + '</div>'; }).join("") : '') +
         (akin.length ? '<h3>The same step in two cases</h3>' + akin.map(function (pr) {
           return '<div class="amech-q">' + nm(pr[0][0]) + ' → ' + nm(pr[0][1]) + ' ≈ ' + nm(pr[1][0]) + ' → ' + nm(pr[1][1]) + '</div>'; }).join("") : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
@@ -1864,7 +1911,9 @@ function create(container, graph, opts) {
         })() +
         (kinOf(selected.state).length ? '<div class="amech-row"><span class="k">kind</span><span><button type="button" data-kind-show="' +
           esc(kindOfState(selected.state)) + '">' + esc((KINDS.filter(function (x) { return x.id === kindOfState(selected.state); })[0] || {}).label || kindOfState(selected.state)) +
-          '</button> <span class="amech-q">with ' + kinOf(selected.state).length + ' other state' + (kinOf(selected.state).length === 1 ? '' : 's') + '</span></span></div>' : '') +
+          '</button> <span class="amech-q">' + (generalOfKind(kindOfState(selected.state)) === selected.state ? 'the general, with ' + kinOf(selected.state).length + ' case' + (kinOf(selected.state).length === 1 ? '' : 's')
+            : generalOfKind(kindOfState(selected.state)) ? 'a case of the general “' + esc(obj(FULL.states[generalOfKind(kindOfState(selected.state))]).label || '') + '”'
+            : 'with ' + kinOf(selected.state).length + ' other state' + (kinOf(selected.state).length === 1 ? '' : 's')) + '</span></span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
         // often make differently (mechanism-pass.md), so the reader is shown it.

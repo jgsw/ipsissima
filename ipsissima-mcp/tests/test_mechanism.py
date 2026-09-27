@@ -382,6 +382,39 @@ for bad, why in ((KINDS.replace("kind: migration, role: condition}", "kind: movi
                  (KINDS.replace("        forest:    {label: \"Forest cover\"}", "        forest:    {label: \"Forest cover\"}\n        water: {label: \"Water\"}"), "kind `water` has 0 state(s)")):
     check(f"a bad 1.6 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
+print("\nprofile 1.7: the general and its cases")
+# THE COLEMAN BOAT'S NEXT LIMIT (27 Sep 2026): a kind was symmetric, so the paper's general claim
+# about migration and its Kenyan case were paired as equals; and Merton's general mechanism could
+# not be told from its instances.
+GENERALS = (FIXTURE / "generals.argdown").read_text(encoding="utf-8")
+rg = run(GENERALS)
+chg = rg["shape"].get("chain") or {}
+check("each kind names its general state", [[k["id"], k["general"]] for k in chg.get("kinds", [])],
+      [["migration", "migr"], ["forest", "forest"]])
+# Mutation: drop the orientation in _akin_steps -> all three pairs come back as akin.
+check("each region's step is a case of the general step", chg.get("instances"),
+      [[["migr", "forest"], ["nmigr", "nforest"]], [["migr", "forest"], ["smigr", "sforest"]]])
+check("  and the two regions' steps are the same step in two cases, as equals", chg.get("akin_steps"),
+      [[["nmigr", "nforest"], ["smigr", "sforest"]]])
+cg = {c["id"]: c for c in chg.get("chains", [])}
+check("a chain is a case of the chain its general step is in", [cg["north"]["case_of"], cg["south"]["case_of"], cg["general"]["case_of"]],
+      [[["general", 1]], [["general", 1]], []])
+half = run(GENERALS.replace(", general: forest}", "}"))["shape"]["chain"]
+check("a step is a case only where every end that differs is the general state",
+      [len(half["instances"]), len(half["akin_steps"])], [0, 3])
+ALT = GENERALS.replace("        smigr:", "        nmove:    {label: \"Northern moves to town\", actor: herders, kind: migration}\n        smigr:") + """
+[Some moved to town]: Some northern herders moved to town, and that too thinned the forest.
+    {causes: {from: nmove, to: nforest, sign: "-", basis: asserted, chain: north}}
+    +> [Migration and forests]
+"""
+# Mutation: drop one_case -> nmigr -> nforest ~ nmove -> nforest comes back as two cases.
+check("two alternatives within one case are not the same step in two cases",
+      [pr for pr in run(ALT)["shape"]["chain"]["akin_steps"] if pr[0][0] in ("nmigr", "nmove") and pr[1][0] in ("nmigr", "nmove")], [])
+check("a kind with no general state pairs its steps as equals, as in 1.6", len(run(KINDS)["shape"]["chain"]["instances"]), 0)
+for bad, why in ((GENERALS.replace("general: migr}", "general: migrants}"), "`general: migrants`, which is not a declared state"),
+                 (GENERALS.replace("general: migr}", "general: drought}"), "`drought` is not of kind `migration`")):
+    check(f"a bad 1.7 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402
