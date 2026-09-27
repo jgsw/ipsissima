@@ -1,0 +1,49 @@
+// Planted SEVERAL CHAINS (27 Sep 2026, profile 1.5): two boats sharing a state. Drought drives
+// migration, which clears forest (what the first chain explains); forest cover then sets the
+// water table (where the second begins, so its role there is a condition, not an outcome). One
+// step belongs to no chain, and the second chain has a gap of its own.
+===
+title: "Chains -- two planted boats"
+mechanism:
+    question: "How do migration and water tables couple through the forest?"
+    levels: [macro, micro]
+    actors:
+        region:   {label: "The region", level: macro}
+        families: {label: "Farming families", level: micro}
+    states:
+        drought:   {label: "Drought", actor: region, role: condition}
+        migration: {label: "Migration", actor: families}
+        forest:    {label: "Forest cover", actor: region, role: outcome}
+        water:     {label: "Water table", actor: region, role: outcome}
+        wells:     {label: "Well digging", actor: families}
+    chains:
+        drought:
+            label: "Drought and migration"
+            question: "Why does drought clear the forest?"
+        water:
+            label: "Forest and water"
+            question: "What does forest loss do to the water table?"
+            roles: {forest: condition}
+===
+
+[The coupling]: Migration and water tables are coupled through the forest.
+
+[Drought drives migration]: Drought drives families to migrate.
+    {causes: {from: drought, to: migration, sign: "+", basis: asserted, chain: drought}}
+    +> [The coupling]
+
+[Migration clears forest]: Migrants clear forest for farmland.
+    {causes: {from: migration, to: forest, sign: "-", basis: asserted, chain: drought}}
+    +> [The coupling]
+
+[Forest holds water]: Forest cover holds up the water table.
+    {causes: {from: forest, to: water, sign: "+", basis: asserted, chain: water}}
+    +> [The coupling]
+
+[Falling water sets people digging]: A falling water table sets families digging wells.
+    {causes: {from: water, to: wells, sign: "-", basis: asserted, chain: water}}
+    +> [The coupling]
+
+[Drought lowers water]: Drought lowers the water table.
+    {causes: {from: drought, to: water, sign: "-", basis: asserted}}
+    +> [The coupling]

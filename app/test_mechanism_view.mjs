@@ -88,6 +88,19 @@ const JOINTF = path.join(FIXTURE, "joint.argdown");
         "the page and the checker agree on a joint step and a state across levels",
         differ.map(k => `${k}: python ${JSON.stringify(pyJ[k])} js ${JSON.stringify(MJ.profile[k])}`).join("\n          "));
 }
+// AND ON TWO PLANTED CHAINS (profile 1.5): each walked with its own roles, and what couples them.
+// Mutation: drop a chain's `roles:` in chainStates -> `chains` differs from the checker's.
+const CHAINSF = path.join(FIXTURE, "chains.argdown");
+{
+  const pyC = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           CHAINSF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MC = MV.model(graphOf(CHAINSF));
+  const differ = Object.keys(pyC).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MC.profile.gaps.map(g => g.message) : MC.profile[k], pyC[k]));
+  check(differ.length === 0 && pyC.chains.length === 2 && pyC.unchained === 1,
+        "the page and the checker agree on two chains, their roles and what they share",
+        differ.map(k => `${k}: python ${JSON.stringify(pyC[k])} js ${JSON.stringify(MC.profile[k])}`).join("\n          "));
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");
@@ -297,6 +310,26 @@ check(same(MV.FIDELITY_DASH, { quotation: "", paraphrase: "6 2", compression: "4
   // as a returning arc.
   const ore = L.edges.find(e => e.from === "order" && e.to === "reoff" && e.layer === "text" && e.kind === "step");
   check(ore && !ore.back, "a loop closed only by the appraisal does not turn the text's own step back on itself");
+}
+
+console.log("\nseveral chains (profile 1.5)");
+{
+  const MC = MV.model(graphOf(CHAINSF));
+  const D = MV.chainModel(MC, "drought"), W = MV.chainModel(MC, "water");
+  // Mutation: build a chain's model from every step -> each carries all five.
+  check(same(D.ids, ["drought", "migration", "forest"]) && same(W.ids, ["forest", "water", "wells"]) &&
+        D.steps.length === 2 && W.steps.length === 2,
+        "a chain is drawn from its own steps and the states they touch", JSON.stringify([D.ids, W.ids]));
+  check(D.states.forest.role === "outcome" && W.states.forest.role === "condition",
+        "and each casts the shared state in its own role", JSON.stringify([D.states.forest.role, W.states.forest.role]));
+  check(W.question === "What does forest loss do to the water table?" && same(W.chain.shared, { forest: ["drought"] }),
+        "and asks its own question, knowing what it shares", JSON.stringify(W.chain));
+  check(same(MV.collapseModel(W).chain, W.chain), "the text's own boxes keep the chain being shown");
+  // Mutation: keep every actor in a chain's model -> the water chain's micro lane names the families.
+  check(same(Object.keys(D.actors).sort(), ["families", "region"]) && same(Object.keys(W.actors).sort(), ["families", "region"]) &&
+        same(MV.layout(MV.chainModel(MV.model(graphOf.fromText(fs.readFileSync(CHAINSF, "utf8")
+          .replace("families: {label: \"Farming families\", level: micro}", "families: {label: \"Farming families\", level: micro}\n        fishers: {label: \"Fishers\", level: micro}"))), "drought")).lanes.map(l => l.actors), [["The region"], ["Farming families"]]),
+        "a chain's lanes name only the actors its states use", JSON.stringify(Object.keys(D.actors)));
 }
 
 console.log("\nsteps between states stacked in one column");
@@ -751,6 +784,28 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(200);
     check(/only together with Desire to fit in/.test(await page.locator(".amech-side").innerText()),
           "and the step's panel says it holds only together with it");
+
+    // SEVERAL CHAINS ON SCREEN (profile 1.5). Mutations: open at every chain together -> the
+    // first check fails; drop the ⇄ handler -> clicking it leaves the chain as it was.
+    const chainsHtml = path.join(tmp, "chains.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), CHAINSF, "-o", chainsHtml], { stdio: "pipe" });
+    await page.goto("file://" + chainsHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const drawnStates = () => page.evaluate(() => [...document.querySelectorAll("#mech .st")].map(g => g.getAttribute("data-state")).sort());
+    check(same(await drawnStates(), ["drought", "forest", "migration"]) &&
+          /Why does drought clear the forest/.test(await page.locator("#mech .amech-q").first().innerText()),
+          "it opens at the first chain, asking that chain's question", JSON.stringify(await drawnStates()));
+    await page.locator('#mech .st[data-state="forest"] .shared').click();
+    await page.waitForTimeout(300);
+    check(same(await drawnStates(), ["forest", "water", "wells"]) &&
+          await page.locator('#mech .st[data-state="forest"]').evaluate(g => g.classList.contains("condition")),
+          "⇄ on the shared state opens the other chain, where it is the condition", JSON.stringify(await drawnStates()));
+    await page.locator("#mech select[data-chain]").selectOption("");
+    await page.waitForTimeout(300);
+    check((await drawnStates()).length === 5 && await page.locator("#mech .shared").count() === 0,
+          "and every chain together draws the whole, with no ⇄ to follow");
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {
     await browser.close();

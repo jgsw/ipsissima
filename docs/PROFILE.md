@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.4 — 26 September 2026.** The machine-readable registry of everything below is
+**Version 1.5 — 27 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -200,6 +200,7 @@ mechanism:
 | key | value | meaning |
 |---|---|---|
 | `question` | string | What the chain answers. |
+| `chains.<id>` | `{label, question, roles}` | One of **several** chains the text sets out, each answering its own question; `roles` maps a state id to the role it plays in this chain, where that differs from its own (*added in 1.5*). |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*). |
@@ -224,6 +225,7 @@ substantially reduces adoption".
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
 | `selects` | boolean | A **selection link**: who ends up on each side, not an effect. |
 | `hedged` | boolean | The text puts the step as a possibility. |
+| `chain` | chain id, or list of them | Which of the declared chains the step belongs to (*added in 1.5*). |
 | `jointly` | state id, or list of them | The step holds **only together with** these states: a joint cause, not two causes each sufficient alone (*added in 1.4*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
@@ -251,6 +253,34 @@ Reasons map draws linked premises: a stem from each co-cause to a bar across the
 society; Wimmer's consensus, negotiated between individuals and holding as a field's — declares
 them: `levels: [macro, micro]`. It is drawn as one box through every lane from its top level to
 its bottom, and it counts toward the chain's height at each. Its actor stays the one that holds it.
+
+**Several chains (1.5).** A text that answers several questions sets out several chains: the
+Coleman-boat paper's drought and migration in northern Kenya, its fisheries, its segregation
+model. Declare each under `chains:` with its own `label` and `question`, and mark each step with
+the chain it belongs to:
+
+```argdown
+===
+mechanism:
+    question: "How do migration and water tables couple through the forest?"
+    chains:
+        drought: {label: "Drought and migration", question: "Why does drought clear the forest?"}
+        water:   {label: "Forest and water", question: "What does forest loss do to the water table?",
+                  roles: {forest: condition}}
+    ...
+===
+
+[Migration clears forest]: Migrants clear forest for farmland.
+    {causes: {from: migration, to: forest, sign: "-", basis: asserted, chain: drought}}
+```
+
+A chain is its steps: its states are those its steps run through, with any it gives a role to. A
+state two chains share is what **couples** them, and a chain may cast it in a role of its own —
+forest cover is what the first chain explains and where the second begins, one boat's outcome the
+next one's condition. The census walks each chain on its own (its routes, loops and gaps, with its
+own roles) as well as the whole, and names what each shares with which other and in what role
+there. The view opens at the first chain, laid out alone; a shared state carries ⇄, which opens the
+other chain; *every chain together* draws the whole. A step marked with no chain is counted.
 
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
@@ -300,10 +330,20 @@ What this profile cannot yet say, found by reading real texts with it. Each says
 what to do meanwhile; a limit is named here rather than worked round silently (the project's own
 rule: name your gaps).
 
-- **A role is fixed, but some texts' roles change with the phase of a cycle.** In Wimmer (2008,
-  p. 1010) a boundary feature is an outcome in one phase and a condition of the next. A role list
-  says a state is both, not *when*. Say when in the state's `note:`; the loop or feedback system the
-  census reports already shows that the chain turns.
+- **A role changes with the phase of a cycle.** In Wimmer (2008, p. 1010) a boundary feature is an
+  outcome in one phase and a condition of the next. Since 1.5 a chain may give a state a role of its
+  own, so phases the text sets out as separate questions can be separate chains; a single cycle
+  whose phases are not separate questions still says *when* only in the state's `note:`.
+- **Scales, not levels.** `levels` is one list for the whole file, and every chain shares it. The
+  Coleman-boat paper talks of "scales rather than levels", with a macro that "is not a fixed-size
+  scale": its deforestation example's local, regional and national endpoints all fall into
+  `macro`. Name the scale in the state's label.
+- **The Coleman boat's own anatomy** — its corners A to D and its situational, action-formation,
+  feedback and transformational arrows — has no mark of its own; roles, levels and the steps carry
+  most of it, and the rest goes in notes.
+- **A feedback that changes a link.** A step's target is a state, never another step or a
+  condition of one: "the rules of the game change", or a feedback "influencing … background
+  conditions", is said in words (`given:`, `note:`).
 - **`part_of` is a tree: a state sits in one box.** Where a text's own diagram puts one concept in two
   boxes — Wimmer's Fig. 2 draws the field's distribution of power and, inside its consensus box, the
   degree of power inequality — make two states, each in its box, with the step between them. One
@@ -329,6 +369,11 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.5** (27 September 2026) added `chains:` in the mechanism block and `chain` on a step: several
+chains in one text, each walked and drawn on its own, a chain's roles its own, and the states they
+share what couples them — for the Coleman-boat paper's several cases (Martínez-Peña and Ylikoski
+2024). Every 1.4 file conforms unchanged.
 
 **1.4** (26 September 2026) added `jointly` on a step and `levels` on a state, for the Coleman
 boat's situational and transformational steps (Martínez-Peña and Ylikoski 2024): a macro condition

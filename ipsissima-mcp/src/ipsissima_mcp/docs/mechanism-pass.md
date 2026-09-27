@@ -91,6 +91,14 @@ mechanism:
   a consensus negotiated between individuals that holds as the field's. `levels: [macro, micro]`
   draws it across both. Its `actor` stays the one that holds it. Use it where the text says the
   state is at both levels, not merely that it is caused at one and felt at another — that is a step.
+- **`chains:`** where the text answers SEVERAL questions, each with a chain of its own: a paper
+  that works through several cases (the Coleman-boat paper's drought and migration, its
+  fisheries, its segregation model), or a theory whose phases the text sets out as separate
+  questions. Declare each with a `label` and the `question` it answers, and mark every step with
+  `chain: <id>` (a list, for a step two chains share). Where a state one chain explains is where
+  another begins, give it that role in the second: `roles: {forest: condition}`. One question
+  with one chain needs none of this. Do not split a single argument into chains to make a busy
+  diagram smaller — a chain is a question the TEXT answers apart.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 

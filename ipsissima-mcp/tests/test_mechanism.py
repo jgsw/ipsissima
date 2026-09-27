@@ -331,6 +331,33 @@ for bad, why in ((JOINT.replace("jointly: [desire]", "jointly: [wish]"), "`joint
                  (JOINT.replace("levels: [macro, micro], role", "levels: [macro, mezzo], role"), "names level `mezzo`")):
     check(f"a bad 1.4 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
+print("\nprofile 1.5: several chains, coupled by the states they share")
+# THE COLEMAN BOAT'S OWN LIMIT (27 Sep 2026): its cases are several boats, one boat's outcome the
+# next one's condition, and one `mechanism:` block with one question could say neither.
+CHAINS = (FIXTURE / "chains.argdown").read_text(encoding="utf-8")
+rc = run(CHAINS)
+chc = rc["shape"].get("chain") or {}
+cs = {c["id"]: c for c in chc.get("chains", [])}
+check("each chain is walked on its own steps", [cs["drought"]["steps"], cs["water"]["steps"]], [2, 2])
+check("  in declared order", [c["id"] for c in chc.get("chains", [])], ["drought", "water"])
+check("  on the states its steps touch", cs["water"]["states"], ["forest", "water", "wells"])
+# Mutation: ignore a chain's `roles:` -> forest is an outcome in both, and the water chain has no start.
+check("a chain casts a shared state in a role of its own", [cs["drought"]["roles"]["forest"], cs["water"]["roles"]["forest"]],
+      [["outcome"], ["condition"]])
+check("  so the second chain starts where the first ends", cs["water"]["entries"], ["forest"])
+check("what couples them: the state each shares, with whom", [cs["drought"]["shared"], cs["water"]["shared"]],
+      [[["forest", ["water"]]], [["forest", ["drought"]]]])
+check("a chain's gaps are its own", cs["water"]["gaps"], ["`wells` leads nowhere in the text: the chain stops there"])
+check("the whole is still walked whole", [len(chc["routes"]), chc["steps"]], [2, 5])
+check("a step in no chain is counted", chc.get("unchained"), 1)
+check("a file with no chains has none, and counts none", [(run(JOINT)["shape"]["chain"]).get(k) for k in ("chains", "unchained")], [[], 0])
+for bad, why in ((CHAINS.replace("chain: water}}", "chain: wetlands}}", 1), "`chain: wetlands` is not one of the chains"),
+                 (CHAINS.replace("roles: {forest: condition}", "roles: {woodland: condition}"), "gives a role to `woodland`, which is not"),
+                 (CHAINS.replace("roles: {forest: condition}", "roles: {forest: explanandum}"), "the role `explanandum`"),
+                 (CHAINS.replace(", chain: water}}", "}}"), "chain `water` is declared but no step"),
+                 (JOINT.replace("jointly: [desire]}", "jointly: [desire], chain: boat}"), "declares no `chains:`")):
+    check(f"a bad 1.5 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

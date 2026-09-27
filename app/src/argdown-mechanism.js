@@ -134,16 +134,19 @@ function model(graph) {
         how: raw.how && typeof raw.how === "object" ? raw.how : null,
         reflexive: !!raw.reflexive, supports: supports,
         // JOINTLY (profile 1.4): the states together with which alone the step holds.
-        jointly: asList(raw.jointly)
+        jointly: asList(raw.jointly),
+        // CHAIN (profile 1.5): which of the text's chains the step belongs to.
+        chain: asList(raw.chain)
       });
     });
   });
   var ok = steps.filter(function (s) { return has(states, s.from) && has(states, s.to); });
+  var chains = chainsOf(block);
   return { levels: levels, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
-           question: block.question == null ? "" : String(block.question),
+           question: block.question == null ? "" : String(block.question), chains: chains,
            profile: profile(levels, actors, states, ids, ok,
-                            m.appraisal != null ? m.appraisal : appraisalClaims) };
+                            m.appraisal != null ? m.appraisal : appraisalClaims, chains) };
 }
 
 function reach(start, edges) {
@@ -260,25 +263,20 @@ function routes(start, goal, edges, ids) {
                             longest: Math.max.apply(null, lengths) } : null;
 }
 
-function uniqEdges(steps) {
-  var seen = {}, out = [];
-  steps.forEach(function (s) { var k = s.from + "\u0000" + s.to;
-    if (!seen[k]) { seen[k] = true; out.push([s.from, s.to]); } });
+/** The chains a block declares (profile 1.5), in declared order -- mechanism.py's _chains. */
+function chainsOf(block) {
+  var raw = obj(block.chains), out = [];
+  Object.keys(raw).forEach(function (id) {
+    var c = obj(raw[id]);
+    out.push({ id: String(id), label: c.label == null ? null : String(c.label),
+               question: c.question == null ? null : String(c.question), roles: obj(c.roles) });
+  });
   return out;
 }
 
-/** Gross's dimensions and the light and shadow, in the text's own layer -- mechanism.py's
- *  profile, field for field, so the census and the page cannot disagree. */
-function profile(levels, actors, states, ids, steps, appraisalClaims) {
-  var causal = steps.filter(function (s) { return !s.isNull && !s.selects; });
-  var textAll = steps.filter(function (s) { return s.layer === "text"; });
-  var text = causal.filter(function (s) { return s.layer === "text"; });
-  var edges = uniqEdges(text);
-  // A CO-CAUSE IS A CAUSE, as the checker has it: routes, loops and dead ends run through it.
-  var seenEdge = {}; edges.forEach(function (e) { seenEdge[e[0] + "\u0000" + e[1]] = true; });
-  text.forEach(function (s) { s.jointly.forEach(function (j) {
-    var k = j + "\u0000" + s.to;
-    if (has(states, j) && j !== s.to && !seenEdge[k]) { seenEdge[k] = true; edges.push([j, s.to]); } }); });
+/** Where a chain starts, what it reaches, its gaps and its routes -- mechanism.py's _walk, run
+ *  on the whole text's chain and, since profile 1.5, on each of its chains. */
+function walkChain(ids, states, edges) {
   var interventions = ids.filter(function (i) { return hasRole(states[i], "intervention"); });
   var conditions = ids.filter(function (i) { return hasRole(states[i], "condition"); });
   var outcomes = ids.filter(function (i) { return hasRole(states[i], "outcome"); });
@@ -291,7 +289,6 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   var reached = {};
   entries.forEach(function (e) { var r = reach(e, edges); for (var k in r) reached[k] = true; });
   var used = {}; edges.forEach(function (e) { used[e[0]] = used[e[1]] = true; });
-
   var gaps = [];
   interventions.forEach(function (i) {
     if (!from[i]) gaps.push({ kind: "unlinked-intervention", state: i,
@@ -321,6 +318,91 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   if (!outcomes.length)
     gaps.push({ kind: "no-outcome", state: null,
                 message: "no state has `role: outcome`, so nothing says what the chain is for" });
+  var rs = [];
+  entries.forEach(function (e) { outcomes.forEach(function (o) {
+    if (o === e) return;          // both where the circle starts and what it explains
+    var r = routes(e, o, edges, ids);
+    if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
+  }); });
+  return { entries: entries, gaps: gaps, used: used, outcomes: outcomes, routes: rs };
+}
+
+/** A co-cause is a cause: the steps' edges, with each co-cause's edge to the step's `to`. */
+function edgesWithCoCauses(steps, states) {
+  var edges = uniqEdges(steps);
+  var seenEdge = {}; edges.forEach(function (e) { seenEdge[e[0] + "\u0000" + e[1]] = true; });
+  steps.forEach(function (s) { (s.jointly || []).forEach(function (j) {
+    var k = j + "\u0000" + s.to;
+    if (has(states, j) && j !== s.to && !seenEdge[k]) { seenEdge[k] = true; edges.push([j, s.to]); } }); });
+  return edges;
+}
+
+/** A chain's states, each in the role the chain gives it where it gives one. */
+function chainStates(c, states, cids) {
+  var out = {};
+  cids.forEach(function (i) {
+    if (has(c.roles, i)) { var copy = {}; for (var k in obj(states[i])) copy[k] = states[i][k]; copy.role = c.roles[i]; out[i] = copy; }
+    else out[i] = states[i];
+  });
+  return out;
+}
+
+/** The states a chain touches: those its steps run through (a co-cause among them), with any
+ *  state it gives a role to, in declared order. */
+function chainIds(c, states, ids, mine) {
+  var touched = {};
+  edgesWithCoCauses(mine, states).forEach(function (e) { touched[e[0]] = touched[e[1]] = true; });
+  Object.keys(c.roles).forEach(function (k) { if (has(states, k)) touched[k] = true; });
+  return ids.filter(function (i) { return touched[i]; });
+}
+
+/** Each chain walked on its own steps with its own roles, what it shares, and how many of the
+ *  text's steps sit in no chain -- mechanism.py's _chain_profiles. */
+function chainProfiles(chains, states, ids, text, isReflexive) {
+  var out = [], member = {};
+  chains.forEach(function (c) {
+    var mine = text.filter(function (s) { return s.chain.indexOf(c.id) >= 0; });
+    var edges = edgesWithCoCauses(mine, states);
+    var cids = chainIds(c, states, ids, mine);
+    var cstates = chainStates(c, states, cids);
+    var W = walkChain(cids, cstates, edges);
+    var best = {}, titles = {};
+    mine.forEach(function (s) { best[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; titles[s.claim.title] = true; });
+    var roles = {};
+    cids.forEach(function (i) { var r = rolesOf(cstates[i]).slice().sort(); if (r.length) roles[i] = r; });
+    out.push({ id: c.id, label: c.label, question: c.question,
+               steps: Object.keys(best).length, claims: Object.keys(titles).length, states: cids,
+               roles: roles, entries: W.entries, routes: W.routes,
+               loops: loops(cids, edges).map(function (l) { return { states: l, reflexive: isReflexive(l, mine) }; }),
+               gaps: W.gaps.map(function (g) { return g.message; }), shared: [] });
+    cids.forEach(function (i) { (member[i] = member[i] || []).push(c.id); });
+  });
+  out.forEach(function (cp) {
+    cp.shared = cp.states.filter(function (i) { return member[i].length > 1; })
+      .map(function (i) { return [i, member[i].filter(function (o) { return o !== cp.id; })]; });
+  });
+  var loose = {};
+  if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
+  return { chains: out, unchained: Object.keys(loose).length };
+}
+
+function uniqEdges(steps) {
+  var seen = {}, out = [];
+  steps.forEach(function (s) { var k = s.from + "\u0000" + s.to;
+    if (!seen[k]) { seen[k] = true; out.push([s.from, s.to]); } });
+  return out;
+}
+
+/** Gross's dimensions and the light and shadow, in the text's own layer -- mechanism.py's
+ *  profile, field for field, so the census and the page cannot disagree. */
+function profile(levels, actors, states, ids, steps, appraisalClaims, chains) {
+  var causal = steps.filter(function (s) { return !s.isNull && !s.selects; });
+  var textAll = steps.filter(function (s) { return s.layer === "text"; });
+  var text = causal.filter(function (s) { return s.layer === "text"; });
+  // A CO-CAUSE IS A CAUSE, as the checker has it: routes, loops and dead ends run through it.
+  var edges = edgesWithCoCauses(text, states);
+  var W = walkChain(ids, states, edges);
+  var entries = W.entries, used = W.used, gaps = W.gaps;
 
   // Keyed by SIGN as well: fee -> health (-) and (+, under a condition) are two steps.
   var best = {};
@@ -338,12 +420,8 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
   }
   var pool = causal.filter(function (s) { return s.layer !== "rival"; });
   var loopsText = loops(ids, edges);
-  var rs = [];
-  entries.forEach(function (e) { outcomes.forEach(function (o) {
-    if (o === e) return;          // both where the circle starts and what it explains
-    var r = routes(e, o, edges, ids);
-    if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
-  }); });
+  var rs = W.routes;
+  var CP = chainProfiles(chains || [], states, ids, text, isReflexive);
   var spanned = {};
   Object.keys(used).forEach(function (i) {
     levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
@@ -395,7 +473,8 @@ function profile(levels, actors, states, ids, steps, appraisalClaims) {
     appraisal_claims: appraisalClaims,
     appraisal_steps: steps.filter(function (s) { return s.layer === "appraisal"; }).length,
     with_how: text.filter(function (s) { return !!s.how; }).length,
-    with_given: text.filter(function (s) { return s.given.length > 0; }).length
+    with_given: text.filter(function (s) { return s.given.length > 0; }).length,
+    chains: CP.chains, unchained: CP.unchained
   };
 }
 
@@ -1149,8 +1228,43 @@ function collapseModel(M) {
   return { levels: M.levels, actors: M.actors, states: states, ids: ids, steps: steps,
            dropped: M.dropped, appraisalClaims: M.appraisalClaims, question: M.question,
            profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims),
+           chains: [], chain: M.chain,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
+}
+
+/** ONE OF THE TEXT'S CHAINS (profile 1.5), as a model of its own: the states its steps touch, each
+ *  in the role the chain gives it, and its steps -- the text's own marked with it, and a rival's or
+ *  the appraisal's marked with it or, unmarked, running between two of its states. Laid out on its
+ *  own: the Coleman-boat paper's six cases drawn together were a thicket, and each is a question
+ *  the text answers apart (F7). `chain.shared` says, for each state, which other chains it is in. */
+function chainModel(M, id) {
+  var c = (M.chains || []).filter(function (x) { return x.id === id; })[0];
+  if (!c) return M;
+  var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && s.chain.indexOf(id) >= 0; });
+  var inIds = {};
+  chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
+  M.steps.forEach(function (s) { if (s.chain.indexOf(id) >= 0) {
+    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
+  var ids = M.ids.filter(function (i) { return inIds[i]; });
+  var steps = M.steps.filter(function (s) {
+    return s.chain.indexOf(id) >= 0 || (s.layer !== "text" && !s.chain.length && inIds[s.from] && inIds[s.to]); });
+  var states = chainStates(c, M.states, ids);
+  var appr = {};
+  steps.forEach(function (s) { if (s.layer === "appraisal") appr[s.claim.title] = true; });
+  var shared = {};
+  var mine = M.profile.chains.filter(function (x) { return x.id === id; })[0];
+  (mine ? mine.shared : []).forEach(function (sh) { shared[sh[0]] = sh[1]; });
+  // Only the actors its states name: the lanes' headings list who acts at each level, and above
+  // the Kenya chain they listed the fisheries' and Madagascar's actors too.
+  var actors = {};
+  ids.forEach(function (i) { var a = obj(M.states[i]).actor; if (has(M.actors, a)) actors[a] = M.actors[a]; });
+  (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
+  return { levels: M.levels, actors: actors, states: states, ids: ids, steps: steps,
+           dropped: 0, appraisalClaims: Object.keys(appr).length,
+           question: c.question || M.question, chains: [],
+           chain: { id: c.id, label: c.label || c.id, shared: shared },
+           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, []) };
 }
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
@@ -1167,11 +1281,16 @@ function create(container, graph, opts) {
   // moving between the text's own boxes and every state mounts afresh. The host holds this one
   // controller throughout.
   var hasWholes = FULL.profile.wholes.length > 0;
-  var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal };
+  // SEVERAL CHAINS OPEN AT THE FIRST (F7), each laid out on its own; "every chain together" is
+  // one choice away.
+  var CHAINS = FULL.chains || [];
+  var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
+               chain: CHAINS.length ? CHAINS[0].id : null };
   var cur = null;
   function remount() {
     container.innerHTML = "";
-    cur = mount(keep.boxes ? collapseModel(FULL) : FULL);
+    var base = keep.chain ? chainModel(FULL, keep.chain) : FULL;
+    cur = mount(keep.boxes ? collapseModel(base) : base);
   }
   remount();
   return {
@@ -1185,6 +1304,8 @@ function create(container, graph, opts) {
     getFolded: function () { return cur.getFolded(); },
     setBoxes: function (on) { keep.boxes = !!on && hasWholes; remount(); },
     getBoxes: function () { return keep.boxes; },
+    setChain: function (id) { keep.chain = CHAINS.some(function (c) { return c.id === id; }) ? id : null; remount(); },
+    getChain: function () { return keep.chain; },
     destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
   };
 
@@ -1226,6 +1347,10 @@ function create(container, graph, opts) {
 
   var bar = document.createElement("div"); bar.className = "amech-bar";
   bar.innerHTML =
+    (CHAINS.length ? '<label class="amech-tog chain" title="The text answers several questions, each with a chain of its own">Chain <select data-chain>' +
+      CHAINS.map(function (c) { return '<option value="' + esc(c.id) + '"' + (keep.chain === c.id ? ' selected' : '') + '>' +
+        esc(c.label || c.id) + '</option>'; }).join("") +
+      '<option value=""' + (keep.chain ? '' : ' selected') + '>Every chain together</option></select></label>' : '') +
     '<div class="amech-q">' + esc(M.question) + '</div>' +
     (M.profile.rival_steps ? '<label class="amech-tog rival"><input type="checkbox" data-layer="rival" checked>' +
       '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
@@ -1239,7 +1364,7 @@ function create(container, graph, opts) {
     (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from where the chain starts to its outcomes: the states between are folded, and what lies off that line is set aside">' + endsLabel + '</button>' : '') +
     // Offered only where the map declares wholes (F2). Named for what a click will show.
     (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
-      (M === FULL ? "The text’s own boxes" : "Show every state") + '</button>' : '') +
+      (keep.boxes ? "Show every state" : "The text’s own boxes") + '</button>' : '') +
     '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
   container.appendChild(bar);
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
@@ -1375,6 +1500,19 @@ function create(container, graph, opts) {
           " states, " + SYS[fi].loops + (SYS[fi].capped ? "+" : "") + " loops — click to see it alone";
         mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: fi }); });
       });
+      // WHAT COUPLES THE CHAINS (profile 1.5): a state this chain shares with another carries ⇄ at
+      // its left corner; a click opens the other chain, where the state plays its part there.
+      var elsewhere = M.chain && M.chain.shared[v];
+      if (elsewhere && elsewhere.length) {
+        var other = CHAINS.filter(function (c) { return c.id === elsewhere[0]; })[0];
+        var sh = el("g", { "class": "loopmark shared", "data-shared": elsewhere[0], transform: "translate(10,-5)" }, g);
+        el("circle", { r: 10 }, sh);
+        el("text", { "text-anchor": "middle", y: 4 }, sh).textContent = "⇄";
+        el("title", {}, sh).textContent = "Also in " + elsewhere.map(function (o) {
+          var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
+          " — click to see " + (other && other.label || elsewhere[0]);
+        sh.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; remount(); });
+      }
       // A co-cause is linked: its step is the one it joins (profile 1.4).
       if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0) && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
@@ -1551,7 +1689,12 @@ function create(container, graph, opts) {
       (M.collapsed.parts === 1 ? '' : 's') + ' drawn inside ' + M.collapsed.wholes + ' of them' +
       (M.collapsed.inside ? '; ' + M.collapsed.inside + ' step' + (M.collapsed.inside === 1 ? '' : 's') + ' between parts of one box not drawn' : '') +
       '. <b>Show every state</b> draws each apart; the counts below are of what is drawn.</div>' : '';
-    return boxesNote + foldedHTML() + '<h3>The chain</h3>' +
+    var chainNote = M.chain ? '<div class="amech-focus">One of the text’s ' + CHAINS.length + ' chains: <b>' + esc(M.chain.label) + '</b>.' +
+      (Object.keys(M.chain.shared).length ? ' It shares ' + Object.keys(M.chain.shared).map(function (v) {
+        return '“' + esc(label(v)) + '” with ' + M.chain.shared[v].map(function (o) {
+          var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return '“' + esc(x && x.label || o) + '”'; }).join(" and "); }).join("; ") +
+        ' (⇄ on the state opens the other).' : ' It shares no state with another chain.') + '</div>' : '';
+    return chainNote + boxesNote + foldedHTML() + '<h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       '<div class="amech-row"><span class="k">height</span><span>' + P.levels_spanned.length + ' of ' + P.levels.length + ' levels' +
         (P.levels_spanned.length ? ': ' + esc(P.levels_spanned.join(", ")) : '') + '</span></div>' +
@@ -1688,6 +1831,8 @@ function create(container, graph, opts) {
   });
   var boxesBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-boxes]"));
   if (boxesBtn) boxesBtn.addEventListener("click", function () { keep.boxes = !keep.boxes; remount(); });
+  var chainSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-chain]"));
+  if (chainSel) chainSel.addEventListener("change", function () { keep.chain = chainSel.value || null; remount(); });
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
@@ -1732,7 +1877,7 @@ function create(container, graph, opts) {
   }
 }
 
-var API = { model: model, layout: layout, create: create, foldable: foldable, collapseModel: collapseModel, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;
