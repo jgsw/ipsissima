@@ -358,6 +358,30 @@ for bad, why in ((CHAINS.replace("chain: water}}", "chain: wetlands}}", 1), "`ch
                  (JOINT.replace("jointly: [desire]}", "jointly: [desire], chain: boat}"), "declares no `chains:`")):
     check(f"a bad 1.5 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
+print("\nprofile 1.6: the same kind of state across cases")
+# THE COLEMAN BOAT'S NEXT LIMIT (27 Sep 2026): Kenyan herders' migration and the paper's general
+# rural-urban migration are two states the text never joins -- one kind in two cases. `part_of`
+# would draw them as one box; one state would walk from the case into the general claim.
+KINDS = (FIXTURE / "kinds.argdown").read_text(encoding="utf-8")
+rk = run(KINDS)
+chk = rk["shape"].get("chain") or {}
+check("each kind is listed with its states", [[k["id"], k["states"]] for k in chk.get("kinds", [])],
+      [["migration", ["kmigr", "migr"]], ["forest", ["kforest", "forest"]]])
+# Mutation: let `alike` ignore kinds -> no akin step.
+check("the case's step is found to be the general step again", chk.get("akin_steps"),
+      [[["kmigr", "kforest"], ["migr", "forest"]]])
+# Mutation: walk a kind as though it were one state -> a route runs from drought to `forest`.
+check("and nothing is walked between them", sorted((r["start"], r["outcome"]) for r in chk["routes"]),
+      [("drought", "kforest"), ("migr", "forest")])
+ck = {c["id"]: c for c in chk.get("chains", [])}
+check("each chain says which of its states have kin in another", ck["north"]["akin"],
+      [["kmigr", "migration", [["general", "migr"]]], ["kforest", "forest", [["general", "forest"]]]])
+check("  and a kin is not a shared state", [ck["north"]["shared"], ck["general"]["shared"]], [[], []])
+check("a file with no kinds lists none", [(run(CHAINS)["shape"]["chain"]).get(k) for k in ("kinds", "akin_steps")], [[], []])
+for bad, why in ((KINDS.replace("kind: migration, role: condition}", "kind: moving, role: condition}"), "`kind: moving`, which is not declared"),
+                 (KINDS.replace("        forest:    {label: \"Forest cover\"}", "        forest:    {label: \"Forest cover\"}\n        water: {label: \"Water\"}"), "kind `water` has 0 state(s)")):
+    check(f"a bad 1.6 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

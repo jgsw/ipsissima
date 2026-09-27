@@ -101,6 +101,19 @@ const CHAINSF = path.join(FIXTURE, "chains.argdown");
         "the page and the checker agree on two chains, their roles and what they share",
         differ.map(k => `${k}: python ${JSON.stringify(pyC[k])} js ${JSON.stringify(MC.profile[k])}`).join("\n          "));
 }
+// AND ON A GENERAL CLAIM AND ITS CASE (profile 1.6): kinds, the akin step, each chain's kin.
+// Mutation: let akinSteps ignore kinds -> `akin_steps` differs from the checker's.
+const KINDSF = path.join(FIXTURE, "kinds.argdown");
+{
+  const pyK = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           KINDSF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MK = MV.model(graphOf(KINDSF));
+  const differ = Object.keys(pyK).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MK.profile.gaps.map(g => g.message) : MK.profile[k], pyK[k]));
+  check(differ.length === 0 && pyK.kinds.length === 2 && pyK.akin_steps.length === 1,
+        "the page and the checker agree on kinds across cases and the step they share",
+        differ.map(k => `${k}: python ${JSON.stringify(pyK[k])} js ${JSON.stringify(MK.profile[k])}`).join("\n          "));
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");
@@ -806,6 +819,27 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(300);
     check((await drawnStates()).length === 5 && await page.locator("#mech .shared").count() === 0,
           "and every chain together draws the whole, with no ⇄ to follow");
+
+    // THE SAME KIND ACROSS CASES ON SCREEN (profile 1.6). Mutations: drop the ≈ badge -> the first
+    // check fails; drop the open-chain handler -> the chain does not change.
+    const kindsHtml = path.join(tmp, "kinds.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), KINDSF, "-o", kindsHtml], { stdio: "pipe" });
+    await page.goto("file://" + kindsHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const kinMarked = await page.evaluate(() => [...document.querySelectorAll("#mech .kin")].map(m => m.closest(".st").getAttribute("data-state")).sort());
+    check(same(kinMarked, ["forest", "migr"]), "≈ marks each state whose kind another state shares, in whatever chain", JSON.stringify(kinMarked));
+    await page.locator('#mech .st[data-state="migr"] .kin').click();
+    await page.waitForTimeout(200);
+    const kindSide = await page.locator(".amech-side").innerText();
+    check(/2 states of one kind/.test(kindSide) && /Herders' migration/.test(kindSide) && /The same step in two cases/i.test(kindSide),
+          "clicking it shows the kind: its states, where each is, and the step the cases share", kindSide.slice(0, 200));
+    await page.locator(".amech-side button[data-open-chain]").click();
+    await page.waitForTimeout(400);
+    check(await page.locator("#mech select[data-chain]").inputValue() === "north" &&
+          /Herders' migration/i.test(await page.locator(".amech-side h3").first().innerText()),
+          "and opens the other case's chain at its state of that kind");
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {
     await browser.close();

@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.5 — 27 September 2026.** The machine-readable registry of everything below is
+**Version 1.6 — 27 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -203,7 +203,8 @@ mechanism:
 | `chains.<id>` | `{label, question, roles}` | One of **several** chains the text sets out, each answering its own question; `roles` maps a state id to the role it plays in this chain, where that differs from its own (*added in 1.5*). |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*). |
+| `kinds.<id>` | `{label}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*). |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -282,6 +283,30 @@ own roles) as well as the whole, and names what each shares with which other and
 there. The view opens at the first chain, laid out alone; a shared state carries ⇄, which opens the
 other chain; *every chain together* draws the whole. A step marked with no chain is counted.
 
+**The same kind across cases (1.6).** Two states can be the same kind of thing in different
+cases without being one state: the Coleman-boat paper's general rural–urban migration and its
+Kenyan herders' migration, which the text never joins. One state would walk from the case into the
+general claim, inventing a step; `part_of` would draw them as one box. Declare the kind once, and
+let each state say it is of it:
+
+```argdown
+===
+mechanism:
+    kinds:
+        migration: {label: "Rural-urban migration"}
+    states:
+        kmigr: {label: "Herders' migration", actor: herders, kind: migration}
+        migr:  {label: "Rural-urban migration", actor: migrants, kind: migration}
+    ...
+===
+```
+
+Nothing is walked between states of one kind: routes, loops and gaps are what they were. What the
+census adds is computed, not declared — each kind with its states; each pair of the text's steps
+whose ends are each one state or states of one kind, **the same step in two cases**; and, for each
+chain, which of its states have kin in another. The view marks such a state ≈, and a click shows
+its kind, with each state of it and the chain it is in.
+
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
 its shortest loops rather than listing every loop.
@@ -349,8 +374,9 @@ rule: name your gaps).
   degree of power inequality — make two states, each in its box, with the step between them. One
   state in two wholes would count every step through it twice once the boxes are collapsed.
 - **A general mechanism and its instances.** Merton gives one mechanism and illustrates it with the
-  bank and with ethnic out-groups. `part_of` can place each instance's states inside a general
-  state, but a *step* cannot be marked as an instance of a general step.
+  bank and with ethnic out-groups. Since 1.6, states of one `kind` make the census find the same
+  step in each case; what cannot be said is that one step is the *general* one and the others its
+  instances — the census pairs them as equals.
 - **Direction only, not size.** A `sign` says which way an effect runs; "insufficient but not null"
   (Merton on education), an effect size or a dose-response stays in the claim's own words. A
   finding of no effect is `"0"`; a weak effect is `+` or `-` with its note.
@@ -369,6 +395,11 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.6** (27 September 2026) added `kinds:` in the mechanism block and `kind` on a state: the same
+kind of state in different cases, never walked as one, with the steps two cases share found by
+the census — for the Coleman-boat paper's general migration and its Kenyan case. Every 1.5 file
+conforms unchanged.
 
 **1.5** (27 September 2026) added `chains:` in the mechanism block and `chain` on a step: several
 chains in one text, each walked and drawn on its own, a chain's roles its own, and the states they

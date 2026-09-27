@@ -177,6 +177,29 @@ def declared(fm):
     # drought and migration, its fisheries, its segregation model -- gives each its own chain; a
     # state two chains share is what couples them, and a chain may cast a state in a role of its
     # own, since one chain's outcome is the next one's condition.
+    # THE SAME KIND ACROSS CASES (profile 1.6). Kenyan herders' migration and the paper's general
+    # rural-urban migration are two states, not one: the text never joins them, and walking from
+    # one to the other would invent a step. Nor is either part of the other. A kind says they are
+    # the same kind of thing in different cases -- and nothing more.
+    kinds = m.get("kinds")
+    if kinds is not None and not isinstance(kinds, dict):
+        problems.append(("!", "`kinds:` must map ids to kinds, each with a `label`", {}))
+    kinds = kinds if isinstance(kinds, dict) else {}
+    of_kind = {}
+    for sid, st in states.items():
+        k = st.get("kind") if isinstance(st, dict) else None
+        if k is None:
+            continue
+        if str(k) not in {str(x) for x in kinds}:
+            problems.append(("!", f"state `{sid}` is `kind: {k}`, which is not declared under "
+                                  f"`mechanism: kinds:`", {"state": str(sid)}))
+        else:
+            of_kind.setdefault(str(k), []).append(sid)
+    for kid in kinds:
+        if len(of_kind.get(str(kid), [])) < 2:
+            problems.append(("?", f"kind `{kid}` has {len(of_kind.get(str(kid), []))} state(s): a "
+                                  f"kind says that two or more states are the same kind of thing",
+                             {"kind": str(kid)}))
     chains = m.get("chains")
     if chains is not None and not isinstance(chains, dict):
         problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
@@ -483,6 +506,36 @@ def _walk(ids, states, text_edges, has_block):
     return dict(entries=entries, gaps=gaps, used=used, outcomes=outcomes, routes=routes)
 
 
+def _kinds(block, states):
+    """The kinds a block declares (profile 1.6), in declared order, each with its label and the
+    declared states of that kind, in declared order."""
+    raw = (block or {}).get("kinds") if isinstance(block, dict) else None
+    out = []
+    for kid, k in (raw.items() if isinstance(raw, dict) else ()):
+        k = k if isinstance(k, dict) else {}
+        members = [i for i, st in states.items()
+                   if isinstance(st, dict) and st.get("kind") is not None and str(st.get("kind")) == str(kid)]
+        out.append(dict(id=str(kid), label=None if k.get("label") is None else str(k.get("label")),
+                        states=members))
+    return out
+
+
+def _akin_steps(edges, kind_of):
+    """THE SAME STEP IN TWO CASES, computed rather than declared: two of the text's steps whose
+    ends are each the same state or states of the same kind, and which are not one step. Merton's
+    bank and his out-groups are one mechanism twice; the Coleman-boat paper's general migration
+    and its Kenyan herders' are one kind of state in two cases. Nothing is walked between them."""
+    def alike(x, y):
+        return x == y or (kind_of.get(x) is not None and kind_of.get(x) == kind_of.get(y))
+    es = sorted(set(edges))
+    out = []
+    for i, (a, b) in enumerate(es):
+        for c, d in es[i + 1:]:
+            if alike(a, c) and alike(b, d):
+                out.append([[a, b], [c, d]])
+    return out
+
+
 def _chains(block):
     """The chains a mechanism block declares (profile 1.5), in declared order: {id: {label,
     question, roles}}, with anything malformed read as absent (declared() names it)."""
@@ -649,7 +702,10 @@ def analyse(fm, doc):
                              shortest=[dict(states=l, reflexive=reflexive(l, text)) for l in shortest]))
     loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all})
     routes = W["routes"]
-    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive)
+    kinds = _kinds(block, states)
+    kind_of = {i: str(st.get("kind")) for i, st in states.items()
+               if isinstance(st, dict) and st.get("kind") is not None and any(k["id"] == str(st.get("kind")) for k in kinds)}
+    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
     profile = dict(
@@ -677,6 +733,7 @@ def analyse(fm, doc):
         with_how=sum(1 for s in text if isinstance(s["how"], dict)),
         with_given=sum(1 for s in text if s["given"]),
         chains=chain_profiles, unchained=unchained,
+        kinds=kinds, akin_steps=_akin_steps({(s["src"], s["dst"]) for s in text}, kind_of),
     )
     for cp in chain_profiles:
         if not cp["steps"]:
@@ -685,7 +742,7 @@ def analyse(fm, doc):
     return findings, profile
 
 
-def _chain_profiles(chains, states, text, ids, reflexive):
+def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None):
     """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
 
     A chain is its steps: the states it touches are those its steps run through (a co-cause
@@ -716,6 +773,19 @@ def _chain_profiles(chains, states, text, ids, reflexive):
     for cp in out:
         cp["shared"] = [[i, [o for o in member[i] if o != cp["id"]]] for i in cp["states"]
                         if len(member[i]) > 1]
+    # AND WHAT IS AKIN (profile 1.6): a state of this chain whose kind a DIFFERENT state has in
+    # another chain -- a weaker tie than a shared state, and reported as one.
+    kind_of = kind_of or {}
+    for cp in out:
+        akin = []
+        for i in cp["states"]:
+            if i not in kind_of:
+                continue
+            there = [[o["id"], j] for o in out if o["id"] != cp["id"] for j in o["states"]
+                     if j != i and kind_of.get(j) == kind_of[i]]
+            if there:
+                akin.append([i, kind_of[i], there])
+        cp["akin"] = akin
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -803,6 +873,16 @@ def census(profile):
             there = "; ".join(f"{o}: " + ("/".join(by_id[o]["roles"].get(st, [])) or "no role")
                               for o in others)
             lines.append(f"              shares  {st} ({here} here) with {there}")
+        for st, k, there in ch.get("akin", []):
+            lines.append(f"              akin    {st} is {k}, as " +
+                         "; ".join(f"{j} in {o}" for o, j in there))
+    for k in p.get("kinds", []):
+        if len(k["states"]) > 1:
+            lines.append(f"      kind    {k['id']}" + (f" \"{k['label']}\"" if k.get("label") else "")
+                         + f": {', '.join(k['states'])} -- the same kind in different cases, not the "
+                         f"same state: nothing is walked between them")
+    for (a, b), (c, d) in p.get("akin_steps", []):
+        lines.append(f"      akin    {a} -> {b}  ~  {c} -> {d}: the same step in two cases")
     if p.get("unchained"):
         lines.append(f"      chain   {p['unchained']} step(s) of the text's own belong to no chain")
     t = p["tiers"]
