@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.7",
+  "version": "1.8",
   "date": "2026-09-27",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -84,13 +84,22 @@
     "sign": {"type": "enum", "values": ["+", "-", "0", "which"], "summary": "+ raises, - lowers, \"0\" a finding of no effect, which decides which alternative follows (since 1.2)."},
     "basis": {"type": "enum", "values": ["study", "statistics", "model", "example", "testimony", "asserted"], "summary": "What the text offers for the step."},
     "lag": {"type": "string"},
-    "given": {"type": "list of strings", "summary": "Conditions the text states, in its words."},
+    "period": {"type": "string", "summary": "When the step holds, in the text's words anchored to an event: during culling, after it ended (since 1.8)."},
+    "on": {"type": "level | trend", "summary": "Whether the step moves the level of its `to` (the default) or its trend: slows a rise, speeds a fall (since 1.8)."},
+    "given": {"type": "list of strings or {state, value}", "summary": "Conditions the text states, in its words, or (since 1.8) a declared state and the value it has."},
     "how": {"type": "map", "keys": {"actor": "an actor id", "situation": "string", "habit": "string", "response": "string"}},
     "reflexive": {"type": "boolean"},
     "selects": {"type": "boolean", "summary": "A selection link: who ends up on each side, not an effect."},
     "hedged": {"type": "boolean", "summary": "The text puts the step as a possibility."},
     "chain": {"type": "chain id or list of chain ids", "summary": "Which declared chain(s) the step belongs to (since 1.5)."},
-    "jointly": {"type": "state id or list of state ids", "summary": "The step holds only together with these states: a joint cause (since 1.4)."}
+    "jointly": {"type": "state id or list of state ids", "summary": "The step holds only together with these states: a joint cause (since 1.4)."},
+    "unless": {"type": "state id or list of state ids", "summary": "The step holds unless these states hold: a blocker, walked as a cause of the opposite sign (since 1.8)."},
+    "despite": {"type": "state id or list of state ids", "summary": "The step held although these states acted against it: a blocker that failed, reported and not walked (since 1.8)."},
+    "regime": {"type": "string", "summary": "The regime the step holds in, in the text's words: a dose, a place, a model. Routes are composed only within one regime (since 1.8)."},
+    "threshold": {"type": "string", "summary": "The threshold the step acts past, in the text's words: the step is not a monotone rise or fall (since 1.8)."},
+    "share": {"type": "entire | most | partial | none", "summary": "How much of the step runs by its `via` route: all of it (the default), most, part, or none of it (since 1.8)."},
+    "size": {"type": "string or {value, unit, ci, versus, at}", "summary": "The magnitude the text gives for the step, quoted: an effect size, with its interval, comparison and time (since 1.8)."},
+    "via": {"type": "state id or list of state ids", "summary": "The finer route the text opens this step into, in order: the step IS that route, walked once (since 1.8)."}
   },
 
   "source_frontmatter": {

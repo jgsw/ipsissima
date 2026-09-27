@@ -134,12 +134,46 @@ substantially reduces adoption".
 | `selects` | `true` where the link holds because of WHO ends up on each side, not because one brings the other about (below) |
 | `hedged` | `true` where the text puts the step as a possibility — "fees *may* worsen targeting" |
 | `jointly` | states the step holds **only together with**: `jointly: [desire]` where belief moves people to act "only where they wish to fit in" |
+| `period` | when the step holds, in the text's words anchored to an event: `"after culling ended"` |
+| `on` | `trend` where the step moves the trend of its `to`, not its level: the levy slowed obesity's rise |
+| `unless` | a state that **blocks** the step where it holds: `unless: defence` on hazard → harm |
+| `despite` | a state that acted against the step and **failed**: `despite: culling` |
+| `regime` | the regime the step holds in, in the text's words: `"at clinical doses"`, `"outside the cull zone"` |
+| `threshold` | the threshold the step acts past, in the text's words: `"above about 3°C of local warming"` |
+| `size` | the magnitude the text gives, quoted: `"a third of the cost"`, or `{value: -1.6, unit: "percentage points", ci: "95% CI -2.3 to -0.9", versus: "the counterfactual", at: "Nov 2019"}` |
+| `share` | with `via`: how much of the step runs by the route, `entire` (the default), `most`, `partial` or `none` |
+| `via` | the finer route the text opens this link into, in order: `via: [reform, sugar]` where the levy's effect on obesity runs through reformulation and sugar bought |
 
 - **A joint cause is one step, not two.** Where the text says two things bring something about only
   together — a belief and a desire, a rule and the means to enforce it, an opportunity and a motive —
   mark the step from one with `jointly:` naming the others. Two separate steps would say each is
   enough alone. Where the text gives the second only as a qualification in words ("in a tight labour
   market"), it is a `given:`, not a state. Pick as `from` the cause the text leads with.
+- **Time is not only a lag.** Where the text reports one step in two periods (an effect during an
+  intervention, none after it), mark each record with its `period:`, in the text's words anchored to
+  the event. Where a finding is a change of trend ("slowed the rise", "a dampening of the rate of
+  increase rather than a reversal"), give the step `on: trend`: a plain `-` would say the level fell.
+- **Keep a regime's steps to their regime.** Where the text says a mechanism runs only at a dose,
+  in a place or in one model, give each such step its `regime:` in the text's words. The census will
+  not compose a route across two regimes. Where a step acts only past a threshold, say so in
+  `threshold:`; a plain sign would say the effect grows smoothly with its cause.
+- **Give the size the text gives.** Where the text reports how much, put it in `size:` in its
+  words or as an estimate with its interval and comparison. Two texts that agree on the direction and
+  dispute the size draw as agreement without it. Where a link runs only partly through a state, say
+  `share: partial` beside its `via`; where the text says it does not run through a state at all,
+  `share: none`.
+- **A blocker is not a second cause.** Where the text says X brings about Y *unless* D holds (the
+  defences between a hazard and harm), mark X → Y with `unless: D`, not a separate D → Y step. Where
+  it says the step held *despite* D, use `despite: D`: `given:` would say the step holds only where D
+  holds. A knockout, a subgroup or a place can be a condition that names a state:
+  `given: [{state: ampk, value: absent}]`. Mark each subgroup's finding as its own step with its
+  condition, and the census groups them.
+- **A link the text opens is one route, not two.** Where the text states a link whole (a trial's
+  total effect, "metformin lowers glucose") and elsewhere says how it runs ("mediated entirely by
+  AMPK"; reformulation, then less sugar bought), mark the finer steps and give the whole link
+  `via:` naming the states between, in order. Without it the whole link reads as a direct route
+  beside the finer one, which is partial mediation the text never claims. Where the text says the
+  link runs only partly through a state, leave out `via` and say so in the note.
 - A claim tagged `#reported` keeps its tag: its steps are the rival view's, drawn apart.
 - **A finding of no effect is a step with `sign: "0"`**, with the basis the text gives it. A policy
   text's central results are often nulls — paying does not raise use; fees do not target the needy —

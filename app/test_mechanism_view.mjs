@@ -137,6 +137,88 @@ const GENERALSF = path.join(FIXTURE, "generals.argdown");
         "the page and the checker agree on the general step, its cases, and the chains that are cases",
         differ.map(k => `${k}: python ${JSON.stringify(pyG[k])} js ${JSON.stringify(MG.profile[k])}`).join("\n          "));
 }
+// AND ON A LINK OPENED INTO A ROUTE (profile 1.8). Mutation: keep opened edges in the walk ->
+// `routes` and `opened` differ; drop `stated` in the chip -> no "via" on the arrow.
+const VIAF = path.join(FIXTURE, "via.argdown");
+{
+  const pyV = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           VIAF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MVV = MV.model(graphOf(VIAF));
+  const differ = Object.keys(pyV).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MVV.profile.gaps.map(g => g.message) : MVV.profile[k], pyV[k]));
+  check(differ.length === 0 && pyV.opened.length === 1,
+        "the page and the checker agree on a link the text opens into a route, walked once",
+        differ.map(k => `${k}: python ${JSON.stringify(pyV[k])} js ${JSON.stringify(MVV.profile[k])}`).join("\n          "));
+  const arrow = MV.layout(MVV).edges.filter(e => e.from === "order" && e.to === "reoff" && /lowers/.test(e.chip.label));
+  // The appraisal's own order -> reoff step is drawn apart, and has no route of the text's.
+  check(arrow.filter(e => / · via Stays in work \+1/.test(e.chip.label)).length === 1 && arrow.length === 2,
+        "the opened link's arrow says which route it is, as a folded route's does", JSON.stringify(arrow.map(e => e.chip.label)));
+}
+// AND ON A BLOCKER, A FAILED ONE, AND STEPS THAT DIFFER BY CONDITION (profile 1.8, G1). Mutations:
+// drop the flip in signsOf -> `routes` differ; draw no T-bar -> the drawing check fails.
+const BLOCKF = path.join(FIXTURE, "blockers.argdown");
+{
+  const pyB = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           BLOCKF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MB = MV.model(graphOf(BLOCKF));
+  const differ = Object.keys(pyB).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MB.profile.gaps.map(g => g.message) : MB.profile[k], pyB[k]));
+  check(differ.length === 0 && pyB.blocked.length === 1 && pyB.strata.length === 1,
+        "the page and the checker agree on a blocker, a failed one, and a step that differs by condition",
+        differ.map(k => `${k}: python ${JSON.stringify(pyB[k])} js ${JSON.stringify(MB.profile[k])}`).join("\n          "));
+  const blocked = MV.layout(MB).edges.filter(e => e.blockers.length);
+  check(blocked.length === 1 && blocked[0].from === "hazard" && blocked[0].stems.length === 1 &&
+        blocked[0].stems[0].blocks && !!blocked[0].stems[0].tbar && !blocked[0].junction,
+        "a blocker is drawn as a stem ending in a bar, not a co-cause's junction", JSON.stringify(blocked.map(e => [e.key, e.stems])));
+}
+// AND ON TIME (profile 1.8, G7): periods and a step on a trend. Mutation: drop the period from
+// strataOf's key -> `strata` differ; drop the trend words -> the chip says "raises".
+const TIMESF = path.join(FIXTURE, "times.argdown");
+{
+  const pyT = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           TIMESF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MT = MV.model(graphOf(TIMESF));
+  const differ = Object.keys(pyT).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MT.profile.gaps.map(g => g.message) : MT.profile[k], pyT[k]));
+  check(differ.length === 0 && pyT.trends.length === 1 && pyT.strata.length === 1,
+        "the page and the checker agree on periods and on a step on a trend",
+        differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
+  const tr = MV.layout(MT).edges.filter(e => e.from === "reoff" && e.to === "prison");
+  check(tr.length === 1 && /^(▲ )?speeds/.test(tr[0].chip.glyph ? tr[0].chip.glyph + " " + tr[0].chip.label : tr[0].chip.label),
+        "a step on a trend says it speeds or slows, not raises or lowers", JSON.stringify(tr.map(e => e.chip)));
+}
+// AND ON MAGNITUDE (profile 1.8, G3): sizes, and how much of a step runs by its route. Mutation:
+// let openedOf ignore `share` -> `routes` and `opened` differ; drop sizeTag -> no value on the arrow.
+const SIZESF = path.join(FIXTURE, "sizes.argdown");
+{
+  const pyZ = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           SIZESF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MZ = MV.model(graphOf(SIZESF));
+  const differ = Object.keys(pyZ).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MZ.profile.gaps.map(g => g.message) : MZ.profile[k], pyZ[k]));
+  check(differ.length === 0 && pyZ.sizes.length === 2 && pyZ.mediation.length === 2,
+        "the page and the checker agree on sizes and on how much of a step runs by its route",
+        differ.map(k => `${k}: python ${JSON.stringify(pyZ[k])} js ${JSON.stringify(MZ.profile[k])}`).join("\n          "));
+  const sz = MV.layout(MZ).edges.filter(e => e.from === "order" && e.to === "reoff" && / · -0\.12/.test(e.chip.label));
+  check(sz.length === 1 && !/via/.test(sz[0].chip.label),
+        "a step's stated value is on its arrow, and a partial route is not labelled as the step", JSON.stringify(MV.layout(MZ).edges.map(e => e.chip.label)));
+}
+// AND ON REGIMES AND A THRESHOLD (profile 1.8, G2). Mutation: ignore regimes in routes -> `routes`
+// differ; drop the threshold words -> the chip reads a plain "raises".
+const REGF = path.join(FIXTURE, "regimes.argdown");
+{
+  const pyR = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           REGF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MR = MV.model(graphOf(REGF));
+  const differ = Object.keys(pyR).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MR.profile.gaps.map(g => g.message) : MR.profile[k], pyR[k]));
+  check(differ.length === 0 && pyR.regimes.length === 2 && !pyR.routes.some(r => r.start === "order" && r.outcome === "prison"),
+        "the page and the checker agree on regimes: no route is composed across two",
+        differ.map(k => `${k}: python ${JSON.stringify(pyR[k])} js ${JSON.stringify(MR.profile[k])}`).join("\n          "));
+  const th = MV.layout(MR).edges.filter(e => e.from === "order" && e.to === "work");
+  check(th.length === 1 && /^raises past a threshold/.test(th[0].chip.label),
+        "a step past a threshold says so on its arrow", JSON.stringify(th.map(e => e.chip.label)));
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");

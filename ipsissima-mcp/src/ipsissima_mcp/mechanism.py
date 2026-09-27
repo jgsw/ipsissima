@@ -88,6 +88,8 @@ _TIER_OF_BASIS = {"study": "evidence", "statistics": "evidence", "model": "evide
                   "example": "argued", "testimony": "argued", "asserted": "asserted"}
 #: Enough routes to say "many"; counting every simple path in a dense chain is exponential.
 ROUTE_CAP = 200
+#: Routes the census prints before it says how many more there are.
+ROUTES_LISTED = 10
 
 
 def read_block(frontmatter_text):
@@ -270,6 +272,7 @@ def steps(doc, appraisal):
                 if tier == "asserted" and supports.get(title):
                     tier = "argued"
                 given = c.get("given") or []
+                given = given if isinstance(given, list) else [given]
                 out.append(dict(
                     title=title, kind=kind, layer=layer, tags=sorted(tags),
                     fidelity=d.get("fidelity"), warrant=d.get("warrant"),
@@ -283,12 +286,32 @@ def steps(doc, appraisal):
                     selects=bool(c.get("selects")),
                     hedged=bool(c.get("hedged")),
                     basis=basis, tier=tier, lag=c.get("lag"),
-                    given=given if isinstance(given, list) else [given],
+                    given=[_cond(g) for g in given], given_raw=given,
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
                     # JOINTLY (profile 1.4): the states together with which alone the step holds.
                     jointly=_as_list(c.get("jointly")),
                     # CHAIN (profile 1.5): which of the text's chains the step belongs to.
                     chain=_as_list(c.get("chain")),
+                    # VIA (profile 1.8): the states of the finer route the text opens this step
+                    # into -- the step IS that route, not a second one beside it.
+                    via=_as_list(c.get("via")),
+                    # SHARE (1.8): how much of the step runs by its `via` route -- entire (the
+                    # default), most, partial, or none ("AMPK-independent").
+                    share=(str(c.get("share")) if c.get("share") is not None
+                           else "entire" if c.get("via") else ""),
+                    # SIZE (1.8, G3): the magnitude the text gives, quoted.
+                    size=_size(c.get("size")),
+                    # REGIME and THRESHOLD (1.8, G2): the regime the step holds in, in the text's
+                    # words, and the threshold it acts past.
+                    regime="" if c.get("regime") is None else str(c.get("regime")),
+                    threshold="" if c.get("threshold") is None else str(c.get("threshold")),
+                    # UNLESS and DESPITE (profile 1.8): a state that blocks the step where it holds,
+                    # and one that acted against it and failed -- G1's commonest forms.
+                    unless=_as_list(c.get("unless")), despite=_as_list(c.get("despite")),
+                    # PERIOD and ON (profile 1.8, G7): when the step holds, in the text's words
+                    # anchored to an event, and whether it moves the level of `to` or its trend.
+                    period="" if c.get("period") is None else str(c.get("period")),
+                    on="level" if c.get("on") is None else str(c.get("on")),
                     supports=supports.get(title, 0), raw=c))
     return out
 
@@ -436,27 +459,138 @@ def _shortest_loops(comp, edges, ids, k=3):
     return sorted(found.values(), key=lambda l: (len(l), [rank[v] for v in l]))[:k]
 
 
-def _routes(start, goal, edges, ids=()):
-    """(number of simple routes, shortest, longest), each route counted in steps."""
-    adj = _adjacency(edges, list(ids) or sorted({x for e in edges for x in e}))
-    lengths = []
+def _cond(g):
+    """A condition as the census prints it: the text's words, or -- since 1.8 -- a declared state
+    and the value it has (`{state: ampk, value: absent}` -> "ampk: absent")."""
+    if isinstance(g, dict):
+        return str(g.get("state")) + (f": {g['value']}" if g.get("value") is not None else "")
+    return str(g)
 
-    def walk(v, seen):
+
+def _size(x):
+    """A step's size as the census prints it: the text's words, or `{value, unit, ci, versus, at}`
+    set out in that order ("-1.6 percentage points (95% CI -2.3 to -0.9) versus the counterfactual
+    at Nov 2019")."""
+    if x is None:
+        return ""
+    if not isinstance(x, dict):
+        return str(x)
+    out = " ".join(str(x[k]) for k in ("value", "unit") if x.get(k) is not None)
+    if x.get("ci") is not None:
+        out += f" ({x['ci']})"
+    if x.get("versus") is not None:
+        out += f" versus {x['versus']}"
+    if x.get("at") is not None:
+        out += f" at {x['at']}"
+    return out.strip()
+
+
+SHARES = ("entire", "most", "partial", "none")
+_FLIP = {"+": "-", "-": "+"}
+
+
+def _signs(steps_, states):
+    """Each edge's signs among `steps_`, a co-cause's edge taking the sign of its step and a
+    blocker's the opposite sign (more of what blocks a raising step, less of its effect)."""
+    out = {}
+    for s in steps_:
+        out.setdefault((s["src"], s["dst"]), set()).add(s["sign"] or "?")
+        for j in s["jointly"]:
+            if j in states and j != s["dst"]:
+                out.setdefault((j, s["dst"]), set()).add(s["sign"] or "?")
+        for u in s["unless"]:
+            if u in states and u != s["dst"]:
+                out.setdefault((u, s["dst"]), set()).add(_FLIP.get(s["sign"], "?"))
+    return out
+
+
+def _regimes(steps_, states):
+    """Each edge's regimes among `steps_`: "" for a step stated in no regime, which holds in all."""
+    out = {}
+    for s in steps_:
+        for a in [s["src"]] + [j for j in s["jointly"] + s["unless"] if j in states and j != s["dst"]]:
+            out.setdefault((a, s["dst"]), set()).add(s["regime"])
+    return out
+
+
+def _side_edges(steps_, states):
+    """The edges a step's co-causes and blockers add: each is a cause of the step's `to`."""
+    return {(j, s["dst"]) for s in steps_ for j in s["jointly"] + s["unless"]
+            if j in states and j != s["dst"]}
+
+
+def _net(signs, hops):
+    """The NET SIGN of a run of steps: `+` or `-` where every step has the one sign, `?` where any
+    is unsigned, decides-which, or carries both signs (the text's steps disagree, or differ by a
+    condition). Metformin's 98 routes to glucose, 41 of them net `+` through the feedback the text
+    invokes, were printed with no sign at all (gap tests, 27 Sep 2026)."""
+    neg = 0
+    for h in hops:
+        sg = signs.get(h) or set()
+        if len(sg) != 1 or next(iter(sg)) not in ("+", "-"):
+            return "?"
+        neg += next(iter(sg)) == "-"
+    return "-" if neg % 2 else "+"
+
+
+def _polarity(loop, signs):
+    """A loop's polarity from its signs: `reinforcing`, `balancing`, or None when not every step
+    has one sign. Lenton's text names every feedback positive or negative; the census listed eight
+    loops with neither, though the signs were there to multiply."""
+    return {"+": "reinforcing", "-": "balancing"}.get(_net(signs, list(zip(loop, loop[1:] + loop[:1]))))
+
+
+def _routes(start, goal, edges, ids=(), signs=None, regimes=None):
+    """(number of simple routes, shortest, longest, net signs), each route counted in steps and
+    the net signs counted as {"+": n, "-": n, "?": n}.
+
+    ONE REGIME TO A ROUTE (1.8, G2). A dose, a place or a model decides which mechanism runs, and
+    the census composed routes across them: metformin's low-dose step chained to its high-dose one.
+    A route is walked only where one regime holds all its steps; a step in no regime holds in all."""
+    adj = _adjacency(edges, list(ids) or sorted({x for e in edges for x in e}))
+    lengths, net = [], {"+": 0, "-": 0, "?": 0}
+    regimes = regimes or {}
+
+    def walk(v, path, allowed):
         for w in adj.get(v, []):
             # The cap is checked per successor, as the page checks it, so both stop at the same
             # count: checked only on entry this counted 201 where the page counted 200.
             if len(lengths) >= ROUTE_CAP:
                 return
+            rs = regimes.get((v, w)) or {""}
+            now = allowed if "" in rs else (rs if allowed is None else allowed & rs)
+            if now is not None and not now:
+                continue
             if w == goal:
-                lengths.append(len(seen))
-            elif w not in seen:
-                walk(w, seen | {w})
+                lengths.append(len(path))
+                run = path + [w]
+                net[_net(signs or {}, list(zip(run, run[1:])))] += 1
+            elif w not in path:
+                walk(w, path + [w], now)
 
-    walk(start, {start})
-    return (len(lengths), min(lengths), max(lengths)) if lengths else (0, None, None)
+    walk(start, [start], None)
+    return (len(lengths), min(lengths), max(lengths), net) if lengths else (0, None, None, net)
 
 
-def _walk(ids, states, text_edges, has_block):
+def _opened(steps_, edges):
+    """{(from, to): via} for each step whose `via` names a route `edges` give, hop by hop.
+
+    ONE LINK AT TWO GRAINS (G13). The gap tests met it in five of six texts and misread it in most:
+    the trial's total effect drawn as a direct route beside the route the text opens it into, which
+    reads as partial mediation the text never claims ("mediated entirely by AMPK"). A step with a
+    `via` the text's own steps give is walked as that route, once (27 Sep 2026)."""
+    out = {}
+    for s in steps_:
+        # Only a step that runs ENTIRELY by its route is that route; part of it, or none, leaves a
+        # direct remainder the text has not opened.
+        if s["via"] and s["share"] == "entire" and s["src"] is not None and s["dst"] is not None:
+            run = [s["src"]] + s["via"] + [s["dst"]]
+            if all(h in edges for h in zip(run, run[1:])):
+                out[(s["src"], s["dst"])] = list(s["via"])
+    return out
+
+
+def _walk(ids, states, text_edges, has_block, signs=None, regimes=None):
     """Where a chain starts, what it reaches, its gaps and its routes: the walk the census makes of
     the whole text's chain, and -- since profile 1.5 -- of each of its chains, on the states that
     chain touches and the roles it gives them."""
@@ -495,8 +629,14 @@ def _walk(ids, states, text_edges, has_block):
                              message=f"the outcome `{o}` is not reached by the text's steps from "
                                      f"where its chain starts"))
     for i in ids:
+        # A PART GOES ON AS ITS WHOLE. A state declared `part_of` another stops nowhere when the
+        # whole leads on, or is what the chain is for: the metformin pass had a false dead end at
+        # every part whose whole carried the next step (gap tests, 27 Sep 2026).
+        whole = (states[i] or {}).get("part_of")
+        onward = (whole is not None and whole != i
+                  and (any(a == whole for a, _ in text_edges) or whole in outcomes))
         if (i in used and i not in outcomes and not (states[i] or {}).get("appraisal")
-                and not any(a == i for a, _ in text_edges)):
+                and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
     if has_block and not interventions and not conditions:
@@ -512,10 +652,11 @@ def _walk(ids, states, text_edges, has_block):
         for o in outcomes:
             if o == e:        # a state that is both where the circle starts and what it explains
                 continue
-            n, lo, hi = _routes(e, o, text_edges, ids)
+            n, lo, hi, net = _routes(e, o, text_edges, ids, signs, regimes)
             if n:
-                routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))
-    return dict(entries=entries, gaps=gaps, used=used, outcomes=outcomes, routes=routes)
+                routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi, net=net))
+    return dict(entries=entries, gaps=gaps, used=used, outcomes=outcomes, routes=routes,
+                interventions=interventions)
 
 
 def _kinds(block, states):
@@ -635,6 +776,36 @@ def analyse(fm, doc):
                                  f"`mechanism: chains:`" if chains else
                                  f"`chain: {c}` names a chain, but the front matter declares no "
                                  f"`chains:`", {"title": s["title"]}))
+        for v in s["via"]:
+            if v not in states:
+                findings.append(("!", "mechanism", f"`via: {v}` is not a declared state",
+                                 {"title": s["title"]}))
+            elif v in (s["src"], s["dst"]):
+                findings.append(("?", "mechanism", f"`via: {v}` names the step's own `from` or "
+                                 f"`to`", {"title": s["title"]}))
+        for key in ("unless", "despite"):
+            for u in s[key]:
+                if u not in states:
+                    findings.append(("!", "mechanism", f"`{key}: {u}` is not a declared state",
+                                     {"title": s["title"]}))
+                elif u in (s["src"], s["dst"]):
+                    findings.append(("?", "mechanism", f"`{key}: {u}` names the step's own "
+                                     f"`from` or `to`", {"title": s["title"]}))
+        if s["share"] and s["share"] not in SHARES:
+            findings.append(("!", "mechanism", f"`share: {s['share']}` is not one of "
+                             f"{', '.join(SHARES)}", {"title": s["title"]}))
+        elif s["raw"].get("share") is not None and not s["via"]:
+            findings.append(("?", "mechanism", "`share` says how much of a step runs by a route, "
+                             "and this step names none in `via`", {"title": s["title"]}))
+        if s["on"] not in ("level", "trend"):
+            findings.append(("!", "mechanism", f"`on: {s['on']}` is not `level` or `trend`",
+                             {"title": s["title"]}))
+        for g in s["given_raw"]:
+            if isinstance(g, dict) and g.get("state") not in states:
+                findings.append(("!", "mechanism", f"`given: {{state: {g.get('state')}}}` is not a "
+                                 f"declared state", {"title": s["title"],
+                                                      "fix": "name a declared state, or give the "
+                                                             "condition in the text's words"}))
         for j in s["jointly"]:
             if j not in states:
                 findings.append(("!", "mechanism", f"`jointly: {j}` is not a declared state",
@@ -695,9 +866,36 @@ def analyse(fm, doc):
     text_edges = {(s["src"], s["dst"]) for s in text}
     # A CO-CAUSE IS A CAUSE. "A and C jointly bring about B" makes C a cause of B as surely as A, so
     # the routes, loops and dead ends run through it; only the step count keeps the one step.
-    text_edges |= {(j, s["dst"]) for s in text for j in s["jointly"] if j in states and j != s["dst"]}
+    # A BLOCKER IS A CAUSE TOO, of the opposite sign: more defence, less harm (1.8).
+    text_edges |= _side_edges(text, states)
+    # A STEP THE TEXT OPENS INTO A ROUTE IS WALKED AS THAT ROUTE (profile 1.8).
+    opened = _opened(text, text_edges)
+    for s in text:
+        if not s["via"] or s["share"] == "none" or not all(v in states for v in s["via"]):
+            continue
+        run = [s["src"]] + s["via"] + [s["dst"]]
+        missing = [f"{a} -> {b}" for a, b in zip(run, run[1:]) if (a, b) not in text_edges]
+        if missing:
+            findings.append(("?", "mechanism", f"`via` opens {s['src']} -> {s['dst']} into a route "
+                             f"the text's steps do not give: no step {', '.join(missing)}",
+                             {"title": s["title"],
+                              "fix": "mark the finer steps the text states, or drop `via`; until "
+                                     "then the step is walked as a step of its own"}))
     ids = list(states)
-    W = _walk(ids, states, text_edges, block is not None)
+    sign_of = _signs(text, states)
+    for s in text:
+        # Only the step that names the route is held to its sign: a subgroup's `+` on the same pair
+        # is another finding, not a claim about the route (levy map, 27 Sep 2026).
+        if s["via"] and s["share"] == "entire" and (s["src"], s["dst"]) in opened and s["sign"] in ("+", "-"):
+            run = [s["src"]] + opened[(s["src"], s["dst"])] + [s["dst"]]
+            net = _net(sign_of, list(zip(run, run[1:])))
+            if net in ("+", "-") and net != s["sign"]:
+                findings.append(("?", "mechanism", f"{s['src']} -> {s['dst']} is `{s['sign']}`, "
+                                 f"but the route it opens into nets `{net}`",
+                                 {"title": s["title"]}))
+    text_edges = text_edges - set(opened)
+    regime_of = _regimes(text, states)
+    W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of)
     entries, gaps, used = W["entries"], W["gaps"], W["used"]
     for g in gaps:
         findings.append(("?", "mechanism-gap", g["message"],
@@ -728,8 +926,9 @@ def analyse(fm, doc):
         inside = [l for l in loops_text if set(l) <= members]
         shortest = _shortest_loops(comp, text_edges, ids)
         feedback.append(dict(states=comp, loops=len(inside), capped=len(loops_text) >= LOOP_CAP,
-                             shortest=[dict(states=l, reflexive=reflexive(l, text)) for l in shortest]))
-    loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all})
+                             shortest=[dict(states=l, reflexive=reflexive(l, text),
+                                            polarity=_polarity(l, sign_of)) for l in shortest]))
+    loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all} - set(opened))
     routes = W["routes"]
     kinds = _kinds(block, states)
     kind_of = {i: str(st.get("kind")) for i, st in states.items()
@@ -740,6 +939,7 @@ def analyse(fm, doc):
         chains_of.setdefault((s["src"], s["dst"]), set()).update(s["chain"])
     akin_steps, instances = _akin_steps({(s["src"], s["dst"]) for s in text}, kind_of, general, chains_of)
     chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of, instances)
+    sign_pool = _signs(pool_all, states)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
     profile = dict(
@@ -748,18 +948,33 @@ def analyse(fm, doc):
         states=len(states), steps=len(best),
         claims=len({s["title"] for s in text}),
         lags=sorted({str(s["lag"]) for s in text if s["lag"]}),
-        entries=entries, routes=routes,
-        loops_text=[dict(states=l, reflexive=reflexive(l, text)) for l in loops_text],
+        # EACH LAG WITH ITS STEP. Joined into one line with "; ", Lenton's timings -- which contain
+        # "; " themselves -- could not be read back, and Yellowstone's four periods of two texts
+        # sat in one unordered list (gap tests, 27 Sep 2026).
+        timed=sorted({(s["src"], s["dst"], str(s["lag"])) for s in text if s["lag"]}),
+        entries=entries, routes=routes, interventions=W["interventions"],
+        loops_text=[dict(states=l, reflexive=reflexive(l, text), polarity=_polarity(l, sign_of))
+                    for l in loops_text],
         feedback=feedback,
         wholes=sorted([k, sorted(v)] for k, v in _wholes(states).items()),
         joint=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["jointly"])) for s in text if s["jointly"]}),
+        opened=sorted([a, b, v] for (a, b), v in opened.items()),
+        blocked=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["unless"])) for s in text if s["unless"]}),
+        despite=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["despite"])) for s in text_all if s["despite"]}),
+        strata=_strata(text_all),
+        sizes=sorted({(s["src"], s["dst"], s["sign"] or "", s["size"]) for s in text_all if s["size"]}),
+        mediation=sorted([a, b, sh, list(v)] for a, b, sh, v in
+                         {(s["src"], s["dst"], s["share"], tuple(s["via"])) for s in text if s["via"]}),
+        regimes=sorted({s["regime"] for s in text_all if s["regime"]}),
+        thresholds=sorted({(s["src"], s["dst"], s["sign"] or "", s["threshold"]) for s in text_all if s["threshold"]}),
+        trends=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "trend"}),
         spanning=sorted([i, levels_of(states[i], actors, levels)] for i in ids
                         if len(levels_of(states[i], actors, levels)) > 1),
-        loops_with_appraisal=[dict(states=l, reflexive=reflexive(l, pool_all))
-                              for l in loops_all],
+        loops_with_appraisal=[dict(states=l, reflexive=reflexive(l, pool_all),
+                                   polarity=_polarity(l, sign_pool)) for l in loops_all],
         tiers=tiers, gaps=[g["message"] for g in gaps],
         rival_steps=sum(1 for s in ok if s["layer"] == "rival"),
-        null_steps=_nulls(text_all, ok),
+        null_steps=_nulls(text_all, ok, text_edges, ids),
         selection_steps=sorted({(s["src"], s["dst"]) for s in text_all if s["selects"]}),
         hedged=sum(1 for s in text_all if s["hedged"]),
         appraisal_claims=len(appraisal),
@@ -788,18 +1003,21 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
     for cid, c in chains.items():
         mine = [s for s in text if cid in s["chain"]]
         edges = {(s["src"], s["dst"]) for s in mine}
-        edges |= {(j, s["dst"]) for s in mine for j in s["jointly"] if j in states and j != s["dst"]}
+        edges |= _side_edges(mine, states)
+        edges -= set(_opened(mine, edges))
         touched = {x for e in edges for x in e} | {k for k in c["roles"] if k in states}
         cids = [i for i in ids if i in touched]
         cstates = {i: ({**(states[i] or {}), "role": c["roles"][i]} if i in c["roles"]
                        else states[i]) for i in cids}
-        W = _walk(cids, cstates, edges, True)
+        csigns = _signs(mine, states)
+        W = _walk(cids, cstates, edges, True, csigns, _regimes(mine, states))
         best = {(s["src"], s["dst"], s["sign"]) for s in mine}
         out.append(dict(id=cid, label=c["label"], question=c["question"],
                         steps=len(best), claims=len({s["title"] for s in mine}), states=cids,
                         roles={i: sorted(roles_of(cstates[i])) for i in cids if roles_of(cstates[i])},
                         entries=W["entries"], routes=W["routes"],
-                        loops=[dict(states=l, reflexive=reflexive(l, mine)) for l in _loops(cids, edges)],
+                        loops=[dict(states=l, reflexive=reflexive(l, mine), polarity=_polarity(l, csigns))
+                               for l in _loops(cids, edges)],
                         gaps=[g["message"] for g in W["gaps"]], shared=[]))
         for i in cids:
             member.setdefault(i, []).append(cid)
@@ -832,9 +1050,32 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
     return out, unchained
 
 
-def _nulls(text_all, ok):
+def _strata(text_all):
+    """Each pair of states whose steps differ by condition: [from, to, [[sign, conditions], ...]].
+
+    A STEP THAT DIFFERS BY SUBGROUP OR PLACE. The levy lowers obesity in year-6 girls and not in
+    boys; culling lowers TB inside the zone and raises it outside. Kept as separate records, the
+    census printed a mixed sign and a null "the text finds no effect"; grouped, it says where each
+    holds (gap tests, 27 Sep 2026). Only a pair with two or more records and a condition on one."""
+    by = {}
+    for s in text_all:
+        if s["selects"]:
+            continue
+        by.setdefault((s["src"], s["dst"]), set()).add((s["sign"] or "", tuple(s["given"]), s["period"]))
+    # A PERIOD IS A CONDITION OF TIME (G7): the badger cull's effect during culling and its null
+    # after it are one step's time course, not a finding and a contradiction.
+    return sorted([a, b, sorted([sg, list(g), pd] for sg, g, pd in recs)] for (a, b), recs in by.items()
+                  if len(recs) > 1 and any(g or pd for _, g, pd in recs))
+
+
+def _nulls(text_all, ok, text_edges=(), ids=()):
     """The text's null findings, each saying whether it answers a rival view's step on the same
-    pair of states -- the dispute the J-PAL bulletin is about, made visible."""
+    pair of states -- the dispute the J-PAL bulletin is about, made visible.
+
+    WITH ITS CONDITIONS, AND THE ROUTES IT FACES. Most nulls the gap tests met hold only where
+    something holds -- a knockout, a subgroup, a place -- and the census printed each as "the text
+    finds no effect", the opposite of a knockout's point. And a null may answer a route the text's
+    own steps compose rather than any one step (27 Sep 2026)."""
     out, seen = [], set()
     for s in text_all:
         if not s["null"] or (s["src"], s["dst"]) in seen:
@@ -842,8 +1083,15 @@ def _nulls(text_all, ok):
         seen.add((s["src"], s["dst"]))
         against = sorted({r["sign"] for r in ok if r["layer"] == "rival" and not r["null"]
                           and (r["src"], r["dst"]) == (s["src"], s["dst"]) and r["sign"]})
+        given, periods = [], []
+        for t in text_all:
+            if t["null"] and (t["src"], t["dst"]) == (s["src"], s["dst"]):
+                given += [str(g) for g in t["given"] if str(g) not in given]
+                if t["period"] and t["period"] not in periods:
+                    periods.append(t["period"])
+        n = _routes(s["src"], s["dst"], text_edges, ids)[0] if s["src"] != s["dst"] else 0
         out.append(dict(**{"from": s["src"], "to": s["dst"]}, basis=s["basis"],
-                        refutes=against))
+                        refutes=against, given=given, periods=periods, routes=n))
     return out
 
 
@@ -858,17 +1106,42 @@ def census(profile):
     lines.append(f"      height  {tall} of {len(p['levels'])} level(s)"
                  + (f": {', '.join(p['levels_spanned'])}" if tall else "")
                  + ("  (tall: expect to need several kinds of evidence)" if tall >= 3 else ""))
-    lines.append("      length  " + ("lags stated: " + "; ".join(p["lags"]) if p["lags"]
-                                     else "no timing stated in any step"))
-    if p["routes"]:
-        for r in p["routes"][:6]:
+    if p.get("timed"):
+        for a, b, lag in p["timed"]:
+            lines.append(f"      length  {a} -> {b}: {lag}")
+    else:
+        lines.append("      length  no timing stated in any step")
+    # THE INTERVENTION'S ROUTES FIRST: listed in the order they were walked, a text's own
+    # recommendation fell past the listed ten behind routes from conditions (gap tests, 27 Sep 2026).
+    shown = sorted(p["routes"], key=lambda r: r["start"] not in p.get("interventions", []))
+    if shown:
+        for r in shown[:ROUTES_LISTED]:
             span = (f"{r['shortest']} step{'' if r['shortest'] == 1 else 's'}"
                     if r["shortest"] == r["longest"]
                     else f"{r['shortest']} to {r['longest']} steps")
             many = "+" if r["routes"] >= ROUTE_CAP else ""
+            net = r.get("net") or {}
+            nets = [f"{net[k]} {w}" for k, w in (("+", "raise"), ("-", "lower"),
+                                                 ("?", "of no one sign")) if net.get(k)]
             lines.append(f"      route   {r['start']} -> {r['outcome']}: {r['routes']}{many} "
                          f"route{'' if r['routes'] == 1 else 's'}, {span}"
-                         + (", every step of which must hold" if (r['longest'] or 0) > 1 else ""))
+                         + (", every step of which must hold" if (r['longest'] or 0) > 1 else "")
+                         + (f"; net: {', '.join(nets)}" if nets else ""))
+            # WHICH WINS IS A MATTER OF SIZE: a net sign alone told a reader that metformin both
+            # lowers and raises glucose (gap tests, 27 Sep 2026).
+            if net.get("+") and net.get("-"):
+                lines.append("              raises by some routes and lowers by others: which wins "
+                             "is a matter of size" + (", and the text gives sizes on "
+                                                      f"{len(p.get('sizes', []))} step(s)"
+                                                      if p.get("sizes") else ", which the text does not give"))
+        # NEVER CUT SILENTLY. Six of Yellowstone's ten were listed with no word of the rest, and
+        # the four left out held the papers' central route (gap tests, 27 Sep 2026).
+        if len(p["routes"]) > ROUTES_LISTED:
+            lines.append(f"      route   ... and {len(p['routes']) - ROUTES_LISTED} more "
+                         f"(every route is in --format json)")
+        if any((r["longest"] or 0) > 1 for r in p["routes"]):
+            lines.append("              composed: a route of several steps is the census's walk "
+                         "through the text's steps, not a claim the text makes whole")
     else:
         lines.append("      route   no outcome is reached by the text's steps")
     if p["loops_text"]:
@@ -880,11 +1153,13 @@ def census(profile):
                          + ", ".join(f["states"]))
             for l in f["shortest"]:
                 lines.append("        e.g.  " + " -> ".join(l["states"] + l["states"][:1])
+                             + (f"  ({l['polarity']})" if l.get("polarity") else "")
                              + ("  (reflexive)" if l["reflexive"] else ""))
         for l in p["loops_text"]:
             if any(set(l["states"]) <= b for b in inbig):
                 continue
             lines.append("      loop    " + " -> ".join(l["states"] + l["states"][:1])
+                         + (f"  ({l['polarity']})" if l.get("polarity") else "")
                          + ("  (reflexive: runs through a classification or representation)"
                             if l["reflexive"] else ""))
     else:
@@ -894,7 +1169,37 @@ def census(profile):
         if l["states"] not in text_loops:
             lines.append("      loop    " + " -> ".join(l["states"] + l["states"][:1])
                          + "  (closed only by the appraisal"
+                         + (f"; {l['polarity']}" if l.get("polarity") else "")
                          + ("; reflexive" if l["reflexive"] else "") + ")")
+    for a, b, via in p.get("opened", []):
+        lines.append(f"      via     {a} -> {b} is the route through {', '.join(via)}: walked once, "
+                     f"as that route")
+    for a, b, sh, via in p.get("mediation", []):
+        if sh in ("most", "partial"):
+            lines.append(f"      via     {a} -> {b} runs {'mostly' if sh == 'most' else 'partly'} "
+                         f"through {', '.join(via)}; the rest by a way the text does not open")
+        elif sh == "none":
+            lines.append(f"      via     {a} -> {b} does NOT run through {', '.join(via)}, the text says")
+    if p.get("regimes"):
+        lines.append(f"      regime  {len(p['regimes'])} named: {'; '.join(p['regimes'])} -- routes are "
+                     f"composed within one regime, never across")
+    for a, b, sg, th in p.get("thresholds", []):
+        lines.append(f"      thresh  {a} -> {b}{' (' + sg + ')' if sg else ''}: only past a threshold -- {th}")
+    for a, b, sg, sz in p.get("sizes", []):
+        lines.append(f"      size    {a} -> {b}{' (' + sg + ')' if sg else ''}: {sz}")
+    for a, b, sg, by in p.get("blocked", []):
+        lines.append(f"      unless  {a} -> {b}{' (' + sg + ')' if sg else ''} is blocked where "
+                     f"{' or '.join(by)} holds")
+    for a, b, sg, by in p.get("despite", []):
+        lines.append(f"      despite {a} -> {b}{' (' + sg + ')' if sg else ''} held although "
+                     f"{' and '.join(by)} acted against it")
+    for a, b, recs in p.get("strata", []):
+        lines.append(f"      strata  {a} -> {b}: " + "; ".join(
+            f"{sg or 'unsigned'} " + " ".join(x for x in ("where " + " and ".join(g) if g else "", pd) if x)
+            if g or pd else f"{sg or 'unsigned'} unconditioned" for sg, g, pd in recs))
+    for a, b, sg in p.get("trends", []):
+        lines.append(f"      trend   {a} -> {b}{' (' + sg + ')' if sg else ''}: moves the trend of {b}, "
+                     f"not its level -- {'slows its rise' if sg == '-' else 'speeds it' if sg == '+' else 'changes it'}")
     for a, b, sg, with_ in p.get("joint", []):
         lines.append(f"      joint   {a} -> {b}{' (' + sg + ')' if sg else ''} only together with {', '.join(with_)}")
     for st, lvs in p.get("spanning", []):
@@ -927,8 +1232,20 @@ def census(profile):
                          + f": {', '.join(k['states'])}"
                          + (f" ({k['general']} the general, the rest its cases)" if k.get("general") else "")
                          + " -- not the same state: nothing is walked between them")
+    # TWO CASES OF ONE GENERAL STEP ARE SAID BY THEIR CASE LINES. Listed as pairs as well, Lenton's
+    # nine elements printed 98 "akin" lines beside the 19 that mattered (gap tests, 27 Sep 2026).
+    general_of = {}
+    for g, c in p.get("instances", []):
+        general_of.setdefault(tuple(c), set()).add(tuple(g))
+    among_cases = 0
     for (a, b), (c, d) in p.get("akin_steps", []):
+        if general_of.get((a, b), set()) & general_of.get((c, d), set()):
+            among_cases += 1
+            continue
         lines.append(f"      akin    {a} -> {b}  ~  {c} -> {d}: the same step in two cases")
+    if among_cases:
+        lines.append(f"      akin    and {among_cases} pair(s) of cases of one general step, not "
+                     f"listed: the case lines below say it")
     for (a, b), (c, d) in p.get("instances", []):
         lines.append(f"      case    {c} -> {d} is a case of the general step {a} -> {b}")
     if p.get("unchained"):
@@ -937,10 +1254,18 @@ def census(profile):
     lines.append(f"      light   {t['evidence']} backed by a study, statistics or a model; "
                  f"{t['argued']} argued; {t['asserted']} asserted only; {t['imputed']} imputed")
     for n in p.get("null_steps", []):
+        where = n.get("given") or []
         lines.append(f"      null    {n['from']} -> {n['to']}: the text finds no effect"
+                     + (" where its condition holds" if where else "")
+                     + (f" ({'; '.join(n['periods'])})" if n.get("periods") else "")
                      + (f" ({n['basis']})" if n["basis"] else "")
                      + (f", against the rival view's {'/'.join(n['refutes'])}"
                         if n["refutes"] else ""))
+        for g in where:
+            lines.append(f"              given   {g}")
+        if n.get("routes"):
+            lines.append(f"              beside  {n['routes']} route(s) the text's own steps give "
+                         f"from {n['from']} to {n['to']}")
     for a, b in p.get("selection_steps", []):
         lines.append(f"      select  {a} -> {b}: a selection link, not an effect -- not walked")
     if p.get("hedged"):
@@ -1011,9 +1336,14 @@ _STOP_HEADING = re.compile(r"^#+\s*(notes|references|bibliography|further readin
 _SENT_END = re.compile(r"(?:(?<=[.!?])|(?<=[.!?][\"'\u201d\u2019)]))\s+(?=[A-Z\"\u201c(\[])")
 
 
+_MARKER_LINE = re.compile(r"^<!--\s*p\.\s*\d+\s+begins here\s*-->$")
+_ENDS = re.compile(r"[.!?:][\"'\u201d\u2019)\]]*$")
+
+
 def _sentences(text):
     """(line, sentence) for every sentence of running text: headings, the converter's comments,
     footnote definitions and the back matter left out."""
+    raw_lines = text.split("\n")
     text = re.sub(r"<!--.*?-->", lambda m: "\n" * m.group(0).count("\n"), text, flags=re.S)
     # THE SOURCE'S OWN FRONT MATTER IS NOT RUNNING TEXT. A converted paper carries its abstract
     # there, and read as prose it put the J-PAL abstract's four causal sentences on line 1 as
@@ -1023,11 +1353,28 @@ def _sentences(text):
         text = "\n" * fm.group(0).count("\n") + text[fm.end():]
     out, para, start = [], [], None
     lines = text.split("\n")
+    # A SENTENCE A PAGE BREAK CUTS IS ONE SENTENCE. The converter sets each page marker on a line
+    # of its own between blank lines, so the half before it and the half after were two
+    # paragraphs, each counted as a causal sentence (gap tests, 27 Sep 2026). Where a marker
+    # stands between two runs of text and the first stops mid-sentence, the paragraph goes on.
+    after_marker = set()
+    for i, raw in enumerate(raw_lines):
+        if _MARKER_LINE.match(raw.strip()):
+            b, j = i - 1, i + 1
+            while b >= 0 and not raw_lines[b].strip():
+                b -= 1
+            while j < len(raw_lines) and not raw_lines[j].strip():
+                j += 1
+            after_marker.update(range(b + 1, j))
     for i, raw in enumerate(lines + [""], 1):
         line = raw.strip()
         if _STOP_HEADING.match(line):
             break
-        if not line or line.startswith("#") or line.startswith("[^") or line.startswith("==="):
+        if not line and para and (i - 1) in after_marker and not _ENDS.search(para[-1]):
+            continue
+        # A TABLE IS NOT A SENTENCE: Lenton's Table 1 counted as one "causal sentence" whole.
+        if (not line or line.startswith("#") or line.startswith("[^") or line.startswith("===")
+                or line.startswith("|")):
             if para:
                 joined = " ".join(para)
                 for sent in _SENT_END.split(joined):

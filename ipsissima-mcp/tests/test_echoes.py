@@ -75,6 +75,15 @@ res = prov.check_echoes(doc_with({"chapter": "p.md", "echoes":
 check("an echo in ANOTHER file is found there: a book's introduction announces its chapters",
       [(r["status"], r["chapter"]) for r in res], [("exact", "intro.md")])
 
+Path(root, "fm.md").write_text("---\ntitle: A paper\nabstract: >-\n  Wolves restored the willows along "
+                                "the northern streams of the park.\n---\n\n# 1. Introduction\n\n" + PROSE,
+                                encoding="utf-8")
+res = prov.check_echoes(doc_with({"chapter": "fm.md", "echoes":
+    ["Wolves restored the willows along the northern streams of the park."]}), root)
+# Mutation: return "absent" at the end of _find_in_text again -> fails.
+check("an echo of an abstract kept ONLY in the front matter is found there, the one copy there is",
+      [(r["status"], r["line"]) for r in res], [("exact", 4)])
+
 print("\nan echo never pins the claim")
 doc = doc_with({"chapter": "p.md",
                 "echoes": ["We argue that small fees sharply reduce take-up among the poor."]},

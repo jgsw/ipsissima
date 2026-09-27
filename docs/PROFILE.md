@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.7 — 27 September 2026.** The machine-readable registry of everything below is
+**Version 1.8 — 27 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -221,13 +221,22 @@ substantially reduces adoption".
 | `sign` | `+` \| `-` \| `"0"` \| `which` | Raises, lowers, a **finding of no effect**, or — since 1.2 — **decides which** of several alternatives follows, rather than raising or lowering a quantity. Quote the zero: YAML reads a bare `0` as a number. |
 | `basis` | `study` \| `statistics` \| `model` \| `example` \| `testimony` \| `asserted` | What the **text** offers for the step. The first three count as tested; `example` and `testimony`, and an asserted step the map argues for, as argued. |
 | `lag` | string | Timing the text states. |
-| `given` | list of strings | Conditions the text states, in its words. A moderator is a condition, not a state. |
+| `period` | string | **When** the step holds, in the text's words anchored to an event: "during culling", "after the order ends" (*added in 1.8*). |
+| `on` | `level` \| `trend` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). |
+| `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
 | `how` | `{actor, situation, habit, response}` | Gross's decomposition of a step, only where the text gives it. |
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
 | `selects` | boolean | A **selection link**: who ends up on each side, not an effect. |
 | `hedged` | boolean | The text puts the step as a possibility. |
 | `chain` | chain id, or list of them | Which of the declared chains the step belongs to (*added in 1.5*). |
 | `jointly` | state id, or list of them | The step holds **only together with** these states: a joint cause, not two causes each sufficient alone (*added in 1.4*). |
+| `unless` | state id, or list of them | The step holds **unless** these states hold: a blocker, such as a defence between a hazard and harm (*added in 1.8*). |
+| `despite` | state id, or list of them | The step held **although** these states acted against it: a blocker that failed (*added in 1.8*). |
+| `via` | state id, or list of them | The finer route the text opens this step into, in order: the step **is** that route, not a second one beside it (*added in 1.8*). |
+| `regime` | string | The **regime** the step holds in, in the text's words: a dose, a place, a model (*added in 1.8*). |
+| `threshold` | string | The **threshold** the step acts past, in the text's words: the step switches something rather than moving it smoothly (*added in 1.8*). |
+| `share` | `entire` \| `most` \| `partial` \| `none` | How much of the step runs by its `via` route: all of it (the default), most, part, or **none** ("AMPK-independent") (*added in 1.8*). |
+| `size` | string, or `{value, unit, ci, versus, at}` | The **magnitude** the text gives for the step, quoted: an effect size with its interval, what it is measured against, and when (*added in 1.8*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
 view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
@@ -319,6 +328,63 @@ step in two cases, as equals. A chain whose steps are cases of a general step in
 reported as a case of that chain. Nothing is declared on a step: Merton's bank and his out-groups
 become cases of his general mechanism by their states alone.
 
+**One link at two grains (1.8).** Texts state a link whole and then open it: a trial measures the
+levy's total effect on obesity, and the paper explains it through reformulation and sugar bought;
+a review says metformin lowers glucose and that this is "mediated entirely" by one enzyme. Marked as
+two steps, the whole link reads as a direct route beside the finer one, which is partial mediation
+the text never claims. `via: [reform, sugar]` on the whole link says it IS the route through those
+states, in order. The census walks it once, as that route, and names it. It asks (`?`) where the
+text's steps do not give every hop of the route, and where the route's signs net the other way
+from the step's own. The step keeps its claim, basis and lag, and the view labels its arrow "via …",
+as it labels a folded route. By default `via` is the whole of the effect. `share: most` or
+`share: partial` says the route carries only part of it, and the step keeps a direct remainder
+the text has not opened. `share: none` says the effect does **not** run through those states, as a
+knockout study finds of a pathway it rules out.
+
+**Magnitude (1.8).** A sign says which way an effect runs, and `size:` says how much, as the text
+gives it: in words ("a third of the cost"), or as `{value, unit, ci, versus, at}` for an estimate.
+The census lists each size. Where a start raises an outcome by some routes and lowers it by others,
+the census says which wins is a matter of size. The view puts a stated value on the step's arrow.
+Two texts that agree on direction and dispute only size then no longer draw as agreement.
+
+**A step on a step (1.8).** Three forms that texts give a step's own conditions, each met in the
+gap tests on six texts:
+
+- **A blocker.** `unless: defence` on hazard → harm says the harm follows unless the defences hold.
+  It is the dual of `jointly`. The census walks the blocker as a cause of the step's `to` with the
+  step's sign reversed (more defence, less harm), once, and names it. The view draws a stem from the
+  blocker that stops on a bar across its own end, the inhibition mark.
+- **A blocker that failed.** `despite: culling` says the step held although culling acted against
+  it. `given:` would read as the condition under which the step holds, which says something else.
+  It is reported and not walked.
+- **A condition naming a state.** A `given` item may be `{state: ampk, value: absent}`: a knockout, a
+  subgroup, a place. Where the steps between one pair of states differ by condition (the levy
+  lowers obesity in year-6 girls and not in boys), the census groups them, each sign with its
+  conditions, and a null that holds under a condition says so rather than "no effect".
+
+**Time (1.8).** A `lag` says how long a step takes. Two more things about time recur in evaluations,
+and the lag could not say them:
+
+- **The period in which a step holds.** A trial finds culling lowered TB during culling and
+  found no effect after it ended. `period: "during culling"` and `period: "after culling ended"` make
+  the two records one step's time course. The census prints them together, each with its period,
+  and a null names the period it holds in.
+- **A step on a trend.** An interrupted time series finds a slower rise against the projected trend,
+  "a dampening of the rate of increase … rather than a reversal". `on: trend` with `sign: "-"` says
+  the step slows the rise. The view's arrow reads "slows" or "speeds", not "lowers" or "raises".
+
+Each stated `lag` is listed with its own step.
+
+**Regimes and thresholds (1.8).** A regime decides which mechanism runs: metformin acts one way at
+the doses used in patients and another at the doses of the laboratory; culling lowers TB inside the
+zone and raises it outside. `regime: "at clinical doses"` names the regime a step holds in, in the
+text's words. The census then composes a route only where one regime holds every step of it, and a
+step in no regime holds in all. `threshold:` says the step acts only past a threshold ("above a
+critical warming of about 3°C"). The arrow reads "raises past a threshold", because a plain "raises"
+says more of the one gives more of the other, smoothly. Both are words. The threshold's value,
+whether reversing the cause reverses the effect, and a loop that holds whichever state obtains are
+not yet marked (see Known limits).
+
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
 its shortest loops rather than listing every loop.
@@ -378,9 +444,10 @@ rule: name your gaps).
 - **The Coleman boat's own anatomy** — its corners A to D and its situational, action-formation,
   feedback and transformational arrows — has no mark of its own; roles, levels and the steps carry
   most of it, and the rest goes in notes.
-- **A feedback that changes a link.** A step's target is a state, never another step or a
-  condition of one: "the rules of the game change", or a feedback "influencing … background
-  conditions", is said in words (`given:`, `note:`).
+- **A feedback that changes a link.** Since 1.8 a state can block a step (`unless`) or fail to
+  (`despite`), and a condition can name a state. A step still cannot strengthen, weaken or reverse
+  another step, or act on a loop or a whole chain: "the rules of the game change", or rapid forcing
+  that "overwhelms" a feedback, is said in words (`given:`, `note:`).
 - **`part_of` is a tree: a state sits in one box.** Where a text's own diagram puts one concept in two
   boxes — Wimmer's Fig. 2 draws the field's distribution of power and, inside its consensus box, the
   degree of power inequality — make two states, each in its box, with the step between them. One
@@ -390,12 +457,16 @@ rule: name your gaps).
   step in each case, and since 1.7 a kind's `general` state makes the general step the one the
   others are cases of. What remains is a general step whose ends are not states the text names —
   a mechanism stated only schematically — which has no general states to point to.
-- **Direction only, not size.** A `sign` says which way an effect runs; "insufficient but not null"
-  (Merton on education), an effect size or a dose-response stays in the claim's own words. A
-  finding of no effect is `"0"`; a weak effect is `+` or `-` with its note.
+- **A size, not a dose-response.** Since 1.8 a step carries the size the text gives (`size:`), but
+  not how the effect varies with the dose of its cause. A dose-response, or "insufficient but not
+  null" (Merton on education), stays in the claim's own words. A finding of no effect is `"0"`.
 - **A direction that depends on something unstated.** "Empower (or disempower)" has no single sign.
   Where the text names the condition, make two steps with `given:`; where it does not, leave the
   step unsigned and say why in the note.
+- **A threshold in words only.** Since 1.8 a step can say it acts past a threshold, and routes keep
+  to one regime. A threshold's value and scale, hysteresis (reversing the cause does not reverse
+  the effect), and a balancing loop around whichever state holds (Lenton's circulation) are said in
+  words, in `threshold:` or the note. Loops are not yet kept to one regime.
 - **Possibility, not probability.** `hedged: true` says the text puts a step as a possibility;
   there is no field for a probabilistic claim ("tends to", "raises the chance of").
 - **Every state needs an actor.** A structural state — "the social field" — has to be given one;
@@ -408,6 +479,13 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.8** (27 September 2026) added `regime` and `threshold` on a step, `size` and `share` on a step, `period` and `on: trend` on a step, `unless` and `despite` on a step (a blocker, and a blocker that
+failed) and conditions that name a state (`given: [{state, value}]`), grouped by the census where
+one pair's steps differ by condition. It also added `via` on a step: the finer route the text opens a whole link into,
+walked as that route and once, so that a trial's total effect and its mechanism are no longer read
+as a direct route beside an indirect one. This was the first construct taken from the gap tests on
+six texts. Every 1.7 file conforms unchanged.
 
 **1.7** (27 September 2026) added `general` on a kind: the state that is the general claim, of
 which the kind's other states are cases, so that the census reports a case of a general step, and

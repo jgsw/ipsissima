@@ -1,0 +1,40 @@
+// Planted fixture for test_mechanism.py and app/test_mechanism_view.mjs (profile 1.8, G1): a
+// blocker (`unless`), a blocker that failed (`despite`), a condition naming a state, and one pair
+// whose steps differ by condition. Expected answers are written in those tests.
+===
+title: "Planted -- defences and their failures"
+reconstruction:
+    generated: true
+defaults:
+    chapter: "source/brief.md"
+mechanism:
+    question: "How do defences stop hazards becoming harm?"
+    levels: [organisation, ward]
+    actors:
+        trust:   {label: "Hospital trust", level: organisation}
+        staff:   {label: "Ward staff", level: ward}
+    states:
+        audit:   {label: "Safety audits", actor: trust, role: intervention}
+        hazard:  {label: "Hazard present", actor: staff, role: condition}
+        defence: {label: "Defences hold", actor: trust}
+        culture: {label: "Reporting culture", actor: trust}
+        harm:    {label: "Harm to patients", actor: staff, role: outcome}
+===
+
+[Audit]: The trust should audit its defences.
+
+[Hazards harm unless defended]: "Hazards bring harm unless the defences hold."
+    {fidelity: "quotation", causes: {from: hazard, to: harm, sign: "+", basis: asserted, unless: defence}}
+    +> [Audit]
+
+[Audits strengthen defences]: "Audits keep the defences in place."
+    {fidelity: "quotation", causes: {from: audit, to: defence, sign: "+", basis: asserted}}
+    +> [Audit]
+
+[Harm despite culture]: "Harm came about despite a reporting culture, where no audit was made."
+    {fidelity: "quotation", causes: {from: hazard, to: harm, sign: "+", basis: example, despite: culture, given: [{state: audit, value: "absent"}]}}
+    +> [Audit]
+
+[No harm among the trained]: "Among trained staff, hazards did no harm."
+    {fidelity: "quotation", causes: {from: hazard, to: harm, sign: "0", basis: study, given: ["among trained staff"]}}
+    +> [Audit]

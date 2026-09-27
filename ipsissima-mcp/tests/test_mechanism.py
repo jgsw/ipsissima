@@ -116,7 +116,8 @@ check("and each loop keeps its order",
       sorted(l["states"] for l in loops), [["order", "reoff", "risk"], ["reoff", "prison"]])
 check("the rival view's step is counted apart from the text's", chain.get("rival_steps"), 1)
 check("a null finding is reported, and answers the rival view's step on the same pair",
-      chain.get("null_steps"), [{"from": "order", "to": "reoff", "basis": "study", "refutes": ["+"]}])
+      chain.get("null_steps"), [{"from": "order", "to": "reoff", "basis": "study", "refutes": ["+"],
+                                 "given": [], "periods": [], "routes": 1}])
 check("a selection link is reported apart", chain.get("selection_steps"), [["order", "reoff"]])
 check("and neither is counted as a step of the chain, nor walked", chain.get("steps"), 4)
 check("the text's \"may\" is counted as hedged", chain.get("hedged"), 1)
@@ -414,6 +415,186 @@ check("a kind with no general state pairs its steps as equals, as in 1.6", len(r
 for bad, why in ((GENERALS.replace("general: migr}", "general: migrants}"), "`general: migrants`, which is not a declared state"),
                  (GENERALS.replace("general: migr}", "general: drought}"), "`drought` is not of kind `migration`")):
     check(f"a bad 1.7 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
+print("\nthe census, as the gap tests found it (27 Sep 2026)")
+# WHAT SIX TEXTS MISREAD, before any construct was added: most wrong readings were the census's,
+# not the file's. Each check below names the mutation that makes it fail.
+import mechanism as mech  # noqa: E402
+rc = run(CHAIN)["shape"]["chain"]
+rts = {(r["start"], r["outcome"]): r for r in rc["routes"]}
+# Mutation: count every route as `?` in _net -> both fail.
+check("a route carries its net sign: order lowers reoffending, which fills prisons, so order lowers prison",
+      rts[("order", "prison")]["net"], {"+": 0, "-": 1, "?": 0})
+check("  and a one-step route its step's sign", rts[("order", "reoff")]["net"], {"+": 0, "-": 1, "?": 0})
+# Mutation: _polarity always None -> fails.
+check("a loop carries its polarity from its signs (- then + then - is reinforcing; + then + too)",
+      sorted((l["states"], l["polarity"]) for l in rc["loops_with_appraisal"]),
+      [(["order", "reoff", "risk"], "reinforcing"), (["reoff", "prison"], "reinforcing")])
+check("a balancing loop is named so", mech._polarity(["a", "b"], {("a", "b"): {"+"}, ("b", "a"): {"-"}}), "balancing")
+check("  and a loop with a step of both signs has no polarity",
+      mech._polarity(["a", "b"], {("a", "b"): {"+", "-"}, ("b", "a"): {"-"}}), None)
+check("each lag is kept with its step", rc["timed"], [["order", "reoff", "two years"]])
+lines = "\n".join(mech.census(rc))
+check("  and printed on a line of its own, never joined with \"; \"",
+      "length  order -> reoff: two years" in lines, True)
+check("the census says a route of several steps is its own composition", "composed:" in lines, True)
+many = dict(rc, routes=[dict(r, outcome=f"o{i}") for i in range(12) for r in rc["routes"][:1]])
+# Mutation: drop the "and N more" line -> fails.
+check("routes past the listed ten are counted, never cut silently",
+      "... and 2 more" in "\n".join(mech.census(many)), True)
+check("the intervention is named in the profile", rc["interventions"], ["policy"])
+late = dict(many, interventions=["policy"], routes=many["routes"] + [dict(rc["routes"][0], start="policy")])
+# Mutation: list routes in walked order -> the intervention's route falls past the ten.
+check("the intervention's routes are listed first, never cut behind the rest",
+      "route   policy -> " in "\n".join(mech.census(late)), True)
+COND = CHAIN.replace('causes: {from: order, to: reoff, sign: "0", basis: study}',
+                     'causes: {from: order, to: reoff, sign: "0", basis: study, given: ["among first offenders"]}')
+rn = run(COND)["shape"]["chain"]
+check("a null keeps its condition", rn["null_steps"][0]["given"], ["among first offenders"])
+nl = "\n".join(mech.census(rn))
+# Mutation: drop the given lines from the census -> fails.
+check("  and the census prints it: not a finding of no effect anywhere",
+      ("where its condition holds" in nl, "given   among first offenders" in nl), (True, True))
+check("a null says how many routes the text's own steps give between its states",
+      "beside  1 route(s)" in nl, True)
+PART = CHAIN.replace('reint:   {label: "Reintegrates", actor: person}',
+                     'reint:   {label: "Reintegrates", actor: person, part_of: order}')
+# Mutation: drop `onward` in _walk -> the dead end comes back.
+check("a part whose whole leads on is not a dead end",
+      any("`reint` leads nowhere" in g for g in run(PART)["shape"]["chain"]["gaps"]), False)
+gl = "\n".join(mech.census(run(GENERALS)["shape"]["chain"]))
+# Mutation: print every akin pair -> fails.
+check("two cases of one general step are said by their case lines, not listed again as a pair",
+      ("nmigr -> nforest  ~  smigr -> sforest" in gl, "and 1 pair(s) of cases of one general step" in gl), (False, True))
+
+PAGED = ("The effect of the long drought is that herders\n\n<!-- p.5 begins here -->\n\nmove to town, "
+         "which reduces forest cover.\n\n| drought | leads to | migration |\n|---|---|---|\n\n"
+         "The census then counts this sentence as causes go.\n")
+# Mutations: drop the after_marker continue -> three sentences; drop the "|" test -> the table row counts.
+check("a sentence a page marker cuts is one sentence, and a table row is none",
+      [ln for ln, _ in mech._sentences(PAGED)], [1, 10])
+
+print("\nprofile 1.8: one link at two grains (via)")
+# G13 (gap tests, 27 Sep 2026): a trial's total effect drawn beside the route the text opens it into
+# read as partial mediation the text never claims. `via` says the step IS that route.
+VIA = (FIXTURE / "via.argdown").read_text(encoding="utf-8")
+FINE = VIA.replace("via: [work, reint]", "")
+fine = {(r["start"], r["outcome"]): r["routes"] for r in run(FINE)["shape"]["chain"]["routes"]}
+rv = run(VIA)
+cv = rv["shape"]["chain"]
+vr = {(r["start"], r["outcome"]): r["routes"] for r in cv["routes"]}
+check("without `via`, the coarse step and the route through work are two routes", fine[("order", "reoff")], 2)
+# Mutation: drop `text_edges - set(opened)` -> 2.
+check("with it, the step IS the route: one", vr[("order", "reoff")], 1)
+check("the opened step is named, with its route", cv["opened"], [["order", "reoff", ["work", "reint"]]])
+check("  and still counted as a step the text asserts", cv["steps"], run(FINE)["shape"]["chain"]["steps"])
+check("the census says so", "via     order -> reoff is the route through work, reint" in "\n".join(mech.census(cv)), True)
+check("  with no finding when the route is the text's and its signs agree",
+      [f["message"] for f in by(rv, "mechanism") if "via" in f["message"] or "nets" in f["message"]], [])
+gone = run(VIA.replace('causes: {from: reint, to: reoff, sign: "-", basis: asserted}', 'causes: {from: reint, to: cost, sign: "-", basis: asserted}'))
+check("a `via` the text's steps do not give is named, and the step walked as its own",
+      (any("no step reint -> reoff" in f["message"] for f in by(gone, "mechanism")), gone["shape"]["chain"]["opened"]), (True, []))
+other = run(VIA + """
+[Some offenders reoffend more]: "Among the youngest, orders were followed by more reoffending."
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "+", basis: study, given: ["the youngest offenders"]}}
+""")
+# Mutation: hold every step on the pair to the route's sign -> a finding against the subgroup's `+`.
+check("another finding on the same pair is not held to the route's sign",
+      [f["message"] for f in by(other, "mechanism") if "nets" in f["message"]], [])
+flip = run(VIA.replace('causes: {from: reint, to: reoff, sign: "-", basis: asserted}', 'causes: {from: reint, to: reoff, sign: "+", basis: asserted}'))
+check("a route that nets the other sign is named", any("nets `+`" in f["message"] for f in by(flip, "mechanism")), True)
+check("a `via` naming no declared state is a fault",
+      any("`via: nowhere` is not a declared state" in f["message"] for f in by(run(VIA.replace("via: [work, reint]", "via: [nowhere]")), "mechanism")), True)
+
+print("\nprofile 1.8: a step on a step (unless, despite, conditions on a state)")
+# G1 (gap tests, 27 Sep 2026): Reason's defences block a hazard -> harm step; Yellowstone's elk
+# suppressed willows DESPITE hunting; metformin's knockouts and the levy's subgroups are conditions.
+BLOCK = (FIXTURE / "blockers.argdown").read_text(encoding="utf-8")
+rb = run(BLOCK)
+cb = rb["shape"]["chain"]
+check("a blocker is named with the step it blocks", cb["blocked"], [["hazard", "harm", "+", ["defence"]]])
+check("  and one that failed, apart", cb["despite"], [["hazard", "harm", "+", ["culture"]]])
+rtb = {(r["start"], r["outcome"]): r for r in cb["routes"]}
+# Mutations: drop unless from _side_edges -> no audit route; drop the flip in _signs -> net +.
+check("a blocker is a cause of the outcome, once, of the opposite sign: audits lower harm",
+      (rtb[("audit", "harm")]["routes"], rtb[("audit", "harm")]["net"]), (1, {"+": 0, "-": 1, "?": 0}))
+check("the failed blocker is walked nowhere, and no gap is found at it",
+      [g for g in cb["gaps"] if "culture" in g], [])
+check("a condition may name a state and its value", "audit: absent" in [c for _, _, recs in cb["strata"] for _, g, _ in recs for c in g], True)
+# Mutation: _strata requires three records -> [].
+check("a pair whose steps differ by condition is grouped, sign by condition",
+      cb["strata"], [["hazard", "harm", [["+", [], ""], ["+", ["audit: absent"], ""], ["0", ["among trained staff"], ""]]]])
+bl = "\n".join(mech.census(cb))
+check("the census says each", ["unless  hazard -> harm (+) is blocked where defence holds" in bl,
+                               "despite hazard -> harm (+) held although culture acted against it" in bl,
+                               "strata  hazard -> harm: + unconditioned; + where audit: absent; 0 where among trained staff" in bl],
+      [True, True, True])
+check("and none of it is a fault", [f["message"] for f in by(rb, "mechanism") if f["severity"] == "!"], [])
+for bad, why in ((BLOCK.replace("unless: defence", "unless: moat"), "`unless: moat` is not a declared state"),
+                 (BLOCK.replace("despite: culture", "despite: harm"), "`despite: harm` names the step's own"),
+                 (BLOCK.replace("{state: audit,", "{state: audits,"), "`given: {state: audits}` is not a declared state")):
+    check(f"a bad G1 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
+print("\nprofile 1.8: time (period, on: trend)")
+# G7 (gap tests, 27 Sep 2026): the badger cull's effect during culling and its null after; the levy
+# "dampening of the rate of increase ... rather than a reversal".
+TIMES = (FIXTURE / "times.argdown").read_text(encoding="utf-8")
+rt = run(TIMES)
+ct = rt["shape"]["chain"]
+# Mutation: drop the period from _strata's key -> the two nulls merge and the pair is not grouped by time.
+check("one pair's findings in two periods are its time course, each with its period",
+      ct["strata"], [["order", "reoff", [["-", [], "while the order runs"], ["0", [], ""], ["0", [], "after the order ends"]]]])
+check("a null says when it holds", ct["null_steps"][0]["periods"], ["after the order ends"])
+check("a step on a trend is named", ct["trends"], [["reoff", "prison", "+"]])
+tl = "\n".join(mech.census(ct))
+check("the census says each", ["strata  order -> reoff: - while the order runs; 0 unconditioned; 0 after the order ends" in tl,
+                               "trend   reoff -> prison (+): moves the trend of prison, not its level" in tl,
+                               "(after the order ends)" in tl], [True, True, True])
+check("`on` is `level` or `trend`",
+      any("`on: rate` is not `level` or `trend`" in f["message"] for f in by(run(TIMES.replace("on: trend", "on: rate")), "mechanism")), True)
+
+print("\nprofile 1.8: magnitude (size, share)")
+# G3 (gap tests, 27 Sep 2026): every text gave sizes; Yellowstone's dispute is ONLY about size.
+SIZES = (FIXTURE / "sizes.argdown").read_text(encoding="utf-8")
+rz = run(SIZES)
+cz = rz["shape"]["chain"]
+check("a size is kept with its step, set out from its parts",
+      cz["sizes"], [["order", "cost", "-", "a third of the cost"],
+                    ["order", "reoff", "-", "-0.12 in the reoffending rate (95% CI -0.20 to -0.04) versus short prison terms at two years"]])
+check("how much of a step runs by its route is named", cz["mediation"],
+      [["order", "cost", "none", ["reoff"]], ["order", "reoff", "partial", ["work", "reint"]]])
+# Mutation: let _opened ignore `share` -> the partial route is walked as the whole step, 1 route.
+check("a step that runs only partly by its route keeps its direct remainder: two routes",
+      {(r["start"], r["outcome"]): r["routes"] for r in cz["routes"]}[("order", "reoff")], 2)
+check("  and is not walked as that route", cz["opened"], [])
+check("a step that does NOT run through a state needs no route through it",
+      [f["message"] for f in by(rz, "mechanism") if "do not give" in f["message"]], [])
+zl = "\n".join(mech.census(cz))
+check("the census says each", ["runs partly through work, reint" in zl, "does NOT run through reoff" in zl,
+                               "size    order -> cost (-): a third of the cost" in zl], [True, True, True])
+mixed = dict(cz, routes=[dict(cz["routes"][0], net={"+": 1, "-": 2, "?": 0})])
+check("a start that raises by some routes and lowers by others is said to turn on size",
+      "which wins is a matter of size" in "\n".join(mech.census(mixed)), True)
+for bad, why in ((SIZES.replace("share: partial", "share: half"), "`share: half` is not one of entire, most, partial, none"),
+                 (SIZES.replace("via: reoff, share: none", "share: none"), "`share` says how much of a step runs by a route")):
+    check(f"a bad G3 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
+
+print("\nprofile 1.8: regimes and thresholds")
+# G2 (gap tests, 27 Sep 2026): dose, place, time since culling, the model -- a regime decides which
+# mechanism runs, and the census composed routes across regimes.
+REG = (FIXTURE / "regimes.argdown").read_text(encoding="utf-8")
+cr = run(REG)["shape"]["chain"]
+rr = {(r["start"], r["outcome"]) for r in cr["routes"]}
+check("without regimes, order reaches prison through reoffending", ("order", "prison") in rts, True)
+# Mutation: ignore regimes in _routes -> the route comes back.
+check("with the two steps in two regimes, no route is composed across them", ("order", "prison") in rr, False)
+check("  while each step still counts", cr["steps"], rc["steps"])
+check("the regimes are named", cr["regimes"], ["at high prison occupancy", "at low prison occupancy"])
+check("a threshold is kept with its step", cr["thresholds"], [["order", "work", "+", "only where the order lasts more than six months"]])
+rl = "\n".join(mech.census(cr))
+check("the census says each", ["regime  2 named" in rl, "thresh  order -> work (+): only past a threshold" in rl], [True, True])
+check("a step in no regime holds in all: a route through it and a regimed step is walked",
+      mech._routes("a", "c", {("a", "b"), ("b", "c")}, ["a", "b", "c"], None, {("a", "b"): {""}, ("b", "c"): {"r1"}})[0], 1)
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

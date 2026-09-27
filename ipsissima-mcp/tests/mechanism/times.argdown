@@ -1,0 +1,81 @@
+// Planted fixture for test_mechanism.py and app/test_mechanism_view.mjs: every expected
+// answer is written in those tests, before the code. Shared so the Python checker and the
+// JavaScript arrangement are held to the same answers on the same file.
+===
+title: "Planted -- periods and a trend (profile 1.8, G7)"
+reconstruction:
+    generated: true
+defaults:
+    chapter: "source/brief.md"
+mechanism:
+    question: "How would community orders reduce reoffending?"
+    levels: [macro, meso, micro]
+    actors:
+        state:    {label: "Government", level: macro}
+        courts:   {label: "Courts", level: meso}
+        prisons:  {label: "Prisons", level: meso}
+        person:   {label: "Offender", level: micro}
+    states:
+        policy:  {label: "More community orders", actor: state, role: intervention}
+        order:   {label: "Community order given", actor: courts}
+        work:    {label: "Stays in work", actor: person}
+        reint:   {label: "Reintegrates", actor: person}
+        reoff:   {label: "Reoffends", actor: person, role: outcome}
+        prison:  {label: "Prison population", actor: prisons, role: outcome}
+        cost:    {label: "Cost", actor: state, role: outcome}
+        risk:    {label: "Risk score", actor: person, appraisal: true}
+===
+
+[Recommend]: The government should use more community orders.
+
+[Orders keep people in work]: "Community orders keep people in work."
+    {fidelity: "quotation", causes: {from: order, to: work, sign: "+", basis: asserted,
+     how: {actor: person, situation: "serving an order at home", response: "keeps the job"}}}
+    +> [Recommend]
+
+[Work helps reintegration]: "People in work reintegrate."
+    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: asserted}}
+    +> [Orders keep people in work]
+
+[Fewer reoffend after orders]: "Fewer people reoffend after community orders than after short prison terms, a study found."
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", basis: study, lag: "two years", period: "while the order runs"}}
+    +> [Recommend]
+
+[Reoffending fills prisons]: "Reoffending sends people back to prison."
+    {fidelity: "quotation", causes: {from: reoff, to: prison, sign: "+", basis: asserted, on: trend}}
+    +> [Recommend]
+
+[Prison deters]: Prison deters reoffending, so fewer orders means less reoffending. #reported
+    {fidelity: "imputation", warrant: "the view the brief sets out to reject",
+     causes: {from: order, to: reoff, sign: "+", basis: asserted}}
+    -> [Recommend]
+
+[No deterrence found]: "A second study found no deterrent effect of prison terms on reoffending."
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "0", basis: study}}
+    -> [Prison deters]
+
+[Orders go to the less risky]: "Courts may give orders to people who were less likely to reoffend in any case." #conceded
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", selects: true, hedged: true}}
+    -> [Fewer reoffend after orders]
+
+[Crowding feeds reoffending]: Crowded prisons rehabilitate no one, so a fuller prison means more reoffending on release. #appraisal
+    {fidelity: "imputation", warrant: "closes the loop the brief leaves open",
+     causes: {from: prison, to: reoff, sign: "+"}}
+    +> [Fewer reoffend after orders]
+
+[Risk scores make themselves true]: Risk scores decide who goes to prison, and prison raises the reoffending that validates them. #appraisal
+    {fidelity: "imputation", warrant: "performativity",
+     causes: [{from: risk, to: order, sign: "-"}, {from: reoff, to: risk, sign: "+", reflexive: true}]}
+
+[Scores are opaque]: Nobody sentenced on a risk score is told what raised it. #appraisal
+    {fidelity: "imputation", warrant: "a reason for the appraisal above, not the text's"}
+    +> [Risk scores make themselves true]
+
+[The study compares like with like]: The study's comparison holds only if courts chose between order and prison as if at random for these people. #appraisal
+    {fidelity: "imputation", warrant: "what the finding needs, which the brief does not say",
+     causes: {from: order, to: reoff, sign: "-", basis: study}}
+    +> [Fewer reoffend after orders]
+
+[The effect fades]: "Once the order ends, the difference in reoffending disappears."
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "0", basis: study, period: "after the order ends"}}
+    -> [Fewer reoffend after orders]

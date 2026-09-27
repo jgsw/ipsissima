@@ -130,13 +130,25 @@ function model(graph) {
         sign: sign, basis: raw.basis || null, tier: tier, fidelity: FIDELITY.indexOf(c.fidelity) >= 0 ? c.fidelity : "compression",
         // A NULL FINDING (sign 0) and a SELECTION LINK are reported, never walked: see mechanism.py.
         isNull: sign === "0", selects: !!raw.selects, hedged: !!raw.hedged,
-        lag: raw.lag == null ? "" : String(raw.lag), given: given.map(String),
+        lag: raw.lag == null ? "" : String(raw.lag), given: given.map(condText),
         how: raw.how && typeof raw.how === "object" ? raw.how : null,
         reflexive: !!raw.reflexive, supports: supports,
         // JOINTLY (profile 1.4): the states together with which alone the step holds.
         jointly: asList(raw.jointly),
         // CHAIN (profile 1.5): which of the text's chains the step belongs to.
-        chain: asList(raw.chain)
+        chain: asList(raw.chain),
+        // VIA (profile 1.8): the finer route the text opens this step into. Not `via`, which a
+        // folded route already carries for the states folded into it.
+        statedVia: asList(raw.via),
+        // UNLESS and DESPITE (profile 1.8): a blocker, and a blocker that failed.
+        unless: asList(raw.unless), despite: asList(raw.despite),
+        // PERIOD and ON (profile 1.8, G7): when the step holds, and whether it moves a level or a trend.
+        period: raw.period == null ? "" : String(raw.period), on: raw.on == null ? "level" : String(raw.on),
+        // SHARE and SIZE (profile 1.8, G3) -- mechanism.py's `share` and _size.
+        share: raw.share != null ? String(raw.share) : raw.via != null ? "entire" : "",
+        // REGIME and THRESHOLD (profile 1.8, G2).
+        regime: raw.regime == null ? "" : String(raw.regime), threshold: raw.threshold == null ? "" : String(raw.threshold),
+        size: sizeText(raw.size), sizeValue: raw.size && typeof raw.size === "object" && raw.size.value != null ? String(raw.size.value) : ""
       });
     });
   });
@@ -248,19 +260,83 @@ function loops(ids, edges) {
   return out;
 }
 
-function routes(start, goal, edges, ids) {
+/** A step's size as the census prints it -- mechanism.py's _size. */
+function sizeText(x) {
+  if (x == null) return "";
+  if (typeof x !== "object" || Array.isArray(x)) return String(x);
+  var out = ["value", "unit"].filter(function (k) { return x[k] != null; }).map(function (k) { return String(x[k]); }).join(" ");
+  if (x.ci != null) out += " (" + x.ci + ")";
+  if (x.versus != null) out += " versus " + x.versus;
+  if (x.at != null) out += " at " + x.at;
+  return out.trim();
+}
+
+/** A condition as the census prints it -- mechanism.py's _cond: the text's words, or a declared
+ *  state and its value. */
+function condText(g) {
+  if (g && typeof g === "object" && !Array.isArray(g)) return String(g.state) + (g.value != null ? ": " + g.value : "");
+  return String(g);
+}
+
+/** Each edge's signs among `steps`, a co-cause's edge taking the sign of its step and a blocker's
+ *  the opposite -- mechanism.py's _signs. */
+function signsOf(steps, states) {
+  var out = {}, flip = { "+": "-", "-": "+" };
+  var add = function (a, b, sg) { var k = a + "\u0000" + b; (out[k] = out[k] || {})[sg || "?"] = true; };
+  steps.forEach(function (s) {
+    add(s.from, s.to, s.sign);
+    (s.jointly || []).forEach(function (j) { if (has(states, j) && j !== s.to) add(j, s.to, s.sign); });
+    (s.unless || []).forEach(function (u) { if (has(states, u) && u !== s.to) add(u, s.to, flip[s.sign] || "?"); });
+  });
+  return out;
+}
+
+/** The net sign of a run of states -- mechanism.py's _net: `+` or `-` where every step has the
+ *  one sign, `?` otherwise. */
+function netSign(signs, run) {
+  var neg = 0;
+  for (var i = 0; i + 1 < run.length; i++) {
+    var sg = Object.keys(signs[run[i] + "\u0000" + run[i + 1]] || {});
+    if (sg.length !== 1 || (sg[0] !== "+" && sg[0] !== "-")) return "?";
+    if (sg[0] === "-") neg++;
+  }
+  return neg % 2 ? "-" : "+";
+}
+
+/** A loop's polarity -- mechanism.py's _polarity. */
+function polarity(loop, signs) {
+  return ({ "+": "reinforcing", "-": "balancing" })[netSign(signs, loop.concat([loop[0]]))] || null;
+}
+
+/** Each edge's regimes -- mechanism.py's _regimes: "" for a step in no regime. */
+function regimesOf(steps, states) {
+  var out = {};
+  steps.forEach(function (s) {
+    [s.from].concat((s.jointly || []).concat(s.unless || []).filter(function (j) { return has(states, j) && j !== s.to; }))
+      .forEach(function (a) { var k = a + "\u0000" + s.to; (out[k] = out[k] || {})[s.regime || ""] = true; });
+  });
+  return out;
+}
+
+/** Routes from start to goal -- mechanism.py's _routes, ONE REGIME TO A ROUTE. */
+function routes(start, goal, edges, ids, signs, regimes) {
   var adj = adjacency(edges, ids);
-  var lengths = [];
-  function walk(v, seen) {
+  var lengths = [], net = { "+": 0, "-": 0, "?": 0 };
+  regimes = regimes || {};
+  function walk(v, seen, allowed) {
     (adj[v] || []).forEach(function (w) {
       if (lengths.length >= ROUTE_CAP) return;
-      if (w === goal) lengths.push(seen.length);
-      else if (seen.indexOf(w) < 0) walk(w, seen.concat([w]));
+      var rs = Object.keys(regimes[v + "\u0000" + w] || { "": true }), now;
+      if (rs.indexOf("") >= 0) now = allowed;
+      else now = allowed == null ? rs : allowed.filter(function (r) { return rs.indexOf(r) >= 0; });
+      if (now != null && !now.length) return;
+      if (w === goal) { lengths.push(seen.length); net[netSign(signs || {}, seen.concat([w]))]++; }
+      else if (seen.indexOf(w) < 0) walk(w, seen.concat([w]), now);
     });
   }
-  walk(start, [start]);
+  walk(start, [start], null);
   return lengths.length ? { routes: lengths.length, shortest: Math.min.apply(null, lengths),
-                            longest: Math.max.apply(null, lengths) } : null;
+                            longest: Math.max.apply(null, lengths), net: net } : null;
 }
 
 /** The chains a block declares (profile 1.5), in declared order -- mechanism.py's _chains. */
@@ -323,7 +399,7 @@ function akinSteps(edges, kindOf, general, chainsOf) {
 
 /** Where a chain starts, what it reaches, its gaps and its routes -- mechanism.py's _walk, run
  *  on the whole text's chain and, since profile 1.5, on each of its chains. */
-function walkChain(ids, states, edges) {
+function walkChain(ids, states, edges, signs, regimes) {
   var interventions = ids.filter(function (i) { return hasRole(states[i], "intervention"); });
   var conditions = ids.filter(function (i) { return hasRole(states[i], "condition"); });
   var outcomes = ids.filter(function (i) { return hasRole(states[i], "outcome"); });
@@ -353,7 +429,10 @@ function walkChain(ids, states, edges) {
                "chain starts" });
   });
   ids.forEach(function (i) {
-    if (used[i] && outcomes.indexOf(i) < 0 && !obj(states[i]).appraisal && !from[i])
+    // A PART GOES ON AS ITS WHOLE -- as the checker has it.
+    var whole = obj(states[i]).part_of;
+    var onward = whole != null && whole !== i && (from[whole] || outcomes.indexOf(whole) >= 0);
+    if (used[i] && outcomes.indexOf(i) < 0 && !obj(states[i]).appraisal && !onward && !from[i])
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
@@ -368,20 +447,37 @@ function walkChain(ids, states, edges) {
   var rs = [];
   entries.forEach(function (e) { outcomes.forEach(function (o) {
     if (o === e) return;          // both where the circle starts and what it explains
-    var r = routes(e, o, edges, ids);
-    if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest });
+    var r = routes(e, o, edges, ids, signs, regimes);
+    if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest, net: r.net });
   }); });
-  return { entries: entries, gaps: gaps, used: used, outcomes: outcomes, routes: rs };
+  return { entries: entries, gaps: gaps, used: used, outcomes: outcomes, routes: rs, interventions: interventions };
 }
 
 /** A co-cause is a cause: the steps' edges, with each co-cause's edge to the step's `to`. */
 function edgesWithCoCauses(steps, states) {
   var edges = uniqEdges(steps);
   var seenEdge = {}; edges.forEach(function (e) { seenEdge[e[0] + "\u0000" + e[1]] = true; });
-  steps.forEach(function (s) { (s.jointly || []).forEach(function (j) {
+  steps.forEach(function (s) { (s.jointly || []).concat(s.unless || []).forEach(function (j) {
     var k = j + "\u0000" + s.to;
     if (has(states, j) && j !== s.to && !seenEdge[k]) { seenEdge[k] = true; edges.push([j, s.to]); } }); });
   return edges;
+}
+
+/** {from\u0000to: via} for each step whose `via` names a route `edges` give -- mechanism.py's
+ *  _opened: that step is walked as the route, once. */
+function openedOf(steps, edges) {
+  var have = {}, out = {};
+  edges.forEach(function (e) { have[e[0] + "\u0000" + e[1]] = true; });
+  steps.forEach(function (s) {
+    if (!(s.statedVia || []).length || s.share !== "entire" || s.from == null || s.to == null) return;
+    var run = [s.from].concat(s.statedVia, [s.to]);
+    for (var i = 0; i + 1 < run.length; i++) if (!have[run[i] + "\u0000" + run[i + 1]]) return;
+    out[s.from + "\u0000" + s.to] = s.statedVia.slice();
+  });
+  return out;
+}
+function withoutOpened(edges, opened) {
+  return edges.filter(function (e) { return !has(opened, e[0] + "\u0000" + e[1]); });
 }
 
 /** A chain's states, each in the role the chain gives it where it gives one. */
@@ -410,9 +506,11 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
   chains.forEach(function (c) {
     var mine = text.filter(function (s) { return s.chain.indexOf(c.id) >= 0; });
     var edges = edgesWithCoCauses(mine, states);
+    edges = withoutOpened(edges, openedOf(mine, edges));
     var cids = chainIds(c, states, ids, mine);
     var cstates = chainStates(c, states, cids);
-    var W = walkChain(cids, cstates, edges);
+    var csigns = signsOf(mine, states);
+    var W = walkChain(cids, cstates, edges, csigns, regimesOf(mine, states));
     var best = {}, titles = {};
     mine.forEach(function (s) { best[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; titles[s.claim.title] = true; });
     var roles = {};
@@ -420,7 +518,7 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     out.push({ id: c.id, label: c.label, question: c.question,
                steps: Object.keys(best).length, claims: Object.keys(titles).length, states: cids,
                roles: roles, entries: W.entries, routes: W.routes,
-               loops: loops(cids, edges).map(function (l) { return { states: l, reflexive: isReflexive(l, mine) }; }),
+               loops: loops(cids, edges).map(function (l) { return { states: l, reflexive: isReflexive(l, mine), polarity: polarity(l, csigns) }; }),
                gaps: W.gaps.map(function (g) { return g.message; }), shared: [] });
     cids.forEach(function (i) { (member[i] = member[i] || []).push(c.id); });
   });
@@ -476,7 +574,11 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   var text = causal.filter(function (s) { return s.layer === "text"; });
   // A CO-CAUSE IS A CAUSE, as the checker has it: routes, loops and dead ends run through it.
   var edges = edgesWithCoCauses(text, states);
-  var W = walkChain(ids, states, edges);
+  // A STEP THE TEXT OPENS INTO A ROUTE IS WALKED AS THAT ROUTE (profile 1.8).
+  var opened = openedOf(text, edges);
+  edges = withoutOpened(edges, opened);
+  var signOf = signsOf(text, states);
+  var W = walkChain(ids, states, edges, signOf, regimesOf(text, states));
   var entries = W.entries, used = W.used, gaps = W.gaps;
 
   // Keyed by SIGN as well: fee -> health (-) and (+, under a condition) are two steps.
@@ -512,21 +614,26 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   Object.keys(used).forEach(function (i) {
     levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
   var lags = {}; text.forEach(function (s) { if (s.lag) lags[s.lag] = true; });
+  // EACH LAG WITH ITS STEP -- as the checker has it.
+  var timed = {}; text.forEach(function (s) { if (s.lag) timed[[s.from, s.to, s.lag].join("\u0000")] = [s.from, s.to, s.lag]; });
+  var cmp3 = function (a, b) { for (var k = 0; k < 3; k++) if (a[k] !== b[k]) return a[k] < b[k] ? -1 : 1; return 0; };
   var claimTitles = {}; text.forEach(function (s) { claimTitles[s.claim.title] = true; });
   return {
     levels: levels,
     levels_spanned: levels.filter(function (lv) { return spanned[lv]; }),
     states: ids.length, steps: Object.keys(best).length,
     claims: Object.keys(claimTitles).length,
-    lags: Object.keys(lags).sort(), entries: entries, routes: rs,
+    lags: Object.keys(lags).sort(),
+    timed: Object.keys(timed).map(function (k) { return timed[k]; }).sort(cmp3),
+    entries: entries, routes: rs, interventions: W.interventions,
     loops_text: loopsText.map(function (l) {
-      return { states: l, reflexive: isReflexive(l, text) }; }),
+      return { states: l, reflexive: isReflexive(l, text), polarity: polarity(l, signOf) }; }),
     feedback: systems(ids, edges).map(function (comp) {
       var inC = {}; comp.forEach(function (v) { inC[v] = true; });
       var inside = loopsText.filter(function (l) { return l.every(function (v) { return inC[v]; }); });
       return { states: comp, loops: inside.length, capped: loopsText.length >= LOOP_CAP,
                shortest: shortestLoops(comp, edges, ids, 3).map(function (l) {
-                 return { states: l, reflexive: isReflexive(l, text) }; }) };
+                 return { states: l, reflexive: isReflexive(l, text), polarity: polarity(l, signOf) }; }) };
     }),
     wholes: (function () {
       var w = {};
@@ -542,13 +649,42 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
       return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; })
                 .map(function (r) { return r[1]; });
     })(),
+    blocked: sideRows(text, "unless"), despite: sideRows(textAll, "despite"),
+    strata: strataOf(textAll),
+    regimes: (function () { var r = {}; textAll.forEach(function (s) { if (s.regime) r[s.regime] = true; }); return Object.keys(r).sort(); })(),
+    thresholds: (function () {
+      var seen = {}, out = [];
+      textAll.forEach(function (s) { if (!s.threshold) return;
+        var k = [s.from, s.to, s.sign, s.threshold].join("\u0000"); if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.sign, s.threshold]]); } });
+      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
+    })(),
+    sizes: (function () {
+      var seen = {}, out = [];
+      textAll.forEach(function (s) { if (!s.size) return;
+        var k = [s.from, s.to, s.sign, s.size].join("\u0000"); if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.sign, s.size]]); } });
+      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
+    })(),
+    mediation: (function () {
+      var seen = {}, out = [];
+      text.forEach(function (s) { if (!(s.statedVia || []).length) return;
+        var k = [s.from, s.to, s.share].concat(s.statedVia).join("\u0000");
+        if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.share, s.statedVia.slice()]]); } });
+      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
+    })(),
+    trends: (function () {
+      var seen = {}, out = [];
+      textAll.forEach(function (s) { if (s.on !== "trend") return;
+        var k = [s.from, s.to, s.sign].join("\u0000"); if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.sign]]); } });
+      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
+    })(),
+    opened: Object.keys(opened).sort().map(function (k) { var e = k.split("\u0000"); return [e[0], e[1], opened[k]]; }),
     spanning: ids.slice().sort().filter(function (i) { return levelsOf(states[i], actors, levels).length > 1; })
                  .map(function (i) { return [i, levelsOf(states[i], actors, levels)]; }),
-    loops_with_appraisal: loops(ids, uniqEdges(pool)).map(function (l) {
-      return { states: l, reflexive: isReflexive(l, pool) }; }),
+    loops_with_appraisal: loops(ids, withoutOpened(uniqEdges(pool), opened)).map(function (l) {
+      return { states: l, reflexive: isReflexive(l, pool), polarity: polarity(l, signsOf(pool, states)) }; }),
     tiers: tiers, gaps: gaps,
     rival_steps: steps.filter(function (s) { return s.layer === "rival"; }).length,
-    null_steps: nullsOf(textAll, steps),
+    null_steps: nullsOf(textAll, steps, edges, ids),
     selection_steps: (function () {
       var seen = {}, out = [];
       textAll.forEach(function (s) { var k = s.from + "\u0000" + s.to;
@@ -565,7 +701,38 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   };
 }
 
-function nullsOf(textAll, steps) {
+/** [from, to, sign, states] for each distinct step with a blocker (`unless`) or a failed one
+ *  (`despite`), sorted as the checker sorts them. */
+function sideRows(steps, key) {
+  var seen = {}, out = [];
+  steps.forEach(function (s) { if (!(s[key] || []).length) return;
+    var row = [s.from, s.to, s.sign, s[key].slice()], k = [s.from, s.to, s.sign].concat(s[key]).join("\u0000");
+    if (!seen[k]) { seen[k] = true; out.push([k, row]); } });
+  return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
+}
+
+/** Each pair whose steps differ by condition -- mechanism.py's _strata. */
+function strataOf(textAll) {
+  var by = {}, order = [];
+  textAll.forEach(function (s) {
+    if (s.selects) return;
+    var k = s.from + "\u0000" + s.to;
+    if (!by[k]) { by[k] = { from: s.from, to: s.to, recs: {} }; order.push(k); }
+    by[k].recs[s.sign + "\u0000" + s.given.join("\u0001") + "\u0000" + s.period] = [s.sign, s.given.slice(), s.period];
+  });
+  var cmpList = function (a, b) {
+    for (var i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
+    return a.length - b.length; };
+  return order.sort().map(function (k) {
+    var recs = Object.keys(by[k].recs).map(function (r) { return by[k].recs[r]; });
+    recs.sort(function (a, b) { return a[0] !== b[0] ? (a[0] < b[0] ? -1 : 1) : cmpList(a[1], b[1]) || (a[2] === b[2] ? 0 : a[2] < b[2] ? -1 : 1); });
+    return [by[k].from, by[k].to, recs];
+  }).filter(function (r) { return r[2].length > 1 && r[2].some(function (x) { return x[1].length || x[2]; }); });
+}
+
+/** The text's null findings -- mechanism.py's _nulls: each with the rival signs it answers, its
+ *  conditions, and the routes the text's own steps give between its states. */
+function nullsOf(textAll, steps, edges, ids) {
   var out = [], seen = {};
   textAll.forEach(function (s) {
     var k = s.from + "\u0000" + s.to;
@@ -575,7 +742,14 @@ function nullsOf(textAll, steps) {
     steps.forEach(function (r) {
       if (r.layer === "rival" && !r.isNull && r.from === s.from && r.to === s.to && r.sign) against[r.sign] = true;
     });
-    out.push({ from: s.from, to: s.to, basis: s.basis, refutes: Object.keys(against).sort() });
+    var given = [], periods = [];
+    textAll.forEach(function (t) {
+      if (t.isNull && t.from === s.from && t.to === s.to) {
+        t.given.forEach(function (g) { if (given.indexOf(g) < 0) given.push(g); });
+        if (t.period && periods.indexOf(t.period) < 0) periods.push(t.period); } });
+    var r = s.from !== s.to ? routes(s.from, s.to, edges || [], ids || []) : null;
+    out.push({ from: s.from, to: s.to, basis: s.basis, refutes: Object.keys(against).sort(),
+               given: given, periods: periods, routes: r ? r.routes : 0 });
   });
   return out;
 }
@@ -808,7 +982,16 @@ function layout(M, opts) {
                   : s.from + "\u0000" + s.to + "\u0000" + s.layer + "\u0000" + kindOf(s) + "\u0000" +
             (kindOf(s) === "step" ? s.sign : "") + "\u0000" + (s.parts ? "route" : "") +
             // "raises" and "raises only together with a wish" say different things: two arrows.
-            ((s.jointly || []).length ? "\u0000&" + s.jointly.join(",") : "");
+            ((s.jointly || []).length ? "\u0000&" + s.jointly.join(",") : "") +
+            // and "raises unless the defences hold" says something else again.
+            ((s.unless || []).length ? "\u0000!" + s.unless.join(",") : "") +
+            // and "slows the rise of" is not "lowers".
+            (s.on === "trend" ? "\u0000~" : "") +
+            // and a step in one regime, or past a threshold, is not the same arrow as one in all.
+            (s.regime ? "\u0000@" + s.regime : "") + (s.threshold ? "\u0000|" : "") +
+            // and two sizes are two findings: merged, Yellowstone's two texts, which agree on the
+            // direction and dispute only the size, drew as one arrow "×2" (G3).
+            (s.size ? "\u0000=" + s.size : "");
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
   });
@@ -959,20 +1142,37 @@ function layout(M, opts) {
     var closes = isBack || ((isVertKey[k] || isSideKey[k]) && ss.some(function (x) { return back[x.id]; }));
     var given = ss.some(function (s) { return s.given.length > 0; });
     var viaName = function (v) { var t = String(obj(M.states[v]).label || v); return t.length > 22 ? t.slice(0, 21) + "…" : t; };
+    // A STEP THE TEXT OPENS INTO A ROUTE (profile 1.8) is labelled as a folded route is: it IS
+    // that route, not a second one beside it.
+    var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire"; }) ? s0.statedVia : null;
+    // THE SIZE ON THE ARROW (G3): two texts that agree on direction and dispute only size drew as
+    // one picture of agreement. One step with a stated value shows it.
+    var sz = s0.sizeValue || s0.size || "";
+    var sizeTag = sz ? " · " + (sz.length > 18 ? sz.slice(0, 17) + "…" : sz) : "";
     var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
-                                            : " · " + ss.length + " routes") : "";
+                                            : " · " + ss.length + " routes")
+              : stated ? " · via " + viaName(stated[0]) + (stated.length > 1 ? " +" + (stated.length - 1) : "") : "";
     var label = breakdown.length > 1
               ? breakdown.slice(0, 2).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
                 (breakdown.length > 2 ? " · +" + (breakdown.length - 2) + " more" : "") +
                 (given ? " ◇" : "") + (closes ? " ↻" : "")
               : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "")
               : kind === "selection" ? "selection" :
-                signWord(signs) + (route || (ss.length > 1 ? " ×" + ss.length : "")) +
+                // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
+                (s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
+                  ? (signs[0] === "+" ? "speeds" : "slows") : signWord(signs)) +
+                // A STEP PAST A THRESHOLD (G2) says so: drawn as a plain "raises" it read as "more
+                // of the one, more of the other", monotone, which Lenton's tipping points are not.
+                (s0.threshold ? " past a threshold" : "") +
+                (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag +
                 (given ? " ◇" : "") + (closes ? " ↻" : "");
     var jointly = [];
     ss.forEach(function (x) { (x.jointly || []).forEach(function (j) {
       if (has(M.states, j) && nodes[j] && j !== s0.to && jointly.indexOf(j) < 0) jointly.push(j); }); });
-    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
+    var blockers = [];
+    ss.forEach(function (x) { (x.unless || []).forEach(function (j) {
+      if (has(M.states, j) && nodes[j] && j !== s0.to && blockers.indexOf(j) < 0) blockers.push(j); }); });
+    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
              ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P,
              // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
@@ -1049,6 +1249,10 @@ function foldSteps(M, folded, nodes) {
           // A route holds only with every co-cause of every step on it.
           jointly: (i.jointly || []).concat((o.jointly || []).filter(function (j) { return (i.jointly || []).indexOf(j) < 0; }))
                      .filter(function (j) { return j !== o.to; }),
+          // and is blocked by whatever blocks any step on it.
+          unless: (i.unless || []).concat((o.unless || []).filter(function (j) { return (i.unless || []).indexOf(j) < 0; }))
+                     .filter(function (j) { return j !== o.to; }),
+          despite: [], statedVia: [],
           claim: null
         });
       });
@@ -1089,20 +1293,22 @@ var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
  *  only from a co-cause on the page; the panel names every one whatever is drawn. */
 var JUNCTION_T = 0.8;
 function stemsOf(e, shown) {
-  if (!e.jointly.length) return;
+  if (!e.jointly.length && !e.blockers.length) return;
   var P = e.curve, t = e.back ? 0.5 : JUNCTION_T;
   var at = function (u) { return [bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)]; };
   var J = at(t), J1 = at(t - 0.02), J2 = at(Math.min(1, t + 0.02));
   var dx = J2[0] - J1[0], dy = J2[1] - J1[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
   var nx = -dy / len * 8, ny = dx / len * 8;
-  e.junction = { x: J[0], y: J[1], bar: "M" + (J[0] - nx) + "," + (J[1] - ny) + " L" + (J[0] + nx) + "," + (J[1] + ny) };
+  e.junction = e.jointly.length ? { x: J[0], y: J[1], bar: "M" + (J[0] - nx) + "," + (J[1] - ny) + " L" + (J[0] + nx) + "," + (J[1] + ny) } : null;
   // THE STEM GOES ROUND, NOT THROUGH. On the planted boat the wish sat in the row of the belief it
   // joins, one column back, and a stem from its right side ran straight through the belief's box.
   // Three ways are tried -- from the side, under the row, over it -- and the first that crosses
   // no box is taken, else the one that crosses least.
   var others = Object.keys(shown).filter(function (v) { return v !== e.to; });
-  e.jointly.forEach(function (j) {
-    var n = shown[j];
+  // A BLOCKER (profile 1.8) takes the same way in, and stops short of the arrow on a bar across its
+  // own end: the inhibition mark, where a co-cause's stem runs on to the bar across the arrow.
+  e.jointly.concat(e.blockers).forEach(function (j, idx) {
+    var n = shown[j], blocks = idx >= e.jointly.length;
     if (!n) return;
     var cands = [];
     var sx = n.x + n.w, sy = n.y + n.h / 2;
@@ -1111,17 +1317,28 @@ function stemsOf(e, shown) {
     cands.push([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [J[0], low]]);
     cands.push([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [J[0], high]]);
     var best = cands[0], bestHits = Infinity;
+    // A blocker's stem stops short of the arrow on a bar, so it must not reach it through the box
+    // the arrow enters: on the planted defences it dipped through "Harm" and read as a step into it.
+    var obst = blocks ? others.concat([e.to]) : others;
     cands.forEach(function (c) {
       var hits = 0;
       for (var i = 1; i < 20; i++) {
         var u = i / 20, px = bez(c[0][0], c[1][0], c[2][0], J[0], u), py = bez(c[0][1], c[1][1], c[2][1], J[1], u);
-        others.forEach(function (v) { var m = shown[v];
+        obst.forEach(function (v) { var m = shown[v];
           if (px > m.x + 2 && px < m.x + m.w - 2 && py > m.y + 2 && py < m.y + m.h - 2) hits++; });
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });
-    e.stems.push({ state: j, path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
-                                   best[2][0] + "," + best[2][1] + " " + J[0] + "," + J[1] });
+    var end = J, tbar = null;
+    if (blocks) {
+      var ux = J[0] - best[2][0], uy = J[1] - best[2][1], ul = Math.sqrt(ux * ux + uy * uy) || 1;
+      ux /= ul; uy /= ul;
+      end = [J[0] - ux * 7, J[1] - uy * 7];
+      tbar = "M" + (end[0] + uy * 7) + "," + (end[1] - ux * 7) + " L" + (end[0] - uy * 7) + "," + (end[1] + ux * 7);
+    }
+    e.stems.push({ state: j, blocks: blocks, tbar: tbar,
+                   path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
+                         best[2][0] + "," + best[2][1] + " " + end[0] + "," + end[1] });
   });
 }
 
@@ -1376,6 +1593,9 @@ function collapseModel(M) {
     c.jointly = [];
     (s.jointly || []).forEach(function (j) { var t = has(top, j) ? top[j] : j;
       if (t !== b && c.jointly.indexOf(t) < 0) c.jointly.push(t); });
+    c.unless = [];
+    (s.unless || []).forEach(function (j) { var t = has(top, j) ? top[j] : j;
+      if (t !== b && c.unless.indexOf(t) < 0) c.unless.push(t); });
     if (a !== s.from || b !== s.to) { c.partFrom = s.from; c.partTo = s.to; }
     steps.push(c);
   });
@@ -1399,7 +1619,7 @@ function chainModel(M, id) {
   var inIds = {};
   chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
   M.steps.forEach(function (s) { if (s.chain.indexOf(id) >= 0) {
-    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
+    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || []).forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
   var ids = M.ids.filter(function (i) { return inIds[i]; });
   var steps = M.steps.filter(function (s) {
     return s.chain.indexOf(id) >= 0 || (s.layer !== "text" && !s.chain.length && inIds[s.from] && inIds[s.to]); });
@@ -1620,6 +1840,7 @@ function create(container, graph, opts) {
         var sp = el("path", { d: sm.path, "class": "ed stem", stroke: col, "stroke-width": st.width, "data-stem": sm.state }, g);
         if (st.dash) sp.setAttribute("stroke-dasharray", st.dash);
         el("path", { d: sm.path, "class": "hit" }, g);
+        if (sm.tbar) el("path", { d: sm.tbar, "class": "junction", stroke: col, "stroke-width": st.width + 2, "data-blocker": sm.state }, g);
       });
       if (e.junction) el("path", { d: e.junction.bar, "class": "junction", stroke: col, "stroke-width": st.width + 2 }, g);
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
@@ -1643,6 +1864,7 @@ function create(container, graph, opts) {
       var title = el("title", {}, g);
       title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
         (e.jointly.length ? ", holding only together with " + e.jointly.map(function (j) { return obj(M.states[j]).label || j; }).join(" and ") : "") +
+        (e.blockers.length ? ", unless " + e.blockers.map(function (j) { return obj(M.states[j]).label || j; }).join(" or ") + " holds" : "") +
         " — click to see";
       var pick = function (ev) { ev.stopPropagation(); select({ edge: e, path: p }); };
       g.addEventListener("click", pick);
@@ -1721,7 +1943,7 @@ function create(container, graph, opts) {
         km.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
       }
       // A co-cause is linked: its step is the one it joins (profile 1.4).
-      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0) && x.layer === "text"; }))
+      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0) && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
     });
@@ -1751,7 +1973,7 @@ function create(container, graph, opts) {
     }
     if (selected.edge) {
       var k = {}; k[selected.edge.from] = k[selected.edge.to] = true;
-      selected.edge.jointly.forEach(function (j) { k[j] = true; });
+      selected.edge.jointly.concat(selected.edge.blockers).forEach(function (j) { k[j] = true; });
       return { nodes: k, edge: function (e) { return e.key === selected.edge.key; } };
     }
     var v = selected.state, up = {}, down = {};
@@ -1760,7 +1982,7 @@ function create(container, graph, opts) {
       while (stack.length) {
         var x = stack.pop();
         vis.forEach(function (e) {
-          [e.from].concat(e.jointly).forEach(function (src) {
+          [e.from].concat(e.jointly, e.blockers).forEach(function (src) {
             var from = dir > 0 ? src : e.to, to = dir > 0 ? e.to : src;
             if (from === x && !into[to] && to !== v) { into[to] = true; stack.push(to); }
           });
@@ -1772,7 +1994,7 @@ function create(container, graph, opts) {
     Object.keys(up).forEach(function (x) { nodes[x] = true; });
     Object.keys(down).forEach(function (x) { nodes[x] = true; });
     return { nodes: nodes, edge: function (e) {
-      return [e.from].concat(e.jointly).some(function (src) {
+      return [e.from].concat(e.jointly, e.blockers).some(function (src) {
         return (up[src] && (up[e.to] || e.to === v)) || ((src === v || down[src]) && down[e.to]); });
     } };
   }
@@ -1781,7 +2003,7 @@ function create(container, graph, opts) {
     drawnEdges.forEach(function (d) {
       var on = !f || f.edge(d.e);
       d.g.classList.toggle("dim", !on); d.chip.classList.toggle("dim", !on);
-      if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.forEach(function (j) { lit[j] = true; }); }
+      if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.concat(d.e.blockers).forEach(function (j) { lit[j] = true; }); }
     });
     Object.keys(drawnNodes).forEach(function (v) {
       var g = drawnNodes[v];
@@ -1808,6 +2030,17 @@ function create(container, graph, opts) {
       (s.selects ? " · <b>a selection link, not an effect</b>" : "") +
       (s.hedged ? " · hedged: the text says it may" : "") +
       ((s.jointly || []).length ? " · <b>only together with</b> " + s.jointly.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") : "") +
+      ((s.unless || []).length ? " · <b>unless</b> " + s.unless.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" or ") + " holds: it blocks the step" : "") +
+      (s.period ? " · when: " + esc(s.period) : "") +
+      (s.size ? " · <b>size</b>: " + esc(s.size) : "") +
+      (s.regime ? " · <b>regime</b>: " + esc(s.regime) : "") +
+      (s.threshold ? " · <b>only past a threshold</b>: " + esc(s.threshold) : "") +
+      ((s.statedVia || []).length && s.share !== "entire" ? " · " + (s.share === "none" ? "<b>not</b> through " : "runs " + (s.share === "most" ? "mostly" : "partly") + " through ") +
+        s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") : "") +
+      (s.on === "trend" ? " · <b>on the trend</b>: it " + (s.sign === "-" ? "slows" : s.sign === "+" ? "speeds" : "changes") + " the change in its effect, not its level" : "") +
+      ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
+      ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
+        ": this link and that route are one, counted once" : "") +
       (s.supports ? " · " + s.supports + " supporting claim" + (s.supports === 1 ? "" : "s") + " in the map" : "");
     if (s.partFrom) meta += ' · inside the boxes: ' + esc(obj(FULL.states[s.partFrom]).label || s.partFrom) + ' → ' +
       esc(obj(FULL.states[s.partTo]).label || s.partTo);
@@ -1822,10 +2055,11 @@ function create(container, graph, opts) {
    *  paragraph describing them asked the reader to translate; a sample of each line, beside its
    *  meaning, does not. Only the kinds this chain uses are listed. */
   function legendHTML() {
-    var ink = {}, fid = {}, tier = {}, isNull = false, joint = false;
+    var ink = {}, fid = {}, tier = {}, isNull = false, joint = false, blocked = false;
     G.edges.forEach(function (e) {
       if (e.layer !== "text" && !layers[e.layer]) return;
-      if (e.stems.length) joint = true;
+      if (e.jointly.length) joint = true;
+      if (e.blockers.length) blocked = true;
       ink[e.ink] = true; fid[e.fidelity] = true; if (e.kind === "null") isNull = true; else tier[e.tier] = true;
     });
     var line = function (color, width, dash, cap) {
@@ -1850,6 +2084,9 @@ function create(container, graph, opts) {
     if (joint) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C14,14 20,8 24,8" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
       '<line x1="2" y1="8" x2="44" y2="8" stroke="var(--mv-text)" stroke-width="2"/><line x1="24" y1="1" x2="24" y2="15" stroke="var(--mv-text)" stroke-width="4"/></svg>',
       "a stem to a bar: the step holds only together with that state");
+    if (blocked) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C12,14 18,10 20,10" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
+      '<line x1="20" y1="4" x2="20" y2="16" stroke="var(--mv-text)" stroke-width="4"/><line x1="2" y1="3" x2="44" y2="3" stroke="var(--mv-text)" stroke-width="2"/></svg>',
+      "a stem ending in a bar: the step holds unless that state does");
     return out + '</div>';
   }
   /** A route through folded states: the states it passes, what it adds up to, and each step's
@@ -1889,7 +2126,8 @@ function create(container, graph, opts) {
           f.states.length + ' states, ' + f.loops + (f.capped ? '+' : '') + ' loops</button>'; }).join("") +
       LOOPS.map(function (l, i) {
         return '<button type="button" class="amech-loop" data-loop="' + i + '">↻' + (LOOPS.length > 1 ? (i + 1) : "") + ' ' +
-          esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
+          esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.polarity ? ' <i>(' + l.polarity + ')</i>' : '') +
+          (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
                                        : "none closed in the text";
     var gapText = function (g) {
       var s = g.state ? "“" + label(g.state) + "”" : "";
@@ -1917,10 +2155,14 @@ function create(container, graph, opts) {
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       '<div class="amech-row"><span class="k">height</span><span>' + P.levels_spanned.length + ' of ' + P.levels.length + ' levels' +
         (P.levels_spanned.length ? ': ' + esc(P.levels_spanned.join(", ")) : '') + '</span></div>' +
-      '<div class="amech-row"><span class="k">length</span><span>' + (P.lags.length ? 'lags stated: ' + P.lags.map(esc).join("; ") : 'no timing stated') + '</span></div>' +
+      // EACH LAG WITH ITS STEP, one to a line: joined with "; ", timings that hold "; " could not be read.
+      '<div class="amech-row"><span class="k">length</span><span>' + ((P.timed || []).length ? P.timed.map(function (t) {
+        return esc(label(t[0]) + " \u2192 " + label(t[1]) + ": " + t[2]); }).join("<br>") : 'no timing stated') + '</span></div>' +
       '<div class="amech-row"><span class="k">loops</span><span>' + loopText + '</span></div>' +
       (P.null_steps.length ? '<div class="amech-row"><span class="k">no effect</span><span>' +
         P.null_steps.map(function (n) { return esc(label(n.from) + " \u2192 " + label(n.to)) +
+          // A CONDITIONAL NULL SAYS SO: "no effect" alone read a knockout as the opposite of its point.
+          ((n.given || []).length ? ' <span class="amech-q">(only where: ' + n.given.map(esc).join("; ") + ')</span>' : "") +
           (n.refutes.length ? ' <span class="amech-q">(against the rival view)</span>' : ""); }).join("<br>") + '</span></div>' : '') +
       (P.selection_steps.length ? '<div class="amech-row"><span class="k">selection</span><span>' +
         P.selection_steps.map(function (x) { return esc(label(x[0]) + " \u2192 " + label(x[1])); }).join("<br>") +

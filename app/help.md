@@ -601,6 +601,29 @@ stem in, as linked premises join in the Reasons map. The step's panel says *only
 A state the text puts at more than one level at once — an expectation that is both many people's
 belief and a fact about their society — is drawn as one tall box through every level it holds at.
 
+**Thresholds and regimes.** An arrow that reads **raises past a threshold** is a step the text
+says acts only once its cause passes a threshold, not one that grows smoothly with it. A step's
+panel names the regime it holds in where the text gives one (a dose, a place, a model). The
+checker never joins steps from two regimes into one route.
+
+**Sizes.** Where the text gives how much, a step's arrow carries the value after its direction
+("lowers · −0.12"). Its panel gives the size in full, with its interval and what it was measured
+against, and says where a link runs only partly through a route, or not through it at all.
+
+**Trends and periods.** An arrow that reads **slows** or **speeds** is a step on a trend: the
+text finds that one thing slowed or sped the change in another, not that it lowered or raised it.
+A step's panel gives the period it holds in where the text names one ("after culling ended").
+
+**A blocker.** Where the text says a step holds *unless* something else does (defences between a
+hazard and harm), a stem runs from that state and stops on a short bar across its own end, the
+mark of a blocker. The step's panel says *unless*, and also *despite* where the text says the
+step held although something acted against it.
+
+**A link the text opens into a route.** A text often states a link whole and then says how it
+runs: a trial's total effect, then the mechanism through which it came about. The map marks the
+whole link `via` the states between, and its arrow is labelled *via* the first of them, as a folded
+route is. It is the same route, counted once, not a second route beside the finer one.
+
 ### What an arrow says
 
 Each arrow is drawn the way the rest of Ipsissima draws things:
@@ -617,8 +640,11 @@ Its label says which way the effect runs: **raises** (more of the first brings m
 second) or **lowers** (more of the first, less of the second). These are effects, not the support
 and attack of the Reasons map, so they are written as words rather than + and −. A line ending in
 a bar, marked **no effect**, is a finding that nothing is brought about — often the text's answer
-to a rival view's arrow beside it. The **Legend** beside the chain shows each kind of line this
-map uses.
+to a rival view's arrow beside it. Where the text finds no effect only under a condition (a
+knockout, a subgroup, a place), the chain's panel gives the condition beside it, since a null that
+holds only there is no finding that the first never affects the second. The panel also names each
+loop **reinforcing** or **balancing** when every step on it has one sign, and lists each stated
+timing with its own step. The **Legend** beside the chain shows each kind of line this map uses.
 
 ### Studying the chain
 

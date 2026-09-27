@@ -638,6 +638,17 @@ console.log("\npositions: echoes — where else the text states a claim");
   eq("the claim itself stays where it is argued", [byId.c.line, byId.c.section], [11, "2. Evidence"]);
 }
 
+{
+  // THE ABSTRACT ONLY IN THE FRONT MATTER (Yellowstone, 27 Sep 2026): the one copy there is counts.
+  // Mutation: return null where the loop ends -> fails.
+  const src = { "F.md": ["---", "abstract: >-", "  Wolves restored the willows along the northern streams of the park.", "---", "",
+                          "# 1. Introduction", "", "The paper then goes on in ordinary prose about other matters entirely.", ""].join("\n") };
+  const { byId } = P.positions([{ id: "f", chapter: "F.md", detail: "ordinary prose about other matters",
+    echoes: ["Wolves restored the willows along the northern streams of the park."] }], src, 'chapters:\n  - "F.md"\n');
+  eq("an echo of an abstract kept only in the front matter is found there, as the checker finds it",
+     (byId.f.echoes || []).map(e => e.line), [3]);
+}
+
 console.log("\nword counts: the bands, the opening, and not the converter's notes");
 {
   const w = P.wordCounts(FIX);

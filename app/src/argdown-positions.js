@@ -698,17 +698,20 @@ function findInText(quote, lines, chapterText) {
   if (!parts.length || !lines) return null;
   var n = normaliseSource(chapterText), hay = n.lower || (n.lower = n.text.toLowerCase());
   var textual = foldedLines(lines), first = parts[0].toLowerCase(), from = 0;
+  // THE ABSTRACT ONLY IN THE FRONT MATTER counts when there is no other copy -- as the checker.
+  var fm = /^---\n[\s\S]*?\n---\n/.exec(chapterText || ""), fmLines = fm ? fm[0].split("\n").length - 1 : 0, fallback = null;
   for (;;) {
     var start = hay.indexOf(first, from);
-    if (start < 0) return null;
+    if (start < 0) return fallback;
     var pos = start + parts[0].length, ok = true;
     for (var i = 1; i < parts.length && ok; i++) {
       var idx = hay.indexOf(parts[i].toLowerCase(), pos);
       if (idx < 0) ok = false; else pos = idx + parts[i].length;
     }
-    if (!ok) return null;
+    if (!ok) return fallback;
     var line = n.lineOf[start];
     if (textual[line - 1]) return line;
+    if (fallback == null && line <= fmLines) fallback = line;
     from = start + 1;
   }
 }

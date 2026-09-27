@@ -384,7 +384,10 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         # reader cites can start anywhere (a JSTOR cover makes sheet 2 into p. 121). The first
         # run to hit this hand-derived every pinpoint from page images without being told to.
         if pages and Path(p).suffix.lower() == ".pdf":
-            notes.append("the <!-- p.N --> markers number the PDF's sheets; the printed page a "
+            # NO COMMENT MARKS IN A NOTE: a note copied into a source's header comment closed it
+            # at the `-->`, and the census read the rest of the header as the author's text
+            # (Lenton gap test, 27 Sep 2026).
+            notes.append("the page markers (p.N begins here) number the PDF's sheets; the printed page a "
                          "reader cites can differ (covers, front matter). Check one page "
                          "before writing pinpoint: values")
         results.append(dict(

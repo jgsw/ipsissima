@@ -1319,17 +1319,26 @@ def _find_in_text(quote, text):
     textual = _folded_text_lines(lines)
     norm, line_of = normalise(text)
     hay, first, start = norm.lower(), parts[0].lower(), 0
+    fm = re.match(r"---\n.*?\n---\n", text, flags=re.S)
+    fm_lines, fallback = (fm.group(0).count("\n") if fm else 0), None
     while True:
         at = hay.find(first, start)
         if at < 0:
-            return "absent", None
+            break
         spans = _locate_parts(parts, hay[at:])
         if not spans:
-            return "absent", None
+            break
         line = line_of[at]
         if line - 1 < len(textual) and textual[line - 1]:
             return "exact", line
+        if fallback is None and line <= fm_lines:
+            fallback = line
         start = at + 1
+    # THE ABSTRACT ONLY IN THE FRONT MATTER. Where the converter dropped the printed abstract (a
+    # letter-spaced "A B S T R A C T" it could not read), the front matter's copy is the only one,
+    # and every echo into it was reported absent while a claim quoting the same words verified --
+    # six times on Yellowstone (gap tests, 27 Sep 2026). The copy counts only when there is no other.
+    return ("exact", fallback) if fallback else ("absent", None)
 
 
 def check_echoes(doc, source_root):
