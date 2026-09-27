@@ -507,11 +507,11 @@ PROFILE_VERSION = _profile_version()
 
 
 #: Every key that something -- this checker, or the app's views -- actually reads off a node.
-#: PROVENANCE_FIELDS is what the analysis here merges; `pinpoint` and `reviewed` are drawn in
-#: the app; `uses`, `formalization` and `formalized` ride on premise-conclusion lines;
+#: PROVENANCE_FIELDS is what the analysis here merges (`pinpoint` among them, since placement
+#: reads it); `reviewed` is drawn in the app; `uses`, `formalization` and `formalized` ride on
+#: premise-conclusion lines;
 #: `isGroup` on headings.
-EXTRA_DATA_KEYS = ("pinpoint", "reviewed", "uses", "formalization", "formalized", "isGroup",
-                   "causes")
+EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the

@@ -155,6 +155,12 @@ whose words match no paragraph. Most of them are the reconstructor's imputations
 interpretations, which have no words in the text to be placed by. A claim quoted from a
 **footnote** is placed where the text marks the note, beside the sentence the note glosses.
 
+When a claim's words stand in **more than one place** (in the abstract and in the results, say,
+or twice in the body), it is placed in the text proper rather than a file's front matter or a
+converter's note. It goes on the page its `pinpoint` cites, if its words are on that page, and
+outside the abstract. Otherwise it goes at the earliest. The other places are what
+`--echo-candidates` offers as echoes.
+
 The **Map**, **Argdown**, **Notes** and **Manuscript** buttons beside them are something else
 again — those are panes, and any combination of them can be open at once.
 

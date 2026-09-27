@@ -532,7 +532,9 @@ export function toGraph(res) {
 
   // `echoes`: the other places the text states the claim, as the author's words -- drawn as a
   // faint echo in the exposition view, never a node of its own (argdown-positions `placeEchoes`).
-  const PROV = ["chapter", "section", "line", "lineSource", "source", "echoes"];
+  // `pinpoint`: the page or paragraph the reconstructor cites, which decides between two places
+  // the claim's words stand (argdown-positions `chooseOccurrence`).
+  const PROV = ["chapter", "section", "line", "lineSource", "source", "echoes", "pinpoint"];
   // FRONT-MATTER DEFAULTS. `chapter` is the same on every claim of a single-source
   // reconstruction and `reviewed` is the date of the pass -- together about 15% of the bytes of
   // a finished map, retyped per claim and stale the moment a file is renamed. Declared once:

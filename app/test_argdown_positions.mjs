@@ -132,6 +132,9 @@ console.log("\nquotation location");
      P.findQuote("He wrote that culture ... this matters", src), 3);
   eq("a quotation that is not there gives nothing",
      P.findQuote("culture is a fixed inheritance", src), null);
+  // Bates carries thirteen soft hyphens mid-line; Python dropped them and this did not.
+  eq("a soft hyphen in the source is invisible, as it is to Python",
+     P.findQuote("be offered for free", "should be \u00adoffered for free"), 1);
 }
 
 console.log("\npositions: precision order");
@@ -326,6 +329,87 @@ console.log("\npositions: the claim's own words are a quotation");
      byId.short.precision !== "quotation", byId.short.precision);
   ok("an <Argument>'s text is its reconstructor's summary, not a passage",
      byId.arg.precision !== "quotation", byId.arg.precision);
+}
+
+/* WHICH OCCURRENCE (recommendation 4, 27 Sep 2026). A claim's words often stand in several
+ * places -- the front matter's copy of the abstract, the printed abstract, the body, a page the
+ * pinpoint names -- and the earliest used to win. The cases are Bates's (findings drawn in the
+ * abstract, one off its pinpoint's page), Wilson's (the contention in the YAML front matter) and
+ * Wolff's (two quotations, the first listed later in the text than the second). */
+const PAD = " These words make the paragraph a stretch of real prose rather than a stub.".repeat(3);
+const E = [
+  "---", "title: A paper", 'subtitle: "A study of price and use in poor households"',
+  "abstract: >-", "  Tiny fees sharply cut the adoption of useful products.", "---", "",
+  "<!-- p.30 begins here -->", "",
+  "> Abstract. Tiny fees sharply cut the adoption of useful products. We also find that " +
+    "paying does not make people use a product.", "",
+  "# 1 Results", "",
+  "Across ten trials, tiny fees sharply cut the adoption of useful products, by as much as " +
+    "eighty per cent." + PAD, "",
+  "<!-- p.34 begins here -->", "",
+  "We repeat the finding: tiny fees sharply cut the adoption of useful products." + PAD, "",
+  "Paying does not make people use a product, on the evidence of two further trials." + PAD, "",
+  "Abstract ideas are formed by custom, as Hume says, and this sentence is the text." + PAD, "",
+  "<!-- p.36 begins here -->", "",
+  "# 2 Discussion", "",
+  "The second quotation stands here: the price of a thing shapes its use." + PAD, "",
+  "Later still, we find again that paying does not make people use a product." + PAD, ""
+];
+const EF = [
+  "# A title", "", "## Abstract", "",
+  "The argument is that ceremonies bind a community together over time.", "",
+  "## 1 Introduction", "",
+  "We argue here that ceremonies bind a community together over time, and more besides." + PAD,
+  ""
+];
+const EFIX = { "E.md": E.join("\n"), "F.md": EF.join("\n") };
+const at = (lines, s) => lines.findIndex(l => l.includes(s)) + 1;
+// The claims, as a map would write them; placed below by both languages.
+const EMAP = [
+  { t: "abs",      d: 'It finds that "tiny fees sharply cut the adoption of useful products".' },
+  { t: "pin",      d: 'It finds that "tiny fees sharply cut the adoption of useful products".', pin: "p. 34" },
+  { t: "pinpair",  d: 'It finds that "tiny fees sharply cut the adoption of useful products".', pin: "pp. 30, 34" },
+  { t: "pinmiss",  d: 'It finds that "tiny fees sharply cut the adoption of useful products".', pin: "p. 121" },
+  { t: "own",      d: "paying does not make people use a product" },
+  { t: "ownpin",   d: "paying does not make people use a product", pin: "p. 36" },
+  { t: "onlyabs",  d: 'The abstract says "We also find that paying" as its bridge.' },
+  { t: "onlyfront", d: 'Its subtitle is "A study of price and use in poor households".' },
+  { t: "multi",    d: 'Both "the price of a thing shapes its use" and "by as much as eighty per cent".' },
+  { t: "multipin", d: 'Both "the price of a thing shapes its use" and "by as much as eighty per cent".', pin: "p. 36" },
+  { t: "headed",   d: 'It says "ceremonies bind a community together over time".', ch: "F.md" }
+];
+const EWANT = {
+  abs: at(E, "Across ten trials"), pin: at(E, "We repeat the finding"),
+  pinpair: at(E, "Across ten trials"), pinmiss: at(E, "Across ten trials"),
+  own: at(E, "Paying does not make"), ownpin: at(E, "Later still"),
+  onlyabs: at(E, "> Abstract."), onlyfront: at(E, "subtitle:"),
+  multi: at(E, "Across ten trials"), multipin: at(E, "The second quotation"),
+  headed: at(EF, "We argue here")
+};
+
+console.log("\npositions: which of several places a claim's words stand");
+{
+  const { byId } = P.positions(EMAP.map(c => ({ id: c.t, chapter: c.ch || "E.md", detail: c.d,
+                                                 pinpoint: c.pin })),
+                               EFIX, 'chapters:\n  - "E.md"\n  - "F.md"\n');
+  const line = t => byId[t] && byId[t].line;
+  eq("the body, not the front matter's copy nor the printed abstract", line("abs"), EWANT.abs);
+  eq("  the page the pinpoint cites, when the words are on it", line("pin"), EWANT.pin);
+  eq("  a pinpoint naming the abstract's page and the body's still gets the body",
+     line("pinpair"), EWANT.pinpair);
+  eq("  a pinpoint naming a page the text does not carry changes nothing",
+     line("pinmiss"), EWANT.pinmiss);
+  eq("the claim's own words follow the same rule", line("own"), EWANT.own);
+  eq("  and their pinpoint too", line("ownpin"), EWANT.ownpin);
+  eq("words found only in the abstract are placed there", line("onlyabs"), EWANT.onlyabs);
+  eq("  and words found only in the front matter, there", line("onlyfront"), EWANT.onlyfront);
+  eq("of two quotations, the earlier in the text, not the first listed",
+     line("multi"), EWANT.multi);
+  eq("  unless the pinpoint cites the other's page", line("multipin"), EWANT.multipin);
+  eq("a section headed Abstract is an abstract too", line("headed"), EWANT.headed);
+  const z = P.textZones(E);
+  eq("a paragraph opening with the word as a label is an abstract; one about abstract ideas is not",
+     [z[at(E, "> Abstract.") - 1], z[at(E, "Abstract ideas") - 1]], ["abstract", ""]);
 }
 
 console.log("\npositions: a note is read at its mark");
@@ -533,6 +617,35 @@ console.log("\nthe note and own-words rules agree with Python");
      titles.map(t => (py[t] && py[t].note) || null), titles.map(t => (js[t] && js[t].note) || null));
 }
 
+console.log("\nthe choice among several places agrees with Python");
+{
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "argpos-occ-"));
+  for (const [f, text] of Object.entries(EFIX)) fs.writeFileSync(path.join(dir, f), text);
+  const q = s => s.replace(/"/g, '\\"');
+  // Under one root, because a statement with no relation never reaches the map.
+  const map = "[root]: The fixture's claims, each a reason for this.\n" +
+    EMAP.map(c => `  + [${c.t}]: ${c.d}\n      {chapter: "${c.ch || "E.md"}"` +
+                  (c.pin ? `, pinpoint: "${q(c.pin)}"` : "") + "}\n").join("");
+  const file = path.join(dir, "occ.argdown");
+  fs.writeFileSync(file, map);
+  const graph = toGraph(await argdown.runAsync({ input: map, ...RUN }));
+  const { byId } = P.positions(graph.nodes, EFIX, 'chapters:\n  - "E.md"\n  - "F.md"\n');
+  const js = {};
+  for (const n of graph.nodes) if (byId[n.id]) js[n.label] = byId[n.id];
+  const cli = path.join(HERE, "node_modules", ".bin", "argdown");
+  execFileSync(cli, ["json", file, "--outputDir", dir], { stdio: "ignore" });
+  const py = JSON.parse(execFileSync("python3",
+    [path.join(SKILL, "argdown_provenance.py"), path.join(dir, "occ.json"), dir],
+    { encoding: "utf8" }));
+  fs.rmSync(dir, { recursive: true, force: true });
+  const titles = EMAP.map(c => c.t);
+  eq("the map's reading of every fixture claim is the one the fixture wants",
+     titles.map(t => [t, js[t] && js[t].line]), titles.map(t => [t, EWANT[t]]));
+  eq("  and Python places each at the same line, with the same precision",
+     titles.map(t => [t, py[t] && py[t].line, py[t] && py[t].precision]),
+     titles.map(t => [t, js[t] && js[t].line, js[t] && js[t].precision]));
+}
+
 console.log("\nthe band is derived in ONE place");
 {
   // THIS IS WHAT THE TEST IS FOR. The rule lived in `positions` and was then worked out AGAIN by
@@ -657,6 +770,69 @@ if (!fs.existsSync(argdownFile)) {
   console.log("  precision: " + JSON.stringify(prec));
   ok(`the axis is not a staircase — ${xs.size} distinct positions`, xs.size > 200,
      "the paragraph locator has stopped working; heading precision alone gives 94");
+}
+
+/* ------------------------------------------------- 3. cross-check against every sample
+ *
+ * THE BOOK IS PRIVATE, SO THE CROSS-CHECK ABOVE USUALLY SKIPS, and the two languages drifted
+ * where nothing looked: on 27 Sep 2026 they placed ten claims differently across the samples
+ * and the private corpus -- among several quotations the JS took the earliest and the Python
+ * the first listed, and only the Python knew a soft hyphen is invisible. So every sample is
+ * placed by both, as the report and the picture each place it, and every claim both can see
+ * must land at the same line with the same precision. About nine seconds. */
+{
+  const SAMPLES = path.join(HERE, "..", "samples");
+  const venv = path.join(HERE, "..", ".venv", "bin", "python3");
+  const py = fs.existsSync(venv) ? venv : "python3";
+  const cli = path.join(HERE, "node_modules", ".bin", "argdown");
+  console.log("\ncross-check: every sample, placed by both languages");
+  let both = 0, maps = 0;
+  const differ = [];
+  if (fs.existsSync(SAMPLES) && fs.existsSync(cli)) {
+    for (const d of fs.readdirSync(SAMPLES)) {
+      const dir = path.join(SAMPLES, d);
+      if (!fs.statSync(dir).isDirectory()) continue;
+      const ad = fs.readdirSync(dir).find(f => f.endsWith(".argdown"));
+      if (!ad) continue;
+      const file = path.join(dir, ad);
+      const graph = toGraph(argdown.run({ input: fs.readFileSync(file, "utf8"), ...RUN }));
+      const sources = {};
+      for (const n of graph.nodes) {
+        if (!n.chapter || n.chapter in sources) continue;
+        const f = path.join(dir, n.chapter);
+        sources[n.chapter] = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
+      }
+      const yml = "chapters:\n" + Object.keys(sources).map(c => `  - "${c}"`).join("\n") + "\n";
+      const { byId } = P.positions(graph.nodes, sources, yml);
+      const js = {};
+      for (const n of graph.nodes) if (byId[n.id]) js[n.label] = byId[n.id];
+      const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "argpos-sample-"));
+      execFileSync(cli, ["json", file, "--outputDir", tmp], { stdio: "ignore" });
+      const exported = path.join(tmp, fs.readdirSync(tmp).find(f => f.endsWith(".json")));
+      // The JSON export drops the front matter, so its `defaults:` are applied from the file,
+      // as check_argdown.py applies them.
+      const placed = JSON.parse(execFileSync(py, ["-c",
+        "import json,sys; sys.path.insert(0, sys.argv[1]); import argdown_provenance as p; " +
+        "d = json.load(open(sys.argv[2])); p.apply_defaults(d, p.read_frontmatter(sys.argv[4]) or {}); " +
+        "print(json.dumps(p.text_positions(d, sys.argv[3], p.check_quotations(d, sys.argv[3]))))",
+        SKILL, exported, dir, file], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 }));
+      fs.rmSync(tmp, { recursive: true, force: true });
+      maps++;
+      for (const t of Object.keys(js)) {
+        if (!placed[t]) continue;
+        both++;
+        if (js[t].line !== placed[t].line || js[t].precision !== placed[t].precision)
+          differ.push(`${d.slice(0, 24)} / ${t.slice(0, 36)}: js ${js[t].precision}@${js[t].line}` +
+                      ` py ${placed[t].precision}@${placed[t].line}`);
+      }
+    }
+  }
+  if (!maps) console.log("  skip  no samples, or no Argdown CLI, to cross-check against");
+  else {
+    ok(`${maps} samples, ${both} claims placed by both`, both > 500, `only ${both}`);
+    ok("  and every one at the same line, with the same precision", differ.length === 0,
+       differ.slice(0, 8).join("\n          "));
+  }
 }
 
 /* ------------------------------------------------------------------ the border rule ---- */
