@@ -477,6 +477,12 @@ compact block: left to right means "comes after" between systems, not inside one
 state leads round to every other. An arrow's label **decides which** says that a state
 settles which of several alternatives follows, rather than raising or lowering anything.
 
+**Several chains.** A text that answers several questions — a paper working through several
+cases — can set out a chain for each. The view then opens at the first, drawn on its own and
+asking its own question; **Chain** at the top switches between them, or shows *every chain
+together*. A state two chains share carries **⇄**: click it to open the other chain, where the
+same state may play a different part — what one chain explains can be where the next begins.
+
 **Joint causes and states across levels.** Where the text says two things bring something about
 only *together* — a belief and a desire, say — the step is one arrow, and a **stem** runs from the
 second cause to a **bar** across the arrow near its head: the effect passes the bar only with every

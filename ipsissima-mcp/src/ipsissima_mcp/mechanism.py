@@ -173,6 +173,28 @@ def declared(fm):
         if bad:
             problems.append(("?", f"state `{sid}` has role `{sorted(bad)[0]}`; the roles read "
                                   f"are `intervention`, `condition` and `outcome`", {"state": str(sid)}))
+    # SEVERAL CHAINS (profile 1.5). A text that answers several questions -- the Coleman-boat paper's
+    # drought and migration, its fisheries, its segregation model -- gives each its own chain; a
+    # state two chains share is what couples them, and a chain may cast a state in a role of its
+    # own, since one chain's outcome is the next one's condition.
+    chains = m.get("chains")
+    if chains is not None and not isinstance(chains, dict):
+        problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
+    for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
+        ch = ch if isinstance(ch, dict) else {}
+        roles = ch.get("roles") or {}
+        if not isinstance(roles, dict):
+            problems.append(("!", f"chain `{cid}`: `roles:` must map state ids to roles", {"chain": str(cid)}))
+            continue
+        for sid, r in roles.items():
+            if sid not in states:
+                problems.append(("!", f"chain `{cid}` gives a role to `{sid}`, which is not a "
+                                      f"declared state", {"chain": str(cid)}))
+            bad = roles_of({"role": r}) - set(ROLES)
+            if bad:
+                problems.append(("?", f"chain `{cid}` gives `{sid}` the role `{sorted(bad)[0]}`; the "
+                                      f"roles read are `intervention`, `condition` and `outcome`",
+                                 {"chain": str(cid)}))
     # A WHOLE MAY NOT CONTAIN ITSELF, however far round: the view collapses parts into their
     # outermost whole, and a cycle has none.
     for sid in states:
@@ -230,6 +252,8 @@ def steps(doc, appraisal):
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
                     # JOINTLY (profile 1.4): the states together with which alone the step holds.
                     jointly=_as_list(c.get("jointly")),
+                    # CHAIN (profile 1.5): which of the text's chains the step belongs to.
+                    chain=_as_list(c.get("chain")),
                     supports=supports.get(title, 0), raw=c))
     return out
 
@@ -397,6 +421,82 @@ def _routes(start, goal, edges, ids=()):
     return (len(lengths), min(lengths), max(lengths)) if lengths else (0, None, None)
 
 
+def _walk(ids, states, text_edges, has_block):
+    """Where a chain starts, what it reaches, its gaps and its routes: the walk the census makes of
+    the whole text's chain, and -- since profile 1.5 -- of each of its chains, on the states that
+    chain touches and the roles it gives them."""
+    interventions = [i for i in ids if "intervention" in roles_of(states[i])]
+    conditions = [i for i in ids if "condition" in roles_of(states[i])]
+    outcomes = [i for i in ids if "outcome" in roles_of(states[i])]
+    # WHERE THE TEXT'S CHAIN STARTS. The intervention if the text links it; otherwise every state
+    # the text leads out of and never into. Reachability from an unlinked intervention reported
+    # every outcome unreached on the spike, burying the two gaps that mattered under the one
+    # already named.
+    # A CONDITION IS A STARTING POINT TOO: an explanatory text sets out from causes it does not
+    # recommend, and in a chain that is all loop -- Merton's circle, Wimmer's process -- no state
+    # is led out of and never into, so without it nothing would count as where the chain starts.
+    entries = sorted({i for i in interventions + conditions if any(a == i for a, _ in text_edges)}
+                     | {i for i in ids if any(a == i for a, _ in text_edges)
+                        and not any(b == i for _, b in text_edges)})
+    reached = set()
+    for e in entries:
+        reached |= _reach(e, text_edges)
+    used = {x for e in text_edges for x in e}
+
+    gaps = []
+    for i in interventions:
+        if not any(a == i for a, _ in text_edges):
+            gaps.append(dict(kind="unlinked-intervention", state=i,
+                             message=f"the intervention `{i}` has no step in the text: nothing "
+                                     f"says how it brings about anything"))
+    for c in conditions:
+        if not any(a == c for a, _ in text_edges):
+            gaps.append(dict(kind="unlinked-condition", state=c,
+                             message=f"the condition `{c}` has no step in the text: nothing "
+                                     f"says what it brings about"))
+    for o in outcomes:
+        if o not in reached:
+            gaps.append(dict(kind="unreached-outcome", state=o,
+                             message=f"the outcome `{o}` is not reached by the text's steps from "
+                                     f"where its chain starts"))
+    for i in ids:
+        if (i in used and i not in outcomes and not (states[i] or {}).get("appraisal")
+                and not any(a == i for a, _ in text_edges)):
+            gaps.append(dict(kind="dead-end", state=i,
+                             message=f"`{i}` leads nowhere in the text: the chain stops there"))
+    if has_block and not interventions and not conditions:
+        gaps.append(dict(kind="no-intervention", state=None,
+                         message="no state has `role: intervention` or `role: condition`, so the "
+                                 "chain has no stated cause to run from"))
+    if has_block and not outcomes:
+        gaps.append(dict(kind="no-outcome", state=None,
+                         message="no state has `role: outcome`, so nothing says what the chain is "
+                                 "for"))
+    routes = []
+    for e in entries:
+        for o in outcomes:
+            if o == e:        # a state that is both where the circle starts and what it explains
+                continue
+            n, lo, hi = _routes(e, o, text_edges, ids)
+            if n:
+                routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))
+    return dict(entries=entries, gaps=gaps, used=used, outcomes=outcomes, routes=routes)
+
+
+def _chains(block):
+    """The chains a mechanism block declares (profile 1.5), in declared order: {id: {label,
+    question, roles}}, with anything malformed read as absent (declared() names it)."""
+    raw = (block or {}).get("chains") if isinstance(block, dict) else None
+    out = {}
+    for cid, ch in (raw.items() if isinstance(raw, dict) else ()):
+        ch = ch if isinstance(ch, dict) else {}
+        roles = ch.get("roles") if isinstance(ch.get("roles"), dict) else {}
+        out[str(cid)] = dict(label=None if ch.get("label") is None else str(ch.get("label")),
+                             question=None if ch.get("question") is None else str(ch.get("question")),
+                             roles={str(k): v for k, v in roles.items()})
+    return out
+
+
 def analyse(fm, doc):
     """(findings, profile) for a file. Findings are (severity, check, message, where).
 
@@ -444,7 +544,15 @@ def analyse(fm, doc):
     for sev, msg, where in problems:
         findings.append((sev, "mechanism", msg, where))
 
+    chains = _chains(block)
     for s in all_steps:
+        for c in s["chain"]:
+            if c not in chains:
+                findings.append(("!", "mechanism",
+                                 f"`chain: {c}` is not one of the chains declared under "
+                                 f"`mechanism: chains:`" if chains else
+                                 f"`chain: {c}` names a chain, but the front matter declares no "
+                                 f"`chains:`", {"title": s["title"]}))
         for j in s["jointly"]:
             if j not in states:
                 findings.append(("!", "mechanism", f"`jointly: {j}` is not a declared state",
@@ -507,53 +615,8 @@ def analyse(fm, doc):
     # the routes, loops and dead ends run through it; only the step count keeps the one step.
     text_edges |= {(j, s["dst"]) for s in text for j in s["jointly"] if j in states and j != s["dst"]}
     ids = list(states)
-    interventions = [i for i in ids if "intervention" in roles_of(states[i])]
-    conditions = [i for i in ids if "condition" in roles_of(states[i])]
-    outcomes = [i for i in ids if "outcome" in roles_of(states[i])]
-    # WHERE THE TEXT'S CHAIN STARTS. The intervention if the text links it; otherwise every state
-    # the text leads out of and never into. Reachability from an unlinked intervention reported
-    # every outcome unreached on the spike, burying the two gaps that mattered under the one
-    # already named.
-    # A CONDITION IS A STARTING POINT TOO: an explanatory text sets out from causes it does not
-    # recommend, and in a chain that is all loop -- Merton's circle, Wimmer's process -- no state
-    # is led out of and never into, so without it nothing would count as where the chain starts.
-    entries = sorted({i for i in interventions + conditions if any(a == i for a, _ in text_edges)}
-                     | {i for i in ids if any(a == i for a, _ in text_edges)
-                        and not any(b == i for _, b in text_edges)})
-    reached = set()
-    for e in entries:
-        reached |= _reach(e, text_edges)
-    used = {x for e in text_edges for x in e}
-
-    gaps = []
-    for i in interventions:
-        if not any(a == i for a, _ in text_edges):
-            gaps.append(dict(kind="unlinked-intervention", state=i,
-                             message=f"the intervention `{i}` has no step in the text: nothing "
-                                     f"says how it brings about anything"))
-    for c in conditions:
-        if not any(a == c for a, _ in text_edges):
-            gaps.append(dict(kind="unlinked-condition", state=c,
-                             message=f"the condition `{c}` has no step in the text: nothing "
-                                     f"says what it brings about"))
-    for o in outcomes:
-        if o not in reached:
-            gaps.append(dict(kind="unreached-outcome", state=o,
-                             message=f"the outcome `{o}` is not reached by the text's steps from "
-                                     f"where its chain starts"))
-    for i in ids:
-        if (i in used and i not in outcomes and not (states[i] or {}).get("appraisal")
-                and not any(a == i for a, _ in text_edges)):
-            gaps.append(dict(kind="dead-end", state=i,
-                             message=f"`{i}` leads nowhere in the text: the chain stops there"))
-    if block is not None and not interventions and not conditions:
-        gaps.append(dict(kind="no-intervention", state=None,
-                         message="no state has `role: intervention` or `role: condition`, so the "
-                                 "chain has no stated cause to run from"))
-    if block is not None and not outcomes:
-        gaps.append(dict(kind="no-outcome", state=None,
-                         message="no state has `role: outcome`, so nothing says what the chain is "
-                                 "for"))
+    W = _walk(ids, states, text_edges, block is not None)
+    entries, gaps, used = W["entries"], W["gaps"], W["used"]
     for g in gaps:
         findings.append(("?", "mechanism-gap", g["message"],
                          {"state": g["state"],
@@ -585,14 +648,8 @@ def analyse(fm, doc):
         feedback.append(dict(states=comp, loops=len(inside), capped=len(loops_text) >= LOOP_CAP,
                              shortest=[dict(states=l, reflexive=reflexive(l, text)) for l in shortest]))
     loops_all = _loops(ids, {(s["src"], s["dst"]) for s in pool_all})
-    routes = []
-    for e in entries:
-        for o in outcomes:
-            if o == e:        # a state that is both where the circle starts and what it explains
-                continue
-            n, lo, hi = _routes(e, o, text_edges, ids)
-            if n:
-                routes.append(dict(start=e, outcome=o, routes=n, shortest=lo, longest=hi))
+    routes = W["routes"]
+    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
     profile = dict(
@@ -619,8 +676,48 @@ def analyse(fm, doc):
         appraisal_steps=sum(1 for s in ok if s["layer"] == "appraisal"),
         with_how=sum(1 for s in text if isinstance(s["how"], dict)),
         with_given=sum(1 for s in text if s["given"]),
+        chains=chain_profiles, unchained=unchained,
     )
+    for cp in chain_profiles:
+        if not cp["steps"]:
+            findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
+                             f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
     return findings, profile
+
+
+def _chain_profiles(chains, states, text, ids, reflexive):
+    """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
+
+    A chain is its steps: the states it touches are those its steps run through (a co-cause
+    among them), with any state it gives a role to. It is walked with its OWN roles -- a state's
+    role in the chain where the chain declares one, its declared role otherwise -- so that
+    forest cover can be what one boat explains and where the next begins."""
+    out = []
+    member = {}
+    for cid, c in chains.items():
+        mine = [s for s in text if cid in s["chain"]]
+        edges = {(s["src"], s["dst"]) for s in mine}
+        edges |= {(j, s["dst"]) for s in mine for j in s["jointly"] if j in states and j != s["dst"]}
+        touched = {x for e in edges for x in e} | {k for k in c["roles"] if k in states}
+        cids = [i for i in ids if i in touched]
+        cstates = {i: ({**(states[i] or {}), "role": c["roles"][i]} if i in c["roles"]
+                       else states[i]) for i in cids}
+        W = _walk(cids, cstates, edges, True)
+        best = {(s["src"], s["dst"], s["sign"]) for s in mine}
+        out.append(dict(id=cid, label=c["label"], question=c["question"],
+                        steps=len(best), claims=len({s["title"] for s in mine}), states=cids,
+                        roles={i: sorted(roles_of(cstates[i])) for i in cids if roles_of(cstates[i])},
+                        entries=W["entries"], routes=W["routes"],
+                        loops=[dict(states=l, reflexive=reflexive(l, mine)) for l in _loops(cids, edges)],
+                        gaps=[g["message"] for g in W["gaps"]], shared=[]))
+        for i in cids:
+            member.setdefault(i, []).append(cid)
+    # WHAT COUPLES THEM: every state a chain shares with another, and which others.
+    for cp in out:
+        cp["shared"] = [[i, [o for o in member[i] if o != cp["id"]]] for i in cp["states"]
+                        if len(member[i]) > 1]
+    unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
+    return out, unchained
 
 
 def _nulls(text_all, ok):
@@ -692,6 +789,22 @@ def census(profile):
         lines.append(f"      span    {st} runs across {', '.join(lvs)}")
     for w, parts in p.get("wholes", []):
         lines.append(f"      whole   {w}: {', '.join(parts)} -- drawn as one box at the text's own level")
+    by_id = {ch["id"]: ch for ch in p.get("chains", [])}
+    for ch in p.get("chains", []):
+        lines.append(f"      chain   {ch['id']}" + (f" \"{ch['label']}\"" if ch.get("label") else "")
+                     + f": {ch['steps']} step{'' if ch['steps'] == 1 else 's'}, "
+                     f"{len(ch['routes'])} route{'' if len(ch['routes']) == 1 else 's'} to an outcome, "
+                     f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
+                     f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}")
+        if ch.get("question"):
+            lines.append(f"              question: {ch['question']}")
+        for st, others in ch["shared"]:
+            here = "/".join(ch["roles"].get(st, [])) or "no role"
+            there = "; ".join(f"{o}: " + ("/".join(by_id[o]["roles"].get(st, [])) or "no role")
+                              for o in others)
+            lines.append(f"              shares  {st} ({here} here) with {there}")
+    if p.get("unchained"):
+        lines.append(f"      chain   {p['unchained']} step(s) of the text's own belong to no chain")
     t = p["tiers"]
     lines.append(f"      light   {t['evidence']} backed by a study, statistics or a model; "
                  f"{t['argued']} argued; {t['asserted']} asserted only; {t['imputed']} imputed")
