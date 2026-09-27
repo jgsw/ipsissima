@@ -125,6 +125,9 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
     let view_menu = SubmenuBuilder::new(app, "View")
         .item(&item("view-reasons", "Reasons", Some("CmdOrCtrl+1"))?)
         .item(&item("view-exposition", "Exposition", Some("CmdOrCtrl+2"))?)
+        // The third arrangement had no menu item or shortcut at all (clarity audit, 27 Sep
+        // 2026): the header button was its only door, and on a narrow window not even that.
+        .item(&item("view-mechanism", "Mechanism", Some("CmdOrCtrl+3"))?)
         .separator()
         .item(&item("pane-map", "Map", Some("CmdOrCtrl+Alt+1"))?)
         .item(&item("pane-argdown", "Argdown", Some("CmdOrCtrl+Alt+2"))?)
@@ -209,7 +212,7 @@ async fn check_for_updates() -> Result<UpdateCheck, String> {
         .map_err(|e| format!("could not reach GitHub: {e}"))?;
 
     if !resp.status().is_success() {
-        return Err(format!("GitHub answered {}", resp.status()));
+        return Err(format!("GitHub answered with an error ({}).", resp.status()));
     }
     let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
     let latest = body
@@ -240,7 +243,7 @@ async fn check_for_updates() -> Result<UpdateCheck, String> {
 #[tauri::command]
 async fn zotero_annotations(key: String) -> Result<serde_json::Value, String> {
     if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
-        return Err("not a Zotero item key".to_string());
+        return Err("The Zotero key recorded with this text is not a valid item key.".to_string());
     }
     // `?itemType=annotation` is load-bearing, not a filter for tidiness: measured on
     // Zotero 10.0.2, a bare `/children` answers the attachment's notes and files but NOT
@@ -262,7 +265,7 @@ async fn zotero_annotations(key: String) -> Result<serde_json::Value, String> {
                 .to_string()
         })?;
     if !resp.status().is_success() {
-        return Err(format!("Zotero answered {}", resp.status()));
+        return Err(format!("Zotero answered with an error ({}).", resp.status()));
     }
     resp.json::<serde_json::Value>().await.map_err(|e| e.to_string())
 }
@@ -342,11 +345,11 @@ const ZOTERO_NOT_RUNNING: &str =
 async fn zotero_store_bundle(key: String, filename: String, bundle: String)
                              -> Result<String, String> {
     if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
-        return Err("not a Zotero item key".to_string());
+        return Err("The Zotero key recorded with this text is not a valid item key.".to_string());
     }
     if filename.is_empty() || filename.contains('/') || filename.contains('\\')
         || filename.len() > 120 {
-        return Err("not a plain filename".to_string());
+        return Err("That is not a plain file name.".to_string());
     }
     let base = "http://127.0.0.1:23119";
     let http = reqwest::Client::builder()
@@ -400,7 +403,7 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     let digest = format!("{:x}", md5::compute(&bytes));
     if let Some((_, ref old)) = existing {
         if *old == digest {
-            return Ok(format!("current — the copy of {filename} in Zotero already \
+            return Ok(format!("Already up to date: the copy of {filename} in Zotero \
                                matches this reconstruction."));
         }
     }
@@ -445,7 +448,7 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
             let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
             let k = v["success"]["0"].as_str()
                 .or_else(|| v["successful"]["0"]["key"].as_str())
-                .ok_or("Zotero accepted the attachment but did not name its key")?
+                .ok_or("Zotero accepted the attachment but did not say what it stored it as.")?
                 .to_string();
             (k, true)
         }
@@ -480,7 +483,7 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     }
     let phase1: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
     if phase1["exists"].as_i64() == Some(1) {
-        return Ok(format!("current — Zotero already holds these exact bytes of \
+        return Ok(format!("Already up to date: Zotero holds these exact bytes of \
                            {filename}."));
     }
     let up_url = phase1["url"].as_str().unwrap_or_default();
@@ -504,7 +507,7 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     }
     Ok(format!("{} {filename} under the item its source belongs to. The copy travels \
                 with Zotero's own sync from here; nothing else was contacted.",
-               if made { "stored" } else { "refreshed" }))
+               if made { "Stored" } else { "Refreshed" }))
 }
 
 /// One highlight, as Zotero's local API wants it written.
@@ -625,17 +628,17 @@ async fn zotero_create_highlight(key: String, text: String, page_label: String,
                                  page_index: u32, rects: Vec<[f64; 4]>, sort_top: u32)
                                  -> Result<String, String> {
     if key.len() != 8 || !key.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) {
-        return Err("not a Zotero item key".to_string());
+        return Err("The Zotero key recorded with this text is not a valid item key.".to_string());
     }
     if text.trim().is_empty() || text.len() > 4000 {
-        return Err("a highlight carries its words, at most a passage".to_string());
+        return Err("A highlight carries its words, and no more than a passage of them.".to_string());
     }
     if page_label.len() > 20 || page_index > 9999 || sort_top > 99999 {
-        return Err("not a page".to_string());
+        return Err("That is not a page of the PDF.".to_string());
     }
     if rects.is_empty() || rects.len() > 100
         || rects.iter().flatten().any(|v| !v.is_finite() || *v < 0.0 || *v > 20000.0) {
-        return Err("not a set of page rectangles".to_string());
+        return Err("Where the words sit on the page could not be worked out.".to_string());
     }
     let base = "http://127.0.0.1:23119";
     let http = reqwest::Client::builder()
@@ -676,7 +679,7 @@ async fn zotero_create_highlight(key: String, text: String, page_label: String,
                                         .chars().take(200).collect::<String>()));
                 }
                 let _ = s;
-                return Ok(format!("highlighted in Zotero, on p. {page_label} of the PDF \
+                return Ok(format!("Highlighted in Zotero, on p. {page_label} of the PDF \
                                    itself — open it there and the mark is where these \
                                    words are printed."));
             }

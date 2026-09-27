@@ -81,6 +81,15 @@ this project takes most seriously, because there is nothing for a reader to noti
 program, and most carry a comment naming the bug that made them necessary. A new test is welcome;
 a new test whose failure message explains what is wrong is better.
 
+**A word the reader meets is a promise, and one thing has one name.** Before a label, a tooltip,
+a message or a help sentence ships, it uses the words the rest of the program uses for the same
+thing, names controls as they are drawn and menus as they are spelled, and says nothing the
+page does not do (F8 in `docs/values/INVENTORY.md`). Two suites hold what can be held:
+`app/test_teaching_text.mjs` checks every "Menu ▸ Item" path, every glyph the text names, and
+the retired words in `app/vocabulary.json`. `app/test_clarity.mjs` keeps the fixes of the
+27 Sep clarity audit under real input. When you rename something, add the old name to the
+vocabulary's `retired` list in the same commit, so it cannot creep back.
+
 **The single-file build is a constraint, not an accident.** Ipsissima is one self-contained HTML
 file that opens by double-clicking and makes no network requests. Anything that would put a
 bundler, a CDN or a server between the source and the reader is a bigger change than it looks —

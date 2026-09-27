@@ -425,13 +425,24 @@ async function clickUntagged(page) {
   });
 }
 
+/** A bar button, by its label AS RENDERED ("Open", "Full", "Shape": sentence case since 27 Sep
+ *  2026). A miss returns false, and the callers that guard on it skip a state -- which is how the
+ *  sentence-case rename silently emptied "sections open" and the invariant self-test for a day.
+ *  So a miss on a map whose bar HAS that group is loud, not quiet. */
 async function clickBarButton(page, label) {
-  return page.evaluate(t => {
+  const found = await page.evaluate(t => {
     const b = [...document.querySelectorAll(".alm-bar button")]
       .find(x => x.textContent.trim() === t);
     if (b) { b.click(); return true; }
     return false;
   }, label);
+  if (!found) {
+    const near = await page.evaluate(t => [...document.querySelectorAll(".alm-bar button")]
+      .map(x => x.textContent.trim()).filter(x => x.toLowerCase() === t.toLowerCase()), label);
+    if (near.length) check(false, `the bar's "${label}" button is found by its rendered label`,
+                           `found ${JSON.stringify(near)} instead: the label changed; update the caller`);
+  }
+  return found;
 }
 
 async function runState(page, map, state, scheme) {
@@ -503,7 +514,7 @@ async function facetFilter(page, map, scheme) {
   await page.reload();
   await settle(page);
   await dismissWalkthrough(page);
-  if (!(await clickBarButton(page, "open"))) return;
+  if (!(await clickBarButton(page, "Open"))) return;
   await page.waitForTimeout(1200);
   /* FULL DEPTH, DELIBERATELY, before the invariant is measured. "open" expands the sections and
    * — by its own design — leaves the "how much" depth limit alone. Under a depth limit the
@@ -591,7 +602,12 @@ async function facetFilter(page, map, scheme) {
  * docs/QA-PLAN.md and can wait until a gesture defect escapes again.
  */
 async function foldByHeader(page, map, scheme) {
-  const before = await page.evaluate(() => document.querySelectorAll(".alm-n").length);
+  /* WHICH BOXES, NOT HOW MANY. A section holding one drawn claim folds into a block of one, so
+   * the count stays put while the fold worked -- the case since a large map opens a rung down,
+   * at a size that can be read (27 Sep 2026): Akhlaghi's sections then show one claim each. */
+  const drawn = () => page.evaluate(() =>
+    [...document.querySelectorAll(".alm-n")].map(n => n.getAttribute("data-id")).sort().join(" "));
+  const before = await drawn();
   const strip = await page.evaluate(() => {
     const f = [...document.querySelectorAll(".alm-gfold")]
       .find(x => { const r = x.getBoundingClientRect();
@@ -603,10 +619,10 @@ async function foldByHeader(page, map, scheme) {
   if (!strip) return;
   await page.mouse.click(strip.x, strip.y);          // a real press and release
   await page.waitForTimeout(900);
-  const after = await page.evaluate(() => document.querySelectorAll(".alm-n").length);
+  const after = await drawn();
   check(after !== before,
         `a real click on a section header folds it — ${map} [${scheme}]`,
-        `claims on screen unchanged at ${before}; the click reached something else`);
+        `the boxes on screen are unchanged (${before.split(" ").length}); the click reached something else`);
 }
 
 /* ------------------------------------------------------------------ the key card
@@ -716,8 +732,12 @@ async function keyChecks(browser) {
     check(opened, "and its header opens it back out");
 
     const withCard = await rectOf();
-    const pos = await page.evaluate(() =>
-      getComputedStyle(document.getElementById("keycard")).position);
+    // FLOATS BY ITS DOCK since 27 Sep 2026: the key and study cards share one column over the
+    // map's corner (#dockr), which is what is positioned; the cards stack inside it.
+    const pos = await page.evaluate(() => {
+      const k = document.getElementById("keycard");
+      return getComputedStyle(k.closest("#dockr") || k).position;
+    });
     await page.click("#keyclose");
     const dismissed = await page.evaluate(() => document.getElementById("keycard").hidden);
     check(pos === "absolute" && dismissed && await rectOf() === withCard,
@@ -1049,7 +1069,7 @@ for (const scheme of ["light", "dark"]) {
     // without a browser. What is wanted here is a few real pictures, painted.
     await runState(page, m.name, "opening", scheme);
 
-    if (await clickBarButton(page, "open")) {
+    if (await clickBarButton(page, "Open")) {
       await page.waitForTimeout(900);
       await runState(page, m.name, "sections open", scheme);
       panels += await runPanel(page, m.name, scheme);
@@ -1069,7 +1089,7 @@ for (const scheme of ["light", "dark"]) {
 
     await facetFilter(page, m.name, scheme);
 
-    if (await clickBarButton(page, "full")) {
+    if (await clickBarButton(page, "Full")) {
       await page.waitForTimeout(900);
       await runState(page, m.name, "claims full", scheme);
     }
@@ -1128,7 +1148,7 @@ async function genTextChecks(browser) {
   }, { t: text, n: name });
   await drop(declared, "gen.argdown");
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "gen.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "gen.argdown", { timeout: 20000 });
   const shown = await page.evaluate(() => {
     const c = document.getElementById("gentext");
     return { hidden: c.hidden, text: c.textContent };
@@ -1137,7 +1157,7 @@ async function genTextChecks(browser) {
         "a declared text-provenance shows beside the title", JSON.stringify(shown));
   await drop(plain, "plain.argdown");
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "plain.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "plain.argdown", { timeout: 20000 });
   const gone = await page.evaluate(() => document.getElementById("gentext").hidden);
   check(gone === true, "and an undeclared one shows nothing", String(gone));
 
@@ -1159,7 +1179,7 @@ async function genTextChecks(browser) {
   ].join("\n");
   await drop(generated, "machine.argdown");
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "machine.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "machine.argdown", { timeout: 20000 });
   const machine = await page.evaluate(() => {
     const c = document.getElementById("mapprov");
     return { hidden: c.hidden, text: c.textContent,
@@ -1183,7 +1203,7 @@ async function genTextChecks(browser) {
   ].join("\n");
   await drop(reviewed, "reviewed.argdown");
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "reviewed.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "reviewed.argdown", { timeout: 20000 });
   const read = await page.evaluate(() => ({
     prov: document.getElementById("mapprov").textContent,
     provTitle: document.getElementById("mapprov").title,
@@ -1199,7 +1219,7 @@ async function genTextChecks(browser) {
 
   await drop(plain, "plain2.argdown");
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "plain2.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "plain2.argdown", { timeout: 20000 });
   const silent = await page.evaluate(() => ({
     prov: document.getElementById("mapprov").hidden,
     crux: document.getElementById("cruxchip").hidden
@@ -1250,7 +1270,7 @@ async function navChecks(browser) {
 
   await drop([{ t: sourceless, n: "debate.argdown" }]);
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "debate.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "debate.argdown", { timeout: 20000 });
   await page.waitForSelector(".alm-n", { timeout: 20000 });
   const box = await page.locator(".alm-n").first().boundingBox();
   await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2);
@@ -1270,7 +1290,7 @@ async function navChecks(browser) {
     const src = fs.readFileSync(path.join(srcDir, srcName), "utf8");
     await drop([{ t: ad, n: path.basename(miller.argdown) }, { t: src, n: srcName }]);
     await page.waitForFunction((want) =>
-      document.getElementById("fname").textContent === want,
+      document.getElementById("fname").dataset.file === want,
       path.basename(miller.argdown), { timeout: 20000 });
     await page.waitForSelector(".alm-n", { timeout: 20000 });
     const before = await page.evaluate(() => document.getElementById("ms").hidden);
@@ -1667,7 +1687,7 @@ async function studyChecks(browser) {
       { bubbles: true, cancelable: true, dataTransfer: dt }));
   }, { t: map, n: "study.argdown" });
   await page.waitForFunction(() =>
-    document.getElementById("fname").textContent === "study.argdown", { timeout: 20000 });
+    document.getElementById("fname").dataset.file === "study.argdown", { timeout: 20000 });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   // A beat for the editor's debounced preview to settle: a drop renders once, and the editor
   // path re-draws a moment later. A reader cannot reach the bar inside that window, and a
@@ -2015,12 +2035,12 @@ async function zoteroChecks(browser) {
         ]);
         if (cmd === "zotero_create_highlight") {
           window.__hl = arg;
-          return Promise.resolve("highlighted in Zotero, on p. " + arg.pageLabel +
+          return Promise.resolve("Highlighted in Zotero, on p. " + arg.pageLabel +
                                  " of the PDF itself");
         }
         if (cmd === "zotero_store_bundle") {
           window.__storeArgs = arg;
-          return Promise.resolve("stored test.argdown under the item its source belongs to.");
+          return Promise.resolve("Stored test.argdown under the item its source belongs to.");
         }
         return Promise.resolve(null);
       } },
@@ -2131,7 +2151,7 @@ async function zoteroChecks(browser) {
         && stored.sourceCarried && stored.mapCarried,
         "  and the bundle carries map and source together",
         JSON.stringify(stored.files));
-  check(/stored test\.argdown/.test(stored.note),
+  check(/Stored test\.argdown/.test(stored.note),
         "  and Zotero's answer is shown to the reader", stored.note.slice(0, 80));
 
   // WRITE-BACK, driven as a reader would: a real drag over the passage, then the button.
@@ -2175,7 +2195,7 @@ async function zoteroChecks(browser) {
         && hl.rects[0][0] === 43 && hl.top === 89,
         "  at the sidecar's exact rectangles, sorted from the page top",
         JSON.stringify({ rects: hl.rects, top: hl.top }));
-  check(/highlighted in Zotero, on p\. 2/.test(hl.note),
+  check(/Highlighted in Zotero, on p\. 2/.test(hl.note),
         "  and Zotero's answer is shown", hl.note.slice(0, 60));
   await ctx.close();
 }
@@ -2563,7 +2583,7 @@ async function expositionChecks(browser) {
   check(await rung() === reasonsDepth, "  and a second visit does not impose the précis again",
         String(await rung()));
 
-  await clickBarButton(page, "shape");
+  await clickBarButton(page, "Shape");
   await page.waitForTimeout(500);
   const on = await page.evaluate(() => ({
     shapeClass: document.querySelector("#map svg").classList.contains("alm-shape"),
@@ -2573,7 +2593,7 @@ async function expositionChecks(browser) {
   }));
   check(on.shapeClass && on.sparks > 0 && !on.footer && on.pressed === "true",
         "  and switching shape on draws the sparklines and the footer line", JSON.stringify(on));
-  await clickBarButton(page, "shape");
+  await clickBarButton(page, "Shape");
   await page.waitForTimeout(300);
   const off = await page.evaluate(() => document.querySelectorAll("#map .alm-spark *").length);
   check(off === 0, "  and off again takes them away", String(off));

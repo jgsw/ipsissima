@@ -1202,19 +1202,32 @@ function injectStyle() {
     "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
     ".amech[hidden]{display:none}",
-    ".amech-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;",
-    "  border-bottom:1px solid var(--line,#ddd)}",
-    ".amech-q{flex:1 1 260px;color:var(--fg-dim,#666);font-size:13px;min-width:0}",
-    ".amech-tog{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line,#ddd);",
-    "  border-radius:7px;padding:4px 9px;background:var(--panel,#fff);cursor:pointer;font-size:13px;user-select:none}",
-    ".amech-tog input{margin:0}",
+    ".amech-head{padding:8px 12px;border-bottom:1px solid var(--line,#ddd)}",
+    ".amech-q{color:var(--fg-dim,#666);font-size:13px;min-width:0}",
+    // The map bar's look, from the page's own tokens (argdown-live-map.js, .alm-bar).
+    ".amech-helplink{border:0;background:none;padding:0;font:inherit;color:var(--accent,#3a7bd5);text-decoration:underline;text-underline-offset:2px;cursor:pointer}",
+    ".amech-bar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;align-self:flex-start;",
+    "  margin:0 8px 8px;padding:.35rem .5rem;max-width:calc(100% - 16px);",
+    "  font:11px system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--alm-bar-bg,rgba(255,255,255,.94));",
+    "  border:1px solid var(--alm-group-line,#ddd);border-radius:7px}",
+    ".amech-tog{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--alm-group-line,#ccc);",
+    "  border-radius:5px;padding:.15rem .45rem;background:transparent;cursor:pointer;font-size:11px;user-select:none;",
+    // The ink too: a <button> with this class drew the browser's black on the dark panel (1.3:1).
+    "  color:inherit;font-family:inherit}",
+    // A LAYER SWITCH IS A PILL, as every independent switch on the page is (ruled D8, 27 Sep
+    // 2026): the native checkbox stays for the keyboard and the screen reader, out of sight, and
+    // the pill's ring says whether the layer is on.
+    ".amech-tog{position:relative}",
+    ".amech-tog input{margin:0;position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}",
+    ".amech-tog:has(input:checked){border-color:var(--accent,#3a7bd5);box-shadow:inset 0 0 0 1px var(--accent,#3a7bd5)}",
+    ".amech-tog:has(input:focus-visible){outline:2px solid var(--accent,#3a7bd5);outline-offset:2px}",
     ".amech-tog .sw{width:20px;height:0;border-top:2px solid var(--mv-rival)}",
-    ".amech-tog.appr{border-style:dashed;border-color:var(--mv-appraisal)}",
+    ".amech-tog.appr{border-color:var(--mv-appraisal)}",
     ".amech-tog.appr .sw{height:9px;border:0;border-radius:2px;",
     "  background:repeating-linear-gradient(45deg,var(--mv-appraisal) 0 2px,transparent 2px 5px)}",
-    ".amech-tog .aside{color:var(--fg-dim,#666);font-size:12px}",
+    ".amech-tog .aside{color:var(--fg-dim,#666);font-size:11px}",
     ".amech-banner{margin:8px 12px 0;padding:7px 11px;border-radius:7px;font-size:13px;",
-    "  background:var(--mv-appraisal-bg);border:1px dashed var(--mv-appraisal)}",
+    "  background:var(--mv-appraisal-bg);border:1px solid var(--mv-appraisal)}",
     ".amech-banner[hidden]{display:none}",
     ".amech-body{flex:1 1 auto;display:flex;min-height:0}",
     ".amech-stage{flex:1 1 auto;overflow:auto;min-width:0}",
@@ -1250,7 +1263,8 @@ function injectStyle() {
     ".amech-loop{display:block;text-align:left;font:inherit;background:none;border:1px solid var(--line,#ddd);border-radius:6px;",
     "  padding:3px 7px;margin:0 0 4px;cursor:pointer;color:var(--fg,#1a1a1a);width:100%}",
     ".amech-loop:hover{border-color:var(--mv-text)}",
-    ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal);stroke-dasharray:4 3}",
+    // Hatched and violet, never dashed: a dash is a fidelity rung (ruled D7, 27 Sep 2026).
+    ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal)}",
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
     ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
@@ -1262,8 +1276,8 @@ function injectStyle() {
     ".amech-route>.t{font-weight:600}.amech-fold{display:flex;flex-wrap:wrap;gap:4px;align-items:center}",
     ".amech-fold button,.amech-state-act button{font:inherit;font-size:12px;background:none;border:1px solid var(--line,#ddd);",
     "  border-radius:5px;padding:1px 7px;cursor:pointer;color:var(--fg,#1a1a1a)}",
-    ".amech-tog select{font:inherit;font-size:12.5px;border:0;background:none;color:inherit}",
-    ".amech-tog.fit{font:inherit;font-size:13px;color:inherit}",
+    ".amech-tog select{font:inherit;font-size:11px;border:0;background:none;color:inherit}",
+    ".amech-tog.fit{font:inherit;font-size:11px;color:inherit}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
     ".amech .st.intervention text.gapmark,.amech .gapmark{fill:var(--mv-gap);font-size:11px;font-weight:600}"
   ].join("\n");
@@ -1445,18 +1459,27 @@ function create(container, graph, opts) {
   var show = "all", fit = false;
   var anyUntested = G.edges.some(function (e) { return !e.steps.some(function (x) { return x.tier === "evidence"; }); });
 
+  // THE QUESTION HEADS THE CHART; THE CONTROLS SIT BELOW IT, as the other arrangements' do
+  // (ruled D10, 27 Sep 2026). They were a top bar of their own, in a different type and shape
+  // from the map's bar at the bottom-left, so moving between arrangements moved the controls
+  // and changed how they looked. The bar is now the map bar's cousin: the same place, the same
+  // small type and pills.
+  var head = document.createElement("div"); head.className = "amech-head";
+  head.innerHTML = '<div class="amech-q">' + esc(M.question) + '</div>';
+  container.appendChild(head);
   var bar = document.createElement("div"); bar.className = "amech-bar";
   bar.innerHTML =
     (CHAINS.length ? '<label class="amech-tog chain" title="The text answers several questions, each with a chain of its own">Chain <select data-chain>' +
       CHAINS.map(function (c) { return '<option value="' + esc(c.id) + '"' + (keep.chain === c.id ? ' selected' : '') + '>' +
         esc(c.label || c.id) + '</option>'; }).join("") +
       '<option value=""' + (keep.chain ? '' : ' selected') + '>Every chain together</option></select></label>' : '') +
-    '<div class="amech-q">' + esc(M.question) + '</div>' +
-    (M.profile.rival_steps ? '<label class="amech-tog rival"><input type="checkbox" data-layer="rival" checked>' +
+    // Every control says what it does on hover (F8, clarity audit 27 Sep 2026): these three were
+    // the chain's switches with nothing to say.
+    (M.profile.rival_steps ? '<label class="amech-tog rival" title="The steps rival views claim, as the text reports them; switch off to see only what the text itself asserts"><input type="checkbox" data-layer="rival" checked>' +
       '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
-    (M.appraisalClaims ? '<label class="amech-tog appr"><input type="checkbox" data-layer="appraisal">' +
+    (M.appraisalClaims ? '<label class="amech-tog appr" title="The reconstructor’s own reading of the text against the world, off until asked for; never something the text says"><input type="checkbox" data-layer="appraisal">' +
       '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
-    (anyUntested ? '<label class="amech-tog">Show <select data-show><option value="all">every step</option>' +
+    (anyUntested ? '<label class="amech-tog" title="Every step the text sets out, or only those it backs with a study, statistics or a model">Show <select data-show><option value="all">every step</option>' +
       '<option value="tested">only what the text tested</option></select></label>' : '') +
     // Offered only where there is something to fold (F2: a control is a promise).
     // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
@@ -1465,17 +1488,21 @@ function create(container, graph, opts) {
     // Offered only where the map declares wholes (F2). Named for what a click will show.
     (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
       (keep.boxes ? "Show every state" : "The text’s own boxes") + '</button>' : '') +
-    '<button type="button" class="amech-tog fit" data-fit>Fit to width</button>';
-  container.appendChild(bar);
+    '<button type="button" class="amech-tog fit" data-fit title="Scale the chain to the width of the pane; press again for its actual size">Fit to width</button>';
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
-  banner.innerHTML = '<b>Appraisal layer on.</b> ' + M.appraisalClaims + ' addition' +
-    (M.appraisalClaims === 1 ? '' : 's') + ' by the reconstructor, drawn hatched in violet. ' +
-    'They are not claims the text makes: each is a reading of the text against the world, with its warrant.';
+  // THE SAME SENTENCE AS THE ARGUMENT MAP'S BANNER, word for word: one switch, one state, one
+  // announcement (sweep D, 27 Sep 2026: the two had drifted into different wordings).
+  banner.innerHTML = '<b>Appraisal on.</b> ' + M.appraisalClaims + ' addition' +
+    (M.appraisalClaims === 1 ? '' : 's') + ' by the reconstructor, drawn hatched in violet \u2014 ' +
+    'readings of the text against the world, not claims the text makes.' + (opts.helpLinks
+      ? ' <button type="button" class="amech-helplink" data-help="The reconstructor&#39;s ' +
+        'appraisal">What is this?</button>' : '');
   container.appendChild(banner);
   var body = document.createElement("div"); body.className = "amech-body";
   var stage = document.createElement("div"); stage.className = "amech-stage";
   var side = document.createElement("div"); side.className = "amech-side";
   body.appendChild(stage); body.appendChild(side); container.appendChild(body);
+  container.appendChild(bar);
 
   var svg = el("svg", { width: G.width, height: G.height, viewBox: "0 0 " + G.width + " " + G.height,
                         role: "img", "aria-label": "The mechanism the text asserts" }, stage);
@@ -1800,9 +1827,16 @@ function create(container, graph, opts) {
                                        : "none closed in the text";
     var gapText = function (g) {
       var s = g.state ? "“" + label(g.state) + "”" : "";
+      // EVERY KIND THE MODEL EMITS, each a whole sentence. Three kinds fell through to the
+      // dead-end wording, and the two with no state printed " leads nowhere…" with no subject
+      // at all (clarity audit sweep D, 27 Sep 2026).
       return g.kind === "unlinked-intervention" ? "The intervention " + s + " has no link in the text: nothing says how it brings about anything."
+           : g.kind === "unlinked-condition" ? "The condition " + s + " has no link in the text: nothing says what it brings about."
            : g.kind === "unreached-outcome" ? s + " is not reached by the text’s links from where its chain starts."
-           : s + " leads nowhere in the text: the chain stops there.";
+           : g.kind === "no-intervention" ? "No state is marked as an intervention or a condition, so the chain has no stated start."
+           : g.kind === "no-outcome" ? "No state is marked as an outcome, so nothing says what the chain is for."
+           : g.state ? s + " leads nowhere in the text: the chain stops there."
+           : String(g.message || "");
     };
     var boxesNote = M.collapsed ? '<div class="amech-focus">Showing the text’s own boxes: ' + M.collapsed.parts + ' state' +
       (M.collapsed.parts === 1 ? '' : 's') + ' drawn inside ' + M.collapsed.wholes + ' of them' +
@@ -1830,7 +1864,9 @@ function create(container, graph, opts) {
       '</div><div class="amech-q">' + T.evidence + ' backed by a study or statistics · ' + T.argued + ' argued · ' +
       T.asserted + ' asserted only · ' + T.imputed + ' imputed</div>' +
       (P.gaps.length ? '<h3>Gaps</h3><ul class="amech-gaps">' + P.gaps.map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
-      '<h3>Key</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
+      // "LEGEND", because "Key" names the floating card the other arrangements share, and Help ▸
+      // Show the Key opens that card, not this (clarity audit, 27 Sep 2026).
+      '<h3>Legend</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
       '“raises” (more of the first, more of the second) or “lowers” (more of the first, less of the second). ' +
       'These are effects, not the support and attack of the Reasons map. ' +
       '×n: claims behind one arrow. ◇: conditions stated. ↻: closes a loop. “via”: a route through folded states. ' +
@@ -1849,7 +1885,7 @@ function create(container, graph, opts) {
         // OFF MEANS OFF IN THE PANEL TOO: the appraisal's view of a text step is named only while
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else if (selected && selected.kind) {
       var K = KINDS.filter(function (x) { return x.id === selected.kind; })[0];
       var touches = function (pr) {
@@ -1871,7 +1907,7 @@ function create(container, graph, opts) {
           return '<div class="amech-q">' + nm(pr[1][0]) + ' → ' + nm(pr[1][1]) + ' is a case of ' + nm(pr[0][0]) + ' → ' + nm(pr[0][1]) + '</div>'; }).join("") : '') +
         (akin.length ? '<h3>The same step in two cases</h3>' + akin.map(function (pr) {
           return '<div class="amech-q">' + nm(pr[0][0]) + ' → ' + nm(pr[0][1]) + ' ≈ ' + nm(pr[1][0]) + ' → ' + nm(pr[1][1]) + '</div>'; }).join("") : '') +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else if (selected && selected.system != null) {
       var F = SYS[selected.system];
       side.innerHTML = '<h3>Feedback system ' + sysName(selected.system) + '</h3>' +
@@ -1882,7 +1918,7 @@ function create(container, graph, opts) {
           return '<button type="button" class="amech-loop" data-sys="' + selected.system + '" data-short="' + j + '">' +
             esc(loopNames(l)) + (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("") +
         '<h3>Its states</h3><div class="amech-q">' + F.states.map(function (v) { return esc(obj(M.states[v]).label || v); }).join(" · ") + '</div>' +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else if (selected && selected.cycle) {
       var L = selected.cycle;
       var hopEdges = L.states.map(function (v, i) {
@@ -1894,7 +1930,7 @@ function create(container, graph, opts) {
         (L.reflexive ? ' It is <b>reflexive</b>: it runs through a belief, a prediction or a classification that the loop itself acts on.' : '') +
         '</div>' +
         hopEdges.map(function (es) { return es.map(function (e) { return e.steps.map(stepHTML).join(""); }).join(""); }).join("") +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else if (selected && selected.state) {
       var s = obj(M.states[selected.state]), a = obj(M.actors[s.actor]);
       side.innerHTML = '<h3>' + esc(s.label || selected.state) + '</h3>' +
@@ -1921,7 +1957,7 @@ function create(container, graph, opts) {
         (s.appraisal ? '<div class="amech-row"><span class="k">layer</span><span>the reconstructor’s appraisal: not in the text</span></div>' : '') +
         (canFold.indexOf(selected.state) >= 0 ? '<div class="amech-state-act"><button type="button" data-fold="' + esc(selected.state) +
           '">Fold into its arrows</button> <span class="amech-q">draws what leads in and what leads out as routes through it</span></div>' : '') +
-        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
+        '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else {
       side.innerHTML = profileHTML();
     }
@@ -1931,6 +1967,19 @@ function create(container, graph, opts) {
     if (!on.length || e.layer === "appraisal") return "";
     return '<h3>The appraisal on this step</h3>' + on[0].steps.map(claimHTML).join("");
   }
+  // ESC LEAVES A FOCUS, as it leaves every other mode on the page (clarity audit, 27 Sep 2026:
+  // the focus had only its button). Only while this chart is on screen and something is
+  // focused, and not when another handler has already taken the key.
+  var doc = container.ownerDocument;
+  var onEsc = function (ev) {
+    // A remount replaces this drawing; its listener then retires itself.
+    if (!container.contains(side)) { if (doc) doc.removeEventListener("keydown", onEsc); return; }
+    if (ev.key !== "Escape" || ev.defaultPrevented || !container.offsetParent) return;
+    if (!side.querySelector("[data-back]")) return;
+    ev.preventDefault();
+    select(null);
+  };
+  if (doc) doc.addEventListener("keydown", onEsc);
   side.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
@@ -1988,7 +2037,9 @@ function create(container, graph, opts) {
     if (!Object.keys(folded).length) ends = false;
     G = layout(M, { folded: folded, ends: ends });
     selected = null;
-    if (foldAll) foldAll.textContent = G.folded.length ? "Show the whole chain" : endsLabel;
+    // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
+    // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
+    if (foldAll) foldAll.textContent = G.folded.length ? "Unfold the chain" : endsLabel;
     apply();
   }
   function setFolded(v, on) { if (on) folded[v] = true; else delete folded[v]; refold(); }

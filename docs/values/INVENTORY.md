@@ -1180,6 +1180,66 @@ assistant-built.
 
 **Weight.** Medium-heavy; B2's operational half.
 
+### F8. Designed against the misreading
+
+**It says.** Understandable to a reader motivated to work it out is the first waypoint, not the
+finish. The finished interface anticipates the obvious ways of misreading it and designs them
+out. Three requirements follow.
+
+- **(a) One thing, one name, one look, one place.** A function, a state or a mark is named,
+  drawn and placed the same way on every surface — the page, the menus, the help, the
+  walkthrough, the messages, the site. Two different things never share a name, a glyph, a
+  pattern or a colour.
+- **(b) What the program says about itself stays true.** Teaching text — the walkthrough, the
+  help, the cards, tooltips and messages — describes the controls as they are rendered now,
+  and is held to them by machinery rather than by care.
+- **(c) First contact is designed, not inherited.** Every default, empty state and first
+  screen is checked against a newcomer who has read nothing.
+
+**Seen in.** Enacted in places before it was stated:
+- the Study → Follow rename of 14 Sep, "ids are addresses, labels are promises";
+- Export renamed from "Send This Back" because "one feature under two names is one feature the
+  reader has to learn twice" (`lib.rs`);
+- F5 on the map.
+
+Broken where the clarity audit of 27 Sep found it (the Clarity audit folder in the private
+record):
+- the dash `4 3` meant four things;
+- "Layout" and "follow" each named two controls;
+- two pairs of header icons were the same drawing;
+- the walkthrough sent readers to "Layout ▸ Study" a fortnight after the rename;
+- the study card called the fold badge ⊞ while the map drew "+3".
+
+Held by `app/test_teaching_text.mjs` (menu paths, glyphs, retired words from
+`app/vocabulary.json`) and `app/test_clarity.mjs` (the audit's faults under real input).
+
+**Provenance.** **quotation** — origin: author, 27 Sep, commissioning the audit: "When I am
+writing a paper, getting the thought to a level where others *can* understand them if
+motivated is only the first way point towards a presentation in which most obvious ways of
+misunderstanding are anticipated and designed around." The three requirements are the
+assistant's articulation, proposed in the audit (§5) and **admitted as worded the same day.**
+
+**Generality.** Every reader-facing surface of the App, and the project's self-description.
+It has three nearer instances: F5 for the map's encodings, F2 for controls and F6 for hover.
+E4 and E10 supply the machinery for (b). On the keystone's reading (`THEORY.md` §1), it is the
+fidelity ethic applied to the program's description of itself. A label, an icon, a tooltip or
+a help sentence each represents what the program does, and a misleading one is a
+representation at a distance it does not declare. Admitting it did not settle whether
+accessibility in the disability sense is a principle or an incident (`THEORY.md` §6 item 4).
+The audit added evidence there — undesigned keyboard focus, contrast failures in the dark
+theme, explanations that live only in tooltips a touch screen never shows — and the question
+stays open.
+
+**Weight.** *Open* — between Heavy and Very heavy. The author's ruling of 27 Sep left it to be
+read off its collisions as they come ("that may become clearer as and when it clashes with
+other principles"). B6 applies: the author's own aim of perfection is his, and what the user
+needs is the anticipated-misreading standard, which serves the novice (B1) and the teacher
+deciding whether to adopt the tool. Candidate case law, to be ruled when the build tests it:
+- *the reader's own word vs one word per thing*: the most general reader's word wins — "the
+  text", never "essay";
+- *a control removed (P6) vs a control disabled with its reason (F2)*: offered but unavailable
+  is disabled with a reason reachable on touch; never applicable is absent.
+
 ---
 
 ## G. The MCP's ingest ethic

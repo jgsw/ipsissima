@@ -25,6 +25,11 @@ way into the text, displacement-relative) admitted to the mission cluster — th
 formation joins the mission's measure — and two case-law rows written (T2, T4).
 `FORMATION.md` is the episode record; the diff is the record of what moved.*
 
+*Revised again at the Clarity checkpoint (27 Sep), after the author's ruling on the clarity
+audit: F8 (designed against the misreading) admitted to the App's display ethic, specialising
+P2 and P6 together, with its weight left open to be read off its collisions. The audit report
+and its sweeps are in the private record; the diff is the record of what moved.*
+
 ---
 
 ## 1. The keystone
@@ -94,7 +99,8 @@ step"** — not philosophical argumentation only, but complex reasoning wherever
 to assess reasons for and against a conclusion; and the sentence names its own trust
 mechanism, as this project's sentences about trust do. Specialised by: B2 (the reader's own
 pace), B4 (cost as hindrance), B5 (the user's own words), B7 (how trust is carried where no
-text anchors it), and the novice-first rulings. The mission is why fidelity is *drawn* rather
+text anchors it), the novice-first rulings, and F8 (designed against the misreading, 27 Sep):
+a map cannot be made intelligible through an instrument that is not. The mission is why fidelity is *drawn* rather
 than merely recorded — a border legible at a glance is the ladder made available to someone
 who will never read a conventions file. The person who *builds* a map is opened to reasoning
 at least as much as the person who reads one, so authoring support is mission work, not a
@@ -138,8 +144,10 @@ scholarship and in free software, with the obligations of both.
 visible serves a useful purpose, and where additional information is needed for discovery and
 orientation, the reader can turn it off — the walkthrough is the exemplar: attention claimed
 once, easily exited, always recallable. Specialised by F3 (the mental map survives the click),
-F6 (hover adds only what the box could not), F7 (the right level of detail), and the pace half
-of B2. Its elevation carried the second-order ruling B6: the author's own, stricter
+F6 (hover adds only what the box could not), F7 (the right level of detail), the pace half
+of B2, and F8 (designed against the misreading, 27 Sep), which it shares with P2: attention
+spent working out what a control means, or which of two things a word names, is attention the
+argument did not get. Its elevation carried the second-order ruling B6: the author's own, stricter
 intolerance of clutter is a personal value; what Ipsissima holds is the user-centred form.
 
 The six are entangled at every edge — the case-law table in §5 is mostly records of their
@@ -175,6 +183,8 @@ new sovereign party needed.
    F6 hover adds only         C1 network claims, per artifact        B4 ask before spending
    F7 right level of detail   C4 the user's files                    A5–A8, A11 via the checker
      (P6, App-local)
+   F8 designed against the
+     misreading (P2 + P6)
    C2 one self-contained file
 ```
 

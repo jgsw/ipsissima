@@ -11,6 +11,26 @@
   --panel:#fff; --shadow:0 1px 3px rgba(0,0,0,.07);
   --alm-node-bg:#fff; --alm-fg:#1a1a1a; --alm-fg-dim:#666;
   --alm-group-line:#cfcfca; --alm-accent:#3a7bd5; --alm-bar-bg:rgba(255,255,255,.94);
+  /* CONTRAST THAT HOLDS IN BOTH THEMES (clarity audit sweep B, 27 Sep 2026). A filled "on"
+     state is its own pair of colours, because white on the accent is 4.2:1 in light and 2.4:1
+     on the dark theme's lighter accent; the claim border and the faint ink had no dark value
+     at all, so the fidelity border -- the brand's one principle -- drew at 2.5:1 on a dark map. */
+  --accent-fill:#2d6cc0; --on-accent:#fff;
+  --alm-accent-fill:#2d6cc0; --alm-on-accent:#fff;
+  --alm-node-line:#5b6472; --alm-fg-faint:#767676; --alm-bg:#fdfdfc;
+  --alm-badge-ink:#444; --alm-badge-ring:#8a8a8a; --alm-badge-hover:#222;
+  --syn-claim:#1d6fa5; --syn-argument:#7c3aed; --syn-tag:#c2410c; --syn-string:#0f766e;
+  --syn-number:#8a6d1f; --syn-relation:#15803d; --syn-invalid:#b91c1c;
+  /* ONE SCALE FOR EACH THING THAT HAS SIZES (clarity audit sweep B, 27 Sep 2026: 27 font sizes,
+     14 radii, 18 shadows). New rules use these; old ones move onto them as they are touched. */
+  --fs-micro:10px; --fs-small:11px; --fs-ui:12px; --fs-body:13px; --fs-read:14px;
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --r-ctl:6px; --r-card:8px; --r-dialog:12px; --r-pill:999px;
+  --e2:0 6px 22px rgba(0,0,0,.16); --e3:0 16px 48px rgba(0,0,0,.28);
+  --focus:2px solid var(--accent);
+  --hit:#fff0a8;              /* the search's mark on the words it found */
+  color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){
   :root{
@@ -18,6 +38,15 @@
     --panel:#1e2126; --shadow:0 1px 3px rgba(0,0,0,.4);
     --alm-node-bg:#23262b; --alm-fg:#e8e8e8; --alm-fg-dim:#aaa;
     --alm-group-line:#3a3d43; --alm-accent:#6ea8fe; --alm-bar-bg:rgba(30,32,36,.94);
+    --accent-fill:#6ea8fe; --on-accent:#0f1c33;
+    --alm-accent-fill:#6ea8fe; --alm-on-accent:#0f1c33;
+    --alm-node-line:#8a93a1; --alm-fg-faint:#909090; --alm-bg:#17191c;
+    --alm-badge-ink:#d0d0d0; --alm-badge-ring:#6b6f76; --alm-badge-hover:#e8e8e8;
+    --alm-spark:#8a93a1;
+    --syn-claim:#6cb6ff; --syn-argument:#b392f0; --syn-tag:#fb923c; --syn-string:#2dd4bf;
+    --syn-number:#d8b25a; --syn-relation:#4ade80; --syn-invalid:#f87171;
+    --e2:0 6px 22px rgba(0,0,0,.5); --e3:0 16px 48px rgba(0,0,0,.6);
+    --hit:#5c4d12;
   }
 }
 *{box-sizing:border-box}
@@ -33,7 +62,11 @@ html,body{height:100vh;height:100dvh}
 body{margin:0;background:var(--bg);color:var(--fg);
   font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
   display:flex;flex-direction:column;overflow:hidden}
-header{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
+/* THE TITLE BAR, and only it. This rule was written as a bare `header` and so reached every
+   <header> on the page -- the key, guide and study cards, the dialogs, the panes -- giving each
+   the title bar's padding, divider and drop shadow, which local rules then half-undid (clarity
+   audit sweep B, 27 Sep 2026). */
+body > header{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
   border-bottom:1px solid var(--line);background:var(--panel);box-shadow:var(--shadow);
   flex:0 0 auto;flex-wrap:nowrap;overflow:hidden}
 /* NOTHING IN THE BAR SHRINKS EXCEPT THE TITLE, and this rule is the whole reason the bar was
@@ -44,15 +77,22 @@ header{display:flex;align-items:center;gap:.5rem;padding:.45rem .8rem;
    the Notes and Manuscript toggles were not on screen at all, and neither was Exposition. The
    comment 40 lines below promises "nothing is merely clipped: a button half off the edge is
    worse than one honestly absent" — that promise was being kept only below 820px. */
-header > *{flex:0 0 auto}
+/* The pane headers' half weighs nothing (`:where`): with the id counted, `#side header > *`
+   outranked `.grow{flex:1 1 auto}` and every spacer in a pane header stopped growing -- the
+   Manuscript's Contents button slid from the right-hand corner its list drops from to the left. */
+body > header > *,:where(#side header) > *{flex:0 0 auto}
 /* One row, always. A bar that reflows to two lines as the window narrows is exactly the kind of
    movement that breaks concentration, so the title gives up its width first and the buttons
    shed their labels before anything wraps. */
 /* SCOPED TO THE HEADER. As a bare `h1` this also hit the <h1> of the RENDERED MANUSCRIPT, so a
    chapter title in the text pane was clamped to one line and ellipsised -- "I. Introduc..." --
    which reads as a bug in the conversion rather than a stray rule in the chrome. */
-header h1{font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;min-width:2rem;flex:0 1 auto}
+/* A TITLE WORTH KEEPING SOME OF. It gave up its width first when it was a file name; now it is
+   the map's own title (ruled D2), and a readable stretch of it outranks the words on Fit and
+   Full screen, whose icons are the conventional ones -- so it shrinks to this and no further
+   before the labels start to go. */
+body > header h1{font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;min-width:min(14rem,18vw);flex:0 1 auto}
 /* ---------------------------------------------------------------- narrow screens
    Two thresholds, and only one of them is a width.
 
@@ -70,15 +110,30 @@ header h1{font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hi
    (see isNarrow in the script), so the window shows the map, or the Argdown, or the text -- whole --
    and the toolbar switches between them in one tap. That one IS a width, because it is about how
    much room a paragraph needs, which does not depend on what is in the toolbar. */
+/* THE LABELS GO IN STAGES, least-read first (clarity audit, 27 Sep 2026; ruled D2/D3). They
+   used to go all at once, so a map whose bar was twenty pixels too wide lost every word on it
+   and showed thirteen icons, two pairs of them the same drawing. `fitHeader` adds these
+   classes one at a time until the bar fits:
+     tight1   the right-hand errands (Layout, Open, Fit, Full screen, Undo, Redo) lose words
+     tight2   the pane switches lose theirs
+     tight    everything is an icon, How to use included
+     crowded  the errands go behind More, and How to use stays on the bar -- always. */
+header.tight1 #laybtn span,header.tight1 #openbtn span,header.tight1 #fitbtn span,
+header.tight1 #fslabel,header.tight1 #undobtn span,header.tight1 #redobtn span{display:none}
+header.tight2 #panes .icon span{display:none}
 header.tight #fitbtn span,header.tight #fslabel{display:none}
 header.tight .icon span,header.tight #laybtn span,header.tight #helpbtn span{display:none}
+#morebtn{display:none}
+header.crowded #laybtn,header.crowded #openbtn,header.crowded #fitbtn,header.crowded #fsbtn,
+header.crowded #undobtn,header.crowded #redobtn{display:none}
+header.crowded #morebtn{display:inline-flex}
 header.tight{gap:.4rem;padding:.35rem .5rem}
 header.tight .seg button{padding:.2rem .45rem}
 @media (max-width:820px){
   /* One pane at a time: whichever is up takes the whole area. */
   #side{width:auto;max-width:none;min-width:0;flex:1 1 auto;border-left:0}
   #split{display:none !important}
-  header h1{font-size:12px;max-width:11rem}
+  body > header h1{font-size:12px;max-width:11rem}
   /* THE BAR MUST STILL FIT, and at 375px it does not. The ARRANGEMENT control goes first: it is
      the one thing the Layout menu already offers by another route, whereas the pane toggles ARE
      the navigation once only one pane can be up. Full screen goes too -- a phone browser is
@@ -87,8 +142,8 @@ header.tight .seg button{padding:.2rem .45rem}
   #view,#fsbtn{display:none !important}
 }
 @media (max-width:560px){
-  header h1{max-width:7rem}
-  header{gap:.3rem;padding:.3rem .4rem}
+  body > header h1{max-width:7rem}
+  body > header{gap:.3rem;padding:.3rem .4rem}
   .seg button{padding:.2rem .35rem}
   button.plain{padding:.22rem .4rem}
 }
@@ -98,28 +153,39 @@ header.tight .seg button{padding:.2rem .45rem}
   .vsplit{height:14px}
   #ctx button{padding:.5rem .6rem}
 }
-header h1 span{font-weight:400;color:var(--fg-dim)}
+body > header h1 span{font-weight:400;color:var(--fg-dim)}
+#dirtymark{font-size:var(--fs-small);color:var(--fg-dim);white-space:nowrap}
+#dirtymark[hidden]{display:none}
 .spacer{flex:1}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{font:inherit;padding:.2rem .6rem;border:0;background:transparent;color:inherit;
   cursor:pointer;white-space:nowrap}
 button.plain{white-space:nowrap}
-.seg button.on{background:var(--accent);color:#fff}
+.seg button.on{background:var(--accent-fill);color:var(--on-accent)}
 /* A plain toolbar button that is a TOGGLE says so when it is on. The segmented control gets the
    solid fill; a lone toggle only needs to look pressed, not to shout. */
 button.plain.on{border-color:var(--accent);color:var(--accent)}
 /* Present but unavailable, with the reason on hover — see the note in render(). */
 .seg button:disabled{opacity:.4;cursor:help}
+/* THE PANES ARE FOUR SEPARATE SWITCHES, and now look it (ruled D8, 27 Sep 2026). They were drawn
+   as one segmented control, exactly like the arrangements beside them, where one choice excludes
+   the others -- the map bar's own rule, "two kinds of control, told apart by shape", broken in
+   the title bar. Pills, each with its own edge; an open pane's is ringed in the accent. */
+#panes{border:0;gap:.25rem;overflow:visible}
+#panes button{border:1px solid var(--line);border-radius:6px}
+#panes button.on{background:transparent;color:var(--accent-fill);border-color:var(--accent);
+  box-shadow:inset 0 0 0 1px var(--accent)}
 button.plain{font:inherit;padding:.22rem .6rem;border:1px solid var(--line);border-radius:6px;
   background:transparent;color:inherit;cursor:pointer}
 button.plain:hover{border-color:var(--accent)}
-main{flex:1;min-height:0;display:flex}
+main{flex:1;min-height:0;display:flex;position:relative}
 /* The texts on the left instead. `row-reverse` rather than `order` on the children, so the
    divider stays between the two whichever way round they are. */
 main.swapped{flex-direction:row-reverse}
 #side.solo{flex:1 1 auto;width:auto;max-width:none}
 #stage{flex:1;min-width:0;position:relative}
 #map{position:absolute;inset:0}
+#map.empty .alm-bar,#map.empty .alm-barchip{display:none}
 /* The Mechanism arrangement draws into its own container in the same stage: it is a different
    graph (states as boxes, claims on the arrows), so it is not a layout of the live map. */
 #mech{position:absolute;inset:0;background:var(--bg);overflow:hidden}
@@ -151,10 +217,18 @@ main.swapped{flex-direction:row-reverse}
   align-items:flex-start;gap:.3rem;min-height:0;
   max-width:min(32rem,calc(100% - 16px));max-height:min(calc(100% - 4.5rem),62%)}
 #absbtn{background:var(--panel);font-size:11.5px;padding:.2rem .5rem;flex:0 0 auto}
+/* The orientation strip: the abstract's fold, and beside it the map's declarations about
+   itself. Quiet pills in the panel's colours -- they are statements about the map, not
+   controls on it -- and each opens the help topic that explains it. */
+#orient{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
+#orient > [hidden]{display:none}
+#orient .decl{background:var(--panel);font-size:11px;line-height:1.3;padding:.15rem .55rem;
+  border-radius:999px;color:var(--fg-dim)}
+#orient .decl:hover{color:var(--fg)}
 /* The Mechanism arrangement opens with its question in a bar across the top-left corner -- the
    corner the Abstract fold floats in, which covered the question's first words (26 Sep 2026).
    While the fold is offered, the bar starts clear of it. */
-#stage:has(> #abs:not([hidden])) #mech .amech-bar{padding-left:118px}
+#stage:has(> #abs:not([hidden])) #mech .amech-head{padding-left:calc(var(--orient-w,106px) + 12px)}
 /* The chevron IS the affordance: it points right when there is something folded away and down
    when it is open, so the button says what a click will do without a second label. */
 #absbtn .chev{transition:transform .18s ease}
@@ -189,16 +263,19 @@ main.swapped{flex-direction:row-reverse}
 #pastedoor label{display:block;margin:.55rem 0 .2rem;font-weight:600;font-size:12.5px}
 #pastedoor .small{font-size:11.5px}
 #pastedoor #pastebegin{font:inherit;font-size:13px;padding:.35rem .9rem;border-radius:8px;
-  border:1px solid transparent;background:var(--accent,#3a7bd5);color:#fff;cursor:pointer}
+  border:1px solid transparent;background:var(--accent-fill);color:var(--on-accent);cursor:pointer}
 #pastedoor #pastefresh{font:inherit;font-size:13px;padding:.35rem .9rem;border-radius:8px;
   border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
 
 /* THE GUIDE CARD: the key card's manners — foldable to its header, closable — sat on the
    map's other corner, above the bar. */
-#guidecard{position:absolute;left:14px;bottom:56px;z-index:6;max-width:300px;
-  background:var(--panel);border:1px solid var(--line);border-radius:10px;
-  padding:.5rem .65rem;font-size:12px;line-height:1.5;
-  box-shadow:0 8px 28px rgba(0,0,0,.18)}
+/* THE CARDS ARE ONE FAMILY -- key, guide, study -- and now measure the same: radius, shadow,
+   padding (sweep B found them claiming "the key card's manners" and differing from it in all
+   three). Only their corners and their layer differ. */
+#guidecard{position:absolute;left:14px;bottom:calc(var(--bar-h,44px) + 22px);z-index:6;max-width:300px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:.45rem .7rem .6rem;font-size:var(--fs-ui);line-height:1.5;
+  box-shadow:var(--e2)}
 #guidecard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.15rem}
 #guidecard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
 #guidecard header button.plain{font-size:11px;line-height:1.3;padding:0 4px;color:var(--fg-dim)}
@@ -208,15 +285,22 @@ main.swapped{flex-direction:row-reverse}
 #guidebtns{display:flex;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
 #guidebtns button{font:inherit;font-size:12px;padding:.2rem .6rem;border-radius:7px;
   border:1px solid var(--line);background:transparent;color:var(--fg);cursor:pointer}
-#guidebtns button.primary{background:var(--accent,#3a7bd5);color:#fff;border-color:transparent}
+#guidebtns button.primary{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 
 /* THE STUDY CARD: the guide card's manners, on the map's other corner (the key's corner is
    below it; z keeps the working card above the standing reference). It asks and never
    answers — see startStudy. */
-#studycard{position:absolute;right:14px;bottom:56px;z-index:6;max-width:300px;
-  background:var(--panel);border:1px solid var(--line);border-radius:10px;
-  padding:.5rem .65rem;font-size:12px;line-height:1.5;
-  box-shadow:0 8px 28px rgba(0,0,0,.18)}
+#dockr{position:absolute;right:14px;bottom:calc(var(--bar-h,44px) + 22px);z-index:6;
+  display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
+#dockr > *{pointer-events:auto}
+/* NOT OVER THE CHAIN. The key describes the argument map, and study works its fold badges; over
+   the Mechanism chart, whose lines mean other things, the key said something false (sweep B,
+   27 Sep 2026). They wait, and come back with Reasons or Exposition. */
+#stage:has(> #mech:not([hidden])) #dockr{display:none}
+#studycard{position:relative;max-width:300px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:.45rem .7rem .6rem;font-size:var(--fs-ui);line-height:1.5;
+  box-shadow:var(--e2)}
 #studycard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.15rem}
 #studycard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
 #studycard header button.plain{font-size:11px;line-height:1.3;padding:0 4px;color:var(--fg-dim)}
@@ -225,9 +309,9 @@ main.swapped{flex-direction:row-reverse}
 #studycard p{margin:.25rem 0}
 #studycard .crux{font-style:italic;color:var(--fg-dim)}
 
-#keycard{position:absolute;right:14px;bottom:14px;z-index:5;max-width:270px;
-  background:var(--panel);border:1px solid var(--line);border-radius:8px;
-  padding:.45rem .7rem .6rem;box-shadow:0 6px 22px rgba(0,0,0,.16);font-size:12px}
+#keycard{position:relative;max-width:270px;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:.45rem .7rem .6rem;box-shadow:var(--e2);font-size:var(--fs-ui)}
 #keycard header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.1rem}
 #keycard header span{font-size:10.5px;font-style:italic;color:var(--fg-dim);flex:1}
 /* The two header controls are furniture, not features: small, quiet, and still an easy
@@ -295,9 +379,13 @@ main.swapped{flex-direction:row-reverse}
    the rule never matched and the Argdown sat in the top half of an otherwise empty column. */
 
 #side > section:not(.sized){flex:1 1 auto}
-#ms > header,#adpane > header{display:flex;align-items:center;gap:.4rem;
-  padding:.35rem .7rem .35rem .5rem;
-  border-bottom:1px solid var(--line);font-size:12px}
+/* THE THREE PANE HEADERS, ONE SHAPE: name · status · actions · × (clarity audit, 27 Sep 2026).
+   They had drifted -- Notes with its own padding, the Manuscript's buttons at 15px beside the
+   others' 11px, the status text in full ink here and dimmed there. */
+#ms > header,#adpane > header,#notes > header{display:flex;align-items:center;gap:.4rem;
+  padding:.35rem .7rem .35rem .5rem;background:var(--panel);flex:0 0 auto;overflow:hidden;
+  border-bottom:1px solid var(--line);font-size:var(--fs-ui)}
+.muted{color:var(--fg-dim)}
 #adpane > header b{font-weight:600}
 /* THE ROW MUST NOT PUSH ITS OWN CONTROLS OFF THE WINDOW, and it did. The file name and the
    status message are both variable-width, and flex overflows rather than shrinking text: with
@@ -306,9 +394,13 @@ main.swapped{flex-direction:row-reverse}
    like from the inside — the controls were not near the edge, they were over it.
    THE NAME GIVES WAY FIRST. A truncated file name is still recognisable and its full value is in
    the window title; a button that is not on screen cannot be pressed at all. */
-#adpane > header > b{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+/* ...BUT NOT TO NOTHING. With every button showing, the name shrank to a single letter ("ı +
+   text save → download"), which says nothing (clarity audit, 27 Sep 2026). It keeps enough to
+   be recognised, and the status beside it gives way too. */
+#adpane > header > b{flex:0 1 auto;min-width:5rem;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap}
-#adpane > header > .muted{flex:0 0 auto;white-space:nowrap}
+#adpane > header > .muted{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
 #adpane > header > button{flex:0 0 auto}
 .grow{flex:1 1 auto}
 button.plain.tiny{padding:.05rem .35rem;font-size:11px}
@@ -319,8 +411,6 @@ button.plain.tiny.icon svg{width:12px;height:12px}
 #adsave.on{border-color:var(--accent);color:var(--accent);font-weight:600}
 button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #adhost{flex:1 1 auto;min-height:0;overflow:auto;position:relative}
-#notes > header{display:flex;align-items:center;gap:.4rem;padding:.35rem .5rem;
-  border-bottom:1px solid var(--line);font-size:12px}
 #notes > header b{font-weight:600}
 /* THE KIND FILTER, on the strip under the header. Modelled on #adextern -- same colour, same
    border, same 11.5px -- because both are a quiet row of controls belonging to the pane above
@@ -335,18 +425,22 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
   color:var(--fg-dim);overflow-x:auto;scrollbar-width:none}
 #notefilter::-webkit-scrollbar{display:none}
 #notefilter[hidden]{display:none}
-#notefilter > b{font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;
-  font-size:9px;flex:0 0 auto}
+/* Dimmed by colour, not by opacity: opacity on top of the dim ink took this label to 2.5:1
+   (sweep B, 27 Sep 2026). The same change is made wherever text carrying information was faded
+   that way -- page numbers, the footer's counts, "edit in the Argdown". */
+#notefilter > b{font-weight:600;color:var(--fg-dim);text-transform:uppercase;letter-spacing:.05em;
+  font-size:10px;flex:0 0 auto}
 #notefilter .seg{flex:0 0 auto}
 #notefilter .seg button{padding:.1rem .45rem;font-size:11px}
 /* The count rides on the button, so the cost of a click is visible before it is made -- the same
    move the map toolbar makes with its own counts, and for the same reason. Tabular figures so
    the row does not jitter when a comment is deleted. */
-#notefilter .seg button[data-count]::after{content:attr(data-count);margin-left:.3rem;opacity:.55;
+#notefilter .seg button[data-count]::after{content:attr(data-count);margin-left:.3rem;opacity:.75;
   font-variant-numeric:tabular-nums}
 #notefilter .seg button.on[data-count]::after{opacity:.8}
 #notefilter .seg button:disabled{opacity:.4;cursor:not-allowed}
 #notelist{flex:1 1 auto;min-height:0;overflow:auto;padding:.4rem}
+.notefoot{padding:.4rem 0 .2rem;text-align:right}
 .note{border:1px solid var(--line);border-left-width:3px;border-radius:5px;padding:.4rem .55rem;
   margin-bottom:.4rem;cursor:pointer;font-size:12.5px;line-height:1.5}
 .note:hover{border-color:var(--accent)}
@@ -358,7 +452,7 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
    the reader has before they think to hover: why does this one have no Edit and Delete? Quiet
    enough to read past once the distinction is learned. */
 .note .elsewhere{margin-left:auto;text-transform:none;letter-spacing:0;font-style:italic;
-  opacity:.55}
+  color:var(--fg-dim)}
 .note .claim{font-weight:600;font-size:11.5px;margin:.1rem 0 .2rem}
 .note.is-note{border-left-color:#8a6d1f}
 .note.is-comment{border-left-color:#b5179e}
@@ -418,7 +512,8 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #adhost .cm-tooltip{z-index:2}
 #ms select{font:inherit;font-size:12px;max-width:16rem;flex:1;min-width:0}
 #ms .muted{font-size:11px;color:var(--fg-dim);white-space:nowrap}
-#ms > header button{padding:.05rem .4rem;line-height:1.1;font-size:15px}
+#ms > header button:not(.x){padding:.05rem .35rem;font-size:var(--fs-small)}
+#ms > header button.icon svg{width:12px;height:12px}
 /* THE CONTENTS, FLOATING (see the JS block of the same name). Absolutely positioned inside
    #ms so it stays put while #mstext scrolls under it -- reachable from anywhere in a long
    file, which is its whole reason to exist. Top-right, clear of the prose margin; the page
@@ -472,7 +567,7 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #mstext.prose [data-l]{position:relative}
 #mstext.prose .pagenum{position:absolute;right:-2.5rem;top:.25em;width:2rem;text-align:right;
   font:11px/1.4 ui-sans-serif,system-ui,sans-serif;font-variant-numeric:tabular-nums;
-  color:var(--fg-dim);opacity:.62;user-select:none;pointer-events:none;white-space:nowrap}
+  color:var(--fg-dim);user-select:none;pointer-events:none;white-space:nowrap}
 #mstext.prose .pagenum::before{content:"";position:absolute;left:-.5rem;top:.5em;width:.3rem;
   border-top:1px solid var(--line)}
 /* One element per source line: it is what a position IS, what gets highlighted, and what a
@@ -493,7 +588,7 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
   padding:.5rem .6rem;border:1px solid var(--line);border-radius:6px;background:var(--bg);
   color:var(--fg);resize:vertical}
 #cdlg .row{display:flex;gap:.4rem;align-items:center;margin-top:.6rem}
-button.plain.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.plain.primary{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
 
 /* ---------------------------------------------------------------- the walkthrough
    THE HOLE IS A SHADOW, not four rectangles. The obvious way to dim everything except one
@@ -534,7 +629,16 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 @media (prefers-reduced-motion:reduce){
   #walkspot{transition:none}
   #walkspot::after{animation:none}
+  /* And everywhere else: a reader who has asked the system for less motion gets it on the map
+     and in the chrome too, not only in the tour (sweep B, 27 Sep 2026). */
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+  :root{--alm-dur:0ms}
 }
+/* ONE FOCUS RING for every HTML control, in the accent, so a keyboard reader can always see
+   where they are; the map keeps its own outline-only ring on claims and badges. */
+button:focus-visible,select:focus-visible,input:focus-visible,[role="button"]:focus-visible,
+summary:focus-visible,a:focus-visible{outline:var(--focus);outline-offset:2px}
+button.plain:disabled{opacity:.45;cursor:not-allowed}
 #walkcard{position:absolute;width:min(25rem,calc(100vw - 1.6rem));background:var(--bg);
   border:1px solid var(--line);border-radius:9px;box-shadow:0 12px 40px rgba(0,0,0,.3);
   padding:.75rem .9rem .65rem;font-size:13px;line-height:1.5}
@@ -566,12 +670,12 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
   text-overflow:ellipsis;white-space:nowrap}
 #ctx button{display:block;width:100%;text-align:left;font:inherit;padding:.32rem .5rem;
   border:0;border-radius:4px;background:transparent;color:inherit;cursor:pointer}
-#ctx button:hover:not(:disabled){background:var(--accent);color:#fff}
+#ctx button:hover:not(:disabled){background:var(--accent-fill);color:var(--on-accent)}
 #ctx button:disabled{opacity:.5;cursor:default}
 #ctx .why{padding:.1rem .5rem .3rem;color:var(--fg-dim);font-size:11px;white-space:normal}
 #ctx hr{border:0;border-top:1px solid var(--line);margin:.25rem .3rem}
 #ctx .tick{display:inline-block;width:1.1em;color:var(--accent)}
-#ctx button.ctxon:hover .tick{color:#fff}
+#ctx button.ctxon:hover .tick{color:var(--on-accent)}
 #ctx .hint{display:block;margin-left:1.1em;color:var(--fg-dim);font-size:11px}
 #ctx button.hasicon{display:grid;grid-template-columns:26px 1fr;align-items:center;
   column-gap:.15rem;padding:.34rem .5rem}
@@ -619,7 +723,7 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
    pane already spends colour on headings, comments and tags. */
 #src .ref{text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer;
   border-radius:3px}
-#src .ref:hover,#src .ref:focus{background:var(--accent);color:#fff;outline:none;
+#src .ref:hover,#src .ref:focus{background:var(--accent-fill);color:var(--on-accent);outline:none;
   text-decoration:none}
 #src .c{color:var(--fg-dim);font-style:italic}
 #src .t{color:#c2410c}
@@ -631,9 +735,13 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 #drop.over .box{border-color:var(--accent);background:rgba(58,123,213,.05)}
 #drop h2{margin:.2rem 0 .5rem;font-size:1.05rem}
 #drop p{margin:.35rem 0;color:var(--fg-dim);font-size:13px}
-#err{position:absolute;left:1rem;right:1rem;top:1rem;z-index:9;padding:.7rem 2.4rem .7rem .9rem;
+#drop p.doors{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem;margin:.45rem 0}
+#drop p.doors:not(:has(button:not([hidden]))){display:none}
+#err{position:absolute;left:1rem;right:1rem;top:1rem;z-index:90;padding:.7rem 2.4rem .7rem .9rem;
   border:1px solid #d33;border-radius:8px;background:var(--panel);display:none;
-  font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;
+  /* The reader's type, not a console's: every message is prose. A listing that needs columns
+     (the broken-metadata report) still keeps its line breaks, through pre-wrap. */
+  font:13px/1.5 var(--font-ui);white-space:pre-wrap;
   max-height:60%;overflow:auto}
 #err.show{display:block}
 /* NOT EVERY MESSAGE IS A FAILURE. "Up to date" arrived in a red-bordered box, which reads as
@@ -642,7 +750,7 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 /* AND IT HAD NO WAY OUT. It cleared only when a file was loaded or the walkthrough started, so a
    message about anything else sat over the map until the reader opened something. */
 #errclose{position:absolute;top:.3rem;right:.4rem;border:0;background:none;cursor:pointer;
-  font:16px/1 system-ui,sans-serif;color:var(--fg-dim);padding:.2rem .4rem;border-radius:6px}
+  font:15px/1 var(--font-ui);color:var(--fg-dim);padding:.2rem .4rem;border-radius:6px}
 #errclose:hover{color:var(--fg);background:var(--line)}
 /* THE UPDATE DIALOG. confirm() carried the message but only one destination, and the two a
    reader may want are different errands: the download page that walks through the install, or
@@ -676,7 +784,7 @@ button.plain.primary{background:var(--accent);color:#fff;border-color:var(--acce
 footer{flex:0 0 auto;padding:.3rem .9rem;border-top:1px solid var(--line);
   background:var(--panel);color:var(--fg-dim);font-size:11px;
   display:flex;gap:1rem;flex-wrap:wrap}
-footer .muted{opacity:.65}
+footer .muted{color:var(--fg-dim)}
 /* THE FOOTER GIVES ITS ROWS BACK on a phone. On Miller at 375px the counts plus the exposition
    mark wrapped to three lines — a tenth of the screen for what the comment on statsLine itself
    calls a debugging aid. Everything it said stays recallable: the counts, the borders state and
@@ -701,7 +809,7 @@ body.fs #fsexit{display:inline-flex}
 #fsexit{display:none;position:absolute;top:.6rem;right:.7rem;z-index:12;
   background:var(--panel);border:1px solid var(--line);border-radius:6px;
   padding:.25rem .55rem;font:inherit;font-size:12px;color:var(--fg-dim);cursor:pointer;
-  align-items:center;gap:.35rem;opacity:.55;transition:opacity .15s}
+  align-items:center;gap:.35rem;opacity:.8;transition:opacity .15s}
 #fsexit:hover{opacity:1}
 
 /* HOW TO USE. A panel, not a dialog: no overlay dimming the map, no modal trap. Esc closes it,
@@ -720,10 +828,9 @@ body.fs #fsexit{display:inline-flex}
 #help dl{margin:.3rem 0;display:grid;grid-template-columns:auto 1fr;gap:.3rem .7rem;align-items:baseline}
 #help dt{font-weight:600;white-space:nowrap}
 #help dd{margin:0;color:var(--fg-dim)}
-#help kbd{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:4px;
-  padding:0 .3rem;background:var(--bg)}
 #help .close{position:absolute;top:.7rem;right:.8rem;border:0;background:transparent;
-  color:var(--fg-dim);font-size:18px;line-height:1;cursor:pointer;padding:.2rem .35rem}
+  color:var(--fg-dim);font-size:15px;line-height:1;cursor:pointer;padding:.2rem .35rem}
+#help .close:hover{color:var(--fg)}
 #help details{margin-top:.5rem}
 #help summary{cursor:pointer;color:var(--fg-dim);font-size:12px}
 /* ---- the contents list, and the topic pages it leads to ---- */
@@ -753,7 +860,7 @@ body.fs #fsexit{display:inline-flex}
   padding:.12rem .6rem;cursor:pointer}
 .xmode button:first-child{border-radius:6px 0 0 6px}
 .xmode button:last-child{border-radius:0 6px 6px 0;border-left:0}
-.xmode button.on{background:var(--accent,#3a7bd5);color:#fff;border-color:var(--accent,#3a7bd5)}
+.xmode button.on{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
 #about{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
   display:grid;place-items:center;padding:2rem}
 #about[hidden]{display:none}
@@ -811,6 +918,48 @@ body.fs #fsexit{display:inline-flex}
 #help .helpback{position:absolute;top:.65rem;left:.8rem;border:0;background:transparent;
   font:inherit;font-size:12px;color:var(--accent);cursor:pointer;padding:.2rem .3rem}
 #help .helpback:hover{text-decoration:underline}
+#helpfind{margin:.55rem 0 .2rem}
+#helpfind input{width:100%;box-sizing:border-box;font:inherit;font-size:13px;color:var(--fg);
+  background:var(--bg);border:1px solid var(--line);border-radius:var(--r-ctl,6px);
+  padding:.35rem .55rem}
+#help.is-page #helpfind,#help.is-page #helpnone,#help.is-page #helpresults{display:none}
+#help.searching #helpintro{display:none}
+#helpnone{color:var(--fg-dim);font-style:italic}
+#helpresults{margin:.5rem 0}
+#helpresults button{display:block;width:100%;text-align:left;border:0;background:transparent;
+  font:inherit;color:var(--fg);padding:.42rem .5rem;border-radius:6px;cursor:pointer;
+  border-bottom:1px solid var(--line)}
+#helpresults button:hover{background:var(--bg-soft,rgba(58,123,213,.08))}
+#helpresults button b{display:block;font-weight:600}
+#helpresults .snip{display:block;color:var(--fg-dim);font-size:var(--fs-ui);margin-top:.1rem}
+/* A LINK INTO HOW TO USE, wherever it stands: in a topic, on the key, in a message. It reads as
+   a link because it goes somewhere, and it is a button because where it goes is this page. */
+.helplink{border:0;background:none;padding:0;font:inherit;color:var(--accent);cursor:pointer;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+#help a[data-help]{color:var(--accent);cursor:pointer}
+mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
+/* What's on the screen: a drawing, then its line. */
+#help .screen{margin:.5rem 0}
+#help .srow{display:grid;grid-template-columns:64px 1fr;gap:.7rem;align-items:start;
+  padding:.4rem 0;border-bottom:1px solid var(--line);color:var(--fg)}
+#help .srow:last-child{border-bottom:0}
+#help .srow .sdraw svg{width:64px;height:30px;display:block;color:var(--fg)}
+#help .srow a[data-help]{display:block;font-size:var(--fs-small);margin-top:.1rem}
+.sd-box{fill:var(--alm-node-bg,#fff);stroke:var(--alm-node-line,#5b6472);stroke-width:1.3}
+.sd-card{fill:var(--bg-soft,rgba(0,0,0,.035));stroke:var(--line);stroke-width:1}
+.sd-chip{fill:var(--panel);stroke:var(--line);stroke-width:1}
+.sd-ink{stroke:var(--fg)}
+.sd-inkfill{fill:var(--fg-dim)}
+.sd-faint{stroke:var(--fg-dim);stroke-width:1.2}
+.sd-badge{fill:var(--accent-fill)}
+.sd-bt{font:700 8px var(--font-ui);fill:var(--on-accent);text-anchor:middle}
+.sd-t{font:600 8px var(--font-ui);fill:var(--fg);text-anchor:middle}
+.sd-ts{font:500 6.5px var(--font-ui);fill:var(--fg-dim);text-anchor:middle}
+.sd-tl{font:600 6.5px var(--font-ui);fill:var(--fg-dim)}
+/* Mechanism's own navy (--mv-text in argdown-mechanism.js), which lives inside the chart's scope. */
+.sd-mv{fill:#203a6a}
+.sd-mvline{stroke:#203a6a}
+@media (prefers-color-scheme:dark){ .sd-mv{fill:#9cc3ef} .sd-mvline{stroke:#9cc3ef} }
 #help.is-page .helptitle{margin-left:5.6rem}
 /* The etymology introduces the panel; it does not belong at the top of every topic. Direct
    child only — the About page has paragraphs of its own in the same style. */
@@ -851,11 +1000,6 @@ body.fs #fsexit{display:inline-flex}
   padding:.4rem .5rem;border:1px solid var(--line);border-radius:6px;
   background:var(--bg);color:var(--fg)}
 #foldstateerr{font-size:.85em;color:#d9534f}
-#help pre.hx{background:var(--bg-alt,rgba(0,0,0,.04));padding:.5rem .6rem;border-radius:5px;
-  font:11.5px/1.55 var(--argdown-font);
-  font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual;
-  white-space:pre-wrap;
-  overflow-x:auto;margin:.4rem 0}
 #help pre.hx .ok{color:#15803d}
 #help pre.hx .bad{color:#b91c1c}
 #help details > summary{cursor:pointer;padding:.2rem 0}
@@ -874,23 +1018,16 @@ body.fs #fsexit{display:inline-flex}
 <body>
 
 <header>
-  <h1 id="fname">Argdown viewer</h1>
-  <!-- WHOSE TEXT IS THIS, at the page level. Shown when the map's front matter declares
-       `text-provenance:` — beside the title, not behind a click, because a checked-quotation
-       border lends a manuscript the look of an authored source, and the label is what stops
-       that borrowed trust (docs/values/SECOND-THOUGHTS.md). -->
-  <span id="gentext" class="muted" hidden></span>
-  <!-- AND WHOSE MAP: the same declaration made about the reconstruction itself (Formation
-       T3, ruled 14 Sep). A map that declares `reconstruction: generated:` and records no
-       `reviewed:` says so beside the title; one recording a person's pass says that instead.
-       Both are declarations, never certifications — the ruling's own constraint is that even
-       a human pass over a hundred-claim map gives limited reassurance, and the hover says so. -->
-  <span id="mapprov" class="muted" hidden></span>
-  <!-- ONE READING AMONG READINGS: shown when the map declares at least one #crux — a claim
-       whose reading was chosen among live alternatives (Formation T4; the conventions'
-       three-scale rule). Declared-driven, not threshold-driven: the page shows what the
-       reconstructor marked and invents no cutoff of its own. -->
-  <span id="cruxchip" class="muted" hidden></span>
+  <h1 id="fname">Ipsissima</h1>
+  <!-- UNSAVED, SAID WHERE IT CAN ALWAYS BE SEEN. The only sign was "edited" in the Argdown pane's
+       header, so after a comment written on the map, with that pane closed -- the usual case --
+       nothing on screen said the file had changed (sweep D, 27 Sep 2026). -->
+  <span id="dirtymark" hidden title="Unsaved changes. Save (Cmd/Ctrl-S) keeps them.">● edited</span>
+  <!-- The map's declarations about itself (AI-written text, machine-written map or map read by
+       a person, one reading · N cruxes) used to sit here, beside the title, where they read as
+       part of it and squeezed the controls' labels off the bar. They now sit with the abstract
+       in the orientation strip at the map's top-left: the same family of thing, said where the
+       reader orients (clarity audit, 27 Sep 2026; ruled D3). -->
   <!-- ONE CONTROL, TWO ARRANGEMENTS. Both are the argument; what differs is what ORDERS the
        claims. `Reasons` puts the main claim at the apex with what holds it up below; `Exposition`
        lays the same claims out in the order the text presents them.
@@ -902,7 +1039,7 @@ body.fs #fsexit{display:inline-flex}
        this is for. The renderer has called it `expositionOrder` from the beginning. -->
   <div class="seg" id="view">
     <button class="icon on" data-v="reasons"
-            title="Ordered by what supports what — the main claim at the apex">
+            title="Ordered by what supports what — the main claim at the top">
       <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="2" width="6" height="4" rx="1"/><rect x="1.2" y="14" width="6" height="4" rx="1"/><rect x="12.8" y="14" width="6" height="4" rx="1"/><path d="M4.2 14V10h11.6v4M10 10V6"/></svg><span>Reasons</span></button>
     <!-- Offered only once the claims can be placed. Disabled rather than absent when they cite
          a manuscript this viewer has no copy of — see the note where it is set. -->
@@ -924,17 +1061,26 @@ body.fs #fsexit{display:inline-flex}
        against the source, or all three. Turning the map off gives the two texts the whole
        window, which is the careful-correction case. -->
   <div class="seg" id="panes">
+    <!-- DRAWN APART FROM REASONS (clarity audit, 27 Sep 2026): the pane and the arrangement were
+         the same tree, and with the labels gone the bar showed it twice meaning two things. The
+         pane is a frame holding a diagram; the arrangement keeps the tree, apex at the top. -->
     <button class="icon on" data-p="map" title="Show or hide the map">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7" y="2" width="6" height="4" rx="1"/><rect x="1.2" y="14" width="6" height="4" rx="1"/><rect x="12.8" y="14" width="6" height="4" rx="1"/><path d="M4.2 14V10h11.6v4M10 10V6"/></svg><span>Map</span></button>
+      <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><rect x="5" y="6" width="4" height="3" rx=".6"/><rect x="11" y="11" width="4" height="3" rx=".6"/><path d="M8.2 9 11.4 11"/></svg><span>Map</span></button>
     <button class="icon" data-p="argdown" title="Show or hide the Argdown">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 3.5H4.5v13h3M12.5 3.5h3v13h-3"/></svg><span>Argdown</span></button>
     <button class="icon" data-p="notes" hidden
             title="Every note and comment written in the margins of this reconstruction">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 2.5h11v10l-4 5h-7z"/><path d="M15.5 12.5h-4v5"/><path d="M7.5 6h5M7.5 9h5"/></svg><span>Notes</span></button>
     <button class="icon" data-p="text" hidden
-            title="Show or hide the manuscript. Shift-click (or right-click) any claim to jump to the passage it came from.">
-      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 2.5v15"/><path d="M6.5 5h11M6.5 8.5h11M6.5 12h7M6.5 15.5h11"/></svg><span>Manuscript</span></button>
+            title="Show or hide the text this map reads. Double-click or shift-click a claim to go to the passage it came from.">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.2C8.2 3.9 5.8 3.4 3 3.7v11.2c2.8-.3 5.2.2 7 1.5 1.8-1.3 4.2-1.8 7-1.5V3.7c-2.8-.3-5.2.2-7 1.5z"/><path d="M10 5.2v11.2"/></svg><span>Manuscript</span></button>
   </div>
+  <!-- THE LAYOUTS SIT WITH THE PANES THEY SET (ruled D9, 27 Sep 2026). Each preset is a
+       combination of the four switches beside it, and it lived at the far end of the bar with
+       Open and Fit, as though it were an errand rather than a way of choosing what is on
+       screen. A caret after the switches: one cluster, "what am I looking at". -->
+  <button class="plain icon" id="laybtn" title="Layouts: the panes set for a job — read, read along, edit, check, comment">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg><span>Layout</span></button>
   <span class="spacer"></span>
   <!-- One click for the whole state. The panes stay independent switches underneath; this is a
        shortcut to the handful of combinations that correspond to actual jobs. -->
@@ -948,8 +1094,12 @@ body.fs #fsexit{display:inline-flex}
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 7H12.5a4 4 0 0 1 0 8H8"/><path d="M9.5 4 6.5 7l3 3"/></svg><span>Undo</span></button>
   <button class="plain icon" id="redobtn" hidden title="Redo (Cmd/Ctrl-Shift-Z)">
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M13 7H7.5a4 4 0 0 0 0 8H12"/><path d="M10.5 4l3 3-3 3"/></svg><span>Redo</span></button>
-  <button class="plain icon" id="laybtn" title="Set the panes for a particular job">
-    <svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M12 3.5v13"/></svg><span>Layout</span></button>
+  <!-- WHEN THE BAR CANNOT HOLD EVERYTHING, THE LEAST-USED GO BEHIND ONE BUTTON, and How to use
+       never does. On a phone the right-hand end of the bar ran off the screen, How to use with
+       it (clarity audit, 27 Sep 2026); see fitHeader. -->
+  <button class="plain icon" id="morebtn" type="button" title="More: Layout, Open, Fit and the rest"
+          aria-label="More controls">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="10" cy="10" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10" r="1.3" fill="currentColor" stroke="none"/></svg><span>More</span></button>
   <button class="plain icon" id="openbtn" hidden title="Open another reconstruction — a file, or a folder">
     <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 15.5V5a1 1 0 0 1 1-1h3.6l1.6 2h6.8a1 1 0 0 1 1 1v1"/><path d="M2.5 15.5 4.8 8.9a1 1 0 0 1 .95-.68h11.4a1 1 0 0 1 .95 1.32l-2 6a1 1 0 0 1-.95.68H3.5a1 1 0 0 1-1-1z"/></svg><span>Open…</span></button>
   <!-- The pane can be reached by a gesture, but a gesture nobody performs is a feature nobody
@@ -975,23 +1125,14 @@ body.fs #fsexit{display:inline-flex}
        once; dismissed in one action and remembered dismissed; always under How to use. The
        card's body is written by keyContent() from the open reconstruction, so it shows only
        the markings this map actually uses. -->
-  <!-- THE GUIDE (docs/EDITOR-PLAN.md §3): build a map from a text, one question at a time —
-       the walkthrough's manners, selection-to-claim as its only gesture. The card never
-       proposes which sentence is the conclusion, never ranks premises, never supplies the
-       assumption: the judgement stays the reader's (G3); the card asks, and works the
-       gesture. -->
-  <div id="guidecard" hidden role="note" aria-label="Building a map from the text" data-step="0">
-    <header><b>From text to map</b><span id="guidestep"></span>
-      <button class="plain" id="guidemin" title="Fold the guide to its header">&#8211;</button>
-      <button class="plain" id="guideclose"
-              title="Close the guide. The map and the text stay; the steps are under How to use.">&#215;</button></header>
-    <div id="guidebody"></div>
-    <div id="guidebtns"></div>
-  </div>
   <!-- STUDY MODE (docs/STUDY-PLAN.md §1, ruled 14 Sep): predict before unfolding. The card
        stages the reveal and stays out of the comparison — it never asks the reader to type,
        never scores, never records; what they expected and what the map says are compared in
        their own judgement (G3, applied to the reader's reading). -->
+  <!-- THE RIGHT-HAND DOCK: the study card above the key, both above the map's control bar, so
+       neither covers the other or the bar's last switches (clarity audit sweep B, 27 Sep 2026:
+       the key sat over the hashtags and the study card over the key). -->
+  <div id="dockr">
   <div id="studycard" hidden role="note" aria-label="Study mode">
     <header><b>Study</b><span id="studyhint">predict, then unfold</span>
       <button class="plain" id="studymin" title="Fold the card to its header">&#8211;</button>
@@ -1007,6 +1148,7 @@ body.fs #fsexit{display:inline-flex}
               title="Close. The key stays under How to use and Help &#9656; Show the Key.">&#215;</button></header>
     <div id="keybody"></div>
   </div>
+  </div><!-- /#dockr -->
   <!-- THE ABSTRACT, FOR SOMEONE MEETING THIS MAP COLD. A reconstruction says what a paper
        argues; the abstract says what the paper says it argues, in the author's own words, and
        those are the two things a reader wants side by side in the first minute. The ingest
@@ -1023,9 +1165,25 @@ body.fs #fsexit{display:inline-flex}
        1928 Economic Journal article do not, and an empty control that never opens teaches the
        reader that the feature is broken. -->
   <div id="abs" hidden>
+    <div id="orient">
     <button class="plain icon" id="absbtn" aria-expanded="false" aria-controls="abspanel"
             title="The article's own abstract — what the paper says it argues, in its authors' words. Click again to fold it away.">
       <svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg><span id="abslabel">Abstract</span></button>
+      <!-- WHOSE TEXT IS THIS, at the page level. Shown when the map's front matter declares
+           `text-provenance:`, because a checked-quotation border lends a manuscript the look
+           of an authored source, and the label is what stops that borrowed trust
+           (docs/values/SECOND-THOUGHTS.md). -->
+      <button class="plain decl" id="gentext" type="button" hidden
+              data-help="What a map says about itself"></button>
+      <!-- AND WHOSE MAP (Formation T3, ruled 14 Sep): `reconstruction: generated:` with no
+           `reviewed:` says so; a recorded person's pass says that instead. Declarations, never
+           certifications, and the hover says so. -->
+      <button class="plain decl" id="mapprov" type="button" hidden
+              data-help="What a map says about itself"></button>
+      <!-- ONE READING AMONG READINGS: the map's own declared cruxes, counted (Formation T4). -->
+      <button class="plain decl" id="cruxchip" type="button" hidden
+              data-help="What a map says about itself"></button>
+    </div>
     <div id="abspanel" role="note" hidden>
       <div id="abshead">
         <span id="abswhere"></span>
@@ -1034,6 +1192,33 @@ body.fs #fsexit{display:inline-flex}
       </div>
       <div id="absbody"></div>
     </div>
+  </div>
+  <button id="fsexit" title="Leave full screen (Esc)">
+    <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor"
+         stroke-width="1.6" stroke-linecap="round"><path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5"/></svg>
+    Leave full screen</button>
+
+
+  </div><!-- /#stage -->
+
+  <!-- OUTSIDE THE STAGE, ON PURPOSE (clarity audit, 27 Sep 2026). The stage is hidden whenever
+       the map pane is off -- Layout ▸ Check, or a phone showing the text -- and everything
+       inside it went with it: How to use lit its button and opened a 0×0 panel, messages were
+       raised where no one could see them, and the guide card vanished at the step that asks
+       the reader to read the text. These belong to the window, not to the map, so they are
+       positioned against <main>. -->
+  <!-- THE GUIDE (docs/EDITOR-PLAN.md §3): build a map from a text, one question at a time —
+       the walkthrough's manners, selection-to-claim as its only gesture. The card never
+       proposes which sentence is the conclusion, never ranks premises, never supplies the
+       assumption: the judgement stays the reader's (G3); the card asks, and works the
+       gesture. -->
+  <div id="guidecard" hidden role="note" aria-label="Building a map from the text" data-step="0">
+    <header><b>From text to map</b><span id="guidestep"></span>
+      <button class="plain" id="guidemin" title="Fold the guide to its header">&#8211;</button>
+      <button class="plain" id="guideclose"
+              title="Close the guide. The map and the text stay; the steps are under How to use.">&#215;</button></header>
+    <div id="guidebody"></div>
+    <div id="guidebtns"></div>
   </div>
   <div id="err"><button id="errclose" type="button" aria-label="Dismiss">×</button><span id="errmsg"></span></div>
   <div id="upd" role="dialog" aria-modal="true" aria-labelledby="updmsg">
@@ -1045,11 +1230,6 @@ body.fs #fsexit{display:inline-flex}
     </div>
   </div>
 </div>
-  <button id="fsexit" title="Leave full screen (Esc)">
-    <svg viewBox="0 0 20 20" width="13" height="13" fill="none" stroke="currentColor"
-         stroke-width="1.6" stroke-linecap="round"><path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5"/></svg>
-    Leave full screen</button>
-
   <aside id="help" aria-label="How to use">
     <button class="close" id="helpclose" title="Close (Esc)">&times;</button>
     <!-- Shown only inside a topic; returns to the contents. The panel opens on the contents,
@@ -1057,30 +1237,40 @@ body.fs #fsexit{display:inline-flex}
          answer, not by dropping them into the middle of the first answer. -->
     <button class="helpback" id="helpback" hidden>&#8249;&ensp;All topics</button>
     <div class="helptitle">Ipsissima</div>
+    <!-- SEARCH (clarity plan 5.1). The whole help is already in the page, so finding a topic by
+         what it says costs nothing -- and a reader with a question knows its words, not yet the
+         title of the page that answers it. Shown with the contents, hidden inside a topic. -->
+    <div id="helpfind"><input type="search" id="helpq" placeholder="Search How to use"
+         aria-label="Search How to use" autocomplete="off" spellcheck="false"></div>
     <!-- Everything below is rendered from help.md at startup. Edit that file, not this one. -->
     <div id="helpbody"></div>
+    <p id="helpnone" hidden></p>
+    <nav id="helpresults" hidden aria-label="Search results"></nav>
     <nav id="helptoc" aria-label="Contents"></nav>
   </aside>
-
   <div id="drop">
     <div class="box">
       <h2>Drop an <code>.argdown</code> file — or its folder — here</h2>
-      <p><button class="plain" id="pick">choose a file</button>
-         &nbsp;·&nbsp; <button class="plain" id="pickdir">choose a folder</button>
-         <!-- THE THIRD ANSWER TO A COLD START. The panel offered two ways to open something that
-              already exists, and no way to begin; someone whose reconstruction does not exist yet
-              had to be told to create an empty file somewhere else and drop it on this. Hidden in
-              a build with no editor, where it would only produce a file nobody could type into. -->
-         &nbsp;·&nbsp; <button class="plain" id="picknew" hidden>start a reconstruction</button>
-         &nbsp;·&nbsp; <button class="plain" id="picknewdebate" hidden>start a debate map</button>
-         &nbsp;·&nbsp; <button class="plain" id="picknewtext" hidden>start from a text</button></p>
-      <p>A folder brings the manuscript with it, so the claims can be laid out
-         <b>by where they appear in the text</b>. A lone file gives the argument map only —
-         unless it is a <b>bundle</b>, which carries the text inside it.</p>
+      <!-- TWO ERRANDS, TWO ROWS, AND THE MENU'S OWN NAMES (clarity audit 27 Sep 2026, plan 4.6;
+           F8(a)). Opening something that exists and beginning something new were five doors in
+           one row joined by middle dots, which orphaned whenever the row wrapped or a build hid
+           a door -- the Reader showed three dots with nothing between them. The doors now carry
+           the names the application's File menu gives the same commands, so a reader who meets
+           both learns one vocabulary. The start row is shown only in a build with an editor. -->
+      <p class="doors"><button class="plain" id="pick" title="Open one .argdown file">Open a file…</button>
+         <button class="plain" id="pickdir" title="Open a reconstruction's folder, so its text comes with the map">Open a folder…</button></p>
+      <p class="doors" id="startdoors"><button class="plain" id="picknew" hidden
+            title="A worked skeleton of a reconstruction, to write over claim by claim">New reconstruction</button>
+         <button class="plain" id="picknewdebate" hidden
+            title="A skeleton for surveying a debate: no source text, a tag for each side">New debate map</button>
+         <button class="plain" id="picknewtext" hidden
+            title="Paste a passage and build a map from it, one question at a time">New from text…</button></p>
+      <p id="dropnote">A folder brings the text with it, so the claims can also be laid out where
+         they appear in it. A lone file opens as the map alone — unless it carries its text
+         inside it.</p>
       <p>Parsed in the page with the real Argdown parser. Nothing is uploaded.</p>
     </div>
   </div>
-  </div><!-- /#stage -->
 
   <!-- THE PASTE DOOR (docs/EDITOR-PLAN.md §3). Starting from a text without a folder and
        without the MCP: paste the passage, say whose it is, and the text becomes an embedded
@@ -1088,9 +1278,9 @@ body.fs #fsexit{display:inline-flex}
        because the rule is that a cited text is never EDITED in place; bringing one in is
        ingest. The honest line is on the door because it is true of everything that follows:
        the checks verify against this pasted copy, never against the original. -->
-  <div id="pastedoor" hidden role="dialog" aria-modal="true" aria-label="Start from a text">
+  <div id="pastedoor" hidden role="dialog" aria-modal="true" aria-label="New from text">
     <div class="card">
-      <header><b>Start from a text</b><span class="grow"></span>
+      <header><b>New from text</b><span class="grow"></span>
         <button class="plain x" id="pasteclose" title="Close (Esc)">&times;</button></header>
       <div class="body">
         <p>Paste the passage you are working from. Plain text is fine — paragraphs stay
@@ -1249,11 +1439,9 @@ body.fs #fsexit{display:inline-flex}
         <span id="notecount" class="muted"></span>
         <span class="grow"></span>
         <button class="plain tiny icon" id="expbtn" hidden
-                title="Export: the annotated essay as Word or Markdown, or the whole
+                title="Export: the annotated text as Word or Markdown, or the whole
                        reconstruction as one file">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 13V3.6"/><path d="M6.6 6.9 10 3.5l3.4 3.4"/><path d="M3.5 13.4v2.1a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-2.1"/></svg><span>Export</span></button>
-        <button class="plain tiny" id="delallc" hidden
-                title="Remove every comment from the file. Notes are left alone.">Delete all comments</button>
         <button class="plain x" data-close="notes" title="Close">&times;</button>
       </header>
       <!-- WHICH OF THE TWO HANDS TO READ. See MARGIN_KINDS: a comment is someone writing ON the
@@ -1273,9 +1461,9 @@ body.fs #fsexit{display:inline-flex}
       <div id="notefilter" hidden>
         <b>show</b>
         <span class="seg" role="group" aria-label="Which marginalia to show">
-          <button data-want="both">everything</button>
-          <button data-want="comment" title="Remarks ON the reconstruction — a tutor on a student's argument, a reader on a colleague's">comments</button>
-          <button data-want="note" title="The reconstruction's own asides — why a claim was read that way, which step is imputed">reconstructor&rsquo;s notes</button>
+          <button data-want="both" title="Comments and the reconstructor's notes together">Everything</button>
+          <button data-want="comment" title="Remarks ON the reconstruction — a tutor on a student's argument, a reader on a colleague's">Comments</button>
+          <button data-want="note" title="The reconstruction's own asides — why a claim was read that way, which step is imputed">Reconstructor&rsquo;s notes</button>
         </span>
       </div>
       <div id="notelist"></div>
@@ -1292,15 +1480,15 @@ body.fs #fsexit{display:inline-flex}
              writes the part the machine can see. Two doors, and they are the reader's first
              fidelity lesson: a quotation's text IS the words, a paraphrase's text is yours. -->
         <button class="plain" id="msquote" hidden
-                title="New claim carrying the selected words as its text — fidelity: quotation, the source recorded verbatim, the chapter cited. The title arrives selected, ready to be renamed.">Quote this passage</button>
+                title="New claim whose text is the selected words, marked as a quotation with its source recorded. Its title arrives selected, ready to rename.">Quote this passage</button>
         <button class="plain" id="mspara" hidden
-                title="New claim for saying the selected words your own way — fidelity: paraphrase, with the source recorded verbatim so the reading can be checked against it. Your restatement arrives selected, ready to be written.">Paraphrase it</button>
+                title="New claim for saying the selected words your own way, with the source recorded so the reading can be checked. Your restatement arrives selected.">Paraphrase it</button>
         <!-- WRITE-BACK (docs/ANNOTATIONS-PLAN.md): the selection becomes a highlight IN
              ZOTERO, on the PDF itself, at the exact rectangles the conversion's geometry
              sidecar resolves — created there and nowhere else (E10: no second store), so
              pressing "Zotero highlights" afterwards reads it back like any other mark. -->
         <button class="plain" id="mszothl" hidden
-                title="Highlight the selected passage in Zotero — the mark is created in Zotero itself, on the PDF, exactly where these words are printed, and lives only there. Zotero asks your permission the first time.">Highlight in Zotero</button>
+                title="Highlight the selected words in Zotero, on the PDF where they are printed. The mark lives in Zotero; it asks your permission the first time.">Highlight in Zotero</button>
         <!-- THE MANUSCRIPT AS COMMON GROUND (docs/PLURALITY-PLAN.md §2, ruled 14 Sep): open
              another reading of this same text, and the margin shows where the two maps read
              the same passages, where each goes alone, and where they read the same words
@@ -1323,22 +1511,22 @@ body.fs #fsexit{display:inline-flex}
              of the passage being read and brings them into view. Off until asked for — a map
              moving under the reader is a thing to choose — and remembered once chosen. -->
         <button class="plain" id="msfollow" hidden aria-pressed="false"
-                title="Follow the reading: as you scroll the text, the map lights the claims drawn from the passage you are reading and brings them into view. Nothing is unfolded; a claim folded away is shown by the block that stands for it.">follow</button>
+                title="Follow the reading: as you scroll the text, the map lights the claims drawn from the passage in view. Nothing is unfolded.">Follow</button>
         <button class="plain icon" id="mstocbtn" hidden aria-expanded="false"
-                title="The file's own contents — its headings, floating so any section is one click away from wherever you are. Click a heading to go there; the section you are reading is marked as you scroll. Click again, press Escape, or use the list's own × to fold it away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
+                title="The text's own headings, floating over it: click one to go there. The section you are reading is marked as you scroll."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 5h.01"/><path d="M7.5 5H16"/><path d="M4 10h.01"/><path d="M7.5 10H16"/><path d="M7.5 15h.01"/><path d="M10.5 15H16"/></svg><span>Contents</span></button>
         <!-- THE READER'S OWN MARKS, from their own store (E10; docs/ANNOTATIONS-PLAN.md).
              Shown only in the desktop application, and only when this text declares the
              Zotero attachment it was converted from. Pressing it is the one thing that makes
              the app speak to Zotero — on this machine, per the ruled C1 narrowing — and
              pressing it again puts the marks away. -->
         <button class="plain icon" id="mszotero" hidden
-                title="Show your own Zotero highlights of this text, read from Zotero running on this computer — nothing leaves your machine, and it is asked only when you press this. Press again to put them away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 4.5v11"/><path d="M9 6.5h7"/><path d="M9 10h7"/><path d="M9 13.5h4.5"/></svg><span>Zotero highlights</span></button>
+                title="Show your Zotero highlights of this text, read from Zotero on this computer only when you press. Press again to put them away."><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 4.5v11"/><path d="M9 6.5h7"/><path d="M9 10h7"/><path d="M9 13.5h4.5"/></svg><span>Zotero highlights</span></button>
         <button class="plain icon" id="mscompare" hidden aria-label="Compare with another reading…"
-                title="Compare with another reading… — open another reconstruction of this same text, and see in the margin which passages each reading covers, and where they read the same words differently. Nothing is judged: which reading is better is the argument the two files exist to have."><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="6" height="12" rx="1.2"/><rect x="11" y="4" width="6" height="12" rx="1.2"/></svg></button>
+                title="Compare with another reading of this text: which passages each covers, and where they read the same words differently."><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4" width="6" height="12" rx="1.2"/><rect x="11" y="4" width="6" height="12" rx="1.2"/></svg></button>
         <input type="file" id="cmpfile" hidden accept=".argdown">
         <span id="cmpnote" hidden></span>
         <button class="plain" id="cmpend" hidden
-                title="End the comparison. The margin stripes go; both files are untouched.">&times; end</button>
+                title="End the comparison (Esc). The margin stripes go; both files are untouched.">End comparison</button>
         <button class="plain x" data-close="text" title="Close">&times;</button>
       </header>
       <nav id="mstoc" hidden aria-label="Contents of this file">
@@ -1386,6 +1574,44 @@ var SHAPE_ON = false;
  * not have been there. */
 var HOST = window.ArgdownHost && window.ArgdownHost.available ? window.ArgdownHost : null;
 
+/* WHERE THE TEXT IS MISSING, ONE REMEDY, SAID ONE WAY (F8(a), admitted 27 Sep 2026). Ten places
+ * told a reader the manuscript was absent, in nine wordings; two of them handed over a
+ * developer's build command, and one gave this advice on a map that reads no text at all. The
+ * remedy differs by host and by nothing else: a browser has to be handed the folder, while the
+ * app reads the folder round the file it opened, so there the text is simply not where the map
+ * says it is. */
+function textMissingRemedy(){
+  return HOST
+    ? "The text it cites was not found beside the .argdown. Put it where the map's source " +
+      "lines point, or open the folder that holds both (File ▸ Open Folder…)."
+    : "Open the map's folder rather than the file on its own: drop the folder here, or choose " +
+      "Open… and then Open a folder….";
+}
+/** Does this map read a text at all? A map citing none is a genre (B7), not a map missing one. */
+function mapCitesText(){
+  return ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).some(function(x){ return x.chapter; });
+}
+/** THE MAP'S NAME IN THE TITLE BAR, the file's name on hover (ruled D2, 27 Sep 2026). The bar
+ *  showed `miller-2019-uksc-41.argdown` while the title the reconstructor wrote -- "R (Miller) v
+ *  The Prime Minister [2019] UKSC 41" -- appeared nowhere. The file's name stays where the file
+ *  is edited, in the Argdown pane's header, and on hover here. */
+function setHeaderTitle(name, graph){
+  var t = graph && graph.mapTitle;
+  $("fname").textContent = t || name || "Ipsissima";
+  $("fname").title = t && name ? t + " — " + name : (name || "");
+  // Which file is open, said plainly for anything that has to know -- the tests used to read
+  // it off the title bar, which now shows the map's title instead.
+  $("fname").dataset.file = name || "";
+}
+
+/** How to open or begin a map, in the words of the control this build actually has: the app's
+ *  File menu, or the web page's opening panel. A message that names a menu the page lacks sends
+ *  the reader looking for something that is not there. */
+function openOrStartHow(){
+  return HOST ? "Open one (File ▸ Open…) or start one (File ▸ New Reconstruction)"
+              : "Open one, or start one, from the panel that Open… brings up";
+}
+
 /* THE TWO FACTS THE BUILD CANNOT WORK OUT FOR ITSELF.
  *
  * Everything else on the About page is measured — version and build time from the builder,
@@ -1407,6 +1633,18 @@ function showErr(msg, opts){
   opts = opts || {};
   clearTimeout(ERR_TIMER); ERR_TIMER = null;
   $("errmsg").textContent = msg;
+  // A MESSAGE CAN SAY WHERE THE LONGER ANSWER IS (plan 5.2): `help` names a topic of How to use,
+  // and the message carries a link to it. The link does not keep the message open -- a click
+  // anywhere on the box dismisses it, which is the point: the reader is going somewhere else.
+  if (opts.help) {
+    var more = document.createElement("button");
+    more.type = "button";
+    more.className = "helplink";
+    more.dataset.help = opts.help;
+    more.textContent = "More in How to use";
+    $("errmsg").appendChild(document.createTextNode(" "));
+    $("errmsg").appendChild(more);
+  }
   var box = $("err");
   box.classList.toggle("note", !!opts.note);
   box.classList.add("show");
@@ -1430,7 +1668,13 @@ document.addEventListener("DOMContentLoaded", function(){
   });
 });
 document.addEventListener("keydown", function(e){
-  if (e.key === "Escape" && $("err") && $("err").classList.contains("show")) clearErr();
+  // ONE ESCAPE, ONE THING (sweep D, 27 Sep 2026): clearing the message used to let the same
+  // press run on and close whatever was next as well. Marked handled, the ladder below and
+  // the Mechanism chart's own listener both stand aside.
+  if (e.key === "Escape" && !e.defaultPrevented && $("err") && $("err").classList.contains("show")) {
+    e.preventDefault();
+    clearErr();
+  }
 });
 
 function clearErr(){
@@ -1490,14 +1734,15 @@ function render(name, source, graph){
   $("mspara").hidden = true;
   $("mszothl").hidden = true;
   NAME = name; SOURCE = source || ""; CURRENT_GRAPH = graph;
-  $("fname").innerHTML = name ? name.replace(/&/g,"&amp;").replace(/</g,"&lt;") : "Argdown viewer";
+  setHeaderTitle(name, graph);
   $("adname").textContent = name || "Argdown";
   var chip = $("adbundle");
   chip.hidden = !BUNDLE;
   if (BUNDLE) {
-    chip.textContent = "+ essay";
-    chip.title = "The manuscript is carried inside this file rather than sitting beside it on " +
-                 "disk. It is a copy taken when the file was made; saving writes it back.";
+    // "+ TEXT", in the one word the page uses for the prose (ruled D4, 27 Sep 2026).
+    chip.textContent = "+ text";
+    chip.title = "The text is carried inside this file rather than sitting beside it on disk. " +
+                 "It is a copy taken when the file was made; saving writes it back.";
   }
   // The text's own provenance, where the map declares it. The checks establish that the map
   // is faithful to the text -- never that the text is true -- and the reader must be able to
@@ -1508,10 +1753,9 @@ function render(name, source, graph){
   if (tp) {
     gt.textContent = tp === "generated" ? "AI-written text" : "text-provenance: " + tp;
     gt.title = tp === "generated"
-      ? "The map's front matter declares that the text it reads was generated by an AI " +
-        "assistant (text-provenance: generated). The borders and checks say the map is " +
-        "faithful to that text — not that the text is true."
-      : "Declared in the map's front matter.";
+      ? "The text this map reads was written by an AI assistant. The checks say the map is " +
+        "faithful to that text, not that the text is true. Click for more."
+      : "Declared at the top of the map's file. Click for more.";
   }
   // The MAP's provenance, beside the text's (Formation T3, ruled 14 Sep). `reviewed:` is a
   // record that a person looked, and the hover claims no more than the ruling allows: even a
@@ -1524,14 +1768,12 @@ function render(name, source, graph){
   mp.hidden = !(rev || recGen);
   if (rev) {
     mp.textContent = "map read by a person";
-    mp.title = "The front matter records a person's pass over this map (reviewed: " + rev +
-      "). That records that someone looked — limited reassurance, not a proof: checking a " +
-      "long map against its source is hard, and the reading remains a judgement to weigh.";
+    mp.title = "A person's pass over this map is recorded (" + rev + "): someone looked — " +
+      "limited reassurance, not a proof. Click for more.";
   } else if (recGen) {
     mp.textContent = "machine-written map";
-    mp.title = "The front matter declares this map was machine-generated (reconstruction: " +
-      "generated) and records no person's pass over it. The quotation checks are mechanical " +
-      "and hold either way; whether the reading is fair, no one has yet vouched.";
+    mp.title = "Written by a machine, with no person's pass recorded. The quotation checks " +
+      "hold either way; whether the reading is fair, no one has vouched. Click for more.";
   }
   // One reading among readings: the map's own declared cruxes, counted — never a threshold
   // the page invented (Formation T4).
@@ -1540,11 +1782,10 @@ function render(name, source, graph){
   cx.hidden = !cc;
   if (cc) {
     cx.textContent = "one reading · " + cc + (cc === 1 ? " crux" : " cruxes");
-    cx.title = "This map marks " + cc + (cc === 1 ? " point" : " points") +
-      " where the text underdetermines the reading and the reconstructor chose among live " +
-      "alternatives (#crux). It is one reading among defensible readings; each marked " +
-      "claim's note names the road not taken.";
+    cx.title = cc + (cc === 1 ? " point" : " points") + " where the text leaves the reading " +
+      "open and the reconstructor chose among live alternatives (#crux). Click for more.";
   }
+  syncOrient();
   showArgdown(SOURCE);
   $("drop").classList.remove("show");
 
@@ -1582,6 +1823,25 @@ function render(name, source, graph){
  *  reconstruct it smaller. A control cannot fix a shape.
  */
 var OPENING_BUDGET = 40;
+/** The smallest zoom at which a claim's words can still be read: at 0.65 a box's text is about
+ *  7.5px. Below it the map opens a rung lower instead (see `lowerRungToRead` in the live map). */
+var READABLE_SCALE = 0.65;
+
+/** The outermost section around each main claim, as a set of group ids. */
+function contentionSections(graph){
+  var out = new Set();
+  var A = window.ArgdownLiveMap;
+  if (!A || !A.index) return out;
+  var ix;
+  try { ix = A.index(graph); } catch (e) { return out; }
+  graph.nodes.forEach(function(n){
+    if (!ix.isContention(n.id)) return;
+    var gid = n.group, last = null;
+    while (gid) { last = gid; var g = ix.groupById.get(gid); gid = g && g.parent; }
+    if (last) out.add(last);
+  });
+  return out;
+}
 
 function openingDepth(graph){
   var A = window.ArgdownLiveMap;
@@ -1618,18 +1878,36 @@ function openingDepth(graph){
   var top = groups.filter(function(g){ return !g.parent; });
   // A large map opened flat is a wall of boxes at unreadable zoom. Open on the spine with the
   // sections folded, and let the reader unfold the one they are working on.
+  //
+  // BUT NOT THE SECTION THAT HOLDS THE MAIN CLAIM. Folding every section opened each large sample
+  // on blocks alone: nine of the ten showed no claim at all, so the first thing a reader met was
+  // a row of titles and no argument. Measured across the samples at 1440 x 900 (27 Sep 2026),
+  // leaving open the outermost section around each main claim opens every one of them on 3 to 16
+  // claims, all in view, every main claim among them: open where the argument lands, and fold
+  // the rest. The how-much ladder below still caps what an unfolded section adds.
   var collapsed = (graph.nodes.length > 25 ? top.map(function(g){ return g.id; }) : []);
+  if (collapsed.length) {
+    var mainTops = contentionSections(graph);
+    collapsed = collapsed.filter(function(id){ return !mainTops.has(id); });
+  }
 
+  KEY_COMING = keyWillOffer(graph);
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true,
     collapsedGroups: collapsed,
     depth: openingDepth(graph),
+    // AND AT A SIZE THAT CAN BE READ. The rung above is chosen by counting claims; this one by
+    // the zoom the opening view would land at, which the count cannot see: a section ten reasons
+    // wide fits at the zoom floor. Only here, on a map being opened -- a rebuild after an edit
+    // hands the reader's own rung back and must keep it.
+    readableScale: READABLE_SCALE,
     onLocate: msLocate,
     onMenu: ctxShow, onExplode: explodeShow,
     onMargin: openMargin,
-    onStudy: startStudy, onStateChange: onMapState,
-    barFolded: barFoldedNow(), onBarFold: rememberBarFold
+    onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
+  syncDock();
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
   // order `positions` used. Rebuilt per file loaded, and the pane starts closed: it is an answer
@@ -1670,11 +1948,11 @@ function openingDepth(graph){
   var tb = $("textbtn");
   tb.hidden = placed.length < 2 && !citesText;
   tb.disabled = placed.length < 2;
+  // The same words as the button's own title in the markup: the runtime copy used to replace a
+  // better sentence with a weaker one (sweep A, 27 Sep 2026).
   tb.title = placed.length >= 2
-    ? "The same claims, where they fall in the manuscript"
-    : "These claims cite a manuscript, but this viewer has no copy of it, so they cannot be " +
-      "placed in the text. Drop the folder rather than the file — or rebuild with " +
-      "build_argdown_viewer.mjs FILE.argdown --source-root <manuscript folder>";
+    ? "The same claims, ordered by where the reader meets them in the text"
+    : "Needs the text this map cites, which is not open. " + textMissingRemedy();
 
   // THE MANUSCRIPT TAB FOLLOWS THE SAME POLICY, decided per control and recorded in
   // viewer.md's table (3 Sep 2026): a disabled control earns its pixels only where it teaches
@@ -1688,10 +1966,9 @@ function openingDepth(graph){
   mtab.hidden = !msAvailable() && !citesText;
   mtab.disabled = !msAvailable();
   mtab.title = msAvailable()
-    ? "Show or hide the manuscript. Shift-click (or right-click) any claim to jump to the " +
-      "passage it came from."
-    : "The claims cite a manuscript this viewer has no copy of. Drop the folder rather than " +
-      "the file, and the text appears here.";
+    ? "Show or hide the text this map reads. Double-click or shift-click a claim to go to " +
+      "the passage it came from."
+    : "Needs the text this map cites, which is not open. " + textMissingRemedy();
 
   statsLine(graph);
   buildKeys(graph);
@@ -1788,8 +2065,8 @@ function statsLine(graph){
                " corrected here."
              : " — every border held.") +
           " Interpretation, imputation and compression are the reconstructor's judgements " +
-          "and are never touched, and nothing is written back to the .argdown — " +
-          "check_argdown.py reports any discrepancy so the file itself can be corrected."
+          "and are never touched, and nothing is written back to the .argdown — the " +
+          "checker reports any discrepancy so the file itself can be corrected."
         : "Positions were worked out in this page from the folder you dropped. Fidelity " +
           "borders are as the .argdown declares them: no claim here was long enough to " +
           "check against the source (the floor is 30 characters), or none carried a " +
@@ -1824,6 +2101,91 @@ function boxSwatch(attrs){
   return '<svg viewBox="0 0 52 20" aria-hidden="true">' +
          '<rect x="3" y="3" width="46" height="14" rx="3" fill="none" ' + attrs + '/></svg>';
 }
+/* WHAT'S ON THE SCREEN (clarity plan 5.2/5.4): the one page that draws every mark, for the reader
+   who can only ask by pointing. The words are help.md's, row by row; the drawings are made here,
+   from the same stroke tables the keys use, so the page cannot show a mark the map does not. */
+var SCREEN_DRAW = {
+  box: function(){ return '<rect x="3" y="4" width="58" height="22" rx="4" class="sd-box"/>' +
+    '<line x1="10" y1="11" x2="54" y2="11" class="sd-ink" stroke-width="2"/>' +
+    '<line x1="14" y1="18" x2="50" y2="18" class="sd-faint"/>'; },
+  borders: function(){ return [0, 2, 4].map(function(k, i){
+    return '<rect x="' + (3 + i * 20) + '" y="6" width="17" height="18" rx="3" fill="none" ' +
+           FID_KEY[k][0] + '/>'; }).join(""); },
+  pile: function(){ return '<rect x="8" y="8" width="52" height="19" rx="4" class="sd-box"/>' +
+    '<rect x="3" y="3" width="52" height="19" rx="4" class="sd-box"/>' +
+    '<text x="29" y="16" class="sd-t">N claims</text>'; },
+  badge: function(){ return '<circle cx="18" cy="15" r="9" class="sd-badge"/>' +
+    '<text x="18" y="18.5" class="sd-bt">+3</text>' +
+    '<circle cx="46" cy="15" r="9" class="sd-badge"/><text x="46" y="18.5" class="sd-bt">\u2212</text>'; },
+  lines: function(){ return REL_KEY.map(function(r, i){
+    return '<line x1="4" x2="60" y1="' + (5 + i * 6.5) + '" y2="' + (5 + i * 6.5) + '" stroke="' +
+           r[1] + '" stroke-width="2" ' + r[2] + '/>'; }).join(""); },
+  bar: function(){ return '<line x1="12" y1="27" x2="24" y2="14" stroke="#3a9d5d" stroke-width="1.6"/>' +
+    '<line x1="52" y1="27" x2="40" y2="14" stroke="#3a9d5d" stroke-width="1.6"/>' +
+    '<rect x="20" y="12" width="24" height="3" rx="1.5" fill="#3a9d5d"/>' +
+    '<line x1="32" y1="12" x2="32" y2="2" stroke="#3a9d5d" stroke-width="1.6"/>'; },
+  argument: function(){ return '<rect x="3" y="2" width="58" height="26" rx="4" class="sd-box"/>' +
+    '<text x="7" y="10" class="sd-tl">(1)</text><text x="7" y="17" class="sd-tl">(2)</text>' +
+    '<line x1="7" y1="19.5" x2="40" y2="19.5" class="sd-faint"/>' +
+    '<text x="7" y="26" class="sd-tl">(3)</text>'; },
+  stair: function(){ return '<rect x="14" y="7" width="36" height="16" rx="8" class="sd-box"/>' +
+    '<text x="32" y="19" class="sd-t">\u229e 2</text>'; },
+  rule: function(){ return '<rect x="4" y="13" width="24" height="3" rx="1.5" class="sd-inkfill"/>' +
+    '<text x="16" y="10" class="sd-t">MP</text>' +
+    '<circle cx="48" cy="15" r="8" fill="#cc3b3b"/><text x="48" y="19" class="sd-bt" style="fill:#fff">!</text>'; },
+  chip: function(){ return '<rect x="3" y="8" width="58" height="14" rx="7" class="sd-chip"/>' +
+    '<text x="32" y="18.5" class="sd-t">#reported</text>'; },
+  corners: function(){ return '<rect x="6" y="3" width="52" height="24" rx="4" class="sd-box"/>' +
+    '<path d="M6 13V7a4 4 0 0 1 4-4h6z" fill="#8a6d1f"/>' +
+    '<path d="M58 13V7a4 4 0 0 0-4-4h-6z" fill="#b5179e"/>'; },
+  hatch: function(){ return '<defs><pattern id="sd-h" width="5" height="5" patternUnits="userSpaceOnUse" ' +
+    'patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--alm-appraisal-bg,#f1eefa)"/>' +
+    '<line x1="0" y1="0" x2="0" y2="5" stroke="#6d5ba3" stroke-opacity=".45"/></pattern></defs>' +
+    '<rect x="3" y="4" width="58" height="22" rx="4" fill="url(#sd-h)" stroke="#6d5ba3" stroke-width="1.5"/>'; },
+  behind: function(){ return '<rect x="20" y="4" width="24" height="22" rx="4" class="sd-box"/>' +
+    '<line x1="2" y1="15" x2="20" y2="15" stroke="#3a9d5d" stroke-width="1.8"/>' +
+    '<line x1="20" y1="15" x2="44" y2="15" stroke="#3a9d5d" stroke-width="1.8" stroke-dasharray="3 3"/>' +
+    '<line x1="44" y1="15" x2="62" y2="15" stroke="#3a9d5d" stroke-width="1.8"/>'; },
+  strip: function(){ return '<rect x="2" y="9" width="24" height="12" rx="6" class="sd-chip"/>' +
+    '<rect x="29" y="9" width="33" height="12" rx="6" class="sd-chip"/>' +
+    '<text x="14" y="17.5" class="sd-ts">Abstract</text><text x="45.5" y="17.5" class="sd-ts">map read</text>'; },
+  controls: function(){ return '<rect x="2" y="9" width="60" height="13" rx="4" class="sd-box"/>' +
+    '<rect x="6" y="12" width="12" height="7" rx="2" class="sd-inkfill"/>' +
+    '<line x1="22" y1="15.5" x2="36" y2="15.5" class="sd-ink" stroke-width="2"/>' +
+    '<circle cx="30" cy="15.5" r="2.5" class="sd-inkfill"/>' +
+    '<rect x="41" y="12" width="17" height="7" rx="3.5" class="sd-chip"/>'; },
+  key: function(){ return '<rect x="14" y="2" width="36" height="26" rx="4" class="sd-box"/>' +
+    '<rect x="18" y="7" width="9" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+    '<rect x="18" y="15" width="9" height="5" rx="1" fill="none" stroke="currentColor" stroke-dasharray="2 1.5"/>' +
+    '<line x1="30" y1="9.5" x2="45" y2="9.5" class="sd-faint"/><line x1="30" y1="17.5" x2="45" y2="17.5" class="sd-faint"/>' +
+    '<line x1="18" y1="24" x2="45" y2="24" stroke="#3a9d5d" stroke-width="1.5"/>'; },
+  cards: function(){ return '<rect x="3" y="3" width="26" height="24" rx="3" class="sd-card"/>' +
+    '<rect x="35" y="3" width="26" height="24" rx="3" class="sd-card"/>' +
+    '<rect x="7" y="7" width="18" height="6" rx="1.5" class="sd-box"/>' +
+    '<rect x="39" y="7" width="18" height="6" rx="1.5" class="sd-box"/>' +
+    '<text x="16" y="24" class="sd-ts">\u00b6 3</text><text x="48" y="24" class="sd-ts">\u00b6 4</text>'; },
+  chain: function(){ return '<rect x="2" y="8" width="16" height="14" rx="3" class="sd-mv"/>' +
+    '<line x1="18" y1="15" x2="42" y2="15" class="sd-mvline" stroke-width="1.6"/>' +
+    '<rect x="42" y="8" width="18" height="14" rx="3" fill="none" class="sd-mvline" stroke-width="1"/>' +
+    '<rect x="44" y="10" width="14" height="10" rx="2" fill="none" class="sd-mvline" stroke-width="1"/>' +
+    '<text x="30" y="11" class="sd-ts">\u21bb</text>'; }
+};
+function drawScreenIndex(){
+  document.querySelectorAll("#helpbody .srow[data-draw]").forEach(function(row){
+    var f = SCREEN_DRAW[row.dataset.draw];
+    if (!f || row.querySelector("svg")) return;
+    // The row's words, whatever markup they carry, in one cell beside the drawing.
+    var words = document.createElement("span");
+    words.className = "stext";
+    while (row.firstChild) words.appendChild(row.firstChild);
+    var box = document.createElement("span");
+    box.className = "sdraw";
+    box.innerHTML = '<svg viewBox="0 0 64 30" aria-hidden="true">' + f() + '</svg>';
+    row.appendChild(box);
+    row.appendChild(words);
+  });
+}
+
 /* THE TWO KEY TABLES, hoisted so the help panel's keys and the floating key card draw their
    strokes from one definition. A second copy of a stroke table is the same species of hazard
    as the band rule that drifted between the build and the template. */
@@ -1834,14 +2196,19 @@ var REL_KEY = [
   ["contradictory", "#8b5cc7", 'stroke-dasharray="2 3"', "contradicts", "the two cannot both be true"]
 ];
 var FID_KEY = [
-  ['stroke="currentColor" stroke-width="2.6"', "quotation", "the source's own words, checked against the text"],
-  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 2"', "paraphrase", "close restatement, the reconstructor's words"],
-  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3"', "compression", "several sentences reduced to one claim"],
-  ['stroke="currentColor" stroke-width="1.4" stroke-dasharray="2 3"', "interpretation", "a reading the text supports but does not state"],
+  // The weights are the map's own (argdown-live-map.js, "FIDELITY"): 2.5 for a quotation, 1.5
+  // for the rest, 1.2 for an imputation. The key drew 2.6 and 1.4, near enough to pass by eye
+  // and still a second copy of one fact (E10). The walkthrough draws from this list too.
+  ['stroke="currentColor" stroke-width="2.5"', "quotation", "the source's own words, checked against the text"],
+  ['stroke="currentColor" stroke-width="1.5" stroke-dasharray="6 2"', "paraphrase", "close restatement, the reconstructor's words"],
+  ['stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"', "compression", "several sentences reduced to one claim"],
+  ['stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 3"', "interpretation", "a reading the text supports but does not state"],
   ['stroke="currentColor" stroke-width="1.2" stroke-dasharray="7 2 1.5 2"', "imputation", "a premise the argument needs but the author never states"]
 ];
 
 function buildKeys(graph){
+  // The keys are part of what the help search reads; its cached words go with the old map.
+  if (HELP_PAGES) HELP_PAGES.forEach(function(pg){ pg._text = null; });
   $("relkey").innerHTML = REL_KEY.map(function(r){
     return swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]) +
            '<span class="lab"><b>'+r[3]+'</b> — '+r[4]+'</span>';
@@ -1871,10 +2238,12 @@ function setFull(on){
 function setHelp(on){
   $("help").classList.toggle("show", !!on);
   $("helpbtn").classList.toggle("on", !!on);
-  // Always back to the contents. Reopening the panel is a new question, not a resumption of the
-  // last one, and landing mid-topic makes the reader work out where they are before they can
-  // look anything up.
-  if (on) showHelpToc();
+  // BACK WHERE THE READER LEFT IT (ruled D13, 27 Sep 2026). This opened on the contents every
+  // time, on the reasoning that reopening is a new question. The audit found the commoner case
+  // the other way: a reader reading "Moving around" puts the panel away to try the gesture, and
+  // comes back for the next line of the same page. So a panel closed on a topic reopens on it,
+  // and one closed on the contents -- or sent back to them with "All topics" -- reopens there.
+  if (on) { if (HELP_LAST != null) showHelpPage(HELP_LAST); else showHelpToc(); }
 }
 
 /* ================= HOW TO USE, AS A SET OF TOPICS ======================================
@@ -1893,6 +2262,7 @@ function setHelp(on){
  * inside the Argdown reference from each becoming a page of their own.
  */
 var HELP_PAGES = null;
+var HELP_LAST = null;       // the topic the panel was closed on, if it was closed on one
 
 /** Render help.md and cut it into topics.
  *
@@ -1936,6 +2306,26 @@ function buildHelpPages(){
     if (cur && node !== cur) cur.appendChild(node);
     else if (!cur) intro.push(node);
   });
+  // ONE HELP FOR TWO BUILDS, AND EACH READS ONLY ITS OWN (plan 5.6). The Reader's help used to
+  // describe Quote this passage, the paste door, Save and writing comments -- none of which the
+  // Reader can do, so a reader who looked for them was sent looking for something that is not
+  // there. A topic marked `<div data-build="editor"></div>` in help.md is left out where
+  // nothing can be edited.
+  // The search words (help.md's `.also`) are read into the page's data and taken out of it, so
+  // they neither show nor turn up in a snippet.
+  pages.forEach(function(pg){
+    var also = [].map.call(pg.querySelectorAll(".also"), function(e){ var t = e.textContent; e.remove(); return t; });
+    pg.dataset.also = also.join(" ").toLowerCase();
+  });
+  var editable = !!window.ArgdownEditor && typeof window.__ARGDOWN_PARSE__ === "function";
+  // An EMPTY marker takes the whole topic out; one wrapped round a passage takes that passage.
+  pages = pages.filter(function(pg){
+    if (editable) return true;
+    var marks = [].slice.call(pg.querySelectorAll('[data-build="editor"]'));
+    if (marks.some(function(m){ return !m.textContent.trim(); })) { pg.remove(); return false; }
+    marks.forEach(function(m){ m.remove(); });
+    return true;
+  });
   // The introduction is wrapped so it can be hidden inside a topic without hiding the About
   // page's own paragraphs, which are styled the same way.
   if (intro.length) {
@@ -1976,6 +2366,7 @@ function buildHelpPages(){
     var b = document.createElement("button");
     b.type = "button";
     b.textContent = pg.dataset.title;
+    b.dataset.page = String(i);
     b.onclick = function(){ showHelpPage(i); };
     toc.appendChild(b);
   });
@@ -1990,14 +2381,16 @@ function buildHelpPages(){
   // the card's reopenable, foldable form is not a desktop privilege (docs/PARITY-PLAN.md).
   // The walkthrough set the pattern: help is where a dismissed teacher is found again.
   var kf = $("keyfloat");
-  if (kf) kf.onclick = function(){ if (!KEY_GRAPH) return; setHelp(false); openKeyCard(); };
+  if (kf) kf.onclick = function(){ setHelp(false); openKeyCard(); };
   HELP_PAGES = pages;
+  drawScreenIndex();
   return pages;
 }
 
 function showHelpToc(){
   var pages = buildHelpPages();
   pages.forEach(function(pg){ pg.classList.remove("show"); });
+  HELP_LAST = null;
   $("helptoc").hidden = false;
   $("helpback").hidden = true;
   $("help").classList.remove("is-page");
@@ -2006,12 +2399,179 @@ function showHelpToc(){
 
 function showHelpPage(i){
   var pages = buildHelpPages();
+  helpUnmark();
   pages.forEach(function(pg, k){ pg.classList.toggle("show", k === i); });
+  HELP_LAST = i;
   $("helptoc").hidden = true;
   $("helpback").hidden = false;
   $("help").classList.add("is-page");
   $("help").scrollTop = 0;
 }
+
+/* ================= FINDING A TOPIC BY WHAT IT SAYS (clarity plan 5.1) ====================
+ *
+ * The list of titles answers only the reader who already knows what the thing is called. The
+ * search reads the topics themselves, and a few words are taken for the others the help uses
+ * for the same thing -- a reader asking about "dotted lines" wants the page on borders, whose
+ * text says "dot-dash" and "interpretation". The list is short on purpose: each entry is a
+ * word a reader was seen to reach for, and every one of them names something the help
+ * explains under another word.
+ */
+var HELP_SYNONYMS = [
+  ["dash", "dashed", "dotted", "border", "outline", "fidelity"],
+  ["badge", "+3", "fold", "folded", "unfold", "hidden", "collapse", "expand"],
+  ["text", "manuscript", "source", "passage", "paper", "essay"],
+  ["key", "legend", "marks", "markings"],
+  ["comment", "note", "margin", "annotate", "annotation"],
+  ["main claim", "contention", "thesis", "conclusion", "apex"],
+  ["section", "group", "block", "band", "chapter"],
+  ["hashtag", "tag", "chip"],
+  ["zoom", "fit", "scale", "pan", "move"],
+  ["export", "download", "word", "docx", "share", "send"],
+  ["undo", "redo", "take back"],
+  ["zotero", "highlight", "library"],
+  ["mechanism", "causal", "chain", "cause"],
+  ["exposition", "text order", "reading order"],
+  ["appraisal", "hatched", "violet"],
+  ["valid", "validity", "rule", "formalization", "logic", "modus ponens"],
+  ["staircase", "steps", "step by step"],
+  ["keyboard", "shortcut", "keys", "escape"],
+  ["pdf", "convert", "converter", "import", "mcp"],
+  ["line", "arrow", "relation", "undercut", "contradict", "objection", "attack", "support"]
+];
+/** The query as alternatives to match: each word, with the words the help uses for it. A
+ *  phrase the list knows ("main claim") is taken whole. */
+function helpTerms(q){
+  q = q.toLowerCase().replace(/\s+/g, " ").trim();
+  if (!q) return [];
+  var alts = function(w){
+    var out = [w];
+    HELP_SYNONYMS.forEach(function(g){ if (g.indexOf(w) >= 0) out = out.concat(g); });
+    return out;
+  };
+  var whole = HELP_SYNONYMS.some(function(g){ return g.indexOf(q) >= 0; });
+  return whole ? [alts(q)] : q.split(" ").map(alts);
+}
+/** How well a topic answers the query, or 0. Every word of the query must be met, by itself or a
+ *  word the help uses for it; the reader's own word counts for more than a stand-in, and a title
+ *  for more than the body -- so "dotted" puts the pages that say "dotted" above the pages that
+ *  merely talk about borders. */
+/** A topic's words, text node by text node with a space between: textContent runs one element
+ *  into the next, so a title ending "found" met "Open" and the page matched "undo". */
+function helpText(pg){
+  if (pg._text == null) {
+    var parts = [], w = document.createTreeWalker(pg, NodeFilter.SHOW_TEXT), nd;
+    while ((nd = w.nextNode())) parts.push(nd.nodeValue);
+    pg._text = parts.join(" ").replace(/\s+/g, " ").replace(/ ([.,;:!?)])/g, "$1")
+                  .replace(/\( /g, "(").trim();
+  }
+  return pg._text;
+}
+function helpScore(pg, terms){
+  var title = (pg.dataset.title + " " + (pg.dataset.also || "")).toLowerCase();
+  var text = helpText(pg).toLowerCase(), score = 0;
+  for (var t = 0; t < terms.length; t++) {
+    var best = 0;
+    terms[t].forEach(function(a, k){
+      var inTitle = title.indexOf(a) >= 0, n = 0, at = -1;
+      while ((at = text.indexOf(a, at + 1)) >= 0 && n < 6) n++;
+      var s = (inTitle ? 10 : 0) + (n ? 2 + n * 0.5 : 0);
+      if (k > 0) s *= 0.35;            // a stand-in, not the reader's word
+      best = Math.max(best, s);
+    });
+    if (!best) return 0;
+    score += best;
+  }
+  return score;
+}
+/** A line of the topic around the first place it says what was asked. */
+function helpSnippet(pg, terms){
+  var text = helpText(pg), low = text.toLowerCase();
+  var alts = [].concat.apply([], terms), at = -1, past = pg.dataset.title.length;
+  for (var k = 0; k < alts.length && at < 0; k++) at = low.indexOf(alts[k], past);
+  if (at < 0) return "";
+  var from = Math.max(past, at - 45), to = Math.min(text.length, at + 75);
+  return (from > past ? "\u2026" : "") + text.slice(from, to).trim() + (to < text.length ? "\u2026" : "");
+}
+function helpSearch(){
+  var pages = buildHelpPages(), q = $("helpq").value, terms = helpTerms(q);
+  var out = $("helpresults");
+  $("help").classList.toggle("searching", terms.length > 0);
+  $("helptoc").hidden = terms.length > 0;
+  out.hidden = !terms.length;
+  out.textContent = "";
+  HELP_FIRST_HIT = null;
+  if (!terms.length) { $("helpnone").hidden = true; return; }
+  var ranked = pages.map(function(pg, i){ return { i: i, s: helpScore(pg, terms) }; })
+    .filter(function(x){ return x.s > 0; })
+    .sort(function(a, b){ return b.s - a.s || a.i - b.i; })
+    .slice(0, 12);
+  ranked.forEach(function(x){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.dataset.page = String(x.i);
+    var t = document.createElement("b");
+    t.textContent = pages[x.i].dataset.title;
+    var sn = document.createElement("span");
+    sn.className = "snip";
+    sn.textContent = helpSnippet(pages[x.i], terms);
+    b.appendChild(t); b.appendChild(sn);
+    b.onclick = function(){ helpOpenFound(x.i); };
+    out.appendChild(b);
+  });
+  if (ranked.length) HELP_FIRST_HIT = ranked[0].i;
+  $("helpnone").hidden = ranked.length > 0;
+  $("helpnone").textContent = ranked.length ? "" :
+    "No topic mentions \u201c" + q.trim() + "\u201d. Try a shorter word, or clear the box for the list.";
+}
+var HELP_FIRST_HIT = null;
+$("helpq").addEventListener("input", helpSearch);
+$("helpq").addEventListener("keydown", function(e){
+  if (e.key === "Enter" && HELP_FIRST_HIT != null) { e.preventDefault(); helpOpenFound(HELP_FIRST_HIT); }
+  // Escape empties the box first, and only an empty box lets it close the panel.
+  if (e.key === "Escape" && $("helpq").value) { e.preventDefault(); e.stopPropagation(); $("helpq").value = ""; helpSearch(); }
+});
+/** Open a topic found by the search, at the first place it says what was asked. */
+function helpOpenFound(i){
+  var terms = helpTerms($("helpq").value);
+  showHelpPage(i);
+  var pg = buildHelpPages()[i], alts = [].concat.apply([], terms);
+  var walker = document.createTreeWalker(pg, NodeFilter.SHOW_TEXT), node, at = -1, hit = null;
+  var h2 = pg.querySelector("h2");
+  while (!hit && (node = walker.nextNode())) {
+    if (h2 && h2.contains(node)) continue;       // the title says it, and is already on screen
+    var low = node.nodeValue.toLowerCase();
+    for (var k = 0; k < alts.length; k++)
+      if (alts[k].length > 1 && (at = low.indexOf(alts[k])) >= 0) { hit = { node: node, at: at, len: alts[k].length }; break; }
+  }
+  if (!hit) return;
+  var range = document.createRange();
+  range.setStart(hit.node, hit.at); range.setEnd(hit.node, hit.at + hit.len);
+  var mark = document.createElement("mark");
+  mark.className = "helphit";
+  range.surroundContents(mark);
+  mark.scrollIntoView({ block: "center" });
+}
+function helpUnmark(){
+  document.querySelectorAll("#helpbody mark.helphit").forEach(function(m){
+    var t = document.createTextNode(m.textContent);
+    m.parentNode.replaceChild(t, m);
+    t.parentNode.normalize();
+  });
+}
+
+/* ONE DOORBELL FOR EVERY LINK INTO HOW TO USE (plan 5.2). Anything carrying `data-help` opens
+ * the topic it names: the chips, the key's headings, a message's "More in How to use", the
+ * cross-references inside the help itself, and whatever the map and the chart draw. Delegated,
+ * so a link drawn later -- by the live map, in a message -- needs no wiring of its own. */
+document.addEventListener("click", function(e){
+  var t = e.target && e.target.closest && e.target.closest("[data-help]");
+  if (!t) return;
+  e.preventDefault();
+  // One teacher at a time: a link followed from the tour's last card ends the tour.
+  if (WALK) stopWalkthrough();
+  openHelpTopic(t.getAttribute("data-help"));
+});
 
 /* ================= THE ABOUT WINDOW =====================================================
  *
@@ -2140,8 +2700,8 @@ function fillAbout(){
         if (p.byText && !LIVE.getState().byText) {
           // setState fell back: the by-position view needs positions this build's graph does
           // not carry. The rest of the state HAS been applied; say so rather than closing over it.
-          if (err) { err.textContent = "Applied, but this build has no by-position layout for " +
-                                       "this file, so the map stays in the by-argument view.";
+          if (err) { err.textContent = "Applied, but this file's claims cannot be placed in " +
+                                       "the text here, so the map stays in Reasons.";
                      err.hidden = false; }
         } else {
           if (err) err.hidden = true;
@@ -2264,12 +2824,31 @@ window.addEventListener("resize", onBreakpoint);
    is first in the document, which is not a thing to depend on. */
 function toolbar(){ return document.querySelector("body > header"); }
 
+/* ONE STAGE AT A TIME, and the order is the order of how much a word is worth: see the CSS
+ * note on `header.tight1`. The classes accumulate, so each stage's rules can assume the ones
+ * before it are in force. */
+var FIT_STAGES = ["tight1", "tight2", "tight", "crowded"];
 function fitHeader(){
   var h = toolbar();
   if (!h) return;
-  h.classList.remove("tight");
-  if (h.scrollWidth > h.clientWidth + 1) h.classList.add("tight");
+  FIT_STAGES.forEach(function(c){ h.classList.remove(c); });
+  for (var i = 0; i < FIT_STAGES.length && h.scrollWidth > h.clientWidth + 1; i++)
+    h.classList.add(FIT_STAGES[i]);
 }
+
+/* WHAT MORE HOLDS: whichever of the errands the crowded bar put away, in the bar's own order and
+ * under the bar's own names, so nothing gets a second name by moving (F8(a)). */
+$("morebtn").onclick = function(){
+  var items = [];
+  ["undobtn", "redobtn", "laybtn", "openbtn", "fitbtn", "fsbtn"].forEach(function(id){
+    var b = $(id);
+    if (!b || b.hidden) return;
+    items.push({ label: b.textContent.trim(), hint: b.title || "",
+                 run: id === "laybtn" ? function(){ openLayoutMenu($("morebtn")); }
+                                      : function(){ b.click(); } });
+  });
+  ctxMenu("More", items, $("morebtn"));
+};
 
 /* OBSERVED RATHER THAN CALLED FROM EVERY SITE THAT CHANGES THE BAR. `render`, `markState`,
  * `applyPanes`, the host wiring and the narrow-screen switch all show or hide a control between
@@ -2303,7 +2882,8 @@ function applyPanes(){
   // the stage, and hiding the stage left it at that width with the rest of the window empty --
   // which is the opposite of what "no map" is asked for: the width is the point.
   $("side").classList.toggle("solo", !PANES.map || isNarrow());
-  $("fitbtn").hidden = !PANES.map;
+  $("fitbtn").hidden = !PANES.map || !CURRENT_GRAPH;
+  syncOpenChrome();
   Array.prototype.forEach.call($("panes").children, function(b){
     b.classList.toggle("on", !!PANES[b.dataset.p]); });
   // The map measures against its container, and the container just changed. This is the one
@@ -2438,7 +3018,11 @@ var LAYOUTS = [
   // on the bar and under How to use — and two things wearing one name would make the menu
   // and the bar contradict each other. The id stays "study" so any stored layout choice
   // survives the rename; ids are addresses, labels are promises.
-  { id: "study",   label: "Follow",  hint: "map + the essay", primary: "text",
+  // "Read along", not "Follow" (ruled D5, 27 Sep 2026): the Manuscript's own switch is
+  // *follow*, and the two were one word for two controls. The preset is what that switch is for,
+  // so choosing it turns following on (`follow: true`).
+  { id: "study",   label: "Read along", hint: "map + the text, following your reading", primary: "text",
+    follow: true,
     icon: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M11 3.5v13"/>' +
           '<path d="M12.6 7h4M12.6 10h4M12.6 13h2.6"/>',
     arrange: "exposition", panes: { map: true, argdown: false, notes: false, text: true },
@@ -2447,7 +3031,7 @@ var LAYOUTS = [
     icon: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M11 3.5v13"/>' +
           '<path d="M13.9 6.6h-1.3v6.8h1.3M15.9 6.6h1.3v6.8h-1.3"/>',
     arrange: "reasons", panes: { map: true, argdown: true, notes: false, text: false } },
-  { id: "check",   label: "Check",   hint: "the Argdown beside the essay, no map",
+  { id: "check",   label: "Check",   hint: "the Argdown beside the text, no map",
     primary: "text",
     icon: '<rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/><path d="M2.5 10h15"/>' +
           '<path d="M5 6.4h4M5 13.4h8"/>',
@@ -2476,7 +3060,9 @@ function layoutIsCurrent(L){
   return true;
 }
 
-function applyLayout(L){
+/** `tour` is the walkthrough showing the layout: it borrows the panes and puts them back, and a
+ *  standing choice such as following the reading is the reader's to make, not the tour's. */
+function applyLayout(L, tour){
   if (!layoutAvailable(L)) return;
   if (L.panes.text && !MSCHAPTER && msAvailable()) msRender(MS.chapters[0].path);
   if (L.panes.notes) renderNotes();
@@ -2484,6 +3070,13 @@ function applyLayout(L){
   if (isNarrow()) keepOnePane(L.primary);
   applyPanes();
   setArrangement(L.arrange, false);
+  if (L.follow && !FOLLOW && !tour) {
+    FOLLOW = true;
+    if (FOLLOW_STORE.ok) FOLLOW_STORE.set("on");
+    FOLLOW_LAST = "";
+    msFollowSync();
+    msFollowNow();
+  }
 }
 
 /** Which side the texts sit on. Handedness, screen, and which of the two you are working in all
@@ -2495,14 +3088,35 @@ function setSwapped(on){
 }
 
 function openLayoutMenu(anchorEl){
-  var items = LAYOUTS.map(function(L){
-    return { label: L.label, hint: L.hint, icon: L.icon, on: layoutIsCurrent(L),
-             disabled: !layoutAvailable(L), run: function(){ applyLayout(L); } };
-  });
+  var items = [];
+  // THE ARRANGEMENTS, WHERE THE HEADER HAS NO ROOM FOR THEM. Below 820px the Reasons /
+  // Exposition / Mechanism buttons are hidden on the grounds that this menu offers them by
+  // another route -- and it offered two of the three, as side effects of the presets, and never
+  // Mechanism (sweep A, 27 Sep 2026). On a narrow window they head the menu in their own right.
+  if (isNarrow()) {
+    Array.prototype.forEach.call($("view").children, function(b){
+      if (b.hidden) return;
+      var v = b.dataset.v;
+      items.push({ label: b.textContent.trim(), hint: "arrange the claims this way",
+                   on: ARRANGEMENT === v, disabled: b.disabled,
+                   run: function(){ setArrangement(v); } });
+    });
+    items.push(null);
+  }
+  items = items.concat(LAYOUTS.map(function(L){
+    var ok = layoutAvailable(L);
+    // A DISABLED ITEM SAYS WHY, in the place its description would be: "map + the essay",
+    // greyed, told the reader nothing about what was missing.
+    return { label: L.label, hint: ok ? L.hint : "needs the text this map reads, which is not open",
+             icon: L.icon, on: layoutIsCurrent(L), disabled: !ok,
+             run: function(){ applyLayout(L); } };
+  }));
   items.push(null);
-  items.push({ label: SWAPPED ? "Texts on the right" : "Texts on the left",
-               hint: "swap the two columns over", on: SWAPPED,
-               run: function(){ setSwapped(!SWAPPED); } });
+  // A FIXED LABEL AND A TICK THAT SAYS WHETHER IT IS TRUE. The label used to flip to name the
+  // action while the tick showed the state, so a ticked "Texts on the right" appeared exactly
+  // when the texts were on the left (sweep A, 27 Sep 2026).
+  items.push({ label: "Texts on the left", hint: "the map on the right, the texts beside it",
+               on: SWAPPED, run: function(){ setSwapped(!SWAPPED); } });
   ctxMenu("Layout", items, anchorEl);
 }
 
@@ -2511,6 +3125,9 @@ function setArrangement(v, showMap){
   // a stale button), it falls back to the order of reasons rather than to an empty stage.
   if (v === "mechanism" && !(CURRENT_GRAPH && CURRENT_GRAPH.mechanism)) v = "reasons";
   ARRANGEMENT = v;
+  // Measured again here: the strip's width is 0 while the stage is hidden, and the Mechanism
+  // chart reads it to start its question clear of the strip.
+  syncOrient();
   Array.prototype.forEach.call($("view").children, function(b){
     b.classList.toggle("on", b.dataset.v === v); });
   msFollowSync();
@@ -2543,7 +3160,7 @@ function mechEnsure(){
   if (MECH) MECH.destroy();
   MECH_GRAPH = CURRENT_GRAPH;
   MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH,
-    { onClaim: mechShowClaim, appraisal: APPRAISAL_ON,
+    { onClaim: mechShowClaim, appraisal: APPRAISAL_ON, helpLinks: true,
       onLayers: function(l){ setAppraisalOn(l.appraisal); } });
   // A rebuild after an edit keeps the reader's layer choices; a new file starts with the defaults
   // (rival views on, appraisal off), because that is where every reader of a new map should start.
@@ -2767,10 +3384,6 @@ function walkEnsureClaims(){
  * and fail to find.
  */
 function walkSteps(){
-  var swatchLine = function(attrs, name, gloss){
-    return boxSwatch('stroke="currentColor" ' + attrs) +
-           "<span><b>" + name + "</b> — " + gloss + "</span>";
-  };
   var steps = [];
 
   // THE TITLE CARD, and the only step that points at nothing. It says what the application is
@@ -2796,7 +3409,7 @@ function walkSteps(){
   steps.push({
     title: "Every box is one claim",
     body: "<p>One box, one thing the writing says. Where a claim runs long the box shows the " +
-          "first lines and a <b>▾ more</b> link for the rest.</p>",
+          "first lines and a <b>▼ more</b> link for the rest.</p>",
     before: function(){ walkEnsureClaims(); },
     target: function(){
       var el = walkTopmost(walkBoxes(".alm-n:not(.alm-k-group)")) ||
@@ -2849,8 +3462,8 @@ function walkSteps(){
           "they arrive; it becomes a <b>−</b> that puts them away again.</p>"
         : "<p>The <b>−</b> under a claim puts its reasons away. The badge then counts them — " +
           "<b>+3</b>, <b>+8</b> — and pressing it brings them back.</p>") +
-             "<p>A whole section folds the same way — click its box to shut it into one " +
-             "block.</p>";
+             "<p>A whole section folds too: click the strip with its name along the top to " +
+             "shut it into one block, and the block's own badge opens it again.</p>";
     },
     target: function(){
       if (!folded) return null;
@@ -2876,14 +3489,12 @@ function walkSteps(){
     title: "The border says whose words",
     body: "<p>How far the reconstruction stands from what the author actually wrote. Solid is a " +
           "quotation checked against the page; the line breaks up as it moves away.</p>" +
+          // ALL FIVE RUNGS, FROM THE KEY'S OWN LIST. The tour taught four and left out
+          // compression, so a reader met an unexplained fifth dash the moment the tour ended.
           '<div class="wkey">' +
-          swatchLine('stroke-width="2.6"', "quotation", "the source's own words") +
-          swatchLine('stroke-width="1.4" stroke-dasharray="6 2"', "paraphrase",
-                     "close restatement") +
-          swatchLine('stroke-width="1.4" stroke-dasharray="2 3"', "interpretation",
-                     "a reading the text supports") +
-          swatchLine('stroke-width="1.2" stroke-dasharray="7 2 1.5 2"', "imputation",
-                     "a premise the author never states") +
+          FID_KEY.map(function(f){
+            return boxSwatch(f[0]) + "<span><b>" + f[1] + "</b> — " + f[2] + "</span>";
+          }).join("") +
           "</div>",
     target: function(){
       // A claim whose border is NOT the default, so the thing being described is visible in the
@@ -2903,11 +3514,14 @@ function walkSteps(){
   if (!$("textbtn").hidden && !$("textbtn").disabled) {
     steps.push({
       title: "Exposition: the same claims, in reading order",
+      // WHAT IS ON SCREEN BY DEFAULT, and nothing else. This step described the line on each
+      // section header for a fortnight after that line went behind the *shape* switch, off
+      // until asked (26 Sep 2026): a tour that teaches a mark the reader cannot see is the
+      // drift F8(b) exists to stop.
       body: "<p>The same claims, laid out where the reader meets them in the text — section " +
-            "by section, left to right.</p>" +
-            "<p>The line on each section header says which side of its claims their reasons " +
-            "fall: below the axis, claims stated before their reasons arrive; above, claims " +
-            "whose reasons were already given. Neither direction is a fault.</p>",
+            "by section, in reading order.</p>" +
+            "<p>It opens on a <b>précis</b>, one claim for each section; the <b>how much</b> " +
+            "slider in the controls brings in the rest.</p>",
       before: function(){ setArrangement("exposition"); },
       target: function(){
         // The header strip, not the band: a section is hundreds of units tall and the name and
@@ -2920,8 +3534,10 @@ function walkSteps(){
         // the renderer appends bands in is the layout's order and not the document's: the frame
         // came out at scale 0.58 round a 2,112-unit band instead of 1.4 round a 697-unit one.
         // The id says which is which: a section's carries the file's id and then a bar.
+        // (By the id alone: the sparkline is drawn only with *shape* on, so asking for one
+        // would find no section at all on a default map and fall back to the file's band.)
         var bands = walkBoxes(".alm-g").filter(function(e){
-          return e.querySelector(".alm-spark") && e.dataset.id.indexOf("|") > 0; });
+          return e.dataset.id.indexOf("|") > 0; });
         var band = bands[0] || walkBoxes(".alm-g")[0];
         if (!band) return null;
         var id = band.dataset.id;
@@ -2939,19 +3555,19 @@ function walkSteps(){
     // same claim, and so the copy can say what the manuscript is about to do.
     var placed = null;
     steps.push({
-      title: "Study: the map beside the essay",
+      title: "Read along: the map beside the text",
       body: function(){
-        return "<p><b>Layout ▸ Study</b> puts the manuscript " +
+        return "<p><b>Layout ▸ Read along</b> puts the text " +
                (isNarrow() ? "up — on a window this narrow the panes take turns rather than " +
                              "sharing"
                            : "next to the map") + ".</p>" +
-               "<p><b>Double-click</b> a claim — or shift-click it — and the essay scrolls to " +
+               "<p><b>Double-click</b> a claim — or shift-click it — and the text scrolls to " +
                "the passage it was drawn from. Click a passage and the claims taken from it " +
                "light up on the map.</p>";
       },
       before: function(){
         for (var i = 0; i < LAYOUTS.length; i++)
-          if (LAYOUTS[i].id === "study") applyLayout(LAYOUTS[i]);
+          if (LAYOUTS[i].id === "study") applyLayout(LAYOUTS[i], true);
         placed = walkBoxes(".alm-n:not(.alm-k-group)").filter(function(e){
           var n = walkNodeById(e.dataset.id);
           return n && n.pos && n.pos.chapter;
@@ -2980,8 +3596,8 @@ function walkSteps(){
     body: "<p>A folded corner on a claim is a mark in the margin: <b>left</b>, the " +
           "reconstructor's aside about why the claim was read that way; <b>right</b>, " +
           "someone's comment on it.</p>" +
-          (ED ? "<p><b>Right-click</b> a claim to write one. The <b>Notes</b> pane lists every " +
-                "mark, with Edit and Delete on each.</p>"
+          (ED ? "<p><b>Right-click</b> a claim to write a comment. The <b>Notes</b> pane lists " +
+                "every mark, and comments can be edited or deleted there.</p>"
               : "<p>The <b>Notes</b> pane lists every mark in one place. Writing comments " +
                 "needs the full Ipsissima; this build reads them.</p>"),
     // MAP AND NOTES, and the manuscript put away. Three panes at once is the layout the reader
@@ -3034,9 +3650,8 @@ function startWalkthrough(){
   // FIRST thing anybody sees and the walkthrough is the obvious thing to press. So say what
   // happened, and leave the Help where it was rather than substituting it for the answer.
   if (!LIVE) {
-    showErr("The walkthrough runs on a reconstruction, and there is not one open yet.\n\n" +
-            "Open an .argdown file — or start one with New Reconstruction — and take the tour " +
-            "from How to use. It will be waiting there.");
+    showNote("The walkthrough tours an open map, and none is open yet. " + openOrStartHow() +
+             ", then choose How to use ▸ Take the walkthrough.", 12000);
     return;
   }
   clearErr();
@@ -3280,7 +3895,8 @@ function walkOffer(){
     $("walkbody").innerHTML =
       "<p>Everything else is under <b>How to use</b>, and every control on screen says what it " +
       "does if you rest on it.</p>" +
-      "<p>This walkthrough is the first thing in that list, whenever you want it again.</p>";
+      "<p>This walkthrough is the first thing in that list, whenever you want it again.</p>" +
+      '<p><button type="button" class="helplink" data-help="">Open How to use now</button></p>';
     $("walknext").textContent = "Close";
     $("walknext").onclick = function(){ stopWalkthrough(); };
     walkPlace();
@@ -3306,11 +3922,11 @@ function walkOffer(){
 function walkFarewell(){
   if (!WALK) return;
   var again = WALK_STORE.ok && WALK_STORE.get() === "again";
-  $("walktitle").textContent = again ? "It will run again next time" : "It is in the Help";
+  $("walktitle").textContent = again ? "It will run again next time" : "It is under How to use";
   $("walkbody").innerHTML = again
     ? "<p>And it is under <b>How to use ▸ Take the walkthrough</b> whenever you want it sooner.</p>"
     : "<p>Press <b>How to use</b> in the toolbar and it is the first thing in the list — " +
-      "<b>Take the walkthrough</b>.</p>";
+      "<b>Take the walkthrough</b>.</p>" + '<p><button type="button" class="helplink" data-help="">Open How to use now</button></p>';
   $("walkno").hidden = true;
   $("walknext").textContent = "Close";
   $("walknext").onclick = function(){ stopWalkthrough(); };
@@ -3426,7 +4042,9 @@ function maybeStartWalkthrough(){
   // scrim's user-select made the Manuscript unselectable — the one gesture the guide runs on.)
   if (GUIDE) return;
   WALK_OFFERED = true;
-  if (window.__ARGDOWN_PAYLOAD__) return;
+  // A built map is a document somebody was sent, and stays quiet -- unless it was built to be
+  // somebody's first look (`--walkthrough`: the site's samples, ruled D12).
+  if (window.__ARGDOWN_PAYLOAD__ && !window.__IPS_WALKTHROUGH__) return;
   if (!WALK_STORE.ok) return;
   if (walkSeen()) return;
   // A beat after the first render, so the map has been framed against a container with a real
@@ -3460,9 +4078,8 @@ var STUDY = null;
 function startStudy(){
   if (STUDY) return;
   if (!LIVE) {
-    showErr("Study mode runs on a reconstruction, and there is not one open yet.\n\n" +
-            "Open an .argdown file — or start one with New Reconstruction — and find " +
-            "study on the map's control bar, or under How to use.");
+    showNote("Study mode works on an open map, and none is open yet. " + openOrStartHow() +
+             ", then press study in the map's controls, or How to use ▸ Study this map.", 12000);
     return;
   }
   if (WALK) abandonWalkthrough();
@@ -3478,7 +4095,23 @@ function startStudy(){
   $("studycard").classList.remove("min");
   document.addEventListener("keydown", studyKey, true);
   studySync();
+  syncStudyButton();
+  dockChanged();
 }
+
+/** The bar's study button is a switch, and a switch shows whether it is on. It never lit while
+ *  the mode ran, and pressing it again did nothing (sweep D, verified 27 Sep 2026): the only way
+ *  out was a card the reader might have folded away. */
+function syncStudyButton(){
+  var b = document.querySelector('#map [data-act="study"]');
+  if (!b) return;
+  b.classList.toggle("on", !!STUDY);
+  b.setAttribute("aria-pressed", STUDY ? "true" : "false");
+  b.title = STUDY ? "End study mode (Esc). The map stays folded as you left it."
+                  : "Study this map: say what you think holds each claim up before " +
+                    "unfolding it";
+}
+function toggleStudy(){ if (STUDY) endStudy(); else startStudy(); }
 
 function endStudy(restore){
   if (!STUDY) return;
@@ -3490,6 +4123,7 @@ function endStudy(restore){
     LIVE.markClaims([]);
     if (restore !== false && untouched) LIVE.setState(was, true);
   }
+  syncStudyButton();
 }
 
 function studyKey(ev){
@@ -3533,8 +4167,19 @@ function setAppraisalOn(on){
   if (PANES.notes && !marginalia().length) setPane("notes", false);
   if (PANES.notes) renderNotes();
 }
+/** The map bar's height, published for the cards to sit above it. Measured on every state
+ *  change, because the bar wraps and folds; zero when there is no bar to clear. */
+function syncDock(){
+  var bar = document.querySelector("#map .alm-bar:not([hidden])") ||
+            document.querySelector("#map .alm-barchip:not([hidden])");
+  var h = bar && bar.offsetParent ? bar.offsetHeight : 0;
+  $("stage").style.setProperty("--bar-h", h + "px");
+}
+window.addEventListener("resize", function(){ syncDock(); });
 function onMapState(st){
   studyOnState(st);
+  syncStudyButton();
+  syncDock();
   if (st) setAppraisalOn(st.appraisal);
   // THE SHAPE LAYER IS ONE SWITCH, on the map's bar, and the page's own marks of it — the
   // footer's sparkline and the key's entry — follow it, so the reader never meets the
@@ -3571,11 +4216,30 @@ function studySync(){
     return;
   }
   var node = walkNodeById(el.dataset.id);
-  var title = (node && node.label) || el.dataset.id;
+  // A FOLDED SECTION IS NOT A CLAIM, and its id is not a name. The frontier is read off the
+  // drawn map, so on a map that opens with its sections shut it is a section's block, whose id
+  // (`group:s1`) has no node behind it -- and the card printed the id (found 27 Sep 2026).
+  var sectionOf = /^group:/.test(el.dataset.id)
+    ? ((CURRENT_GRAPH && CURRENT_GRAPH.groups) || []).filter(function(g){
+        return "group:" + g.id === el.dataset.id; })[0]
+    : null;
+  var drawn = el.querySelector(".alm-title");
+  var title = (node && node.label) || (sectionOf && sectionOf.label) ||
+              (drawn && drawn.textContent) || "This claim";
+  // THE BADGE AS IT IS DRAWN. The card called it ⊞, which is the staircase pill's glyph; the
+  // fold badge says "+2".
+  var badgeEl = el.querySelector(".alm-toggle.is-closed text");
+  var badge = (badgeEl && badgeEl.textContent) || "+";
   $("studyhint").textContent = "predict, then unfold";
-  p("“" + title + "” has reasons still folded beneath it.");
-  p("Before you look: what do you think holds it up — and would anything speak against " +
-    "it? When you have your answer, press the ⊞ badge under the claim and compare.");
+  if (/^group:/.test(el.dataset.id)) {
+    p("The section “" + title + "” is folded.");
+    p("Before you look: what do you expect it to argue? When you have your answer, press " +
+      badge + " under it and compare.");
+  } else {
+    p("“" + title + "” has reasons still folded beneath it.");
+    p("Before you look: what do you think holds it up — and would anything speak against " +
+      "it? When you have your answer, press " + badge + " under it and compare.");
+  }
   // The crux moment (Formation T4): the plurality lesson arrives exactly when its subject
   // matter does, on the guided mode's explained-when-earned principle.
   if (node && node.tags && node.tags.indexOf("crux") >= 0)
@@ -3622,7 +4286,10 @@ var KEY_GRAPH = null;
    remembering happens here and travels through `barFolded` / `onBarFold` at every mount. */
 var BAR_STORE = makeChoiceStore("ipsissima.mapbar.v1");
 function barFoldedNow(){ return BAR_STORE.ok ? BAR_STORE.get() === "folded" : false; }
-function rememberBarFold(folded){ if (BAR_STORE.ok) BAR_STORE.set(folded ? "folded" : "open"); }
+function rememberBarFold(folded){
+  if (BAR_STORE.ok) BAR_STORE.set(folded ? "folded" : "open");
+  setTimeout(syncDock, 0);     // the cards come down with the bar, or go up with it
+}
 
 /** The footer sparkline's own inputs, or null where the exposition mark cannot be drawn —
  *  the same guards `statsLine` applies, asked without drawing anything. */
@@ -3673,14 +4340,20 @@ function keyContent(graph){
 
   var present = {};
   nodes.forEach(function(n){ if (n.fidelity) present[n.fidelity] = true; });
-  out.push('<h4>Borders — whose words</h4>');
+  // EACH HEADING IS A LINK to the topic that explains it (plan 5.2): the key is where a
+  // puzzled reader already is, and "explained in full under How to use" left them to find where.
+  var head = function(title, topic){
+    return '<h4><button type="button" class="helplink" data-help="' + topic + '">' + title +
+           '</button></h4>';
+  };
+  out.push(head("Borders — whose words", "How close to the author's words?"));
   FID_KEY.forEach(function(f){
     out.push(dim(!!present[f[1]], boxSwatch(f[0]), f[1]));
   });
 
   var kinds = {};
   edges.forEach(function(e){ if (e.type && KEY_KIND[e.type]) kinds[KEY_KIND[e.type]] = true; });
-  out.push('<h4>Lines — how claims bear</h4>');
+  out.push(head("Lines — how claims bear", "What the lines mean"));
   REL_KEY.forEach(function(r){
     out.push(dim(!!kinds[r[0]],
                  swatch('stroke="'+r[1]+'" stroke-width="2" '+r[2]), r[3]));
@@ -3689,7 +4362,7 @@ function keyContent(graph){
   var facets = [];
   nodes.forEach(function(n){ if (n.facet && facets.indexOf(n.facet) < 0) facets.push(n.facet); });
   if (facets.length) {
-    out.push('<h4>Chips — whose claim</h4><div>');
+    out.push(head("Chips — whose claim", "Whose claim is this?") + '<div>');
     facets.slice(0, 6).forEach(function(f){
       out.push('<span class="kchip">#' + ArgdownStaircase.esc(f) + '</span>');
     });
@@ -3700,14 +4373,14 @@ function keyContent(graph){
 
   var sp = SHAPE_ON ? sparkFor(graph) : null;
   if (sp) {
-    out.push('<h4>Sparkline — where the reasons fall</h4>');
+    out.push(head("Sparkline — where the reasons fall", "Where do the reasons fall?"));
     out.push('<div>' + window.ArgdownExposition.sparkline(sp.rs, sp.n,
                                                           { width: 170, height: 16 }) + '</div>');
     out.push('<div class="kfoot" style="margin-top:0">below — reasons still to come · ' +
              'above — already given</div>');
   }
 
-  out.push('<div class="kfoot">Each of these is explained in full under <b>How to use</b>.</div>');
+  out.push('<div class="kfoot">A heading opens its page of How to use.</div>');
   return out.join("");
 }
 
@@ -3728,7 +4401,25 @@ function keySetMin(min){
     : "Fold the key to its header — it stays on screen, across maps, until closed";
 }
 
+/** WILL THE KEY OFFER ITSELF on this map? Asked before the map is first framed, so the framing
+ *  leaves the card its room from the start. Without it the map was fitted to the whole pane,
+ *  and 700ms later the card arrived over its right side and the map re-laid itself underneath
+ *  -- on a large map, a rung lower. The same gates as the offer below, less the walkthrough's
+ *  turn, which only delays it. A kept key arrives folded and needs no room. */
+var KEY_COMING = false;
+function keyWillOffer(graph){
+  if (window.__ARGDOWN_PAYLOAD__ || !KEY_STORE.ok || keySeen() || keyKept()) return false;
+  return encodingsInUse(graph) >= 3;
+}
+
 function offerKeyCard(){
+  var coming = KEY_COMING;
+  KEY_COMING = false;
+  offerKeyCardNow();
+  // Room was kept for a card that did not come (a walkthrough took the turn): give it back.
+  if (coming && $("keycard").hidden) dockChanged();
+}
+function offerKeyCardNow(){
   if (!KEY_GRAPH || WALK) return;
   // KEPT WINS FIRST, and skips every gate below: the reader has already chosen. The content is
   // rebuilt for the map now open, and the card arrives folded, which is what was kept.
@@ -3736,6 +4427,7 @@ function offerKeyCard(){
     $("keybody").innerHTML = keyContent(KEY_GRAPH);
     keySetMin(true);
     $("keycard").hidden = false;
+    dockChanged();
     return;
   }
   if (window.__ARGDOWN_PAYLOAD__) return;
@@ -3744,16 +4436,35 @@ function offerKeyCard(){
   $("keybody").innerHTML = keyContent(KEY_GRAPH);
   keySetMin(false);
   $("keycard").hidden = false;
+  dockChanged();
 }
 
 /** The deliberate opening — Help ▸ Show the Key. An explicit ask bypasses the offer's gates
  *  (any map, any number of encodings, seen or kept or neither) and touches no store: asking to
  *  see the key is neither a dismissal nor a standing choice. */
 function openKeyCard(){
-  if (!KEY_GRAPH) return;
+  // A MENU ITEM THAT CAN DO NOTHING SAYS WHY (the rule the Export item already keeps): with no
+  // map open this was a silent no-op from Help ▸ Show the Key and from How to use.
+  if (!KEY_GRAPH) {
+    showNote("The key describes the markings of an open map, and none is open yet. " +
+             openOrStartHow() + ".", 10000);
+    return;
+  }
+  // THE CHART HAS ITS OWN LEGEND, and this key would describe a map that is not on screen: in
+  // Mechanism dashes and colours mean the chain's things, not the argument map's (sweep A,
+  // 27 Sep 2026). Say where the right legend is, and bring it into view.
+  if (ARRANGEMENT === "mechanism" && !$("mech").hidden) {
+    var lg = Array.prototype.filter.call($("mech").querySelectorAll(".amech-side h3"),
+      function(h){ return h.textContent === "Legend"; })[0];
+    if (lg) lg.scrollIntoView({ block: "start" });
+    showNote("Mechanism has its own legend, in the panel beside the chart. The key describes " +
+             "the argument map, in Reasons and Exposition.", 8000);
+    return;
+  }
   $("keybody").innerHTML = keyContent(KEY_GRAPH);
   keySetMin(false);
   $("keycard").hidden = false;
+  dockChanged();
 }
 
 /** `remember: false` hides the card without recording anything — for a new file replacing the
@@ -3766,6 +4477,10 @@ function dismissKeyCard(remember){
   return true;
 }
 $("keyclose").onclick = function(){ dismissKeyCard(); };
+// Where the key lives afterwards, in this build's own words: the app has a Help menu, the page
+// has only its How to use button (the markup's title named the app's menu everywhere).
+$("keyclose").title = "Close. The key stays under How to use ▸ The key" +
+                      (HOST ? ", and Help ▸ Show the Key." : ".");
 $("keymin").onclick = function(){
   var toMin = !$("keycard").classList.contains("min");
   keySetMin(toMin);
@@ -3836,7 +4551,7 @@ function openExportMenu(){
   // BUILD lacks, which no reader can mend; the two rules differ because the situations do.
   if (window.ArgdownBundle) {
     var bundleable = bundleFiles().length > 0;
-    items.push({ label: "Reconstruction + essay (.argdown)",
+    items.push({ label: "Reconstruction with its text (.argdown)",
                  hint: bundleable ? "one file \u00b7 opens here, and stays editable"
                                   : "nothing to attach \u2014 open the folder, or a bundle",
                  disabled: !bundleable,
@@ -4108,7 +4823,19 @@ function splitWidth(x, box, swapped, viewport){
   });
 })();
 
-$("fitbtn").onclick = function(){ if (LIVE) LIVE.fit(); };
+/** Fit whichever arrangement is on screen. The header's Fit and View ▸ Fit (Cmd-0) fitted the
+ *  argument map even while the Mechanism chart was showing -- a hidden map, so the button did
+ *  nothing visible (sweep A, 27 Sep 2026). The chart's own control is its "Fit to width"
+ *  toggle, pressed here only when the chart is not already fitted. */
+function fitView(){
+  if (ARRANGEMENT === "mechanism" && !$("mech").hidden) {
+    var fb = $("mech").querySelector("[data-fit]");
+    if (fb && fb.textContent === "Fit to width") fb.click();
+    return;
+  }
+  if (LIVE) LIVE.fit();
+}
+$("fitbtn").onclick = fitView;
 // ONE HANDLER, THREE DOORBELLS. The menu item, the keyboard and these buttons all run this —
 // the menu's `undo` entry routes here too, so there is one implementation of what undo means.
 $("undobtn").onclick = function(){ if (ED) { ED.undo(); markState(); } };
@@ -4141,29 +4868,42 @@ document.addEventListener("keydown", function(e){
   // Esc should undo one thing. The
   // open panel is dismissable only when there IS a map to go back to — on a cold start it is
   // the whole page and closing it would leave nothing.
-  if (!$("expl").hidden) return explHide();
-  if (!$("about").hidden) return closeAbout();
-  if (!$("cdlg").hidden) return closeCommentDialog();
-  if (!$("ctx").hidden) return ctxHide();
+  // Whatever this press does, it does ONE thing, and says so -- so a later listener (the
+  // Mechanism chart's focus, the message box) does not act on the same press.
+  var one = function(f){ e.preventDefault(); f(); };
+  if (!$("expl").hidden) return one(explHide);
+  if (!$("about").hidden) return one(closeAbout);
+  if (!$("cdlg").hidden) return one(closeCommentDialog);
+  if (!$("ctx").hidden) return one(ctxHide);
   // The key sits over the map like the menus do, so Escape sends it away next — and an Escape
   // is a dismissal like any other: remembered, per the card's own contract. A card the reader
   // FOLDED is different: they parked it there on purpose, it is not in anyone's way, and an
   // Escape aimed at whatever is on top should not retire a standing choice — so a minimised
   // card lets the Escape pass through to the next thing.
-  if (!$("keycard").hidden && !$("keycard").classList.contains("min")) return dismissKeyCard();
-  if ($("help").classList.contains("show")) return setHelp(false);
+  if (!$("keycard").hidden && !$("keycard").classList.contains("min")) return one(dismissKeyCard);
+  if ($("help").classList.contains("show")) return one(function(){ setHelp(false); });
   // The abstract sits with the panels rather than with full screen: it is a thing the reader
   // opened over the map, and one Escape should put it back before it touches anything else.
-  if (!$("abspanel").hidden) return setAbstract(false);
+  if (!$("abspanel").hidden) return one(function(){ setAbstract(false); });
   // The contents float over the text the way the abstract floats over the map: a thing the
   // reader opened, put back by one Escape before anything larger is touched.
-  if (!$("mstoc").hidden) return msTocOpen(false);
-  if (LIVE && $("drop").classList.contains("show")) return $("drop").classList.remove("show");
-  if (document.body.classList.contains("fs")) setFull(false);
+  if (!$("mstoc").hidden) return one(function(){ msTocOpen(false); });
+  // THE MODES, EACH LEFT BY ESC as study and the walkthrough already were (sweep D: the
+  // comparison, the Zotero highlights and the guide had only their buttons). Each puts back
+  // only itself; the map and the text stay as they are.
+  if (CMP) return one(endCompare);
+  if (ZOT) return one(endZotero);
+  if (GUIDE) return one(guideEnd);
+  if (LIVE && $("drop").classList.contains("show")) return one(function(){ $("drop").classList.remove("show"); });
+  if (document.body.classList.contains("fs")) one(function(){ setFull(false); });
 });
 document.addEventListener("pointerdown", function(e){
   if (!$("help").classList.contains("show")) return;
   if (e.target.closest("#help") || e.target.closest("#helpbtn")) return;
+  // NOT ON THE MAP (ruled D13). The panel is not modal, and the commonest thing to do with a
+  // page of How to use open is to try what it says: read "Moving around", then drag. A press on
+  // the map or the chart used to put the panel away under the reader's hand.
+  if (e.target.closest("#stage")) return;
   setHelp(false);
 });
 /* ================= THE MANUSCRIPT PANE =================================================
@@ -4668,6 +5408,54 @@ function manuscriptAbstract(){
   return null;
 }
 
+/** THE ORIENTATION STRIP IS SHOWN WHEN IT HAS ANYTHING TO SAY: the abstract's fold, or any of
+ *  the map's declarations about itself (ruled D3, 27 Sep 2026). Its width is published to the
+ *  stage, so the Mechanism chart's question starts clear of it -- a fixed 118px cleared the
+ *  Abstract button alone and nothing wider. */
+function syncOrient(){
+  var any = ["absbtn", "gentext", "mapprov", "cruxchip"].some(function(id){ return !$(id).hidden; });
+  $("abs").hidden = !any;
+  $("stage").style.setProperty("--orient-w", any ? $("orient").offsetWidth + "px" : "0px");
+}
+/** How far the strip reaches down over the map, for the map's framing to keep clear of. */
+function orientInset(){
+  return $("abs").hidden ? 0 : $("orient").getBoundingClientRect().height + 8;
+}
+/** How far the open cards in the map's corner reach in from its right edge, the same way. A
+ *  card folded to its header is small enough to pan past, and on a narrow pane giving up that
+ *  width would cost more of the map than the card hides, so both of those answer 0. */
+function dockInset(){
+  var d = $("dockr");
+  if (!d.offsetParent) return 0;
+  var open = [$("keycard"), $("studycard")].some(function(c){
+    return !c.hidden && !c.classList.contains("min");
+  });
+  if (!open && !KEY_COMING) return 0;
+  var w = Math.max(d.offsetWidth,
+                   KEY_COMING ? parseFloat(getComputedStyle($("keycard")).maxWidth) || 270 : 0) + 24;
+  return $("map").clientWidth - w >= 560 ? w : 0;
+}
+/** A card has just come over the map: let the map frame itself for the room left.
+ *
+ *  ONLY WHEN ONE ARRIVES. Folding, unfolding and closing a card move nothing -- the key's own
+ *  promise since it first floated ("one click removes it without moving anything"): the reader
+ *  who closes it is looking at the map, and a map that slides away as the card goes is the map
+ *  moving under them. The room a closed card leaves is taken back at the next fold's re-fit. */
+function dockChanged(){ if (LIVE && LIVE.reframe) LIVE.reframe(); }
+/** Open How to use at a named topic. The first of the deep links the help has lacked: things on
+ *  screen that need explaining now say where the explanation is by opening it. */
+function openHelpTopic(title){
+  var pages = buildHelpPages();
+  // A link wrapped across two lines of help.md carries the line break in its attribute.
+  title = String(title || "").replace(/\s+/g, " ").trim();
+  setHelp(true);
+  if ($("helpq").value) { $("helpq").value = ""; helpSearch(); }
+  for (var i = 0; i < pages.length; i++)
+    if (pages[i].dataset.title === title) { showHelpPage(i); return true; }
+  showHelpToc();            // a topic this build leaves out: the contents, rather than nothing
+  return false;
+}
+
 /** Unfold the abstract, or fold it away. One function, because the button, the ×, Escape and a
  *  fresh file all mean the same thing by it and must not drift apart. */
 function setAbstract(open){
@@ -4681,7 +5469,8 @@ function setAbstract(open){
  *  page cannot leave the first one's abstract on screen. */
 function syncAbstract(){
   ABSTRACT = manuscriptAbstract();
-  $("abs").hidden = !ABSTRACT;
+  $("absbtn").hidden = !ABSTRACT;
+  syncOrient();
   var body = $("absbody");
   body.textContent = "";
   if (ABSTRACT) {
@@ -4877,7 +5666,8 @@ function startCompare(name, text){
   catch (e) {
     // The parser wrapper already speaks the translated line-and-column language the
     // editor's own errors use; repeat it, do not re-word it.
-    showErr("Could not read “" + name + "” as Argdown: " + (e && e.message || String(e)));
+    showErr("Could not read “" + name + "” as Argdown: " + (e && e.message || String(e)),
+            { help: "Writing Argdown" });
     return;
   }
   locateInPage(graph, msSources());
@@ -5232,7 +6022,10 @@ function startZotero(){
       (unplaced ? " — " + unplaced + " could not be placed in this converted text" : "") +
       (images ? " — " + images + " carry no text (area marks)" : "");
   }).catch(function(e){
-    showErr(String(e && e.message || e));
+    // Framed with the action that failed, so the reason reads as the answer to something
+    // (sweep D rewrite 20: the host's reasons arrived bare).
+    showErr("Couldn't read your Zotero highlights. " + String(e && e.message || e),
+            { help: "Your Zotero highlights" });
   });
 }
 
@@ -5320,12 +6113,12 @@ async function zotGeometry(){
   var raw;
   try { raw = await HOST.readText(path); }
   catch (e) {
-    return { pages: null, why: "this conversion carries no geometry sidecar — reconvert " +
-                               "the PDF with the current converter to enable exact " +
-                               "highlights" };
+    return { pages: null, why: "this copy of the text was converted without the page " +
+                               "positions a highlight needs. Reconvert the PDF with the " +
+                               "current converter, then try again" };
   }
   try { ZOT_GEOM = { path: path, pages: JSON.parse(raw).pages || null }; }
-  catch (e) { return { pages: null, why: "the geometry sidecar would not parse" }; }
+  catch (e) { return { pages: null, why: "the page positions saved with this text would not read" }; }
   return { pages: ZOT_GEOM.pages };
 }
 
@@ -5370,7 +6163,8 @@ async function zotHighlightSelection(){
     showNote(said, 9000);
     if (ZOT) { endZotero(); startZotero(); }   // the pane re-reads its marks from Zotero
   } catch (e) {
-    showErr(String(e && e.message || e));
+    showErr("Couldn't highlight in Zotero. " + String(e && e.message || e) +
+            " Nothing was written to Zotero.", { help: "Your Zotero highlights" });
   }
 }
 
@@ -5502,9 +6296,10 @@ function markState(){
   else $("adstate").textContent = "edited";
   $("adstate").title = writable
     ? "Save writes back to the file you opened."
-    : "This file was not opened with write access, so Save will offer a download. Use " +
-      "‘choose a folder’ from the open panel to edit in place.";
+    : "This file was opened without write access, so Save will offer a download. Where the " +
+      "browser allows it, Open… ▸ Open a folder… opens it for saving in place.";
   $("adsave").classList.toggle("on", DIRTY);
+  $("dirtymark").hidden = !DIRTY;
   // The history is the editor's, whichever surface the edit was made from.
   var canUndo = !!(ED && ED.undoDepth && ED.undoDepth() > 0);
   var canRedo = !!(ED && ED.redoDepth && ED.redoDepth() > 0);
@@ -5590,6 +6385,18 @@ function mapSignature(g){
 var MAP_SIG = null;
 
 /** Draw a new graph into the existing map, keeping the reader exactly where they were. */
+/** CONTROLS THAT ACT ON A MAP ARE SHOWN WHEN THERE IS ONE (plan 4.6, 27 Sep 2026). Layout,
+ *  Fit and Full screen were live on the empty opening panel, where each did nothing; and a map
+ *  with no claims yet -- the guided mode's first step -- showed the whole control bar reading
+ *  "everything 0", "Load-bearing 0". A control is a promise (F2). */
+function syncOpenChrome(){
+  var open = !!CURRENT_GRAPH;
+  $("laybtn").hidden = !open;
+  if (!HOST) $("fsbtn").hidden = !open;
+  var empty = open && !((CURRENT_GRAPH.nodes || []).length);
+  $("map").classList.toggle("empty", empty);
+}
+
 function redrawFrom(graph){
   // The baseline for the empty-graph guard in `schedulePreview`, set wherever a map is drawn —
   // there are several ways in (a load, a drop, a reload from disk) and they must all leave it
@@ -5598,6 +6405,7 @@ function redrawFrom(graph){
   if (MS && window.ArgdownPositions) locateInPage(graph, msSources());
   var sig = mapSignature(graph);
   CURRENT_GRAPH = graph;
+  syncOpenChrome();
   // An edit moved this map's claims; the comparison margin reads them live, so repaint it —
   // and the highlights after it, because the repaint clears shared hover titles.
   cmpPaint();
@@ -5610,8 +6418,8 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow,
-    onStudy: startStudy, onStateChange: onMapState,
-    barFolded: barFoldedNow(), onBarFold: rememberBarFold,
+    onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
     depth: keep ? keep.depth : null,
@@ -5621,6 +6429,7 @@ function redrawFrom(graph){
     // reader to a fresh fit of the whole map.
     view: keep ? keep.view : null, userMoved: keep ? keep.userMoved : false
   });
+  syncDock();
   buildKeys(graph);
   statsLine(graph);
   if (PANES.notes) renderNotes();
@@ -5672,21 +6481,37 @@ function openCommentDialog(n){
 }
 function closeCommentDialog(){ $("cdlg").hidden = true; CDLG_FOR = null; }
 
+/* ONE QUESTION FOR DELETING A COMMENT, ASKED THE SAME WAY EVERYWHERE, AND TRUE. Three wordings
+ * said "this cannot be undone from here" while the toolbar's Undo appeared a moment later and
+ * undid it (sweep D, 27 Sep 2026). The editor's history holds every map edit, so the honest
+ * sentence is the reassuring one. */
+function confirmDeleteComment(label){
+  return confirm("Delete the comment on “" + label + "”? Undo (Cmd/Ctrl-Z) brings it back.");
+}
+/** Typed words about to be thrown away by a click beside the dialog, which is too easy a
+ *  gesture to lose them to without asking. */
+function commentDialogChanged(){
+  return !!CDLG_FOR && $("cdlgtext").value.trim() !== (CDLG_FOR.comment || "").trim();
+}
+
 $("cdlgcancel").onclick = closeCommentDialog;
 $("cdlgsave").onclick = function(){
   if (!CDLG_FOR) return;
   var v = $("cdlgtext").value.trim();
-  // An emptied box means "take it away", which is what the reader will expect it to mean.
+  // An emptied box means "take it away", which is what the reader will expect it to mean --
+  // and taking a comment away is asked about wherever else it happens, so here too.
+  if (!v && CDLG_FOR.comment && !confirmDeleteComment(CDLG_FOR.label)) return;
   if (applyComment(CDLG_FOR.label, v || null)) closeCommentDialog();
 };
 $("cdlgdel").onclick = function(){
   if (!CDLG_FOR) return;
-  if (!confirm("Delete this comment? This cannot be undone from here — though the editor's " +
-               "own undo (Cmd/Ctrl-Z) will still bring it back.")) return;
+  if (!confirmDeleteComment(CDLG_FOR.label)) return;
   if (applyComment(CDLG_FOR.label, null)) closeCommentDialog();
 };
 $("cdlg").addEventListener("click", function(e){
-  if (e.target === $("cdlg")) closeCommentDialog();
+  if (e.target !== $("cdlg")) return;
+  if (commentDialogChanged() && !confirm("Discard what you have written?")) return;
+  closeCommentDialog();
 });
 
 /** Apply a comment change to the file — and REFUSE if the result would not parse. This is the
@@ -5786,6 +6611,9 @@ async function saveBlob(blob, name){
       var target = await HOST.pickSavePath(name, [{ name: kind, extensions: [ext] }]);
       if (!target) return;                       // the reader changed their mind
       await HOST.writeBinary(target, new Uint8Array(await blob.arrayBuffer()));
+      // An export writes where nothing on screen shows it, so it says so (sweep D: exports
+      // confirmed nothing at all).
+      showNote("Exported " + HOST.basename(target) + ".", 5000);
       return;
     }
     if (typeof window.showSaveFilePicker === "function") {
@@ -5794,19 +6622,24 @@ async function saveBlob(blob, name){
         suggestedName: name, types: [{ description: kind, accept: accept }] });
       var w = await h.createWritable();
       await w.write(blob); await w.close();
+      showNote("Exported " + (h.name || name) + ".", 5000);
       return;
     }
   } catch (e) {
     if (e && e.name === "AbortError") return;    // the reader changed their mind
+    var failed = true;
     // Anything else falls through to the download, which is the route that always works. Said
     // out loud, because "it saved" and "it saved somewhere else" look identical from here.
-    showErr("Could not write it where you asked (" + (e && e.message || e) + "), so it is " +
-            "being offered as a download instead.");
+    // One wording for the fallback, wherever it happens (docs/MESSAGES.md; sweep D rewrite 17).
+    showErr("Couldn't save where you asked (" + (e && e.message || e) + "). A copy has been " +
+            "downloaded instead — look in your Downloads folder.");
   }
   var url = URL.createObjectURL(blob);
   var a = document.createElement("a");
   a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
+  // (After a failure the error above has already said where the copy went.)
+  if (!failed) showNote("Downloaded " + name + " — look in your Downloads folder.", 5000);
   // Revoked on a timer rather than immediately: revoking in the same tick cancels the download
   // in some browsers before it has begun.
   setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
@@ -5815,14 +6648,14 @@ async function saveBlob(blob, name){
 function exportAnnotated(kind, want){
   if (!window.__EXPORT__) return;
   if (!msAvailable()) {
-    alert("There is no manuscript to annotate.\n\nOpen the reconstruction's FOLDER rather than " +
-          "the lone .argdown file, so the essay comes with it.");
+    showErr("There is no text to annotate: the text this map cites is not open.\n\n" +
+            textMissingRemedy(), { help: "Opening a map, and where its text is found" });
     return;
   }
   var ch = currentChapter();
   var marks = exportMarks(ch.path, want);
   if (!marks.length && !confirm("Nothing of that kind is written in the margins of this chapter. " +
-                                "Export the essay anyway?")) return;
+                                "Export the text anyway?")) return;
   var base = exportBase();
   var opts = { title: (NAME || "").replace(/\.argdown$/i, ""), author: "",
                text: readableSource(ch.text), marks: marks };
@@ -5896,7 +6729,7 @@ function renderNotes(){
          : nn + " reconstructor's note" + (nn === 1 ? "" : "s");
   $("panes").querySelector('[data-p="notes"]').hidden = false;
   var comments = items.filter(function(m){ return m.kind === "comment"; });
-  $("delallc").hidden = !(ED && comments.length);
+  // (Delete all comments now sits at the foot of the list it acts on -- see below.)
   // Offered only where it can be done, and what can be done has grown. The .docx writer is not
   // carried by every build and needs marks to be worth running; a bundle or a self-contained
   // page needs neither -- a reconstruction with no comments on it yet is still the thing
@@ -5911,9 +6744,12 @@ function renderNotes(){
   if (!items.length) {
     var none = document.createElement("div");
     none.className = "none";
-    none.textContent = "Nothing in the margins yet. Right-click a claim to leave a COMMENT on " +
-                       "it. A RECONSTRUCTOR'S NOTE — the reading's own aside about why a claim " +
-                       "was taken that way — is written in the Argdown as {note: \"…\"}.";
+    // No capitals for emphasis, no syntax, and nothing the Reader cannot do (sweep D rewrite 15).
+    none.textContent = ED
+      ? "No comments or notes yet. Right-click a claim and choose Add comment. (A " +
+        "reconstructor's note is written in the Argdown itself — see How to use ▸ Comments and " +
+        "notes.)"
+      : "This reconstruction has no comments or notes.";
     list.appendChild(none);
     return;
   }
@@ -5938,9 +6774,7 @@ function renderNotes(){
       rm.className = "plain tiny"; rm.textContent = "Delete";
       rm.onclick = function(e){
         e.stopPropagation();
-        if (confirm("Delete the comment on \u201c" + m.node.label + "\u201d? This cannot be undone " +
-                    "from here."))
-          applyComment(m.node.label, null);
+        if (confirmDeleteComment(m.node.label)) applyComment(m.node.label, null);
       };
       tools.append(ed, rm);
       who.appendChild(tools);
@@ -5961,6 +6795,22 @@ function renderNotes(){
     d.onclick = function(){ followClaim(m.node); };
     list.appendChild(d);
   });
+  // A RARE, DESTRUCTIVE BULK ACTION, AT THE FOOT OF WHAT IT ACTS ON (plan 4.5, 27 Sep 2026). It
+  // held permanent space in a header that already overflowed at the pane's narrowest; here it
+  // is met only by someone who has scrolled past every comment, which is who might want it.
+  if (ED && comments.length) {
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "plain tiny";
+    del.id = "delallc";
+    del.title = "Remove every comment from the file. The reconstructor's notes are kept.";
+    del.textContent = "Delete all " + comments.length + " comment" + (comments.length === 1 ? "" : "s");
+    del.onclick = deleteAllComments;
+    var foot = document.createElement("div");
+    foot.className = "notefoot";
+    foot.appendChild(del);
+    list.appendChild(foot);
+  }
 }
 
 /* ONE HANDLER FOR THE GROUP, because the three buttons are one setting. Three handlers would be
@@ -5974,14 +6824,13 @@ $("notefilter").addEventListener("click", function(e){
 
 /** Remove every comment in the file at once. Notes are left alone — they are the
  *  reconstruction's own reasoning, not feedback, and clearing feedback should not clear them. */
-$("delallc").onclick = function(){
+function deleteAllComments(){
   var labels = marginalia().filter(function(m){ return m.kind === "comment"; })
                            .map(function(m){ return m.node.label; });
   if (!labels.length || !ED) return;
   if (!confirm("Delete all " + labels.length + " comment" + (labels.length === 1 ? "" : "s") +
-               " from this file?\n\nThis cannot be undone from here — the editor's own undo " +
-               "(Cmd/Ctrl-Z) will bring them back, but saving first will not.\n\n" +
-               "Notes are not affected.")) return;
+               "? The reconstructor's notes are kept. Undo (Cmd/Ctrl-Z) brings the comments " +
+               "back.")) return;
   // Applied in one pass over the text, then checked once, so a half-finished removal can never
   // be written.
   var next = ED.getText(), ok = true;
@@ -6039,9 +6888,14 @@ $("adnums").onclick = function(){
  */
 function confirmDiscard(what){
   if (!DIRTY) return true;
-  var where = AD_HANDLE ? "Save writes back to the file you opened."
-                        : "This file was opened without write access, so Save offers a download.";
-  return confirm(what + " and lose the unsaved changes to the Argdown?\n\n" + where);
+  // THE REASON GIVEN MUST BE TRUE IN THIS BUILD. The app writes through HOST_PATH, not a
+  // browser handle, so testing AD_HANDLE alone told every app user their file was read-only
+  // (sweep D, 27 Sep 2026). The question is the point; the second line is only a courtesy.
+  var name = NAME || "this file";
+  var writable = HOST_PATH || AD_HANDLE;
+  return confirm("You have unsaved changes to " + name + ". " + what + " will discard them.\n\n" +
+                 (writable ? "Cancel, then Save, to keep them."
+                           : "Cancel, then Save, to keep them — Save offers a download here."));
 }
 
 /* The browser's own version of the same question, for closing the tab or following a link.
@@ -6137,18 +6991,16 @@ async function saveArgdown(asNew){
       hostWatchArgdown();          // a Save As moves which file we are watching
       // The window's title follows the file, or a Save As leaves it naming the one it came from.
       NAME = HOST.basename(target);
-      $("fname").textContent = NAME;
+      setHeaderTitle(NAME, CURRENT_GRAPH);
       DIRTY = false; markState();
-      $("adstate").textContent = asNew ? "saved as " + NAME : "saved";
-      setTimeout(markState, 1800);
+      confirmSaved(asNew ? "saved as " + NAME : "saved", "Saved to " + NAME + ".");
       return;
     }
     if (AD_HANDLE && AD_HANDLE.createWritable && !asNew) {
       var w = await AD_HANDLE.createWritable();
       await w.write(text); await w.close();
       DIRTY = false; markState();
-      $("adstate").textContent = "saved";
-      setTimeout(markState, 1800);
+      confirmSaved("saved", "Saved to " + (NAME || "the file") + ".");
       return;
     }
     if (typeof window.showSaveFilePicker === "function") {
@@ -6159,9 +7011,8 @@ async function saveArgdown(asNew){
       var w2 = await h.createWritable();
       await w2.write(text); await w2.close();
       AD_HANDLE = h; DIRTY = false; markState();
-      if (h.name) { NAME = h.name; $("fname").textContent = NAME; }
-      $("adstate").textContent = asNew ? "saved as " + NAME : "saved";
-      setTimeout(markState, 1800);
+      if (h.name) { NAME = h.name; setHeaderTitle(NAME, CURRENT_GRAPH); }
+      confirmSaved(asNew ? "saved as " + NAME : "saved", "Saved to " + NAME + ".");
       return;
     }
     // A BROWSER WITH NO PICKER CANNOT DO SAVE AS, and saying so is better than doing the
@@ -6175,8 +7026,8 @@ async function saveArgdown(asNew){
     }
   } catch (e) {
     if (e && e.name === "AbortError") return;          // the reader changed their mind
-    showErr("Could not write the file: " + (e && e.message || e) +
-            "\n\nThe copy below is being offered as a download instead.");
+    showErr("Couldn't save to " + (NAME || "the file") + " (" + (e && e.message || e) + "). " +
+            "A copy has been downloaded instead — look in your Downloads folder.");
   }
   // Last resort. Not silent about it: the file lands in Downloads, not where it came from.
   var a = document.createElement("a");
@@ -6184,8 +7035,17 @@ async function saveArgdown(asNew){
   a.download = NAME || "reconstruction.argdown";
   a.click();
   setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
-  $("adstate").textContent = "downloaded";
-  setTimeout(markState, 2400);
+  confirmSaved("downloaded", "Downloaded " + (NAME || "reconstruction.argdown") +
+               " — look in your Downloads folder.");
+}
+
+/** SAY WHERE IT WENT, where it can be seen (docs/MESSAGES.md rule 7). The Argdown pane's header
+ *  carries a word for a moment; with that pane closed -- Cmd-S after writing on the map -- the
+ *  word was said to nobody, so the sentence goes to the message area instead. */
+function confirmSaved(word, sentence){
+  $("adstate").textContent = word;
+  setTimeout(markState, 2000);
+  if (!PANES.argdown) showNote(sentence, 5000);
 }
 $("adsave").onclick = function(){ saveArgdown(false); };
 $("adsaveas").onclick = function(){ saveArgdown(true); };
@@ -6268,17 +7128,14 @@ function msLocate(n){
     // tells it — does any claim cite a chapter? — and the no-text answer is spoken only
     // when the gesture otherwise did nothing visible: with the Argdown pane open, the
     // claim's own line has already answered.
-    var cites = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [])
-                  .some(function(x){ return x.chapter; });
-    if (!cites) {
+    if (!mapCitesText()) {
       if (!(ED && PANES.argdown && n && n.docLine != null))
         showErr("This map reads no text, so its claims have no passages to go to.",
                 { note: true });
       return;
     }
-    showErr("This viewer has no copy of the manuscript, so it cannot show the passage.\n\n" +
-            "Drop the reconstruction's FOLDER rather than the .argdown on its own — or rebuild " +
-            "with:  build_argdown_viewer.mjs FILE.argdown --source-root <manuscript folder>");
+    showErr("The text this map cites is not open, so the passage cannot be shown.\n\n" +
+            textMissingRemedy(), { help: "Opening a map, and where its text is found" });
     return;
   }
   var pos = n && n.pos;
@@ -6516,7 +7373,7 @@ function pasteBegin(mode){
     return;
   }
 
-  if (!confirmDiscard("Start from a text")) return;
+  if (!confirmDiscard("Starting from a new text")) return;
   // THE READING-POLICY BLOCK IS WRITTEN FIRST (the author's ruling, 5 Sep 2026): the file is
   // honest from its first save. The guide draws attention to it only at the end, when the
   // reader has made enough readings for aim, unit, mode and strength to mean something.
@@ -6578,7 +7435,7 @@ function guideShow(){
   var b = $("guidebody"), k = $("guidebtns");
   b.textContent = ""; k.textContent = "";
   $("guidecard").dataset.step = String(GUIDE.step);
-  $("guidestep").textContent = "step " + GUIDE.step + " of 5";
+  $("guidestep").textContent = "Step " + GUIDE.step + " of 5";
   var p = function(t){ var e = document.createElement("p"); e.textContent = t; b.appendChild(e); };
   var btn = function(t, primary, fn){
     var e = document.createElement("button");
@@ -6588,7 +7445,9 @@ function guideShow(){
     k.appendChild(e);
   };
   if (GUIDE.step === 1) {
-    p("Read the text on the right, and find the sentence it is finally arguing for.");
+    // Where the text IS, not where it usually is: on a narrow window or with the texts
+    // swapped to the left, "on the right" was false (sweep D rewrite 14).
+    p("Read the text in the Manuscript pane, and find the sentence it is finally arguing for.");
     p("Select those words, then press “Quote this passage” — or “Paraphrase it” to say them your own way.");
   } else if (GUIDE.step === 2) {
     p("What has to hold for that conclusion to follow?");
@@ -6608,7 +7467,13 @@ function guideShow(){
     btn("Add another", false, guideImputation);
     btn("Finish", true, function(){ GUIDE.step = 5; guideShow(); });
   } else if (GUIDE.step === 5) {
-    p("One thing was done for you at the start: the top of the Argdown carries a reconstruction: block — a declaration of which reading yours tries to be. Now that you have made some readings, it is worth a look; “How to use” explains each line.");
+    p("One thing was done for you at the start: the lines at the top of the Argdown say what kind of reading yours aims to be. Now that you have made some readings, they are worth a look — How to use ▸ What a map says about itself explains each one.");
+    var gl = document.createElement("button");
+    gl.type = "button"; gl.className = "helplink";
+    gl.dataset.help = "What a map says about itself";
+    gl.textContent = "Open that page";
+    b.lastChild.appendChild(document.createTextNode(" "));
+    b.lastChild.appendChild(gl);
     p("Your file saves as one .argdown carrying the text inside it — hand the whole thing to anyone.");
     // The hand-off is STUDY MODE (ruled 14 Sep): the builder becomes the map's first
     // reader, predicting their own argument back before each unfold — retrieval on the
@@ -6723,7 +7588,13 @@ function explDraw(){
 
   foot.textContent = (steps.length === 1 ? "One step, with every line in full"
                                          : steps.length + " steps") +
-    ". Click any claim to show it on the map. Esc closes.";
+    ". Click any claim to show it on the map. Esc closes. ";
+  var how = document.createElement("button");
+  how.type = "button";
+  how.className = "helplink";
+  how.dataset.help = "Following a long argument";
+  how.textContent = "How to read this";
+  foot.appendChild(how);
   $("xmstair").className = EXPL_MODE === "stair" ? "on" : "";
   $("xmcompact").className = EXPL_MODE === "compact" ? "on" : "";
 }
@@ -6756,16 +7627,14 @@ function ctxShow(n, ev){
   b.disabled = !msAvailable() || !(n.pos && n.pos.chapter);
   // A DISABLED CONTROL EARNS ITS PIXELS BY SAYING WHY (the tab policy, 3 Sep): the three
   // reasons are different remedies, and only one of them is the reader's to fix.
-  if (b.disabled) {
-    var citesAny = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [])
-                     .some(function(x){ return x.chapter; });
-    b.title = !citesAny
-      ? "This map reads no text, so there is no source to go to."
-      : !msAvailable()
-        ? "The claims cite a manuscript this viewer has no copy of. Drop the folder rather " +
-          "than the file, and the source appears."
-        : "This claim cites no file.";
-  }
+  // ONE SENTENCE, SAID TWICE: as the hover and as the visible line at the foot of the menu. They
+  // used to disagree -- the hover knew a map with no text from a map missing one, and the line
+  // below told both to go and find the folder (sweep D, 27 Sep 2026).
+  var why = !b.disabled ? ""
+          : !mapCitesText() ? "This map reads no text, so there is no passage to go to."
+          : !msAvailable() ? "The text this map cites is not open. " + textMissingRemedy()
+          : "This claim cites no passage, so there is nothing to go to.";
+  if (b.disabled) b.title = why;
   b.onclick = function(){ ctxHide(); msLocate(n); };
   m.appendChild(b);
 
@@ -6795,8 +7664,7 @@ function ctxShow(n, ev){
       del.textContent = "Delete comment";
       del.onclick = function(){
         ctxHide();
-        if (confirm("Delete the comment on “" + n.label + "”? This cannot be undone from here."))
-          applyComment(n.label, null);
+        if (confirmDeleteComment(n.label)) applyComment(n.label, null);
       };
       m.appendChild(del);
     }
@@ -6807,8 +7675,15 @@ function ctxShow(n, ev){
   var kb = document.createElement("button");
   kb.type = "button";
   kb.textContent = "Show the key";
+  // AND WHAT THE MARKS MEAN, for the reader who can only ask by pointing (plan 5.2): the one
+  // page that draws every mark on the screen, each with a line and a link onward.
+  var wm = document.createElement("button");
+  wm.type = "button";
+  wm.textContent = "What does this mean?";
+  wm.onclick = function(){ ctxHide(); openHelpTopic("What's on the screen?"); };
   kb.onclick = function(){ ctxHide(); openKeyCard(); };
   m.appendChild(kb);
+  m.appendChild(wm);
 
   // EXPORT, from the same menu. The button lives in the Notes pane's header, and the Notes tab
   // hides on a map with no marks — so in a browser tab such a map had no visible door to Export
@@ -6831,12 +7706,10 @@ function ctxShow(n, ev){
   }
 
   if (b.disabled) {
-    var why = document.createElement("div");
-    why.className = "why";
-    why.textContent = !msAvailable()
-      ? "This viewer has no copy of the manuscript. Drop the folder rather than the file."
-      : "This claim cites no file, so there is nothing to go to.";
-    m.appendChild(why);
+    var whyEl = document.createElement("div");
+    whyEl.className = "why";
+    whyEl.textContent = why;
+    m.appendChild(whyEl);
   }
 
   ctxPlace(ev.clientX, ev.clientY);
@@ -7145,7 +8018,7 @@ function loadDropped(items, prefer){
   var picks = items.filter(function(it){ return /\.(argdown|ad)$/i.test(it.path); });
   if (!picks.length) {
     showErr("No .argdown file in what you dropped.\n\nDrop the .argdown itself, or the folder " +
-            "holding it — a folder also gives the by-position view its manuscript.");
+            "holding it — a folder also brings the text, which Exposition needs.");
     return;
   }
   // The shallowest .argdown wins: a folder with one map at the top and fixtures in a subfolder
@@ -7185,7 +8058,8 @@ function loadDropped(items, prefer){
     var graph;
     try { graph = window.__ARGDOWN_PARSE__(text); }
     catch (e) {
-      showErr("Argdown could not parse " + pick.file.name + ":\n\n" + (e && e.message || e));
+      showErr("Argdown could not parse " + pick.file.name + ":\n\n" + (e && e.message || e),
+              { help: "Writing Argdown" });
       return null;
     }
     return Promise.all(wanted.map(function(it){
@@ -7224,7 +8098,7 @@ function loadDropped(items, prefer){
       if (bnd && bnd.truncated)
         showErr("The attached text in \u201c" + pick.file.name + "\u201d has no end marker, so " +
                 "it was cut short somewhere — most likely by whatever the file travelled " +
-                "through. The reconstruction is intact and what arrived of the essay is shown, " +
+                "through. The reconstruction is intact and what arrived of the text is shown, " +
                 "but the last of it may be missing.");
     });
   }).catch(function(e){ showErr("Could not read the files: " + (e && e.message || e)); });
@@ -7319,7 +8193,7 @@ async function hostOpenPaths(paths){
   for (var i = 0; i < paths.length && !target; i++)
     if (/\.(argdown|ad)$/i.test(paths[i])) target = paths[i];
   if (!target) return;
-  if (!confirmDiscard("Open " + HOST.basename(target))) return;
+  if (!confirmDiscard("Opening " + HOST.basename(target))) return;
   var dir = HOST.dirname(target);
   try { await hostLoadDir(dir, HOST.basename(target)); }
   catch (e) { showErr("Could not open " + HOST.basename(target) + ": " + (e && e.message || e)); }
@@ -7539,10 +8413,10 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     if (!PANES.argdown) setPane("argdown", true);
   } : null;
   newReconstruction = canEdit ? function(){
-    startFromSkeleton("Start a new reconstruction", window.__STARTER_ARGDOWN__);
+    startFromSkeleton("Starting a new reconstruction", window.__STARTER_ARGDOWN__);
   } : null;
   newDebateMap = canEdit ? function(){
-    startFromSkeleton("Start a new debate map", window.__DEBATE_ARGDOWN__);
+    startFromSkeleton("Starting a new debate map", window.__DEBATE_ARGDOWN__);
   } : null;
   $("picknew").hidden = !newReconstruction;
   if (newReconstruction) $("picknew").onclick = newReconstruction;
@@ -7604,9 +8478,12 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
       loadDropped(list);
     } catch (e) {
       if (e && e.name === "AbortError") return;
-      showErr("Could not open that folder: " + (e && e.message || e) +
-              "\n\nUse ‘choose a folder’ instead — it can read the folder, but Save will offer " +
-              "a download rather than writing the file back.");
+      // NOT BACK TO THE BUTTON THAT JUST FAILED. This said "use 'choose a folder' instead",
+      // which is the button the reader had pressed (sweep D, 27 Sep 2026). Dropping the folder
+      // is the route that needs no permission at all.
+      showErr("Ipsissima could not open that folder (" + (e && e.message || e) + ").\n\n" +
+              "Try again, or drop the folder onto the page: it opens that way too, and Save " +
+              "then offers a download rather than writing in place.");
     }
   };
 
@@ -7638,7 +8515,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
    * route stays available from the File menu for the case where there is no .argdown to point at
    * yet. The panel is still the cold-start screen, and still what a drag lands on. */
   $("openbtn").onclick = async function(){
-    if (!confirmDiscard("Open another reconstruction")) return;
+    if (!confirmDiscard("Opening another reconstruction")) return;
     if (HOST) {
       var f = await HOST.pickFile();
       if (f) await hostOpenPaths([f]);
@@ -7664,9 +8541,9 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     };
     $("pickdir").onclick = async function(){
       var d = await HOST.pickDirectory();
-      if (d && confirmDiscard("Open that folder")) await hostLoadDir(d, null);
+      if (d && confirmDiscard("Opening that folder")) await hostLoadDir(d, null);
     };
-    $("pick").title = "Opens the file and reads its folder for the manuscript.";
+    $("pick").title = "Opens the file and reads its folder for the text.";
     $("pickdir").title = "Opens the folder read-write — Save writes the .argdown back in place.";
   } else {
     $("pick").onclick = pickFile;
@@ -7689,7 +8566,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     // A DROP REPLACES WHAT IS OPEN, exactly as the Open button does, so it asks the same
     // question. Easy to miss when guarding only the button: this is the route most people
     // actually use, and it is the one where the gesture can be accidental.
-    if (!confirmDiscard("Open the dropped reconstruction")) {
+    if (!confirmDiscard("Opening the dropped reconstruction")) {
       $("drop").classList.remove("show");
       return;
     }
@@ -7781,12 +8658,10 @@ if (HOST) {
                            }
                            var ks = Object.keys(keys);
                            if (!ks.length) {
-                             showErr("No cited source declares a zotero: key in its front " +
-                                     "matter, so the Zotero item cannot be identified. A " +
-                                     "source converted from a PDF in Zotero's storage " +
-                                     "carries the key automatically; for one converted " +
-                                     "from elsewhere, add zotero: \"KEY\" (the attachment " +
-                                     "key) to the source's front matter.");
+                             showErr("Ipsissima can't tell which Zotero item this text came " +
+                                     "from. A text converted from a PDF in Zotero records it " +
+                                     "automatically; for any other, see How to use ▸ Storing " +
+                                     "the reconstruction in Zotero.");
                              return;
                            }
                            if (ks.length > 1) {
@@ -7806,7 +8681,9 @@ if (HOST) {
                              showNote(await HOST.zoteroStoreBundle(ks[0], zname, zbundle),
                                       12000);
                            } catch (e) {
-                             showErr(String(e && e.message || e));
+                             showErr("Couldn't store the reconstruction in Zotero. " +
+                                     String(e && e.message || e),
+                                     { help: "Storing the reconstruction in Zotero" });
                            }
                          },
       /* THE ONLY MENU ITEM THAT IS NOT A SECOND DOORBELL FOR A BUTTON, because there is no
@@ -7867,7 +8744,7 @@ if (HOST) {
                          },
       "open":            function(){ $("openbtn").click(); },
       "open-folder":     async function(){
-                           if (!confirmDiscard("Open that folder")) return;
+                           if (!confirmDiscard("Opening that folder")) return;
                            var d = await HOST.pickDirectory();
                            if (d) await hostLoadDir(d, null);
                          },
@@ -7886,12 +8763,26 @@ if (HOST) {
       "redo":            function(){ if (ED) ED.redo(); },
       "find":            function(){ if (ED) ED.openSearch(); },
       "view-reasons":    function(){ setArrangement("reasons"); },
-      "view-exposition": function(){ if (!$("textbtn").disabled) setArrangement("exposition"); },
+      // Unavailable arrangements say why, as the Export item does (sweep D, 27 Sep 2026).
+      "view-exposition": function(){
+                           if ($("textbtn").hidden || $("textbtn").disabled)
+                             return showNote(LIVE ? $("textbtn").title || "This map cannot be " +
+                                               "laid out in the order of its text."
+                                                  : "No map is open.", 10000);
+                           setArrangement("exposition");
+                         },
+      "view-mechanism":  function(){
+                           if ($("mechbtn").hidden)
+                             return showNote(LIVE ? "This map declares no causal chain, so " +
+                                               "there is no Mechanism to show."
+                                                  : "No map is open.", 10000);
+                           setArrangement("mechanism");
+                         },
       "pane-map":        function(){ pane("map"); },
       "pane-argdown":    function(){ pane("argdown"); },
       "pane-notes":      function(){ pane("notes"); },
       "pane-text":       function(){ pane("text"); },
-      "fit":             function(){ if (LIVE) LIVE.fit(); },
+      "fit":             fitView,
       "layout":          function(){ $("laybtn").click(); },
       // The application's only door to a comparison — see cmpSyncHeader for why the
       // Manuscript's header carries none here.
@@ -7899,9 +8790,10 @@ if (HOST) {
     }[id] || function(){})();
   });
   // The drop panel's wording is written for a browser; in the app the folder caveat is gone.
-  var dropNote = $("drop").querySelector("p:nth-of-type(2)");
-  if (dropNote) dropNote.textContent = "Opening a file reads the folder around it, so the " +
-    "manuscript comes too. Nothing leaves this machine.";
+  // Addressed by id: the panel's paragraphs were counted (`p:nth-of-type(2)`) until the doors
+  // moved into two rows of their own, when the count would have written over the second row.
+  $("dropnote").textContent = "Opening a file reads the folder round it, so the text comes " +
+    "with the map. Nothing leaves this machine.";
 }
 
 /* ---- baked mode: a graph was compiled into this page at build time ---- */
@@ -7921,9 +8813,10 @@ if (window.__ARGDOWN_PAYLOAD__){
   render(p.name, p.source, p.graph);
 } else if (typeof window.__ARGDOWN_PARSE__ === "function"){
   $("drop").classList.add("show");
+  syncOpenChrome();
 } else {
-  showErr("This page was built without a graph and without a parser. Rebuild it with\n" +
-          "build_argdown_viewer.mjs.");
+  showErr("This copy of the page was built with neither a map nor the parser in it, so there " +
+          "is nothing it can show. It needs building again from the Ipsissima repository.");
 }
 })();
 </script>

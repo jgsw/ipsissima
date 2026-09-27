@@ -603,7 +603,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(await page.locator(".amech-banner").isHidden(), "and no banner is shown");
     const before = await textBoxes();
 
-    await page.locator(".amech-tog.appr input").click();
+    await page.locator(".amech-tog.appr").click();
     await page.waitForTimeout(150);
     check(await drawnAppraisal() > 0 && await page.locator(".amech-banner").isVisible(),
           "switched on, the appraisal is drawn under a standing banner");
@@ -636,7 +636,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(150);
     check(/appraisal on this step/i.test(await page.locator(".amech-side").innerText()),
           "on, the panel names the appraisal of the step");
-    await page.locator(".amech-tog.appr input").click();
+    await page.locator(".amech-tog.appr").click();
     await page.waitForTimeout(150);
     // Mutation: drop the `layers.appraisal ?` guard before appraisalNotes -> fails.
     const sideOff = await page.locator(".amech-side").innerText();
@@ -712,7 +712,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(await page.locator('#mech .st[data-state="work"]').count() === 1 && await nEdges() === all, "and Unfold all restores the whole chain");
     await page.locator("#mech [data-foldall]").click();
     await page.waitForTimeout(250);
-    check(await page.locator("#mech [data-foldall]").innerText() === "Show the whole chain" &&
+    check(await page.locator("#mech [data-foldall]").innerText() === "Unfold the chain" &&
           await page.evaluate(() => document.querySelectorAll("#mech svg g[data-route]").length) > 0,
           "Intervention → outcomes folds every state between, and offers the whole chain back");
     await page.locator("#mech [data-foldall]").click();
@@ -795,7 +795,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(400);
     const gap = await page.evaluate(() => {
-      const q = document.querySelector("#mech .amech-q"), b = document.querySelector("#absbtn");
+      // The whole strip, not just the Abstract button: the strip also carries the map's
+      // declarations about itself now (27 Sep 2026), and the question must clear all of it.
+      const q = document.querySelector("#mech .amech-q"), b = document.querySelector("#orient");
       return b && q && b.offsetParent ? q.getBoundingClientRect().left - b.getBoundingClientRect().right : null; });
     check(gap !== null && gap >= 0, "the Abstract fold leaves the question uncovered", String(gap));
 

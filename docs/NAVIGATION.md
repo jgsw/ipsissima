@@ -4,7 +4,7 @@
 opens with this audit): when does a gesture on a claim in one pane centre that claim in the
 other open panes, and when may it open a pane that is closed? First the behaviour as found,
 then the audit against the values framework, then what moved. The reader-facing half of this
-document is in `app/help.md` under "The claim and its source"; this file is the record and
+document is in `app/help.md` under "Seeing where a claim comes from"; this file is the record and
 the full table.
 
 ## The doctrine

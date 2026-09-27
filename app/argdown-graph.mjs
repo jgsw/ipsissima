@@ -963,6 +963,11 @@ export function toGraph(res) {
            // `causes:` step, so a chain read off the drawn nodes silently lost it (found on the
            // notation spike). Null for the great majority of maps, which declare no chain.
            mechanism: mechanismOf(res, titleToId),
+           // THE MAP'S OWN NAME, from its front matter, for the page's title bar. The header
+           // showed the file name and nothing anywhere showed the title the reconstructor wrote
+           // (clarity audit, 27 Sep 2026; ruled D2). Null when the file declares none.
+           mapTitle: (res.frontMatter && typeof res.frontMatter.title === "string" &&
+                      res.frontMatter.title.trim()) || null,
            // The map's own declaration about the TEXT it reads (front matter
            // `text-provenance:`), carried to the page so the reader meets it beside the
            // title. `generated` is the documented value; any other declared value travels

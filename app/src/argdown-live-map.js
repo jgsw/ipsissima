@@ -465,6 +465,11 @@ function filterOnce(graph, state, force) {
     || (load.get(n.id) || 0) >= S.spine
     || ix.isContention(n.id);                   // a contention is always spine
   const passes  = new Set(ix.nodes.filter(n => facetOk(n) && spineOk(n)).map(n => n.id));
+  // HOW MANY THE SWITCHES ARE HIDING, for the bar to say (docs/MESSAGES.md rule 12). Filters
+  // took claims off the map while the footer went on counting them all, and with the bar folded
+  // nothing on screen said a filter was on. The appraisal is not counted: it answers to its own
+  // switch and its own banner.
+  const filteredOut = ix.nodes.filter(n => !isAppraisal(n) && !passes.has(n.id)).length;
   const kids    = id => (ix.childrenOf.get(id) || []).filter(c => passes.has(c));
 
   // Which sections enclose each node, so "is this reason inside the section I folded" is a
@@ -1079,7 +1084,7 @@ function filterOnce(graph, state, force) {
   const bandsInUse = new Set(ix.nodes.filter(n => S.appraisal || !isAppraisal(n))
     .map(textLane).filter(l => l !== "gutter"));
   return { nodes: outNodes, edges: outEdges, groups: outGroups, rescues,
-           words: graph.words || null, chapterOfIndex, bandsInUse };
+           words: graph.words || null, chapterOfIndex, bandsInUse, filteredOut };
 }
 
 /** The nearest enclosing group that is still drawn as a cluster (not folded into a node). */
@@ -3509,7 +3514,24 @@ const DEFAULTS = {
   // Opening a fold reveals ONE level, not the whole subtree beneath it. A section holding 34
   // claims dumped out at once is unreadable, and the reader has lost the structure they clicked
   // in order to see. Set false for the old reveal-everything behaviour.
-  stepwiseExpand: true
+  stepwiseExpand: true,
+  // The height, in screen pixels, of whatever the host floats over the map's top edge -- the
+  // page's orientation strip (the abstract, and the map's declarations about itself). Framing
+  // keeps clear of it as it keeps clear of the control bar below. A function, because the
+  // strip changes with the file; null for none.
+  topInset: null,
+  // The same on the right: the width of whatever the host keeps open over the map's right edge
+  // -- the page's key and study cards. A function returning pixels; null for none.
+  rightInset: null,
+  // The smallest zoom at which a claim's words can be read. Given it, a map still as it opened
+  // -- nothing folded, moved or switched by the reader yet -- that would fit only below it comes
+  // down a rung of "how much" instead, until it fits or reaches the main claims alone. See
+  // `lowerRungToRead`. null leaves the rung where the host put it.
+  readableScale: null,
+  // Whether the host has a How to use to point into. Given it, what the map says at length --
+  // the appraisal's banner -- carries a link (`data-help`) the host answers. Off by default,
+  // because a map drawn in a slide or an export has no help to open.
+  helpLinks: false
 };
 
 function createLiveMap(container, graph, options) {
@@ -3594,6 +3616,13 @@ function createLiveMap(container, graph, options) {
   // node instead of appearing to start at it.
   const gUnder = el("g", { class: "alm-layer-under" });
   viewport.append(gGroups, gCards, gHulls, gEdges, gEchoes, gNodes, gUnder);
+  // THE APPRAISAL'S HATCHING, the pattern Mechanism draws it with, so the reconstructor's own
+  // additions look one way in every arrangement.
+  const hatch = el("pattern", { id: "alm-hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse",
+                                patternTransform: "rotate(45)" });
+  hatch.append(el("rect", { class: "alm-hatch-bg", width: 6, height: 6 }),
+               el("line", { class: "alm-hatch-line", x1: 0, y1: 0, x2: 0, y2: 6 }));
+  defs.appendChild(hatch);
   svg.append(defs, viewport, gMeasure);
   container.appendChild(svg);
 
@@ -3629,7 +3658,7 @@ function createLiveMap(container, graph, options) {
     barChip = document.createElement("button");
     barChip.className = "alm-barchip";
     barChip.title = "Show the map's controls";
-    barChip.innerHTML = "⌃ <b>controls</b>";
+    barChip.innerHTML = "⌃ <b>controls</b><span class=\"alm-chiphid\"></span>";
     barChip.hidden = true;
     barChip.addEventListener("click", () => setBarFolded(false, true));
     container.appendChild(barChip);
@@ -3638,6 +3667,10 @@ function createLiveMap(container, graph, options) {
 
   const view = { x: 0, y: 0, k: 1 };
   let userMoved = false;   // has the reader taken the camera? see render()
+  // Is the map still as it opened, untouched by the reader? Only then may the framing choose the
+  // rung (see `lowerRungToRead`); after the reader's first act the rung is theirs.
+  let opening = opt.readableScale != null;
+  const readerActed = () => { opening = false; };
   // Has the map ever been framed against a container that actually had a size? See `fitTo` and
   // the size watcher near the end of this file.
   let framedForReal = false;
@@ -3877,9 +3910,7 @@ function createLiveMap(container, graph, options) {
     // measures it — clientWidth/Height less the floating toolbar — so the layout is aiming at
     // the box it will actually land in rather than at a constant.
     const paneAspect = (() => {
-      const cw = container.clientWidth || 800;
-      const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
-      const ch = Math.max(80, (container.clientHeight || 500) - bar);
+      const { cw, ch } = clearBand();
       return cw / ch;
     })();
 
@@ -3891,6 +3922,18 @@ function createLiveMap(container, graph, options) {
                                                   (toolbar ? toolbar.offsetHeight + 14 : 0)) });
     } else {
       g = layoutByArgument(vis, sizes, opt);
+    }
+
+    // A RUNG THAT WILL NOT STAY IS NEVER PAINTED. Asked here, between the layout and the drawing,
+    // because asking after the drawing painted the higher rung first: its boxes were still
+    // leaving when the lower rung's arrived, and the two overlapped on the opening screen.
+    // (The apex only moves a frame that is over the floor; the zoom is all this asks about.)
+    if (opt.fitOnRender && !honourCamera && (fit || !userMoved)) {
+      const gl0 = g.graph();
+      if (lowerRungToRead(gl0.width || 1, gl0.height || 1, null, !!gl0.reading)) {
+        render(true);
+        return;
+      }
     }
 
     // MOTION THAT READS AS MOTION (stability plan, Phase 4). The glide duration was one fixed
@@ -4099,6 +4142,10 @@ function createLiveMap(container, graph, options) {
                 (WARRANT[n.warrant] ? " — " + WARRANT[n.warrant] : ""));
     title.textContent = bits.join("\n\n");
     if (bits.length) box.appendChild(title);
+    // A folded section is a pile: a second outline behind the box (see the CSS on alm-stack).
+    if (n.kind === "group")
+      box.appendChild(el("rect", { class: "alm-stack", x: 4, y: 4, width: s.width, height: s.height,
+                                   rx: 7, ry: 7 }));
     const r = el("rect", { class: "alm-box", width: s.width, height: s.height, rx: 7, ry: 7 });
     if (n.color) r.setAttribute("stroke", n.color);   // adapter may colour per node
     box.appendChild(r);
@@ -4159,9 +4206,9 @@ function createLiveMap(container, graph, options) {
                : v === "invalid" ? "\n\nChecked: the conclusion does NOT follow, on the formalizations given."
                : v === "unformalized" ? "\n\nNot checked: the lines of this step carry no "
                                         + "`formalization:`, so the claim is unexamined."
-               : v === "stale" ? "\n\nNOT checked: a claim of this step has been edited since it "
-                                 + "was formalized, so the formulas may no longer say what the "
-                                 + "claims say. Re-read them, then run `--stamp`."
+               : v === "stale" ? "\n\nNot checked: a claim in this step has changed since its "
+                                 + "formulas were written, so they may no longer say what the "
+                                 + "claims say. Re-read them before trusting this step."
                : "");
             rt.appendChild(rtip);
             box.appendChild(rt);
@@ -4384,12 +4431,14 @@ function createLiveMap(container, graph, options) {
       badge.append(el("circle", { class: "alm-toggle-hit", cx: s.width / 2, cy, r: 9 }),
                    el("circle", { cx: s.width / 2, cy, r: 9 }), t);
       const one = n.hidden === 1;
-      const what = n.kind === "group" ? (one ? "claim in this group" : "claims in this group")
+      // "SECTION", AS EVERY OTHER SURFACE SAYS: the bar, the menu, the walkthrough and the help
+      // all call this a section; "group" is the parser's word (sweep C, 27 Sep 2026).
+      const what = n.kind === "group" ? (one ? "claim in this section" : "claims in this section")
                                       : (one ? "reason for or against this"
                                              : "reasons for and against this");
       const tip = el("title");
       tip.textContent = hidden ? `Show ${n.hidden} ${what}`
-                               : `Hide the ${n.kind === "group" ? "claims in this group"
+                               : `Hide the ${n.kind === "group" ? "claims in this section"
                                                                 : "reasons for and against this"}`;
       badge.appendChild(tip);
       badge.classList.add(hidden ? "is-closed" : "is-open");
@@ -5593,15 +5642,54 @@ function createLiveMap(container, graph, options) {
     return true;
   }
 
+  /** The box framing may use, and where it starts: the pane less the control bar floating
+   *  over its bottom, whatever the host floats over its top (`opt.topInset`) and whatever it
+   *  keeps open on its right (`opt.rightInset`). Every framing asks here, so no framing forgets
+   *  one of them. The top was added 27 Sep 2026, when the page's orientation strip grew to carry
+   *  the map's declarations and, on a map fitted by its apex, sat over the first band's fold
+   *  control. The right followed the same day: a large map opened with its main claim's
+   *  section unfolded is wide, and the key card, which offers itself on that same first
+   *  opening, sat over two or three of its sections. */
+  function clearBand() {
+    const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
+    const top = typeof opt.topInset === "function" ? Math.max(0, +opt.topInset() || 0) : 0;
+    const right = typeof opt.rightInset === "function" ? Math.max(0, +opt.rightInset() || 0) : 0;
+    return { top, ch: Math.max(80, (container.clientHeight || 500) - bar - top),
+             cw: Math.max(200, (container.clientWidth || 800) - right) };
+  }
+
+  /** WOULD THIS FIT ONLY BELOW THE READABLE ZOOM, on a map still as it opened? Then it comes
+   *  down a rung of "how much" first, and the caller draws again.
+   *
+   *  WHY. A large map opens with its main claim's section unfolded (the host's choice, D11),
+   *  and on some samples that section is ten reasons wide: Bates fitted at the 0.5 floor, where a
+   *  claim's words are five pixels high. Measured on the ten samples at 1440 x 900 (27 Sep
+   *  2026), the rung below always fitted readably -- Bates at the main claims alone, 1.22;
+   *  Akhlaghi at "+ reasons", 0.67; Carroll and Darwin at "+ reasons" too -- and the ladder in
+   *  the bar then says which rung the map is on, so the reader can take the next one knowing
+   *  what it costs. Only while the map is as it opened: once the reader has folded, moved or
+   *  switched anything, the rung is theirs, and a pane opening beside it does not take it back.
+   *  Never in the text's order, whose rungs mean something else, and never on a reading column,
+   *  which is scrolled rather than fitted. Returns whether it lowered the rung. */
+  function lowerRungToRead(w, h, apex, reading) {
+    if (!opening || reading || expo || !opt.readableScale) return false;
+    const { ch, cw } = clearBand();
+    if (frameFor(w, h, cw, ch, opt.minScale, apex).k >= opt.readableScale) return false;
+    const cur = state.depth == null ? maxDepth(graph) : state.depth;
+    const next = Math.min(cur - 1, 2);
+    if (next < 0) return false;
+    state.depth = next;
+    return true;
+  }
+
   function fitTo(w, h, apex, reading, paged) {
     // clientWidth/Height, not getBoundingClientRect: the rect is measured AFTER any CSS
     // transform, and reveal.js scales the whole slide to the window. Fitting to the scaled
     // numbers leaves the map a fraction of its proper size on a slide.
-    const cw = container.clientWidth || 800;
     // The toolbar floats over the bottom of the map, so fit into what is left above it or the
-    // lowest row of nodes ends up hidden behind the buttons.
-    const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
-    const ch = Math.max(80, (container.clientHeight || 500) - bar);
+    // lowest row of nodes ends up hidden behind the buttons -- and the host's strip floats over
+    // the top and its cards over the right, so the same goes there (see clearBand).
+    const { ch, top, cw } = clearBand();
     // Was that a real measurement, or the fallback? The distinction is what lets the observer
     // below know whether this framing is worth keeping.
     if (container.clientWidth > 40 && container.clientHeight > 120) framedForReal = true;
@@ -5619,7 +5707,7 @@ function createLiveMap(container, graph, options) {
       ? { k: Math.max(opt.minScale, Math.min(cw / (w + 32), 1)), x: 0, y: 16 }
       : frameFor(w, h, cw, ch, opt.minScale, apex);
     if (reading && !paged) f.x = Math.max(16, (cw - w * f.k) / 2);
-    view.k = f.k; view.x = f.x; view.y = f.y;
+    view.k = f.k; view.x = f.x; view.y = f.y + top;
     glide();                      // rather than cutting to the new frame
     userMoved = false;
     applyView();
@@ -5677,13 +5765,11 @@ function createLiveMap(container, graph, options) {
     if (opts.topOnly) y1 = Math.min(y1, y0 + opts.topOnly);
     const pad = opts.pad == null ? 40 : opts.pad;
     x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
-    const cw = container.clientWidth || 800;
-    const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
-    const ch = Math.max(80, (container.clientHeight || 500) - bar);
+    const { ch, top, cw } = clearBand();
     const f = frameFor(x1 - x0, y1 - y0, cw, ch, opt.minScale);
     view.k = f.k;
     view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
-    view.y = ch / 2 - ((y0 + y1) / 2) * view.k;
+    view.y = top + ch / 2 - ((y0 + y1) / 2) * view.k;
     // The walkthrough asked for this camera; a fold performed as part of the tour must not
     // re-frame it away underneath. Same reasoning as `centreOn`.
     userMoved = true;
@@ -5716,7 +5802,7 @@ function createLiveMap(container, graph, options) {
       const k = Math.max(0.15, Math.min(4, view.k * f));
       view.x = mx - (mx - view.x) * (k / view.k);
       view.y = my - (my - view.y) * (k / view.k);
-      view.k = k; userMoved = true; viewport.style.transition = ""; applyView();
+      view.k = k; userMoved = true; readerActed(); viewport.style.transition = ""; applyView();
     }, { passive: false });
     svg.addEventListener("pointerdown", ev => {
       // A SECTION'S BACKGROUND IS CANVAS. `.alm-g` was in this list, so a pointerdown anywhere
@@ -5740,7 +5826,7 @@ function createLiveMap(container, graph, options) {
       ev.preventDefault();
       dragging = true; sx = ev.clientX - view.x; sy = ev.clientY - view.y;
       down = { x: ev.clientX, y: ev.clientY };
-      userMoved = true; viewport.style.transition = "";
+      userMoved = true; readerActed(); viewport.style.transition = "";
       svg.setPointerCapture(ev.pointerId); svg.classList.add("is-panning");
     });
     svg.addEventListener("pointermove", ev => {
@@ -5785,7 +5871,7 @@ function createLiveMap(container, graph, options) {
         dragging = false; down = null; svg.classList.remove("is-panning");
         const m = midAndDist();
         pinch = { d: Math.max(m.d, 1), mx: m.mx, my: m.my, x: view.x, y: view.y, k: view.k };
-        userMoved = true; viewport.style.transition = "";
+        userMoved = true; readerActed(); viewport.style.transition = "";
       }
     });
     container.addEventListener("pointermove", ev => {
@@ -5840,29 +5926,42 @@ function createLiveMap(container, graph, options) {
     // out from the contention, how much of each claim's own words, and whether the sections are
     // shut. They belong together and in that order. "kinds" is a different question entirely
     // (which claims, not how much) and so goes last.
+    // BUTTON LABELS IN SENTENCE CASE, as the title bar's are (docs/MESSAGES.md rule 5; clarity
+    // audit, 27 Sep 2026). The group labels are small capitals by CSS; the rung readout beside
+    // the slider is a status, and stays lower case.
     bar.innerHTML =
+      // STUDY FIRST, AND A PILL (ruled D17, D8; clarity audit 27 Sep 2026). It was the last thing
+      // on the bar, after the hashtags, and drawn like them, so it read as one more tag. It is a
+      // mode that works the fold badges, which "how much" beside it governs; an independent
+      // switch, so drawn as a pill, lit while the mode runs.
+      (opt.onStudy ? '<span class="alm-grp" data-role="study">' +
+        '<button data-act="study" title="Study this map: say what you think holds each ' +
+        'claim up before unfolding it">Study</button></span>' : "") +
       (parts.depth ? '<span class="alm-grp" data-role="depth"></span>' : "") +
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="claims">' +
         '<b title="How much of each claim\'s own words to show">claims</b>' +
         '<button data-act="text" data-full="0" title="The first few lines, with a “more” link">' +
-        'short</button>' +
-        '<button data-act="text" data-full="1" title="Every claim in full">full</button>' +
+        'Short</button>' +
+        '<button data-act="text" data-full="1" title="Every claim\u2019s whole text">Full</button>' +
         '</span>' : "") +
       // Offered in Exposition only, where there is a text order to lay out two ways.
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="layout" hidden>' +
-        '<b title="How the text\'s order is laid out">layout</b>' +
+        // "FLOW", NOT "LAYOUT": the title bar's Layout menu arranges the panes, and one word
+        // for two controls is two controls the reader has to tell apart by position (ruled
+        // D6, 27 Sep 2026). The role keeps its old name: ids are addresses, labels are promises.
+        '<b title="How the text\'s order flows: side by side like prose, or down one column">flow</b>' +
         '<button data-act="layout" data-col="0" title="Each paragraph a card, its claims top to ' +
         'bottom; the cards side by side in the order of the text, wrapping like lines of ' +
-        'prose">rows</button>' +
-        '<button data-act="layout" data-col="1" title="One claim to a row, top to bottom as the ' +
-        'text runs, with the relations as arcs in the margins: on the left, reasons already ' +
-        'given; on the right, reasons still to come. On a wide pane the column is cut into ' +
-        'pages set side by side: read one down, then the next">column</button>' +
+        'prose">Rows</button>' +
+        '<button data-act="layout" data-col="1" title="One claim to a row, as the text runs; ' +
+        'reasons already given arc on the left, those still to come on the right. A wide pane ' +
+        'cuts it into pages">Column</button>' +
         '</span>' : "") +
-      (parts.actions ? '<span class="alm-grp alm-seg" data-role="shape" hidden>' +
-        '<button data-act="shape" title="The shape of the argument: whether each claim\'s ' +
-        'reasons come before it or after, and how far they reach \u2014 drawn in the ink of the ' +
-        'lines and as a sparkline on each band. Off, the lines are drawn plain.">shape</button>' +
+      // A switch of its own, so a pill rather than a one-button segmented control (ruled D8).
+      (parts.actions ? '<span class="alm-grp" data-role="shape" hidden>' +
+        '<button data-act="shape" title="Where each claim\'s reasons fall \u2014 before it or ' +
+        'after, near or far \u2014 in the lines\' ink and a sparkline on each section. Off until ' +
+        'asked for.">Shape</button>' +
         '</span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +
       // SPINE sits with "kinds" rather than with "how much", because it answers WHICH claims
@@ -5870,24 +5969,22 @@ function createLiveMap(container, graph, options) {
       // claim beside the contention need not be.
       '<span class="alm-grp alm-seg" data-role="spine">' +
         '<b title="Show every claim, or only those the argument rests on">spine</b>' +
-        '<button data-act="spine" data-on="0" title="Every claim">all</button>' +
+        '<button data-act="spine" data-on="0" title="Every claim, whether or not the argument rests on it">All</button>' +
         '<button data-act="spine" data-on="1" ' +
         'title="Only claims that hold something up: remove one and part of the argument ' +
-        'loses its route to a contention">load-bearing</button>' +
+        'loses its route to the main claim">Load-bearing</button>' +
       '</span>' +
       (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "") +
-      // THE APPRAISAL'S OWN SWITCH, drawn unlike every other control: dashed, in the appraisal's
-      // violet, saying in words that what it holds is not in the text and how much of it there
+      // Shown only while a switch is hiding something: see `filteredOut`.
+      '<span class="alm-hid" hidden title="Claims the switches in this bar are keeping off ' +
+      'the map. Switch them back on to see them."></span>' +
+      // THE APPRAISAL'S OWN SWITCH, drawn unlike every other control: in the appraisal's violet, saying in words that what it holds is not in the text and how much of it there
       // is. Offered only where the map has any.
       (parts.facets && appraisalCount() ? '<span class="alm-grp" data-role="appraisal">' +
         '<button class="alm-appr" data-act="appraisal" title="The reconstructor\u2019s own ' +
         'reading of the text against the world \u2014 never a claim the text makes. Off until ' +
-        'asked for.">appraisal <span class="alm-appr-n"></span></button></span>' : "") +
-      // STUDY is a mode, not a filter, so it sits apart from the scales — offered only where
-      // the host wires one in (the viewer does; an export with no host machinery does not).
-      (opt.onStudy ? '<span class="alm-grp alm-seg" data-role="study">' +
-        '<button data-act="study" title="Study this map: say what you think holds each ' +
-        'claim up before unfolding it">study</button></span>' : "") +
+        'asked for.">Appraisal <span class="alm-appr-n"></span></button></span>' : "") +
+      // (STUDY, a mode rather than a filter, now heads the bar -- see its note above.)
       // THE BAR CAN BE PUT AWAY. On a desktop it earns its strip; on a phone the strip is the
       // scarcest thing there is, and a reader who has set the map how they want it is done with
       // these controls. Folded, a small chip remains where the bar was — dismissible AND
@@ -5898,6 +5995,7 @@ function createLiveMap(container, graph, options) {
     // reason a ladder is worth making draggable.
     bar.addEventListener("input", ev => {
       const r = /** @type {any} */ (ev.target).closest("input.alm-range"); if (!r) return;
+      readerActed();
       const rungs = r.parentNode._rungs || [];
       const cur = rungs[+r.value]; if (!cur) return;
       if (cur.key === "chapters") return apply({ type: "byChapter" });
@@ -5905,6 +6003,7 @@ function createLiveMap(container, graph, options) {
     });
     bar.addEventListener("click", ev => {
       const b = /** @type {any} */ (ev.target).closest("button"); if (!b) return;
+      readerActed();
       const act = b.dataset.act;
       if (act === "fold")     return setBarFolded(true, true);
       if (act === "study")    return opt.onStudy && opt.onStudy();
@@ -5938,6 +6037,14 @@ function createLiveMap(container, graph, options) {
   function appraisalCount() { return (graph.nodes || []).filter(isAppraisal).length; }
 
   function syncToolbar(vis, info) {
+    const hid = (vis && vis.filteredOut) || 0;
+    const hidEl = /** @type {HTMLElement|null} */ (toolbar.querySelector(".alm-hid"));
+    if (hidEl) {
+      hidEl.hidden = !hid;
+      hidEl.textContent = hid ? hid + (hid === 1 ? " claim" : " claims") + " hidden by switches" : "";
+    }
+    const chipHid = barChip && barChip.querySelector(".alm-chiphid");
+    if (chipHid) chipHid.textContent = hid ? " \u00b7 " + hid + " hidden" : "";
     const depthBox = /** @type {any} */ (toolbar.querySelector('[data-role="depth"]'));
     if (depthBox) {
       // Rebuilt when the axis changes, because the first rung MEANS something different in each
@@ -6023,12 +6130,26 @@ function createLiveMap(container, graph, options) {
         if (!sectionBox.childElementCount)
           sectionBox.innerHTML =
             '<b title="Whether the sections are folded into blocks">sections</b>' +
-            '<button data-act="sections" data-open="0">folded</button>' +
-            '<button data-act="sections" data-open="1">open</button>';
-        const anyFolded = expo ? state.collapsedLanes.size > 0
-                               : groups.some(id => state.collapsedGroups.has(id));
-        sectionBox.querySelector('[data-open="0"]').classList.toggle("on", anyFolded);
-        sectionBox.querySelector('[data-open="1"]').classList.toggle("on", !anyFolded);
+            '<button data-act="sections" data-open="0" title="Every section shut into one ' +
+            'block">Folded</button>' +
+            '<button data-act="sections" data-open="1" title="Every section opened out">Open</button>';
+        // THREE STATES, NOT TWO. Sections are also folded one at a time, by their own titles,
+        // and a large map now OPENS mixed: its main claim's section open, the rest folded. "Any
+        // folded" lit "Folded" over a map whose argument lay open on the screen, which is the
+        // misreading this switch exists to prevent. So each half lights only when it is true of
+        // every section, neither lights when they differ, and the label says how many are shut
+        // (ruling D15, 27 Sep 2026: kept, because it is the one click that opens or shuts them
+        // all).
+        const nFolded = expo ? groups.filter(l => state.collapsedLanes.has(l)).length
+                             : groups.filter(id => state.collapsedGroups.has(id)).length;
+        const mixed = nFolded > 0 && nFolded < groups.length;
+        sectionBox.querySelector('[data-open="0"]').classList.toggle("on", nFolded === groups.length);
+        sectionBox.querySelector('[data-open="1"]').classList.toggle("on", nFolded === 0);
+        sectionBox.classList.toggle("is-mixed", mixed);
+        /** @type {HTMLElement} */ (sectionBox.querySelector("b")).title = mixed
+          ? nFolded + " of " + groups.length + " sections folded. Folded shuts them all; Open " +
+            "opens them all"
+          : "Whether the sections are folded into blocks";
         /** @type {any} */ (sectionBox.querySelector('[data-open="0"]')).dataset.count =
           String(groups.length);
       }
@@ -6048,12 +6169,14 @@ function createLiveMap(container, graph, options) {
         // it would read as one more tag somebody had written.
         const bare = (graph.nodes || []).filter(n => !n.facet).length;
         fBox.innerHTML = '<b title="Hashtags the file uses. Switch one off to take those claims '
-          + 'off the map. See Help for what #reported, #conceded and #contested mean.">hashtags</b>'
-          + vals.map(v => `<button data-facet="${v}" data-count="${total[v] || 0}">${v}</button>`).join("")
+          + 'off the map. How to use ▸ Whose claim is this? says what the common ones mean.">hashtags</b>'
+          + vals.map(v => `<button data-facet="${v}" data-count="${total[v] || 0}" `
+              + `title="Claims tagged #${v}. Press to take them off the map, and again to bring `
+              + `them back.">${v}</button>`).join("")
           + (bare ? `<button class="alm-bare" data-untagged="1" data-count="${bare}" `
               + `title="Claims carrying no hashtag at all. Switch it off to see only the tagged `
               + `ones — most files tag sparingly, so this is usually the switch that changes the `
-              + `picture.">untagged</button>` : "");
+              + `picture.">Untagged</button>` : "");
       }
       fBox.querySelectorAll("button").forEach(b =>
         b.classList.toggle("on", b.dataset.untagged
@@ -6071,8 +6194,10 @@ function createLiveMap(container, graph, options) {
     if (state.appraisal) {
       const n = appraisalCount();
       apprBanner.innerHTML = "<b>Appraisal on.</b> " + n + " addition" + (n === 1 ? "" : "s") +
-        " by the reconstructor, drawn in violet with a dashed border \u2014 readings of the text against the " +
-        "world, not claims the text makes.";
+        " by the reconstructor, drawn hatched in violet \u2014 readings of the text against the " +
+        "world, not claims the text makes." + (opt.helpLinks
+          ? ' <button type="button" class="alm-helplink" data-help="The reconstructor&#39;s ' +
+            'appraisal">What is this?</button>' : "");
     }
 
     // Both halves are lit or unlit together, like `sections`: a radio pair says which of the two
@@ -6102,7 +6227,7 @@ function createLiveMap(container, graph, options) {
         let n = 0;
         for (const nd of (graph.nodes || []))
           if ((load.get(nd.id) || 0) >= 1) n++;
-        spineBtn.textContent = "load-bearing " + n;
+        spineBtn.textContent = "Load-bearing " + n;
       } catch (e) { /* a graph too odd to measure keeps the plain label */ }
     }
   }
@@ -6133,6 +6258,7 @@ function createLiveMap(container, graph, options) {
   /** Both controls defer to reduceFold, the pure state machine, so what the reader clicks and
    *  what the invariant harness drives are the same code. */
   function apply(action) {
+    readerActed();
     setState(reduceFold(graph, state, action, lastVis, opt));
   }
 
@@ -6145,6 +6271,7 @@ function createLiveMap(container, graph, options) {
 
   /** Whether this node shows its claim in full or clipped to a few lines. */
   function toggleText(id) {
+    readerActed();
     textOpen.has(id) ? textOpen.delete(id) : textOpen.add(id);
     measureCache.clear();
     render(false);
@@ -6190,6 +6317,9 @@ function createLiveMap(container, graph, options) {
     // Switching axis moves every node at once. Re-frame rather than leave the reader looking
     // at whatever happens to be under the old camera position.
     if ("expositionOrder" in patch) {
+      // A change of arrangement is the reader's, even arriving from the host's tabs -- except
+      // the host's own statement of the arrangement it opened on, which changes nothing.
+      if (!!patch.expositionOrder !== expo) readerActed();
       expo = positioned && !!patch.expositionOrder; state.byText = expo; refit = true;
       // A BOOK OPENS FOLDED TO ITS CHAPTERS. Laid out claim by claim it is a ribbon: every band
       // is its own row, so 81 bands make 81 rows however wide the page, and the fitted map is a
@@ -6339,9 +6469,7 @@ function createLiveMap(container, graph, options) {
       y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2);
     }
     if (!found) return false;
-    const cw = container.clientWidth || 800;
-    const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
-    const ch = Math.max(80, (container.clientHeight || 500) - bar);
+    const { ch, top, cw } = clearBand();
     // WOULD THEY ALL FIT? That, not how many there are, is what decides whether moving the
     // camera helps. Two claims side by side are worth framing; six scattered across a book have
     // a midpoint that is nowhere near any of them, and centring on it moves the reader away
@@ -6349,7 +6477,7 @@ function createLiveMap(container, graph, options) {
     if (onlyIfTheyFit &&
         ((x1 - x0) * view.k > cw * 0.9 || (y1 - y0) * view.k > ch * 0.9)) return false;
     view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
-    view.y = ch / 2 - ((y0 + y1) / 2) * view.k;
+    view.y = top + ch / 2 - ((y0 + y1) / 2) * view.k;
     userMoved = true;             // the reader asked for this camera; a fold must not undo it
     glide();
     applyView();
@@ -6419,6 +6547,13 @@ function createLiveMap(container, graph, options) {
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
     fit: () => fitTo(lastFit.w, lastFit.h, null, lastFit.reading, lastFit.paged),
+    // A card has come over the map. Frame again for the room now left -- unless the reader has
+    // taken the camera, whose choice outranks the card.
+    reframe: () => {
+      if (!lastFit || userMoved) return;
+      if (lowerRungToRead(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading)) render(true);
+      else fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading, lastFit.paged);
+    },
     // The host calls this when a pane opens or closes. If the last render was measured blind, the
     // sizes have to be thrown away first — otherwise this redraws the slivers exactly as they are.
     redraw: () => { remeasureIfBlind(); render(true); },
@@ -6455,9 +6590,11 @@ function injectStyle() {
 /* Nodes stay neutral and the RELATIONS carry the colour. Green-bordered boxes next to green
    support arrows read as if every claim were itself a "support", which is the wrong signal. */
 .alm-n .alm-box{fill:var(--alm-node-bg,#fff);stroke:var(--alm-node-line,#5b6472);stroke-width:1.5}
-.alm-n.alm-k-opponent .alm-box{stroke:#cc3b3b}
-.alm-n.alm-k-survey .alm-box{stroke:#9a9a9a;stroke-dasharray:4 3}
-.alm-n.alm-k-survey .alm-title{font-style:italic}
+/* TWO HASHTAGS USED TO RESTYLE THE BOX, and both said something else as well: #opponent drew
+   the border in the attack's red, and #survey in the compression's dash with the imputation's
+   italic title. The hashtag chip says whose claim it is; the border says whose words; the
+   colour says how claims bear on each other -- one meaning per channel (F5, F8(a); clarity
+   audit, 27 Sep 2026). No sample used either. */
 /* A FOLDED SECTION IS MADE OF CLAIMS, so it is drawn like one. It used to be cream on brown
    while everything inside it was white on slate, and testers read the difference as meaning
    something -- then found it meant only "this is a section rather than an argument", which is
@@ -6469,22 +6606,33 @@ function injectStyle() {
    prefers-color-scheme:dark rule that repaints the ordinary box, so a folded section stayed
    cream on a dark map. Inheriting the fill fixes both at once.
    (No back-ticks in this comment -- the stylesheet is a template literal.) */
-.alm-n.alm-k-group .alm-box{stroke-dasharray:4 3}
-/* THE APPRAISAL: the reconstructor's own, drawn unlike anything the text says -- violet, dashed,
-   hatched -- and only while its switch is on. */
-.alm-n.alm-appraisal .alm-box{stroke:#6d5ba3;stroke-dasharray:4 3;
-  fill:var(--alm-appraisal-bg,#f1eefa)}
-.alm-bar .alm-appr{border:1px dashed #6d5ba3 !important;color:inherit}
+/* ...AND A PILE OF CARDS SAYS IT, not a dash (ruled D7, 27 Sep 2026). The dash was the
+   compression dash exactly, so a reader taught the fidelity ladder read every folded section
+   as a paraphrase of something. A second outline, offset behind the box, is the ordinary
+   drawing of "more of these underneath", and no fidelity rung uses it. */
+.alm-n.alm-k-group .alm-box{stroke-dasharray:none}
+.alm-stack{fill:var(--alm-node-bg,#fff);stroke:var(--alm-node-line,#5b6472);stroke-width:1.2;
+  opacity:.75;pointer-events:none}
+/* THE APPRAISAL: the reconstructor's own, drawn unlike anything the text says -- violet and
+   hatched, as in Mechanism -- and only while its switch is on. Not dashed: a dash on a border is
+   a fidelity rung, and this one was the compression's (ruled D7, 27 Sep 2026). */
+.alm-n.alm-appraisal .alm-box{stroke:#6d5ba3;fill:url(#alm-hatch)}
+.alm-hatch-bg{fill:var(--alm-appraisal-bg,#f1eefa)}
+.alm-hatch-line{stroke:#6d5ba3;stroke-width:1;opacity:.35}
+.alm-bar .alm-appr{border:1px solid #6d5ba3 !important;color:inherit}
 .alm-bar .alm-appr.on{background:var(--alm-appraisal-bg,#f1eefa)}
 .alm-bar .alm-appr .alm-appr-n{font-weight:400;opacity:.75}
 .alm-appr-banner{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:3;
   max-width:min(720px,92%);padding:6px 11px;border-radius:7px;font-size:12.5px;
-  background:var(--alm-appraisal-bg,#f1eefa);border:1px dashed #6d5ba3;color:var(--alm-fg,#1a1a1a);
+  background:var(--alm-appraisal-bg,#f1eefa);border:1px solid #6d5ba3;color:var(--alm-fg,#1a1a1a);
   pointer-events:none}
 .alm-appr-banner[hidden]{display:none}
+/* The banner lets a drag through to the map; its link is the one part that takes a press. */
+.alm-appr-banner .alm-helplink{pointer-events:auto}
 @media (prefers-color-scheme:dark){
   .alm-n.alm-appraisal .alm-box,.alm-appr-banner,.alm-bar .alm-appr.on{--alm-appraisal-bg:#2a2638}
   .alm-n.alm-appraisal .alm-box{stroke:#b3a4e6}
+  .alm-hatch-line{stroke:#b3a4e6}
   .alm-appr-banner,.alm-bar .alm-appr{border-color:#b3a4e6 !important}
 }
 /* FIDELITY -- whose words the claim is in. Orthogonal to kind, so it takes the border while
@@ -6497,7 +6645,11 @@ function injectStyle() {
 .alm-n.alm-f-interpretation .alm-box{stroke-dasharray:2 3}
 .alm-n.alm-f-imputation .alm-box{stroke-dasharray:7 2 1.5 2;stroke-width:1.2}
 .alm-n.alm-f-imputation .alm-title{font-style:italic}
-.alm-n.is-collapsed .alm-box{stroke-width:2}
+/* THE BORDER'S WEIGHT IS FIDELITY'S, AND NOTHING ELSE MAY WRITE IT (F5; clarity audit sweep B,
+   27 Sep 2026). A folded claim used to take weight 2 -- so a folded quotation LOST the heavier
+   border that says "these are the author's checked words" -- a hovered box took 2.5, the
+   quotation's own weight, and a lit one 2.4. The fold is said by its badge, the hover and the
+   lit state by a glow round the box: the focus ring's reasoning, applied to every state. */
 .alm-n .alm-title{fill:var(--alm-fg,#1a1a1a)}
 .alm-n .alm-text{fill:var(--alm-fg-dim,#555)}
 /* THE PREMISE-CONCLUSION STRUCTURE inside an argument's box. The numbers are quieter than the
@@ -6520,15 +6672,15 @@ function injectStyle() {
 /* The line number an edge carries, at the argument's end of it and at each junction foot:
    the same numerals as the rows they pair with, in the relation's own ink. */
 .alm-line-no,.alm-join-no{pointer-events:none;font-variant-numeric:tabular-nums;opacity:.9}
-.alm-n:hover .alm-box{stroke-width:2.5}
+.alm-n:hover{filter:drop-shadow(0 0 3px rgba(58,123,213,.35))}
 /* The circle is the one control that says "show / hide what argues for this". A closed one is
    filled and inviting; an open one is quiet, because most of the time you leave it alone. */
 .alm-toggle{cursor:pointer}
-.alm-toggle circle{fill:var(--alm-node-bg,#fff);stroke:#8a8a8a;stroke-width:1.2}
-.alm-toggle text{fill:#444;pointer-events:none;font-weight:600}
-.alm-toggle.is-closed circle{fill:var(--alm-accent,#3a7bd5);stroke:var(--alm-accent,#3a7bd5)}
-.alm-toggle.is-closed text{fill:#fff}
-.alm-toggle:hover circle{stroke:#222;stroke-width:2}
+.alm-toggle circle{fill:var(--alm-node-bg,#fff);stroke:var(--alm-badge-ring,#8a8a8a);stroke-width:1.2}
+.alm-toggle text{fill:var(--alm-badge-ink,#444);pointer-events:none;font-weight:600}
+.alm-toggle.is-closed circle{fill:var(--alm-accent-fill,#2d6cc0);stroke:var(--alm-accent-fill,#2d6cc0)}
+.alm-toggle.is-closed text{fill:var(--alm-on-accent,#fff)}
+.alm-toggle:hover circle{stroke:var(--alm-badge-hover,#222);stroke-width:2}
 /* The badge's reach, in SCREEN pixels rather than graph units -- see paintNode. NO BACKTICKS IN
    THIS BLOCK: it lives inside a template literal and one ends the string.
    It has to beat the three rules above, all of which name .alm-toggle circle, so it names the
@@ -6689,11 +6841,11 @@ function injectStyle() {
 .alm-explode{cursor:pointer}
 .alm-explode rect{fill:var(--alm-node-bg,#fff);stroke:var(--alm-accent,#3a7bd5)}
 .alm-explode text{fill:var(--alm-accent,#3a7bd5);font-weight:600;pointer-events:none}
-.alm-explode:hover rect{fill:var(--alm-accent,#3a7bd5)}
-.alm-explode:hover text{fill:#fff}
+.alm-explode:hover rect{fill:var(--alm-accent-fill,#2d6cc0)}
+.alm-explode:hover text{fill:var(--alm-on-accent,#fff)}
 .alm-verdict{cursor:pointer}
-.alm-verdict circle{fill:var(--alm-accent,#3a7bd5)}
-.alm-verdict text{fill:#fff;font-weight:600;pointer-events:none}
+.alm-verdict circle{fill:var(--alm-accent-fill,#2d6cc0)}
+.alm-verdict text{fill:var(--alm-on-accent,#fff);font-weight:600;pointer-events:none}
 .alm-verdict:hover circle{fill:#2b5fa8}
 /* The countermodel, folded away until the badge is clicked. Monospace, because it is a list of
    assignments and a reader compares them column-wise. */
@@ -6722,11 +6874,11 @@ function injectStyle() {
 .alm-n:focus,.alm-toggle:focus{outline:none}
 .alm-n:focus-visible,.alm-toggle:focus-visible{
   outline:2.5px solid var(--alm-accent,#3a7bd5);outline-offset:3px;border-radius:3px}
-.alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5);stroke-width:2.4}
+.alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5)}
 .alm-n.is-lit{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 /* The box a hovered reference row names. Same voice as is-lit -- both mean "this one, here" --
    kept as its own class so a hover cannot fight the marks the reader has pinned. */
-.alm-n.is-ref-target .alm-box{stroke:var(--alm-accent,#3a7bd5);stroke-width:2.4}
+.alm-n.is-ref-target .alm-box{stroke:var(--alm-accent,#3a7bd5)}
 .alm-n.is-ref-target{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 .alm-glabel{fill:var(--alm-fg-dim,#6b6b6b);pointer-events:none}
 .alm-gwords{fill:var(--alm-fg-dim,#6b6b6b);opacity:.75;pointer-events:none;
@@ -6747,7 +6899,7 @@ function injectStyle() {
 /* The dismissal is smaller and quieter than the offer: it is the second thing a reader wants. */
 .alm-return-x{padding:5px 10px 5px 8px;font-size:13px;line-height:1;opacity:.62;
   border-left:1px solid rgba(58,123,213,.35)}
-.alm-return-go:hover,.alm-return-x:hover{background:var(--alm-accent,#3a7bd5);color:#fff}
+.alm-return-go:hover,.alm-return-x:hover{background:var(--alm-accent-fill,#2d6cc0);color:var(--alm-on-accent,#fff)}
 .alm-return-x:hover{opacity:1}
 .alm-ghit{fill:transparent}
 .alm-gfold{fill:transparent;cursor:pointer}
@@ -6781,7 +6933,7 @@ function injectStyle() {
 /* Bands shut by hand put the ladder off its rungs; the readout says so rather than claiming a
    setting that is not in force. */
 .alm-bar .alm-rung.alm-off em{opacity:.5;font-weight:400}
-.alm-bar .alm-rung.alm-off::after{content:"(bands set by hand)";opacity:.55}
+.alm-bar .alm-rung.alm-off::after{content:"(sections opened by hand)";opacity:.55}
 /* ON A PHONE THE BAR WOULD COVER THE MAP. Wrapping is right on a wide window -- the groups stay
    whole and read as groups -- but at 375px it takes three rows and half the height. Capped to the
    viewport and scrolled sideways instead, which keeps it one row deep however much is in it.
@@ -6825,6 +6977,8 @@ function injectStyle() {
   font-size:9px}
 .alm-barchip:hover{border-color:#888}
 .alm-barchip[hidden]{display:none}
+.alm-bar .alm-hid{color:var(--alm-fg,#1a1a1a);font-style:italic;white-space:nowrap}
+.alm-bar .alm-hid[hidden]{display:none}
 .alm-bar b{font-weight:600;opacity:.6;margin-right:.15rem;text-transform:uppercase;
   letter-spacing:.05em;font-size:9px}
 .alm-bar button{font:inherit;padding:.15rem .45rem;border:1px solid var(--alm-group-line,#ccc);
@@ -6841,7 +6995,8 @@ function injectStyle() {
 /* TWO KINDS OF CONTROL, TOLD APART BY SHAPE.
  *
  *   a SEGMENTED group  — "claims", "sections" — is one setting with two values. Exactly one is
- *                        in force, always; clicking the other moves the setting.
+ *                        in force; clicking the other moves the setting. (Sections can also be
+ *                        folded one by one, and when they differ neither half is lit.)
  *   a group of PILLS   — "kinds" — is a set of independent switches. Any number may be on, and
  *                        turning one off takes those claims off the map.
  *
@@ -6853,11 +7008,14 @@ function injectStyle() {
 .alm-bar .alm-seg b{padding:0 .4rem 0 .45rem}
 .alm-bar .alm-seg button{border:0;border-radius:0;border-left:1px solid var(--alm-group-line,#ccc);
   padding:.15rem .5rem}
-.alm-bar .alm-seg button.on{background:var(--alm-accent,#3a7bd5);color:#fff;box-shadow:none}
+.alm-bar .alm-seg button.on{background:var(--alm-accent-fill,#2d6cc0);color:var(--alm-on-accent,#fff);box-shadow:none}
 .alm-bar .alm-seg button.on[data-count]::after{opacity:.8}
 .alm-bar .alm-seg button:hover:not(.on){background:rgba(0,0,0,.05)}
 /* Set apart from the tags themselves: this one names what the file did NOT say. */
 .alm-bar button.alm-bare{margin-left:.5rem}
+/* A link into the host's How to use (opt.helpLinks), in a sentence the map says at length. */
+.alm-helplink{border:0;background:none;padding:0;font:inherit;color:var(--alm-accent,#3a7bd5);
+  text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 @media (prefers-color-scheme:dark){
   .alm-n .alm-box{fill:var(--alm-node-bg,#23262b)}
   .alm-toggle circle{fill:var(--alm-node-bg,#23262b)}

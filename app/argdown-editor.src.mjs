@@ -89,20 +89,39 @@ const argdownMode = StreamLanguage.define({
   }
 });
 
+/* THE COLOURS COME FROM THE PAGE, SO THEY FOLLOW ITS THEME. Written as literals they had no dark
+ * values, and on the dark theme measured 2.7 to 3.6:1 against the editor's background (clarity
+ * audit sweep B, 27 Sep 2026). The page defines each `--syn-*` twice, once per theme; the
+ * literal after each is only what a host without them falls back to. */
 const argdownHighlight = HighlightStyle.define([
   { tag: t.heading,      color: "var(--accent, #3a7bd5)", fontWeight: "600" },
   { tag: t.comment,      color: "var(--fg-dim, #777)", fontStyle: "italic" },
   { tag: t.meta,         color: "var(--fg-dim, #777)" },
-  { tag: t.variableName, color: "#1d6fa5" },
-  { tag: t.typeName,     color: "#7c3aed" },
-  { tag: t.labelName,    color: "#c2410c" },
-  { tag: t.string,       color: "#0f766e" },
-  { tag: t.number,       color: "#8a6d1f" },
-  { tag: t.keyword,      color: "#15803d", fontWeight: "600" },
-  { tag: t.operator,     color: "#15803d", fontWeight: "700" },
+  { tag: t.variableName, color: "var(--syn-claim, #1d6fa5)" },
+  { tag: t.typeName,     color: "var(--syn-argument, #7c3aed)" },
+  { tag: t.labelName,    color: "var(--syn-tag, #c2410c)" },
+  { tag: t.string,       color: "var(--syn-string, #0f766e)" },
+  { tag: t.number,       color: "var(--syn-number, #8a6d1f)" },
+  { tag: t.keyword,      color: "var(--syn-relation, #15803d)", fontWeight: "600" },
+  { tag: t.operator,     color: "var(--syn-relation, #15803d)", fontWeight: "700" },
   { tag: t.strong,       fontWeight: "700" },
-  { tag: t.invalid,      color: "#b91c1c", textDecoration: "underline wavy" }
+  { tag: t.invalid,      color: "var(--syn-invalid, #b91c1c)", textDecoration: "underline wavy" }
 ]);
+
+/** Which of CodeMirror's two base themes to use, following the system setting as the page's own
+ *  colours do. Without it the editor kept its light gutter, a black cursor and a selection that
+ *  hid the selected text (1.18:1) on the dark page. */
+const prefersDark = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function" &&
+  window.matchMedia("(prefers-color-scheme: dark)").matches;
+const chromeTheme = EditorView.theme({
+  "&": { color: "var(--fg, #1a1a1a)" },
+  ".cm-gutters": { backgroundColor: "var(--panel, #fff)", color: "var(--fg-dim, #666)",
+                   borderRight: "1px solid var(--line, #ddd)" },
+  ".cm-panels": { backgroundColor: "var(--panel, #fff)", color: "var(--fg, #1a1a1a)" },
+  ".cm-tooltip": { backgroundColor: "var(--panel, #fff)", color: "var(--fg, #1a1a1a)",
+                   border: "1px solid var(--line, #ddd)" }
+});
 
 /* ---------------------------------------------------------------- the traps */
 
@@ -364,6 +383,7 @@ const argdownIndent = indentService.of((ctx, pos) => {
 export function create(parent, opts) {
   const o = opts || {};
   const numbers = new Compartment();
+  const mode = new Compartment();
   // The history lives in a compartment SO IT CAN BE THROWN AWAY. Reconfiguring the compartment
   // rebuilds the field from nothing, which is the documented way to give CodeMirror a fresh
   // past. See `loadText`.
@@ -389,6 +409,7 @@ export function create(parent, opts) {
         highlightActiveLine(), highlightSelectionMatches(),
         search({ top: true }),
         argdownMode, syntaxHighlighting(argdownHighlight),
+        mode.of(EditorView.darkTheme.of(prefersDark())), chromeTheme,
         codeFolding({ placeholderText: "…" }), argdownFolds, foldGutter(),
         claimRefs(o.knowsClaim),
         // A plain click follows the link; the editor keeps the click too, so the caret still
@@ -406,7 +427,7 @@ export function create(parent, opts) {
         EditorView.theme({
           ".cm-ad-ref": { textDecoration: "underline dotted", textUnderlineOffset: "2px",
                           cursor: "pointer" },
-          ".cm-ad-ref:hover": { background: "var(--accent, #3a7bd5)", color: "#fff",
+          ".cm-ad-ref:hover": { background: "var(--accent-fill, #2d6cc0)", color: "var(--on-accent, #fff)",
                                 textDecoration: "none" }
         }),
         lintGutter(),
@@ -425,6 +446,12 @@ export function create(parent, opts) {
       ]
     })
   });
+  // And when the system switches theme while the page is open, the editor switches with it.
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const follow = () => view.dispatch({ effects: mode.reconfigure(EditorView.darkTheme.of(mq.matches)) });
+    if (mq.addEventListener) mq.addEventListener("change", follow);
+  }
   return {
     view,
     getText: () => view.state.doc.toString(),
