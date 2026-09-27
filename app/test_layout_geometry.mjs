@@ -80,7 +80,7 @@ const arg = (f, d) => { const i = process.argv.indexOf(f); return i >= 0 ? Numbe
 const CASES = arg("--cases", 120);
 const SEED = arg("--seed", 20260818);
 
-let failures = 0, cases = 0, layouts = 0, fellBack = 0;
+let failures = 0, cases = 0, layouts = 0, fellBack = 0, pagedLayouts = 0;
 const fail = (where, msg) => { failures++; console.log(`   FAIL  ${where}\n         ${msg}`); };
 
 /* ---------------------------------------------------------------- sizing stub */
@@ -107,6 +107,7 @@ const num = v => typeof v === "number" && Number.isFinite(v);
 
 function checkGeometry(name, graph, vis, g) {
   const where = n => `${name}: ${n}`;
+  const paged = !!(g.graph() && g.graph().paged);
   const boxes = [];
   for (const n of vis.nodes) {
     const p = g.node(n.id);
@@ -151,19 +152,32 @@ function checkGeometry(name, graph, vis, g) {
       const k = b.pos.chapterIndex + ":" + b.pos.line;
       const c = cols.get(k) || { k, ci: b.pos.chapterIndex, line: b.pos.line,
                                  top: Infinity, left: Infinity };
-      c.top = Math.min(c.top, b.y - b.height / 2);
-      c.left = Math.min(c.left, b.x - b.width / 2);
+      const top = b.y - b.height / 2, left = b.x - b.width / 2;
+      // On pages a paragraph's stack can run over a page break; it is read where it begins,
+      // so its top is taken on its FIRST page, not the highest top on any.
+      if (paged ? left < c.left - 0.5 || (Math.abs(left - c.left) <= 0.5 && top < c.top)
+                : top < c.top) c.top = top;
+      c.left = Math.min(c.left, left);
       cols.set(k, c);
     }
     const inOrder = [...cols.values()].sort((p, q) => p.ci - q.ci || p.line - q.line);
+    const rowOf = new Map();
+    if (paged) {
+      // PAGES ARE READ PAGE BY PAGE, each top to bottom: every page's claims share one left edge,
+      // so the pages are the distinct left edges, left to right, and a page's rows its claims.
+      const lefts = [...new Set([...cols.values()].map(c => Math.round(c.left)))].sort((x, y) => x - y);
+      const order = [...cols.values()].sort((p, q) =>
+        lefts.indexOf(Math.round(p.left)) - lefts.indexOf(Math.round(q.left)) || p.top - q.top);
+      order.forEach((c, i) => rowOf.set(c.k, i));
+    } else {
     const rows = [];
     for (const c of [...cols.values()].sort((p, q) => p.top - q.top)) {
       const row = rows.find(r => Math.abs(r.top - c.top) < 20);
       if (row) row.items.push(c); else rows.push({ top: c.top, items: [c] });
     }
     rows.sort((p, q) => p.top - q.top);
-    const rowOf = new Map();
     rows.forEach((r, i) => r.items.forEach(c => rowOf.set(c.k, i)));
+    }
     for (let i = 1; i < inOrder.length; i++) {
       const prev = inOrder[i - 1], cur = inOrder[i];
       const rp = rowOf.get(prev.k), rc = rowOf.get(cur.k);
@@ -192,7 +206,10 @@ function checkGeometry(name, graph, vis, g) {
       const byText = bs.slice().sort((p, q) => p.pos.col - q.pos.col);
       for (let i = 1; i < byText.length; i++) {
         if (byText[i].pos.col === byText[i - 1].pos.col) continue;
-        if (byText[i].y < byText[i - 1].y - 0.5)
+        // On pages, a later page reads after an earlier one, whatever the heights.
+        const lp = byText[i - 1].x - byText[i - 1].width / 2, lc = byText[i].x - byText[i].width / 2;
+        if (paged && lc > lp + 0.5) continue;
+        if ((paged && lc < lp - 0.5) || byText[i].y < byText[i - 1].y - 0.5)
           return fail(where("a paragraph's claims read in its own order"),
                       `at ${k}, ${byText[i].id} (col ${byText[i].pos.col}) is drawn above ` +
                       `${byText[i - 1].id} (col ${byText[i - 1].pos.col})`);
@@ -206,7 +223,19 @@ function checkGeometry(name, graph, vis, g) {
   //    it used to lead the whole view (the top row of the Carroll, 26 Sep 2026).
   const unplaced = boxes.filter(b => !b.pos || b.pos.line == null);
   const placedB = boxes.filter(b => b.pos && b.pos.line != null);
-  if (unplaced.length && placedB.length) {
+  if (unplaced.length && placedB.length && paged) {
+    // ON PAGES, LAST MEANS ON THE LAST PAGE: no unplaced claim on a page left of a placed one,
+    // and on a page shared with placed claims, below all of them.
+    const rightmost = Math.max(...placedB.map(b => b.x - b.width / 2));
+    for (const u of unplaced) {
+      const left = u.x - u.width / 2;
+      if (left < rightmost - 0.5)
+        return fail(where("unplaced claims come last"), `${u.id} is on a page before the last placed claim's`);
+      const same = placedB.filter(b => Math.abs(b.x - b.width / 2 - left) < 0.5);
+      if (same.length && u.y - u.height / 2 < Math.max(...same.map(b => b.y + b.height / 2)) - 0.5)
+        return fail(where("unplaced claims come last"), `${u.id} is above a placed claim on its page`);
+    }
+  } else if (unplaced.length && placedB.length) {
     const lowestPlaced = Math.max(...placedB.map(b => b.y + b.height / 2));
     const highestUnplaced = Math.min(...unplaced.map(b => b.y - b.height / 2));
     if (highestUnplaced < lowestPlaced - 0.5)
@@ -234,9 +263,21 @@ function checkGeometry(name, graph, vis, g) {
     for (let i = 1; i < sorted.length; i++) {
       const prev = sorted[i - 1].p, cur = sorted[i].p;
       if (cur.y - cur.height / 2 < prev.y + prev.height / 2 - 0.5)
-        return fail(where("chapter lanes do not overlap"),
-                    `${sorted[i - 1].gr.label} overlaps ${sorted[i].gr.label}`);
+        // Pages stand SIDE BY SIDE, so bands on two of them share heights; on pages it is two
+        // bands covering the same ground that is wrong.
+        if (!paged) return fail(where("chapter lanes do not overlap"),
+                                `${sorted[i - 1].gr.label} overlaps ${sorted[i].gr.label}`);
     }
+    if (paged)
+      for (let i = 0; i < sibs.length; i++)
+        for (let j = i + 1; j < sibs.length; j++) {
+          const a = sibs[i].p, b = sibs[j].p;
+          const ox = Math.min(a.x + a.width / 2, b.x + b.width / 2) - Math.max(a.x - a.width / 2, b.x - b.width / 2);
+          const oy = Math.min(a.y + a.height / 2, b.y + b.height / 2) - Math.max(a.y - a.height / 2, b.y - b.height / 2);
+          if (ox > 0.5 && oy > 0.5)
+            return fail(where("bands on pages do not overlap"),
+                        `${sibs[i].gr.label} overlaps ${sibs[j].gr.label}`);
+        }
   }
   // A section band lies inside the file band that encloses it — the empty ones included, which
   // have no claims of their own to pull the file band out to them.
@@ -282,8 +323,8 @@ function checkGeometry(name, graph, vis, g) {
   // interior points somewhere that was never on a route between anything, and the line went out
   // to one side and curved all the way back: 3.0x, 3.8x and 4.1x on the three sample maps.
   // (The reading column's arcs swing out into the margin and back BY DESIGN, so they are held
-  // to the other rules here and not to this one.)
-  for (const e of (g.graph().reading ? [] : g.edges())) {
+  // to the other rules here and not to this one -- on its pages as well as in the one column.)
+  for (const e of (g.graph().reading || paged ? [] : g.edges())) {
     const d = g.edge(e);
     if (!d || !d.points || d.points.length < 3) continue;
     const p = d.points, end = p[p.length - 1];
@@ -329,6 +370,90 @@ function checkColumn(name, vis, g) {
   const lefts = new Set(rows.map(x => Math.round(x.p.x - x.p.width / 2)));
   if (lefts.size > 1)
     return fail(`${name}: the column is left-aligned`, `${lefts.size} different left edges`);
+}
+
+/** THE PARAGRAPH CARDS of the rows (see `layoutByText`): a card holds its paragraph's claims and
+ *  nothing else, no two cards overlap, a band holds its cards, and the paragraph numbers rise in
+ *  the order the cards are read -- down the rows, left to right along each. */
+function checkCards(name, vis, g) {
+  const cards = g.cards || [];
+  const box = id => g.node(id);
+  for (const cd of cards) {
+    const mine = vis.nodes.filter(n => cd.ids.includes(n.id));
+    for (const n of vis.nodes) {
+      const p = box(n.id);
+      if (!p) continue;
+      const inside = p.x - p.width / 2 >= cd.x - 0.5 && p.x + p.width / 2 <= cd.x + cd.width + 0.5 &&
+                     p.y - p.height / 2 >= cd.y - 0.5 && p.y + p.height / 2 <= cd.y + cd.height + 0.5;
+      const belongs = mine.includes(n);
+      if (belongs && !inside) return fail(`${name}: a card holds its paragraph's claims`, `${n.id} is outside its card`);
+      if (!belongs && inside) return fail(`${name}: a card holds only its paragraph's claims`, `${n.id} is on another's card`);
+    }
+  }
+  for (let i = 0; i < cards.length; i++)
+    for (let j = i + 1; j < cards.length; j++) {
+      const a = cards[i], b = cards[j];
+      if (Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 0.5 &&
+          Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 0.5)
+        return fail(`${name}: no two cards overlap`, `${a.key} and ${b.key}`);
+    }
+  const byLane = new Map();
+  for (const cd of cards) {
+    if (!byLane.has(cd.lane)) byLane.set(cd.lane, []);
+    byLane.get(cd.lane).push(cd);
+    const band = g.node("lane:" + cd.lane);
+    if (band && (cd.x < band.x - band.width / 2 - 0.5 || cd.x + cd.width > band.x + band.width / 2 + 0.5 ||
+                 cd.y + cd.height > band.y + band.height / 2 + 0.5))
+      return fail(`${name}: a band holds its cards`, `${cd.key} spills out of its band`);
+  }
+  for (const [lane, list] of byLane) {
+    const read = list.slice().sort((a, b) => (Math.abs(a.y - b.y) < 4 ? 0 : a.y - b.y) || a.x - b.x)
+      .map(c => c.para).filter(n => n != null);
+    for (let i = 1; i < read.length; i++)
+      if (read[i] <= read[i - 1])
+        return fail(`${name}: paragraph numbers rise in reading order`, `${lane}: ${read.join(",")}`);
+  }
+}
+
+/** PAGES (the reading column across a wide pane): no page taller than the pane at the size it
+ *  was cut for, beyond one claim too tall to cut; a page's claims share a left edge; and every
+ *  relation between pages that are not side by side is a connector, with a stub on each box. */
+function checkPages(name, vis, g, paneH) {
+  const gl = g.graph();
+  if (!gl.paged) return;
+  const pageH = paneH / gl.paged - 40;
+  const byLeft = new Map();
+  for (const n of vis.nodes) {
+    const p = g.node(n.id);
+    if (!p || !n.pos || n.pos.line == null) continue;
+    const l = Math.round(p.x - p.width / 2);
+    if (!byLeft.has(l)) byLeft.set(l, []);
+    byLeft.get(l).push(p);
+  }
+  const lefts = [...byLeft.keys()].sort((a, b) => a - b);
+  for (const l of lefts) {
+    const ps = byLeft.get(l);
+    const top = Math.min(...ps.map(p => p.y - p.height / 2)), bottom = Math.max(...ps.map(p => p.y + p.height / 2));
+    const tallest = Math.max(...ps.map(p => p.height));
+    if (bottom - top > pageH + tallest + 60)
+      return fail(`${name}: a page is no taller than the pane`, `page at x=${l} is ${Math.round(bottom - top)} for ${Math.round(pageH)}`);
+  }
+  const pageOf = id => { const p = g.node(id); return p ? lefts.indexOf(Math.round(p.x - p.width / 2)) : -1; };
+  for (const e of g.edges()) {
+    const d = g.edge(e), a = pageOf(e.v), b = pageOf(e.w);
+    if (a < 0 || b < 0) continue;
+    const far = Math.abs(a - b) > 1;
+    if (far !== !!d.connector)
+      return fail(`${name}: a connector exactly where pages are not side by side`,
+                  `${e.v} (page ${a}) -> ${e.w} (page ${b}) ${d.connector ? "is" : "is not"} one`);
+    if (!far) continue;
+    for (const [end, id] of [["fromStub", e.v], ["toStub", e.w]]) {
+      const st = d.connector[end], p = g.node(id);
+      if (!st || Math.abs(Math.abs(st.x0 - p.x) - p.width / 2) > 0.5 ||
+          st.y < p.y - p.height / 2 || st.y > p.y + p.height / 2)
+        return fail(`${name}: a connector's stubs leave its claims`, `${e.v} -> ${e.w} ${end}`);
+    }
+  }
 }
 
 /* ---------------------------------------------------------------- awkward inputs */
@@ -538,6 +663,7 @@ function exercise(name, raw) {
     }
     layouts++;
     checkGeometry(`${name} [state ${i}]`, graph, vis, g);
+    checkCards(`${name} [state ${i}]`, vis, g);
     // THE READING COLUMN: the same invariants, and its own — every claim on a row of its own,
     // and the rows in the order the text makes them.
     let rc;
@@ -550,6 +676,20 @@ function exercise(name, raw) {
     layouts++;
     checkGeometry(`${name} [state ${i}] reading column`, graph, vis, rc);
     checkColumn(`${name} [state ${i}] reading column`, vis, rc);
+    // ACROSS A WIDE PANE, in pages; and on a narrow one, still the one column.
+    for (const [w, h, label] of [[1600, 700, "pages"], [480, 800, "narrow pane"]]) {
+      let pg;
+      try { pg = layoutByText(vis, sizesFor(vis), 0, w / h, { reading: true, paneWidth: w, paneHeight: h }); }
+      catch (e) {
+        fail(`${name} [state ${i}] ${label}`, "threw: " + (e && e.stack || e).toString().split("\n")[0]);
+        continue;
+      }
+      layouts++;
+      checkGeometry(`${name} [state ${i}] ${label}`, graph, vis, pg);
+      if (label === "pages") { pagedLayouts += pg.graph().paged ? 1 : 0; checkPages(`${name} [state ${i}] pages`, vis, pg, h); }
+      else if (pg.graph().paged) fail(`${name} [state ${i}] narrow pane`, "a narrow pane was cut into pages");
+      else checkColumn(`${name} [state ${i}] narrow pane`, vis, pg);
+    }
     // ...and the other arrangement, which shares the map but not the layout.
     const byArg = layoutByArgumentSafe(vis, sizesFor(vis));
     if (byArg) { layouts++; checkShared(`${name} [state ${i}] by argument`, vis, byArg); }
@@ -956,6 +1096,10 @@ for (const [name, file] of FILES) {
   }
 }
 
+// THE PAGED CHECKS ARE ONLY WORTH SOMETHING IF PAGES WERE MADE: every real map longer than a
+// page is cut into them, so none at all means the pages have stopped happening.
+if (!pagedLayouts) fail("pages", "no layout was cut into pages -- the paged checks tested nothing");
+console.log(`  ${pagedLayouts} layouts cut into pages`);
 console.log(`\n${cases} graphs, ${layouts} layouts checked` +
             (fellBack ? ` (${fellBack} shapes the layout refused)` : ""));
 if (!layouts) { console.log("NOTHING WAS CHECKED — the harness is not exercising anything"); process.exit(1); }

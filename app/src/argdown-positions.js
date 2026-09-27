@@ -199,6 +199,35 @@ function bandsOf(text) {
   return hit;
 }
 
+var PARAS = typeof WeakMap === "function" ? new WeakMap() : null;
+
+/** Each line's paragraph number within its band, counted as a reader counts them: 1 for the
+ *  first paragraph under the heading (or on the page), and so on. The sources are one paragraph
+ *  to a line, so a paragraph is a line of the text proper -- not blank, not a heading, not the
+ *  front matter, a converter's comment or a page marker. A line that is not a paragraph (a
+ *  heading) gets 0. Computed once per source; `bands` is `bandsOf(text).bands`.
+ *
+ *  THE ROWS VIEW LABELS EACH PARAGRAPH'S STACK WITH IT (see `layoutByText`), so the reader can
+ *  see the order to read the stacks in, and find the paragraph in the text. Numbering the stacks
+ *  1, 2, 3 instead would have been simpler and false: most paragraphs produce no claim, and the
+ *  third stack is rarely the third paragraph. */
+function paragraphNumbers(lines, bands) {
+  var hit = PARAS && PARAS.get(lines);
+  if (hit) return hit;
+  var zone = textZones(lines), starts = Object.create(null), n = 0;
+  for (var b = 0; b < bands.length; b++) starts[bands[b].line] = true;
+  hit = new Array(lines.length);
+  for (var i = 0; i < lines.length; i++) {
+    if (starts[i + 1]) n = 0;
+    var t = String(lines[i]).trim();
+    var para = t && t.charAt(0) !== "#" && (zone[i] === "" || zone[i] === "abstract");
+    if (para) n++;
+    hit[i] = para ? n : 0;
+  }
+  if (PARAS) PARAS.set(lines, hit);
+  return hit;
+}
+
 /** The band a line falls in — the last band starting at or above it. Null before the first one,
  *  which is the text's opening, and null throughout a text nothing divides.
  *
@@ -996,6 +1025,9 @@ function positions(nodes, sources, quarto) {
     pp.opening = pp.line != null && !pp.section && banded.bands.length > 0;
     // A PRINTED PAGE, not a heading of the author's — the layout says so on the band.
     pp.page = !!(banded.paged && pp.section && pp.line != null);
+    // WHICH PARAGRAPH OF ITS BAND, for the label on the rows view's paragraph cards.
+    pp.para = pp.line != null && linesOf(pp.chapter)
+      ? paragraphNumbers(linesOf(pp.chapter), banded.bands)[pp.line - 1] || null : null;
     // WHERE IN ITS PARAGRAPH (see `colInLine`), so claims sharing a paragraph can be read in the
     // order the text makes them.
     pp.col = pp.line != null && linesOf(pp.chapter)
@@ -1033,6 +1065,7 @@ function positions(nodes, sources, quarto) {
       var eBands = bandsOf(sources[at.chapter]);
       var eSection = sectionAt(eBands.bands, eLine);
       found.push({ chapter: at.chapter, line: eLine, note: eNote,
+                   para: paragraphNumbers(linesOf(at.chapter), eBands.bands)[eLine - 1] || null,
                    chapterIndex: (at.chapter in index) ? index[at.chapter] : order.length,
                    inBook: at.chapter in index,
                    section: eSection, opening: !eSection && eBands.bands.length > 0,

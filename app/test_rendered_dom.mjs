@@ -2656,7 +2656,128 @@ async function expositionChecks(browser) {
   await ctx.close();
 }
 
+/* ------------------------------------------------------------------ cards, pages, connectors
+ *
+ * The rows' paragraph cards, and the column cut into pages across a wide pane, on Tooming --
+ * long enough for several pages and with relations reaching across them. Driven as a reader
+ * drives it: the layout chosen on the bar, the pointer moved onto a claim, a stub clicked. And a
+ * narrow pane, where the column must stay one column. */
+async function pagesChecks(browser) {
+  const tooming = built.find(m => /tooming/i.test(m.name));
+  if (!tooming) { check(false, "pages: the Tooming sample built", "no Tooming sample"); return; }
+  const open = async (width, withText) => {
+    const ctx = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await ctx.newPage();
+    await page.goto("file://" + tooming.html);
+    await page.evaluate(() => {
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    });
+    await page.reload();
+    await page.waitForSelector("#map .alm-n", { timeout: 20000 });
+    if (withText) {
+      await page.click('#panes [data-p="text"]');
+      await page.waitForSelector("#mstext [data-l]", { timeout: 10000 });
+    }
+    await page.click('#view [data-v="exposition"]');
+    await page.waitForTimeout(800);
+    await page.evaluate(() => {
+      const r = /** @type {HTMLInputElement} */ (document.querySelector("#map input.alm-range"));
+      r.value = r.max;
+      r.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await page.waitForTimeout(900);
+    return { ctx, page };
+  };
+  const { ctx, page } = await open(1600);
+  const cards = await page.evaluate(() =>
+    [...document.querySelectorAll("#map .alm-card")].map(c => c.textContent.trim()));
+  check(cards.length > 20 && cards.every(t => /^¶ \d+/.test(t)),
+        "pages: in rows, every paragraph's claims sit on a card numbered with its paragraph",
+        `${cards.length} cards: ${cards.slice(0, 6).join(" | ")}`);
+
+  await page.click('#map [data-act="layout"][data-col="1"]');
+  await page.waitForTimeout(1500);
+  const laid = await page.evaluate(() => ({
+    cards: document.querySelectorAll("#map .alm-card").length,
+    cont: document.querySelectorAll('#map .alm-g[data-id^="cont:"]').length,
+    conns: document.querySelectorAll("#map .alm-conn").length,
+    open: document.querySelectorAll("#map .alm-conn.is-open").length
+  }));
+  check(laid.cards === 0 && laid.cont > 0 && laid.conns > 0 && laid.open === 0,
+        "  and the column, on a wide pane, is cut into pages, with connectors drawn closed",
+        JSON.stringify(laid));
+
+  // THE POINTER ON A CLAIM opens its connectors: a real move, onto a claim that has one and is
+  // on screen, then away again.
+  const target = await page.evaluate(() => {
+    for (const c of document.querySelectorAll("#map .alm-conn")) {
+      const box = document.querySelector(`#map .alm-n[data-id="${/** @type {HTMLElement} */ (c).dataset.from}"]`);
+      if (!box) continue;
+      const r = box.getBoundingClientRect();
+      if (r.left > 10 && r.right < innerWidth - 10 && r.top > 60 && r.bottom < innerHeight - 120)
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2,
+                 from: /** @type {HTMLElement} */ (c).dataset.from, to: /** @type {HTMLElement} */ (c).dataset.to };
+    }
+    return null;
+  });
+  check(!!target, "  a claim with a connector is on screen to point at", "");
+  if (target) {
+    await page.mouse.move(target.x, target.y);
+    await page.waitForTimeout(200);
+    const shown = await page.evaluate(t => [...document.querySelectorAll("#map .alm-conn.is-open")]
+      .some(c => /** @type {HTMLElement} */ (c).dataset.from === t.from), target);
+    await page.mouse.move(5, 450);
+    await page.waitForTimeout(200);
+    const hidden = await page.evaluate(() => document.querySelectorAll("#map .alm-conn.is-open").length);
+    check(shown && hidden === 0, "  pointing at the claim draws its connector's whole line, and away hides it",
+          JSON.stringify({ shown, hidden }));
+    // A STUB IS A WAY THERE: click the stub on this claim, and the other end is selected and on
+    // screen.
+    const stub = await page.evaluate(t => {
+      const c = [...document.querySelectorAll("#map .alm-conn")]
+        .find(x => /** @type {HTMLElement} */ (x).dataset.from === t.from);
+      const d = c && c.querySelector('.alm-conn-stub[data-end="from"] .alm-conn-dot');
+      if (!d) return null;
+      const r = d.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2, to: /** @type {HTMLElement} */ (c).dataset.to };
+    }, target);
+    if (stub) {
+      await page.mouse.click(stub.x, stub.y);
+      await page.waitForTimeout(900);
+      const there = await page.evaluate(to => {
+        const box = document.querySelector(`#map .alm-n[data-id="${to}"]`);
+        if (!box) return null;
+        const r = box.getBoundingClientRect();
+        return { lit: box.classList.contains("is-lit"),
+                 onScreen: r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight };
+      }, stub.to);
+      check(!!there && there.lit && there.onScreen,
+            "  and clicking its stub goes to the claim at the other end", JSON.stringify(there));
+    } else check(false, "  and clicking its stub goes to the claim at the other end", "no stub found");
+  }
+  await ctx.close();
+
+  // A NARROW PANE keeps the one column: the map squeezed beside a wide Manuscript, to less
+  // than two pages' width. (Beside the Manuscript at its own width on a 1280 window the map is
+  // 793px, which does hold two pages at reading size, and gets them.)
+  const narrow = await open(1280, true);
+  await narrow.page.evaluate(() => {
+    document.getElementById("side").style.setProperty("--ms-w", "760px");
+  });
+  await narrow.page.waitForTimeout(300);
+  await narrow.page.click('#map [data-act="layout"][data-col="1"]');
+  await narrow.page.waitForTimeout(1500);
+  const one = await narrow.page.evaluate(() => ({
+    cont: document.querySelectorAll('#map .alm-g[data-id^="cont:"]').length,
+    conns: document.querySelectorAll("#map .alm-conn").length }));
+  const mapW = await narrow.page.evaluate(() => document.getElementById("map").clientWidth);
+  check(one.cont === 0 && one.conns === 0, "pages: a narrow pane keeps the single column",
+        JSON.stringify({ ...one, mapW }));
+  await narrow.ctx.close();
+}
+
 await barChecks(browser);
+await pagesChecks(browser);
 await expositionChecks(browser);
 await keyChecks(browser);
 await genTextChecks(browser);

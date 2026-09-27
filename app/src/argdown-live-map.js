@@ -1153,6 +1153,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   const reading = !!(opts && opts.reading);
   const GUTTER_GAP = 90;     // the visible break before the no-position lane
   const COL_GAP = 26, ROW_GAP = 18;
+  // THE PARAGRAPH CARD (rows only): the backdrop that makes one paragraph's stack read as a
+  // unit, with its number in a strip at its foot. See `cards` below.
+  const CARD_PAD = 6, CARD_FOOT = 14;
   // Lanes are the main structure now, so they get room. It must also exceed the padding their
   // boxes carry — 12 below one lane plus 24 above the next for its label — or consecutive lanes
   // overlap by a couple of pixels, which reads as a rendering fault rather than a tight gap.
@@ -1426,7 +1429,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   const ARC_ROOM = reading ? ARC_MAX + 14 : 0;
   const place = new Map();
   const laneBox = new Map();
+  const cards = [];
   const rowOf = new Map();          // the reading column's rows, in the order they are read
+  const rowTops = [];               // where each claim but a band's first begins, in that column
   let y = MARGIN, maxRight = 0, lastChapter = null;
   for (const lane of laneKeys) {
     const empty = empties.has(lane);
@@ -1459,6 +1464,7 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
           place.set(id, { x: left + sz.width / 2, y: cy + sz.height / 2,
                           width: sz.width, height: sz.height });
           rowOf.set(id, rowOf.size);
+          if (cy > top) rowTops.push(cy);      // a claim a newspaper column may begin with
           cy += sz.height + ROW_GAP;
           maxRight = Math.max(maxRight, left + sz.width);
         }
@@ -1468,10 +1474,23 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
       y += BAND_GAP;
       continue;
     }
+    // THE PARAGRAPH CARDS. The grid reads two ways -- down a paragraph's stack, then across to
+    // the next paragraph, then down again to the next row -- and "down" meant two different
+    // things with only a gap's width between them: 18px to the next claim of the same paragraph,
+    // 36px to the next row. The author reading it could not tell which way to go (27 Sep 2026).
+    // So each paragraph's stack sits on a card, with its paragraph number at its foot: a card is
+    // read top to bottom, cards left to right, rows as lines of prose. The number is the
+    // paragraph's own within its section (argdown-positions `paragraphNumbers`), so it also says
+    // where in the text to look -- and how many paragraphs between two cards gave no claim.
+    // Not in the no-position lane, whose columns are not paragraphs.
+    const carded = lane !== "gutter";
+    const foot = carded ? CARD_FOOT : 0;
     let x = left, rowH = 0;
     for (const k of mine) {
       const cs = colSize.get(k);
-      if (x > left && x + cs.w > wrapAt) { x = left; y += rowH + ROW_GAP * 2; rowH = 0; }
+      if (x > left && x + cs.w > wrapAt) {
+        x = left; y += rowH + ROW_GAP * 2 + (carded ? CARD_PAD * 2 + foot : 0); rowH = 0;
+      }
       let cy = y;
       for (const id of colNodes.get(k)) {
         const sz = sizeOf(id);
@@ -1479,7 +1498,15 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
                         width: sz.width, height: sz.height });
         cy += sz.height + ROW_GAP;
       }
-      rowH = Math.max(rowH, cs.h);
+      if (carded) {
+        const first = byIdAll.get(colNodes.get(k)[0]);
+        cards.push({ lane, key: k, ids: colNodes.get(k).slice(),
+                     para: first && first.pos ? first.pos.para || null : null,
+                     count: colNodes.get(k).filter(id => !echoSize.has(id)).length,
+                     x: x - CARD_PAD, y: y - CARD_PAD,
+                     width: cs.w + CARD_PAD * 2, height: cs.h + CARD_PAD * 2 + foot });
+      }
+      rowH = Math.max(rowH, cs.h + (carded ? CARD_PAD + foot : 0));
       x += cs.w + COL_GAP;
       maxRight = Math.max(maxRight, x);
     }
@@ -1493,18 +1520,101 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   // that is about the text's own divisions. The arcs on the right swing out from here too.
   if (reading) maxRight = Math.max(maxRight, MARGIN + ARC_ROOM + 460);
 
+  // THE READING COLUMN, IN PAGES ACROSS A WIDE PANE. One column reads one way, which is what it
+  // is for, but on a monitor it is a strip down the middle of a wide pane with the rest empty
+  // (the author, 27 Sep 2026: "a waste of screen space on a monitor"). Print solved this long
+  // ago: a journal page is read down one column and then down the next. So the column is laid
+  // out whole and then cut into PAGES -- each as tall as the pane at a size a claim can be read
+  // at (PAGE_SCALE), so it is read top to bottom without scrolling -- set side by side, as many
+  // as the text needs, and panned across like turning pages.
+  //
+  // PAGES, NOT BALANCED COLUMNS. The first try cut the column into as many columns as made a
+  // block the shape of the pane, as the rows wrap. On Tooming that was three columns each
+  // several screens tall at a readable size: read down one, scroll, then back up for the next,
+  // which is the reason multi-column text is avoided on screens.
+  //
+  // Only where the pane shows two pages at that size, and only when the text is longer than
+  // one: a narrow pane -- a phone, or the map beside an open Manuscript on a laptop -- keeps the
+  // single column. A cut falls between two sections where one comes late enough in the page;
+  // otherwise between two claims, and the section runs on under a "(continued)" band at the top
+  // of the next. Relations inside a page keep their arcs. One to the next page or the page before
+  // runs through the gutter between them, out of the right of the earlier and into the left of
+  // the later -- left still for what the reader has met, right for what is to come. One that
+  // reaches further is a CONNECTOR (step 6), because a line across the pages between would run
+  // over everything on them.
+  const colOfItem = new Map();      // id -> the page it is on
+  let flowCols = 1, pitch = 0;
+  const colRight = i => maxRight + i * pitch;
+  const PAGE_SCALE = 0.8;           // the scale a page is cut to be read at
+  const FLOW_ARC = 84;              // a page's arc margin, each side
+  let pagedAt = 0, flowArcCap = 0;
+  const laneTops = [...laneBox.values()].map(b => b.top).sort((a, b) => a - b);
+  if (reading && laneTops.length) {
+    const firstTop = laneTops[0];
+    const lastBottom = Math.max(...[...laneBox.values()].map(b => b.bottom));
+    // NARROWER THAN THE ONE COLUMN, because a page holds a page's worth of rows and no arc on it
+    // reaches further than that: the margins the single column keeps for arcs across the whole
+    // text (ARC_MAX a side) would be most of each page's width. The band is as wide as its
+    // claims and a little over, not the 460 kept for its name -- a long name is cut short, and
+    // says itself in full on hover. Measured before deciding, since it decides how many fit.
+    const trim = ARC_ROOM - FLOW_ARC;
+    let claimsRight = 0;
+    for (const q of place.values()) claimsRight = Math.max(claimsRight, q.x - trim + q.width / 2);
+    const flowRight = Math.max(MARGIN + FLOW_ARC + 300, claimsRight + 24);
+    const flowPitch = flowRight + FLOW_ARC + 16 - MARGIN;
+    const pageH = opts && opts.paneHeight ? opts.paneHeight / PAGE_SCALE - 40 : 0;
+    const paged = pageH > 0 && !!(opts && opts.paneWidth) && opts.flow !== false &&
+                  opts.paneWidth >= flowPitch * PAGE_SCALE * 2 && lastBottom - firstTop > pageH;
+    if (paged) {
+      pitch = flowPitch;
+      for (const q of place.values()) q.x -= trim;
+      for (const b of laneBox.values()) b.left -= trim;
+      maxRight = flowRight;
+      flowArcCap = FLOW_ARC - 8;
+      const cands = [...laneTops.slice(1).map(t => ({ top: t, band: true })),
+                     ...rowTops.map(t => ({ top: t, band: false }))]
+        .sort((a, b) => a.top - b.top || (a.band ? -1 : 1));
+      const cuts = [];
+      let start = firstTop;
+      while (lastBottom - start > pageH) {
+        const fits = cands.filter(c => c.top > start && c.top - start <= pageH);
+        const band = fits.filter(c => c.band && c.top - start >= pageH * 0.7).pop();
+        const cut = band || fits.pop() || cands.find(c => c.top > start);
+        if (!cut) break;
+        cuts.push(cut.top);
+        start = cut.top;
+      }
+      pagedAt = PAGE_SCALE;
+      flowCols = cuts.length + 1;
+      const colAt = top => { let i = 0; while (i < cuts.length && top >= cuts[i] - 0.5) i++; return i; };
+      const shift = i => (i === 0 ? 0 : firstTop - cuts[i - 1]);
+      for (const [id, q] of place) {
+        const i = colAt(q.y - q.height / 2);
+        colOfItem.set(id, i);
+        q.x += i * pitch; q.y += shift(i);
+      }
+      for (const b of laneBox.values()) {
+        const i = colAt(b.top);
+        b.col = i; b.top += shift(i); b.bottom += shift(i); b.left += i * pitch;
+      }
+    }
+  }
+
   // 4. One band per lane, named for the chapter it holds.
   const expoGroups = [];
-  const chapExtent = new Map();     // chapter lane -> the box its section bands need
-  const extendChapter = (lane, x0, x1, y0, y1, names, inBook) => {
-    const c = chapExtent.get(laneChapter(lane)) ||
+  // chapter lane (and newspaper column) -> the box its section bands need there. A file that
+  // runs across newspaper columns gets a box in each, as its sections do.
+  const chapExtent = new Map();
+  const extendChapter = (lane, x0, x1, y0, y1, names, inBook, col) => {
+    const key = laneChapter(lane) + "#" + (col || 0);
+    const c = chapExtent.get(key) ||
               { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity,
-                names: new Set(), inBook: true };
+                names: new Set(), inBook: true, chap: laneChapter(lane), col: col || 0 };
     c.x0 = Math.min(c.x0, x0 - 10); c.x1 = Math.max(c.x1, x1 + 10);
     c.y0 = Math.min(c.y0, y0 - 24); c.y1 = Math.max(c.y1, y1 + 10);
     names.forEach(n => c.names.add(n));
     c.inBook = c.inBook && inBook;
-    chapExtent.set(laneChapter(lane), c);
+    chapExtent.set(key, c);
   };
   for (const lane of laneKeys) {
     if (!laneBox.has(lane)) continue;
@@ -1519,12 +1629,14 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
       const b = laneBox.get(lane), name = empties.get(lane).label || laneName(section);
       const w = Math.min(560, Math.max(300, 34 + name.length * GROUP_LABEL_SIZE * 0.56 + 90));
       const x0 = b.left - 12, y0 = b.top - 24, y1 = b.bottom + 12;
-      const x1 = reading ? Math.max(x0 + w, maxRight + 12) : x0 + w;
+      const x1 = reading && flowCols > 1 ? colRight(b.col || 0) + 12
+               : reading ? Math.max(x0 + w, colRight(b.col || 0) + 12) : x0 + w;
       const path = vis.chapterOfIndex.get(Number(laneChapter(lane).slice(3)));
-      extendChapter(lane, x0, x1, y0, y1, path != null ? [path] : [], true);
+      extendChapter(lane, x0, x1, y0, y1, path != null ? [path] : [], true, b.col);
       // `gap:`, not `lane:` — there is nothing to fold, and an id of its own means the box is
       // never mistaken for the band the section becomes once a claim is placed in it.
       expoGroups.push({ id: "gap:" + lane, label: name, parent: "lane:" + laneChapter(lane),
+                        page: b.col || 0,
                         fold: false, empty: true, words: empties.get(lane).words,
                         note: !empties.get(lane).page ? EMPTY_NOTE
                             : (/^pp\./.test(name) ? PAGES_NOTE : PAGE_NOTE) + " " + EMPTY_NOTE,
@@ -1538,7 +1650,6 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
     // the band's name and its size, so the box adds a second copy of the caption and a frame
     // round one node. The block is its own handle — clicking it opens the band again.
     if (ids.length === 1 && ids[0] === "lane:" + lane) continue;
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
     const chapters = new Set();
     let inBook = true;
     // A chapter's OWN row inside a chapter that has sections: it holds the blocks of the shut
@@ -1546,17 +1657,31 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
     // blocks say which sections — but its extent has to reach the chapter band, or the band
     // would be drawn around the open sections only and leave the shut ones outside it.
     const ownRow = section == null && lane !== "gutter" && sectionedChapters.has(lane);
+    // ONE BOX PER NEWSPAPER COLUMN the band runs through; outside the flow, just one.
+    const pieces = new Map();
     for (const id of ids) {
       const q = place.get(id); if (!q) continue;
-      x0 = Math.min(x0, q.x - q.width / 2 - 12); x1 = Math.max(x1, q.x + q.width / 2 + 12);
-      y0 = Math.min(y0, q.y - q.height / 2 - 24); y1 = Math.max(y1, q.y + q.height / 2 + 12);
+      const c = colOfItem.get(id) || 0;
+      const pc = pieces.get(c) || { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity };
+      pc.x0 = Math.min(pc.x0, q.x - q.width / 2 - 12); pc.x1 = Math.max(pc.x1, q.x + q.width / 2 + 12);
+      pc.y0 = Math.min(pc.y0, q.y - q.height / 2 - 24); pc.y1 = Math.max(pc.y1, q.y + q.height / 2 + 12);
+      pieces.set(c, pc);
       const n = byIdAll.get(id);
       if (n && n.pos) { chapters.add(n.pos.chapter); inBook = n.pos.inBook; }
     }
-    if (!(x0 < x1)) continue;
+    // The paragraph cards are inside the band too, foot strip and all.
+    for (const cd of cards) {
+      if (cd.lane !== lane || !pieces.has(0)) continue;
+      const pc = pieces.get(0);
+      pc.x0 = Math.min(pc.x0, cd.x - 8); pc.x1 = Math.max(pc.x1, cd.x + cd.width + 8);
+      pc.y1 = Math.max(pc.y1, cd.y + cd.height + 8);
+    }
+    if (!pieces.size) continue;
+    const cols = [...pieces.keys()].sort((a, b) => a - b);
     // One width for every band of the column, so its edges read as the column's and not as the
     // accident of which band holds the widest claim.
-    if (reading) x1 = Math.max(x1, maxRight + 12);
+    if (reading) for (const c of cols) pieces.get(c).x1 = Math.max(pieces.get(c).x1, colRight(c) + 12);
+    const { x0, x1, y0, y1 } = pieces.get(cols[0]);
     const names = [...chapters];
     // THE SECTION IS THE LABEL WHERE THERE IS ONE. A lane is now a top-level heading, so
     // labelling it with the filename says nothing: a one-file article came out as six lanes all
@@ -1569,13 +1694,27 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
                 : section != null ? laneName(section)
                 : !inBook ? `not listed in the project file — ${names.length} file${names.length === 1 ? "" : "s"}`
                 : chapterLabel(names[0]);
-    if (section != null || ownRow) extendChapter(lane, x0, x1, y0, y1, names, inBook);
+    if (section != null || ownRow)
+      for (const c of cols) {
+        const pc = pieces.get(c);
+        extendChapter(lane, pc.x0, pc.x1, pc.y0, pc.y1, names, inBook, c);
+      }
     if (ownRow) continue;                       // its extent counted, no box of its own
+    // THE BAND RUNS ON in the next newspaper column: the same name, said to continue, and no
+    // fold strip -- the band's own box, in the column where it starts, is the one that folds.
+    for (const c of cols.slice(1)) {
+      const pc = pieces.get(c);
+      expoGroups.push({ id: "cont:" + lane + "#" + c, label: label + " (continued)", page: c,
+                        parent: section != null ? "lane:" + laneChapter(lane) : null,
+                        fold: false, title: label + ", continued from the column before" });
+      place.set("cont:" + lane + "#" + c, { x: (pc.x0 + pc.x1) / 2, y: (pc.y0 + pc.y1) / 2,
+                                            width: pc.x1 - pc.x0, height: pc.y1 - pc.y0 });
+    }
     const wc = bandWords(vis.words, lane, vis.chapterOfIndex);
     // THE NO-POSITION LANE IS A RULER, NOT A CONTROL: `filterGraph` never folds it, so a fold
     // strip on it would be a button that does nothing. It says what it holds instead, always —
     // the lane is only honest if the reader knows why these claims are down here.
-    expoGroups.push({ id: "lane:" + lane, label,
+    expoGroups.push({ id: "lane:" + lane, label, page: cols[0],
                       parent: section != null ? "lane:" + laneChapter(lane) : null,
                       fold: lane !== "gutter",
                       words: wc,
@@ -1595,18 +1734,36 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   //    A file with no sections gets none of this — its single band is already the file, and a box
   //    drawn round one box says nothing.
   const chapGroups = [];
-  for (const [chap, c] of chapExtent) {
+  const chapFirst = new Map();      // chapter -> the first newspaper column it appears in
+  for (const c of chapExtent.values())
+    if (!chapFirst.has(c.chap) || c.col < chapFirst.get(c.chap)) chapFirst.set(c.chap, c.col);
+  for (const c of chapExtent.values()) {
     if (!(c.x0 < c.x1)) continue;
+    const chap = c.chap, first = c.col === chapFirst.get(chap);
     const names = [...c.names];
     const cwc = bandWords(vis.words, chap, vis.chapterOfIndex);
-    chapGroups.push({ id: "lane:" + chap, parent: null, fold: true, words: cwc,
-                      label: c.inBook ? chapterLabel(names[0])
-                           : `not listed in the project file — ${names.length} file${names.length === 1 ? "" : "s"}`,
-                      title: names.join("\n") + (cwc ? "\n" + cwc.toLocaleString() + " words" : "") });
-    place.set("lane:" + chap, { x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2,
-                                width: c.x1 - c.x0, height: c.y1 - c.y0 });
+    const label = c.inBook ? chapterLabel(names[0])
+                : `not listed in the project file — ${names.length} file${names.length === 1 ? "" : "s"}`;
+    const id = first ? "lane:" + chap : "cont:" + chap + "#" + c.col;
+    chapGroups.push(first
+      ? { id, parent: null, fold: true, words: cwc, label,
+          title: names.join("\n") + (cwc ? "\n" + cwc.toLocaleString() + " words" : "") }
+      : { id, parent: null, fold: false, label: label + " (continued)",
+          title: label + ", continued from the column before" });
+    place.set(id, { x: (c.x0 + c.x1) / 2, y: (c.y0 + c.y1) / 2,
+                    width: c.x1 - c.x0, height: c.y1 - c.y0 });
   }
   expoGroups.unshift(...chapGroups);
+  // A SECTION'S PARENT IS ITS FILE'S BOX ON THE SAME PAGE. On pages a file has a box on each,
+  // and the one a section sits inside is the one beside it -- the file's own box, where it
+  // starts, only on that first page.
+  if (flowCols > 1)
+    for (const gr of expoGroups) {
+      const m = /** @type {any} */ (gr);
+      if (m.page == null || !gr.parent || !gr.parent.startsWith("lane:")) continue;
+      const chap = gr.parent.slice(5);
+      if (chapFirst.has(chap) && m.page !== chapFirst.get(chap)) gr.parent = "cont:" + chap + "#" + m.page;
+    }
 
   // THE SHAPE OF EACH BAND, carried on the band so its header can draw it.
   //
@@ -1672,20 +1829,38 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   // met by the time they reach the claim; on the right, support still to come — and the arc
   // swings wider the further it reaches, which is what a reader has to carry. No new colour and
   // no new dash: a line still is what it is everywhere else.
-  const arc = (a, b, side, rows) => {
+  const arc = (a, b, side, rows, col) => {
     const x0 = side === "left" ? a.x - a.width / 2 : a.x + a.width / 2;
     const x1 = side === "left" ? b.x - b.width / 2 : b.x + b.width / 2;
     // By ROWS APART, and as its square root: proportional to pixels, every arc longer than a
     // screen hit the cap and they ran together down one trunk; this keeps a neighbour's arc
     // tight and still tells a twenty-row reach from a hundred-row one.
-    const bulge = Math.min(ARC_MAX, 16 + 16 * Math.sqrt(Math.max(1, rows || 1)));
-    const ex = side === "left" ? Math.min(x0, x1) - bulge : Math.max(maxRight, x0, x1) + bulge;
+    const bulge = Math.min(flowArcCap || ARC_MAX, 16 + 16 * Math.sqrt(Math.max(1, rows || 1)));
+    const ex = side === "left" ? Math.min(x0, x1) - bulge
+                               : Math.max(colRight(col || 0), x0, x1) + bulge;
     const pts = [];
     // Sampled finely, so everything downstream that walks an edge as a polyline — the
     // direction marks, the dashing where it passes behind a claim — walks the curve itself.
     for (let i = 0; i <= 16; i++) {
       const t = i / 16, u = 1 - t;
       pts.push({ x: u * u * u * x0 + 3 * u * u * t * ex + 3 * u * t * t * ex + t * t * t * x1,
+                 y: u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y });
+    }
+    return pts;
+  };
+  // A RELATION BETWEEN NEWSPAPER COLUMNS, through the gutter: out of the right of the claim in
+  // the earlier column, into the left of the one in the later, whichever end is the reason. Both
+  // sides keep their meaning -- the later claim meets it on its left, as something already read.
+  const bridge = (a, b, ca, cb) => {
+    const fwd = ca < cb;
+    const x0 = fwd ? a.x + a.width / 2 : a.x - a.width / 2;
+    const x1 = fwd ? b.x - b.width / 2 : b.x + b.width / 2;
+    const g = Math.min(ARC_MAX, Math.abs(x1 - x0) * 0.4);
+    const c0 = x0 + (fwd ? g : -g), c1 = x1 + (fwd ? -g : g);
+    const pts = [];
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16, u = 1 - t;
+      pts.push({ x: u * u * u * x0 + 3 * u * u * t * c0 + 3 * u * t * t * c1 + t * t * t * x1,
                  y: u * u * u * a.y + 3 * u * u * t * a.y + 3 * u * t * t * b.y + t * t * t * b.y });
     }
     return pts;
@@ -1711,8 +1886,11 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
     const mid = { x: (p0.x + p1.x) / 2 - (dy / len) * bow,
                   y: (p0.y + p1.y) / 2 + (dx / len) * bow };
     const ra2 = rowOf.get(e.from), rb2 = rowOf.get(e.to);
+    const ca = colOfItem.get(e.from) || 0, cb = colOfItem.get(e.to) || 0;
     const points = reading && ra2 != null && rb2 != null
-      ? arc(a, b, ra2 > rb2 ? "right" : "left", Math.abs(ra2 - rb2)) : [p0, mid, p1];
+      ? (ca === cb ? arc(a, b, ra2 > rb2 ? "right" : "left", Math.abs(ra2 - rb2), ca)
+                   : bridge(a, b, ca, cb))
+      : [p0, mid, p1];
     // How far the edge reaches, in columns. This — not its direction — is what the emphasis
     // tracks: a support that arrives forty claims away taxes the reader whichever way round
     // the two sit. Threshold is relative, so it means the same on a paper and on a book.
@@ -1723,7 +1901,46 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
                  { points, debt: debt, span: span,
                    step: e.step == null ? null : e.step,
                    line: e.line == null ? null : e.line,
-                   far: span >= Math.max(5, claimCols.length * 0.1) });
+                   far: span >= Math.max(5, claimCols.length * 0.1),
+                   connector: reading && Math.abs(ca - cb) > 1
+                     ? { from: e.from, to: e.to, fromPage: ca, toPage: cb } : null });
+  }
+
+  // THE CONNECTORS: a relation between pages that are not side by side. Drawn in full, its line
+  // crosses every page between -- on Tooming, lines from section 2.2 back to the Introduction
+  // ran straight over two pages of claims. So it is drawn as a flowchart draws a line that goes
+  // off the page: a short stub at each end, facing the other page, labelled with the claim at
+  // the other end. The whole line is drawn only while the reader holds one of its claims or a
+  // stub under the pointer, or has either claim selected; a stub is also a way there. The full
+  // line stays in `points`, so nothing that measures relations sees any difference.
+  const STUB = 26, STUB_STEP = 13;
+  const stubsAt = new Map();        // "id side" -> the stubs leaving that side of that box
+  for (const [k, d] of edgeData) {
+    const c = d.connector;
+    if (!c) continue;
+    for (const end of ["from", "to"]) {
+      const mine = end === "from" ? c.fromPage : c.toPage, other = end === "from" ? c.toPage : c.fromPage;
+      const side = other > mine ? "right" : "left";
+      const at = c[end] + " " + side;
+      if (!stubsAt.has(at)) stubsAt.set(at, []);
+      stubsAt.get(at).push({ k, end, other: end === "from" ? c.to : c.from, side });
+    }
+  }
+  for (const [at, list] of stubsAt) {
+    const q = place.get(at.slice(0, at.lastIndexOf(" ")));
+    if (!q) continue;
+    // In the order of the other ends down their pages, so stubs do not cross on the way out.
+    list.sort((s1, s2) => (place.get(s1.other) || q).y - (place.get(s2.other) || q).y);
+    list.forEach((st, i) => {
+      const lo = q.y - q.height / 2 + 9, hi = q.y + q.height / 2 - 9;
+      const y = Math.max(lo, Math.min(hi, q.y + (i - (list.length - 1) / 2) * STUB_STEP));
+      const x0 = st.side === "right" ? q.x + q.width / 2 : q.x - q.width / 2;
+      const other = byIdAll.get(st.other);
+      edgeData.get(st.k).connector[st.end + "Stub"] = {
+        x0, x1: x0 + (st.side === "right" ? STUB : -STUB), y, side: st.side,
+        label: String((other && (other.label || other.id)) || st.other),
+        page: (colOfItem.get(st.other) || 0) + 1 };
+    });
   }
 
   // THE ECHOES' TIES to the claims they echo: faint, dotted, never an edge — an echo is not a
@@ -1733,8 +1950,13 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
     const a = place.get(it.id), b = place.get(it.of);
     if (!a || !b) continue;
     let points;
-    if (reading) points = arc(a, b, "left",
-                              Math.abs((rowOf.get(it.id) || 0) - (rowOf.get(it.of) || 0)));
+    const ea = colOfItem.get(it.id) || 0, eb = colOfItem.get(it.of) || 0;
+    // Across pages that are not side by side an echo has no tie: it would cross the pages
+    // between, and the chip already names its claim and goes there when clicked.
+    if (reading && Math.abs(ea - eb) > 1) points = [];
+    else if (reading && ea !== eb) points = bridge(a, b, ea, eb);
+    else if (reading) points = arc(a, b, "left",
+                                   Math.abs((rowOf.get(it.id) || 0) - (rowOf.get(it.of) || 0)), ea);
     else {
       const p0 = boundary(a, b), p1 = boundary(b, a);
       const dx = p1.x - p0.x, dy = p1.y - p0.y, len = Math.hypot(dx, dy) || 1;
@@ -1748,7 +1970,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   // The canvas is the union of everything drawn, bands included. Sizing it from the columns
   // alone was right while a band was only ever a backdrop behind claims it was measured from;
   // a file band is drawn wider and taller than its contents, and would have hung over the edge.
-  let width = maxRight + 16, height = y + 16;
+  // Flowed into newspaper columns, `y` is still where the one long column ended; the height is
+  // what the columns hold, measured below.
+  let width = maxRight + 16, height = (flowCols > 1 ? 0 : y) + 16;
   for (const q of place.values()) {
     width  = Math.max(width,  q.x + q.width  / 2 + 16);
     height = Math.max(height, q.y + q.height / 2 + 16);
@@ -1761,12 +1985,17 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
     node: id => place.get(id),
     edge: e => edgeData.get(e.v + " " + e.w + " " + e.name) || { points: [] },
     edges: () => edgeList,
-    graph: () => ({ width, height, reading }),
+    // READ FROM THE TOP only while it is one column: flowed into several, it is framed whole,
+    // like the rows, and read down one column and then the next.
+    graph: () => ({ width, height, reading: reading && flowCols === 1,
+                    paged: flowCols > 1 ? pagedAt : 0 }),
     echoes,
+    cards,
     // Read by the toolbar, so the reader is told how much of the map is off the axis rather
     // than left to notice a lane at the edge and guess what it means.
     expo: { columns: claimCols.length,
             unplaced: vis.nodes.filter(n => !keyOf.get(n.id)).length,
+            flow: flowCols,
             debt: edgeList.filter(k => edgeData.get(
               k.v + " " + k.w + " " + k.name).debt === true).length,
             support: edgeList.filter(k => edgeData.get(
@@ -3348,6 +3577,8 @@ function createLiveMap(container, graph, options) {
   const defs     = el("defs");
   const viewport = el("g", { class: "alm-viewport" });
   const gGroups  = el("g", { class: "alm-layer-groups" });
+  // The paragraph cards of the rows view: over the bands, under everything else.
+  const gCards   = el("g", { class: "alm-layer-cards" });
   // The enclosure round the premises of one inference step. Its own layer, between the sections
   // and the edges, because it is a BACKDROP: the member lines have to run over it to the bar,
   // and a section's box has to stay legible underneath it.
@@ -3362,7 +3593,7 @@ function createLiveMap(container, graph, options) {
   // It has to sit on top: the whole point is that the reader sees the line continue across a
   // node instead of appearing to start at it.
   const gUnder = el("g", { class: "alm-layer-under" });
-  viewport.append(gGroups, gHulls, gEdges, gEchoes, gNodes, gUnder);
+  viewport.append(gGroups, gCards, gHulls, gEdges, gEchoes, gNodes, gUnder);
   svg.append(defs, viewport, gMeasure);
   container.appendChild(svg);
 
@@ -3654,7 +3885,10 @@ function createLiveMap(container, graph, options) {
 
     let g;
     if (expo) {
-      g = layoutByText(vis, sizes, 0, paneAspect, { reading: readColumn });
+      g = layoutByText(vis, sizes, 0, paneAspect,
+                       { reading: readColumn, paneWidth: container.clientWidth || 800,
+                         paneHeight: Math.max(80, (container.clientHeight || 500) -
+                                                  (toolbar ? toolbar.offsetHeight + 14 : 0)) });
     } else {
       g = layoutByArgument(vis, sizes, opt);
     }
@@ -3687,6 +3921,7 @@ function createLiveMap(container, graph, options) {
     drawGroups(g, vis);
     drawEdges(g, vis, sizes);
     drawEchoes(expo ? g : null);
+    drawCards(expo ? g : null);
     drawNodes(g, vis, sizes);
 
     const gl = g.graph();
@@ -3700,7 +3935,8 @@ function createLiveMap(container, graph, options) {
       if (!apex || nd.y < apex.y) apex = { x: nd.x, y: nd.y };
     }
     lastG = g;
-    lastFit = { w: gl.width || 1, h: gl.height || 1, apex, reading: !!gl.reading };
+    lastFit = { w: gl.width || 1, h: gl.height || 1, apex, reading: !!gl.reading,
+                paged: gl.paged || 0 };
     // Re-frame on its own unless the reader has taken the camera: mid-talk a fold should leave
     // the result centred without a second click, but while drafting a deliberate pan or zoom
     // must survive the next fold.
@@ -3718,7 +3954,7 @@ function createLiveMap(container, graph, options) {
     const held = pin && !fit && !honourCamera && applyPin(pin);
     pin = null;
     if (opt.fitOnRender && !honourCamera && !held && (fit || !userMoved || stranded(lastFit)))
-      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading);
+      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading, lastFit.paged);
     // The restored camera still has to be PUT ON THE PAGE. `fitTo` is what normally writes the
     // transform, so skipping it left the viewport with no transform at all and the map drawn at
     // the origin, unscaled.
@@ -4223,6 +4459,14 @@ function createLiveMap(container, graph, options) {
 
   /** The gestures on a claim's box, wired the one time the box is made. */
   function wireBox(box) {
+    // The pointer on a claim draws the whole of any connector it has (see `drawConnector`).
+    box.addEventListener("mouseenter", () => {
+      const n = boxNode.get(box);
+      if (n && drawnConn.size) { connHover = n.id; applyConnectors(); }
+    });
+    box.addEventListener("mouseleave", () => {
+      if (drawnConn.size && connHover != null) { connHover = null; applyConnectors(); }
+    });
     box.addEventListener("keydown", ev => {
       const n = boxNode.get(box);
       if (ev.key === "Enter" || ev.key === " ") {
@@ -4281,8 +4525,18 @@ function createLiveMap(container, graph, options) {
     // Every drawn box, once, so the hidden-span test does not rebuild them per edge.
     const allBoxes = boxesOf(g, vis);
     const joins = planJoins(g, vis, geometry, allBoxes);
+    const keepConn = new Set();
     for (const e of g.edges()) {
       const key = e.v + " " + e.w + " " + e.name;
+      const info0 = g.edge(e);
+      // A relation between pages that are not side by side is a connector (see `layoutByText`):
+      // drawn apart, and NOT kept among the ordinary edges, so a line this key drew before -- in
+      // the rows, or one page apart -- is cleared away below with everything else it had.
+      if (info0 && info0.connector && info0.connector.fromStub && info0.connector.toStub) {
+        keepConn.add(key);
+        drawConnector(key, e, info0, REL[e.name] || REL.support);
+        continue;
+      }
       keep.add(key);
       const pts = geometry.get(key);
       if (!pts || pts.length < 2) continue;
@@ -4358,7 +4612,86 @@ function createLiveMap(container, graph, options) {
       drawnUnder.delete(key);
       holder.remove();
     }
+    for (const [key, holder] of drawnConn) {
+      if (keepConn.has(key)) continue;
+      drawnConn.delete(key);
+      holder.remove();
+    }
     drawJoins(joins);
+    applyConnectors();
+  }
+
+  /** A CONNECTOR, drawn: a stub at each end facing the other page, labelled with the claim at
+   *  the other end, and the whole line hidden until it is asked for -- by the pointer on either
+   *  claim or either stub, or by either claim being selected. A stub is also a way to the other
+   *  end. The reason's stub leaves its claim plainly; the claim's stub carries the arrowhead,
+   *  so the direction reads at either end without the line. */
+  const drawnConn = new Map();
+  let connHover = null;             // the claim, or connector, the pointer is on
+  function drawConnector(key, e, info, rel) {
+    const c = info.connector;
+    let holder = drawnConn.get(key);
+    if (!holder) {
+      holder = el("g", { class: "alm-conn" });
+      const full = el("path", { class: "alm-conn-full", fill: "none" });
+      holder.appendChild(full);
+      for (const end of ["from", "to"]) {
+        const st = el("g", { class: "alm-conn-stub", "data-end": end });
+        st.append(el("path", { class: "alm-conn-line", fill: "none" }),
+                  el("circle", { class: "alm-conn-dot", r: 2.6 }),
+                  el("text", { class: "alm-conn-label", "font-size": 9.5 }), el("title"));
+        st.addEventListener("mouseenter", () => { connHover = key; applyConnectors(); });
+        st.addEventListener("mouseleave", () => { connHover = null; applyConnectors(); });
+        st.addEventListener("click", ev => {
+          ev.stopPropagation();
+          const k = drawnConn.get(key);
+          const there = k && (end === "from" ? k.dataset.to : k.dataset.from);
+          if (!there) return;
+          setLit([there]);
+          centreOn([there]);
+        });
+        holder.appendChild(st);
+      }
+      gEdges.appendChild(holder);
+      drawnConn.set(key, holder);
+    }
+    holder.dataset.from = c.from;
+    holder.dataset.to = c.to;
+    const full = holder.querySelector(".alm-conn-full");
+    full.setAttribute("d", smooth(info.points));
+    full.setAttribute("stroke", rel.color);
+    full.setAttribute("marker-end", `url(#alm-arrow-${e.name})`);
+    if (rel.dash) full.setAttribute("stroke-dasharray", rel.dash);
+    for (const end of ["from", "to"]) {
+      const s0 = c[end + "Stub"], st = holder.querySelector(`.alm-conn-stub[data-end="${end}"]`);
+      const line = st.querySelector(".alm-conn-line");
+      // The claim's end runs from the dot INTO the claim, so its arrowhead lands on the box.
+      line.setAttribute("d", end === "to" ? `M${s0.x1},${s0.y}L${s0.x0},${s0.y}`
+                                          : `M${s0.x0},${s0.y}L${s0.x1},${s0.y}`);
+      line.setAttribute("stroke", rel.color);
+      if (end === "to") line.setAttribute("marker-end", `url(#alm-arrow-${e.name})`);
+      const dot = st.querySelector(".alm-conn-dot");
+      dot.setAttribute("cx", s0.x1); dot.setAttribute("cy", s0.y);
+      dot.setAttribute("fill", rel.color);
+      const t = st.querySelector(".alm-conn-label");
+      t.setAttribute("x", s0.x1 + (s0.side === "right" ? 5 : -5));
+      t.setAttribute("y", s0.y + 3.2);
+      t.setAttribute("text-anchor", s0.side === "right" ? "start" : "end");
+      t.textContent = fitLabel(s0.label, 120, 9.5);
+      st.querySelector("title").textContent =
+        (end === "from" ? "Bears on \u201c" + s0.label + "\u201d"
+                        : "From \u201c" + s0.label + "\u201d") +
+        ", on page " + s0.page + ". Point at it to draw the line; click to go there.";
+    }
+  }
+  /** Which connectors show their whole line: those touching the claim or stub under the
+   *  pointer, and those touching a selected claim. */
+  function applyConnectors() {
+    for (const [key, holder] of drawnConn) {
+      const f = holder.dataset.from, t = holder.dataset.to;
+      holder.classList.toggle("is-open", connHover === key || connHover === f || connHover === t ||
+                                         lit.has(f) || lit.has(t));
+    }
   }
 
   /** The boxes drawn behind the nodes: in the ordinary map the reconstruction's own sections, in
@@ -4550,6 +4883,7 @@ function createLiveMap(container, graph, options) {
       box.classList.toggle("is-lit",
         lit.has(id) || !!(n && (n.members || []).some(m => lit.has(m))));
     }
+    applyConnectors();
   }
   function setLit(ids) { lit = new Set(ids || []); applyLit(); }
 
@@ -4999,6 +5333,42 @@ function createLiveMap(container, graph, options) {
    *  claim's name, dotted, never a claim box: it adds nothing to the argument, carries no badge,
    *  folds nothing and is found by nothing, and a click on it goes to the claim itself. Its tie
    *  to the claim is dotted and faint for the same reason — it is not a relation. */
+  /** THE PARAGRAPH CARDS of the rows view (see `layoutByText`): one paragraph's claims on one
+   *  card, read top to bottom, with the paragraph's number in its section at the foot. */
+  const drawnCard = new Map();
+  function drawCards(g) {
+    const list = (g && g.cards) || [];
+    const keep = new Set();
+    for (const cd of list) {
+      const key = cd.lane + " " + cd.key;
+      keep.add(key);
+      let box = drawnCard.get(key);
+      if (!box) {
+        box = el("g", { class: "alm-card" });
+        box.append(el("rect", { class: "alm-card-box", rx: 9, ry: 9 }),
+                   el("text", { class: "alm-card-no", "font-size": 9.5 }), el("title"));
+        gCards.appendChild(box);
+        drawnCard.set(key, box);
+      }
+      const r = box.querySelector(".alm-card-box");
+      r.setAttribute("x", cd.x); r.setAttribute("y", cd.y);
+      r.setAttribute("width", cd.width); r.setAttribute("height", cd.height);
+      const t = box.querySelector(".alm-card-no");
+      t.setAttribute("x", cd.x + 8); t.setAttribute("y", cd.y + cd.height - 5);
+      t.textContent = cd.para ? "\u00b6 " + cd.para : "";
+      box.querySelector("title").textContent =
+        (cd.para ? "Paragraph " + cd.para + " of this section" : "One passage of the text") +
+        (cd.count > 1 ? ": its " + cd.count + " claims, top to bottom, in the order it makes " +
+                        "them" : "") +
+        ". Paragraphs run left to right, then on to the next row, as lines of text do.";
+    }
+    for (const [key, box] of drawnCard) {
+      if (keep.has(key)) continue;
+      box.remove();
+      drawnCard.delete(key);
+    }
+  }
+
   const drawnEcho = new Map();
   function drawEchoes(g) {
     const list = (g && g.echoes) || [];
@@ -5021,7 +5391,8 @@ function createLiveMap(container, graph, options) {
         gEchoes.appendChild(box);
         drawnEcho.set(ec.id, box);
       }
-      box.querySelector(".alm-echo-tie").setAttribute("d", smooth(ec.points));
+      box.querySelector(".alm-echo-tie").setAttribute("d",
+        ec.points && ec.points.length >= 2 ? smooth(ec.points) : "");
       const rect = box.querySelector(".alm-echo-box");
       rect.setAttribute("x", p.x - p.width / 2); rect.setAttribute("y", p.y - p.height / 2);
       rect.setAttribute("width", p.width); rect.setAttribute("height", p.height);
@@ -5222,7 +5593,7 @@ function createLiveMap(container, graph, options) {
     return true;
   }
 
-  function fitTo(w, h, apex, reading) {
+  function fitTo(w, h, apex, reading, paged) {
     // clientWidth/Height, not getBoundingClientRect: the rect is measured AFTER any CSS
     // transform, and reveal.js scales the whole slide to the window. Fitting to the scaled
     // numbers leaves the map a fraction of its proper size on a slide.
@@ -5241,10 +5612,13 @@ function createLiveMap(container, graph, options) {
     // other map it is a tall sliver at the zoom floor, with its middle on screen — the one part
     // of a text nobody starts from. So it fills the pane's width, starts at its first band, and
     // is scrolled, as a page is.
-    const f = reading
+    // PAGED COLUMNS open at the first, at the size they were cut for: the whole height of a
+    // column on screen, the next ones to its right.
+    const f = paged ? { k: Math.min(paged, ch / (h + 16)), x: 16, y: 8 }
+      : reading
       ? { k: Math.max(opt.minScale, Math.min(cw / (w + 32), 1)), x: 0, y: 16 }
       : frameFor(w, h, cw, ch, opt.minScale, apex);
-    if (reading) f.x = Math.max(16, (cw - w * f.k) / 2);
+    if (reading && !paged) f.x = Math.max(16, (cw - w * f.k) / 2);
     view.k = f.k; view.x = f.x; view.y = f.y;
     glide();                      // rather than cutting to the new frame
     userMoved = false;
@@ -5352,7 +5726,7 @@ function createLiveMap(container, graph, options) {
       // An echo is a press target too: it goes to the claim it echoes. Left out of this list, a
       // press on one started a pan and captured the pointer, and the click never arrived (found
       // by clicking one, 26 Sep 2026).
-      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold, .alm-echo")) return;
+      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold, .alm-echo, .alm-conn-stub")) return;
       // THE LEFT BUTTON ONLY. Without this a right-click started a pan -- and, worse, the
       // preventDefault below suppressed the contextmenu event that was supposed to follow it,
       // so "Fold section" could never appear. A dispatched contextmenu event still worked,
@@ -5477,11 +5851,13 @@ function createLiveMap(container, graph, options) {
       // Offered in Exposition only, where there is a text order to lay out two ways.
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="layout" hidden>' +
         '<b title="How the text\'s order is laid out">layout</b>' +
-        '<button data-act="layout" data-col="0" title="Paragraphs side by side, wrapping like ' +
-        'lines of prose">rows</button>' +
+        '<button data-act="layout" data-col="0" title="Each paragraph a card, its claims top to ' +
+        'bottom; the cards side by side in the order of the text, wrapping like lines of ' +
+        'prose">rows</button>' +
         '<button data-act="layout" data-col="1" title="One claim to a row, top to bottom as the ' +
         'text runs, with the relations as arcs in the margins: on the left, reasons already ' +
-        'given; on the right, reasons still to come">column</button>' +
+        'given; on the right, reasons still to come. On a wide pane the column is cut into ' +
+        'pages set side by side: read one down, then the next">column</button>' +
         '</span>' : "") +
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="shape" hidden>' +
         '<button data-act="shape" title="The shape of the argument: whether each claim\'s ' +
@@ -6034,7 +6410,7 @@ function createLiveMap(container, graph, options) {
       // hidden pane and needs measuring again.
       if (remeasureIfBlind()) { render(true); return; }
       if (framedForReal || !lastFit || container.clientHeight <= 120) return;
-      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading);
+      fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading, lastFit.paged);
     });
     sizeWatch.observe(container);
   }
@@ -6042,7 +6418,7 @@ function createLiveMap(container, graph, options) {
   return {
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
-    fit: () => fitTo(lastFit.w, lastFit.h, null, lastFit.reading),
+    fit: () => fitTo(lastFit.w, lastFit.h, null, lastFit.reading, lastFit.paged),
     // The host calls this when a pane opens or closes. If the last render was measured blind, the
     // sizes have to be thrown away first — otherwise this redraws the slivers exactly as they are.
     redraw: () => { remeasureIfBlind(); render(true); },
@@ -6247,8 +6623,18 @@ function injectStyle() {
 .alm-g.is-empty .alm-gbox{fill:none;stroke-dasharray:2 4;stroke-opacity:.7}
 /* An echo: where else the text states a claim. Dotted, unfilled and small — present, and plainly
    not a claim box; its tie is dotted and faint because it is not a relation. */
+.alm-conn-full{display:none;stroke-width:1.4;stroke-opacity:.9}
+.alm-conn.is-open .alm-conn-full{display:inline}
+.alm-conn-line{stroke-width:1.4}
+.alm-conn-stub{cursor:pointer}
+.alm-conn-label{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;paint-order:stroke;
+  stroke:var(--alm-node-bg,#fff);stroke-width:3px;stroke-linejoin:round}
+.alm-conn-stub:hover .alm-conn-label,.alm-conn.is-open .alm-conn-label{fill:var(--alm-fg,#1a1a1a)}
+.alm-card-box{fill:var(--alm-fg,#1f1f1f);fill-opacity:.035;stroke:var(--alm-fg,#1f1f1f);
+  stroke-opacity:.14;stroke-width:1}
+.alm-card-no{fill:var(--alm-fg-dim,#6b6b6b);font-variant-numeric:tabular-nums}
 .alm-echo{cursor:pointer}
-.alm-echo-box{fill:var(--alm-bg,#fff);fill-opacity:.6;stroke:var(--alm-fg-dim,#6b6b6b);
+.alm-echo-box{fill:var(--alm-node-bg,#fff);fill-opacity:.6;stroke:var(--alm-fg-dim,#6b6b6b);
   stroke-width:1;stroke-dasharray:1.5 3;stroke-opacity:.8}
 .alm-echo:hover .alm-echo-box{stroke-width:1.6;stroke-opacity:1}
 .alm-echo-text{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;pointer-events:none}
