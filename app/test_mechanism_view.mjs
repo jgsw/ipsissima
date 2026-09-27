@@ -548,6 +548,20 @@ mechanism:
 
 for (const [dir, SL] of SAMPLE_LAYOUTS)
   check(same(clashes(SL), { chips: 0, underHead: 0 }), `${dir.slice(0, 40)}: nothing sits on anything`, JSON.stringify(clashes(SL)));
+// A CHIP SITS WHERE ITS LINE RUNS ALONE (27 Sep 2026). On the J-PAL sample 31 of 42 chips had
+// another line through them; the second placement pass brings it to 22. Mutation: skip the second
+// pass -> 31, and this fails.
+{
+  const bz = (a, b, c, d, t) => { const u = 1 - t; return u*u*u*a + 3*u*u*t*b + 3*u*t*t*c + t*t*t*d; };
+  const crossed = L => {
+    const S = L.edges.map(e => { const P = e.curve; return Array.from({ length: 33 }, (_, u) => [bz(P[0][0], P[1][0], P[2][0], P[3][0], u / 32), bz(P[0][1], P[1][1], P[2][1], P[3][1], u / 32)]); });
+    return L.edges.filter((e, i) => { const b = { x: e.chip.x - e.chip.w / 2 - 2, y: e.chip.y - 11, w: e.chip.w + 4, h: 22 };
+      return S.some((sm, j) => j !== i && sm.some(([x, y]) => x > b.x && x < b.x + b.w && y > b.y && y < b.y + b.h)); }).length;
+  };
+  const bates = SAMPLE_LAYOUTS.find(([dir]) => /Bates/.test(dir));
+  check(!!bates && crossed(bates[1]) <= 24, "a chip is placed where no other line runs through it, wherever there is room",
+        bates && `${crossed(bates[1])} of ${bates[1].edges.length} chips crossed`);
+}
 for (const [dir, , SM] of SAMPLE_LAYOUTS) {
   const SF = MV.layout(SM, { folded: Object.fromEntries(MV.foldable(SM, "text").map(v => [v, true])) });
   check(SF.edges.every(e => e.chip.x - e.chip.w / 2 >= 4), `${dir.slice(0, 40)}: folded to its ends, every chip is on the drawing`);
@@ -620,7 +634,16 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const chipText = kind => page.evaluate(k => {
       const e = document.querySelector(`#mech .chip[data-layer="text"][data-edge="order>reoff"][data-kind="${k}"] text`);
       return e ? e.textContent : ""; }, kind);
-    check((await chipText("step")).startsWith("lowers"), "the text's own step is drawn as its step, in words", await chipText("step"));
+    check(/^(▼ )?lowers/.test(await chipText("step")), "the text's own step is drawn as its step, in words", await chipText("step"));
+    // Mutation: drop the glyph -> fails. ▲ raises, ▼ lowers: read at a glance in a crowd.
+    check((await chipText("step")).startsWith("▼ "), "and its chip leads with the direction glyph", await chipText("step"));
+    // HOVER TIES A CHIP TO ITS LINE. Mutation: drop the mouseenter handler -> nothing fades.
+    await page.locator('#mech .chip[data-layer="text"][data-edge="order>reoff"][data-kind="step"]').hover();
+    await page.waitForTimeout(150);
+    const hov = await page.evaluate(() => ({ on: document.querySelector("#mech svg").classList.contains("hovering"),
+      hot: [...document.querySelectorAll("#mech g.hot[data-edge]")].map(g => g.getAttribute("data-edge")) }));
+    check(hov.on && hov.hot.includes("order>reoff"), "hovering a chip lights its line and fades the rest", JSON.stringify(hov));
+    await page.mouse.move(2, 2);
     check(/^no effect/.test(await chipText("null")), "the text's null finding is drawn apart, saying so", await chipText("null"));
     check(/selection/.test(await chipText("selection")), "and the selection link apart again", await chipText("selection"));
     check(await page.evaluate(() => { const g = document.querySelector('#mech g[data-kind="null"]');

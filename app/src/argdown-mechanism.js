@@ -975,7 +975,13 @@ function layout(M, opts) {
     return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
              ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P,
-             chip: { x: 0, y: 0, w: label.length * 6.6 + 14, h: 18, label: label } };
+             // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
+             // where many chips crowd, and not the + and − that mean support and attack in Reasons.
+             chip: (function () {
+               var glyph = kind === "step" && breakdown.length === 1 && signs.length === 1
+                 ? ({ "+": "▲", "-": "▼", "which": "◆" })[signs[0]] || "" : "";
+               return { x: 0, y: 0, w: label.length * 6.6 + 14 + (glyph ? 11 : 0), h: 18, label: label, glyph: glyph };
+             })() };
   });
   var shown = {};
   Object.keys(nodes).forEach(function (v) { if (!drawn.folded[v] && setAside.indexOf(v) < 0) shown[v] = nodes[v]; });
@@ -1075,7 +1081,8 @@ function foldable(M, voice) {
  *  first clear of every box, every arrowhead and every chip already placed -- the text's
  *  best-backed steps first, so they get the clearest places -- or the least crowded if none is
  *  clear. Deterministic: the same chain places its chips the same way. */
-var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9];
+var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9,
+              0.25, 0.75, 0.33, 0.67, 0.2, 0.8, 0.12, 0.88, 0.05, 0.95];
 var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
 /** JOINT CAUSES, DRAWN AS THE REASONS MAP DRAWS LINKED PREMISES. Each co-cause sends a stem to a
  *  bar across the arrow near its head: the effect passes the bar only with every stem in. Drawn
@@ -1135,6 +1142,26 @@ function placeChips(edges, nodes, lanes) {
   var order = edges.map(function (e, i) { return i; })
                    .sort(function (i, j) { return rankOf(edges[i]) - rankOf(edges[j]) || i - j; });
   var placed = [];
+  // A CHIP SITS WHERE ITS LINE RUNS ALONE. Placed only clear of boxes and other chips, a chip in a
+  // bundle of lines -- Reason's first column sends a dozen arrows down one corridor -- sat on four
+  // lines at once and belonged visibly to none (27 Sep 2026). Every line is sampled, and a place
+  // where OTHER lines pass through the chip costs as a partial overlap would.
+  var samples = edges.map(function (e) {
+    var P = e.curve, out = [];
+    for (var u = 0; u <= 32; u++) { var tt = u / 32;
+      out.push([bez(P[0][0], P[1][0], P[2][0], P[3][0], tt), bez(P[0][1], P[1][1], P[2][1], P[3][1], tt)]); }
+    return out;
+  });
+  var crossings = function (box, self) {
+    var n = 0;
+    for (var q = 0; q < samples.length; q++) {
+      if (q === self) continue;
+      var S = samples[q];
+      for (var r = 0; r < S.length; r++)
+        if (S[r][0] > box.x - 3 && S[r][0] < box.x + box.w + 3 && S[r][1] > box.y - 3 && S[r][1] < box.y + box.h + 3) n++;
+    }
+    return n;
+  };
   order.forEach(function (i) {
     var e = edges[i], P = e.curve, best = null, bestCost = Infinity;
     // On the line first, at every point tried; only then a step above or below it, which still
@@ -1152,7 +1179,30 @@ function placeChips(edges, nodes, lanes) {
       if (!cost) break;
     }
     e.chip.x = Math.round(best.x * 10) / 10; e.chip.y = Math.round(best.y * 10) / 10;
-    placed.push(best.box);
+    placed[i] = best.box;
+  });
+  // SECOND PASS: each chip moves to a place where fewer OTHER lines cross it, but only to a place
+  // clear of every box, arrowhead and chip -- so the first pass's guarantee stands, and a chip moves
+  // only where there is room. A place on its own line is preferred to one beside it.
+  var clear = function (box, self) {
+    if (box.x < 4) return false;
+    if (fixed.some(function (f) { return overlap(box, f) > 0; })) return false;
+    return !placed.some(function (f, j) { return j !== self && f && overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }) > 0; });
+  };
+  order.forEach(function (i) {
+    var e = edges[i], P = e.curve, cur = placed[i];
+    var score = function (box, dy) { return crossings(box, i) + (dy ? 2 + Math.abs(dy) / 12 : 0); };
+    var bestScore = clear(cur, i) ? score(cur, Math.abs(cur.y + cur.h / 2 - e.chip.y) > 0.5 ? 1 : 0) : Infinity, move = null;
+    if (!bestScore) return;
+    for (var k = 0; k < CHIP_T.length * CHIP_DY.length; k++) {
+      var t = CHIP_T[k % CHIP_T.length], dy = CHIP_DY[Math.floor(k / CHIP_T.length)];
+      var cx = bez(P[0][0], P[1][0], P[2][0], P[3][0], t), cy = bez(P[0][1], P[1][1], P[2][1], P[3][1], t) + dy;
+      var box = { x: cx - e.chip.w / 2, y: cy - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
+      if (!clear(box, i)) continue;
+      var sc = score(box, dy);
+      if (sc < bestScore) { bestScore = sc; move = { x: cx, y: cy, box: box }; }
+    }
+    if (move) { e.chip.x = Math.round(move.x * 10) / 10; e.chip.y = Math.round(move.y * 10) / 10; placed[i] = move.box; }
   });
 }
 
@@ -1268,6 +1318,9 @@ function injectStyle() {
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
     ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
+    ".amech .chip .glyph{font-size:9px}",
+    ".amech svg.hovering g[data-edge]:not(.hot){opacity:.18}.amech svg.hovering g[data-edge].hot .ed{stroke-width:3.2}",
+    ".amech svg.hovering g.chip.hot rect{stroke-width:2}",
     ".amech .sel{stroke:var(--mv-sel)!important;stroke-width:4!important}",
     ".amech .dim{opacity:.1}.amech .faint{opacity:.35}",
     ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
@@ -1572,8 +1625,21 @@ function create(container, graph, opts) {
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
                            "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gC);
       var tw = e.chip.w;
-      el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - 9, width: tw, height: 18, rx: 9 }, chip);
-      el("text", { x: e.chip.x, y: e.chip.y + 4, "text-anchor": "middle" }, chip).textContent = e.chip.label;
+      // THE CHIP LOOKS LIKE ITS LINE: its border takes the line's pattern (F5 -- a dotted step's
+      // chip is dotted), so a chip in a crowd is tied to its line by more than nearness.
+      var cr = el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - 9, width: tw, height: 18, rx: 9 }, chip);
+      if (st.dash) cr.setAttribute("stroke-dasharray", st.dash);
+      var ct = el("text", { x: e.chip.x, y: e.chip.y + 4, "text-anchor": "middle" }, chip);
+      if (e.chip.glyph) {
+        el("tspan", { "class": "glyph" }, ct).textContent = e.chip.glyph + " ";
+        el("tspan", {}, ct).textContent = e.chip.label;
+      } else ct.textContent = e.chip.label;
+      // HOVER TIES A CHIP TO ITS LINE without a click: both stand out, the rest fade.
+      var hot = function (on) { svg.classList.toggle("hovering", on); g.classList.toggle("hot", on); chip.classList.toggle("hot", on); };
+      [g, chip].forEach(function (x) {
+        x.addEventListener("mouseenter", function () { hot(true); });
+        x.addEventListener("mouseleave", function () { hot(false); });
+      });
       var title = el("title", {}, g);
       title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
         (e.jointly.length ? ", holding only together with " + e.jointly.map(function (j) { return obj(M.states[j]).label || j; }).join(" and ") : "") +
