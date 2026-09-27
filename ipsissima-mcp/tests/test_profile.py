@@ -92,6 +92,9 @@ if re.search(r'\)\.part_of\b', MECH_JS):
 # A state's levels are read through levelsOf() since profile 1.4.
 if re.search(r'function levelsOf\(state\b.{0,300}?obj\(state\)\.levels\b', MECH_JS, re.S):
     js_state.add("levels")
+# A state's kind is read through kindMap() and the view's kindOfState() since profile 1.6.
+if re.search(r'obj\((?:FULL\.)?states\[\w+\]\)\.kind\b', MECH_JS):
+    js_state.add("kind")
 # Roles are read through rolesOf() since profile 1.1, where `role` may be a list.
 if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
     js_state.add("role")

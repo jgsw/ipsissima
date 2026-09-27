@@ -99,6 +99,12 @@ mechanism:
   another begins, give it that role in the second: `roles: {forest: condition}`. One question
   with one chain needs none of this. Do not split a single argument into chains to make a busy
   diagram smaller — a chain is a question the TEXT answers apart.
+- **`kinds:`** where the same KIND of state recurs across cases the text keeps apart: a general
+  claim about rural–urban migration and a case of herders' migration; forest cover in one study
+  and in another. Declare the kind once, and give each such state `kind: <id>`. Keep them two
+  states: making them one would walk from the case into the general claim, a step the text never
+  takes. Use a kind only where the text itself treats the two as the same kind of thing — the
+  same word is not enough.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 

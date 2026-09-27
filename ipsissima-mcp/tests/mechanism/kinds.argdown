@@ -1,0 +1,41 @@
+// Planted SAME KIND ACROSS CASES (27 Sep 2026, profile 1.6): a general claim that migration
+// thins the forest, and a case in which herders' migration after drought thins theirs. The two
+// migrations are one kind, not one state -- the text never joins them -- and so are the two
+// forests; the census should find the case's step to be the general step again, and walk
+// nothing between them.
+===
+title: "Kinds -- a general claim and its case"
+mechanism:
+    question: "Does migration thin the forest, and did it in the north?"
+    levels: [macro, micro]
+    actors:
+        region:   {label: "The region", level: macro}
+        herders:  {label: "Herding families in the north", level: micro}
+        migrants: {label: "Rural migrants, in general", level: micro}
+    kinds:
+        migration: {label: "Rural-urban migration"}
+        forest:    {label: "Forest cover"}
+    states:
+        drought:  {label: "Drought in the north", actor: region, role: condition}
+        kmigr:    {label: "Herders' migration", actor: herders, kind: migration}
+        kforest:  {label: "The north's forest cover", actor: region, kind: forest, role: outcome}
+        migr:     {label: "Rural-urban migration", actor: migrants, kind: migration, role: condition}
+        forest:   {label: "Forest cover", actor: region, kind: forest, role: outcome}
+    chains:
+        general: {label: "The general claim", question: "Does migration thin the forest?"}
+        north:   {label: "The northern case", question: "What did drought do to the north's forest?"}
+===
+
+[Migration and forests]: Migration and forests are tied, in general and in the north.
+
+[Migration thins forests]: Rural-urban migration thins the forest.
+    {causes: {from: migr, to: forest, sign: "-", basis: asserted, chain: general}}
+    +> [Migration and forests]
+
+[Drought drove herders out]: Drought drove herding families to migrate.
+    {causes: {from: drought, to: kmigr, sign: "+", basis: asserted, chain: north}}
+    +> [Migration and forests]
+
+[Their going thinned the north's forest]: Their going thinned the north's forest.
+    {causes: {from: kmigr, to: kforest, sign: "-", basis: asserted, chain: north}}
+    +> [Migration and forests]

@@ -141,12 +141,12 @@ function model(graph) {
     });
   });
   var ok = steps.filter(function (s) { return has(states, s.from) && has(states, s.to); });
-  var chains = chainsOf(block);
+  var chains = chainsOf(block), kinds = kindsOf(block);
   return { levels: levels, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
-           question: block.question == null ? "" : String(block.question), chains: chains,
+           question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds,
            profile: profile(levels, actors, states, ids, ok,
-                            m.appraisal != null ? m.appraisal : appraisalClaims, chains) };
+                            m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds) };
 }
 
 function reach(start, edges) {
@@ -274,6 +274,38 @@ function chainsOf(block) {
   return out;
 }
 
+/** The kinds a block declares (profile 1.6), in declared order -- mechanism.py's _kinds, less the
+ *  states, which `profile` counts from whatever states it is given. */
+function kindsOf(block) {
+  var raw = obj(block.kinds);
+  return Object.keys(raw).map(function (id) {
+    var k = obj(raw[id]);
+    return { id: String(id), label: k.label == null ? null : String(k.label) };
+  });
+}
+
+/** Each state's kind, where it names a declared one. */
+function kindMap(kinds, states, ids) {
+  var known = {}, out = {};
+  (kinds || []).forEach(function (k) { known[k.id] = true; });
+  ids.forEach(function (i) { var k = obj(states[i]).kind; if (k != null && known[String(k)]) out[i] = String(k); });
+  return out;
+}
+
+/** THE SAME STEP IN TWO CASES -- mechanism.py's _akin_steps: two steps whose ends are each the
+ *  same state or states of one kind, and which are not one step. Nothing is walked between them. */
+function akinSteps(edges, kindOf) {
+  var alike = function (x, y) { return x === y || (kindOf[x] != null && kindOf[x] === kindOf[y]); };
+  var seen = {}, es = [];
+  edges.forEach(function (e) { var k = e[0] + "\u0000" + e[1]; if (!seen[k]) { seen[k] = true; es.push(e); } });
+  es.sort(function (p, q) { return p[0] < q[0] ? -1 : p[0] > q[0] ? 1 : p[1] < q[1] ? -1 : p[1] > q[1] ? 1 : 0; });
+  var out = [];
+  for (var i = 0; i < es.length; i++)
+    for (var j = i + 1; j < es.length; j++)
+      if (alike(es[i][0], es[j][0]) && alike(es[i][1], es[j][1])) out.push([es[i], es[j]]);
+  return out;
+}
+
 /** Where a chain starts, what it reaches, its gaps and its routes -- mechanism.py's _walk, run
  *  on the whole text's chain and, since profile 1.5, on each of its chains. */
 function walkChain(ids, states, edges) {
@@ -358,7 +390,7 @@ function chainIds(c, states, ids, mine) {
 
 /** Each chain walked on its own steps with its own roles, what it shares, and how many of the
  *  text's steps sit in no chain -- mechanism.py's _chain_profiles. */
-function chainProfiles(chains, states, ids, text, isReflexive) {
+function chainProfiles(chains, states, ids, text, isReflexive, kindOf) {
   var out = [], member = {};
   chains.forEach(function (c) {
     var mine = text.filter(function (s) { return s.chain.indexOf(c.id) >= 0; });
@@ -381,6 +413,18 @@ function chainProfiles(chains, states, ids, text, isReflexive) {
     cp.shared = cp.states.filter(function (i) { return member[i].length > 1; })
       .map(function (i) { return [i, member[i].filter(function (o) { return o !== cp.id; })]; });
   });
+  // AND WHAT IS AKIN (profile 1.6): a state whose kind a different state has in another chain.
+  kindOf = kindOf || {};
+  out.forEach(function (cp) {
+    cp.akin = [];
+    cp.states.forEach(function (i) {
+      if (kindOf[i] == null) return;
+      var there = [];
+      out.forEach(function (o) { if (o.id === cp.id) return;
+        o.states.forEach(function (j) { if (j !== i && kindOf[j] === kindOf[i]) there.push([o.id, j]); }); });
+      if (there.length) cp.akin.push([i, kindOf[i], there]);
+    });
+  });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
   return { chains: out, unchained: Object.keys(loose).length };
@@ -395,7 +439,7 @@ function uniqEdges(steps) {
 
 /** Gross's dimensions and the light and shadow, in the text's own layer -- mechanism.py's
  *  profile, field for field, so the census and the page cannot disagree. */
-function profile(levels, actors, states, ids, steps, appraisalClaims, chains) {
+function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds) {
   var causal = steps.filter(function (s) { return !s.isNull && !s.selects; });
   var textAll = steps.filter(function (s) { return s.layer === "text"; });
   var text = causal.filter(function (s) { return s.layer === "text"; });
@@ -421,7 +465,8 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains) {
   var pool = causal.filter(function (s) { return s.layer !== "rival"; });
   var loopsText = loops(ids, edges);
   var rs = W.routes;
-  var CP = chainProfiles(chains || [], states, ids, text, isReflexive);
+  var kindOf = kindMap(kinds, states, ids);
+  var CP = chainProfiles(chains || [], states, ids, text, isReflexive, kindOf);
   var spanned = {};
   Object.keys(used).forEach(function (i) {
     levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
@@ -474,7 +519,10 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains) {
     appraisal_steps: steps.filter(function (s) { return s.layer === "appraisal"; }).length,
     with_how: text.filter(function (s) { return !!s.how; }).length,
     with_given: text.filter(function (s) { return s.given.length > 0; }).length,
-    chains: CP.chains, unchained: CP.unchained
+    chains: CP.chains, unchained: CP.unchained,
+    kinds: (kinds || []).map(function (k) {
+      return { id: k.id, label: k.label, states: ids.filter(function (i) { return kindOf[i] === k.id; }) }; }),
+    akin_steps: akinSteps(uniqEdges(text), kindOf)
   };
 }
 
@@ -1228,7 +1276,7 @@ function collapseModel(M) {
   return { levels: M.levels, actors: M.actors, states: states, ids: ids, steps: steps,
            dropped: M.dropped, appraisalClaims: M.appraisalClaims, question: M.question,
            profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims),
-           chains: [], chain: M.chain,
+           chains: [], chain: M.chain, kinds: M.kinds,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
 }
@@ -1262,9 +1310,9 @@ function chainModel(M, id) {
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   return { levels: M.levels, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
-           question: c.question || M.question, chains: [],
+           question: c.question || M.question, chains: [], kinds: M.kinds,
            chain: { id: c.id, label: c.label || c.id, shared: shared },
-           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, []) };
+           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds) };
 }
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
@@ -1285,12 +1333,24 @@ function create(container, graph, opts) {
   // one choice away.
   var CHAINS = FULL.chains || [];
   var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
-               chain: CHAINS.length ? CHAINS[0].id : null };
+               chain: CHAINS.length ? CHAINS[0].id : null, then: null };
+  // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
+  // which chains each is in, read off the whole file whatever is being shown.
+  var KINDS = FULL.profile.kinds || [];
+  var kindOfState = function (v) { var k = obj(FULL.states[v]).kind;
+    return k != null && KINDS.some(function (x) { return x.id === String(k); }) ? String(k) : null; };
+  var kinOf = function (v) { var k = kindOfState(v); if (!k) return [];
+    return KINDS.filter(function (x) { return x.id === k; })[0].states.filter(function (w) { return w !== v; }); };
+  var chainsOfState = function (v) { return FULL.profile.chains.filter(function (c) { return c.states.indexOf(v) >= 0; })
+    .map(function (c) { return c.id; }); };
+  var chainLabel = function (id) { var c = CHAINS.filter(function (x) { return x.id === id; })[0]; return c && c.label || id; };
   var cur = null;
   function remount() {
     container.innerHTML = "";
     var base = keep.chain ? chainModel(FULL, keep.chain) : FULL;
     cur = mount(keep.boxes ? collapseModel(base) : base);
+    // Arriving from another chain at a state, or at a kind, shows it there.
+    if (keep.then) { var t = keep.then; keep.then = null; cur.select(t); }
   }
   remount();
   return {
@@ -1511,7 +1571,19 @@ function create(container, graph, opts) {
         el("title", {}, sh).textContent = "Also in " + elsewhere.map(function (o) {
           var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
           " — click to see " + (other && other.label || elsewhere[0]);
-        sh.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; remount(); });
+        sh.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; keep.then = { state: v }; remount(); });
+      }
+      // ITS KIN (profile 1.6): ≈ where another state, here or in another chain, is of its kind.
+      var kin = kinOf(v);
+      if (kin.length) {
+        var km = el("g", { "class": "loopmark kin", "data-kind": kindOfState(v),
+                           transform: "translate(" + (elsewhere && elsewhere.length ? 36 : 10) + ",-5)" }, g);
+        el("circle", { r: 10 }, km);
+        el("text", { "text-anchor": "middle", y: 4 }, km).textContent = "≈";
+        el("title", {}, km).textContent = "The same kind of thing as " + kin.map(function (w) {
+          var cs = chainsOfState(w); return "“" + (obj(FULL.states[w]).label || w) + "”" + (cs.length ? " (" + cs.map(chainLabel).join(", ") + ")" : ""); }).join(" and ") +
+          " — a different state, in a different case; click to see them";
+        km.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
       }
       // A co-cause is linked: its step is the one it joins (profile 1.4).
       if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0) && x.layer === "text"; }))
@@ -1531,6 +1603,11 @@ function create(container, graph, opts) {
       var F = SYS[selected.system], inF = {};
       F.states.forEach(function (v) { inF[v] = true; });
       return { nodes: inF, edge: function (e) { return e.layer === "text" && e.kind === "step" && inF[e.from] && inF[e.to]; } };
+    }
+    if (selected.kind) {
+      var inK = {};
+      M.ids.forEach(function (v) { if (kindOfState(v) === selected.kind) inK[v] = true; });
+      return { nodes: inK, edge: function () { return false; } };
     }
     if (selected.cycle) {
       var L = selected.cycle, hops = {}, ln = {};
@@ -1731,6 +1808,23 @@ function create(container, graph, opts) {
         // the layer is on.
         (layers.appraisal ? appraisalNotes(e) : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1">Back to the chain</button>';
+    } else if (selected && selected.kind) {
+      var K = KINDS.filter(function (x) { return x.id === selected.kind; })[0];
+      var akin = (FULL.profile.akin_steps || []).filter(function (pr) {
+        return [pr[0][0], pr[0][1], pr[1][0], pr[1][1]].some(function (v) { return kindOfState(v) === selected.kind; }); });
+      var nm = function (v) { return esc(obj(FULL.states[v]).label || v); };
+      side.innerHTML = '<h3>' + esc(K.label || K.id) + '</h3>' +
+        '<div class="amech-focus">' + K.states.length + ' states of one kind: the same kind of thing in different cases, ' +
+        'not one state. The text never joins them, so no route runs from one to another.</div>' +
+        K.states.filter(function (v) { return !!G.nodes[v]; }).concat(K.states.filter(function (v) { return !G.nodes[v]; })).map(function (v) {
+          var cs = chainsOfState(v), here = !!G.nodes[v];
+          return '<div class="amech-row"><span class="k">' + (here ? 'shown' : 'elsewhere') + '</span><span>' + nm(v) +
+            (cs.length ? ' <span class="amech-q">(' + cs.map(function (c) { return esc(chainLabel(c)); }).join(", ") + ')</span>' : '') +
+            (!here && cs.length ? ' <button type="button" data-open-chain="' + esc(cs[0]) + '" data-open-state="' + esc(v) + '">Open ' +
+              esc(chainLabel(cs[0])) + '</button>' : '') + '</span></div>'; }).join("") +
+        (akin.length ? '<h3>The same step in two cases</h3>' + akin.map(function (pr) {
+          return '<div class="amech-q">' + nm(pr[0][0]) + ' → ' + nm(pr[0][1]) + ' ≈ ' + nm(pr[1][0]) + ' → ' + nm(pr[1][1]) + '</div>'; }).join("") : '') +
+        '<h3>&nbsp;</h3><button type="button" data-back="1">Show the whole chain</button>';
     } else if (selected && selected.system != null) {
       var F = SYS[selected.system];
       side.innerHTML = '<h3>Feedback system ' + sysName(selected.system) + '</h3>' +
@@ -1768,6 +1862,9 @@ function create(container, graph, opts) {
                  (whole != null && has(FULL.states, whole) ? '<div class="amech-row"><span class="k">part of</span><span>' +
                     esc(obj(FULL.states[whole]).label || whole) + '</span></div>' : '');
         })() +
+        (kinOf(selected.state).length ? '<div class="amech-row"><span class="k">kind</span><span><button type="button" data-kind-show="' +
+          esc(kindOfState(selected.state)) + '">' + esc((KINDS.filter(function (x) { return x.id === kindOfState(selected.state); })[0] || {}).label || kindOfState(selected.state)) +
+          '</button> <span class="amech-q">with ' + kinOf(selected.state).length + ' other state' + (kinOf(selected.state).length === 1 ? '' : 's') + '</span></span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
         // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
         // often make differently (mechanism-pass.md), so the reader is shown it.
@@ -1793,6 +1890,10 @@ function create(container, graph, opts) {
     var sp = t.closest ? t.closest("[data-short]") : null;
     if (sp) { var fi2 = +sp.getAttribute("data-sys");
       select({ cycle: SYS[fi2].shortest[+sp.getAttribute("data-short")], name: "A loop in feedback system " + sysName(fi2) }); return; }
+    var oc = t.getAttribute && t.getAttribute("data-open-chain");
+    if (oc) { keep.chain = oc; keep.then = { state: t.getAttribute("data-open-state") }; remount(); return; }
+    var ks = t.getAttribute && t.getAttribute("data-kind-show");
+    if (ks) { select({ kind: ks }); return; }
     var sy = t.closest ? t.closest("[data-system]") : null;
     if (sy) { select({ system: +sy.getAttribute("data-system") }); return; }
     var fv = t.getAttribute && t.getAttribute("data-fold"), uv = t.getAttribute && t.getAttribute("data-unfold");
@@ -1872,7 +1973,8 @@ function create(container, graph, opts) {
     getLayers: function () { return { rival: layers.rival, appraisal: layers.appraisal }; },
     setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
     setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
-    getFolded: function () { return G.folded.slice(); }
+    getFolded: function () { return G.folded.slice(); },
+    select: function (x) { if (x && (x.kind || (x.state && G.nodes[x.state]))) select(x); }
   };
   }
 }
