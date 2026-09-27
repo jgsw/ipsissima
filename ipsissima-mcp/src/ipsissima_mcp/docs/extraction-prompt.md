@@ -205,6 +205,15 @@ it is a different reconstruction — a sibling file, never a second reading mult
 this one. Naming a crux is a result, not a failure: a map of an old or contested text with no
 cruxes is usually claiming a determinacy the text does not have.
 
+**Record where the text announces what it argues, as you write.** A text states its thesis more
+than once: announced in the abstract or the roadmap, argued in the body, restated at the end.
+Place the claim where it is argued, and put the other places in its `echoes:` (the author's
+words, verbatim, one span or a list), so a reader of the Exposition view meets the thesis where
+the text first states it. You have the whole text in mind already (rule 2), so this costs a line,
+not a pass. An echo is a *statement* of the claim, never a question, a promise to discuss it,
+or its denial by someone the author answers. Do it for the contentions and for what each
+section argues; do not hunt for every restatement.
+
 **A wholly dramatised text also declares itself once, whole.** Where the entire argument is a
 persona's — a satire, a dialogue, a view set out to be seen through — tag its claims
 `#reported` as the conventions direct, and *also* write `voice:` into the source file's front
@@ -244,6 +253,28 @@ something to look at, and some of those are judgements you are entitled to make 
 a claim whose text is the author's words but which declares `paraphrase` is reported, and is
 sometimes exactly right. `ok` is `true` when no `!` remains; the `?` findings come back beside
 it, so read them once before you stop and act on the ones you agree with.
+
+**And take the exposition step, in the same edit as your first round of fixes.** The map is built
+from the conclusion backwards, which is right, and it leaves the text's own order thin in
+predictable places. The census's `EXPOSITION` block names them from your first check, each with
+the sentence you need to judge it. So this needs no second reading of the source, and done
+alongside the fixes it costs no extra round trip: the next check verifies both.
+
+- a **contention the text states well before the place it is argued**, with no echo recorded:
+  if the sentence states the claim, add it to the claim's `echoes:`;
+- an **abstract, introduction, summary or conclusion with nothing mapped**, or a paper's
+  **opening with nothing mapped**: where it restates a claim, add an echo;
+  where it asserts something the argument uses, add the claim; where it argues nothing the map
+  needs, leave it. *Adds anchors, never argument*: this step does not rewire the map.
+
+That is the whole step: measured at a minute or so of judgement on four or fewer items, and
+one edit. Nothing else depends on it, so **if you have been asked for speed above the Exposition
+view, skip it.** The block's
+last line counts what only a **full exposition pass** would take up: every other unmapped
+section, and a book's chapter openings. That pass is optional, because on a long text it means
+reading pages again. Take it only when the map is for close reading, and then run
+`check_argdown.py FILE --source-root DIR --echo-candidates` for every place a claim's words
+recur.
 
 **`ok` alone is not the finish line — read `verified` beside it.** `ok` says nothing was wrong
 with what the run looked at. `verified` says whether the quotations were among what it looked at,
@@ -327,7 +358,7 @@ of an argument that is not there is worse than an honest one full of gaps.
 |---|---|
 | the map mirrors the section headings | worked forwards instead of from the conclusion |
 | every objection is an attack on a premise | undercuts not recognised |
-| a whole section of the paper has almost no claims | it was reported, not reconstructed |
+| a whole section of the paper has almost no claims | it was reported, not reconstructed — or, if it is the abstract or introduction, the exposition step was skipped |
 | the argument is tidier than the paper's | charity over accuracy |
 | an author asserts what they set out to refute | a supposition or reductio read as an assertion |
 | a claim says *all* where the paper says *most* | scope not preserved |

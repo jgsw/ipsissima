@@ -1998,6 +1998,89 @@ def provenance_report(cli, path, source_root, fix=None, echo_candidates=False):
             print(f"        +{g['gap']:>3} claims  {g['claim'][:34]:36} "
                   f"stated {g['stated']}/{g['total']}, first used {g['first_used']}")
 
+    exposition_report(prov, doc, source_root, quotes, apex)
+
+
+def exposition_report(prov, doc, source_root, quotes, contentions):
+    """THE TEXT'S OWN ORDER, for the method's exposition step (extraction-prompt.md, step 4).
+
+    What the map leaves thin in the order the text runs -- a section with nothing mapped, an
+    opening mapped far more thinly than the body, a contention the text announces well before
+    the place it is argued with no echo recorded -- each with the sentence to judge it by, so
+    that deciding needs no second reading of the source. Things to look at, never faults: a
+    statement of facts, or a survey the paper does not use, is rightly left unmapped.
+
+    CHEAP BY CONSTRUCTION, because it rides in the census of every check in the fix loop: it
+    prints nothing when there is nothing to act on, at most a dozen lines when there is, and one
+    finding per kind rather than one per section.
+    """
+    cov = prov.exposition_coverage(doc, source_root, quotes, contentions)
+    gaps = [(ch, g) for ch, f in cov["files"].items() for g in f["gaps"]]
+    # AN OPENING WITH NOTHING, OR ALMOST NOTHING, MAPPED -- James's 304 words with no claim, a
+    # chapter's first pages. Not one merely thinner than the body: an introduction is partly
+    # scene-setting, rightly left unmapped, and a ratio flagged Prescott-Couch's opening again
+    # after the step had anchored eight claims in it (trial, 27 Sep 2026) -- a note that nags on
+    # every later check is a cost with nothing to act on.
+    thin = [(ch, f) for ch, f in cov["files"].items()
+            if f["opening"]["words"] >= 100 and f["body"]["mapped"] and f["opening"]["mapped"] <= 1]
+    # TWO TIERS, because the step has a budget (the author, 27 Sep 2026: a minute or a tenth of
+    # a run, not four tenths). THE STEP ITSELF is what is cheap to judge and matters most: the
+    # contentions announced well before they are argued, the sections a text announces itself
+    # in, and a paper's opening -- each judged from the sentence given here and the text already
+    # read. EVERYTHING ELSE, a book's unmapped pages and chapter openings among it, is counted in
+    # one line for a full exposition pass, which is optional: on a book it means reading pages
+    # again, and that is the cost the step is built to avoid.
+    few_files = len(cov["files"]) <= 2
+    step_gaps = [(ch, g) for ch, g in gaps if g.get("announcing")]
+    more_gaps = [(ch, g) for ch, g in gaps if not g.get("announcing")]
+    step_thin = thin if few_files else []
+    more_thin = [] if few_files else thin
+    announced = cov["announced"][:4]
+    SHAPE["exposition"] = {"step": len(step_gaps) + len(step_thin) + len(announced),
+                           "more": len(more_gaps) + len(more_thin),
+                           "unplaced": len(cov["unplaced"]), "from_notes": cov["notes"]}
+    if not (step_gaps or step_thin or announced or more_gaps or more_thin):
+        return
+    print("\n   EXPOSITION -- the text's own order (method, step 4: the exposition step)")
+    for a in announced:
+        print(f"      ? [{a['title'][:40]}] is placed {a['placed_at']}% of the way through; the "
+              f"text states it at line {a['line']}: \u201c{a['sentence'][:90]}\u201d")
+        finding("exposition-announced", "?",
+                f"the contention is placed {a['placed_at']}% of the way through, and the text "
+                f"states it at line {a['line']} with no echo recorded there",
+                title=a["title"], line=a["line"], chapter=a["chapter"],
+                fix=f'if that sentence states the claim (not its denial, not a question), add '
+                    f'echoes: ["{a["sentence"][:160]}"]')
+    for ch, g in step_gaps:
+        print(f"      ? {g['heading'][:44]} ({g['words']} words) has nothing mapped: "
+              f"\u201c{g['first'][:80]}\u201d")
+    if step_gaps:
+        finding("exposition-gap", "?",
+                "nothing mapped in: " + "; ".join(f"{g['heading'][:40]} ({g['words']} words)"
+                                                  for _, g in step_gaps),
+                fix="where it restates a claim, record the sentence in that claim's `echoes:`; "
+                    "where it asserts something the argument uses, add the claim; where it "
+                    "argues nothing the map needs, leave it")
+    for ch, f in step_thin:
+        per = 1000 * f["body"]["mapped"] / f["body"]["words"]
+        print(f"      ? the opening ({f['opening']['words']} words, before the first section) "
+              f"holds {f['opening']['mapped']} claim(s); the body {per:.1f} per 1,000 words")
+        finding("exposition-opening", "?",
+                f"the opening ({f['opening']['words']} words) holds {f['opening']['mapped']} "
+                f"claim(s) against {per:.1f} per 1,000 words in the body -- where a text usually "
+                "announces its thesis", chapter=ch,
+                fix="record an announcement as an `echoes:` of the claim it states; add a claim "
+                    "only for something the argument uses")
+    if more_gaps or more_thin:
+        parts = []
+        if more_gaps:
+            parts.append(f"{len(more_gaps)} more section(s) with nothing mapped ("
+                         + ", ".join(g["heading"][:24] for _, g in more_gaps[:3])
+                         + (", ..." if len(more_gaps) > 3 else "") + ")")
+        if more_thin:
+            parts.append(f"{len(more_thin)} file opening(s) mapped thinly")
+        print("      for a full exposition pass only (optional): " + "; and ".join(parts))
+
 
 def mechanism_report(cli, path, source_root=None):
     """The chain the text asserts: declarations checked, gaps and loops found, light and shadow.

@@ -932,8 +932,18 @@ def argdown_check(path: str, source_root: str | None = None,
                       "stamps yourself: the value is a hash, and inventing one would vouch for "
                       "an agreement nobody made.")
 
-    out["next"] = ("apply the fixes above and call this again" if not out.get("ok") else
-                   "nothing to fix" + stamp_note if out.get("verified") else
+    # THE EXPOSITION STEP IS NAMED ONCE THE FAULTS ARE GONE (method, step 4): the places the
+    # text announces what it argues, which the census lists. Things to look at, never faults --
+    # so said here, where a loop that stops at "nothing to fix" will read it.
+    ex = (out.get("shape") or {}).get("exposition") or {}
+    expo_note = (f"  The census's EXPOSITION block lists {ex['step']} place(s) where the text "
+                 "announces what it argues; take the exposition step once (method, step 4) "
+                 "before you stop." if ex.get("step") else "")
+    out["next"] = ("apply the fixes above" + (" -- and, in the same edit, take the exposition "
+                                              "step on the census's EXPOSITION block (method, "
+                                              "step 4)" if ex.get("step") else "") +
+                   " and call this again" if not out.get("ok") else
+                   "nothing to fix" + expo_note + stamp_note if out.get("verified") else
                    "no faults among what was checked — but NOT verified against the source: no "
                    "quotation in this map has been compared with any text. Call this again with "
                    "`source_root` set to the folder holding `source/` before treating the "
