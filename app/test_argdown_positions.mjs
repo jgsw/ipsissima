@@ -455,6 +455,44 @@ console.log("\npages: the pages a line may be on");
        .map(f => path.basename(f)).join(", "));
 }
 
+console.log("\nbands: the Python twin divides every sample's text as the JS does");
+{
+  // THE CHECKER'S EXPOSITION BLOCK names the sections a map leaves empty, in Python, and the
+  // view draws them from `bandsOf` here: the two have to divide a text into the same sections,
+  // or the checker names a gap the reader cannot find.
+  const SAMPLES = path.join(HERE, "..", "samples"), files = [];
+  for (const d of fs.existsSync(SAMPLES) ? fs.readdirSync(SAMPLES) : []) {
+    const src = path.join(SAMPLES, d, "source");
+    if (!fs.existsSync(src)) continue;
+    for (const f of fs.readdirSync(src)) if (f.endsWith(".md")) files.push(path.join(src, f));
+  }
+  // AND THE EDGES OF THE RULE, which no sample happens to sit on: a heading with 45 words of
+  // prose under it (under the 50 that divide), a heading that is only a link, back matter, and a
+  // second text with no headings but its pages.
+  const edgeDir = fs.mkdtempSync(path.join(os.tmpdir(), "bands-"));
+  const w = n => Array.from({ length: n }, (_, i) => "word" + i).join(" ");
+  // Two parts, one holding 45 words: at the rule's 50 it divides nothing, so the text is divided
+  // by the second part's subsections; a rule drifted to 40 would divide it by the parts.
+  fs.writeFileSync(path.join(edgeDir, "edges.md"), ["# Part A", "", w(45), "", "# Part B", "",
+    "## B one", "", w(90), "", "## B two", "", w(90), "", "## [Home](https://example.org)", "",
+    w(70), "", "## References", "", w(80), ""].join("\n"));
+  fs.writeFileSync(path.join(edgeDir, "pages.md"), ["<!-- p.3 begins here -->", "", w(30), "",
+    "<!-- p.4 begins here -->", "", w(30), ""].join("\n"));
+  files.push(path.join(edgeDir, "edges.md"), path.join(edgeDir, "pages.md"));
+  const py = JSON.parse(execFileSync("python3", ["-c",
+    "import json,sys; sys.path.insert(0, sys.argv[1]); import argdown_provenance as p; " +
+    "print(json.dumps([p.bands_of(open(f, encoding='utf-8').read().split('\\n')) " +
+    "for f in sys.argv[2:]]))", SKILL, ...files], { encoding: "utf8", maxBuffer: 64 << 20 }));
+  const js = files.map(f => P.bandsOf(fs.readFileSync(f, "utf8")));
+  const same = (a, b) => a.level === b.level && a.paged === b.paged &&
+    JSON.stringify(a.bands.map(x => [x.heading, x.line, x.back, x.page])) ===
+    JSON.stringify(b.bands.map(x => [x.heading, x.line, x.back, x.page]));
+  fs.rmSync(edgeDir, { recursive: true, force: true });
+  ok(`the bands of ${files.length} sample and edge-case sources agree with Python`,
+     files.length > 5 && files.every((f, i) => same(js[i], py[i])),
+     files.filter((f, i) => !same(js[i], py[i])).map(f => path.basename(f)).join(", "));
+}
+
 console.log("\npositions: a note is read at its mark");
 {
   const yml = 'chapters:\n  - "P.md"\n  - "H.md"\n';

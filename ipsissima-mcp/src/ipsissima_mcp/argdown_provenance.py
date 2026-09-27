@@ -1390,8 +1390,10 @@ def _sentences(paragraph):
     return [p.strip() for p in parts if len(p.strip()) >= 30]
 
 
-def echo_candidates(doc, source_root, positions=None, limit=2):
-    """Places the text may state a claim a second time -- for a PERSON to confirm or reject.
+def echo_candidates(doc, source_root, positions=None, limit=2, titles=None):
+    """Places the text may state a claim a second time -- for the reconstructor to confirm or
+    reject, reading the sentence, never to paste unread. `titles` restricts the search to those
+    claims (the census asks only about the contentions).
 
     For each placed statement with enough words of its own, every other paragraph of its file is
     scored by the share of the claim's content words it contains, and a paragraph holding 60% or
@@ -1407,6 +1409,8 @@ def echo_candidates(doc, source_root, positions=None, limit=2):
     positions = positions or text_positions(doc, source_root)
     bodies, out = {}, []
     for title, rec in merged_statements(doc).items():
+        if titles is not None and title not in titles:
+            continue
         pos = positions.get(title)
         text = re.sub(r"(?<!\S)\#[A-Za-z][\w-]*", " ", rec.get("text") or "")
         want = content_words(text)
@@ -1461,6 +1465,214 @@ def echo_candidates(doc, source_root, positions=None, limit=2):
         found.sort(key=lambda c: (c["where"] != "earlier", -c["score"], c["line"]))
         out.extend(found[:limit])
     return out
+
+
+# --------------------------------------------------------------------------- #
+# How a text is divided: the bands of the exposition view
+# --------------------------------------------------------------------------- #
+#
+# Twin of `bandsOf` and `proseWords` in argdown-positions.js, which carry the reasoning: the
+# shallowest heading level with more than one heading that DIVIDES the text (50 words of prose
+# under it, not back matter, not a bare link), or the printed pages where no heading does. The
+# checker needs it to say which sections of the text the map has nothing in, and says it in the
+# same terms as the view draws them; test_argdown_positions.mjs holds the two to each other.
+
+_BACK_MATTER = re.compile(
+    r"^(references|bibliography|works cited|notes|footnotes|endnotes|funding|acknowledg|appendix|"
+    r"conflicts? of interest|competing interests|author contributions|data availability|"
+    r"declarations?|academic tools|other internet resources|related entries|"
+    r"(the )?(full )?project gutenberg)", re.I)
+_LINK_ONLY = re.compile(r"^\[[^\]]*\]\([^)]*\)$")
+MIN_BAND_WORDS = 50
+
+
+def is_back_matter(heading):
+    return bool(_BACK_MATTER.match(str(heading or "")))
+
+
+def prose_words(lines):
+    """The prose words on each line: 0 for front matter, converter comments, fenced code and
+    headings. Index 0 is line 1."""
+    out, fence, front, comment = [], False, False, False
+    for i, line in enumerate(lines):
+        t = line.strip()
+        out.append(0)
+        if i == 0 and t == "---":
+            front = True
+            continue
+        if front:
+            if t in ("---", "..."):
+                front = False
+            continue
+        if comment:
+            if "-->" in t:
+                comment = False
+            continue
+        if t.startswith("<!--"):
+            if "-->" not in t:
+                comment = True
+            continue
+        if re.match(r"^\s*(```|~~~)", line):
+            fence = not fence
+            continue
+        if fence or re.match(r"^#{1,6}\s", t):
+            continue
+        out[i] = sum(1 for w in t.split() if re.search(r"[A-Za-z0-9]", w))
+    return out
+
+
+def bands_of(lines):
+    """{level, paged, bands: [{heading, line, back, page}]} -- twin of `bandsOf`."""
+    words = prose_words(lines)
+    heads = []
+    for i, ln in enumerate(lines, 1):
+        mo = re.match(r"^(#{1,6})\s+(.*?)\s*(?:\{.*\})?\s*$", ln)
+        if mo:
+            heads.append(dict(line=i, level=len(mo.group(1)), text=mo.group(2).strip()))
+    under = []
+    for i, h in enumerate(heads):
+        end = len(lines)
+        for h2 in heads[i + 1:]:
+            if h2["level"] <= h["level"]:
+                end = h2["line"] - 1
+                break
+        under.append(sum(words[h["line"]:end]))
+    count = {}
+    for h, n in zip(heads, under):
+        if n >= MIN_BAND_WORDS and not is_back_matter(h["text"]) and not _LINK_ONLY.match(h["text"]):
+            count[h["level"]] = count.get(h["level"], 0) + 1
+    level = next((lv for lv in sorted(count) if count[lv] > 1), 0)
+    bands = [dict(heading=h["text"], line=h["line"], back=is_back_matter(h["text"]), page=False)
+             for h, n in zip(heads, under)
+             if level and h["level"] == level and n > 0 and not _LINK_ONLY.match(h["text"])]
+    marks = [] if level else [(i, int(m.group(1))) for i, raw in enumerate(lines, 1)
+                              for m in [_PAGE_MARK.search(raw)] if m]
+    paged = not level and len(marks) > 1
+    if paged:
+        bands += [dict(heading=f"p. {pg}", line=ln, back=False, page=True) for ln, pg in marks]
+    return dict(level=level, paged=paged, bands=bands)
+
+
+# --------------------------------------------------------------------------- #
+# Exposition coverage: what of the text's own order the map has nothing in
+# --------------------------------------------------------------------------- #
+#
+# RECOMMENDATION 14 of the exposition audit (26 Sep 2026). A reconstruction is built from the
+# conclusion backwards, as it should be, and measured on the samples that leaves the TEXT'S OWN
+# ORDER thin in predictable places: an abstract and introduction with no claim at all (Akhlaghi),
+# sections of the paper with nothing mapped (Bates's account of its own ten evaluations), a thesis
+# placed only where it is argued, at the end, though the text announces it in its first page
+# (Tooming, Prescott-Couch, James). The method's exposition step (extraction-prompt.md, step 4)
+# reads this report once and decides, section by section; it is built so that deciding needs no
+# second reading of the source -- each gap comes with the sentence it opens on, and each
+# announcement with the sentence to quote.
+
+_ANNOUNCING = re.compile(r"^(?:[\dIVX]+[.)]?\s*)?(abstract|introduction|summary|conclusions?|"
+                        r"overview|preface|concluding remarks)\b", re.I)
+
+
+def _first_sentence(lines, start, end):
+    for raw in lines[start:end]:
+        t = raw.strip()
+        if not t or t.startswith("#") or t.startswith("<!--") or t.startswith("[^"):
+            continue
+        t = re.sub(r"^>\s*", "", t)
+        mo = re.match(r"(.+?[.?!])(\s|$)", t)
+        s0 = (mo.group(1) if mo else t)
+        return s0 if len(s0) <= 150 else s0[:147].rstrip() + "..."
+    return ""
+
+
+def exposition_coverage(doc, source_root, quote_results=None, contentions=()):
+    """Where the map leaves the text's own order thin: per cited file, the sections with nothing
+    mapped (with the sentence each opens on), the opening against the body; the claims placed
+    nowhere; how many are read from notes; and the contentions the text states earlier than
+    they are placed, with no echo recorded there (with the sentence to quote)."""
+    placed = resolve_lines(doc, source_root, quote_results)
+    echoes = [e for e in check_echoes(doc, source_root) if e["status"] == "exact"]
+    files = {}
+    by_chapter = {}
+    for title, info in placed.items():
+        if info.get("chapter") and info.get("line"):
+            by_chapter.setdefault(info["chapter"], []).append(info["line"])
+    for e in echoes:
+        if e.get("chapter") and e.get("line"):
+            by_chapter.setdefault(e["chapter"], []).append(e["line"])
+    for chapter, marks in by_chapter.items():
+        try:
+            with open(os.path.join(source_root, chapter), encoding="utf-8",
+                      errors="replace") as fh:
+                lines = fh.read().splitlines()
+        except OSError:
+            continue
+        words = prose_words(lines)
+        bands = bands_of(lines)["bands"]
+        if not bands:
+            continue
+        starts = [b["line"] for b in bands]
+        rows = []
+        for i, b in enumerate(bands):
+            end = starts[i + 1] - 1 if i + 1 < len(bands) else len(lines)
+            n = sum(1 for m in marks if b["line"] <= m <= end)
+            rows.append(dict(heading=b["heading"], line=b["line"], end=end, back=b["back"],
+                             page=b["page"], words=sum(words[b["line"] - 1:end]), mapped=n))
+        opening_words = sum(words[:starts[0] - 1])
+        opening_mapped = sum(1 for m in marks if m < starts[0])
+        # Empty pages in a run are one gap, as the view draws them ("pp. 11-34").
+        gaps, run = [], None
+        for r in rows:
+            empty = not r["mapped"] and not r["back"]
+            if empty and r["page"] and run and run["page"]:
+                run["words"] += r["words"]
+                run["last"] = r["heading"].replace("p. ", "")
+                run["heading"] = "pp. " + run["heading"].replace("pp. ", "").replace("p. ", "") \
+                    .split("-")[0] + "-" + run["last"]
+                run["end"] = r["end"]
+                continue
+            if run:
+                gaps.append(run)
+                run = None
+            if empty:
+                run = dict(r)
+        if run:
+            gaps.append(run)
+        body_words = sum(r["words"] for r in rows if not r["back"])
+        body_mapped = sum(r["mapped"] for r in rows if not r["back"])
+        # A GAP IS MEASURED AGAINST THE MAP'S OWN DENSITY. A book mapped for its argument holds a
+        # claim or two per thousand words, and every page it passes over is not a gap: on Cribb
+        # that was 62 runs of pages, a list nobody should work through. So a section counts where
+        # the map, at its own density, would have put two claims in it -- or where it is one of
+        # the places a text announces itself (an abstract, introduction, summary, conclusion),
+        # which is what the exposition step is for, however short.
+        density = body_mapped / body_words if body_words else 0
+        gaps = [g for g in gaps if g["words"] >= MIN_BAND_WORDS and
+                (_ANNOUNCING.match(g["heading"]) or g["words"] * density >= 2)]
+        for g in gaps:
+            g["first"] = _first_sentence(lines, g["line"], g["end"])
+            g["announcing"] = bool(_ANNOUNCING.match(g["heading"]))
+        files[chapter] = dict(gaps=gaps, opening=dict(words=opening_words, mapped=opening_mapped),
+                              body=dict(words=body_words, mapped=body_mapped),
+                              lines=len(lines))
+    unplaced = sorted(t for t, i in placed.items() if i.get("source") == "chapter-only")
+    notes = sum(1 for i in placed.values() if i.get("note") is not None)
+    announced = []
+    wanted = set(contentions or ())
+    if wanted:
+        pos = text_positions(doc, source_root, quote_results)
+        merged = merged_statements(doc)
+        cands = echo_candidates(doc, source_root, positions=pos, limit=1, titles=wanted)
+        for c in cands:
+            if c["where"] != "earlier" or echo_spans((merged[c["title"]]["data"] or {}).get("echoes")):
+                continue
+            total = files.get(c["chapter"], {}).get("lines") or 0
+            at = round(100 * c["claim_line"] / total) if total else None
+            # THE THESIS THAT COMES LAST is the case this is for (the main contention 88-100% of
+            # the way through seven texts, measured 26 Sep 2026). A contention already placed in
+            # the first half is found by a reader at the start anyway; its announcement is worth
+            # an echo, but not a line in every check.
+            if at is not None and at >= 50:
+                announced.append(dict(c, placed_at=at))
+    return dict(files=files, unplaced=unplaced, notes=notes, announced=announced)
 
 
 def _chapter_order(doc, source_root, _cache={}):
