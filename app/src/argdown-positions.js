@@ -494,19 +494,58 @@ function pinnedPages(pinpoint) {
 
 var PAGES = typeof WeakMap === "function" ? new WeakMap() : null;
 
-/** The printed page each line is on (null before the first marker), once per source. */
-function pageOfLines(lines) {
+/** The printed pages each line may be on, as [first, last], or null before the first marker.
+ *  Computed once per source.
+ *
+ *  A MARKER BETWEEN PARAGRAPHS DOES NOT SAY WHERE IN A PARAGRAPH THE PAGE TURNS. The sources are
+ *  one paragraph to a line and most converters put `<!-- p.N begins here -->` between paragraphs,
+ *  so a paragraph that runs across a break carries one page number for words printed on two. Which
+ *  one depends on the converter: James's puts the marker above the paragraph the page turns in,
+ *  so its opening words, printed on p. 9, read as p. 10; Bates's keeps the paragraph on the page it
+ *  starts on. Measured 27 Sep 2026: every one of the 27 quoted claims in the samples whose words
+ *  seemed to be off the page their pinpoint cites was a paragraph beside a marker. So a paragraph
+ *  with markers directly above it may have begun on the page before the first of them, and one
+ *  with markers directly below it may run on to the last of them. Blank lines, other markers and
+ *  a converter's one-line comments between do not separate them. Twin of `page_ranges` in
+ *  argdown_provenance.py. */
+function pageRangeOfLines(lines) {
   var hit = PAGES && PAGES.get(lines);
   if (hit) return hit;
+  var page = new Array(lines.length), p = null, i, j, m;
+  for (i = 0; i < lines.length; i++) {
+    m = PAGE_MARK.exec(lines[i]);
+    if (m) p = +m[1];
+    page[i] = p;
+  }
+  var between = function (t) {
+    t = String(t).trim();
+    return !t || (t.indexOf("<!--") === 0 && t.indexOf("-->") > 0);
+  };
   hit = new Array(lines.length);
-  var page = null;
-  for (var i = 0; i < lines.length; i++) {
-    var m = PAGE_MARK.exec(lines[i]);
-    if (m) page = +m[1];
-    hit[i] = page;
+  for (i = 0; i < lines.length; i++) {
+    if (page[i] == null) { hit[i] = null; continue; }
+    var lo = page[i], hi = page[i];
+    if (!between(lines[i])) {
+      for (j = i - 1; j >= 0 && between(lines[j]); j--) {
+        m = PAGE_MARK.exec(lines[j]);
+        if (m) lo = Math.min(lo, +m[1] - 1);
+      }
+      for (j = i + 1; j < lines.length && between(lines[j]); j++) {
+        m = PAGE_MARK.exec(lines[j]);
+        if (m) hi = Math.max(hi, +m[1]);
+      }
+    }
+    hit[i] = [lo, hi];
   }
   if (PAGES) PAGES.set(lines, hit);
   return hit;
+}
+
+/** Whether a line may be on any of the pages a pinpoint cites. */
+function onPinnedPage(range, pins) {
+  if (!range || !pins) return false;
+  for (var k = 0; k < pins.length; k++) if (pins[k] >= range[0] && pins[k] <= range[1]) return true;
+  return false;
 }
 
 /** Which of the lines a claim's words stand on it is placed at (see above), or null. */
@@ -522,8 +561,8 @@ function chooseOccurrence(found, lines, pinpoint) {
   cands = keep(cands, function (l) { return zone[l - 1] !== "front" && zone[l - 1] !== "comment"; });
   var pins = pinnedPages(pinpoint);
   if (pins) {
-    var page = pageOfLines(lines);
-    cands = keep(cands, function (l) { return pins.indexOf(page[l - 1]) >= 0; });
+    var range = pageRangeOfLines(lines);
+    cands = keep(cands, function (l) { return onPinnedPage(range[l - 1], pins); });
   }
   cands = keep(cands, function (l) { return zone[l - 1] !== "abstract"; });
   return cands[0];
@@ -1107,6 +1146,7 @@ var API = { positions: positions, readingOrder: readingOrder, headingIndex: head
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
             chooseOccurrence: chooseOccurrence, textZones: textZones, pinnedPages: pinnedPages,
+            pageRangeOfLines: pageRangeOfLines,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA, MIN_VERBATIM: MIN_VERBATIM };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownPositions = API;

@@ -346,6 +346,8 @@ const E = [
   "# 1 Results", "",
   "Across ten trials, tiny fees sharply cut the adoption of useful products, by as much as " +
     "eighty per cent." + PAD, "",
+  // Not beside the marker: a paragraph beside one may run across the break (pageRangeOfLines).
+  "A paragraph between, so the finding above is wholly on the thirtieth page." + PAD, "",
   "<!-- p.34 begins here -->", "",
   "We repeat the finding: tiny fees sharply cut the adoption of useful products." + PAD, "",
   "Paying does not make people use a product, on the evidence of two further trials." + PAD, "",
@@ -410,6 +412,39 @@ console.log("\npositions: which of several places a claim's words stand");
   const z = P.textZones(E);
   eq("a paragraph opening with the word as a label is an abstract; one about abstract ideas is not",
      [z[at(E, "> Abstract.") - 1], z[at(E, "Abstract ideas") - 1]], ["abstract", ""]);
+}
+
+console.log("\npages: the pages a line may be on");
+{
+  const L = ["intro", "<!-- p.9 begins here -->", "", "<!-- p.10 begins here -->", "",
+             "a paragraph under two markers", "", "a paragraph between", "",
+             "a paragraph above one", "", "<!-- p.11 begins here -->",
+             "<!-- a converter's note -->", "after"];
+  const r = P.pageRangeOfLines(L);
+  eq("a paragraph under stacked markers may have begun on the page before the first", r[5], [8, 10]);
+  eq("  one beside no marker is on its page alone", r[7], [10, 10]);
+  eq("  one just above a marker may run on to it", r[9], [10, 11]);
+  eq("  and a converter's one-line comment does not separate it from its marker", r[13], [10, 11]);
+  eq("nothing before the first marker has a page", r[0], null);
+  // The same answer as Python on every paged source in the samples, line by line: the checker
+  // reports a pinpoint off its page by Python's reading, and the map places by this one.
+  const SAMPLES = path.join(HERE, "..", "samples"), files = [];
+  for (const d of fs.existsSync(SAMPLES) ? fs.readdirSync(SAMPLES) : []) {
+    const src = path.join(SAMPLES, d, "source");
+    if (!fs.existsSync(src)) continue;
+    for (const f of fs.readdirSync(src))
+      if (f.endsWith(".md") && /begins here/.test(fs.readFileSync(path.join(src, f), "utf8")))
+        files.push(path.join(src, f));
+  }
+  const py = JSON.parse(execFileSync("python3", ["-c",
+    "import json,sys; sys.path.insert(0, sys.argv[1]); import argdown_provenance as p; " +
+    "print(json.dumps([p.page_ranges(open(f, encoding='utf-8').read().split('\\n')) " +
+    "for f in sys.argv[2:]]))", SKILL, ...files], { encoding: "utf8", maxBuffer: 64 << 20 }));
+  const js = files.map(f => P.pageRangeOfLines(fs.readFileSync(f, "utf8").split("\n")));
+  ok(`the pages of every line of ${files.length} paged sources agree with Python`,
+     files.length > 3 && JSON.stringify(js) === JSON.stringify(py),
+     files.filter((f, i) => JSON.stringify(js[i]) !== JSON.stringify(py[i]))
+       .map(f => path.basename(f)).join(", "));
 }
 
 console.log("\npositions: a note is read at its mark");

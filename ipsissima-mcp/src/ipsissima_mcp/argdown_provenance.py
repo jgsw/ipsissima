@@ -1629,7 +1629,7 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
         if chapter not in folded:
             lines = source_lines(chapter)
             zones[chapter] = text_zones(lines)
-            pages[chapter] = page_of_lines(lines)
+            pages[chapter] = page_ranges(lines)
             folded[chapter] = _folded_text_lines(lines, zones[chapter])
             norm, line_of = normalise("\n".join(lines))
             joined[chapter] = (norm.lower(), line_of)
@@ -1838,19 +1838,57 @@ def pinned_pages(pinpoint):
     return out or None
 
 
-def page_of_lines(lines):
-    """The printed page each line is on (None before the first marker)."""
-    out, page = [], None
+def _between(raw):
+    """Nothing a paragraph is separated from a page marker by: a blank line, or a converter's
+    one-line comment (a marker is one of those too)."""
+    t = raw.strip()
+    return not t or (t.startswith("<!--") and "-->" in t)
+
+
+def page_ranges(lines):
+    """The printed pages each line may be on, as (first, last), or None before the first marker.
+
+    Twin of `pageRangeOfLines` in argdown-positions.js, which carries the reasoning: a marker
+    between paragraphs does not say where in a paragraph the page turns, so a paragraph with
+    markers directly above it may have begun on the page before the first of them, and one with
+    markers directly below it may run on to the last of them."""
+    page, p = [], None
     for raw in lines:
         m = _PAGE_MARK.search(raw)
         if m:
-            page = int(m.group(1))
-        out.append(page)
+            p = int(m.group(1))
+        page.append(p)
+    out = []
+    for i, raw in enumerate(lines):
+        if page[i] is None:
+            out.append(None)
+            continue
+        lo = hi = page[i]
+        if not _between(raw):
+            j = i - 1
+            while j >= 0 and _between(lines[j]):
+                m = _PAGE_MARK.search(lines[j])
+                if m:
+                    lo = min(lo, int(m.group(1)) - 1)
+                j -= 1
+            j = i + 1
+            while j < len(lines) and _between(lines[j]):
+                m = _PAGE_MARK.search(lines[j])
+                if m:
+                    hi = max(hi, int(m.group(1)))
+                j += 1
+        out.append((lo, hi))
     return out
 
 
+def on_pinned_page(rng, pins):
+    """Whether a line whose pages are `rng` may be on any page a pinpoint cites."""
+    return bool(rng and pins) and any(rng[0] <= p <= rng[1] for p in pins)
+
+
 def choose_occurrence(found, zones, pages, pinpoint=None):
-    """Which of the lines a claim's words stand on it is placed at, or None."""
+    """Which of the lines a claim's words stand on it is placed at, or None. `pages` is
+    `page_ranges` of the same lines."""
     if not found:
         return None
     cands = sorted(set(found))
@@ -1862,9 +1900,86 @@ def choose_occurrence(found, zones, pages, pinpoint=None):
     cands = keep(cands, lambda l: zones[l - 1] not in ("front", "comment"))
     pins = pinned_pages(pinpoint)
     if pins:
-        cands = keep(cands, lambda l: pages[l - 1] in pins)
+        cands = keep(cands, lambda l: on_pinned_page(pages[l - 1], pins))
     cands = keep(cands, lambda l: zones[l - 1] != "abstract")
     return cands[0]
+
+
+# --------------------------------------------------------------------------- #
+# Does the pinpoint cite the page the words are on?
+# --------------------------------------------------------------------------- #
+#
+# `pinpoint` is written for a human reader and was never checked. Measured 27 Sep 2026: of the
+# quoted claims whose pinpoint names a page their source carries, every one in the samples
+# agreed with the source's page markers once a paragraph running across a break is allowed
+# either page -- and nineteen of Horton's twenty-one did not, lagging the pages read off the
+# printed sheets by one to three pages, the lag growing through the paper: pinpoints estimated,
+# not read. Only a quoted claim is checked -- its words are in the text, so their page is a fact
+# -- and only against pages the source carries: a source paged 1-3 while the map cites
+# pp. 691-693 is numbered differently, not wrong, and is reported once as that. A pinpoint that
+# cites a NOTE, where the words sit in a note or a Notes section, is left alone: a converter
+# routinely moves notes from the foot of the page they were printed on.
+
+_NOTE_PIN = re.compile(r"\bnn?\.\s*\d|\bnotes?\s+\d|\bfn\.?\s*\d", re.I)
+_NOTES_HEAD = re.compile(r"^#{1,6}\s+(?:notes|footnotes|endnotes)\b", re.I)
+
+
+def _under_notes_heading(lines, line):
+    for i in range(min(line, len(lines)) - 1, -1, -1):
+        if _HEADING_LINE.match(lines[i]):
+            return bool(_NOTES_HEAD.match(lines[i]))
+    return False
+
+
+def pinpoint_check(doc, source_root, quote_results=None):
+    """Quoted claims whose words are not on the page their pinpoint cites, and the files whose
+    pinpoints cite no page the source carries.
+
+    Returns (mismatches, checked, unpaged): `mismatches` a list of dicts (title, chapter,
+    pinpoint, cited, line, pages -- the first and last page the words may be on); `checked` how
+    many quoted claims had a pinpoint naming a page their source carries; `unpaged` a dict of
+    chapter -> (the pages the source carries, the pages the pinpoints cite) for files where no
+    pinpoint names a page the source has."""
+    placed = resolve_lines(doc, source_root, quote_results)
+    merged = merged_statements(doc)
+    files, mismatches, checked, cited_by_file, paged_ok = {}, [], 0, {}, set()
+    for title, info in placed.items():
+        chapter = info.get("chapter")
+        pin = (merged.get(title, {}).get("data") or {}).get("pinpoint")
+        pins = pinned_pages(pin)
+        if info.get("source") != "quotation" or not chapter or not pins:
+            continue
+        if chapter not in files:
+            try:
+                with open(os.path.join(source_root, chapter), encoding="utf-8",
+                          errors="replace") as fh:
+                    lines = fh.read().splitlines()
+            except OSError:
+                lines = []
+            present = {int(m.group(1)) for raw in lines for m in [_PAGE_MARK.search(raw)] if m}
+            files[chapter] = (lines, page_ranges(lines) if present else None, present)
+        lines, ranges, present = files[chapter]
+        if not present:
+            continue
+        if not set(pins) & present:
+            cited_by_file.setdefault(chapter, set()).update(pins)
+            continue
+        checked += 1
+        paged_ok.add(chapter)
+        cands = [l for l in (info.get("line"), info.get("note_line")) if l]
+        if any(on_pinned_page(ranges[l - 1], pins) for l in cands):
+            continue
+        where = info.get("note_line") or info["line"]
+        if _NOTE_PIN.search(str(pin)) and (info.get("note") is not None
+                                           or _under_notes_heading(lines, where)):
+            continue
+        rng = ranges[where - 1]
+        mismatches.append(dict(title=title, chapter=chapter, pinpoint=str(pin), cited=pins,
+                               line=where, pages=list(rng) if rng else None))
+    # A file is UNPAGED for the map when no pinpoint citing it names a page it carries.
+    unpaged = {ch: (sorted(files[ch][2]), sorted(p)) for ch, p in cited_by_file.items()
+               if ch not in paged_ok}
+    return mismatches, checked, unpaged
 
 
 def _all_quote_lines(quote, hay, line_of):
@@ -1934,7 +2049,7 @@ def own_words_line(text, lines, folded, joined=None, pinpoint=None, zones=None, 
     found = [i + 1 for i, f in enumerate(folded) if want in f]
     if found:
         return choose_occurrence(found, zones if zones is not None else text_zones(lines),
-                                 pages if pages is not None else page_of_lines(lines), pinpoint)
+                                 pages if pages is not None else page_ranges(lines), pinpoint)
     parts = quote_parts(text)
     if not parts:
         return None

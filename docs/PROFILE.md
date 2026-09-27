@@ -113,7 +113,7 @@ On any claim or argument, in its `{data}` block:
 | `section` | string | The heading in that file the claim belongs to. |
 | `source` | string | A quotation pinning a claim whose own text has to be a summary. Verified like any quotation. |
 | `echoes` | string, or list of strings | Where **else** the text states the claim, in the author's words: the thesis announced in the abstract or the roadmap, say, while the claim is placed where it is argued. Verified like any quotation, and found in another file of the manuscript if not in the claim's own. It never pins the claim; the exposition view draws a faint echo at each place (*added in 1.3*). |
-| `pinpoint` | string | Where a reader finds it in print: `p. 12`, `pp. 34, 36`, `[50]`. Shown, not checked. Where the claim's words stand in more than one place, a cited page that holds them decides which the claim is placed at. |
+| `pinpoint` | string | Where a reader finds it in print: `p. 12`, `pp. 34, 36`, `[50]`. Checked where the source carries page markers: a quoted claim whose words are not on the page cited is reported, as something to look at and never as a fault, since the markers may be the ones in error. A paragraph running across a break may cite either page. Where the claim's words stand in more than one place, a cited page that holds them decides which the claim is placed at. |
 | `line`, `lineSource` | integer, string | Where in the chapter the claim sits when no quotation places it, and how that was arrived at. |
 | `fidelity` | the fidelity ladder | How far the claim's **own text** stands from the author's words. |
 | `warrant` | string | Why a departure is allowed. Required on `interpretation` and `imputation`. |

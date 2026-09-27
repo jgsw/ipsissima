@@ -1551,6 +1551,78 @@ def fidelity_report(cli, path):
               + (" \u2026" if len(il["inferences"]) > 6 else ""))
 
 
+def _pages(lo, hi):
+    return f"p. {lo}" if lo == hi else f"pp. {lo}-{hi}"
+
+
+def pinpoint_report(prov, doc, source_root, quotes):
+    """Quoted claims whose words are not on the page their pinpoint cites (see
+    `argdown_provenance.pinpoint_check`). Things to look at, never faults: the pinpoint or the
+    source's page markers may be the one that is wrong, and only a person with the printed pages
+    can say which."""
+    mismatches, checked, unpaged = prov.pinpoint_check(doc, source_root, quotes)
+    if not checked and not unpaged:
+        return
+    SHAPE["pinpoints"] = {"checked": checked, "off": len(mismatches)}
+    if checked:
+        print(f"\n   PINPOINTS ({checked} quoted claim(s) cite a page their source carries): "
+              + (f"{len(mismatches)} cite a page their words are not on" if mismatches
+                 else "every one is on the page it cites"))
+    # MANY IN ONE FILE IS A PATTERN, NOT A SCATTER OF SLIPS, and the per-claim fixes would then be
+    # the wrong edit if it is the page markers that are off. Said once, before the list.
+    by_file = Counter(m["chapter"] for m in mismatches)
+    for chapter, n in by_file.items():
+        mine = [m for m in mismatches if m["chapter"] == chapter]
+        if n < 3:
+            continue
+        offs = []
+        for m in mine:
+            lo, hi = m["pages"] or (None, None)
+            if lo is None:
+                continue
+            offs.append(lo - max(m["cited"]) if lo > max(m["cited"]) else hi - min(m["cited"]))
+        span = (f"{min(offs):+d} to {max(offs):+d}" if offs and min(offs) != max(offs)
+                else f"{offs[0]:+d}" if offs else "?")
+        finding("pinpoint", "?",
+                f"{n} quoted claims cite a page their words are not on, off by {span} page(s) -- "
+                "a pattern, not a slip: check the source's page markers against the printed "
+                "pages before changing any pinpoint. If the markers are right, the pinpoints "
+                "were estimated rather than read",
+                chapter=chapter)
+        print(f"      ? {n} in {chapter} are off by {span} page(s): a pattern, not a slip. Check "
+              "the source's page")
+        print("        markers against the printed pages first; if they are right, the "
+              "pinpoints were estimated.")
+    for m in mismatches:
+        lo, hi = m["pages"] or (None, None)
+        where = _pages(lo, hi) if lo is not None else "no page"
+        finding("pinpoint", "?",
+                f"cites {m['pinpoint']}, but its words are on {where} of the source (line "
+                f"{m['line']}) -- the pinpoint or the source's page markers are wrong",
+                title=m["title"], chapter=m["chapter"], line=m["line"],
+                fix=(f'pinpoint: "{where}", if the page markers are right'
+                     if lo is not None else None))
+    for m in mismatches[:12]:
+        lo, hi = m["pages"] or (None, None)
+        print(f"      ? [{m['title']}] cites {m['pinpoint']}; its words are on "
+              f"{_pages(lo, hi) if lo is not None else 'no page'} (line {m['line']})")
+    if len(mismatches) > 12:
+        print(f"      … and {len(mismatches) - 12} more")
+    # A FILE PAGED DIFFERENTLY FROM THE PINPOINTS is not wrong, and nothing in it can be checked:
+    # the markers count the file's pages, the pinpoints the printed ones. Said once per file.
+    for chapter, (have, cited) in sorted(unpaged.items()):
+        finding("pinpoint-pages", "?",
+                f"the pinpoints cite {_pages(cited[0], cited[-1])}, but the source's page "
+                f"markers run {have[0]}-{have[-1]}: they number the file's pages, not the printed "
+                "ones, so no pinpoint can be checked against them",
+                chapter=chapter,
+                fix="number the source's page markers as the pages are printed")
+        print(f"\n   PINPOINTS: {chapter} is paged {have[0]}-{have[-1]}, the pinpoints cite "
+              f"{_pages(cited[0], cited[-1])} --")
+        print("      the markers number the file's pages, not the printed ones, so none can be "
+              "checked.")
+
+
 def provenance_report(cli, path, source_root, fix=None, echo_candidates=False):
     """Verify quotations against their sources, and measure justification debt.
 
@@ -1615,6 +1687,7 @@ def provenance_report(cli, path, source_root, fix=None, echo_candidates=False):
         print("      but not in the file the claim names. Correcting `chapter:` restores them.")
 
     quotation_context_report(prov, doc, source_root, quotes)
+    pinpoint_report(prov, doc, source_root, quotes)
 
     # ---- echoes: the other places the text states a claim ------------------- #
     # Verified like quotations and reported beside them, but never mixed into `quotes`: every
