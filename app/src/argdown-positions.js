@@ -374,22 +374,205 @@ function findQuote(quote, sourceText) {
   return first;
 }
 
-/** The earliest line at which any quotation this claim carries can be found in its chapter.
- *  Both places a quotation lives are searched: the statement's own text, and the `source:`
- *  metadata where a reconstruction usually parks the author's exact words. */
-function locateQuotation(node, chapterText) {
-  var best = null;
+/** Every line a quotation starts on, in order: `findQuote`, not stopped at the first. A thesis
+ *  quoted from the body is often in the abstract too, word for word. */
+function findQuoteAll(quote, sourceText) {
+  var parts = quoteParts(quote);
+  if (!parts.length) return [];
+  var n = normaliseSource(sourceText), hay = n.lower || (n.lower = n.text.toLowerCase());
+  var first = parts[0].toLowerCase(), from = 0, out = [];
+  for (;;) {
+    var start = hay.indexOf(first, from);
+    if (start < 0) break;
+    var pos = start + parts[0].length, ok = true;
+    for (var i = 1; i < parts.length && ok; i++) {
+      var idx = hay.indexOf(parts[i].toLowerCase(), pos);
+      if (idx < 0) ok = false; else pos = idx + parts[i].length;
+    }
+    // The rest of an elided quotation not after THIS start is not after any later one either.
+    if (!ok) break;
+    var line = n.lineOf[start];
+    if (out[out.length - 1] !== line) out.push(line);
+    from = start + 1;
+  }
+  return out;
+}
+
+/** The line a claim's quotations place it at, or null. Both places a quotation lives are
+ *  searched: the statement's own text, and the `source:` metadata where a reconstruction usually
+ *  parks the author's exact words. Every place every quotation stands is a candidate, and
+ *  `chooseOccurrence` picks one. */
+function locateQuotation(node, chapterText, lines) {
+  var found = [];
   var blobs = [node.detail, node.source];
   for (var b = 0; b < blobs.length; b++) {
     if (!blobs[b]) continue;
     QUOTED.lastIndex = 0;
     var mo;
-    while ((mo = QUOTED.exec(String(blobs[b]))) !== null) {
-      var line = findQuote(mo[1], chapterText);
-      if (line != null && (best === null || line < best)) best = line;
+    while ((mo = QUOTED.exec(String(blobs[b]))) !== null)
+      found = found.concat(findQuoteAll(mo[1], chapterText));
+  }
+  return chooseOccurrence(found, lines || String(chapterText).split("\n"), node.pinpoint);
+}
+
+/* ------------------------------------------------------------------ which occurrence
+ *
+ * WHEN A CLAIM'S WORDS STAND IN SEVERAL PLACES, THE EARLIEST USED TO WIN, and the earliest is
+ * very often not where the claim is made. An abstract repeats a paper's findings word for word,
+ * and a converter copies the abstract into the front matter, so both came before the Results
+ * section that argues them. Measured 27 Sep 2026: four Bates findings drawn in the abstract,
+ * Wilson's contention in the YAML front matter, and five claims across Bates and the private
+ * corpus placed on a page other than the one their pinpoint cites, while their words stood on it
+ * too. And the two languages chose differently among SEVERAL quotations -- the earliest here,
+ * the first listed in Python -- so the report and the picture disagreed about seven claims.
+ *
+ * So every place is a candidate, pooled across all of a claim's quotations, and the choice is
+ * made by what the reconstruction and the text say, in this order:
+ *   1. the TEXT, not the front matter or a converter's comment -- unless nothing else has them;
+ *   2. the page the claim's `pinpoint` cites, when its words are on that page;
+ *   3. not an abstract (a section headed Abstract, or a paragraph that opens with the word);
+ *   4. the earliest of what is left, so a claim restated later is placed where it is made.
+ *
+ * THE PINPOINT DECIDES BETWEEN EXACT OCCURRENCES AND NOTHING ELSE. It is never used to steer the
+ * paragraph search, and that was tried: on Horton's paper thirteen claims matched by paragraph
+ * sit on a page two or so after the one their pinpoint names, and a search confined to the named
+ * page found nothing there to match -- the matched paragraphs are word for word the claims. A
+ * pinpoint is a reconstructor's note and can be off; the author's words are not.
+ *
+ * The other places are not lost: `check_argdown.py --echo-candidates` proposes them as echoes.
+ * Twin of `choose_occurrence` in argdown_provenance.py.
+ */
+
+var ZONES = typeof WeakMap === "function" ? new WeakMap() : null;
+var ABSTRACT_HEAD = /^(#{1,6})\s+(.*)$/;
+// A LABEL, NOT THE WORD: "Abstract." or "Abstract:" or "Abstract For Bernard Williams..." -- the
+// word followed by punctuation or by a capitalised sentence -- and never "Abstract ideas are
+// formed...", which is Hume's subject in one of the samples and a sentence of the text.
+var ABSTRACT_LABEL = /^(?:>\s*)*[*_]{0,2}(?:Abstract|ABSTRACT)[*_]{0,2}(?:\s*[.:\u2014\u2013-]|\s+(?=[A-Z]))/;
+
+/** What each line of a source is, beyond the text proper: "front" (the YAML front matter),
+ *  "comment" (a converter's HTML comment), "abstract", or "" for the text. An abstract is a
+ *  section headed Abstract, at any level, up to the next heading at its level or above; or a
+ *  paragraph that opens with the word as a label, as a journal prints it ("Abstract. Charging
+ *  small fees..." in Bates, "Abstract For Bernard Williams..." in Wilson). Computed once per
+ *  source. */
+function textZones(lines) {
+  var hit = ZONES && ZONES.get(lines);
+  if (hit) return hit;
+  hit = new Array(lines.length);
+  var front = false, comment = false, under = 0;
+  for (var i = 0; i < lines.length; i++) {
+    var t = String(lines[i]).trim(), z = "";
+    if (i === 0 && t === "---") { front = true; z = "front"; }
+    else if (front) { z = "front"; if (t === "---" || t === "...") front = false; }
+    else if (comment) { z = "comment"; if (t.indexOf("-->") >= 0) comment = false; }
+    else if (t.indexOf("<!--") === 0) { z = "comment"; if (t.indexOf("-->") < 0) comment = true; }
+    else {
+      var h = ABSTRACT_HEAD.exec(t);
+      if (h) {
+        if (under && h[1].length <= under) under = 0;
+        var name = h[2].replace(/\{[^}]*\}/g, "").replace(/[*_]/g, "").trim();
+        if (/^abstract[.:]?$/i.test(name)) under = h[1].length;
+      } else if (under || ABSTRACT_LABEL.test(t)) z = "abstract";
+    }
+    hit[i] = z;
+  }
+  if (ZONES) ZONES.set(lines, hit);
+  return hit;
+}
+
+/** The printed pages a pinpoint cites -- "p. 34", "pp. 30, 34", "§2, pp. 12–13" -- or null.
+ *  Only pages: a section, a note or a numbered paragraph names no page. */
+function pinnedPages(pinpoint) {
+  if (pinpoint == null) return null;
+  var out = [], re = /\bpp?\.\s*(\d[\d,\s\u2013-]*)/g, m;
+  while ((m = re.exec(String(pinpoint))) !== null) {
+    var items = m[1].split(",");
+    for (var i = 0; i < items.length; i++) {
+      var r = items[i].trim().split(/\s*[\u2013-]\s*/);
+      var a = parseInt(r[0], 10), b = r.length > 1 ? parseInt(r[1], 10) : a;
+      if (!isFinite(a)) continue;
+      if (!isFinite(b) || b < a || b - a > 50) b = a;
+      for (var p = a; p <= b; p++) out.push(p);
     }
   }
-  return best;
+  return out.length ? out : null;
+}
+
+var PAGES = typeof WeakMap === "function" ? new WeakMap() : null;
+
+/** The printed pages each line may be on, as [first, last], or null before the first marker.
+ *  Computed once per source.
+ *
+ *  A MARKER BETWEEN PARAGRAPHS DOES NOT SAY WHERE IN A PARAGRAPH THE PAGE TURNS. The sources are
+ *  one paragraph to a line and most converters put `<!-- p.N begins here -->` between paragraphs,
+ *  so a paragraph that runs across a break carries one page number for words printed on two. Which
+ *  one depends on the converter: James's puts the marker above the paragraph the page turns in,
+ *  so its opening words, printed on p. 9, read as p. 10; Bates's keeps the paragraph on the page it
+ *  starts on. Measured 27 Sep 2026: every one of the 27 quoted claims in the samples whose words
+ *  seemed to be off the page their pinpoint cites was a paragraph beside a marker. So a paragraph
+ *  with markers directly above it may have begun on the page before the first of them, and one
+ *  with markers directly below it may run on to the last of them. Blank lines, other markers and
+ *  a converter's one-line comments between do not separate them. Twin of `page_ranges` in
+ *  argdown_provenance.py. */
+function pageRangeOfLines(lines) {
+  var hit = PAGES && PAGES.get(lines);
+  if (hit) return hit;
+  var page = new Array(lines.length), p = null, i, j, m;
+  for (i = 0; i < lines.length; i++) {
+    m = PAGE_MARK.exec(lines[i]);
+    if (m) p = +m[1];
+    page[i] = p;
+  }
+  var between = function (t) {
+    t = String(t).trim();
+    return !t || (t.indexOf("<!--") === 0 && t.indexOf("-->") > 0);
+  };
+  hit = new Array(lines.length);
+  for (i = 0; i < lines.length; i++) {
+    if (page[i] == null) { hit[i] = null; continue; }
+    var lo = page[i], hi = page[i];
+    if (!between(lines[i])) {
+      for (j = i - 1; j >= 0 && between(lines[j]); j--) {
+        m = PAGE_MARK.exec(lines[j]);
+        if (m) lo = Math.min(lo, +m[1] - 1);
+      }
+      for (j = i + 1; j < lines.length && between(lines[j]); j++) {
+        m = PAGE_MARK.exec(lines[j]);
+        if (m) hi = Math.max(hi, +m[1]);
+      }
+    }
+    hit[i] = [lo, hi];
+  }
+  if (PAGES) PAGES.set(lines, hit);
+  return hit;
+}
+
+/** Whether a line may be on any of the pages a pinpoint cites. */
+function onPinnedPage(range, pins) {
+  if (!range || !pins) return false;
+  for (var k = 0; k < pins.length; k++) if (pins[k] >= range[0] && pins[k] <= range[1]) return true;
+  return false;
+}
+
+/** Which of the lines a claim's words stand on it is placed at (see above), or null. */
+function chooseOccurrence(found, lines, pinpoint) {
+  if (!found || !found.length) return null;
+  var cands = found.slice().sort(function (a, b) { return a - b; });
+  if (!lines) return cands[0];
+  var zone = textZones(lines);
+  var keep = function (list, test) {
+    var kept = list.filter(test);
+    return kept.length ? kept : list;
+  };
+  cands = keep(cands, function (l) { return zone[l - 1] !== "front" && zone[l - 1] !== "comment"; });
+  var pins = pinnedPages(pinpoint);
+  if (pins) {
+    var range = pageRangeOfLines(lines);
+    cands = keep(cands, function (l) { return onPinnedPage(range[l - 1], pins); });
+  }
+  cands = keep(cands, function (l) { return zone[l - 1] !== "abstract"; });
+  return cands[0];
 }
 
 /* ------------------------------------------------------------------ the claim's own words
@@ -425,27 +608,23 @@ function foldedLines(lines) {
   var hit = FOLDED_LINES && FOLDED_LINES.get(lines);
   if (hit) return hit;
   hit = new Array(lines.length);
-  var front = false, comment = false;
-  for (var i = 0; i < lines.length; i++) {
-    var t = String(lines[i]).trim(), skip = false;
-    if (i === 0 && t === "---") front = skip = true;
-    else if (front) { skip = true; if (t === "---" || t === "...") front = false; }
-    else if (comment) { skip = true; if (t.indexOf("-->") >= 0) comment = false; }
-    else if (t.indexOf("<!--") === 0) { skip = true; if (t.indexOf("-->") < 0) comment = true; }
-    hit[i] = skip ? "" : foldPunctuation(lines[i]);
-  }
+  var zone = textZones(lines);
+  for (var i = 0; i < lines.length; i++)
+    hit[i] = zone[i] === "front" || zone[i] === "comment" ? "" : foldPunctuation(lines[i]);
   if (FOLDED_LINES) FOLDED_LINES.set(lines, hit);
   return hit;
 }
 
-/** The line where a claim's own text stands in its source, or null. `text` has its inline
- *  hashtags already stripped, as for the border. */
-function locateOwnWords(text, lines, chapterText) {
+/** The line where a claim's own text stands in its source, or null: every line it stands on,
+ *  and `chooseOccurrence` picks. `text` has its inline hashtags already stripped, as for the
+ *  border. */
+function locateOwnWords(text, lines, chapterText, pinpoint) {
   if (!text || text.length < MIN_VERBATIM || !lines) return null;
   var want = foldPunctuation(text);
   if (!want) return null;
-  var folded = foldedLines(lines);
-  for (var i = 0; i < folded.length; i++) if (folded[i].indexOf(want) >= 0) return i + 1;
+  var folded = foldedLines(lines), found = [];
+  for (var i = 0; i < folded.length; i++) if (folded[i].indexOf(want) >= 0) found.push(i + 1);
+  if (found.length) return chooseOccurrence(found, lines, pinpoint);
   // Across a line break, exactly — and still not in the front matter or a converter's note.
   var across = findQuote(text, chapterText);
   return across != null && folded[across - 1] ? across : null;
@@ -666,13 +845,13 @@ function positions(nodes, sources, quarto) {
     // The claim's words as the border reads them: inline hashtags are chips, not words.
     var vtext = String(n.detail || n.label || "")
       .replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim();
-    var quoted = chapterText != null ? locateQuotation(n, chapterText) : null;
+    var quoted = chapterText != null ? locateQuotation(n, chapterText, linesOf(n.chapter)) : null;
     // Its own words next, with the same standing as a quoted span — they ARE a quotation. From
     // `detail` alone, which is what the Python twin reads: a claim with no text of its own has
     // only its title, and a title is the reconstructor's name for the claim, not a passage.
     var own = quoted == null && chapterText != null && n.kind !== "argument" && n.detail
       ? locateOwnWords(String(n.detail).replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 ").trim(),
-                       linesOf(n.chapter), chapterText)
+                       linesOf(n.chapter), chapterText, n.pinpoint)
       : null;
     if (quoted != null || own != null) {
       place.line = quoted != null ? quoted : own;
@@ -769,7 +948,8 @@ function positions(nodes, sources, quarto) {
     var line = drawn && drawn.chapter === ap.chapter ? drawn.line : null;
     var body = sources && sources[ap.chapter] != null ? sources[ap.chapter] : null;
     if (line == null && arg.conclusionText && body != null)
-      line = locateQuotation({ detail: arg.conclusionText, source: arg.conclusionSource }, body);
+      line = locateQuotation({ detail: arg.conclusionText, source: arg.conclusionSource,
+                               pinpoint: arg.pinpoint }, body, linesOf(ap.chapter));
     if (line == null && arg.conclusionText && linesOf(ap.chapter))
       line = locateParagraph(arg.conclusionText, linesOf(ap.chapter),
                              1, linesOf(ap.chapter).length).line;
@@ -972,6 +1152,8 @@ var API = { positions: positions, readingOrder: readingOrder, headingIndex: head
             proseWords: proseWords, isBackMatter: isBackMatter, echoSpans: echoSpans,
             contentWords: contentWords, normalise: normalise, findQuote: findQuote,
             isVerbatim: isVerbatim, foldPunctuation: foldPunctuation,
+            chooseOccurrence: chooseOccurrence, textZones: textZones, pinnedPages: pinnedPages,
+            pageRangeOfLines: pageRangeOfLines,
             MIN_SCORE: MIN_SCORE, MIN_PARA: MIN_PARA, MIN_VERBATIM: MIN_VERBATIM };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownPositions = API;

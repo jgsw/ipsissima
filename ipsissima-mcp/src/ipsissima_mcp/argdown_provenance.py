@@ -957,8 +957,10 @@ def iter_members(doc):
             yield title, m
 
 
+# `pinpoint` is here, gathered across members like the rest, because placement reads it: it
+# decides between two places a claim's words stand (`choose_occurrence`).
 PROVENANCE_FIELDS = ("chapter", "section", "line", "lineSource", "source",
-                     "fidelity", "warrant", "note", "echoes")
+                     "fidelity", "warrant", "note", "echoes", "pinpoint")
 
 
 def read_frontmatter(path):
@@ -1617,12 +1619,14 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
     `locate=False` disables the paragraph search and restores heading-level positions, which
     is what the cross-check against the JS implementation compares against.
     """
+    # Every exact quotation a claim carries, not only the first listed: the choice among them,
+    # and among the places each one stands, is `choose_occurrence`'s.
     exact = {}
     for r in (quote_results or []):
         if r["status"] == "exact" and r["line"]:
-            exact.setdefault(r["title"], r["line"])
+            exact.setdefault(r["title"], []).append(r)
 
-    headings, bodies, folded, joined, notes = {}, {}, {}, {}, {}
+    headings, bodies, folded, joined, notes, zones, pages = {}, {}, {}, {}, {}, {}, {}
 
     def source_lines(chapter):
         if chapter not in bodies:
@@ -1634,22 +1638,44 @@ def resolve_lines(doc, source_root, quote_results=None, locate=True):
                 bodies[chapter] = []
         return bodies[chapter]
 
+    def prepare(chapter):
+        """The per-file readings every claim citing the file shares, made once."""
+        if chapter not in folded:
+            lines = source_lines(chapter)
+            zones[chapter] = text_zones(lines)
+            pages[chapter] = page_ranges(lines)
+            folded[chapter] = _folded_text_lines(lines, zones[chapter])
+            norm, line_of = normalise("\n".join(lines))
+            joined[chapter] = (norm.lower(), line_of)
+
     out = {}
     for title, rec in merged_statements(doc).items():
         data = rec["data"]
         chapter, section = data.get("chapter"), data.get("section")
+        pinpoint = data.get("pinpoint")
         if title in exact:
-            out[title] = dict(line=exact[title], source="quotation", chapter=chapter)
+            line = None
+            if chapter and source_lines(chapter):
+                prepare(chapter)
+                hay, line_of = joined[chapter]
+                found = []
+                for r in exact[title]:
+                    if r.get("chapter") == chapter:
+                        found += _all_quote_lines(r["quote"], hay, line_of)
+                line = choose_occurrence(found, zones[chapter], pages[chapter], pinpoint)
+            # A quotation checked against another file than the claim's own (a member citing its
+            # own chapter) keeps the line it was found at, as before.
+            if line is None:
+                line = exact[title][0]["line"]
+            out[title] = dict(line=line, source="quotation", chapter=chapter)
             continue
         # THE CLAIM'S OWN WORDS, with the standing of a quoted span: where the claim's text IS
         # the author's words it is a quotation, marks or no marks. See `own_words_line`.
         if chapter and source_lines(chapter):
-            if chapter not in folded:
-                folded[chapter] = _folded_text_lines(source_lines(chapter))
-                norm, line_of = normalise("\n".join(source_lines(chapter)))
-                joined[chapter] = (norm.lower(), line_of)
+            prepare(chapter)
             own = own_words_line(rec["text"], source_lines(chapter), folded[chapter],
-                                 joined[chapter])
+                                 joined[chapter], pinpoint=pinpoint,
+                                 zones=zones[chapter], pages=pages[chapter])
             if own:
                 out[title] = dict(line=own, source="quotation", chapter=chapter)
                 continue
@@ -1748,6 +1774,257 @@ def note_index(lines):
 
 
 # --------------------------------------------------------------------------- #
+# Which occurrence: where a claim's words stand in several places
+# --------------------------------------------------------------------------- #
+#
+# Twin of `chooseOccurrence` in argdown-positions.js, which carries the full reasoning. The
+# earliest used to win, and the earliest is often an abstract repeating the finding or the
+# front matter's copy of it; and among SEVERAL quotations this half took the first listed where
+# the JS took the earliest, so the report and the picture disagreed. Now every place every
+# quotation stands is a candidate, and the choice is, in order: the text rather than the front
+# matter or a converter's comment; the page the `pinpoint` cites, when the words are on it; not
+# an abstract; the earliest. The pinpoint decides between exact occurrences and nothing else.
+
+_ABSTRACT_HEAD = re.compile(r"^(#{1,6})\s+(.*)$")
+# A label, not the word: "Abstract." / "Abstract:" / "Abstract For Bernard Williams...", never
+# "Abstract ideas are formed...", which is a sentence of the text.
+_ABSTRACT_LABEL = re.compile(
+    r"^(?:>\s*)*[*_]{0,2}(?:Abstract|ABSTRACT)[*_]{0,2}(?:\s*[.:\u2014\u2013-]|\s+(?=[A-Z]))")
+_PAGE_MARK = re.compile(r"<!--\s*(?:.*?\s)?p\.\s*(\d+)\s+begins here\s*-->")
+_PINNED = re.compile(r"\bpp?\.\s*(\d[\d,\s\u2013-]*)")
+
+
+def text_zones(lines):
+    """What each line is beyond the text proper: "front", "comment", "abstract", or "".
+
+    An abstract is a section headed Abstract, at any level, up to the next heading at its level
+    or above; or a paragraph that opens with the word as a label, as a journal prints it."""
+    out, front, comment, under = [], False, False, 0
+    for i, raw in enumerate(lines):
+        t, z = raw.strip(), ""
+        if i == 0 and t == "---":
+            front, z = True, "front"
+        elif front:
+            z = "front"
+            if t in ("---", "..."):
+                front = False
+        elif comment:
+            z = "comment"
+            if "-->" in t:
+                comment = False
+        elif t.startswith("<!--"):
+            z = "comment"
+            if "-->" not in t:
+                comment = True
+        else:
+            h = _ABSTRACT_HEAD.match(t)
+            if h:
+                if under and len(h.group(1)) <= under:
+                    under = 0
+                name = re.sub(r"[*_]", "", re.sub(r"\{[^}]*\}", "", h.group(2))).strip()
+                if re.match(r"^abstract[.:]?$", name, re.I):
+                    under = len(h.group(1))
+            elif under or _ABSTRACT_LABEL.match(t):
+                z = "abstract"
+        out.append(z)
+    return out
+
+
+def pinned_pages(pinpoint):
+    """The printed pages a pinpoint cites -- "p. 34", "pp. 30, 34", "§2, pp. 12–13" -- or None."""
+    if pinpoint is None:
+        return None
+    out = []
+    for m in _PINNED.finditer(str(pinpoint)):
+        for item in m.group(1).split(","):
+            r = re.split(r"\s*[\u2013-]\s*", item.strip())
+            try:
+                a = int(r[0])
+            except ValueError:
+                continue
+            try:
+                b = int(r[1]) if len(r) > 1 else a
+            except ValueError:
+                b = a
+            if b < a or b - a > 50:
+                b = a
+            out.extend(range(a, b + 1))
+    return out or None
+
+
+def _between(raw):
+    """Nothing a paragraph is separated from a page marker by: a blank line, or a converter's
+    one-line comment (a marker is one of those too)."""
+    t = raw.strip()
+    return not t or (t.startswith("<!--") and "-->" in t)
+
+
+def page_ranges(lines):
+    """The printed pages each line may be on, as (first, last), or None before the first marker.
+
+    Twin of `pageRangeOfLines` in argdown-positions.js, which carries the reasoning: a marker
+    between paragraphs does not say where in a paragraph the page turns, so a paragraph with
+    markers directly above it may have begun on the page before the first of them, and one with
+    markers directly below it may run on to the last of them."""
+    page, p = [], None
+    for raw in lines:
+        m = _PAGE_MARK.search(raw)
+        if m:
+            p = int(m.group(1))
+        page.append(p)
+    out = []
+    for i, raw in enumerate(lines):
+        if page[i] is None:
+            out.append(None)
+            continue
+        lo = hi = page[i]
+        if not _between(raw):
+            j = i - 1
+            while j >= 0 and _between(lines[j]):
+                m = _PAGE_MARK.search(lines[j])
+                if m:
+                    lo = min(lo, int(m.group(1)) - 1)
+                j -= 1
+            j = i + 1
+            while j < len(lines) and _between(lines[j]):
+                m = _PAGE_MARK.search(lines[j])
+                if m:
+                    hi = max(hi, int(m.group(1)))
+                j += 1
+        out.append((lo, hi))
+    return out
+
+
+def on_pinned_page(rng, pins):
+    """Whether a line whose pages are `rng` may be on any page a pinpoint cites."""
+    return bool(rng and pins) and any(rng[0] <= p <= rng[1] for p in pins)
+
+
+def choose_occurrence(found, zones, pages, pinpoint=None):
+    """Which of the lines a claim's words stand on it is placed at, or None. `pages` is
+    `page_ranges` of the same lines."""
+    if not found:
+        return None
+    cands = sorted(set(found))
+
+    def keep(lst, test):
+        kept = [x for x in lst if test(x)]
+        return kept or lst
+
+    cands = keep(cands, lambda l: zones[l - 1] not in ("front", "comment"))
+    pins = pinned_pages(pinpoint)
+    if pins:
+        cands = keep(cands, lambda l: on_pinned_page(pages[l - 1], pins))
+    cands = keep(cands, lambda l: zones[l - 1] != "abstract")
+    return cands[0]
+
+
+# --------------------------------------------------------------------------- #
+# Does the pinpoint cite the page the words are on?
+# --------------------------------------------------------------------------- #
+#
+# `pinpoint` is written for a human reader and was never checked. Measured 27 Sep 2026: of the
+# quoted claims whose pinpoint names a page their source carries, every one in the samples
+# agreed with the source's page markers once a paragraph running across a break is allowed
+# either page -- and nineteen of Horton's twenty-one did not, lagging the pages read off the
+# printed sheets by one to three pages, the lag growing through the paper: pinpoints estimated,
+# not read. Only a quoted claim is checked -- its words are in the text, so their page is a fact
+# -- and only against pages the source carries: a source paged 1-3 while the map cites
+# pp. 691-693 is numbered differently, not wrong, and is reported once as that. A pinpoint that
+# cites a NOTE, where the words sit in a note or a Notes section, is left alone: a converter
+# routinely moves notes from the foot of the page they were printed on.
+
+_NOTE_PIN = re.compile(r"\bnn?\.\s*\d|\bnotes?\s+\d|\bfn\.?\s*\d", re.I)
+_NOTES_HEAD = re.compile(r"^#{1,6}\s+(?:notes|footnotes|endnotes)\b", re.I)
+
+
+def _under_notes_heading(lines, line):
+    for i in range(min(line, len(lines)) - 1, -1, -1):
+        if _HEADING_LINE.match(lines[i]):
+            return bool(_NOTES_HEAD.match(lines[i]))
+    return False
+
+
+def pinpoint_check(doc, source_root, quote_results=None):
+    """Quoted claims whose words are not on the page their pinpoint cites, and the files whose
+    pinpoints cite no page the source carries.
+
+    Returns (mismatches, checked, unpaged): `mismatches` a list of dicts (title, chapter,
+    pinpoint, cited, line, pages -- the first and last page the words may be on); `checked` how
+    many quoted claims had a pinpoint naming a page their source carries; `unpaged` a dict of
+    chapter -> (the pages the source carries, the pages the pinpoints cite) for files where no
+    pinpoint names a page the source has."""
+    placed = resolve_lines(doc, source_root, quote_results)
+    merged = merged_statements(doc)
+    files, mismatches, checked, cited_by_file, paged_ok = {}, [], 0, {}, set()
+    for title, info in placed.items():
+        chapter = info.get("chapter")
+        pin = (merged.get(title, {}).get("data") or {}).get("pinpoint")
+        pins = pinned_pages(pin)
+        if info.get("source") != "quotation" or not chapter or not pins:
+            continue
+        if chapter not in files:
+            try:
+                with open(os.path.join(source_root, chapter), encoding="utf-8",
+                          errors="replace") as fh:
+                    lines = fh.read().splitlines()
+            except OSError:
+                lines = []
+            present = {int(m.group(1)) for raw in lines for m in [_PAGE_MARK.search(raw)] if m}
+            files[chapter] = (lines, page_ranges(lines) if present else None, present)
+        lines, ranges, present = files[chapter]
+        if not present:
+            continue
+        if not set(pins) & present:
+            cited_by_file.setdefault(chapter, set()).update(pins)
+            continue
+        checked += 1
+        paged_ok.add(chapter)
+        cands = [l for l in (info.get("line"), info.get("note_line")) if l]
+        if any(on_pinned_page(ranges[l - 1], pins) for l in cands):
+            continue
+        where = info.get("note_line") or info["line"]
+        if _NOTE_PIN.search(str(pin)) and (info.get("note") is not None
+                                           or _under_notes_heading(lines, where)):
+            continue
+        rng = ranges[where - 1]
+        mismatches.append(dict(title=title, chapter=chapter, pinpoint=str(pin), cited=pins,
+                               line=where, pages=list(rng) if rng else None))
+    # A file is UNPAGED for the map when no pinpoint citing it names a page it carries.
+    unpaged = {ch: (sorted(files[ch][2]), sorted(p)) for ch, p in cited_by_file.items()
+               if ch not in paged_ok}
+    return mismatches, checked, unpaged
+
+
+def _all_quote_lines(quote, hay, line_of):
+    """Every line a quotation starts on, in order: `find_quote`'s search, not stopped at the
+    first. `hay` is the normalised source lowercased, `line_of` its line map."""
+    parts = quote_parts(quote)
+    if not parts:
+        return []
+    first, out, frm = parts[0].lower(), [], 0
+    while True:
+        start = hay.find(first, frm)
+        if start < 0:
+            break
+        pos, ok = start + len(parts[0]), True
+        for part in parts[1:]:
+            idx = hay.find(part.lower(), pos)
+            if idx < 0:
+                ok = False
+                break
+            pos = idx + len(part)
+        # The rest of an elided quotation not after THIS start is not after any later one.
+        if not ok:
+            break
+        line = line_of[start]
+        if not out or out[-1] != line:
+            out.append(line)
+        frm = start + 1
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # The claim's own words
 # --------------------------------------------------------------------------- #
 #
@@ -1764,44 +2041,29 @@ def _fold(text):
     return " ".join(_PUNCT.sub(" ", normalise(text)[0].lower()).split())
 
 
-def _folded_text_lines(lines):
+def _folded_text_lines(lines, zones=None):
     """Every line folded, with the front matter and HTML comments left empty."""
-    out, front, comment = [], False, False
-    for i, raw in enumerate(lines):
-        t, skip = raw.strip(), False
-        if i == 0 and t == "---":
-            front = skip = True
-        elif front:
-            skip = True
-            if t in ("---", "..."):
-                front = False
-        elif comment:
-            skip = True
-            if "-->" in t:
-                comment = False
-        elif t.startswith("<!--"):
-            skip = True
-            if "-->" not in t:
-                comment = True
-        out.append("" if skip else _fold(raw))
-    return out
+    zones = zones if zones is not None else text_zones(lines)
+    return ["" if z in ("front", "comment") else _fold(raw) for raw, z in zip(lines, zones)]
 
 
-def own_words_line(text, lines, folded, joined=None):
+def own_words_line(text, lines, folded, joined=None, pinpoint=None, zones=None, pages=None):
     """The line where a claim's own text stands in its source, when that text is the author's
-    words; else None. `folded` is `_folded_text_lines(lines)` and `joined` the normalised source
-    as `normalise` returns it -- both cached by the caller, because both are the same for every
-    claim citing the file, and normalising a whole source per claim is the cost the JS twin was
-    profiled out of."""
+    words; else None. Every line it stands on is a candidate, and `choose_occurrence` picks.
+    `folded` is `_folded_text_lines(lines)` and `joined` the normalised source as `normalise`
+    returns it -- both cached by the caller, because both are the same for every claim citing
+    the file, and normalising a whole source per claim is the cost the JS twin was profiled out
+    of. `zones` and `pages` likewise, when the caller has them."""
     text = re.sub(r"(?<!\S)\#[A-Za-z][\w-]*", " ", text or "").strip()
     if len(text) < MIN_VERBATIM or not lines:
         return None
     want = _fold(text)
     if not want:
         return None
-    for i, f in enumerate(folded):
-        if want in f:
-            return i + 1
+    found = [i + 1 for i, f in enumerate(folded) if want in f]
+    if found:
+        return choose_occurrence(found, zones if zones is not None else text_zones(lines),
+                                 pages if pages is not None else page_ranges(lines), pinpoint)
     parts = quote_parts(text)
     if not parts:
         return None

@@ -90,6 +90,7 @@ const SUITES = [
   // An echo drawn where the text never says it points at words nobody wrote; one read as a
   // quotation moves the claim to wherever it is echoed. Both halves are held here.
   ["echoes: verified, and proposed", PY, [path.join(PYTESTS, "test_echoes.py")]],
+  ["pinpoints: the page the words are on", PY, [path.join(PYTESTS, "test_pinpoints.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
   ["the profile holds to the code",   PY, [path.join(PYTESTS, "test_profile.py")]],
