@@ -1,0 +1,81 @@
+{
+  "about": "The reader's words, held by app/test_teaching_text.mjs (F8(a), admitted 27 Sep 2026). `retired` lists names the reader no longer meets and what replaced each; `pattern` is a regular expression matched against teaching text with code comments removed. `in`, where given, limits a rule to those sources. Add a word here when you retire it, in the same commit, so it cannot creep back.",
+  "retired": [
+    {
+      "pattern": "by-position|by-argument",
+      "flags": "i",
+      "use": "Exposition, or Reasons",
+      "why": "the arrangements were renamed; the old names survived in two messages"
+    },
+    {
+      "pattern": "Argdown viewer",
+      "use": "Ipsissima",
+      "why": "the product's name; the title bar said 'Argdown viewer' with nothing open"
+    },
+    {
+      "pattern": "\\bkinds\\*\\* buttons|kinds buttons|\\*\\*kinds\\*\\*",
+      "use": "hashtags",
+      "why": "the control has been 'hashtags' since it was renamed from 'kinds'"
+    },
+    {
+      "pattern": "build_argdown_viewer|--source-root",
+      "in": [
+        "the page",
+        "the map",
+        "the mechanism",
+        "app/help.md"
+      ],
+      "use": "open the map's folder",
+      "why": "a developer's build command, shown to readers in two messages"
+    },
+    {
+      "pattern": "Layout ▸ Study",
+      "use": "Layout ▸ Read along",
+      "why": "the layout was renamed when study became a mode (14 Sep 2026)"
+    },
+    {
+      "pattern": "claims? in this group",
+      "in": [
+        "the map"
+      ],
+      "use": "section",
+      "why": "every other surface calls it a section; 'group' is the parser's word"
+    },
+    {
+      "pattern": "cannot be undone from here",
+      "in": [
+        "the page"
+      ],
+      "use": "Undo (Cmd/Ctrl-Z) brings it back",
+      "why": "it could be undone: the toolbar's Undo did it"
+    },
+    {
+      "pattern": "Layout ▸ Follow",
+      "use": "Layout ▸ Read along",
+      "why": "the Manuscript's switch is 'follow'; one word named two controls (ruled D5, 27 Sep 2026)"
+    },
+    {
+      "pattern": "\\+ essay|Reconstruction \\+ essay|annotated essay",
+      "use": "the text (\"+ text\", \"Reconstruction with its text\")",
+      "why": "one word for the prose, and 'essay' is wrong for a judgment or a chapter of Darwin (ruled D4, 27 Sep 2026)"
+    },
+    {
+      "pattern": "main claim at the apex|route to a contention",
+      "in": [
+        "the page",
+        "the map",
+        "app/help.md"
+      ],
+      "use": "the main claim, at the top",
+      "why": "five names for the top claim; the reader's word is 'main claim' (ruled D4)"
+    },
+    {
+      "pattern": ">layout</b>",
+      "in": [
+        "the map"
+      ],
+      "use": "flow",
+      "why": "'Layout' is the title bar's pane menu; one word named two controls (ruled D6)"
+    }
+  ]
+}

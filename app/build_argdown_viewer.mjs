@@ -24,6 +24,9 @@
  *   node build_argdown_viewer.mjs --standalone [-o OUT.html]     the drop-anything viewer
  *   any build + --editor    adds CodeMirror and the Argdown mode, so the file can be edited
  *                           and the map redrawn from what is typed (+346 KB)
+ *   one file + --walkthrough  offers the walkthrough to a first-time reader, as the workbench
+ *                           does. For the site's samples, which ARE somebody's first look;
+ *                           a map sent to someone stays quiet (ruled D12, 27 Sep 2026)
  *
  * A BUNDLE IS ACCEPTED WHEREVER A .argdown IS. `argdown-bundle.js` defines a one-file container
  * -- the reconstruction with its sources attached as line comments the parser discards -- and a
@@ -625,6 +628,7 @@ async function main() {
       "usage:\n" +
       "  node build_argdown_viewer.mjs FILE.argdown [-o OUT.html] [--source-root DIR]\n" +
       "  node build_argdown_viewer.mjs --standalone [-o OUT.html]\n" +
+      "  any one-file build + --walkthrough: offer the walkthrough to a first-time reader\n" +
       "\n" +
       "  --source-root is the manuscript folder. Given it, the viewer gains the\n" +
       "  exposition-order toggle: the same claims laid out by where they appear in\n" +
@@ -724,7 +728,8 @@ async function main() {
       located = attachPositions(graph, rootArg ? path.resolve(rootArg) : null, input, attached);
     parts.PAYLOAD = wrap("baked graph",
       `window.__ARGDOWN_PAYLOAD__ = ${safeJSON({ name: path.basename(src), source, graph,
-                                                 manuscript: located && located.manuscript || null })};`,
+                                                 manuscript: located && located.manuscript || null })};` +
+      (argv.includes("--walkthrough") ? "\nwindow.__IPS_WALKTHROUGH__ = true;" : ""),
       "PAYLOAD");
     outPath = outArg ? path.resolve(outArg)
                      : src.replace(/\.argdown$/i, "") + " (map).html";

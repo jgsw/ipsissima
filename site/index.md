@@ -31,7 +31,7 @@ map: the main claims at a glance, the detail where you choose to look, the marks
 writes in the margin, and, when the map was drawn from a text, the passage each claim came
 from beside the claim that reports it. **It runs entirely in your browser and makes no network
 requests of any kind.** (The downloadable application speaks beyond your machine only when you
-choose Help ▸ Check for Updates, and can converse with Zotero on your own computer — showing
+choose Help ▸ Check for Updates…, and can converse with Zotero on your own computer — showing
 your highlights, and storing the reconstruction under its source's item with your permission
 — a conversation that never leaves it; the page on this site has nothing of the sort.)
 
@@ -53,8 +53,9 @@ the manuscript with it so the claims can be laid out by where they appear in the
 to open yet? The same panel can **start a new one**: a worked skeleton you replace claim by
 claim, with the map redrawing as you write.
 
-New to argument maps? Take the walkthrough: it is the first entry under **How to use**, runs on
-whatever you have open, and takes about two minutes.
+New to argument maps? Open one of the worked examples below and the walkthrough offers itself:
+about two minutes, on the map you have open. After that it is the first entry under **How to
+use**, whenever you want it again.
 
 There is also a <a href="{{ '/ipsissima-reader.html' | relative_url }}">read-only Reader</a>,
 which is smaller and has no editor — the right one to send to somebody you want to *show* a
@@ -102,7 +103,7 @@ tool's job is to make every step visible enough to challenge.
 
 **A map of your own.** Ipsissima is also an editor, and for most people the lightest way to
 write Argdown — one page in a browser, rather than a programmer's IDE. Start a new map from
-the opening panel (**File ▸ New** in the application), write, and the map redraws as you go;
+the opening panel (**File ▸ New Reconstruction** in the application), write, and the map redraws as you go;
 where a line does not parse, the editor says so on the line, with the real Argdown parser
 doing the judging.
 

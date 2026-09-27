@@ -19,12 +19,12 @@ machine.
 
 **`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
 one file that works with the network cable out. **The desktop application speaks beyond your
-machine exactly once, and only when you ask for it**: Help ▸ Check for Updates asks GitHub
+machine exactly once, and only when you ask for it**: Help ▸ Check for Updates… asks GitHub
 whether a newer release exists. It sends nothing about you or your documents, downloads nothing,
 and installs nothing. And on your own machine it can converse with Zotero — running on the
 same computer, only when you ask, never beyond your machine: show your **Zotero highlights**
 beside a text converted from your library, and **store the reconstruction back** under that
-text's Zotero item (File ▸ Store in Zotero), after you answer Zotero's own permission dialog,
+text's Zotero item (File ▸ Store in Zotero…), after you answer Zotero's own permission dialog,
 which names Ipsissima and is revocable in Zotero's settings.
 
 ---
@@ -44,9 +44,9 @@ checking the finished reconstruction against its sources word for word. It does 
 arguments itself; that judgement belongs to the model, and the instructions for it are served as
 a prompt read off disk. The command line is still there for a one-off.
 
-**`samples/`** — nine worked reconstructions of real arguments, each with the text it was drawn
+**`samples/`** — ten worked reconstructions of real arguments, each with the text it was drawn
 from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, James's "The
-Will to Believe", Swift's satire, and four journal articles. **Five are on the website ready to
+Will to Believe", Swift's satire, and five journal articles. **Five are on the website ready to
 open, with the manuscript already in the page** —
 [Darwin](https://jgsw.github.io/ipsissima/try/darwin.html),
 [Carroll](https://jgsw.github.io/ipsissima/try/carroll.html),
@@ -147,14 +147,16 @@ Everything else, including installing from source and the command line tools, is
   short names. A single-step argument opens too, squared up rather than stepped, which is where
   its premises can be read in full rather than clipped to a line. Either can be saved as PNG or
   SVG.
-- **Two arrangements of the same claims.** By the order of reasons, or by the order of exposition.
-- **Justificatory debt.** In the exposition arrangement, a sparkline on every band and one for the
-  whole piece: below the line, claims asserted here whose reasons come later; above, claims their
-  reasons have already earned.
+- **Three arrangements of the same claims.** By the order of reasons, by the order of
+  exposition, and — where a map declares one — by the causal chain the text sets out.
+- **Where the reasons fall.** In the exposition arrangement, with **shape** switched on, a
+  sparkline on every band and one for the whole piece: below the line, claims asserted here
+  whose reasons come later; above, claims their reasons have already earned.
 - **Margins that go back to the writer.** Comments written on the map export as *real Word
   comments* on the essay, anchored to the passage each one is about.
 - **An editor most people can actually start in.** One page in a browser, or one application —
-  not an IDE with an extension. A new map starts from a worked skeleton (File ▸ New), the map
+  not an IDE with an extension. A new map starts from a worked skeleton (File ▸ New
+  Reconstruction, or New Debate Map), the map
   redraws as you write, and where a line does not parse the editor says so on the line, with
   the official Argdown parser doing the judging.
 - **One file that carries everything.** A reconstruction and the text it is of can be saved as a

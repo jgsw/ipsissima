@@ -33,10 +33,10 @@ stand at a distance from, Ipsissima keeps the distinction, on every claim.
 It runs entirely on your own machine, and nothing is ever uploaded. **As a single HTML file** it
 makes no network requests of any kind — not for updates, not for fonts, not for analytics;
 disconnect from the internet and it behaves identically. **As the desktop application** it speaks
-beyond your machine exactly once, and only when you ask: Help ▸ Check for Updates asks GitHub for
+beyond your machine exactly once, and only when you ask: Help ▸ Check for Updates… asks GitHub for
 the latest release number. It can also converse with Zotero running on this same computer, only
 when you ask, and never beyond your machine: show your Zotero highlights beside a text
-converted from your library, and — via File ▸ Store in Zotero — store the reconstruction
+converted from your library, and — via File ▸ Store in Zotero… — store the reconstruction
 under that text's item, after you answer Zotero's own permission dialog (revocable in
 Zotero's Settings ▸ Advanced).
 
@@ -81,7 +81,7 @@ The method by which a reconstruction is made is not this program's either. It fo
 Fisher**'s *The Logic of Real Arguments* — working back from the conclusion, and the Assertibility
 Question that stops a reconstruction attributing reasoning the author never gave — and **Trudy
 Govier**'s *A Practical Study of Argument*, from which come standardising, the distinction between
-linked and convergent support that these maps draw, unstated premises and counterconsiderations;
+linked and independent support that these maps draw, unstated premises and counterconsiderations;
 with argument schemes from **Walton, Reed and Macagno**. `CREDITS.md` gives the full list.
 
 ## The name

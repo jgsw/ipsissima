@@ -47,6 +47,13 @@ const SUITES = [
   // not run `npx playwright install chromium` still runs everything else.
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
+  // F8, designed against the misreading (admitted 27 Sep 2026): the faults the clarity audit
+  // found on screen -- help that vanished with the map, an id printed where a name belonged, a
+  // bar that dropped every word -- each held by a real-input check.
+  ["designed against the misreading", "node", [path.join(HERE, "test_clarity.mjs")]],
+  // AND THE WORDS THAT TEACH IT: menu paths as the menus spell them, glyphs as the page draws
+  // them, and the retired names (app/vocabulary.json) kept retired.
+  ["the teaching text says what is there", "node", [path.join(HERE, "test_teaching_text.mjs")]],
   ["the appraisal, off until asked", "node", [path.join(HERE, "test_appraisal_layer.mjs")]],
   // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
   // the four export defects were invisible in the browser that made the file.

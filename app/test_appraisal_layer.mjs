@@ -122,13 +122,29 @@ if (chromium) {
     await notesBtn.click();
     await page.waitForTimeout(300);
     check(/APPRAISAL-NOTE/.test(await page.locator("body").innerText()), "which the margins list");
+    // AND THE BANNER SAYS WHERE IT IS EXPLAINED (clarity plan 5.2). Mutation: build the banner
+    // without its link (or without `helpLinks` from the page) -> no way from it to the answer.
+    const topic = () => page.evaluate(() => {
+      const pg = document.querySelector("#help .helppage.show");
+      return document.getElementById("help").classList.contains("show") && pg ? pg.dataset.title : null;
+    });
+    await page.locator("#map .alm-appr-banner .alm-helplink").click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    check(await topic() === "The reconstructor's appraisal",
+          "the banner's link opens the page that explains the appraisal", String(await topic()));
+    await page.keyboard.press("Escape");
 
     // ONE SWITCH, THREE ARRANGEMENTS. Mutation: drop `appraisal: APPRAISAL_ON` from the create
     // options in mechEnsure -> Mechanism opens with it off.
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(300);
     check(await page.locator(".amech-banner").isVisible(), "Mechanism opens with the appraisal still on");
-    await page.locator(".amech-tog.appr input").click();
+    await page.locator(".amech-banner .amech-helplink").click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(300);
+    check(await topic() === "The reconstructor's appraisal", "and Mechanism's banner links there too",
+          String(await topic()));
+    await page.keyboard.press("Escape");
+    await page.locator(".amech-tog.appr").click();
     await page.waitForTimeout(200);
     await page.locator('#view [data-v="reasons"]').click();
     await page.waitForTimeout(500);

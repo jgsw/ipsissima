@@ -111,7 +111,9 @@ for (const s of SAMPLES) {
   const map = path.join(root, s.file);
   if (!fs.existsSync(map)) throw new Error("no such sample: " + map);
   const out = path.join(tryDir, s.slug + ".html");
-  run([BUILDER, map, "--source-root", root, "-o", out]);
+  // --walkthrough: a sample on the site is somebody's first look, so it offers the tour the
+  // workbench offers (ruled D12, 27 Sep 2026). Maps built for sending stay quiet.
+  run([BUILDER, map, "--source-root", root, "--walkthrough", "-o", out]);
   console.log(`  try/${(s.slug + ".html").padEnd(20)}${kb(out)} KB`);
 }
 

@@ -4,26 +4,41 @@
   EDIT THIS FILE, not the template. It is rendered by the same markdown-it that draws the
   manuscript pane, and inlined into the page by build_argdown_viewer.mjs.
 
-  THREE RULES, and only three:
+  THE RULES:
 
     * `#` starts a GROUP. It is a label in the contents and not a page — there is nothing to read
-      at that level. Groups divide by WHAT THE READER IS DOING, not by which control does it,
+      at that level. Groups divide by WHAT THE READER IS ASKING, not by which control does it,
       because somebody consulting the help has a question and does not yet know the control.
-    * `##` starts a new TOPIC. The contents list is built from these, in this order, so adding a
-      topic is adding a heading. `###` and `####` are subheadings inside a topic.
-    * Everything above the first heading stays on the contents page, under the title.
+    * `##` starts a new TOPIC, and its title is the reader's question or task, in the reader's
+      words ("Is a step valid?", not "The validity check"). The contents list is built from these,
+      in this order, so adding a topic is adding a heading. `###` and `####` are subheadings.
+    * Everything above the first heading stays on the contents page, under the search box.
+    * Everyday first, specialist after: a group opens with what a new reader needs, and design
+      reasoning, where it helps at all, is a closing line — not the opening of an instruction.
 
-  ADDING A TOPIC means putting it under the right `#`, and nothing else: the contents are built
-  from the file, so a topic in the wrong group is a topic filed in the wrong place and not a bug
-  in the program. If a topic genuinely belongs in no group, that is a sign the groups are wrong
-  rather than that the topic needs one of its own — seventeen topics in a flat list is what these
-  four groups were introduced to fix, and it will happen again if they are allowed to multiply.
+  ADDING A TOPIC means putting it under the right `#`, and nothing else. If a topic genuinely
+  belongs in no group, that is a sign the groups are wrong rather than that the topic needs one
+  of its own.
 
-  Raw HTML is allowed here (this is our own text, unlike a manuscript), and five ids are filled
-  in by the program at runtime and must survive any rewrite: `relkey`, `fidkey`, `helpkeypane`,
-  `helpstats`, and the `about*` ids in the last topic. A sixth, `keyfloat`, is WIRED rather
-  than filled — the program attaches its click. Deleting one of those does not break the
-  page, but the thing it was showing (or doing) silently stops.
+  LINKS. `<a data-help="Topic title">…</a>` opens that topic; the same attribute works on
+  anything in the page. A title named in a link, in `openHelpTopic("…")`, or in a "How to use ▸
+  …" path must be a `##` here — app/test_teaching_text.mjs holds all three, so renaming a topic
+  means renaming its links in the same commit.
+
+  ONE HELP, TWO BUILDS. `<div data-build="editor"></div>`, empty, at the top of a topic leaves the
+  whole topic out of the Reader, which cannot edit; wrapped round a passage (with blank lines
+  inside it so its markdown is read), it leaves out just that passage.
+
+  SEARCH WORDS. `<p class="also" hidden>…</p>` under a heading lists the words a reader reaches
+  for that the topic may not use — "dashed" for the page that draws its dashes rather than naming
+  them. The search weighs them like the title; nobody sees them.
+
+  Raw HTML is allowed here (this is our own text, unlike a manuscript), and six ids are used by
+  the program and must survive any rewrite: `relkey`, `fidkey`, `helpkeypane` and `helpstats` are
+  filled in at runtime, `keyfloat` has its click attached, and `helpArrangeNote` is emphasised
+  while Exposition is showing. The `srow` rows of "What's on the screen?" are drawn by
+  `drawScreenIndex` from their `data-draw` key. Deleting one of those does not break the page,
+  but the thing it was showing (or doing) silently stops.
 
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
@@ -31,164 +46,83 @@
 Ipsissima makes complex reasoning intelligible through maps you can check at every step — a
 reading of one text, a survey of a whole debate, or an argument of your own.
 
-*ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
-did the author write *these words*, or is this a faithful report of what they meant? Every
-discipline that quotes anybody has had to draw that line, and wherever a claim has a source to
-stand at a distance from, this tool keeps it — every claim marked for how far it stands from
-the words it came from, and every quotation checkable against the page it was taken from.
+New to it? **Take the walkthrough**, the first entry below: two minutes, on the map you have open.
+Looking for something? Type in the box above; it reads every topic, not only their titles.
 
-New to it? **Take the walkthrough** — the first entry below. Two minutes, and it runs on the
-reconstruction you have open. It offers to run again next time; if you said no, it lives here.
+# Start here
 
-# Reading a map
+## What's on the screen?
 
-## Reading the map
+<p class="also" hidden>marks, symbols, icons, glyphs, what does this mean, legend</p>
 
+Every mark the map draws, with what it means and where to read more. Right-click a claim and
+choose **What does this mean?** to come back here.
+
+<div class="screen">
+<div class="srow" data-draw="box"><b>A box</b> is one claim: its title in bold, its words below. <b>▼ more</b> shows the rest of them. <a data-help="Moving around and folding">Moving around and folding</a></div>
+<div class="srow" data-draw="borders"><b>Its border</b> says whose words these are: solid for the author's own, dissolving to dot-dash for a premise the reconstructor supplied. <a data-help="How close to the author's words?">How close to the author's words?</a></div>
+<div class="srow" data-draw="pile"><b>A box with another behind it</b>, saying how many claims it holds, is a folded section. <a data-help="Moving around and folding">Moving around and folding</a></div>
+<div class="srow" data-draw="badge"><b>+3 under a box</b>: three reasons are folded there, and pressing it shows them. <b>−</b> puts them away. <a data-help="Moving around and folding">Moving around and folding</a></div>
+<div class="srow" data-draw="lines"><b>The lines</b>: green supports, red objects, dashed orange undercuts a step, dotted violet contradicts. <a data-help="What the lines mean">What the lines mean</a></div>
+<div class="srow" data-draw="bar"><b>Lines gathered on a bar</b> are premises that work only together. <a data-help="Reading an argument's box">Reading an argument's box</a></div>
+<div class="srow" data-draw="argument"><b>A box of numbered lines</b> is an argument, step by step. A number on a line is that line's row in the box. <a data-help="Reading an argument's box">Reading an argument's box</a></div>
+<div class="srow" data-draw="stair"><b>⊞ and a number</b> at an argument's foot opens it one step at a time. <a data-help="Following a long argument">Following a long argument</a></div>
+<div class="srow" data-draw="rule"><b>A rule's name by a bar</b> (MP) says the step was checked and follows. <b>A red !</b> says it does not. <a data-help="Is a step valid?">Is a step valid?</a></div>
+<div class="srow" data-draw="chip"><b>A hashtag on a box</b> says whose claim it is: a view reported, a point conceded, an objection. <a data-help="Whose claim is this?">Whose claim is this?</a></div>
+<div class="srow" data-draw="corners"><b>A folded corner</b>: top left, the reconstructor's note; top right, a comment. <a data-help="Comments and notes">Comments and notes</a></div>
+<div class="srow" data-draw="hatch"><b>Hatched in violet</b>: the reconstructor's own appraisal, shown only while it is switched on. <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a></div>
+<div class="srow" data-draw="behind"><b>A line broken where it crosses a box</b> passes behind a claim it has nothing to do with. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
+<div class="srow" data-draw="strip"><b>Along the top</b>: the abstract, and what the map says about itself — who wrote it, whether a person has read it, where the reading is contested. <a data-help="What a map says about itself">What a map says about itself</a></div>
+<div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — how much of the argument is showing, and which claims. <a data-help="The controls">The controls</a></div>
+<div class="srow" data-draw="key"><b>The key</b>, floating in a corner, lists every marking, with this map's drawn bright. <a data-help="The key">The key</a></div>
+<div class="srow" data-draw="cards"><b>In Exposition</b>: a band for each section of the text, and a card for each paragraph, numbered ¶ 4. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
+<div class="srow" data-draw="chain"><b>In Mechanism</b>: the chain of states. A solid navy box is what the text recommends doing, a double border what the chain is for, ↻ a loop. <a data-help="Reading a causal chain">Reading a causal chain</a></div>
+</div>
+
+## Moving around and folding
+
+<p class="also" hidden>zoom, pan, drag, scroll, fold, unfold, collapse, expand, badge, +3, section, block, pile, fit, full screen, main claim</p>
 
 Every box is one claim. Arrows run *from a reason to what it bears on*, so an arrow points at the
 claim it is about.
 
-## Moving around
-
-
 - **Scroll** — zoom in and out
 - **Drag** — pan across the map, from anywhere including the inside of a section
-- **Click a box** — nothing is hidden; click its **⊕** to show or hide the reasons for it
+- **Fit**, in the title bar (<kbd>Cmd/Ctrl-0</kbd> in the app) — the whole map in the window again
+- **Click a box** — it becomes the current claim, and nothing is hidden. The badge under it
+  folds: **+3** says three reasons are hidden there and shows them; **−** puts them away again
 - **Click a section's header** — the named strip along its top: fold the section into a single
   block, or open it again
 - **Right-click inside a section** — **Fold section**, from a menu
-- <kbd>Esc</kbd> — leave full screen, or close this panel
 
-Opening a section shows the claims it starts from, each still folded — one level per click, so a
-section of forty claims never lands on you at once.
+**A folded section** is drawn as a pile: a box with a second outline behind it, the section's
+title, and how many claims it holds. The badge under it opens it. Opening a section shows the
+claims it starts from, each still folded — one level per click, so a section of forty claims
+never lands on you at once.
 
-The header folds and the *background does not*, which is not a distinction for its own sake. A
-map with everything open is nearly all section background, so when a click anywhere in a section
-folded it there was almost nowhere left to start a drag from, and panning became a hunt for a
-gap. The header is the control; the rest is canvas.
+**How a large map opens.** A map of more than 25 claims opens with the section that holds its
+main claim open and the others folded, at a size you can read: if the section is too wide for
+that, it opens a rung lower on **how much**, the slider at the left of the controls, which says
+which rung the map is on. Move it up when you want more. Nothing is decided for you after that:
+the rung is yours from the first thing you fold, move or switch.
 
 Folding and unfolding **hold still**: whatever you pressed stays where it was under the pointer
-while the rest of the map moves around it. A section that opens does not throw the map somewhere
-else and leave you to find your place again.
+while the rest of the map moves around it.
 
-## The arrangements
+**The controls along the bottom** fold away with the **⌄** at their end, leaving a small chip that
+brings them back; the choice is remembered. In a browser, **Full screen** in the title bar gives
+the map the whole window, and <kbd>Esc</kbd> leaves it.
 
-
-Reasons and Exposition are both the argument. What differs is what *orders* the claims — the
-order of reasons, or the order of exposition.
-
-- **Reasons** — the main claim at the apex, and beneath it what supports or attacks it, level by
-  level
-- **Exposition** — the same claims, placed where they occur in the text: file by file, section by
-  section, in reading order
-- **Mechanism** — offered only when a map declares one: not the argument but what the text says
-  *happens* — the chain of steps from a cause, often the action it recommends, to the outcomes it
-  is for. *Reading a mechanism*, below, says how to read it
-
-**The reconstructor's appraisal** is off until you ask for it. It is the reconstructor's own
-reading of the text against the world — a confounder the author never mentions, a step the text
-leaves out, a loop it leaves open — and never something the text says. Its switch sits in the
-map's control bar, beside the hashtags, and above the chain in Mechanism, and it is **one switch**:
-turned on in one arrangement, it is on in all three. It says how many additions it is hiding;
-switched on, a banner stays across the view and every addition is drawn in violet — dash-bordered
-on the argument map, hatched on the chain. While
-it is off the additions are nowhere on the page — not on the map, not in the margins — and none of
-them is ever counted as the author's: an appraisal claim is never crowned the main claim, and the
-spine and the depth ladder are measured towards the author's own theses alone.
-
-<p id="helpArrangeNote">They are the same claims twice over. <b>Exposition</b> answers a different
-question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
-there is a claim and its support far apart in the text.</p>
-
-In **Exposition** every section of the text has a band, including a section with nothing in the
-map placed in it. That band is drawn empty and dotted, with its word count and *nothing in the
-map is placed here*, so that a gap in the reconstruction reads as a gap and not as a section the
-text does not have. References, notes and other back matter get no empty band. Text that comes
-before the first heading, such as an abstract or an untitled introduction, has a band of its own
-called *before the first heading*. That is a description, not one of the text's headings.
-
-The bands are the headings that actually divide the text. A heading with almost nothing under
-it, such as a title page's heading, does not count, and neither does back matter or a heading
-that is only a link. A text that no heading divides is banded by its **printed pages** instead:
-*p. 101*, *p. 102*. That is the printer's division, not the author's, and the band's tooltip says
-so. A run of pages with nothing mapped in it is one empty band, *pp. 11–34*.
-
-Claims drawn from the same paragraph are stacked in the order the paragraph makes them, top to
-bottom. A claim placed only by matching its paragraph, with no words of its own to find there,
-goes below the ones that were found.
-
-**The précis.** The first rung of *how much* in Exposition is the **précis**: one claim for each
-section, chosen to be what that section argues, in the order the text makes them. Read down,
-it is the paper in a sentence per section. The choice passes over arguments (they have no words
-of their own), claims read from a note, the reconstructor's imputations and views the text
-reports only to answer. A paper opens at its précis the first time you turn to Exposition, and
-you climb from there. The Reasons view keeps the depth it had.
-
-**Following the reading.** With the Manuscript open beside Exposition, **follow** in the
-Manuscript's header makes the map keep pace with the text. As you scroll, the claims drawn from
-the passage you are reading are lit and brought into view: the passage a third of the way down
-the pane, or the nearest one above it that produced a claim the map is showing. Nothing is
-unfolded; a claim in a folded section is shown by the block that stands for it, and at the
-précis the section's one claim stays lit while you read the section. Clicking a passage lights, as well,
-any claim the passage *announces* (see echoes, below), even though that claim is placed where
-it is argued.
-
-**Two layouts.** Exposition can be laid out in **rows** or as a **column**. The choice is
-*layout* on the control bar.
-
-**Rows.** Each paragraph that has claims drawn from it is a faint **card**, with its claims top to
-bottom in the order the paragraph makes them. Its number is at the foot: **¶ 4** is the fourth
-paragraph of its section, so you can find it in the text. The numbers also show paragraphs that
-gave no claim: from ¶ 2 to ¶ 5, two paragraphs were passed over. Read down a card, then along to
-the next, and at the end of a row on to the next row, as you would lines of text.
-
-**The column.** Every claim has a row of its own, top to bottom in the order the text runs, so the
-map reads the way the Manuscript beside it does. The relations move into the margins as arcs. On
-the left are reasons the reader has **already met** when they reach the claim; on the right are
-reasons **still to come**. The wider an arc swings, the further it reaches. On a narrow pane (a
-phone, or the map beside an open Manuscript on a laptop) the column opens at the top of the text,
-at a size that can be read, and scrolls like a page.
-
-**Pages.** On a pane wide enough for two, the column is cut into **pages** set side by side, like
-a journal's columns. Each page is as tall as the pane at a size that can be read, so you read it
-top to bottom without scrolling, then go on to the top of the next, panning across when you
-reach the edge. A section that runs over a page break carries on under its name, marked
-*(continued)*.
-
-A relation to the page beside is drawn through the gap between them. A relation to a page further
-off would cross everything in between, so it is drawn as a **connector**: a short stub at each
-end, labelled with the claim at the other end. Point at either claim, or at a stub, and the whole
-line appears. Select either claim and its connectors stay drawn. Click a stub to go to the other
-end.
-
-**Echoes.** A claim can record, in `echoes:`, the other places the text states it: its thesis
-announced in the abstract or the roadmap, say, while the claim itself is placed where it is
-argued. Exposition draws a small dotted **echo** at each of those places, tied to the claim by a
-faint dotted line. Click an echo to go to its claim. An echo is not a claim: it carries no
-relation, folds nothing, and the Reasons view never shows it. The checker verifies each echo
-against the text, and `check_argdown.py --echo-candidates` lists places where a claim's words
-recur, for you to confirm or not.
-
-Claims that have no place in the text come **last**, in a lane of their own called *no position
-in the text*. They are the claims whose quotation could not be found, which declare no line, and
-whose words match no paragraph. Most of them are the reconstructor's imputations and
-interpretations, which have no words in the text to be placed by. A claim quoted from a
-**footnote** is placed where the text marks the note, beside the sentence the note glosses.
-
-When a claim's words stand in **more than one place** (in the abstract and in the results, say,
-or twice in the body), it is placed in the text proper rather than a file's front matter or a
-converter's note. It goes on the page its `pinpoint` cites, if its words are on that page, and
-outside the abstract. Otherwise it goes at the earliest. The other places are what
-`--echo-candidates` offers as echoes.
-
-The **Map**, **Argdown**, **Notes** and **Manuscript** buttons beside them are something else
-again — those are panes, and any combination of them can be open at once.
+*Why only the header folds a section:* a map with everything open is nearly all section
+background, and a click anywhere in it would leave nowhere to start a drag from.
 
 ## The key
 
+<p class="also" hidden>legend, key card, markings</p>
 
-Everything the map draws with, in one place — assembled from the reconstruction you have open,
-with the markings this map actually uses drawn bright and the rest dimmed:
+The markings a map draws with most — borders, lines and hashtags — in one place, assembled from
+the reconstruction you have open, with the ones this map actually uses drawn bright and the rest
+dimmed. Each heading opens its own page here.
 
 <div id="helpkeypane"></div>
 
@@ -201,31 +135,114 @@ in the application **Help ▸ Show the Key** and the map's right-click menu do t
 screen, across maps and reopenings, until the **×** closes it for good. Closing it is
 remembered too; this page is its permanent home either way.
 
-## What the lines mean
+## Laying out the panes
 
+<p class="also" hidden>layout, panes, read along, split, side by side, divider</p>
 
-<div class="key" id="relkey"></div>
+The **Map**, **Argdown**, **Notes** and **Manuscript** buttons in the title bar are panes, and any
+combination of them can be open at once. Drag the divider between the map and the panes to give
+either more of the window.
 
-<p id="helpEdgeNote">In <b>Exposition</b>, with <b>shape</b> switched on in the control bar, a line
-also says <em>which way it reaches</em>. Colour still means what it means above — the arrangement
-never changes what a line <em>is</em> — but the weight of the ink says when its support
-arrives:</p>
+**Layout**, beside them, sets them for a job in one step:
 
-- **Solid** — the reasons were already given by the time the claim was made.
-- **Pale** — the claim is asserted *before* its justification arrives: at the point you meet
-  it, its reasons are still to come.
-- **Heavier** — the relation reaches a long way across the text, whichever direction it runs.
+- **Read** — the map only
+- **Read along** — the map in text order beside the Manuscript, and **Follow** switched on, so the
+  map keeps pace with your reading (see <a data-help="Reading in the text's order">Reading in the
+  text's order</a>)
+- **Edit** — the map beside the Argdown
+- **Check** — the Argdown beside the text, no map: for checking quotations against the source
+- **Comment** — the map beside the margin notes
 
-Weight of ink means the same thing here as it does on a claim's border: how settled this is *at
-this point in the reading*. A quotation is drawn solid and an imputation dot-dashed, and a
-justification still to come is drawn pale for the same reason.
+**Texts on the left**, at the foot of the menu, puts the panes on the left of the map instead of
+the right. On a narrow screen the menu also carries the three arrangements, which the title bar
+has no room for.
 
-Only relations that reach further than about a twelfth of the reconstruction are marked this way.
-Most support sits a line or two from what it supports, and that is not a finding about the text,
-it is how prose works. Small arrowheads along a line show its direction where there is room.
+## Seeing where a claim comes from
 
-## Linked and independent reasons
+<p class="also" hidden>source, passage, quotation, manuscript, go to source, jump</p>
 
+**Manuscript** opens the text beside the map. The pane is there in every arrangement: beside
+**Argdown** it is what lets you check a `source:` quotation against the source without leaving the
+page.
+
+- **Double-click a claim** — jump to the passage it was drawn from
+- <kbd>Shift</kbd>**-click a claim** — the same, and so is <kbd>Shift</kbd>+<kbd>Enter</kbd> on
+  a claim reached by keyboard
+- **Right-click a claim** — **Go to source**, from a menu
+- **Click a claim** — marks it as the one you are working on
+- **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
+  the map. If they are folded away they are opened, and if they all fit on screen the map moves
+  to them.
+- <kbd>Shift</kbd>**-click a passage** — the same, and the map *reframes* on the lit claims,
+  zooming out as far as it needs to hold them all. The plain click moves the camera only when
+  the claims fit at your current zoom, so this is the gesture for a crowded screen, and the note
+  at the top of the Manuscript pane names it whenever it would help.
+- **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
+  open, shows its passage
+
+Selecting a claim shows it in whatever panes are already open, and opens none: which panes you
+work with is your business. Going to its passage — double-click, shift-click, or **Go to source**
+— is the one request that opens a pane, because the Manuscript is the very thing it asks for. On a
+map that reads no text there are no passages, and the gesture says so.
+
+The note above the passage says how precisely the claim was placed. *Found by its quotation* is
+exact. That includes a claim whose own text is the author's words, with or without quotation
+marks. *The paragraph it came from* is as close as an unquoted claim can be pinned. A claim
+quoted from a footnote is shown where the text marks the note, and says *from note 3*.
+Clicking the note itself lights the claim too. A claim located only to its file has no line to
+highlight, and says so.
+
+The two marks come off separately. Clicking the map's background clears the mark on the map;
+clicking past the passage in the manuscript clears the mark there, so you can keep a claim
+marked while reading around it in the text.
+
+*Why a passage lights every claim it produced, not the nearest:* across the reference maps 57% of
+placed claims share a line with another, so "the closest" would be a choice the tool has no way
+to make.
+
+## Finding your way in a long text
+
+<p class="also" hidden>contents, headings, table of contents, chapters</p>
+
+A long article or a book is navigated by its own structure, and the Manuscript pane knows it:
+**Contents**, at the right of the pane's header, floats the file's headings over the text
+beneath it, so any section is one click away from wherever you are. Click a heading to go
+there; the section you are reading is marked as you scroll, and where the source records
+printed pages, each entry carries the page it falls on. The list's own **×**, the button again,
+or Escape folds it away.
+
+The headings are the document's own, never invented: a `#` in the source is there because the
+document said so. A file with fewer than two headings offers no Contents at all. A text in
+several files has a menu at the left of the header for choosing which file to show.
+
+# Reading an argument
+
+## Three arrangements of the same claims
+
+<p class="also" hidden>reasons, exposition, mechanism, arrangement, view, main claim</p>
+
+Reasons and Exposition are both the argument. What differs is what *orders* the claims — the
+order of reasons, or the order of exposition.
+
+- **Reasons** — the main claim at the top, and beneath it what supports or attacks it, level by
+  level
+- **Exposition** — the same claims, placed where they occur in the text: file by file, section by
+  section, in reading order. See <a data-help="Reading in the text's order">Reading in the text's
+  order</a>
+- **Mechanism** — offered only when a map declares one: not the argument but what the text says
+  *happens* — the chain of steps from a cause, often the action it recommends, to the outcomes it
+  is for. See <a data-help="Reading a causal chain">Reading a causal chain</a>
+
+<p id="helpArrangeNote">They are the same claims twice over. <b>Exposition</b> answers a different
+question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
+there is a claim and its support far apart in the text.</p>
+
+In the application, **View ▸ Reasons**, **Exposition** and **Mechanism** switch between them, on
+<kbd>Cmd/Ctrl-1</kbd>, <kbd>2</kbd> and <kbd>3</kbd>.
+
+## Reading an argument's box
+
+<p class="also" hidden>premises, conclusion, bar, linked, numbered, argument box, independent</p>
 
 Argdown draws two different things with the same arrow, and the map tells them apart. Premises
 inside one inference step of a **premise-conclusion structure** are *linked*: none of them carries
@@ -250,24 +267,40 @@ and the numbers in the box are one numbering. An unbracketed row is a claim that
 nowhere else.
 
 **Clicking a bracketed row travels to that claim**, unfolding whatever hides it and moving the
-map. Lighting a box up says where a claim lives, which is no use when it lives off screen — on
-the Miller map premise (2) of *The route to the order* sits some two thousand pixels from the
-argument that numbers it.
+map, and leaves a control naming the argument it came from. The control takes you back to that
+**argument** — not to where the camera was, which a fold in between could have made point at
+nothing.
 
-The return trip is the half that matters. A reader moved somewhere they did not choose, with no
-way back, has been lost rather than helped, so the excursion leaves a control naming the argument
-it came from. It centres back on that **argument**, not on the camera position you left: a fold
-between the two clicks would make saved coordinates point at nothing, and *back to the argument*
-is what a reader actually means.
+## What the lines mean
+
+<p class="also" hidden>arrows, lines, colours, green, red, orange, violet, support, attack, undercut, contradiction</p>
+
+<div class="key" id="relkey"></div>
+
+<p id="helpEdgeNote">In <b>Exposition</b>, with <b>Shape</b> switched on in the control bar, a line
+also says <em>which way it reaches</em>. Colour still means what it means above — the arrangement
+never changes what a line <em>is</em> — but the weight of the ink says when its support
+arrives:</p>
+
+- **Solid** — the reasons were already given by the time the claim was made.
+- **Pale** — the claim is asserted *before* its justification arrives: at the point you meet
+  it, its reasons are still to come.
+- **Heavier** — the relation reaches a long way across the text, whichever direction it runs.
+
+Weight of ink means the same thing here as it does on a claim's border: how settled this is *at
+this point in the reading*.
+
+Only relations that reach further than about a twelfth of the reconstruction are marked this way.
+Most support sits a line or two from what it supports, and that is not a finding about the text,
+it is how prose works. Small arrowheads along a line show its direction where there is room.
 
 ## Following a long argument
 
+<p class="also" hidden>staircase, steps, step by step, chain of reasoning</p>
 
 An argument that reaches its conclusion in several steps is drawn as one box of numbered lines.
-That is the compact form and the right default — it is what the map is for — but it asks the
-reader to hold several cross-references at once: that (2)(3)(4) give (5), that (5) with (6) give
-(7), and so on. Readers who do not read numbered premises fluently are exactly the readers
-Ipsissima is for.
+That is the compact form and the right default, but it asks you to hold several cross-references
+at once: that (2)(3)(4) give (5), that (5) with (6) give (7), and so on.
 
 So an argument with a premise-conclusion structure carries a **⊞** control at the foot of its
 box, with the number of steps beside it. It opens the same argument as a **staircase**: one small
@@ -277,56 +310,26 @@ spelled out and the verdict beside it.
 A **one-step** argument has the control too, and it offers something different: there is no chain
 to follow, so what the panel adds is what the box has no room for. On the map a premise is
 clipped to a single line; here every one of them is written out in full, with the rule named and
-the verdict in words. The stair is dropped for a single step — the two boxes square up, with the
-arrow running straight down, which is the shape a single inference has always had.
+the verdict in words.
 
 - **Full text** — every line as the file writes it. What the source actually says
 - **Compact** — the same chain drawn from the claims' short names, so a step and the conclusion
   it reaches sit side by side and the whole shape fits on a screen
 
 The short names are the *reconstructor's*, not the source's, so **Compact** is the view to think
-with and **Full text** the one to check against — which is the distinction the whole program is
-about.
+with and **Full text** the one to check against.
 
 A step whose only input is the conclusion above it gets no box; it becomes a label on the arrow,
 which is what such a step is: *and therefore*.
 
-## Studying a map
-
-
-Unfolding a map shows you the argument; **study mode** makes you reach for it first. Start it
-from **study** on the map's control bar, or from **Study this map** at the top of this panel.
-The map folds to its main claim, and a small card asks one question of the topmost claim that
-still has reasons folded beneath it: *what do you think holds this up — and would anything
-speak against it?* Answer in your own head, then press the claim's **⊞** badge and compare
-what you expected with what the map says.
-
-That order — reach first, then look — is the whole feature. Recalling an argument beats
-re-reading it, and predicting a reason beats being handed one; the card only stages the
-reveal. It never asks you to type, never scores you, and never records your answer: whether
-your expectation and the map agree is your judgement to make, not the tool's — and on a
-contested text, a machine grading your answer would be grading you against one reading among
-several.
-
-Where the reconstructor has marked a claim's reading as contested (`#crux`), the card says so
-at that step, and the claim's note names the readings not taken.
-
-The mode follows you rather than steering you: unfold any badge, in any order, and the card
-moves on. <kbd>Esc</kbd> or the **×** ends it at any time, and the map stays folded exactly as
-you left it — your unfolds are the study. The one exception: ending the mode before you have
-unfolded anything puts the map back as it was, so pressing the wrong button costs nothing.
-
-The window is **as wide as the argument needs**, not a fixed size: a box gets one comfortable
-measure and keeps it, and what makes the window wider is the *travel* — how far the chain has to
-step to the right. A one-step argument travels nowhere and opens in the narrowest window; a long
-staircase opens in the widest.
-
 **Click any claim in the panel** to dismiss it and go to that claim on the map. Claims that exist
 only inside the argument are not clickable — there is nowhere to go. <kbd>Esc</kbd>, the **×**,
-or a click outside the panel all close it.
+or a click outside the panel all close it. The panel's two save buttons keep the staircase as a
+picture (SVG or PNG).
 
-## Does the step actually work?
+## Is a step valid?
 
+<p class="also" hidden>validity, valid, invalid, logic, rule, formalization, countermodel, red exclamation</p>
 
 A premise-conclusion structure can name the rule its step relies on, and naming one is a claim
 that the conclusion **follows**. Ipsissima checks that claim where it can.
@@ -355,11 +358,11 @@ name of several words is reduced to its initials, and a one-word name is drawn a
 **And the name is not what the map's mark vouches for.** The verdict comes from the
 `formalization` lines alone — the map would reach the same answer if the line said `-- Banana --`.
 What the name does on the map is *ask the question*: a step with no rule named is not checked at
-all. The label itself is examined elsewhere: `argdown_check` matches a single textbook
-name against that rule's actual schema and reports a valid step wearing the wrong one — a
-*modus ponens* labelled `Modus tollens` comes back flagged. A name of your own, and a line
-naming two rules at once (a compound step), are labels rather than claims to a known form, and
-are not examined by anything.
+all. The label itself is examined elsewhere: the checker (`ipsissima-check`, or `argdown_check`
+when an assistant runs it) matches a single textbook name against that rule's actual schema and
+reports a valid step wearing the wrong one — a *modus ponens* labelled `Modus tollens` comes back
+flagged. A name of your own, and a line naming two rules at once (a compound step), are labels
+rather than claims to a known form, and are not examined by anything.
 
 Checking needs the claims to say what they *are*, which they do with `formalization`:
 
@@ -380,7 +383,7 @@ Named-but-unchecked is drawn differently from nothing-claimed on purpose. A step
 *modus ponens* and has never been tested is not in the same position as one that asserts nothing.
 
 **Click the red badge** for the countermodel — the concrete way the premises can all hold while
-the conclusion fails. It is the most useful thing the check produces and far too big for a bar.
+the conclusion fails.
 
 This is a check on **validity**, not on truth and not on whether the step really is the rule it
 names. A step can be perfectly valid and still misread the author entirely; that is what the
@@ -390,8 +393,7 @@ fidelity border and the `warrant` are for.
 
 A `formalization` is written once, by hand, and nothing afterwards ties it to the sentence it
 stands for. Edit the claim, leave the formula, and the step is still decided — correctly — about
-formulas that no longer say what the claim says. The map would then mark it *checked* over an
-argument the words no longer make, which is worse than marking nothing.
+formulas that no longer say what the claim says.
 
 So a claim may record the words it was formalized against:
 
@@ -414,29 +416,110 @@ rendering of an English sentence — that is the judgement the whole design leav
 stamp does is make sure the judgement is not quietly inherited by a sentence you have since
 rewritten. Capitalisation and line-wrapping are ignored, so re-flowing a file raises nothing.
 
-## A line behind a claim
+## Reading in the text's order
 
+<p class="also" hidden>exposition, text order, bands, paragraphs, cards, echoes, follow, rows, column, pages</p>
 
-…is drawn dashed across it. In **Exposition** a reason several sections away is a long line with
-whatever the text put in between sitting on top of it, and a line re-emerging at a box's edge
+In **Exposition** every section of the text has a band, including a section with nothing in the
+map placed in it. That band is drawn empty and dotted, with its word count and *nothing in the
+map is placed here*, so that a gap in the reconstruction reads as a gap and not as a section the
+text does not have. References, notes and other back matter get no empty band. Text that comes
+before the first heading, such as an abstract or an untitled introduction, has a band of its own
+called *before the first heading*. That is a description, not one of the text's headings.
+
+The bands are the headings that actually divide the text. A heading with almost nothing under
+it, such as a title page's heading, does not count, and neither does back matter or a heading
+that is only a link. A text that no heading divides is banded by its **printed pages** instead:
+*p. 101*, *p. 102*. That is the printer's division, not the author's, and the band's tooltip says
+so. A run of pages with nothing mapped in it is one empty band, *pp. 11–34*.
+
+Claims drawn from the same paragraph are stacked in the order the paragraph makes them, top to
+bottom. A claim placed only by matching its paragraph, with no words of its own to find there,
+goes below the ones that were found.
+
+**The précis.** The first rung of *how much* in Exposition is the **précis**: one claim for each
+section, chosen to be what that section argues, in the order the text makes them. Read down,
+it is the paper in a sentence per section. The choice passes over arguments (they have no words
+of their own), claims read from a note, the reconstructor's imputations and views the text
+reports only to answer. A paper opens at its précis the first time you turn to Exposition, and
+you climb from there. Reasons keeps the depth it had.
+
+**Following the reading.** With the Manuscript open beside Exposition, **Follow** in the
+Manuscript's header makes the map keep pace with the text (**Layout ▸ Read along** sets this up
+in one step). As you scroll, the claims drawn from the passage you are reading are lit and brought
+into view: the passage a third of the way down the pane, or the nearest one above it that
+produced a claim the map is showing. Nothing is unfolded; a claim in a folded section is shown by
+the block that stands for it, and at the précis the section's one claim stays lit while you read
+the section. Clicking a passage lights, as well, any claim the passage *announces* (see echoes,
+below), even though that claim is placed where it is argued.
+
+**Two flows.** Exposition can flow in **rows** or down a **column**. The choice is *flow* on
+the control bar.
+
+**Rows.** Each paragraph that has claims drawn from it is a faint **card**, with its claims top to
+bottom in the order the paragraph makes them. Its number is at the foot: **¶ 4** is the fourth
+paragraph of its section, so you can find it in the text. The numbers also show paragraphs that
+gave no claim: from ¶ 2 to ¶ 5, two paragraphs were passed over. Read down a card, then along to
+the next, and at the end of a row on to the next row, as you would lines of text.
+
+**The column.** Every claim has a row of its own, top to bottom in the order the text runs, so the
+map reads the way the Manuscript beside it does. The relations move into the margins as arcs. On
+the left are reasons the reader has **already met** when they reach the claim; on the right are
+reasons **still to come**. The wider an arc swings, the further it reaches. On a narrow pane (a
+phone, or the map beside an open Manuscript on a laptop) the column opens at the top of the text,
+at a size that can be read, and scrolls like a page.
+
+**Pages.** On a pane wide enough for two, the column is cut into **pages** set side by side, like
+a journal's columns. Each page is as tall as the pane at a size that can be read, so you read it
+top to bottom without scrolling, then go on to the top of the next, panning across when you
+reach the edge. A section that runs over a page break carries on under its name, marked
+*(continued)*.
+
+A relation to the page beside is drawn through the gap between them. A relation to a page further
+off would cross everything in between, so it is drawn as a **connector**: a short stub at each
+end, labelled with the claim at the other end. Point at either claim, or at a stub, and the whole
+line appears. Select either claim and its connectors stay drawn. Click a stub to go to the other
+end.
+
+**A line behind a claim** is drawn dashed across it. A reason several sections away is a long line
+with whatever the text put in between sitting on top of it, and a line re-emerging at a box's edge
 would otherwise look exactly like a line starting there. The broken stretch says the claim it
 crosses has nothing to do with it.
 
-## Where the reasons fall
+**Echoes.** A claim can record, in `echoes:`, the other places the text states it: its thesis
+announced in the abstract or the roadmap, say, while the claim itself is placed where it is
+argued. Exposition draws a small dotted **echo** at each of those places, tied to the claim by a
+faint dotted line. Click an echo to go to its claim. An echo is not a claim: it carries no
+relation, folds nothing, and Reasons never shows it. The checker verifies each echo against the
+text, and lists (`ipsissima-check --echo-candidates` on the command line) places where a claim's
+words recur, for you to confirm or not.
 
+Claims that have no place in the text come **last**, in a lane of their own called *no position
+in the text*. They are the claims whose quotation could not be found, which declare no line, and
+whose words match no paragraph. Most of them are the reconstructor's imputations and
+interpretations, which have no words in the text to be placed by. A claim quoted from a
+**footnote** is placed where the text marks the note, beside the sentence the note glosses.
+
+When a claim's words stand in **more than one place** (in the abstract and in the results, say,
+or twice in the body), it is placed in the text proper rather than a file's front matter or a
+converter's note. It goes on the page its `pinpoint` cites, if its words are on that page, and
+outside the abstract. Otherwise it goes at the earliest. The other places are what
+`--echo-candidates` offers as echoes.
+
+## Where do the reasons fall?
+
+<p class="also" hidden>shape, sparkline, before, after, anticipated, prepared</p>
 
 A claim has to be justified, and there are only two places its justification can sit: before it
 in the text, or after. If it comes after, the reader holds the claim while its reasons are still
 to come; if before, the reader has held the *materials* without yet knowing what they were for.
 
 Neither is a fault, and each asks something of a reader in its own way. Stating a thesis and
-then arguing for it is ordinary practice — the reader knows where the text is going, and holds
-the thesis on trust while it gets there. Building the case first is ordinary too — nothing is
-taken on trust, and the reader assembles pieces whose purpose arrives later. This view measures
+then arguing for it is ordinary practice; so is building the case first. This view measures
 where each claim's support falls and how far away it sits; it does not score either habit.
 
 This is an author's question about a text more than a reader's, so it is a layer you turn on:
-**shape**, on the control bar in Exposition. Off, the default, the lines are drawn plain and
+**Shape**, on the control bar in Exposition. Off, the default, the lines are drawn plain and
 no sparklines are shown. On, each band carries a **sparkline**, and the whole reconstruction
 has one in the footer beside the claim count, read left to right through the text:
 
@@ -457,14 +540,15 @@ too — each mark is scaled to itself, so a short section is not a flat line bes
 Beside the footer's mark is the same thing in words — *converges late*, *settled early*, and the
 point in the text where the weight of the argument falls. Hovering gives the percentage.
 
-On the reconstructions that come with Ipsissima, Williams's *Internal and External Reasons*
-settles at 73% of the way through the text and Horton's *Aggregation, Risk and Reductio* at 42%.
-Their sparklines say it without words: Horton opens deep below the line — the claims are stated
-first and the reader carries them — and climbs out across the first third. Williams runs near the
-line for most of the paper, earning each step as it goes, and then rises sharply at the very end
-as the contention arrives already paid for.
+Two of the samples that come with Ipsissima sit at opposite ends. Swift's *A Modest Proposal*
+has done its justifying 14% of the way through: the proposal is made first and argued for
+afterwards, so most of its mark sits below the line. Darwin's *Natural selection* is not done
+until 68%: most of its reasons are given before the claims they support, so most of its mark
+sits above the line.
 
-## Reading a mechanism
+## Reading a causal chain
+
+<p class="also" hidden>mechanism, causal, cause, effect, chain, loop, intervention, outcome</p>
 
 The Mechanism arrangement draws the causal chain a text sets out: from a cause, through the states
 it says change, to the outcomes it is for. Levels of social complexity run top to bottom (macro,
@@ -475,17 +559,17 @@ Where a chain starts is drawn by what the text does with it. A **solid navy** bo
 *intervention* — what the text recommends doing. A **tinted** box is a *condition* — a cause an
 explanatory text sets out from without recommending anything. An outcome — what the chain is for,
 or what the text explains — has a **double border**. A state can be more than one of these:
-in Merton's essay, prejudice is both where the circle starts and what his remedy is for.
+in a vicious circle, the state where the circle starts can also be what the remedy is for.
 
 **Loops.** Where the text closes a loop, the arrow that closes it dips under the chain and returns,
 marked ↻ — or, between two states drawn one above the other, the steps run down one side of the
-column and back up the other, so a loop between them reads as a circuit — and **every state in the loop carries a ↻ badge** (numbered when there is more than
-one loop). Click a badge, or the loop in the panel, to see that loop alone, its steps and claims
-listed in order. A loop marked *reflexive* runs through a belief, a prediction or a
-classification that the loop itself acts on — a prophecy that fulfils itself. Where many loops
-run through the same states — a theory whose every part feeds back on every other — they are
-shown as one **feedback system**, marked ⟳A on each of its states: click it to see the system
-alone, with its shortest loops offered one by one.
+column and back up the other, so a loop between them reads as a circuit — and **every state in the
+loop carries a ↻ badge** (numbered when there is more than one loop). Click a badge, or the loop in
+the panel, to see that loop alone, its steps and claims listed in order. A loop marked *reflexive*
+runs through a belief, a prediction or a classification that the loop itself acts on — a prophecy
+that fulfils itself. Where many loops run through the same states — a theory whose every part
+feeds back on every other — they are shown as one **feedback system**, marked ⟳A on each of its
+states: click it to see the system alone, with its shortest loops offered one by one.
 
 **The text's own boxes.** Where a map says that some states are parts of a larger one — the boxes
 of the author's own diagram, a typology under one heading — the chain opens with each part drawn
@@ -533,14 +617,16 @@ Its label says which way the effect runs: **raises** (more of the first brings m
 second) or **lowers** (more of the first, less of the second). These are effects, not the support
 and attack of the Reasons map, so they are written as words rather than + and −. A line ending in
 a bar, marked **no effect**, is a finding that nothing is brought about — often the text's answer
-to a rival view's arrow beside it. The key beside the chain shows each kind of line this map uses.
+to a rival view's arrow beside it. The **Legend** beside the chain shows each kind of line this
+map uses.
 
 ### Studying the chain
 
 Click an arrow to see its claims, and a claim to reach its passage in the text. **Click a state**
 to see only the paths through it — what leads to it and what it leads to — with the rest faded.
-**Show only what the text tested** keeps the steps backed by a study, statistics or a model.
-**Fit to width** scales a wide chain to the window.
+**Back to the whole chain**, or <kbd>Esc</kbd>, brings everything back. **Show only what the text
+tested** keeps the steps backed by a study, statistics or a model. **Fit to width** scales a wide
+chain to the window.
 
 The panel beside the chain gives its shape — how many steps, across how many levels, over how
 long — and its **gaps**: where the text's chain stops, or never reaches an outcome. A gap is a
@@ -556,14 +642,43 @@ clicking it lists every step's own claims.
 
 **Intervention → outcomes** does this for the whole chain at once: it folds everything between
 the intervention and its outcomes, and sets aside what lies off that line — other causes the text
-names, places its chain stops — naming them in the panel. **Show the whole chain** puts it back.
+names, places its chain stops — naming them in the panel. **Unfold the chain** puts it back.
 Nothing moves when you fold: every state keeps its place, so unfolding returns exactly what you
 saw.
 
-# Whose words are these?
+## Studying a map
 
-## How close to the author's words
+<p class="also" hidden>study, quiz, predict, test yourself</p>
 
+Unfolding a map shows you the argument; **study mode** makes you reach for it first. Start it
+from **Study** at the head of the map's control bar, or from **Study this map** at the top of
+this panel. The map folds to its main claim, and a small card asks one question of the topmost
+claim that still has reasons folded beneath it: *what do you think holds this up — and would
+anything speak against it?* Answer in your own head, then press the badge under it — the **+3**
+that counts what is folded there — and compare what you expected with what the map says.
+
+The card never asks you to type, never scores you, and never records your answer: whether your
+expectation and the map agree is your judgement to make, not the tool's.
+
+Where the reconstructor has marked a claim's reading as a **crux** (`#crux`) — one reading among
+live alternatives — the card says so at that step, and the claim's note names the readings not
+taken.
+
+The mode follows you rather than steering you: unfold any badge, in any order, and the card
+moves on. **Study** again, <kbd>Esc</kbd> or the **×** ends it at any time, and the map stays
+folded exactly as you left it — your unfolds are the study. The one exception: ending the mode
+before you have unfolded anything puts the map back as it was, so pressing the wrong button costs
+nothing.
+
+*Why reach before looking:* recalling an argument beats re-reading it, and predicting a reason
+beats being handed one. On a contested text a machine grading your answer would be grading you
+against one reading among several, which is why nothing here does.
+
+# Whose words, whose view
+
+## How close to the author's words?
+
+<p class="also" hidden>border, borders, dashed, dotted, dot-dash, outline, fidelity, quotation, paraphrase, compression, interpretation, imputation</p>
 
 A reconstruction cannot otherwise distinguish the source's words from the reconstructor's. The
 border of each box says which:
@@ -573,9 +688,7 @@ border of each box says which:
 Unmarked claims are drawn plain.
 
 **Hover text says what the box could not.** A claim drawn in full, with nothing recorded about
-where it came from, has no tooltip at all — the box is already saying everything there is to say,
-and a tooltip repeating it would only teach you that tooltips are not worth opening. What a
-tooltip does carry:
+where it came from, has no tooltip at all. What a tooltip does carry:
 
 - the claim's own text, **only where the box clipped it**
 - the author's **exact words**, which the map never draws — it draws the reconstructor's claim.
@@ -588,16 +701,20 @@ tooltip does carry:
 The same rule everywhere: a section header gives its full name on hover only when the band was
 too narrow to draw it; a premise row gives its full text only when the row was cut.
 
-## Whose claim is this
+How these are written in the file: <a data-help="Recording where a claim came from">Recording
+where a claim came from</a>.
 
+## Whose claim is this?
+
+<p class="also" hidden>hashtag, tags, reported, conceded, contested, crux, authority, obiter</p>
 
 A different question, and the border does not answer it. *Whose words* is one thing; *who is
 putting this forward* is another, and a map loses it where prose keeps it easily — "Hume holds…",
 "even granting that…", "one might object…". Without it a reader cannot tell a position the author
 holds from one the author is attacking.
 
-So a claim may carry a **hashtag**, and three of them recur often enough to mean the same thing in
-every reconstruction:
+So a claim may carry a **hashtag**, and these recur often enough to mean the same thing in every
+reconstruction:
 
 | | the claim is |
 |---|---|
@@ -605,8 +722,9 @@ every reconstruction:
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — a counterconsideration, or a scope limit the author sets on their own thesis |
 | `#contested` | **an objection voiced in the text that is not the author's view** — a critic's, an interlocutor's, or one the author raises against their own position and answers. Never the author's own view, even where it opposes a persona or a position the text sets out; and never the reconstruction's own objection, which is a rival reading (`#crux`, with the rival set out as `#reported`) or, where one was asked for, the appraisal |
-| `#appraisal` | **the reconstructor's own reading of the text against the world** — written only when asked for, and hidden until its switch is turned on (see *The arrangements*) |
+| `#appraisal` | **the reconstructor's own reading of the text against the world** — written only when asked for, and hidden until its switch is turned on (see <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a>) |
 | `#authority` | **a proposition whose force comes from its source, not its content** — a decided case, a statute. Chiefly in legal texts |
+| `#crux` | **a point where the text underdetermines the reading** — the reconstructor chose among live alternatives, and the claim's note names the road not taken (see <a data-help="What a map says about itself">What a map says about itself</a>) |
 
 Each names something the shape of the graph cannot: nothing about how a claim is wired reveals
 that it is Hume's rather than the paper's. On the Tooming reconstruction thirty claims are
@@ -616,63 +734,70 @@ that it is Hume's rather than the paper's. On the Tooming reconstruction thirty 
 supports another, and it means the same whether the support is a reason a reader can weigh or a
 precedent that binds regardless of what anyone thinks of it. *The King hath no prerogative but that
 which the law of the land allows him* holds up the claim above it **because a court decided it in
-1611**. On the Miller map the hashtag marks the two places where that is what an arrow means.
+1611**. On the Miller map nine claims carry it.
 
-A file may use any hashtag it likes and Ipsissima will show it — these four are a convention, not
-a fixed list. The **hashtags** control lists whatever the file actually contains, and does not
-appear at all when it contains none.
+A file may use any hashtag it likes and Ipsissima will show it — these are a convention, not
+a fixed list. Miller's `#obiter`, for what the court said by the way and did not need for its
+decision, is one of a map's own. The **hashtags** switches in the control bar list whatever the
+file actually contains, and do not appear at all when it contains none. Switch one off to take
+those claims off the map; the bar says how many claims the switches are hiding.
 
-## The claim and its source
+## The reconstructor's appraisal
 
+<p class="also" hidden>appraisal, hatched, violet, reconstructor</p>
 
-**Manuscript** opens the text beside the map. Drag the divider to give it more or less of the
-window. The pane is there in both arrangements: beside **Argdown** it is what lets you check a
-`source:` quotation against the source without leaving the page.
+The appraisal is off until you ask for it. It is the reconstructor's own reading of the text
+against the world — a confounder the author never mentions, a step the text leaves out, a loop it
+leaves open — and never something the text says.
 
-- **Double-click a claim** — jump to the passage it was drawn from
-- <kbd>Shift</kbd>**-click a claim** — the same, and so is <kbd>Shift</kbd>+<kbd>Enter</kbd> on
-  a claim reached by keyboard
-- **Right-click a claim** — **Go to source**, from a menu
-- **Click a claim** — marks it as the one you are working on
-- **Click a passage** — the other way round: every claim drawn from that paragraph lights up on
-  the map. If they are folded away they are opened, and if they all fit on screen the map moves
-  to them.
-- <kbd>Shift</kbd>**-click a passage** — the same, and the map *reframes* on the lit claims,
-  zooming out as far as it needs to hold them all. The plain click moves the camera only when
-  the claims fit at your current zoom — claims scattered across the whole map have a midpoint
-  near none of them — so this is the gesture for a crowded screen, and the note under the
-  chapter menu names it whenever it would help.
-- **Click a `[claim]` in the Argdown** — lights it on the map and, when the Manuscript pane is
-  open, shows its passage
-- **Select a passage** — when you are writing the map, two buttons appear above the text,
-  and they are the fidelity vocabulary's first lesson. **Quote this passage** writes a new
-  claim whose text *is* the selected words — `fidelity: quotation`, the source recorded
-  verbatim, the chapter cited where the front matter does not already say it — with the
-  claim's title arriving selected, ready to be renamed. **Paraphrase it** writes the same
-  provenance but not your words: the restatement is yours to make, so the claim's text
-  arrives as a selected placeholder, ready to be written over. Either way, while words are
-  selected, clicking does not light claims or move the map: a drag that selects is not a
-  click that asks.
+Its switch is **Appraisal**, in the map's control bar beside the hashtags, and in Mechanism's bar
+below the chain, and it is **one switch**: turned on in one arrangement, it is on in all three. It
+says how many additions it is hiding; switched on, a banner stays across the view and every
+addition is drawn hatched in violet, on the argument map and on the chain alike.
 
-  *Writing the map* means a map you are building by hand, or a machine-written one
-  (`reconstruction: generated`) that you have already edited here — the first edit is how
-  you say you mean to. On a machine-written map you have only read, selecting a passage
-  offers no writing doors: reading is not editing, and the row above the text stays clear
-  for the one door reading may want, **Highlight in Zotero** (below).
+While it is off the additions are nowhere on the page — not on the map, not in the margins — and
+none of them is ever counted as the author's: an appraisal claim is never crowned the main claim,
+and the spine and the depth ladder are measured towards the author's own theses alone.
 
-Two kinds of gesture, keeping two different promises. **Selecting** — a plain click on a claim,
-a claim's name in the Argdown, an entry in the margin list — shows the claim in whatever panes
-are already open, and opens none: which panes you work with is your business. **Going to the
-passage** — double-click, shift-click, or **Go to source** from the menu — is the one request
-that opens a pane, because the Manuscript is the very thing it asks for. (Two more openers,
-each summoning exactly the pane it needs: the folded corner of a commented claim opens the
-margin list it names, and **Quote this passage** opens the Argdown it writes into.) On a map
-that reads no text there are no passages, and the go-to gesture says so rather than asking you
-for a manuscript that never existed.
+## What a map says about itself
 
-A panel at the top-left of the map carries whatever the manuscript's own front matter offers as
-an orientation to the text — the article's **abstract**, or for a judgment its **facts of the
-case**, which somebody else usually wrote and which the panel credits:
+<p class="also" hidden>machine-written, AI, generated, reviewed, crux, abstract, facts, voice, reconstruction block</p>
+
+Along the top of the map, beside the **Abstract**, a map can say what kind of thing it is. Each of
+these opens this page when clicked.
+
+**When the text itself was machine-written.** A map may declare, in its front matter, that the
+text it reads was generated by an AI assistant:
+
+```argdown
+===
+title: A generated-text reading
+text-provenance: generated
+===
+```
+
+Ipsissima shows that declaration beside the map's title. The borders and checks then say what
+they always say — that the map is faithful to the text. Whether the text is *true* is a
+different question, and the label is there so nobody mistakes the first assurance for the
+second.
+
+**When the map itself was machine-written.** A map whose front matter declares
+`reconstruction: generated:` and records no `reviewed:` shows **machine-written map**; one whose
+front matter records `reviewed:` — a person's pass over the map, dated — shows **map read by a
+person** instead. The second label records that someone looked, and deliberately claims no more:
+checking a long map against its source is hard, so a recorded pass is limited reassurance, not a
+proof. The quotation checks are mechanical and hold either way; whether the *reading* is fair
+remains a judgement, and the label says whose.
+
+**A reading that names its cruxes.** A claim tagged `#crux` marks a point where the text
+underdetermines the reading and the reconstructor chose among live alternatives — the claim's
+note names the road not taken. A map declaring any shows **one reading · N cruxes**: it is one
+reading among defensible readings, and it says so at exactly the points where that matters.
+
+**The abstract, the facts, the voice.** The panel behind **Abstract** carries whatever the
+manuscript's own front matter offers as an orientation to the text — the article's **abstract**,
+or for a judgment its **facts of the case**, which somebody else usually wrote and which the
+panel credits:
 
 ```yaml
 ---
@@ -690,117 +815,46 @@ reconstructor's own sentence, and it takes the panel ahead of an abstract becaus
 against misreading outranks a courtesy summary. None of these is part of the reconstruction,
 and the panel says so. A file offering none of them has no panel.
 
-The note above the passage says how precisely the claim was placed. *Found by its quotation* is
-exact. That includes a claim whose own text is the author's words, with or without quotation
-marks. *The paragraph it came from* is as close as an unquoted claim can be pinned. A claim
-quoted from a footnote is shown where the text marks the note, and says *from note 3*.
-Clicking the note itself lights the claim too. A claim located only to its file has no line to
-highlight, and says so.
+**The reading the map declares.** A new map begins with a `reconstruction:` block at the top of
+the Argdown. It says which kind of reading the map is trying to be, so that someone who finds a
+reading unfair has something definite to disagree with:
 
-The two marks come off separately. Clicking the map's background clears the mark on the map;
-clicking past the passage in the manuscript clears the mark there. Neither touches the other, so
-you can keep a claim marked while reading around it in the text.
-
-Clicking a passage answers with *every* claim it produced, not the nearest one. Across the
-reference maps 57% of placed claims share a line with another — a claim pinned to its paragraph
-carries that paragraph's first line — so "the closest" would be a choice between several the tool
-has no way to make.
-
-## The file's contents
-
-A long article or a book is navigated by its own structure, and the Manuscript pane knows it:
-**Contents**, at the right of the pane's header, floats the file's headings over the text
-beneath it, so any section is one click away from wherever you are. Click a heading to go
-there; the section you are reading is marked as you scroll, and where the source records
-printed pages, each entry carries the page it falls on. The list's own **×**, the button again,
-or Escape folds it away.
-
-The headings are the document's own, never invented: the converter's rule is that a `#` in the
-source is there because the document said so, and this list can only show the text's shape as
-the text stated it. A file with fewer than two headings offers no Contents at all.
-
-## Provenance
-
-
-Metadata in braces records where a claim came from and whose words it is. It is what makes the
-**Exposition** arrangement and the source links work.
-
-```argdown
-[a-claim]: The claim.
-    {chapter: "source/paper.md", fidelity: "quotation",
-     source: "\"the author's exact words\"", reviewed: "2026-08-20"}
+```yaml
+reconstruction:
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
 ```
 
-`fidelity` says whose words these are — `quotation`, `paraphrase`, `compression`,
-`interpretation`, `imputation` — and the map draws it as the box's border. Press **{…}** in the
-Argdown pane to fold all of it away and see the argument's shape.
+- **aim** — `fit`: what the text says, by its author's own standards — would the author
+  recognise these thoughts as theirs? Or `appropriation`: the best argument that can be made
+  *with* the text, for a debate of today.
+- **unit** — what a hard choice is between: `meaning`, two senses of one sentence; or
+  `commitment`, two things the author says that cannot both be held.
+- **mode** — what makes one reading *better*: `coherence` with the author's other commitments,
+  `truth`, `soundness` (the argument works), `agreement` with what the reader takes to be
+  reasonable, or `interest`.
+- **strength** — how much better than their words the author is assumed to be: `minimal`,
+  `ordinary` (the working default) or `strong`.
 
-Two of the levels are departures from the text and owe a reason, which `warrant` gives:
-
-```argdown
-[a-claim]: A premise the argument needs.
-    {fidelity: "imputation", warrant: "enthymeme"}
-```
-
-| `warrant` | the reading is taken because |
-|---|---|
-| `enthymeme` | the argument is invalid without it and plainly relies on it |
-| `hyperbole` | it reads as overstatement rather than as the position |
-| `sloppy-phrasing` | it reads as imprecise expression of a different claim |
-| `secret-sign` | it reads as a signal to knowing readers rather than at face value |
-| `other-texts` | the author says so elsewhere |
-| `coherence` | it makes the surrounding text hang together |
-| `convention` | it is the field's standard reading of this passage |
-
-The list is a **prompt, not a vocabulary**. Any other value is accepted and shown as written: the
-point is that a reason was recorded, not that it fell into a taxonomy. An `imputation` with a
-warrant is a reading; one without is a guess.
-
-`formalization` says what a claim *is*, in the notation the validity check reads — see **Does the
-step actually work?** above.
-
-**When the text itself was machine-written.** A map may declare, in its front matter, that the
-text it reads was generated by an AI assistant:
-
-```argdown
-===
-title: A generated-text reading
-text-provenance: generated
-===
-```
-
-Ipsissima shows that declaration beside the map's title. The borders and checks then say what
-they always say — that the map is faithful to the text. Whether the text is *true* is a
-different question, and the label is there so nobody mistakes the first assurance for the
-second.
-
-**When the map itself was machine-written.** The same honesty runs the other way. A map whose
-front matter declares `reconstruction: generated:` and records no `reviewed:` shows
-**machine-written map** beside the title; one whose front matter records `reviewed:` — a
-person's pass over the map, dated — shows **map read by a person** instead. The second label
-records that someone looked, and deliberately claims no more: checking a long map against its
-source is hard, so a recorded pass is limited reassurance, not a proof. The quotation checks
-are mechanical and hold either way; whether the *reading* is fair remains a judgement, and the
-label says whose.
-
-**A reading that names its cruxes.** A claim tagged `#crux` marks a point where the text
-underdetermines the reading and the reconstructor chose among live alternatives — the claim's
-note names the road not taken. A map declaring any shows **one reading · N cruxes** beside the
-title: it is one reading among defensible readings, and it says so at exactly the points where
-that matters.
+The last three are the three ways "read it charitably" is ambiguous, after Tom Stern: coherence
+and truth are both called charity, and can point opposite ways about the same passage. A map
+written by a machine also records `generated: true` in the same block.
 
 ## Comparing two readings
 
+<p class="also" hidden>compare, comparison, two maps, other reading, difference</p>
 
 One text legitimately supports more than one reconstruction, and two defensible readings are
 two `.argdown` files. To see where they differ, open one of them and choose the other: in the
 desktop application from **File ▸ Compare with Another Reading…**, which shows the Manuscript
 if it is not already up; in the web page from the small two-pages glyph at the right of the
 Manuscript's header. The text is the one thing the two readings share, so the text is where
-their disagreement is drawn: each passage's
-margin shows whether **both** maps read it, only **this** one, or only the **other** — and a
-passage the two read *differently* carries a **⚑** whose hover says how. Three kinds of
-difference are flagged, all from what the maps themselves declare:
+their disagreement is drawn: each passage's margin shows whether **both** maps read it, only
+**this** one, or only the **other** — and a passage the two read *differently* carries a **⚑**
+whose hover says how. Three kinds of difference are flagged, all from what the maps themselves
+declare:
 
 - one map marks the reading **contested** (`#crux`) where the other notes no choice;
 - the maps disagree about **who is speaking** — one reads the passage as the author's own
@@ -810,69 +864,22 @@ difference are flagged, all from what the maps themselves declare:
 
 Hovering a striped passage names the claims each map draws from it. Nothing is judged and
 nothing is written: which reading is better is the argument the two files exist to have, and
-**× end** removes every stripe, both files untouched. A file that places no claim in this
-manuscript is refused with an explanation — maps citing no text in common are not readings of
-the same source, and there is nothing to compare them on.
+**End comparison** removes every stripe, both files untouched. A file that places no claim in
+this manuscript is refused with an explanation — maps citing no text in common are not readings
+of the same source, and there is nothing to compare them on.
 
-## Your Zotero highlights
+# Making and editing a map
 
+## Opening a map, and where its text is found
 
-If you read and mark your library in **Zotero**, your marks can appear here too — without ever
-becoming a second copy. A text converted out of your Zotero library carries the name of the
-attachment it came from in its own front matter (`zotero:`, written by the converter from the
-path it actually read), and in the **desktop application** the Manuscript header then offers a
-**Zotero highlights** button. Pressing it asks Zotero — running on this same computer — for
-your highlights of exactly this file, and paints each one **on the very words you marked**,
-in its Zotero colour — a wash for a highlight, an underline for an underline — starting and
-stopping where your pen did, even in the middle of a long paragraph. A note, which has no
-words of its own, appears as a bar in the left gutter at the beginning of its printed page,
-and so does any mark whose words this conversion cannot pin down. The exact words, any
-comment, and the printed page ride the hover. Pressing the button again puts them away.
+<p class="also" hidden>open, file, folder, text not found, missing text, bundle</p>
 
-Three honesty notes. The marks stay **Zotero's**: Ipsissima displays them and keeps no copy,
-so there is nothing to drift out of sync — Zotero remains the one place your marks live.
-The button is the **only** thing that makes the application speak to Zotero, and that
-conversation never leaves your machine. And a highlight whose words cannot be found in this
-converted text is **counted, not dropped** — the note under the chapter menu says how many
-placed and how many did not, the same honesty the quotation checks keep. (An area highlight —
-a rectangle over a figure — carries no words to find, and is counted separately.)
-
-If the button reports that Zotero is not answering: Zotero has to be running, and *Allow other
-applications on this computer to communicate with Zotero* switched on in its
-Settings ▸ Advanced.
-
-The conversation runs the other way too. Select a passage in a text that came from Zotero and
-a button appears above it: **Highlight in Zotero** (beside Quote and Paraphrase when you are
-writing the map, on its own when you are reading one). The mark is created *in Zotero*, on the
-PDF itself, at the exact rectangles where those words are printed — the conversion wrote a
-small geometry file beside the text for precisely this — and it lives only there: press
-**Zotero highlights** and it comes back like any mark you made in Zotero's own reader.
-Zotero asks your permission the first time, by name, revocably. A conversion made before
-this feature carries no geometry file; the button says so and writes nothing — reconvert
-the PDF to enable it.
-
-## Storing the reconstruction in Zotero
-
-The conversation also runs the other way, on the same terms. **File ▸ Store in Zotero** places
-this reconstruction under the very item its source came from, as **one attachment**: the
-`.argdown` as a bundle, every cited source carried inside it — still a valid Argdown file, so
-a double-click in Zotero opens it here, text and map together, and Zotero's own sync carries
-it to your other devices. Nothing is stored except on this gesture, and the first time Zotero
-itself asks — a dialog naming Ipsissima, with *Allow*, *Always Allow* and *Deny* — and the
-grant stays revocable in Zotero's Settings ▸ Advanced. Choosing plain *Allow* grants one
-write's worth of trust, so a store of several steps may ask more than once; *Always Allow* is
-the natural answer for a workflow you have adopted, and Ipsissima and its MCP tools share the
-one grant. Storing again replaces the stored copy, never duplicates it, and a copy someone
-else changed in the meantime is refused rather than overwritten.
-
-# Working with a reconstruction
-
-## Opening a reconstruction
-
-
-**Open a file.** Ipsissima reads the folder it sits in, so the manuscript comes with it — you do
-not have to find and open the folder yourself. Double-clicking a `.argdown` in Finder or Explorer
-does the same thing.
+**Open a file.** In the application, Ipsissima reads the folder the file sits in, so the text
+comes with it — you do not have to find and open the folder yourself — and double-clicking a
+`.argdown` in Finder or Explorer does the same thing. In a web browser a page cannot read a
+folder it was not handed, so a lone file opens as the map alone: drop the whole **folder**, or
+use **Open… ▸ Open a folder…**, to bring the text too. A **bundle** — a single `.argdown` that
+carries its text inside it — needs neither.
 
 **Where it looks for the text.** Nothing is guessed. Each claim says which file it came from, in
 its own metadata:
@@ -893,7 +900,7 @@ several `.argdown` files opens the one you actually chose.
 **Reading order**, when a reconstruction cites more than one file, comes from a project file
 beside it — `argdown-project.yml`, or `_quarto.yml` if you already keep one:
 
-```argdown
+```yaml
 chapters:
   - "source/01-intro.md"
   - "source/02-cases.md"
@@ -903,34 +910,46 @@ Without one, the order is the order the reconstruction itself cites them in, whi
 single paper and is the reconstructor's own sequence for several.
 
 **Open a folder** instead when there is no `.argdown` yet, or when you want to pick the folder
-rather than hunt for the file inside it. It is the same result either way.
+rather than hunt for the file inside it. It is the same result either way. **Open…** in the title
+bar brings back the opening panel, with every door on it.
+
+## Starting a new map
+
+<p class="also" hidden>new, blank, skeleton, debate map, start</p>
+
+<div data-build="editor"></div>
 
 **Start a new one** when there is nothing to open. The panel Ipsissima shows when no file is
-loaded offers both kinds — **start a reconstruction** and **start a debate map** — and in the
+loaded offers both kinds — **New reconstruction** and **New debate map** — and in the
 app they are **File ▸ New Reconstruction** and **File ▸ New Debate Map**. Either way, what
 appears is a small working skeleton to type over; it unloads whatever is open, and asks first
-if there is anything unsaved. The reconstruction skeleton — a claim, the argument for it, an
-objection, two premises — carries a border of each kind, so the vocabulary the map draws with is
-on screen before you have written anything. The debate-map skeleton carries none, which is its
-own lesson: a debate map surveys a pattern of public argument rather than reading one text, so
-no claim cites a source, and the map stands instead on the fairness of the person who drew it —
-whose name goes in the front matter — with tags marking which side each claim belongs to.
+if there is anything unsaved.
 
-**Save** writes the reconstruction back where it came from. **Save as…** writes it somewhere else
-and goes on editing *that* file, which is what you want before a substantial revision. In a browser
-that cannot choose where to write, Save offers the file as a download instead and says so.
+The reconstruction skeleton — a claim, the argument for it, an objection, two premises — carries
+a border of each kind, so the vocabulary the map draws with is on screen before you have written
+anything. The debate-map skeleton carries none, which is its own lesson: a debate map surveys a
+pattern of public argument rather than reading one text, so no claim cites a source, and the map
+stands instead on the fairness of the person who drew it — whose name goes in the front matter —
+with tags marking which side each claim belongs to.
 
-## Starting from a text
+The reconstruction skeleton begins with a `reconstruction:` block, saying which kind of reading
+the map is trying to be; <a data-help="What a map says about itself">What a map says about
+itself</a> explains each line.
 
+## Starting from a pasted text
 
-**Start from a text** — the third door on the opening panel, and **File ▸ New from Text…** in the
+<p class="also" hidden>paste, pasted, new from text, guide</p>
+
+<div data-build="editor"></div>
+
+**New from text…** — the third door on the opening panel, and **File ▸ New from Text…** in the
 app — is for when what you have is a passage and the map does not exist yet. The door is never
-far away once something is open: **Open…** brings the opening panel back, doors and all. Paste the text, say
-whose it is, and press Begin. The pasted text becomes the manuscript, carried *inside* your file:
-saving produces one `.argdown` with the text embedded, which opens anywhere and can be handed to
-anyone whole. Whose-text-you-said appears in the panel at the top-left of the map, and one thing
-is true of everything that follows: **quotations are checked against this pasted copy, not
-against the original** — which is why the door asks for the edition.
+far away once something is open: **Open…** brings the opening panel back, doors and all. Paste
+the text, say whose it is, and press Begin. The pasted text becomes the manuscript, carried
+*inside* your file: saving produces one `.argdown` with the text embedded, which opens anywhere
+and can be handed to anyone whole. Whose-text-you-said appears in the panel at the top-left of the
+map, and one thing is true of everything that follows: **quotations are checked against this
+pasted copy, not against the original** — which is why the door asks for the edition.
 
 A guide then takes you through building the map, one question at a time, with selecting-and-
 quoting as the only gesture:
@@ -945,98 +964,63 @@ quoting as the only gesture:
 
 The guide asks; it never answers. Which sentence *is* the conclusion, what the assumption says,
 whether the reading is fair — those stay yours. The **–** folds the guide to its header; the
-**×** puts it away for good, and the map and text stay exactly as they are.
+**×** or <kbd>Esc</kbd> puts it away for good, and the map and text stay exactly as they are.
 
 The pasted text itself is never edited in place — no manuscript is. A bad paste is corrected
-wholesale: reach the door again — **File ▸ New from Text…** in the app, **Open…** then *start
-from a text* on the web — and with a pasted text open it offers both intents, guessing at
+wholesale: reach the door again — **File ▸ New from Text…** in the app, **Open…** then *New
+from text…* on the web — and with a pasted text open it offers both intents, guessing at
 neither: **Replace the text, keep the map**, which re-places every claim and re-checks every
 border against the corrected copy, or **Start fresh from this text**, which begins again.
 
-## The controls
+## Bringing in a paper or a PDF
 
+<p class="also" hidden>pdf, epub, word, docx, convert, converter, import, mcp, claude, assistant</p>
 
-- **how much** — how many levels of reasons are showing, from the main claim outwards. The number
-  on each button is how many claims it puts on screen. In Exposition the first rung is the
-  *précis*, one claim per section.
-- **claims** — *short* gives the first few lines with a "more" link; *full* gives every claim's
-  whole text.
-- **layout**, in Exposition only — *rows* lays the paragraphs side by side, wrapping like lines of
-  prose; *column* gives every claim a row of its own, top to bottom as the text runs.
-- **shape**, in Exposition only — the shape of the argument: whether each claim's reasons come
-  before it or after, and how far they reach, in the ink of the lines and a sparkline on each
-  band. Off until you ask for it.
-- **sections** — whether the argument's sections are folded into blocks or opened out
-- **spine** — *all* shows every claim; *load-bearing* shows only those the argument rests on —
-  remove one and part of the argument loses its route to a contention. The number is how many
-  qualify.
-- **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
-  carry it. This control appears only when the file uses hashtags at all.
-- **untagged**, at the end of the same row — every claim the file did not tag. **This is usually
-  the switch that changes the picture.** Most reconstructions tag sparingly, so switching the
-  hashtags off one by one leaves the bulk of the map exactly where it was; switching *untagged*
-  off leaves only the claims that carry a tag, which is how you see the authorities, or the
-  reported views, on their own. On the Miller map that is 22 claims out of 66.
+Ipsissima reads a text as Markdown: a `source` folder beside the `.argdown`, with a `.md` file for
+each paper or chapter. Getting a PDF, an EPUB, a Word file or a web article into that form is the
+other half of the work, and a separate program does it: **Ipsissima-MCP**.
 
-Switching everything off, hashtags and untagged alike, leaves the map empty. That is the filter
-doing what it was told rather than a fault, and the controls all read *off* so you can see why.
+It is an **MCP server** — a set of tools an AI assistant can use — so you ask the assistant you
+are already talking to: *make an argument map of this paper*. It converts the document into
+structured Markdown with its paragraphs and printed page numbers intact (this conversion is the
+*converter* that other pages here mention), and checks the finished reconstruction against the
+text word for word. The reconstruction itself is the assistant's judgement, and yours to check:
+a map written that way says so, **machine-written map**, until someone records that they have
+read it (see <a data-help="What a map says about itself">What a map says about itself</a>).
 
-**how much** and **spine** answer different questions and both are worth having. *how much* is
-distance: how far out from the contention a claim sits. *spine* is load: how much rests on it. A
-claim five steps out that holds up twenty others is the spine of the argument and the distance
-ladder reveals it last.
+You can also stop after the conversion — *just get me the text* — and reconstruct by hand here.
+In Claude Desktop, Ipsissima-MCP installs with a double-click on its `.mcpb` bundle, from the
+releases page; any other MCP client can run it too, and its README says how. Without an assistant
+at all, **New from text…** starts a map from a passage pasted from anywhere.
 
-## Writing in the margins
+## Quoting and paraphrasing from the text
 
+<p class="also" hidden>quote, paraphrase, select, selection, new claim</p>
 
-Two hands write in the margin of a reconstruction, and the map keeps them apart:
+<div data-build="editor"></div>
 
-```argdown
-[a-claim]: The essay's central move.
-    {comment: "Interesting. Try reading Frankfurt on this to deepen it."}
-    {note: "The essay never states this premise; it is imputed."}
-```
+**Select a passage** in the Manuscript while you are writing the map, and two buttons appear above
+the text. They are the fidelity vocabulary's first lesson:
 
-- `comment` <span style="color:#b5179e">■</span> — a remark *on* the argument: a tutor reading a
-  student's essay. It marks the claim's **top-right** corner.
-- `note` <span style="color:#8a6d1f">■</span> — the reconstructor's own: why a reading was taken,
-  what the map cannot show. It marks the **top-left** corner.
+- **Quote this passage** writes a new claim whose text *is* the selected words —
+  `fidelity: quotation`, the source recorded verbatim, the chapter cited where the front matter
+  does not already say it — with the claim's title arriving selected, ready to be renamed.
+- **Paraphrase it** writes the same provenance but not your words: the restatement is yours to
+  make, so the claim's text arrives as a selected placeholder, ready to be written over.
 
-A claim carrying both is marked on both sides. Both appear in the **Notes** pane too, where
-clicking one lights the claim and opens its passage.
+Either way, while words are selected, clicking does not light claims or move the map: a drag that
+selects is not a click that asks. **Quote this passage** opens the Argdown pane it writes into.
 
-**Neither becomes a node**, and that is deliberate. A comment is about the argument but is not a
-move in it: "try reading Frankfurt on this" drawn as a claim would say the essay contains that
-move. An *objection* is different — that is a move, and belongs on the map as `- [an-objection]`.
-
-## Export
-
-
-The **Export** button in the Notes pane offers four things, and the right one depends entirely on
-what the reader on the other end has. All four ask where to put the file rather than dropping it
-in Downloads — the annotated essay belongs beside the essay.
-
-- **Word (.docx)** — the essay itself, with the margin marks as **real Word comments** beside the
-  passage each one is about. What a student opens without being told how.
-- **Markdown (.md)** — the same, with the marks as quoted asides under each paragraph.
-- **Reconstruction + essay (.argdown)** — one file holding the reconstruction *and* the text it is
-  of. Still an ordinary `.argdown`: the essay travels at the end of it, written as comments the
-  parser ignores, so it opens here, stays editable, and saves back as one file. For anyone who has
-  this program.
-- **Reconstruction as a web page** — a copy of *this page* with the whole thing inside it: map,
-  essay, margins. They double-click it. Nothing to install, nothing to unzip, no folder to point
-  anything at. It is a reading copy: everything this page does, apart from parsing a new file and
-  editing one. Somebody who wants to answer back opens the reconstruction in Ipsissima itself,
-  which is a browser tab or an application rather than a copy frozen into the file you sent.
-
-A file that carries its text this way says so — **+ essay** beside the file name in the Argdown
-pane. That copy is a snapshot taken when the file was made, so if the real manuscript is open
-beside it in a folder, the folder wins.
-
-# Reference
+*Writing the map* means a map you are building by hand, or a machine-written one
+(`reconstruction: generated`) that you have already edited here — the first edit is how you say
+you mean to. On a machine-written map you have only read, selecting a passage offers no writing
+doors: reading is not editing, and the row above the text stays clear for the one door reading
+may want, **Highlight in Zotero** (see <a data-help="Your Zotero highlights">Your Zotero
+highlights</a>).
 
 ## Writing Argdown
 
+<p class="also" hidden>syntax, argdown, write, edit, undercut, contradiction, premise, conclusion</p>
 
 Argdown is line-oriented. Four things make up a reconstruction:
 
@@ -1050,6 +1034,24 @@ Argdown is line-oriented. Four things make up a reconstruction:
   once; afterwards `[name]` on its own points at it.
 - `<Name>: text` — an **argument**: a named inference, which can carry a premise-conclusion
   structure.
+- `+` and `-` — **support** and **attack**. **Indentation decides direction, and it runs child →
+  parent.** A reason is written *underneath* what it bears on.
+- `#tag` — a **hashtag**: whose claim this is (see <a data-help="Whose claim is this?">Whose
+  claim is this?</a>).
+
+Two more relations, for the two things support and attack cannot say:
+
+```argdown
+<The inference>
+    _> <What the race-course shows>
+
+[Accepting A and B compels Z]
+    >< [Neither reader is compelled]
+```
+
+- `_>` — an **undercut**: the claim or argument above denies that the step goes through, whatever
+  its premises. Written `<_` the other way up. Drawn dashed and orange.
+- `><` — a **contradiction**: the two cannot both be true. Drawn dotted and violet.
 
 The editor helps with the mechanics, so the argument gets your attention instead:
 
@@ -1065,9 +1067,6 @@ The editor helps with the mechanics, so the argument gets your attention instead
 - **Where a line does not parse, the margin says so on the line**, with the real Argdown
   parser doing the judging — plus warnings for the traps that parse cleanly and mean the
   wrong thing, which are worse.
-- `+` and `-` — support and attack. **Indentation decides direction, and it runs child → parent.**
-  A reason is written *underneath* what it bears on.
-- `#tag` — a kind of claim. The map colours by these and the **kinds** buttons filter on them.
 
 **THE MOST EXPENSIVE MISTAKE IN THE LANGUAGE** is writing a relation the wrong way up. Both
 parse; only one is what you meant.
@@ -1112,8 +1111,12 @@ each step the premises standing immediately above it, which would make (1) an in
 step, where it does no work at all. Declared, `uses` wins; whatever it leaves unclaimed is filled
 in by position.
 
-A rule name is a claim that the conclusion follows, and Ipsissima checks it — see **Does the step
-actually work?**
+A rule name is a claim that the conclusion follows, and Ipsissima checks it — see
+<a data-help="Is a step valid?">Is a step valid?</a>
+
+The Argdown pane's **1,2,3** switches line numbers on and off, and **{…}** folds every claim's
+metadata away so the argument's shape shows. In the app, **Edit ▸ Find in the Argdown…**
+(<kbd>Cmd/Ctrl-F</kbd>) searches it.
 
 ### What breaks a file without saying so
 
@@ -1133,8 +1136,277 @@ actually work?**
 The editor marks the first three as you type. The rest show up on the map: check the **Argdown**
 pane against what you expected to see.
 
+## Recording where a claim came from
+
+<p class="also" hidden>metadata, fidelity, warrant, pinpoint, page, source, chapter, echoes</p>
+
+Metadata in braces records where a claim came from and whose words it is. It is what makes the
+**Exposition** arrangement and the source links work.
+
+```argdown
+[a-claim]: The claim.
+    {chapter: "source/paper.md", fidelity: "quotation", pinpoint: "p. 12",
+     source: "\"the author's exact words\"", reviewed: "2026-08-20"}
+```
+
+- `chapter` — the file the claim was drawn from, relative to the `.argdown`
+- `fidelity` — whose words these are: `quotation`, `paraphrase`, `compression`,
+  `interpretation`, `imputation`. The map draws it as the box's border
+- `source` — the author's exact words, which the checker finds in the text
+- `pinpoint` — the printed page, `p. 12` or `pp. 12–13`; the checker reports a quotation whose
+  words are not on the page it cites
+- `echoes` — the other places the text states the claim (see <a data-help="Reading in the text's
+  order">Reading in the text's order</a>)
+- `note` and `comment` — the reconstructor's note and a reader's comment (see
+  <a data-help="Comments and notes">Comments and notes</a>)
+- `formalization` — what a claim *is*, in the notation the validity check reads (see
+  <a data-help="Is a step valid?">Is a step valid?</a>)
+
+Press **{…}** in the Argdown pane to fold all of it away and see the argument's shape.
+
+Two of the fidelity levels are departures from the text and owe a reason, which `warrant` gives:
+
+```argdown
+[a-claim]: A premise the argument needs.
+    {fidelity: "imputation", warrant: "enthymeme"}
+```
+
+| `warrant` | the reading is taken because |
+|---|---|
+| `enthymeme` | the argument is invalid without it and plainly relies on it |
+| `hyperbole` | it reads as overstatement rather than as the position |
+| `sloppy-phrasing` | it reads as imprecise expression of a different claim |
+| `secret-sign` | it reads as a signal to knowing readers rather than at face value |
+| `other-texts` | the author says so elsewhere |
+| `coherence` | it makes the surrounding text hang together |
+| `convention` | it is the field's standard reading of this passage |
+
+The list is a **prompt, not a vocabulary**. Any other value is accepted and shown as written: the
+point is that a reason was recorded, not that it fell into a taxonomy. An `imputation` with a
+warrant is a reading; one without is a guess.
+
+## Comments and notes
+
+<p class="also" hidden>comment, comments, note, notes, margin, annotate, annotation, delete</p>
+
+Two hands write in the margin of a reconstruction, and the map keeps them apart:
+
+```argdown
+[a-claim]: The essay's central move.
+    {comment: "Interesting. Try reading Frankfurt on this to deepen it."}
+    {note: "The essay never states this premise; it is imputed."}
+```
+
+- `comment` <span style="color:#b5179e">■</span> — a remark *on* the argument: a tutor reading a
+  student's essay. It marks the claim's **top-right** corner.
+- `note` <span style="color:#8a6d1f">■</span> — the reconstructor's own: why a reading was taken,
+  what the map cannot show. It marks the **top-left** corner.
+
+A claim carrying both is marked on both sides. Both appear in the **Notes** pane too, where
+clicking one lights the claim and opens its passage. The pane's filter shows all of them, or
+comments or notes alone.
+
+<div data-build="editor">
+
+**Writing a comment.** Right-click a claim and choose **Add comment**, or **Edit comment** on one
+that has one; the comment is written into the `.argdown` for you. **Delete comment**, in the same
+menu, asks first, and Undo (<kbd>Cmd/Ctrl-Z</kbd>) brings it back. **Delete all comments**, at the
+foot of the Notes pane's list, clears them all, and Undo brings those back too.
+
+</div>
+
+**Neither becomes a claim on the map.** A comment is about the argument but is not a move in it:
+"try reading Frankfurt on this" drawn as a claim would say the essay contains that move. An
+*objection* is different — that is a move, and belongs on the map as `- [an-objection]`.
+
+## Saving and undoing
+
+<p class="also" hidden>save, save as, undo, redo, edited, unsaved</p>
+
+<div data-build="editor"></div>
+
+**Save** (<kbd>Cmd/Ctrl-S</kbd>) writes the reconstruction back where it came from. **Save as…**
+writes it somewhere else and goes on editing *that* file, which is what you want before a
+substantial revision. In a browser that cannot choose where to write, Save offers the file as a
+download instead and says so. Until you save, **● edited** beside the title says there are
+changes the file does not have yet.
+
+**Undo** (<kbd>Cmd/Ctrl-Z</kbd>) and **Redo** (<kbd>Cmd/Ctrl-Shift-Z</kbd>) take back an edit and
+put it back: a claim typed, a quotation made from the text, a comment added or deleted. They are
+in the title bar, and in the application's Edit menu. Opening another file starts a fresh history.
+
+# Sharing and storing
+
+## Sending a map to someone
+
+<p class="also" hidden>export, share, send, word, docx, markdown, download, web page</p>
+
+The **Export** button in the Notes pane offers four things (in the application also **File ▸
+Export…**, and on the web in a claim's right-click menu), and the right one depends entirely on
+what the reader on the other end has. All four ask where to put the file rather than dropping it
+in Downloads — the annotated text belongs beside the text.
+
+- **Word (.docx)** — the text itself, with the margin marks as **real Word comments** beside the
+  passage each one is about. What a student opens without being told how.
+- **Markdown (.md)** — the same, with the marks as quoted asides under each paragraph.
+- **Reconstruction with its text (.argdown)** — one file holding the reconstruction *and* the text
+  it is of. Still an ordinary `.argdown`: the text travels at the end of it, written as comments
+  the parser ignores, so it opens here, stays editable, and saves back as one file. For anyone who
+  has this program.
+- **Reconstruction as a web page** — a copy of *this page* with the whole thing inside it: map,
+  text, margins. They double-click it. Nothing to install, nothing to unzip, no folder to point
+  anything at. It is a reading copy: everything this page does, apart from parsing a new file and
+  editing one.
+
+A file that carries its text this way says so — **+ text** beside the file name in the Argdown
+pane. That copy is a snapshot taken when the file was made, so if the real manuscript is open
+beside it in a folder, the folder wins.
+
+## Your Zotero highlights
+
+<p class="also" hidden>zotero, highlights, highlight, annotations, library</p>
+
+If you read and mark your library in **Zotero**, your marks can appear here too — without ever
+becoming a second copy. A text converted out of your Zotero library carries the name of the
+attachment it came from in its own front matter (`zotero:`, written by the converter from the
+path it actually read), and in the **desktop application** the Manuscript header then offers a
+**Zotero highlights** button. Pressing it asks Zotero — running on this same computer — for
+your highlights of exactly this file, and paints each one **on the very words you marked**,
+in its Zotero colour — a wash for a highlight, an underline for an underline — starting and
+stopping where your pen did, even in the middle of a long paragraph. A note, which has no
+words of its own, appears as a bar in the left gutter at the beginning of its printed page,
+and so does any mark whose words this conversion cannot pin down. The exact words, any
+comment, and the printed page ride the hover. Pressing the button again puts them away.
+
+The marks stay **Zotero's**: Ipsissima displays them and keeps no copy, so there is nothing to
+drift out of sync. The button is the **only** thing that makes the application speak to Zotero,
+and that conversation never leaves your machine. A highlight whose words cannot be found in this
+converted text is **counted, not dropped** — the note at the top of the Manuscript pane says how
+many placed and how many did not. (An area highlight — a rectangle over a figure — carries no
+words to find, and is counted separately.)
+
+If the button reports that Zotero is not answering: Zotero has to be running, and *Allow other
+applications on this computer to communicate with Zotero* switched on in its
+Settings ▸ Advanced.
+
+The conversation runs the other way too. Select a passage in a text that came from Zotero and
+a button appears above it: **Highlight in Zotero** (beside Quote and Paraphrase when you are
+writing the map, on its own when you are reading one). The mark is created *in Zotero*, on the
+PDF itself, at the exact rectangles where those words are printed — the conversion wrote a
+small geometry file beside the text for precisely this — and it lives only there: press
+**Zotero highlights** and it comes back like any mark you made in Zotero's own reader.
+Zotero asks your permission the first time, by name, revocably. A conversion made before
+this feature carries no geometry file; the button says so and writes nothing — reconvert
+the PDF to enable it.
+
+## Storing the reconstruction in Zotero
+
+<p class="also" hidden>zotero, store, attach, sync</p>
+
+**File ▸ Store in Zotero…**, in the application, places this reconstruction under the very item
+its source came from, as **one attachment**: the `.argdown` as a bundle, every cited source
+carried inside it — still a valid Argdown file, so a double-click in Zotero opens it here, text
+and map together, and Zotero's own sync carries it to your other devices. Nothing is stored
+except on this gesture, and the first time Zotero itself asks — a dialog naming Ipsissima, with
+*Allow*, *Always Allow* and *Deny* — and the grant stays revocable in Zotero's Settings ▸
+Advanced. Choosing plain *Allow* grants one write's worth of trust, so a store of several steps
+may ask more than once; *Always Allow* is the natural answer for a workflow you have adopted, and
+Ipsissima and its MCP tools share the one grant. Storing again replaces the stored copy, never
+duplicates it, and a copy someone else changed in the meantime is refused rather than
+overwritten.
+
+# Reference
+
+## The controls
+
+<p class="also" hidden>bar, controls, slider, switch, how much, spine, sections, hashtags, untagged</p>
+
+Along the bottom of the map, left to right:
+
+- **Study** — study mode: see <a data-help="Studying a map">Studying a map</a>. Lit while it
+  is on; press it again to end it.
+- **how much** — a slider: how many levels of reasons are showing, from the main claim
+  outwards. Its rungs are *main claim*, *+ reasons*, *+ detail* and *everything*; the name of the
+  rung you are on sits beside it, with the number of boxes it puts on screen. In Exposition the
+  first rung is the *précis*, one claim per section, and a text in several files adds *by
+  chapter*, every file shut into one block. The arrow keys step it.
+- **claims** — **Short** gives the first few lines with a "more" link; **Full** gives every
+  claim's whole text.
+- **flow**, in Exposition only — **Rows** lays the paragraphs side by side, wrapping like lines of
+  prose; **Column** gives every claim a row of its own, top to bottom as the text runs.
+- **Shape**, in Exposition only — whether each claim's reasons come before it or after, and how
+  far they reach: see <a data-help="Where do the reasons fall?">Where do the reasons fall?</a>
+  Off until you ask for it.
+- **sections** — **Folded** shuts every section into a block, **Open** opens every one. When some
+  are folded and some open, neither is lit, and resting on *sections* says how many are folded.
+- **spine** — **All** shows every claim; **Load-bearing** shows only those the argument rests on —
+  remove one and part of the argument loses its route to the main claim. The number is how many
+  qualify.
+- **hashtags** — switch a hashtag off to take those claims off the map. The number is how many
+  carry it. This control appears only when the file uses hashtags at all.
+- **Untagged**, at the end of the same row — every claim the file did not tag. **This is usually
+  the switch that changes the picture.** Most reconstructions tag sparingly, so switching the
+  hashtags off one by one leaves the bulk of the map exactly where it was; switching *Untagged*
+  off leaves only the claims that carry a tag, which is how you see the authorities, or the
+  reported views, on their own. On the Miller map that is 22 claims out of 66.
+- **Appraisal** — the reconstructor's own additions: see <a data-help="The reconstructor's
+  appraisal">The reconstructor's appraisal</a>
+- **⌄** — folds the bar away to a small chip, which brings it back
+
+While switches hide claims, the bar says how many: *12 claims hidden by switches*. Switching
+everything off, hashtags and untagged alike, leaves the map empty. That is the filter doing what
+it was told rather than a fault, and the controls all read *off* so you can see why.
+
+**how much** and **spine** answer different questions and both are worth having. *how much* is
+distance: how far out from the main claim a claim sits. *spine* is load: how much rests on it. A
+claim five steps out that holds up twenty others is the spine of the argument and the distance
+ladder reveals it last.
+
+In the title bar: the three arrangements (<a data-help="Three arrangements of the same
+claims">Three arrangements of the same claims</a>), the four panes and **Layout** (<a
+data-help="Laying out the panes">Laying out the panes</a>), **Open…**, **Fit**, **Full screen**
+on the web, and **How to use**. When the window is narrow the buttons drop their words before
+anything drops off the screen; resting on one says what it is.
+
+## Keyboard and mouse
+
+<p class="also" hidden>keyboard, shortcuts, keys, mouse, escape</p>
+
+**On the map**
+
+- **Scroll** to zoom, **drag** to pan, **Fit** to see it all
+- <kbd>Tab</kbd> moves between claims and their badges; <kbd>Enter</kbd> or <kbd>Space</kbd>
+  selects a claim or presses a badge
+- <kbd>Shift</kbd>+<kbd>Enter</kbd> on a claim, **double-click** or <kbd>Shift</kbd>**-click** —
+  go to its passage in the text
+- <kbd>Shift</kbd>+<kbd>F10</kbd> or the context-menu key on a claim — the same menu a
+  right-click opens
+- The arrow keys step the **how much** slider once it has focus
+
+**Everywhere**
+
+- <kbd>Esc</kbd> puts away one thing at a time — a dialog, a menu, the key, this panel, the
+  abstract, a comparison, the guide, full screen — the topmost first
+- <kbd>Cmd/Ctrl-S</kbd> saves and <kbd>Cmd/Ctrl-Z</kbd> undoes, where the build can edit
+
+**In the application**
+
+| | |
+|---|---|
+| <kbd>Cmd/Ctrl-1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Reasons, Exposition, Mechanism |
+| <kbd>Cmd/Ctrl-Alt-1</kbd> to <kbd>4</kbd> | the Map, Argdown, Notes and Manuscript panes |
+| <kbd>Cmd/Ctrl-0</kbd> | fit the map to the window |
+| <kbd>Cmd/Ctrl-O</kbd>, <kbd>Cmd/Ctrl-Shift-O</kbd> | open a file, open a folder |
+| <kbd>Cmd/Ctrl-N</kbd>, <kbd>Cmd/Ctrl-Shift-N</kbd> | a new reconstruction, a new debate map |
+| <kbd>Cmd/Ctrl-S</kbd>, <kbd>Cmd/Ctrl-Shift-S</kbd> | save, save as |
+| <kbd>Cmd/Ctrl-Z</kbd>, <kbd>Cmd/Ctrl-Shift-Z</kbd> | undo, redo |
+| <kbd>Cmd/Ctrl-E</kbd> | export |
+| <kbd>Cmd/Ctrl-F</kbd> | find in the Argdown |
+| <kbd>Cmd/Ctrl-/</kbd> | How to use |
+
 ## Map details
 
+<p class="also" hidden>statistics, counts, numbers</p>
 
 For checking a file.
 

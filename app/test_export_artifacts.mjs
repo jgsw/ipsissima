@@ -174,9 +174,17 @@ await page.evaluate(() => {
   HTMLAnchorElement.prototype.click = function () {};
 });
 
+// Every section open, and the top of the "how much" ladder: a large map opens a rung down, at a
+// size that can be read, and the panels wanted here sit on claims deeper than that. By the
+// controls' roles, not their words -- "open" became "Open" and this quietly clicked nothing.
 await page.evaluate(() => {
-  const b = [...document.querySelectorAll(".alm-bar button")].find(x => x.textContent.trim() === "open");
+  const b = document.querySelector('.alm-bar [data-act="sections"][data-open="1"]');
   if (b) b.click();
+});
+await page.waitForTimeout(800);
+await page.evaluate(() => {
+  const r = document.querySelector(".alm-bar input.alm-range");
+  if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); }
 });
 await page.waitForTimeout(1200);
 /* BY THE COUNT ON THE PILL. Sorting on `textContent` picked the longest string, which stopped
