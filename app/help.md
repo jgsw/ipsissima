@@ -133,13 +133,33 @@ précis the section's one claim stays lit while you read the section. Clicking a
 any claim the passage *announces* (see echoes, below), even though that claim is placed where
 it is argued.
 
-**Two layouts.** Exposition can be laid out in **rows** or as a **column**; the choice is
-*layout* on the control bar. In rows, the paragraphs sit side by side and wrap like lines of
-prose. In the column, every claim has a row of its own, top to bottom in the order the text runs,
-so the map reads the way the Manuscript beside it does. The relations move into the margins as
-arcs. On the left are reasons the reader has **already met** when they reach the claim; on the
-right are reasons **still to come**. The wider an arc swings, the further it reaches. The column
-opens at the top of the text, at a size that can be read, and scrolls like a page.
+**Two layouts.** Exposition can be laid out in **rows** or as a **column**. The choice is
+*layout* on the control bar.
+
+**Rows.** Each paragraph that has claims drawn from it is a faint **card**, with its claims top to
+bottom in the order the paragraph makes them. Its number is at the foot: **¶ 4** is the fourth
+paragraph of its section, so you can find it in the text. The numbers also show paragraphs that
+gave no claim: from ¶ 2 to ¶ 5, two paragraphs were passed over. Read down a card, then along to
+the next, and at the end of a row on to the next row, as you would lines of text.
+
+**The column.** Every claim has a row of its own, top to bottom in the order the text runs, so the
+map reads the way the Manuscript beside it does. The relations move into the margins as arcs. On
+the left are reasons the reader has **already met** when they reach the claim; on the right are
+reasons **still to come**. The wider an arc swings, the further it reaches. On a narrow pane (a
+phone, or the map beside an open Manuscript on a laptop) the column opens at the top of the text,
+at a size that can be read, and scrolls like a page.
+
+**Pages.** On a pane wide enough for two, the column is cut into **pages** set side by side, like
+a journal's columns. Each page is as tall as the pane at a size that can be read, so you read it
+top to bottom without scrolling, then go on to the top of the next, panning across when you
+reach the edge. A section that runs over a page break carries on under its name, marked
+*(continued)*.
+
+A relation to the page beside is drawn through the gap between them. A relation to a page further
+off would cross everything in between, so it is drawn as a **connector**: a short stub at each
+end, labelled with the claim at the other end. Point at either claim, or at a stub, and the whole
+line appears. Select either claim and its connectors stay drawn. Click a stub to go to the other
+end.
 
 **Echoes.** A claim can record, in `echoes:`, the other places the text states it: its thesis
 announced in the abstract or the roadmap, say, while the claim itself is placed where it is
