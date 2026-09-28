@@ -156,12 +156,15 @@ export function traps(text) {
     // — `.^.` `.v_.` `.<>.` `.[].` — so a heading containing one was rewritten with nothing
     // said, which is the exact failure this warning exists for. Longest alternatives first, or
     // `.v.` matches inside `.v_.`.
-    const sc = line.match(/\.(<->|->|<>|v_|\[\]|A|E|~|v|\^|P|O)\./);
+    // An ESCAPED dot is not a shortcode: `i\.v.` prints as "i.v.", which is the fix offered for
+    // an abbreviation in a claim (metformin's "given i.v." was shown as "given i∨", 27 Sep 2026).
+    const sc = line.match(/(?<!\\)\.(<->|->|<>|v_|\[\]|A|E|~|v|\^|P|O)\./);
     if (sc)
       out.push({ from: start + sc.index, to: start + sc.index + sc[0].length, severity: "warning",
         message: `\`${sc[0]}\` is a symbol shortcode and will be rewritten (${sc[0]} → a logic ` +
-                 `symbol). In a heading that silently breaks every reference to it. Write it ` +
-                 `without the trailing dot.` });
+                 `symbol). In a heading that silently breaks every reference to it; in a claim ` +
+                 `it turns an abbreviation such as "i.v." into a symbol. Escape the first dot ` +
+                 `(\`\\${sc[0]}\`) to keep it as written.` });
 
     // AN UNCLOSED BRACKET IS NOT A SYNTAX ERROR, which is the trap. `[claim: text` parses as
     // ordinary prose (measured 5 Sep 2026, docs/EDITOR-PLAN.md): no claim is defined,

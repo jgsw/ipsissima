@@ -260,6 +260,51 @@ for t in QUIET:
     check(f"  quiet: {t[:44]}", bool(_chk.PRECONDITION.search(t)), False)
 
 
+print("\na contradiction bears on neither side")
+# `A >< B` demoted whichever thesis was typed first out of the apex (Ripple against MacNulty,
+# 27 Sep 2026). Both sides of a contradiction are theses at odds, and either order must say so.
+for order in ("[A]\n  >< [B]\n", "[B]\n  >< [A]\n"):
+    with tempfile.TemporaryDirectory() as td:
+        f = os.path.join(td, "contra.argdown")
+        open(f, "w").write("===\ntitle: t\n===\n\n[A]: Alpha holds.\n  <+ [P]: P holds.\n\n"
+                           "[B]: Beta holds.\n  <+ [Q]: Q holds.\n\n" + order)
+        r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), f, "--format", "json",
+                            "--no-fix"], capture_output=True, text=True)
+        shape = json.loads(r.stdout).get("shape") or {}
+        roles = {t: c["role"] for t, c in prov.contribution(_chk.export_json(_chk.find_cli(None), f)).items()}
+    check(f"  both sides are apex ({order.split()[0]} first)", sorted(shape.get("apex") or []),
+          ["Alpha holds.", "Beta holds."])
+    check("  and both are contentions in the contribution measure",
+          (roles.get("A"), roles.get("B")), ("apex", "apex"))
+# But a view the text REPORTS, set against its own claim, bears on it as an attack does:
+# Akhlaghi's four rejected rivals `><` his thesis are not theses (28 Sep 2026).
+with tempfile.TemporaryDirectory() as td:
+    f = os.path.join(td, "rival.argdown")
+    open(f, "w").write("===\ntitle: t\n===\n\n[A]: Alpha holds.\n  <+ [P]: P holds.\n\n"
+                       "[B]: Beta holds. #reported\n  <- [Q]: Q holds.\n\n[B]\n  >< [A]\n")
+    r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), f, "--format", "json",
+                        "--no-fix"], capture_output=True, text=True)
+    shape = json.loads(r.stdout).get("shape") or {}
+    roles = {t: c["role"] for t, c in prov.contribution(_chk.export_json(_chk.find_cli(None), f)).items()}
+# Mutation: treat every contradiction as bearing on neither side -> B is apex too.
+check("a reported view contradicting the text's own claim is not an apex", sorted(shape.get("apex") or []),
+      ["Alpha holds."])
+check("  nor a contention in the contribution measure", roles.get("B") != "apex" and roles.get("A") == "apex", True)
+
+print("\nan abbreviation read as a shortcode")
+# "given i.v." was shown as "given i∨" (metformin, 27 Sep 2026). The finding names the escape the
+# parser honours, and does not fire again once it is used.
+with tempfile.TemporaryDirectory() as td:
+    f = os.path.join(td, "sc.argdown")
+    open(f, "w").write("===\ntitle: t\n===\n\n[A]: Metformin given i.v. lowers glucose.\n"
+                       "  <+ [P]: Given i\\.v. it does.\n")
+    r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), f, "--format", "json",
+                        "--no-fix"], capture_output=True, text=True)
+    sc = [x for x in json.loads(r.stdout)["findings"] if x.get("check") == "symbol-shortcode"]
+check("  one finding, on the unescaped line only", [x.get("line") for x in sc], [5])
+check("  it says what the map will show", "shows `i∨`" in (sc[0]["message"] if sc else ""), True)
+check("  and names the escape", "`\\.v.`" in (sc[0].get("fix", "") if sc else ""), True)
+
 
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

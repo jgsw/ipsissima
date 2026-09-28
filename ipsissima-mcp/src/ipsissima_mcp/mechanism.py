@@ -86,6 +86,24 @@ def roles_of(state):
 TIERS = ("evidence", "argued", "asserted", "imputed")
 _TIER_OF_BASIS = {"study": "evidence", "statistics": "evidence", "model": "evidence",
                   "example": "argued", "testimony": "argued", "asserted": "asserted"}
+#: WHAT A MODERATOR DOES TO A STEP (profile 1.9, G1): Marti and Gond's six boundary conditions
+#: "moderate the relationship between" a theory and experimentation; Valentino et al. find that
+#: cue type does NOT moderate racial priming. `"0"` is that finding, quoted as the sign's zero is.
+EFFECTS = ("strengthens", "weakens", "reverses", "0")
+#: THE TYPE OF A CAUSAL ATTRIBUTION (profile 1.9, N-i): Stone's typology, built from whether the
+#: action was purposeful and whether its consequences were intended. `mechanical` is her "guided
+#: through an intervening agent"; `complex` her web of causes with no single locus.
+ATTRIBUTIONS = ("intentional", "mechanical", "inadvertent", "accidental", "complex")
+#: WHERE A TEXT STANDS ON A VIEW IT REPORTS (profile 1.9, G11). `#reported` said only "set out,
+#: not held"; Stone reports stories she calls "neither right nor wrong" and one (hookworm) she
+#: endorses, and each had to be settled claim by claim with a crux.
+STANCES = ("rejected", "unjudged", "endorsed")
+#: THE TEXT'S OWN WORDS FOR ITS EVIDENCE (profile 1.9, G10), where `basis` is too coarse. These
+#: few are read; anything else is kept as written. `illustration` is a hypothetical case: it
+#: shows how a step could go, not that it does, and is never shaded as evidence.
+DESIGNS = ("experiment", "replication", "quasi-experiment", "observational", "case study",
+           "illustration", "anecdote", "review", "simulation")
+
 #: Enough routes to say "many"; counting every simple path in a dense chain is exponential.
 ROUTE_CAP = 200
 #: Routes the census prints before it says how many more there are.
@@ -165,6 +183,16 @@ def declared(fm):
             if lv not in levels:
                 problems.append(("!", f"state `{sid}` names level `{lv}`, which is not one of the "
                                       f"declared levels", {"state": str(sid)}))
+        # A MEASURE OF A STATE (profile 1.9, G10): an indicator or estimate, not a cause of it.
+        # Valentino's timing experiment moves the MEASURED priming; Yellowstone's crown volume is
+        # computed from height; metformin's markers stand for its states. Three texts in four
+        # waves needed the relation, and drawn as a step it composed routes through a method.
+        meas = s.get("measures")
+        if meas is not None and meas not in states:
+            problems.append(("!", f"state `{sid}` `measures: {meas}`, which is not a declared state",
+                             {"state": str(sid)}))
+        elif meas is not None and meas == sid:
+            problems.append(("!", f"state `{sid}` `measures` itself", {"state": str(sid)}))
         whole = s.get("part_of")
         if whole is not None and whole not in states:
             problems.append(("!", f"state `{sid}` is `part_of: {whole}`, which is not a declared "
@@ -267,17 +295,28 @@ def steps(doc, appraisal):
             raw = d["causes"]
             for c in (raw if isinstance(raw, list) else [raw]):
                 c = c if isinstance(c, dict) else {}
+                stance = "" if c.get("stance") is None else str(c.get("stance"))
                 imputed = d.get("fidelity") == "imputation"
                 basis = c.get("basis")
                 # `sign: 0` arrives from YAML as an int, `sign: "0"` as a string: one meaning.
                 sign = None if c.get("sign") is None else str(c.get("sign"))
                 tier = "imputed" if imputed else _TIER_OF_BASIS.get(basis, "asserted")
+                # A HYPOTHETICAL ILLUSTRATION IS NOT AN EXAMPLE (wave 4): it shows how a step could
+                # go, not that it did, and is shaded as what the text asserts.
+                if not imputed and str(c.get("design")) == "illustration":
+                    tier = "asserted"
                 if tier == "asserted" and supports.get(title):
                     tier = "argued"
                 given = c.get("given") or []
                 given = given if isinstance(given, list) else [given]
+                mods = c.get("modifies")
+                mods = [m for m in (mods if isinstance(mods, list) else [mods] if mods else [])]
                 out.append(dict(
-                    title=title, kind=kind, layer=layer, tags=sorted(tags),
+                    title=title, kind=kind, tags=sorted(tags),
+                    # A VIEW THE TEXT REPORTS AND ENDORSES IS ITS OWN TOO (profile 1.9): Stiles
+                    # "demonstrated" the hookworm cause, and Stone holds it as her own.
+                    layer="text" if layer == "rival" and stance == "endorsed" else layer,
+                    reported=layer == "rival", stance=stance,
                     fidelity=d.get("fidelity"), warrant=d.get("warrant"),
                     src=c.get("from"), dst=c.get("to"), sign=sign,
                     # NULL: the text finds NO effect here -- a finding, not an absence (trial of
@@ -315,6 +354,19 @@ def steps(doc, appraisal):
                     # anchored to an event, and whether it moves the level of `to` or its trend.
                     period="" if c.get("period") is None else str(c.get("period")),
                     on="level" if c.get("on") is None else str(c.get("on")),
+                    # MODIFIES (1.9, G1): the states that strengthen, weaken or reverse the step,
+                    # or that the text finds do not moderate it -- each {by, effect, period}.
+                    modifies=[dict(by=str(m.get("by")) if isinstance(m, dict) and m.get("by") is not None else "",
+                                   effect=str(m.get("effect")) if isinstance(m, dict) and m.get("effect") is not None else "",
+                                   period=str(m.get("period")) if isinstance(m, dict) and m.get("period") is not None else "")
+                              for m in mods],
+                    # NECESSARY and SUFFICIENT (1.9, G5): "only if", and whether the cause (with
+                    # its co-causes) brings the effect about on its own -- or, `false`, does not.
+                    necessary=c.get("necessary"), sufficient=c.get("sufficient"),
+                    # DESIGN (1.9, G10): the text's own words for the evidence.
+                    design="" if c.get("design") is None else str(c.get("design")),
+                    # ATTRIBUTION (1.9, N-i): what kind of causing the step is.
+                    attribution="" if c.get("attribution") is None else str(c.get("attribution")),
                     supports=supports.get(title, 0), raw=c))
     return out
 
@@ -672,7 +724,9 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
                   and (any(a == whole for a, _ in text_edges) or whole in outcomes))
         # AND WHAT A CHAIN IS FOR IS NO DEAD END on the whole map: the badger follow-up's outcome,
         # an outcome only in its own chain, was reported as the chain stopping (gap tests, 27 Sep).
+        # A MEASURE STOPS WHERE IT IS READ (1.9): nothing is expected to follow from an estimate.
         if (i in used and i not in outcomes and i not in ends and not (states[i] or {}).get("appraisal")
+                and not (states[i] or {}).get("measures")
                 and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
@@ -838,6 +892,42 @@ def analyse(fm, doc):
         elif s["raw"].get("share") is not None and not s["via"]:
             findings.append(("?", "mechanism", "`share` says how much of a step runs by a route, "
                              "and this step names none in `via`", {"title": s["title"]}))
+        for m in s["modifies"]:
+            if not m["by"] or m["by"] not in states:
+                findings.append(("!", "mechanism", f"`modifies: {{by: {m['by'] or '?'}}}` is not a "
+                                 f"declared state", {"title": s["title"],
+                                                     "fix": "name the moderating state in `by`"}))
+            elif m["by"] in (s["src"], s["dst"]):
+                findings.append(("?", "mechanism", f"`modifies: {{by: {m['by']}}}` names the step's "
+                                 f"own `from` or `to`", {"title": s["title"]}))
+            if m["effect"] not in EFFECTS:
+                findings.append(("?", "mechanism", f"`effect: {m['effect'] or '(none)'}` is not one of "
+                                 f"strengthens, weakens, reverses or \"0\" (does not moderate)",
+                                 {"title": s["title"]}))
+        for key in ("necessary", "sufficient"):
+            if s[key] is not None and not isinstance(s[key], bool):
+                findings.append(("!", "mechanism", f"`{key}:` is `true` or `false`, not "
+                                 f"`{s[key]}`", {"title": s["title"]}))
+        if s["necessary"] is True and s["sign"] in ("-", "0"):
+            findings.append(("?", "mechanism", f"a step marked `necessary` says {s['dst']} holds only "
+                             f"where {s['src']} does, which a `{s['sign']}` step contradicts",
+                             {"title": s["title"]}))
+        if s["sufficient"] is True and s["sign"] == "0":
+            findings.append(("?", "mechanism", "a finding of no effect cannot be `sufficient`",
+                             {"title": s["title"]}))
+        if s["attribution"] and s["attribution"] not in ATTRIBUTIONS:
+            findings.append(("?", "mechanism", f"`attribution: {s['attribution']}` is not one of "
+                             f"{', '.join(ATTRIBUTIONS)}", {"title": s["title"]}))
+        if s["stance"] and s["stance"] not in STANCES:
+            findings.append(("!", "mechanism", f"`stance: {s['stance']}` is not one of "
+                             f"{', '.join(STANCES)}", {"title": s["title"]}))
+        elif s["stance"] and not s["reported"]:
+            findings.append(("?", "mechanism", "`stance` says where the text stands on a view it "
+                             "reports, and this claim is not tagged #reported or #contested",
+                             {"title": s["title"]}))
+        if s["design"] == "illustration" and s["basis"] in ("study", "statistics", "model"):
+            findings.append(("?", "mechanism", f"`design: illustration` is a hypothetical case, and "
+                             f"`basis: {s['basis']}` says the text tested the step", {"title": s["title"]}))
         if s["on"] not in ("level", "trend"):
             findings.append(("!", "mechanism", f"`on: {s['on']}` is not `level` or `trend`",
                              {"title": s["title"]}))
@@ -937,6 +1027,9 @@ def analyse(fm, doc):
     text_edges = text_edges - set(opened)
     regime_of = _regimes(text, states)
     null_from = {s["src"] for s in text_all if s["null"]}
+    # A MODERATOR IS LINKED BY WHAT IT MODERATES (1.9): Marti and Gond's boundary conditions have
+    # no step of their own, and are not stranded for that.
+    null_from |= {m["by"] for s in text_all for m in s["modifies"] if m["by"] in states}
     rival_edges = {(s["src"], s["dst"]) for s in causal if s["layer"] == "rival"}
     chain_ends = {i for ch in chains.values() for i, r in ch["roles"].items() if "outcome" in _as_list(r)}
     W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends)
@@ -1028,12 +1121,60 @@ def analyse(fm, doc):
         with_given=sum(1 for s in text if s["given"]),
         chains=chain_profiles, unchained=unchained,
         kinds=kinds, akin_steps=akin_steps, instances=instances,
+        moderated=sorted({(s["src"], s["dst"], s["sign"] or "", m["by"], m["effect"], m["period"])
+                          for s in text_all for m in s["modifies"] if m["by"] in states}),
+        necessary=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["necessary"] is True}),
+        sufficient=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["jointly"]), s["sufficient"])
+                           for s in text_all if isinstance(s["sufficient"], bool)}),
+        designs=sorted([d, n] for d, n in _count(s["design"] for s in text_all if s["design"]).items()),
+        measures=sorted([i, str(st["measures"]), str(st.get("method") or "")] for i, st in states.items()
+                        if isinstance(st, dict) and st.get("measures") in states and st.get("measures") != i),
+        attributions=sorted({(s["src"], s["dst"], s["sign"] or "", s["attribution"], s["layer"], s["title"])
+                             for s in ok if s["attribution"]}),
+        stances=sorted([k, n] for k, n in _count(s["stance"] for s in ok if s["reported"] and s["stance"]).items()),
+        accounts=_accounts(ids, ok),
     )
     for cp in chain_profiles:
         if not cp["steps"]:
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
                              f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
     return findings, profile
+
+
+def _count(xs):
+    out = {}
+    for x in xs:
+        out[x] = out.get(x, 0) + 1
+    return out
+
+
+def _accounts(ids, ok):
+    """Each outcome that more than one account explains, where at least one is a view the text
+    reports: [{state, accounts: [{from, title, layer, stance, attribution, opened_by}]}].
+
+    RIVAL ACCOUNTS OF ONE OUTCOME, SIDE BY SIDE (profile 1.9, G11). Stone tells three stories of
+    malnutrition -- the liberal, the conservative, the radical -- and the census never set them
+    together; nor did it see that the radical story opens the conservative story's cause
+    (advertising -> choice). An account is a claim's step into the state; what opens it is another
+    claim's step into that account's cause (wave 4, 28 Sep 2026)."""
+    steps_ = [s for s in ok if not s["null"] and not s["selects"] and s["layer"] != "appraisal"]
+    out = []
+    for i in ids:
+        into = [s for s in steps_ if s["dst"] == i]
+        seen, accs = set(), []
+        for s in into:
+            k = (s["src"], s["title"])
+            if k in seen:
+                continue
+            seen.add(k)
+            opened = sorted({(r["src"], r["title"]) for r in steps_
+                             if r["dst"] == s["src"] and r["title"] != s["title"]})
+            accs.append({"from": s["src"], "title": s["title"], "layer": s["layer"],
+                         "stance": s["stance"], "attribution": s["attribution"],
+                         "opened_by": [list(x) for x in opened]})
+        if len({a["title"] for a in accs}) > 1 and any(a["layer"] == "rival" or a["stance"] for a in accs):
+            out.append({"state": i, "accounts": accs})
+    return out
 
 
 def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=(), rival=(), null_from=()):
@@ -1257,6 +1398,40 @@ def census(profile):
                      f"not its level -- {'slows its rise' if sg == '-' else 'speeds it' if sg == '+' else 'changes it'}")
     for a, b, sg, with_ in p.get("joint", []):
         lines.append(f"      joint   {a} -> {b}{' (' + sg + ')' if sg else ''} only together with {', '.join(with_)}")
+    for a, b, sg, by, eff, pd in p.get("moderated", []):
+        what = {"strengthens": f"stronger where {by} holds", "weakens": f"weaker where {by} holds",
+                "reverses": f"reversed where {by} holds",
+                "0": f"NOT moderated by {by}, the text finds"}.get(eff, f"modified by {by} ({eff})")
+        lines.append(f"      modif   {a} -> {b}{' (' + sg + ')' if sg else ''}: {what}"
+                     + (f" ({pd})" if pd else ""))
+    for a, b, sg in p.get("necessary", []):
+        lines.append(f"      needed  {a} -> {b}: {b} only where {a} holds -- necessary, which says "
+                     f"nothing of how much {a} brings")
+    for a, b, sg, with_, suff in p.get("sufficient", []):
+        cause = a + (" with " + ", ".join(with_) if with_ else "")
+        lines.append(f"      enough  {cause} -> {b}: " + ("brings it about on its own" if suff else
+                     "NOT enough on its own, the text says"))
+    for st, of, how in p.get("measures", []):
+        lines.append(f"      measure {st} measures {of}" + (f" ({how})" if how else "")
+                     + " -- a reading of it, not a cause: steps into it are about the measurement")
+    if p.get("designs"):
+        lines.append("      design  " + "; ".join(
+            f"{d}: {n}" + (" (hypothetical: shaded as asserted)" if d == "illustration" else "")
+            for d, n in p["designs"]))
+    by_pair = {}
+    for a, b, sg, att, layer, title in p.get("attributions", []):
+        by_pair.setdefault((a, b), []).append(f"{att} ({title}{'; reported' if layer == 'rival' else ''})")
+    for (a, b), atts in sorted(by_pair.items()):
+        lines.append(f"      attrib  {a} -> {b}: " + "; ".join(atts))
+    for acc in p.get("accounts", []):
+        lines.append(f"      accounts of {acc['state']}, side by side:")
+        for x in acc["accounts"]:
+            who = "the text's own" if x["layer"] == "text" and not x["stance"] else \
+                  "reported" + (f", {x['stance']}" if x["stance"] else "")
+            lines.append(f"              {x['from']} ({x['title']}; {who}"
+                         + (f"; {x['attribution']}" if x["attribution"] else "") + ")"
+                         + (" -- opened by " + "; ".join(f"{f} ({t})" for f, t in x["opened_by"])
+                            if x["opened_by"] else ""))
     for st, lvs in p.get("spanning", []):
         lines.append(f"      span    {st} runs across {', '.join(lvs)}")
     for w, parts in p.get("wholes", []):
@@ -1332,6 +1507,8 @@ def census(profile):
     if cov:
         lines.append(f"      cover   {cov['covered']} of {cov['causal_sentences']} sentences in the "
                      f"text that use causal language are quoted by a step"
+                     + (f"; {cov['in_argument']} more are quoted by claims of the argument "
+                        f"that carry no step" if cov.get("in_argument") else "")
                      + (f"; {cov['near']} more share a paragraph with one (weaker)"
                         if cov.get("near") else ""))
         if cov["uncovered_count"]:
@@ -1342,9 +1519,14 @@ def census(profile):
                              f"{u['text'][:86]}")
             if cov["uncovered_count"] > 8:
                 lines.append(f"              ... and {cov['uncovered_count'] - 8} more")
+    stance = dict(p.get("stances") or [])
     if p["rival_steps"]:
         lines.append(f"      rival   {p['rival_steps']} step(s) in views the text reports "
-                     f"(#reported)")
+                     f"(#reported)" + (": " + ", ".join(f"{stance[k]} {k}" for k in ("rejected", "unjudged")
+                                                      if stance.get(k)) if stance.get("rejected") or stance.get("unjudged") else ""))
+    if stance.get("endorsed"):
+        lines.append(f"      endorse {stance['endorsed']} step(s) the text reports and endorses: walked as "
+                     f"its own")
     if p["appraisal_claims"]:
         lines.append(f"      appraisal  {p['appraisal_claims']} claim(s), {p['appraisal_steps']} "
                      f"step(s) -- the reconstructor's own, excluded from every measure of the "
@@ -1490,6 +1672,62 @@ def coverage(doc, source_root, steps_all):
     if not titles or not source_root:
         return None
     quotes = prov.check_quotations(doc, source_root)
+    spans = _spans(prov, doc, source_root, quotes, titles)
+    # A SENTENCE THE ARGUMENT QUOTES WAS READ, even where no step carries it. Stone's paper is
+    # almost all causal talk reported as stories, and 6 of 109 "covered" measured the genre, not
+    # the reading (wave 4, 28 Sep 2026). Such sentences are counted apart and left out of the
+    # candidates, which are then the causal sentences no claim of the map quotes at all.
+    appraisal = prov.appraisal_titles(doc)
+    others = {t for t, _ in prov.iter_members(doc)} - titles - set(appraisal)
+    argued = _spans(prov, doc, source_root, quotes, others)
+    placed = {}
+    try:
+        pos = prov.text_positions(doc, source_root, quotes)
+    except Exception:
+        pos = {}
+    for t in titles:
+        p = pos.get(t) or {}
+        if p.get("chapter") and p.get("line"):
+            placed.setdefault(p["chapter"], set()).add(p["line"])
+    chapters = sorted({(m.get("data") or {}).get("chapter")
+                       for _, m in prov.iter_members(doc) if (m.get("data") or {}).get("chapter")})
+    total, covered, near, in_argument, uncovered = 0, 0, 0, 0, []
+    for ch in chapters:
+        try:
+            with open(os.path.join(source_root, ch), encoding="utf-8", errors="replace") as fh:
+                raw = fh.read()
+        except OSError:
+            continue
+        sents = _sentences(raw)
+        para_lines = sorted({ln for ln, _ in sents})
+        for ln, sent in sents:
+            if not CAUSAL.search(sent):
+                continue
+            total += 1
+            norm = prov.normalise(sent)[0].lower()
+            if any(_quoted(norm, q) for q in spans.get(ch, [])):
+                covered += 1
+                continue
+            if any(_quoted(norm, q) for q in argued.get(ch, [])):
+                in_argument += 1
+                continue
+            # ONLY A QUOTATION COVERS. Being placed in the same paragraph as a step was counted as
+            # covering at first, and on a source converted with page-long paragraphs one placed
+            # claim covered a whole page: both trial annotators of the J-PAL bulletin found 66-67
+            # of 76 "covered" and said their own reading had done the work. It is reported apart.
+            nxt = [x for x in para_lines if x > ln]
+            is_near = any(ln <= p < (nxt[0] if nxt else 10 ** 9) for p in placed.get(ch, ()))
+            near += int(is_near)
+            uncovered.append(dict(chapter=ch, line=ln, text=sent[:220], near=is_near))
+    if not total:
+        return None
+    return dict(causal_sentences=total, covered=covered, near=near, in_argument=in_argument,
+                uncovered=uncovered[:40], uncovered_count=len(uncovered))
+
+
+def _spans(prov, doc, source_root, quotes, titles):
+    """{chapter: [normalised quotation]} for the claims named: their exact quotations, and the
+    claim's own words where it is a quotation whole."""
     spans = {}
     for q in quotes:
         if q["title"] in titles and q["status"] == "exact" and q.get("chapter"):
@@ -1514,43 +1752,4 @@ def coverage(doc, source_root, steps_all):
         except OSError:
             continue
         spans.setdefault(ch, []).extend(n for n in ns if n in whole)
-    placed = {}
-    try:
-        pos = prov.text_positions(doc, source_root, quotes)
-    except Exception:
-        pos = {}
-    for t in titles:
-        p = pos.get(t) or {}
-        if p.get("chapter") and p.get("line"):
-            placed.setdefault(p["chapter"], set()).add(p["line"])
-    chapters = sorted({(m.get("data") or {}).get("chapter")
-                       for _, m in prov.iter_members(doc) if (m.get("data") or {}).get("chapter")})
-    total, covered, near, uncovered = 0, 0, 0, []
-    for ch in chapters:
-        try:
-            with open(os.path.join(source_root, ch), encoding="utf-8", errors="replace") as fh:
-                raw = fh.read()
-        except OSError:
-            continue
-        sents = _sentences(raw)
-        para_lines = sorted({ln for ln, _ in sents})
-        for ln, sent in sents:
-            if not CAUSAL.search(sent):
-                continue
-            total += 1
-            norm = prov.normalise(sent)[0].lower()
-            if any(_quoted(norm, q) for q in spans.get(ch, [])):
-                covered += 1
-                continue
-            # ONLY A QUOTATION COVERS. Being placed in the same paragraph as a step was counted as
-            # covering at first, and on a source converted with page-long paragraphs one placed
-            # claim covered a whole page: both trial annotators of the J-PAL bulletin found 66-67
-            # of 76 "covered" and said their own reading had done the work. It is reported apart.
-            nxt = [x for x in para_lines if x > ln]
-            is_near = any(ln <= p < (nxt[0] if nxt else 10 ** 9) for p in placed.get(ch, ()))
-            near += int(is_near)
-            uncovered.append(dict(chapter=ch, line=ln, text=sent[:220], near=is_near))
-    if not total:
-        return None
-    return dict(causal_sentences=total, covered=covered, near=near, uncovered=uncovered[:40],
-                uncovered_count=len(uncovered))
+    return spans

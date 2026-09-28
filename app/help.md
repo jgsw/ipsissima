@@ -619,6 +619,26 @@ hazard and harm), a stem runs from that state and stops on a short bar across it
 mark of a blocker. The step's panel says *unless*, and also *despite* where the text says the
 step held although something acted against it.
 
+**A moderator.** Where the text says something strengthens, weakens or reverses a step, rather than
+bringing about its end, a **dotted stem** runs from that state to a small **ring** on the arrow. The
+step's panel says what it does, and also where the text finds that something does *not* moderate
+the step.
+
+**Needed for, enough for.** An arrow that reads **needed for** is a necessary condition: the text
+says the effect holds only where its cause does, which a plain *raises* would misstate. **Enough
+for** says the cause, with any co-causes, brings the effect about on its own; **not alone** says the
+text denies that it does.
+
+**Measures.** A box marked **≙** is a measure of another state: a survey score, an estimate, a
+marker. It is a reading of that state, not a cause of it, and its panel says which state it
+measures and how.
+
+**Rival accounts and their types.** A rival arrow can carry the *type* of causing its story
+attributes: *intended*, *inadvertent*, *guided* (through another agent), *accident*, or *complex*.
+Where an outcome has several accounts, the outcome's panel lists them side by side: whose each is,
+whether the text rejects it, leaves it unjudged or endorses it, and which story opens another's
+cause. A story the text endorses is drawn as its own.
+
 **A link the text opens into a route.** A text often states a link whole and then says how it
 runs: a trial's total effect, then the mechanism through which it came about. The map marks the
 whole link `via` the states between, and its arrow is labelled *via* the first of them, as a folded

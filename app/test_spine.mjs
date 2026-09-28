@@ -188,6 +188,25 @@ check("the middle conclusion has no drawn outgoing edge", mix.outCount.get(mid.i
 check("but it is not a contention", mix.isContention(mid.id), false);
 check("the main conclusion still is", mix.isContention(end.id), true);
 
+console.log("\na contradiction bears on neither side (Ripple and MacNulty, 27 Sep 2026)");
+// `A >< B` was counted as an outgoing edge of whichever side was typed first, so that thesis
+// stopped being a contention. Either order must leave both standing.
+for (const order of ["[A]\n  >< [B]\n", "[B]\n  >< [A]\n"]) {
+  const cg = toGraph(argdown.run({ input: `[A]: Alpha holds.\n  <+ [P]: P holds.\n\n[B]: Beta holds.\n  <+ [Q]: Q holds.\n\n${order}`, ...RUN }));
+  const cix = M.index(cg);
+  const id = t => cg.nodes.find(n => n.label === t).id;
+  check(`both sides are contentions (${order.split("\n")[0]} first)`,
+        [cix.isContention(id("A")), cix.isContention(id("B"))], [true, true]);
+}
+{
+  // A view the text REPORTS, set against its own claim, bears on it (Akhlaghi's rejected rivals).
+  const cg = toGraph(argdown.run({ input: "[A]: Alpha holds.\n  <+ [P]: P holds.\n\n[B]: Beta holds. #reported\n  <- [Q]: Q holds.\n\n[B]\n  >< [A]\n", ...RUN }));
+  const cix = M.index(cg);
+  const id = t => cg.nodes.find(n => n.label === t).id;
+  check("a reported view contradicting the text's own claim is not a contention",
+        [cix.isContention(id("A")), cix.isContention(id("B"))], [true, false]);
+}
+
 console.log();
 if (fails) { console.log(`${fails} FAILED\n`); process.exit(1); }
 console.log("all passed\n");

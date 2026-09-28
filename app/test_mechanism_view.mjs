@@ -171,6 +171,39 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         blocked[0].stems[0].blocks && !!blocked[0].stems[0].tbar && !blocked[0].junction,
         "a blocker is drawn as a stem ending in a bar, not a co-cause's junction", JSON.stringify(blocked.map(e => [e.key, e.stems])));
 }
+// AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
+// measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
+// `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"
+// word -> the chip says "raises".
+const STORIESF = path.join(FIXTURE, "stories.argdown");
+{
+  const pyS = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           STORIESF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MS = MV.model(graphOf(STORIESF));
+  const differ = Object.keys(pyS).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MS.profile.gaps.map(g => g.message) : MS.profile[k], pyS[k]));
+  check(differ.length === 0 && pyS.moderated.length === 2 && pyS.accounts.length === 1 && pyS.measures.length === 1,
+        "the page and the checker agree on moderation, necessity, evidence, measures and rival accounts",
+        differ.map(k => `${k}: python ${JSON.stringify(pyS[k])} js ${JSON.stringify(MS.profile[k])}`).join("\n          "));
+  const LS = MV.layout(MS);
+  const mod = LS.edges.filter(e => e.from === "aid" && e.to === "diet");
+  check(mod.length === 1 && mod[0].stems.filter(sm => sm.ring).map(sm => [sm.state, sm.ring.effect]).length === 2,
+        "each moderator is drawn as a stem to a ring on the arrow it moderates", JSON.stringify(mod.map(e => e.stems)));
+  const need = LS.edges.filter(e => e.from === "income" && e.to === "diet");
+  check(need.length === 1 && /^needed for · not alone/.test(need[0].chip.label),
+        "a necessary cause that is not enough alone says so on its arrow", JSON.stringify(need.map(e => e.chip)));
+  // A step in two periods is two arrows, each with its period and its own ring (Valentino).
+  // Mutation: drop the period from the edge key -> one arrow, one ring.
+  const TWO = MV.model(graphOf.fromText(fs.readFileSync(STORIESF, "utf8").replace(
+    'modifies: [{by: income, effect: weakens}, {by: schools, effect: "0"}]}}',
+    'period: "the 1990s", modifies: {by: income, effect: weakens}}}\n\n[Later]: Later.\n    {causes: {from: aid, to: diet, sign: "+", basis: study, period: "2010-2012", modifies: {by: income, effect: "0"}}}\n    +> [Feed the poor]')));
+  const two = MV.layout(TWO).edges.filter(e => e.from === "aid" && e.to === "diet");
+  check(two.length === 2 && two.every(e => e.stems.filter(sm => sm.ring).length === 1) &&
+        two.some(e => / · the 1990s/.test(e.chip.label)) && two.some(e => / · 2010-2012/.test(e.chip.label)),
+        "a step in two periods is two arrows, each naming its period and carrying its own moderator", JSON.stringify(two.map(e => e.chip.label)));
+  const att = LS.edges.filter(e => e.from === "choice" && e.to === "malnourish");
+  check(att.length === 1 && / · intended$/.test(att[0].chip.label), "an attribution's type is on its arrow", JSON.stringify(att.map(e => e.chip)));
+}
 // AND ON TIME (profile 1.8, G7): periods and a step on a trend. Mutation: drop the period from
 // strataOf's key -> `strata` differ; drop the trend words -> the chip says "raises".
 const TIMESF = path.join(FIXTURE, "times.argdown");

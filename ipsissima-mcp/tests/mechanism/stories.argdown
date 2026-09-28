@@ -1,0 +1,65 @@
+// Planted fixture for test_mechanism.py and app/test_mechanism_view.mjs (profile 1.9, wave 4): a
+// moderator that strengthens a step and one the text finds does not moderate it (G1); a necessary
+// cause, a joint set that suffices and a cause that is not enough alone (G5); a design in the
+// text's words, a hypothetical illustration and a measure of a state (G10); rival stories of one
+// outcome, with where the text stands on each and the type of attribution each makes (G11, N-i).
+// Expected answers are written in those tests.
+===
+title: "Planted -- stories of a harm"
+reconstruction:
+    generated: true
+defaults:
+    chapter: "source/brief.md"
+mechanism:
+    question: "Why are the poor malnourished, and what would change it?"
+    levels: [society, household]
+    actors:
+        state:   {label: "Government", level: society}
+        firms:   {label: "Advertisers", level: society}
+        homes:   {label: "Poor households", level: household}
+    states:
+        aid:     {label: "Food aid", actor: state, role: intervention}
+        income:  {label: "Household income", actor: homes, role: condition}
+        ignorance: {label: "Ignorance of nutrition", actor: homes}
+        adverts: {label: "Junk-food advertising", actor: firms}
+        choice:  {label: "Choice of junk food", actor: homes}
+        schools: {label: "School meals", actor: state}
+        diet:    {label: "Adequate diet", actor: homes}
+        malnourish: {label: "Malnutrition", actor: homes, role: outcome}
+        survey:  {label: "Surveyed malnutrition", actor: homes, measures: malnourish, method: "a household survey"}
+===
+
+[Feed the poor]: Government should give food aid.
+
+[Aid feeds households]: "Food aid raises an adequate diet, but only where household income is low it matters most."
+    {fidelity: "quotation", causes: {from: aid, to: diet, sign: "+", basis: study, design: experiment,
+     modifies: [{by: income, effect: weakens}, {by: schools, effect: "0"}]}}
+    +> [Feed the poor]
+
+[Diet needs income]: "No household eats adequately without some income."
+    {fidelity: "quotation", causes: {from: income, to: diet, sign: "+", basis: asserted, necessary: true, sufficient: false}}
+    +> [Feed the poor]
+
+[Aid and meals together]: "Aid and school meals together end malnutrition."
+    {fidelity: "quotation", causes: {from: diet, to: malnourish, sign: "-", basis: example, design: illustration,
+     jointly: [schools], sufficient: true}}
+    +> [Feed the poor]
+
+[The survey counts it]: "The survey records malnutrition where it is."
+    {fidelity: "quotation", causes: {from: malnourish, to: survey, sign: "+", basis: statistics}}
+    +> [Feed the poor]
+
+[The liberal story]: "Liberals say the poor are malnourished because they do not know better." #reported
+    {fidelity: "quotation", causes: {from: ignorance, to: malnourish, sign: "+", basis: asserted,
+     attribution: inadvertent, stance: unjudged}}
+    -> [Feed the poor]
+
+[The conservative story]: "Conservatives say the poor choose junk food knowingly." #reported
+    {fidelity: "quotation", causes: {from: choice, to: malnourish, sign: "+", basis: asserted,
+     attribution: intentional, stance: rejected}}
+    -> [Feed the poor]
+
+[The radical story]: "Radicals say advertisers steer that choice." #reported
+    {fidelity: "quotation", causes: {from: adverts, to: choice, sign: "+", basis: asserted,
+     attribution: mechanical, stance: endorsed}}
+    +> [Feed the poor]

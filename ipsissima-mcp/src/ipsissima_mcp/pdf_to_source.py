@@ -112,12 +112,21 @@ def join_spans(spans, mark_footnotes=True):
     if not mark_footnotes or len(spans) < 2:
         return "".join(s["text"] for s in spans)
     body = max(s.get("size", 0) for s in spans)
+    # A SUBSCRIPT IS SMALL TOO, and sits BELOW the line: Valentino et al.'s regression terms
+    # ("b1", "b2") came out as footnote references, `b[^1]` (wave 4, 28 Sep 2026). A marker is
+    # raised, so a small digit whose baseline is lower than its line's is left as it is.
+    base = next((s.get("origin") for s in spans if s.get("size", 0) == body), None)
+
+    def lowered(s):
+        o = s.get("origin")
+        return bool(base and o and o[1] > base[1] + 0.1 * body)
+
     out = []
     for s in spans:
         t = s["text"]
         bare = t.strip()
         if (bare.isdigit() and 1 <= len(bare) <= 3
-                and s.get("size", 0) and s["size"] < body - 0.5):
+                and s.get("size", 0) and s["size"] < body - 0.5 and not lowered(s)):
             FOOTNOTE_MARKS.append(bare)
             out.append(t.replace(bare, "[^%s]" % bare, 1))
         else:
@@ -587,6 +596,15 @@ def detect_furniture(pages, extra=()):
         """
         if (text in tops or (y0 <= height * 0.14
                              and re.sub(r"[\d.]+", "#", text) in repeated_tops)) and alone:
+            return "running head"
+        # A HEAD THAT REPEATS, WITH WORDS IN IT, IS A HEAD WHATEVER IS BESIDE IT. `alone` is there
+        # to keep a paragraph number from reading as a page number; a verso head set in two parts
+        # on one line -- "760 / Changing Rhetorical Norms and Racial Priming" at the left and the
+        # authors at the right -- is not a paragraph number, and kept on that ground it ran into
+        # the prose seven times and pinned the text after it to the page before (Valentino et al.,
+        # wave 4, 28 Sep 2026).
+        if (y0 <= height * 0.14 and re.search(r"[A-Za-z]{3}", text)
+                and re.sub(r"[\d.]+", "#", text) in repeated_tops):
             return "running head"
         if re.fullmatch(r"\d{1,4}", text) and alone:
             return "page number"
@@ -1262,11 +1280,46 @@ def hanging_blocks(rows):
     blocks = []
     for p, x, t in rows:
         if blocks and x > margins[p] + 4:
-            blocks[-1]["text"] += " " + t
-            blocks[-1]["pages"].add(p)
+            _extend(blocks[-1], p, t)
         else:
             blocks.append(dict(page=p, pages={p}, kind="body", text=t))
     return blocks
+
+
+def _extend(block, page, text):
+    """Run a row on into the block, remembering where a new page begins inside it."""
+    if page not in block["pages"]:
+        block.setdefault("breaks", []).append((page, text))
+    block["text"] += " " + text
+    block["pages"].add(page)
+
+
+def split_at_pages(block):
+    """[(page, text)]: the block cut where each later page begins in it.
+
+    A PARAGRAPH THAT RUNS ACROSS A PAGE BREAK WAS PINNED TO ITS FIRST PAGE WHOLE. The marker for
+    the new page followed the paragraph, so everything after the break -- on Valentino et al.'s
+    sheets, whole sentences at the top of seven pages -- was cited one page early (wave 4, 28 Sep
+    2026). The break is found by the new page's first row, AFTER `finish` has dehyphenated and
+    repaired the text (which moves every offset); a row that lands mid-word -- the second half of
+    a hyphenated word -- cuts at the next space, and a row that cannot be found is not cut at all.
+    The readers downstream already join a sentence that a marker line cuts (`mechanism._sentences`
+    and both quotation normalisers)."""
+    text, out, page, at = block["text"], [], block["page"], 0
+    for nxt, row in block.get("breaks", []):
+        probe = " ".join(row.split()[:6])
+        i = text.find(probe[:40], at) if probe else -1
+        if i <= at:
+            continue
+        while 0 < i < len(text) and not text[i - 1].isspace():
+            i += 1
+        head = text[at:i].strip()
+        if not head or i >= len(text):
+            continue
+        out.append((page, head))
+        page, at = nxt, i
+    out.append((page, text[at:].strip()))
+    return [(p, x) for p, x in out if x]
 
 
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
@@ -1299,8 +1352,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         quote = len(row) > 3 and row[3]
         if quote and not notes:
             if blocks and blocks[-1]["kind"] == "quote":
-                blocks[-1]["text"] += " " + text
-                blocks[-1]["pages"].add(page)
+                _extend(blocks[-1], page, text)
             else:
                 blocks.append(dict(page=page, pages={page}, kind="quote", text=text))
             continue
@@ -1319,8 +1371,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
                     expected += 1
                 blocks.append(dict(page=page, pages={page}, kind="note", text=text))
             else:
-                blocks[-1]["text"] += " " + text
-                blocks[-1]["pages"].add(page)
+                _extend(blocks[-1], page, text)
             continue
         # A HEADING THE PAPER SET IN CAPITALS. `own_headings` names these by hand, one config
         # entry per heading, and on the Horton that was four lines of config for four headings
@@ -1340,8 +1391,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         # The heading test runs FIRST, so a numbered section heading still wins and a number is
         # never absorbed into one.
         if not notes and blocks and blocks[-1].pop("awaits_text", False):
-            blocks[-1]["text"] += " " + text
-            blocks[-1]["pages"].add(page)
+            _extend(blocks[-1], page, text)
             continue
         if (text in own_headings or (end_marker and end_marker in text)
                 or (number_headings and NUMBERED.match(text))):
@@ -1365,8 +1415,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             # NEVER INTO A QUOTE BLOCK: the paragraph a quotation interrupted resumes at the
             # margin, usually mid-sentence -- merged into the quote it would put the author's
             # words inside somebody else's quotation marks.
-            blocks[-1]["text"] += " " + text
-            blocks[-1]["pages"].add(page)
+            _extend(blocks[-1], page, text)
             continue
         elif (margins and step and page in margins
               and x0 > margins[page] + step - 2):
@@ -1380,8 +1429,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         elif bands["display"] and x0 > bands["display"] - 2:
             kind = "display"
         elif blocks and blocks[-1]["kind"] not in ("display", "own-heading", "quote"):
-            blocks[-1]["text"] += " " + text
-            blocks[-1]["pages"].add(page)
+            _extend(blocks[-1], page, text)
             continue
         else:
             kind = "body"
@@ -1618,11 +1666,27 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
                     k -= 1
             cut = k if k < len(idxs) else None
         else:
+            number = (note_opening(body[idxs[cut]][4], dotted=True) or ("",))[0]
             # Walk back off the first numbered note through whatever apparatus-sized lines sit
             # directly above it. A body-sized line stops the scan, which is what keeps a small
             # display quotation lower down the page from being swallowed with the notes.
             while cut > 0 and is_runover(body[idxs[cut - 1]]):
                 cut -= 1
+            # THE NOTE BEFORE THE FIRST ONE FOUND. A line directly above the zone that opens with
+            # the NEXT NUMBER DOWN is that note, though it sits a little high and at near-body
+            # size: on Stone's JSTOR scan "19 Ralph Nader, Unsafe at Any Speed" stood at 0.689 of
+            # the sheet in 7.6pt, notes 20-23 below it were lifted, and 19 was left inside the
+            # Ford Pinto sentence that runs on over the page (wave 4, 28 Sep 2026). The number's
+            # sequence is what a body line cannot fake.
+            while cut > 0 and number.isdigit():
+                above = note_opening(body[idxs[cut - 1]][4], dotted=True)
+                if not (above and above[0].isdigit() and int(above[0]) == int(number) - 1
+                        and re.match(r"^[A-Z\"'(]", above[1])
+                        and body[idxs[cut - 1]][2] > body[idxs[cut - 1]][3] * 0.50):
+                    break
+                cut, number = cut - 1, above[0]
+                while cut > 0 and is_runover(body[idxs[cut - 1]]):
+                    cut -= 1
         if cut is not None:
             for i in idxs[cut:]:
                 lifted[i] = True
@@ -1850,10 +1914,11 @@ def convert(cfg):
     out, used, seen = [], [], set()
     for b in blocks:
         if b["kind"] == "quote":
-            if b["page"] not in seen:
-                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
-                seen.add(b["page"])
-            out.append("> " + b["text"])
+            for pg, part in split_at_pages(b):
+                if pg not in seen:
+                    out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{pg} begins here -->")
+                    seen.add(pg)
+                out.append("> " + part)
             continue
         # A NUMBERED PARAGRAPH IS NOT A NUMBERED HEADING, and on the page they are identical:
         # "64. Article 9 provides:" has exactly the shape of "2. Hume and abstraction", and a
@@ -1876,10 +1941,11 @@ def convert(cfg):
                 out.append(f"# {head}")
                 used.append(head)
                 break
-        if b["page"] not in seen:
-            out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
-            seen.add(b["page"])
-        out.append(b["text"])
+        for pg, part in split_at_pages(b):
+            if pg not in seen:
+                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{pg} begins here -->")
+                seen.add(pg)
+            out.append(part)
     if note_blocks:
         # Say WHICH pages they were printed at the foot of. Generated rather than written by
         # hand, so the note cannot come to disagree with where the footnotes actually were.

@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.8 — 27 September 2026.** The machine-readable registry of everything below is
+**Version 1.9 — 28 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -204,7 +204,7 @@ mechanism:
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*). |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -237,6 +237,12 @@ substantially reduces adoption".
 | `threshold` | string | The **threshold** the step acts past, in the text's words: the step switches something rather than moving it smoothly (*added in 1.8*). |
 | `share` | `entire` \| `most` \| `partial` \| `none` | How much of the step runs by its `via` route: all of it (the default), most, part, or **none** ("AMPK-independent") (*added in 1.8*). |
 | `size` | string, or `{value, unit, ci, versus, at}` | The **magnitude** the text gives for the step, quoted: an effect size with its interval, what it is measured against, and when (*added in 1.8*). |
+| `modifies` | `{by, effect, period}`, or a list of them | A state that **moderates** the step: `effect` is `strengthens`, `weakens`, `reverses`, or `"0"` where the text finds it does **not** moderate it (*added in 1.9*). |
+| `necessary` | boolean | The step's `to` holds **only if** its `from` does (*added in 1.9*). |
+| `sufficient` | boolean | `true`: the cause, with any `jointly` co-causes, brings the effect about **on its own**. `false`: the text says it is **not enough** on its own (*added in 1.9*). |
+| `design` | string | The **design** of the evidence, in the text's words; `experiment`, `replication`, `quasi-experiment`, `observational`, `case study`, `illustration`, `anecdote`, `review` and `simulation` are read. An `illustration` is a hypothetical case (*added in 1.9*). |
+| `attribution` | `intentional` \| `mechanical` \| `inadvertent` \| `accidental` \| `complex` | The **type of causing** the step attributes (*added in 1.9*). |
+| `stance` | `rejected` \| `unjudged` \| `endorsed` | On a `#reported` or `#contested` step: where the text **stands** on the view it reports (*added in 1.9*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
 view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
@@ -387,6 +393,46 @@ says more of the one gives more of the other, smoothly. Both are words. The thre
 whether reversing the cause reverses the effect, and a loop that holds whichever state obtains are
 not yet marked (see Known limits).
 
+**Moderation (1.9).** "Powerful initial backers moderate the relationship between a new theory and
+experimentation" is a claim about a step, not a cause of its end. `modifies: {by: backers, effect:
+strengthens}` on the step says so; `weakens` and `reverses` are the other directions, and `"0"` records
+a text's finding that something does **not** moderate the step (cue type and racial priming). A
+`period` dates the moderation. The moderator is not walked as a cause, and a condition that only
+moderates is not reported as unlinked. The census lists each; the view sends a dotted stem from the
+moderator to a small ring on the arrow. `given:` remains the form for a condition in words, `unless`
+for a blocker, and `jointly` for a co-cause without which the step does not run at all.
+
+**Necessary and sufficient (1.9).** "Difficult conditions become problems only when people come to
+see them as amenable to human action" is a necessary condition, and a plain `+` drew it as "raises".
+`necessary: true` says the step's `to` holds only where its `from` does, and the arrow reads "needed
+for". `sufficient: true` says the cause, with its `jointly` co-causes if it has any, brings the effect
+about on its own: a joint set that suffices is a step with `jointly` and `sufficient: true`.
+`sufficient: false` records the commoner claim, a cause that is "necessary, but not sufficient" or
+that "may help; it will not guarantee". "In part" and "not solely" stay in `size` or `share`.
+Whether a list of conditions is independent or conjoint is the reconstructor's reading; where the
+text leaves it open, say so in a `note`.
+
+**Evidence and measurement (1.9).** `basis` says what kind of backing a step has; `design` says how,
+in the text's own words: a randomised experiment, a replication, an anecdote, a case the text re-reads.
+`design: illustration` marks a **hypothetical** case, which shows how a step could go and not that it
+does: it is shaded as asserted, never as an example. A state may be a **measure** of another:
+`measures: priming, method: "the attitude battery after the treatment"`. Nothing is walked from a
+measure to what it measures, and a measure is no dead end. A step into a measure is a claim about
+the measurement, which is where a method's artefacts belong (Valentino et al.'s timing experiment;
+a crown volume computed from height).
+
+**Rival accounts (1.9).** A text of rival accounts reports them to reject them, to set them out
+without judging, or, sometimes, to endorse one. `stance: rejected | unjudged | endorsed` on a
+`#reported` or `#contested` step records which. An endorsed step is walked as the text's own too.
+Where an outcome has two or more accounts from different claims, and at least one is reported, the
+census sets them side by side: each account, whose it is, its stance and type, and any story that
+opens its cause. The view shows the same list on the outcome's panel. `attribution` records the
+**type** of causing a step attributes, after Stone (1989): `intentional` (purposeful action, intended
+consequences), `inadvertent` (purposeful action, unintended consequences), `mechanical` (guided
+through another agent or a machine), `accidental` (neither), and `complex` (a web of causes with no
+single locus). Rival stories of one harm often differ in nothing else, and a strategy that moves a
+problem from accident to intent is a move between types.
+
 **Feedback.** Nothing is declared for a loop: loops and feedback systems are computed from the
 steps. Past a handful of loops through one system of states, the census names the system and
 its shortest loops rather than listing every loop.
@@ -449,9 +495,16 @@ rule: name your gaps).
   feedback and transformational arrows — has no mark of its own; roles, levels and the steps carry
   most of it, and the rest goes in notes.
 - **A feedback that changes a link.** Since 1.8 a state can block a step (`unless`) or fail to
-  (`despite`), and a condition can name a state. A step still cannot strengthen, weaken or reverse
-  another step, or act on a loop or a whole chain: "the rules of the game change", or rapid forcing
-  that "overwhelms" a feedback, is said in words (`given:`, `note:`).
+  (`despite`), and since 1.9 a state can strengthen, weaken or reverse one (`modifies`). A *step*
+  still cannot act on another step, and nothing acts on a loop or a whole chain: "the rules of the
+  game change", or rapid forcing that "overwhelms" a feedback, is said in words (`given:`, `note:`).
+- **A step disputed for one period.** Whether an effect existed at all in one period (Valentino et
+  al. on the 1990s implicit-explicit effect) is a rival view's step with a `period`; the census does
+  not yet set a period's disputed step beside the text's own.
+- **Evidence for a change.** Evidence that each period's effect holds is not evidence that the
+  effect changed between them. `design` can say which the text offers, in words; nothing checks it.
+- **How settled a mechanism is.** A proposition put forward for testing, a mechanism illustrated,
+  and one shown in a case are all steps. `hedged` and `design` say part of it.
 - **`part_of` is a tree: a state sits in one box.** Where a text's own diagram puts one concept in two
   boxes — Wimmer's Fig. 2 draws the field's distribution of power and, inside its consensus box, the
   degree of power inequality — make two states, each in its box, with the step between them. One
@@ -483,6 +536,13 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.9** (28 September 2026) added, from the fourth wave of gap tests (Marti and Gond 2018, Valentino
+et al. 2018, Stone 1989): `modifies` on a step (a moderator that strengthens, weakens or reverses it,
+or does not); `necessary` and `sufficient` on a step; `design` on a step; `measures` and `method` on a
+state; `attribution` on a step (the type of causing, after Stone); and `stance` on a reported step,
+with an endorsed step walked as the text's own. The census sets rival accounts of one outcome side by
+side. Every 1.8 file conforms unchanged.
 
 **1.8** (27 September 2026) added `regime` and `threshold` on a step, `size` and `share` on a step, `period` and `on: trend` on a step, `unless` and `despite` on a step (a blocker, and a blocker that
 failed) and conditions that name a state (`given: [{state, value}]`), grouped by the census where

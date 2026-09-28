@@ -1,7 +1,7 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.8",
-  "date": "2026-09-27",
+  "version": "1.9",
+  "date": "2026-09-28",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
   "licence": "CC-BY-4.0",
@@ -75,7 +75,7 @@
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
     "kinds": {"type": "map of id to kind", "keys": {"label": "string", "general": "a state id of this kind: the general claim, of which the kind's other states are cases (since 1.7)"}, "summary": "Kinds of state that recur across cases; states of one kind are never walked as one (since 1.6)."},
     "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
-    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)", "kind": "a kind id: the declared kind this state is a case of (since 1.6)"}}
+    "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)", "kind": "a kind id: the declared kind this state is a case of (since 1.6)", "measures": "a state id: the state this one is a measure, indicator or estimate of -- a reading of it, never walked as its cause (since 1.9)", "method": "string: how that measure is taken, in the text's words (since 1.9)"}}
   },
 
   "causes": {
@@ -99,7 +99,13 @@
     "threshold": {"type": "string", "summary": "The threshold the step acts past, in the text's words: the step is not a monotone rise or fall (since 1.8)."},
     "share": {"type": "entire | most | partial | none", "summary": "How much of the step runs by its `via` route: all of it (the default), most, part, or none of it (since 1.8)."},
     "size": {"type": "string or {value, unit, ci, versus, at}", "summary": "The magnitude the text gives for the step, quoted: an effect size, with its interval, comparison and time (since 1.8)."},
-    "via": {"type": "state id or list of state ids", "summary": "The finer route the text opens this step into, in order: the step IS that route, walked once (since 1.8)."}
+    "via": {"type": "state id or list of state ids", "summary": "The finer route the text opens this step into, in order: the step IS that route, walked once (since 1.8)."},
+    "modifies": {"type": "{by, effect, period}, or a list of them", "values": ["strengthens", "weakens", "reverses", "0"], "summary": "A state that moderates the step: `effect` strengthens, weakens or reverses it, or -- \"0\" -- the text finds it does not moderate it. The moderator is linked by the step, never walked as a cause (since 1.9)."},
+    "necessary": {"type": "boolean", "summary": "The step's `to` holds only where its `from` does: \"only if\". Drawn \"needed for\", not \"raises\" (since 1.9)."},
+    "sufficient": {"type": "boolean", "summary": "`true`: the cause, with any `jointly` co-causes, brings the effect about on its own. `false`: the text says it is not enough on its own (since 1.9)."},
+    "design": {"type": "string", "values": ["experiment", "replication", "quasi-experiment", "observational", "case study", "illustration", "anecdote", "review", "simulation"], "summary": "The design of the evidence for the step, in the text's words; these values are read, others kept as written. `illustration` is a hypothetical case, shaded as asserted (since 1.9)."},
+    "attribution": {"type": "enum", "values": ["intentional", "mechanical", "inadvertent", "accidental", "complex"], "summary": "The type of causing the step attributes, after Stone (1989): purposeful or not, intended or not, guided through another agent, or a web with no single locus (since 1.9)."},
+    "stance": {"type": "enum", "values": ["rejected", "unjudged", "endorsed"], "summary": "On a #reported or #contested step: where the text stands on the view it reports. An endorsed step is walked as the text's own as well (since 1.9)."}
   },
 
   "source_frontmatter": {

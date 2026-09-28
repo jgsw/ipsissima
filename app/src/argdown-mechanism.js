@@ -123,11 +123,25 @@ function model(graph) {
       raw = obj(raw);
       var tier = c.fidelity === "imputation" ? "imputed"
                : (TIER_OF_BASIS[raw.basis] || "asserted");
+      // A HYPOTHETICAL ILLUSTRATION IS NOT AN EXAMPLE (1.9) -- as the checker has it.
+      if (c.fidelity !== "imputation" && String(raw.design) === "illustration") tier = "asserted";
+      var stance = raw.stance == null ? "" : String(raw.stance);
+      var mods = raw.modifies == null ? [] : (Array.isArray(raw.modifies) ? raw.modifies : [raw.modifies]);
       if (tier === "asserted" && supports) tier = "argued";
       var given = raw.given == null ? [] : (Array.isArray(raw.given) ? raw.given : [raw.given]);
       var sign = raw.sign == null ? "" : String(raw.sign);
       steps.push({
-        id: c.title + "#" + i, claim: c, layer: layer, from: raw.from, to: raw.to,
+        id: c.title + "#" + i, claim: c, from: raw.from, to: raw.to,
+        // A VIEW THE TEXT REPORTS AND ENDORSES IS ITS OWN TOO (1.9).
+        layer: layer === "rival" && stance === "endorsed" ? "text" : layer,
+        reported: layer === "rival", stance: stance,
+        // MODIFIES, NECESSARY, SUFFICIENT, DESIGN, ATTRIBUTION (profile 1.9) -- see mechanism.py.
+        modifies: mods.map(function (m) { m = obj(m);
+          return { by: m.by == null ? "" : String(m.by), effect: m.effect == null ? "" : String(m.effect),
+                   period: m.period == null ? "" : String(m.period) }; }),
+        necessary: raw.necessary, sufficient: raw.sufficient,
+        design: raw.design == null ? "" : String(raw.design),
+        attribution: raw.attribution == null ? "" : String(raw.attribution),
         sign: sign, basis: raw.basis || null, tier: tier, fidelity: FIDELITY.indexOf(c.fidelity) >= 0 ? c.fidelity : "compression",
         // A NULL FINDING (sign 0) and a SELECTION LINK are reported, never walked: see mechanism.py.
         isNull: sign === "0", selects: !!raw.selects, hedged: !!raw.hedged,
@@ -456,7 +470,9 @@ function walkChain(ids, states, edges, signs, regimes, nullFrom, rivalEdges, end
     // A PART GOES ON AS ITS WHOLE -- as the checker has it.
     var whole = obj(states[i]).part_of;
     var onward = whole != null && whole !== i && (from[whole] || outcomes.indexOf(whole) >= 0);
-    if (used[i] && outcomes.indexOf(i) < 0 && !ends[i] && !obj(states[i]).appraisal && !onward && !from[i])
+    // A MEASURE STOPS WHERE IT IS READ (1.9) -- as the checker has it.
+    if (used[i] && outcomes.indexOf(i) < 0 && !ends[i] && !obj(states[i]).appraisal && obj(states[i]).measures == null
+        && !onward && !from[i])
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
@@ -611,6 +627,8 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   edges = withoutOpened(edges, opened);
   var signOf = signsOf(text, states);
   var nullFrom = {}; textAll.forEach(function (s) { if (s.isNull) nullFrom[s.from] = true; });
+  // A MODERATOR IS LINKED BY WHAT IT MODERATES (1.9) -- as the checker has it.
+  textAll.forEach(function (s) { s.modifies.forEach(function (m) { if (has(states, m.by)) nullFrom[m.by] = true; }); });
   var rivalSteps = causal.filter(function (s) { return s.layer === "rival"; });
   // What a chain is for is no dead end on the whole map -- as the checker has it.
   var chainEnds = {};
@@ -735,8 +753,70 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     with_how: text.filter(function (s) { return !!s.how; }).length,
     with_given: text.filter(function (s) { return s.given.length > 0; }).length,
     chains: CP.chains, unchained: CP.unchained,
-    kinds: kindList, akin_steps: AK.akin, instances: AK.instances
+    kinds: kindList, akin_steps: AK.akin, instances: AK.instances,
+    moderated: uniqSorted([].concat.apply([], textAll.map(function (s) {
+      return s.modifies.filter(function (m) { return has(states, m.by); })
+                       .map(function (m) { return [s.from, s.to, s.sign, m.by, m.effect, m.period]; }); }))),
+    necessary: uniqSorted(textAll.filter(function (s) { return s.necessary === true; })
+                                 .map(function (s) { return [s.from, s.to, s.sign]; })),
+    sufficient: uniqSorted(textAll.filter(function (s) { return typeof s.sufficient === "boolean"; })
+                                  .map(function (s) { return [s.from, s.to, s.sign, s.jointly.slice(), s.sufficient]; })),
+    designs: counted(textAll.map(function (s) { return s.design; })),
+    measures: ids.filter(function (i) { var m = obj(states[i]).measures; return m != null && has(states, m) && m !== i; })
+                 .map(function (i) { var st = obj(states[i]); return [i, String(st.measures), st.method == null ? "" : String(st.method)]; })
+                 .sort(cmpDeep),
+    attributions: uniqSorted(steps.filter(function (s) { return s.attribution; })
+                                  .map(function (s) { return [s.from, s.to, s.sign, s.attribution, s.layer, s.claim.title]; })),
+    stances: counted(steps.filter(function (s) { return s.reported; }).map(function (s) { return s.stance; })),
+    accounts: accountsOf(ids, steps)
   };
+}
+
+/** Python's ordering of nested lists of strings, numbers and booleans. */
+function cmpDeep(a, b) {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    for (var i = 0; i < Math.min(a.length, b.length); i++) { var c = cmpDeep(a[i], b[i]); if (c) return c; }
+    return a.length - b.length;
+  }
+  if (typeof a === "boolean" && typeof b === "boolean") return (a ? 1 : 0) - (b ? 1 : 0);
+  return a === b ? 0 : a < b ? -1 : 1;
+}
+
+/** Distinct rows, sorted as Python sorts a set of tuples. */
+function uniqSorted(rows) {
+  var seen = {}, out = [];
+  rows.forEach(function (r) { var k = JSON.stringify(r); if (!seen[k]) { seen[k] = true; out.push(r); } });
+  return out.sort(cmpDeep);
+}
+
+/** [[value, how many]] for the non-empty values, sorted -- mechanism.py's _count, sorted. */
+function counted(xs) {
+  var n = {};
+  xs.forEach(function (x) { if (x) n[x] = (n[x] || 0) + 1; });
+  return Object.keys(n).map(function (k) { return [k, n[k]]; }).sort(cmpDeep);
+}
+
+/** Rival accounts of one outcome, side by side -- mechanism.py's _accounts. */
+function accountsOf(ids, steps) {
+  var pool = steps.filter(function (s) { return !s.isNull && !s.selects && s.layer !== "appraisal"; });
+  var out = [];
+  ids.forEach(function (i) {
+    var seen = {}, accs = [];
+    pool.forEach(function (s) {
+      if (s.to !== i) return;
+      var k = s.from + "\u0000" + s.claim.title;
+      if (seen[k]) return;
+      seen[k] = true;
+      var opened = uniqSorted(pool.filter(function (r) { return r.to === s.from && r.claim.title !== s.claim.title; })
+                                  .map(function (r) { return [r.from, r.claim.title]; }));
+      accs.push({ from: s.from, title: s.claim.title, layer: s.layer, stance: s.stance,
+                  attribution: s.attribution, opened_by: opened });
+    });
+    var titles = {}; accs.forEach(function (a) { titles[a.title] = true; });
+    if (Object.keys(titles).length > 1 && accs.some(function (a) { return a.layer === "rival" || a.stance; }))
+      out.push({ state: i, accounts: accs });
+  });
+  return out;
 }
 
 /** [from, to, sign, states] for each distinct step with a blocker (`unless`) or a failed one
@@ -809,6 +889,15 @@ function overlap(a, b) {
 }
 /** THE WORDS ON A CHIP. "+" and "-" say support and attack everywhere else on this page; here a
  *  sign is a direction of effect, as in a causal loop diagram. Words say which without a key. */
+/** The states that moderate an edge's step (profile 1.9): lit with it, as its co-causes are. */
+function modStates(e) { return (e.modifiers || []).map(function (m) { return m.state; }); }
+
+/** Stone's types of causal attribution, as a chip says them (profile 1.9). */
+var ATTRIBUTION_WORD = { intentional: "intended", mechanical: "guided", inadvertent: "inadvertent",
+                         accidental: "accident", complex: "complex" };
+/** What a moderator does to a step, in the panel's words (profile 1.9). */
+var EFFECT_WORD = { strengthens: "strengthens it", weakens: "weakens it", reverses: "reverses it", "0": "does not change it, the text finds" };
+
 function signWord(signs) {
   if (!signs.length) return "link";
   if (signs.length > 1) return "mixed";
@@ -1027,9 +1116,18 @@ function layout(M, opts) {
             (s.on === "trend" ? "\u0000~" : "") +
             // and a step in one regime, or past a threshold, is not the same arrow as one in all.
             (s.regime ? "\u0000@" + s.regime : "") + (s.threshold ? "\u0000|" : "") +
+            // and so is a step in another period: merged, Valentino's 1990s moderation and its
+            // 2010 null moderation drew one arrow with one ring (28 Sep 2026).
+            (s.period ? "\u0000#" + s.period : "") +
             // and two sizes are two findings: merged, Yellowstone's two texts, which agree on the
             // direction and dispute only the size, drew as one arrow "×2" (G3).
-            (s.size ? "\u0000=" + s.size : "");
+            (s.size ? "\u0000=" + s.size : "") +
+            // and "only if", "enough on its own", a moderated step and a type of attribution each say
+            // something a plain "raises" does not (profile 1.9).
+            (s.necessary === true ? "\u0000N" : "") + (typeof s.sufficient === "boolean" ? "\u0000S" + s.sufficient : "") +
+            (s.attribution ? "\u0000A" + s.attribution : "");
+    // A MODERATOR IS NOT A SECOND ARROW: it acts on the relationship, and Marti and Gond's six
+    // propositions about one pair of states drew six parallel arrows. Its ring goes on the one arrow.
     if (!groups[k]) { groups[k] = []; order.push(k); }
     groups[k].push(s);
   });
@@ -1187,6 +1285,11 @@ function layout(M, opts) {
     // one picture of agreement. One step with a stated value shows it.
     var sz = s0.sizeValue || s0.size || "";
     var sizeTag = sz ? " · " + (sz.length > 18 ? sz.slice(0, 17) + "…" : sz) : "";
+    // THE PERIOD ON THE ARROW, where one pair has steps in several: each is its own arrow.
+    var pd = s0.period || "";
+    var periodTag = pd && ss.every(function (x) { return x.period === pd; }) &&
+      M.steps.some(function (x) { return x.from === s0.from && x.to === s0.to && x.period && x.period !== pd; })
+      ? " · " + (pd.length > 16 ? pd.slice(0, 15) + "…" : pd) : "";
     var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
                                             : " · " + ss.length + " routes")
               : stated ? " · via " + viaName(stated[0]) + (stated.length > 1 ? " +" + (stated.length - 1) : "") : "";
@@ -1198,11 +1301,18 @@ function layout(M, opts) {
               : kind === "selection" ? "selection" :
                 // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
                 (s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
-                  ? (signs[0] === "+" ? "speeds" : "slows") : signWord(signs)) +
+                  ? (signs[0] === "+" ? "speeds" : "slows")
+                  // "ONLY IF" IS NOT "RAISES" (profile 1.9, G5): drawn as a plain raise, a necessary
+                  // condition read as more of the one giving more of the other.
+                  : s0.necessary === true && s0.sufficient === true ? "needed and enough for"
+                  : s0.necessary === true ? "needed for"
+                  : s0.sufficient === true ? "enough for" : signWord(signs)) +
+                (s0.sufficient === false ? " · not alone" : "") +
+                (s0.attribution ? " · " + (ATTRIBUTION_WORD[s0.attribution] || s0.attribution) : "") +
                 // A STEP PAST A THRESHOLD (G2) says so: drawn as a plain "raises" it read as "more
                 // of the one, more of the other", monotone, which Lenton's tipping points are not.
                 (s0.threshold ? " past a threshold" : "") +
-                (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag +
+                (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag + periodTag +
                 (given ? " ◇" : "") + (closes ? " ↻" : "");
     var jointly = [];
     ss.forEach(function (x) { (x.jointly || []).forEach(function (j) {
@@ -1210,7 +1320,11 @@ function layout(M, opts) {
     var blockers = [];
     ss.forEach(function (x) { (x.unless || []).forEach(function (j) {
       if (has(M.states, j) && nodes[j] && j !== s0.to && blockers.indexOf(j) < 0) blockers.push(j); }); });
-    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
+    var modifiers = [];
+    ss.forEach(function (x) { (x.modifies || []).forEach(function (m) {
+      if (has(M.states, m.by) && nodes[m.by] && m.by !== s0.to && m.by !== s0.from &&
+          !modifiers.some(function (y) { return y.state === m.by; })) modifiers.push({ state: m.by, effect: m.effect }); }); });
+    return { key: k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, modifiers: modifiers, stems: [], junction: /** @type {null | {x:number,y:number,bar:string}} */ (null),
              ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P,
              // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
@@ -1331,7 +1445,7 @@ var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
  *  only from a co-cause on the page; the panel names every one whatever is drawn. */
 var JUNCTION_T = 0.8;
 function stemsOf(e, shown) {
-  if (!e.jointly.length && !e.blockers.length) return;
+  if (!e.jointly.length && !e.blockers.length && !(e.modifiers || []).length) return;
   var P = e.curve, t = e.back ? 0.5 : JUNCTION_T;
   var at = function (u) { return [bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)]; };
   var J = at(t), J1 = at(t - 0.02), J2 = at(Math.min(1, t + 0.02));
@@ -1345,11 +1459,16 @@ function stemsOf(e, shown) {
   var others = Object.keys(shown).filter(function (v) { return v !== e.to; });
   // A BLOCKER (profile 1.8) takes the same way in, and stops short of the arrow on a bar across its
   // own end: the inhibition mark, where a co-cause's stem runs on to the bar across the arrow.
-  e.jointly.concat(e.blockers).forEach(function (j, idx) {
-    var n = shown[j], blocks = idx >= e.jointly.length;
+  // A MODERATOR (profile 1.9) sends a dotted stem to a small ring on the arrow two-thirds along: it
+  // changes how strongly the step runs, and is neither a cause of the step's end nor a blocker.
+  var mods = (e.modifiers || []).map(function (m) { return m.state; });
+  e.jointly.concat(e.blockers, mods).forEach(function (j, idx) {
+    var n = shown[j], blocks = idx >= e.jointly.length && idx < e.jointly.length + e.blockers.length;
+    var moderates = idx >= e.jointly.length + e.blockers.length;
     // A BLOCKER MEETS THE ARROW A THIRD OF THE WAY ALONG: at the head parallel arrows crowd, and
     // at the middle the chips sit; on the planted defences it was lost in both (28 Sep 2026).
-    var T = blocks ? at(0.3) : J;
+    // Two moderators of one arrow get a ring each, spaced along it: on one point they read as one.
+    var T = blocks ? at(0.3) : moderates ? at(0.66 - 0.12 * (idx - e.jointly.length - e.blockers.length)) : J;
     if (!n) return;
     var cands = [];
     var sx = n.x + n.w, sy = n.y + n.h / 2;
@@ -1360,7 +1479,7 @@ function stemsOf(e, shown) {
     var best = cands[0], bestHits = Infinity;
     // A blocker's stem stops short of the arrow on a bar, so it must not reach it through the box
     // the arrow enters: on the planted defences it dipped through "Harm" and read as a step into it.
-    var obst = blocks ? others.concat([e.to]) : others;
+    var obst = blocks || moderates ? others.concat([e.to]) : others;
     cands.forEach(function (c) {
       var hits = 0;
       for (var i = 1; i < 20; i++) {
@@ -1370,14 +1489,19 @@ function stemsOf(e, shown) {
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });
-    var end = T, tbar = null;
+    var end = T, tbar = null, ring = null;
+    if (moderates) {
+      var mx = T[0] - best[2][0], my = T[1] - best[2][1], ml = Math.sqrt(mx * mx + my * my) || 1;
+      end = [T[0] - mx / ml * 5, T[1] - my / ml * 5];
+      ring = { x: T[0], y: T[1], r: 5, effect: (e.modifiers.filter(function (m) { return m.state === j; })[0] || {}).effect };
+    }
     if (blocks) {
       var ux = T[0] - best[2][0], uy = T[1] - best[2][1], ul = Math.sqrt(ux * ux + uy * uy) || 1;
       ux /= ul; uy /= ul;
       end = [T[0] - ux * 7, T[1] - uy * 7];
       tbar = "M" + (end[0] + uy * 7) + "," + (end[1] - ux * 7) + " L" + (end[0] - uy * 7) + "," + (end[1] + ux * 7);
     }
-    e.stems.push({ state: j, blocks: blocks, tbar: tbar, end: end,
+    e.stems.push({ state: j, blocks: blocks, tbar: tbar, ring: ring, end: end,
                    path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
                          best[2][0] + "," + best[2][1] + " " + end[0] + "," + end[1] });
   });
@@ -1390,7 +1514,8 @@ function placeChips(edges, nodes, lanes) {
   // A BLOCKER'S BAR IS NOT TO BE COVERED: a chip placed over it hid the only mark that the step
   // holds unless something else does (28 Sep 2026).
   edges.forEach(function (e) { (e.stems || []).forEach(function (sm) {
-    if (sm.tbar) fixed.push({ x: sm.end[0] - 11, y: sm.end[1] - 11, w: 22, h: 22 }); }); });
+    if (sm.tbar) fixed.push({ x: sm.end[0] - 11, y: sm.end[1] - 11, w: 22, h: 22 });
+    if (sm.ring) fixed.push({ x: sm.ring.x - 10, y: sm.ring.y - 10, w: 20, h: 20 }); }); });
   edges.forEach(function (e) {
     if (!e.stub) return;
     var P = e.curve, x = P[3][0], y = P[3][1];
@@ -1578,7 +1703,7 @@ function injectStyle() {
     // Hatched and violet, never dashed: a dash is a fidelity rung (ruled D7, 27 Sep 2026).
     ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal)}",
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
-    ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
+    ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .ring{fill:var(--panel,#fff)}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
     ".amech .chip .glyph{font-size:9px}",
     ".amech svg.hovering g[data-edge]:not(.hot){opacity:.18}.amech svg.hovering g[data-edge].hot .ed{stroke-width:3.2}",
@@ -1641,6 +1766,9 @@ function collapseModel(M) {
     c.unless = [];
     (s.unless || []).forEach(function (j) { var t = has(top, j) ? top[j] : j;
       if (t !== b && c.unless.indexOf(t) < 0) c.unless.push(t); });
+    c.modifies = [];
+    (s.modifies || []).forEach(function (m) { var t = has(top, m.by) ? top[m.by] : m.by;
+      if (t !== a && t !== b) c.modifies.push({ by: t, effect: m.effect, period: m.period }); });
     if (a !== s.from || b !== s.to) { c.partFrom = s.from; c.partTo = s.to; }
     steps.push(c);
   });
@@ -1664,7 +1792,8 @@ function chainModel(M, id) {
   var inIds = {};
   chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
   M.steps.forEach(function (s) { if (s.chain.indexOf(id) >= 0) {
-    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || []).forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
+    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }))
+      .forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
   var ids = M.ids.filter(function (i) { return inIds[i]; });
   var steps = M.steps.filter(function (s) {
     return s.chain.indexOf(id) >= 0 || (s.layer !== "text" && !s.chain.length && inIds[s.from] && inIds[s.to]); });
@@ -1886,6 +2015,11 @@ function create(container, graph, opts) {
         if (st.dash) sp.setAttribute("stroke-dasharray", st.dash);
         el("path", { d: sm.path, "class": "hit" }, g);
         if (sm.tbar) el("path", { d: sm.tbar, "class": "junction", stroke: col, "stroke-width": st.width + 2, "data-blocker": sm.state }, g);
+        if (sm.ring) {
+          sp.setAttribute("stroke-dasharray", "1.5 3");
+          el("circle", { cx: sm.ring.x, cy: sm.ring.y, r: sm.ring.r, "class": "ring", stroke: col, "stroke-width": 1.6,
+                         "data-moderator": sm.state, "data-effect": sm.ring.effect || "" }, g);
+        }
       });
       if (e.junction) el("path", { d: e.junction.bar, "class": "junction", stroke: col, "stroke-width": st.width + 2 }, g);
       var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
@@ -1910,6 +2044,7 @@ function create(container, graph, opts) {
       title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
         (e.jointly.length ? ", holding only together with " + e.jointly.map(function (j) { return obj(M.states[j]).label || j; }).join(" and ") : "") +
         (e.blockers.length ? ", unless " + e.blockers.map(function (j) { return obj(M.states[j]).label || j; }).join(" or ") + " holds" : "") +
+        ((e.modifiers || []).length ? ", moderated by " + e.modifiers.map(function (m) { return (obj(M.states[m.state]).label || m.state) + " (" + (EFFECT_WORD[m.effect] || m.effect) + ")"; }).join(" and ") : "") +
         " — click to see";
       var pick = function (ev) { ev.stopPropagation(); select({ edge: e, path: p }); };
       g.addEventListener("click", pick);
@@ -1987,8 +2122,18 @@ function create(container, graph, opts) {
           " — a different state, in a different case; click to see them";
         km.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
       }
+      // A MEASURE OF ANOTHER STATE (profile 1.9): ≙ at its right foot, naming what it reads.
+      var measOf = obj(FULL.states[v]).measures;
+      if (measOf != null && has(FULL.states, measOf)) {
+        var mm = el("g", { "class": "loopmark measure", "data-measures": measOf, transform: "translate(" + (p.w - 10) + "," + (p.h + 5) + ")" }, g);
+        el("circle", { r: 10 }, mm);
+        el("text", { "text-anchor": "middle", y: 4 }, mm).textContent = "≙";
+        el("title", {}, mm).textContent = "A measure of “" + (obj(FULL.states[measOf]).label || measOf) + "”" +
+          (obj(FULL.states[v]).method ? ", by " + obj(FULL.states[v]).method : "") + " — a reading of it, not a cause of it";
+      }
       // A co-cause is linked: its step is the one it joins (profile 1.4).
-      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0) && x.layer === "text"; }))
+      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0 ||
+                                                           (x.modifies || []).some(function (m) { return m.by === v; })) && x.layer === "text"; }))
         el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
     });
@@ -2018,7 +2163,7 @@ function create(container, graph, opts) {
     }
     if (selected.edge) {
       var k = {}; k[selected.edge.from] = k[selected.edge.to] = true;
-      selected.edge.jointly.concat(selected.edge.blockers).forEach(function (j) { k[j] = true; });
+      selected.edge.jointly.concat(selected.edge.blockers, modStates(selected.edge)).forEach(function (j) { k[j] = true; });
       return { nodes: k, edge: function (e) { return e.key === selected.edge.key; } };
     }
     var v = selected.state, up = {}, down = {};
@@ -2027,7 +2172,7 @@ function create(container, graph, opts) {
       while (stack.length) {
         var x = stack.pop();
         vis.forEach(function (e) {
-          [e.from].concat(e.jointly, e.blockers).forEach(function (src) {
+          [e.from].concat(e.jointly, e.blockers, modStates(e)).forEach(function (src) {
             var from = dir > 0 ? src : e.to, to = dir > 0 ? e.to : src;
             if (from === x && !into[to] && to !== v) { into[to] = true; stack.push(to); }
           });
@@ -2039,7 +2184,7 @@ function create(container, graph, opts) {
     Object.keys(up).forEach(function (x) { nodes[x] = true; });
     Object.keys(down).forEach(function (x) { nodes[x] = true; });
     return { nodes: nodes, edge: function (e) {
-      return [e.from].concat(e.jointly, e.blockers).some(function (src) {
+      return [e.from].concat(e.jointly, e.blockers, modStates(e)).some(function (src) {
         return (up[src] && (up[e.to] || e.to === v)) || ((src === v || down[src]) && down[e.to]); });
     } };
   }
@@ -2048,7 +2193,7 @@ function create(container, graph, opts) {
     drawnEdges.forEach(function (d) {
       var on = !f || f.edge(d.e);
       d.g.classList.toggle("dim", !on); d.chip.classList.toggle("dim", !on);
-      if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.concat(d.e.blockers).forEach(function (j) { lit[j] = true; }); }
+      if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.concat(d.e.blockers, modStates(d.e)).forEach(function (j) { lit[j] = true; }); }
     });
     Object.keys(drawnNodes).forEach(function (v) {
       var g = drawnNodes[v];
@@ -2086,6 +2231,14 @@ function create(container, graph, opts) {
       ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
       ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
         ": this link and that route are one, counted once" : "") +
+      ((s.modifies || []).length ? " · <b>moderated</b>: " + s.modifies.map(function (m) {
+        return esc(obj(FULL.states[m.by]).label || m.by) + " " + esc(EFFECT_WORD[m.effect] || m.effect) + (m.period ? " (" + esc(m.period) + ")" : ""); }).join("; ") : "") +
+      (s.necessary === true ? " · <b>necessary</b>: its effect holds only where its cause does" : "") +
+      (s.sufficient === true ? " · <b>enough</b>: " + ((s.jointly || []).length ? "with its co-causes it" : "it") + " brings the effect about on its own" : "") +
+      (s.sufficient === false ? " · <b>not enough on its own</b>, the text says" : "") +
+      (s.design ? " · design: " + esc(s.design) + (s.design === "illustration" ? " (hypothetical: shows how, not that)" : "") : "") +
+      (s.attribution ? " · <b>attribution</b>: " + esc(s.attribution) : "") +
+      (s.reported ? " · a view the text reports" + (s.stance ? ", " + esc(s.stance) + (s.stance === "endorsed" ? " — and holds as its own" : "") : ", taking no stance the map records") : "") +
       (s.supports ? " · " + s.supports + " supporting claim" + (s.supports === 1 ? "" : "s") + " in the map" : "");
     if (s.partFrom) meta += ' · inside the boxes: ' + esc(obj(FULL.states[s.partFrom]).label || s.partFrom) + ' → ' +
       esc(obj(FULL.states[s.partTo]).label || s.partTo);
@@ -2100,11 +2253,12 @@ function create(container, graph, opts) {
    *  paragraph describing them asked the reader to translate; a sample of each line, beside its
    *  meaning, does not. Only the kinds this chain uses are listed. */
   function legendHTML() {
-    var ink = {}, fid = {}, tier = {}, isNull = false, joint = false, blocked = false;
+    var ink = {}, fid = {}, tier = {}, isNull = false, joint = false, blocked = false, moderated = false;
     G.edges.forEach(function (e) {
       if (e.layer !== "text" && !layers[e.layer]) return;
       if (e.jointly.length) joint = true;
       if (e.blockers.length) blocked = true;
+      if ((e.modifiers || []).length) moderated = true;
       ink[e.ink] = true; fid[e.fidelity] = true; if (e.kind === "null") isNull = true; else tier[e.tier] = true;
     });
     var line = function (color, width, dash, cap) {
@@ -2132,6 +2286,9 @@ function create(container, graph, opts) {
     if (blocked) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C12,14 18,10 20,10" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
       '<line x1="20" y1="4" x2="20" y2="16" stroke="var(--mv-text)" stroke-width="4"/><line x1="2" y1="3" x2="44" y2="3" stroke="var(--mv-text)" stroke-width="2"/></svg>',
       "a stem ending in a bar: the step holds unless that state does");
+    if (moderated) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C12,14 22,8 26,8" fill="none" stroke="var(--mv-text)" stroke-width="2" stroke-dasharray="1.5 3"/>' +
+      '<line x1="2" y1="3" x2="44" y2="3" stroke="var(--mv-text)" stroke-width="2"/><circle cx="30" cy="3" r="4" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.6"/></svg>',
+      "a dotted stem to a ring: that state changes how strongly the step runs (click the arrow for how)");
     return out + '</div>';
   }
   /** A route through folded states: the states it passes, what it adds up to, and each step's
@@ -2304,6 +2461,20 @@ function create(container, graph, opts) {
             : generalOfKind(kindOfState(selected.state)) ? 'a case of the general “' + esc(obj(FULL.states[generalOfKind(kindOfState(selected.state))]).label || '') + '”'
             : 'with ' + kinOf(selected.state).length + ' other state' + (kinOf(selected.state).length === 1 ? '' : 's')) + '</span></span></div>' : '') +
         (s.measured ? '<div class="amech-row"><span class="k">measured</span><span>' + esc(s.measured) + '</span></div>' : '') +
+        (s.measures != null && has(FULL.states, s.measures) ? '<div class="amech-row"><span class="k">measures</span><span>' +
+          esc(obj(FULL.states[s.measures]).label || s.measures) + (s.method ? ', by ' + esc(s.method) : '') +
+          ' — a reading of it, not a cause</span></div>' : '') +
+        // RIVAL ACCOUNTS OF THIS STATE, SIDE BY SIDE (profile 1.9, G11).
+        (function () {
+          var acc = (FULL.profile.accounts || []).filter(function (x) { return x.state === selected.state; })[0];
+          if (!acc) return '';
+          return '<div class="amech-row"><span class="k">accounts</span><span>' + acc.accounts.map(function (x) {
+            return '<div>' + esc(obj(FULL.states[x.from]).label || x.from) + ' <span class="amech-q">(' + esc(x.title) + '; ' +
+              (x.layer === "text" && !x.stance ? 'the text’s own' : 'reported' + (x.stance ? ', ' + esc(x.stance) : '')) +
+              (x.attribution ? '; ' + esc(x.attribution) : '') + ')' +
+              (x.opened_by.length ? ' — opened by ' + x.opened_by.map(function (o) { return esc(obj(FULL.states[o[0]]).label || o[0]) + ' (' + esc(o[1]) + ')'; }).join('; ') : '') +
+              '</span></div>'; }).join('') + '</span></div>';
+        })() +
         // WHICH OF THE TEXT'S WORDS WERE READ AS THIS ONE STATE: the decision two annotators most
         // often make differently (mechanism-pass.md), so the reader is shown it.
         (s.note ? '<div class="amech-row"><span class="k">note</span><span>' + esc(s.note) + '</span></div>' : '') +

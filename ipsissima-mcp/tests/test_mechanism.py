@@ -650,6 +650,63 @@ check("what a chain is for is no dead end on the whole map",
        [g["kind"] for g in mech._walk(["a", "b"], ENDS, {("a", "b")}, False, ends={"b"})["gaps"]]),
       (["dead-end"], []))
 
+print("\nprofile 1.9: moderation, necessity, evidence, rival accounts (wave 4)")
+STORIES = (FIXTURE / "stories.argdown").read_text(encoding="utf-8")
+rs9 = run(STORIES)
+c9 = rs9["shape"]["chain"]
+# Mutation: drop `modifies` from the census -> [].
+check("a moderator that weakens a step, and one the text finds does not moderate it",
+      c9["moderated"], [["aid", "diet", "+", "income", "weakens", ""], ["aid", "diet", "+", "schools", "0", ""]])
+check("a necessary cause", c9["necessary"], [["income", "diet", "+"]])
+check("a joint set that suffices, and a cause that is not enough alone",
+      c9["sufficient"], [["diet", "malnourish", "-", ["schools"], True], ["income", "diet", "+", [], False]])
+check("the text's words for its evidence are counted", c9["designs"], [["experiment", 1], ["illustration", 1]])
+# Mutation: drop the illustration rule in steps() -> the example step is shaded argued.
+check("  and a hypothetical illustration is shaded as asserted, not as an example",
+      c9["tiers"], {"evidence": 2, "argued": 0, "asserted": 3, "imputed": 0})
+check("a measure of a state is named with its method", c9["measures"], [["survey", "malnourish", "a household survey"]])
+# Mutation: drop the measures exemption in _walk -> `survey` leads nowhere.
+check("  and is no dead end", any("`survey`" in g for g in c9["gaps"]), False)
+# Mutation: drop the moderator from null_from -> "the condition `income` ..." no; schools is no
+# role, so test with a moderator that is a condition and has no step of its own.
+MODONLY = STORIES.replace("schools: {label: \"School meals\", actor: state}",
+                          "schools: {label: \"School meals\", actor: state, role: condition}").replace(
+    "jointly: [schools], sufficient: true", "sufficient: true")
+check("  a condition that only moderates is not unlinked",
+      any("`schools`" in g for g in run(MODONLY)["shape"]["chain"]["gaps"]), False)
+check("each attribution is kept with its step and whose it is", c9["attributions"],
+      [["adverts", "choice", "+", "mechanical", "text", "The radical story"],
+       ["choice", "malnourish", "+", "intentional", "rival", "The conservative story"],
+       ["ignorance", "malnourish", "+", "inadvertent", "rival", "The liberal story"]])
+# Mutation: drop the endorsed rule in steps() -> 3 rival steps.
+check("a reported story the text endorses is walked as its own", c9["rival_steps"], 2)
+check("  and the stances are counted", c9["stances"], [["endorsed", 1], ["rejected", 1], ["unjudged", 1]])
+acc = {a["state"]: a["accounts"] for a in c9["accounts"]}
+# Mutation: return [] from _accounts -> no accounts.
+check("rival accounts of one outcome are set side by side",
+      [(a["from"], a["layer"], a["stance"]) for a in acc.get("malnourish", [])],
+      [("diet", "text", ""), ("ignorance", "rival", "unjudged"), ("choice", "rival", "rejected")])
+check("  with the story that opens another's cause",
+      [a["opened_by"] for a in acc.get("malnourish", []) if a["from"] == "choice"], [[["adverts", "The radical story"]]])
+cl9 = "\n".join(mech.census(c9))
+check("the census says each",
+      ["modif   aid -> diet (+): NOT moderated by schools" in cl9, "needed  income -> diet" in cl9,
+       "enough  income -> diet: NOT enough on its own" in cl9, "measure survey measures malnourish" in cl9,
+       "accounts of malnourish" in cl9, "endorse 1 step(s)" in cl9], [True] * 6)
+check("the fixture raises no fault", [f["message"] for f in by(rs9, "mechanism") if f["severity"] == "!"], [])
+BAD = STORIES.replace("effect: weakens", "effect: dampens").replace(
+    "attribution: inadvertent", "attribution: careless").replace(
+    "necessary: true, sufficient: false", "necessary: yes, sufficient: false").replace(
+    "design: experiment,", "design: experiment, stance: unjudged,").replace(
+    "measures: malnourish", "measures: hunger")
+bad = [f["message"] for f in by(run(BAD), "mechanism")]
+check("an unknown effect, attribution, a non-boolean, a stance on the text's own step and an "
+      "undeclared measured state are each named",
+      [any("dampens" in m for m in bad), any("careless" in m for m in bad),
+       any("`necessary:` is `true` or `false`" in m for m in bad),
+       any("`stance` says where the text stands" in m for m in bad),
+       any("`measures: hunger`" in m for m in bad)], [True] * 5)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

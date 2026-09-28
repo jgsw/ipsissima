@@ -159,6 +159,8 @@ const LOGIC = [".A.", ".E.", ".~.", ".v.", ".->.", ".<->.", ".P.", ".O.",
         `not matched exactly: ${missed}`);
   check("  without firing on ordinary prose",
         !re.test("a sentence. Another one.") && !re.test("version 1.0. Next"), true);
+  check("  nor on an escaped dot, the fix it offers for an abbreviation (i\\.v.)",
+        !re.test("given i\\.v. to patients") && re.test("given i.v. to patients"), true);
 }
 
 console.log();

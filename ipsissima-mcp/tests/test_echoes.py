@@ -109,5 +109,18 @@ doc = doc_with({"chapter": "p.md", "echoes": [
 check("an echo already recorded is not proposed again",
       sorted(c["line"] for c in prov.echo_candidates(doc, root)), [15])
 
+# A paragraph that holds the claim's words spread over sentences that say other things is not a
+# place the claim recurs (Ripple's methods sentence, the levy's reception null; 27-28 Sep 2026).
+Path(root, "spread.md").write_text("\n".join([
+    "# 1. Methods", "",
+    "Small fees are common in pilots. Take-up is measured by sales. Useful products were chosen "
+    "with the ministry. The poor were sampled at random. It sharply rose." + PROSE, "",
+    "# 2. Results", "", "Placed here." + PROSE, ""]), encoding="utf-8")
+doc = {"statements": {"fees": {"members": [{"text": "Small fees sharply reduce the take-up of "
+       "useful products among the poor.", "data": {"chapter": "spread.md"}}], "data": {}}}}
+pos = {"fees": {"chapter": "spread.md", "line": 7}}
+check("a paragraph that holds the words only across sentences is not proposed",
+      prov.echo_candidates(doc, root, positions=pos), [])
+
 print(f"\n{'FAILED' if fails else 'all passed'} ({fails} failed)")
 sys.exit(1 if fails else 0)

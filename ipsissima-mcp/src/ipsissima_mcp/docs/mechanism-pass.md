@@ -5,6 +5,10 @@ A SEPARATE PASS, AND ONLY ON REQUEST. It runs when a reader has asked for the me
 reconstruction. It takes a map that is already finished (`argdown_check` reports `ok` and
 `verified`) and adds to it. Ruled 26 Sep 2026.
 
+This document says what to mark and in what notation. How to READ a text's causal claims — their
+strength, necessity and sufficiency, moderators, time and size, rival accounts — is the mechanism
+cheatsheet, `argdown_method("mechanism-method")`: read it first.
+
 ## What it is for
 
 Ipsissima's argument map says what holds a claim up. The Mechanism arrangement says what the text
@@ -143,6 +147,12 @@ substantially reduces adoption".
 | `size` | the magnitude the text gives, quoted: `"a third of the cost"`, or `{value: -1.6, unit: "percentage points", ci: "95% CI -2.3 to -0.9", versus: "the counterfactual", at: "Nov 2019"}` |
 | `share` | with `via`: how much of the step runs by the route, `entire` (the default), `most`, `partial` or `none` |
 | `via` | the finer route the text opens this link into, in order: `via: [reform, sugar]` where the levy's effect on obesity runs through reformulation and sugar bought |
+| `modifies` | a state that **moderates** the step: `{by: backers, effect: strengthens}`; `weakens`, `reverses`, or `"0"` where the text finds it does not moderate it |
+| `necessary` | `true` where the text says the effect holds **only if** the cause does: "only when", "sine qua non" |
+| `sufficient` | `true` where the cause (with its `jointly` co-causes) brings the effect about **on its own**; `false` where the text says it is **not enough** alone |
+| `design` | the design of the evidence, in the text's words: `experiment`, `replication`, `anecdote`, `case study`, `illustration` (a hypothetical case) |
+| `attribution` | the **type** of causing the step attributes: `intentional`, `inadvertent`, `mechanical`, `accidental`, `complex` |
+| `stance` | on a `#reported` or `#contested` step: `rejected`, `unjudged` or `endorsed` |
 
 - **A joint cause is one step, not two.** Where the text says two things bring something about only
   together — a belief and a desire, a rule and the means to enforce it, an opportunity and a motive —
@@ -189,11 +199,35 @@ substantially reduces adoption".
 - **Two findings with opposite signs on one pair of states are two steps** — fee → use `+` among
   owners (screening, or given a condition) and `-` overall. Mark both; state the condition in `given:`.
   They are counted apart.
-- **A moderator is a condition on a step, not a state.** "Demand fell less steeply when households had
-  time to pay" says the step fee → take-up is weaker under a condition: put `given: ["households given
-  three months to redeem the voucher"]` on that step. Mark the condition as a cause of its own only
-  where the text says it brings something about in its own right (cash in hand raises willingness to
-  pay: cash → take-up).
+- **A moderator changes a step; it is not a cause of the step's end.** Where the text names the
+  moderator as something the chain has — "powerful initial backers moderate the relationship between a
+  new theory and experimentation" — declare it as a state and put `modifies: {by: backers, effect:
+  strengthens}` on the step it moderates. Where the text finds that something does *not* moderate a
+  step, that is a finding too: `effect: "0"`. Where the moderator is only a qualification in words
+  ("demand fell less steeply when households had time to pay"), it stays a `given:` on the step. Mark
+  it as a cause of its own only where the text says it brings something about in its own right.
+- **"Only if" is not "raises".** "Problems arise only when conditions are seen as changeable" is a
+  necessary condition: mark the step `necessary: true`. Where the text denies that a cause is enough
+  ("necessary, but not sufficient"; "may help; it will not guarantee"), add `sufficient: false`. Where
+  it says a set of conditions together brings the effect about, mark one step with `jointly:` naming
+  the rest and `sufficient: true`. Where a list of conditions ("more likely if …, if … and if …")
+  leaves open whether they act separately or only together, choose, and say in the claim's `note:`
+  that the text leaves it open.
+- **Say how the text knows, in its words.** `basis` is the kind of backing; `design` is the design:
+  a randomised experiment, a replication, a re-reading of someone else's case, an anecdote. A
+  **hypothetical** example ("imagine a manager who …") is `design: illustration`: it shows how a step
+  could go, not that it does, and it is shaded as asserted. Where the evidence is for each period and
+  not for the change between them, say so in `design:` in the text's words.
+- **A measure is not a cause.** Where the text reports a state through a measure — a survey score, an
+  estimate computed by a model, a marker — and the measure matters to the argument (a method's
+  artefact, a critique that the estimate is biased), declare the measure as its own state with
+  `measures: <state>` and `method:`. Steps into the measure are claims about the measurement. Never
+  draw a step from the measure to what it measures.
+- **Say where the text stands on a story it reports.** A `#reported` step is a view the text sets
+  out; `stance:` says whether it sets it out to reject it, leaves it unjudged, or endorses it. An
+  endorsed step is the text's own as well, and is walked as such. For a text about blame, harm or
+  responsibility, give each step its `attribution:` — the type of causing it attributes. Rival stories
+  of one harm often differ only in that.
 - **Hedged steps.** A step the text puts as a possibility ("may", "might", "could") is the text's own,
   marked `hedged: true`. A step the text sets out only to reject is the rival's (`#reported`).
 - Where two groups respond differently to the same situation — heavy drinkers cut down, dependent

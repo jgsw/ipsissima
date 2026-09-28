@@ -43,7 +43,14 @@ function index(graph) {
   for (const e of edges) {
     if (!byId.has(e.from) || !byId.has(e.to)) continue;   // tolerate dangling refs
     childrenOf.get(e.to).push(e.from);
-    outCount.set(e.from, outCount.get(e.from) + 1);
+    // A CONTRADICTION BEARS ON NEITHER SIDE between two claims in one voice: counted as an
+    // outgoing edge, `A >< B` demoted whichever thesis was typed first. A view the text reports,
+    // set against its own claim, bears on it as an attack does (argdown_provenance.contribution).
+    if (e.type !== "contradictory") outCount.set(e.from, outCount.get(e.from) + 1);
+    else {
+      var va = otherVoiced(byId.get(e.from)), vb = otherVoiced(byId.get(e.to));
+      if (va !== vb) { var src = va ? e.from : e.to; outCount.set(src, outCount.get(src) + 1); }
+    }
   }
   // Declared contentions travel on the graph (front matter `contentions:`). Additive only:
   // `isContention` is the union of "supports nothing" and the declaration, so a map that
@@ -68,6 +75,12 @@ function index(graph) {
     (((outCount.get(id) || 0) === 0 && !midConclusion.has(id)) || declared.has(id));
   return { nodes, edges, groups, byId, groupById, childrenOf, outCount, declared, isContention,
            appraisal };
+}
+
+/** Is this claim voiced as someone else's -- a view the text reports, an objection it raises? */
+function otherVoiced(n) {
+  var tags = (n && n.tags) || [];
+  return tags.indexOf("reported") >= 0 || tags.indexOf("contested") >= 0;
 }
 
 /** Is this claim the reconstructor's own appraisal? Read from ALL its tags, not the drawn

@@ -117,6 +117,22 @@ same = [row(40, 100, "Body."),
         row(40, 680, "2 Second note.")]
 flow2, notes2 = split_footnotes(same, 30)
 check("inside one column the zone still latches", (len(flow2), len(notes2)), (1, 3))
+
+# THE NOTE BEFORE THE FIRST ONE FOUND: set a little high and at near-body size, "19 Ralph Nader"
+# was left inside the sentence that runs over the page while 20 below it was lifted (Stone, JSTOR
+# scan, 28 Sep 2026). The number sequence decides; a body line numbered otherwise stays.
+stone = [row(54, 500, "The Ford Pinto automobile case is especially notable because the court"),
+         row(65, 551, "19 Ralph Nader, Unsafe at Any Speed (New York: Bantam Books, 1973)."),
+         row(65, 563, "20 Jonathan Schell, The Fate of the Earth (New York: Avon Books, 1982).",
+             small=True),
+         row(54, 575, "and a runover line of note twenty", small=True)]
+flow3, notes3 = split_footnotes(stone, 60, margin=54)
+check("a note numbered just before the first note found is lifted with it",
+      [t[:9] for _p, _x, t in notes3], ["19 Ralph ", "20 Jonath", "and a run"])
+check("  and the sentence it interrupted is left whole", len(flow3), 1)
+other = [stone[0], row(65, 551, "17 Ralph Nader, Unsafe at Any Speed (New York: Bantam Books, 1973).")] + stone[2:]
+check("  a line numbered out of sequence is not",
+      len(split_footnotes(other, 60, margin=54)[0]), 2)
 check("high-up numbered text is not a footnote",
       len(split_footnotes([row(40, 100, "1 Not a note, too high.")], 30)[1]), 0)
 
@@ -282,6 +298,35 @@ check("body text is not furniture, however often a page has some",
 check("  and a head's words are safe once they are out of the top band",
       is_furn("July 2020", 500, 1000.0), None)
 
+# A VERSO HEAD IN TWO PARTS ON ONE LINE: "760 / Changing Rhetorical Norms ..." at the left and the
+# authors at the right. `alone` kept it as text -- the paragraph-number rule -- and it ran into the
+# prose seven times (Valentino et al., 28 Sep 2026).
+pages = [head_sheet()]
+for i in range(1, 14):
+    pages.append(head_sheet(f"{757 + i} / Changing Rhetorical Norms", "N. Valentino and others")
+                 if i % 2 else head_sheet("Volume 80", f"July 2018 / {757 + i}"))
+is_furn, heads, _footers = detect_furniture(pages)
+check("a repeated head with words in it is a head though its other half is beside it",
+      is_furn("760 / Changing Rhetorical Norms", 90, 1000.0, alone=False), "running head")
+check("  but a bare number with text beside it is still a paragraph number",
+      is_furn("30.", 90, 1000.0, alone=False), None)
+
+print("split_at_pages (the marker where the page begins, not after the paragraph)")
+from pdf_to_source import split_at_pages                                      # noqa: E402
+b = dict(page=759, pages={759, 760}, text="or with one that did not discuss welfare at all. They "
+         "found no differences.", breaks=[(760, "discuss welfare at all. They found")])
+check("a paragraph across a page break is cut where the new page's first row begins",
+      split_at_pages(b), [(759, "or with one that did not"),
+                          (760, "discuss welfare at all. They found no differences.")])
+b = dict(page=4, pages={4, 5}, text="the argument continues here and ends.",
+         breaks=[(5, "tinues here and ends.")])
+check("  the second half of a hyphenated word cuts at the next space",
+      split_at_pages(b), [(4, "the argument continues"), (5, "here and ends.")])
+b = dict(page=4, pages={4, 5}, text="a row the repairs changed beyond finding.",
+         breaks=[(5, "nowhere in the text")])
+check("  and a row that cannot be found leaves the block whole",
+      split_at_pages(b), [(4, "a row the repairs changed beyond finding.")])
+
 print("printed_numbers / page_offset")
 def sheet(number):
     """One sheet carrying its page number centred at the foot, as a journal prints it."""
@@ -415,6 +460,13 @@ check("marking off leaves the line exactly as extracted",
       join_spans(spans(("of thought.", 7.97), ("1", 5.98)), mark_footnotes=False), "of thought.1")
 check("a single span is never touched -- there is nothing to compare it with",
       join_spans(spans(("1", 5.98))), "1")
+# A SUBSCRIPT IS SMALL AND LOWERED; a marker is small and raised (Valentino's "b1", 28 Sep 2026).
+check("a small digit set below the line is a subscript, not a marker",
+      join_spans([dict(text="where b", size=10.0, origin=(72, 500.0)),
+                  dict(text="1", size=7.0, origin=(110, 502.5))]), "where b1")
+check("  and one set above it is still a marker",
+      join_spans([dict(text="as argued.", size=10.0, origin=(72, 500.0)),
+                  dict(text="1", size=7.0, origin=(130, 496.0))]), "as argued.[^1]")
 
 # THE NOTE'S OWN NUMBER AS A LINE OF ITS OWN. The extractor can hand a footnote's superscript
 # number back as a separate line -- a different block, same baseline, a few points left of the
@@ -1097,6 +1149,30 @@ check("a lowercase segment is not a key",
       zotero_key_of("/x/storage/ab12cd34/paper.pdf"), None)
 check("a nine-character segment is not a key",
       zotero_key_of("/x/storage/AB12CD345/paper.pdf"), None)
+
+
+print("a paragraph across a page break, converted whole")
+# End to end, since `split_at_pages` alone passed while the emitting loop still printed each block
+# whole: the marker must stand where the new page begins, not after the paragraph.
+doc = pymupdf.open()
+first = ("Ten sentences of ordinary prose run down this page and the last of them does not end "
+         "here but goes on over the page break into the next sheet where") 
+second = ("the sentence ends at last. A second sentence follows it on the new page, and then the "
+          "paragraph closes.")
+for n, part in enumerate((first * 6, second)):
+    pg = doc.new_page(width=595, height=842)
+    for k, line in enumerate(wrap(part, 70)):
+        pg.insert_text((72, 100 + 14 * k), line, fontsize=10)
+with tempfile.TemporaryDirectory() as tmp:
+    pdf = Path(tmp) / "break.pdf"
+    doc.save(pdf)
+    convert(Config(pdf=pdf, out=Path(tmp) / "source" / "break.md"))
+    written = (Path(tmp) / "source" / "break.md").read_text(encoding="utf-8")
+body = written[written.index("p.1 begins here"):]
+check("the p.2 marker comes before the words printed on p.2",
+      body.index("p.2 begins here") < body.index("the sentence ends at last"), True)
+check("  and after the words printed on p.1", body.index("into the next sheet where") <
+      body.index("p.2 begins here"), True)
 
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

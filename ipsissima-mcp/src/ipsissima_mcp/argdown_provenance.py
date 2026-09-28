@@ -1128,6 +1128,32 @@ def node_tags(node):
     return tags
 
 
+#: The tags that voice a claim as someone else's than the text's author: a view reported, an
+#: objection raised.
+OTHER_VOICE = {"reported", "contested"}
+
+
+def other_voiced(doc):
+    """Titles of the claims and arguments voiced as another's (`#reported`, `#contested`)."""
+    out = set()
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            if node_tags(node) & OTHER_VOICE:
+                out.add(title)
+    return out
+
+
+def contradiction_bearers(doc):
+    """Claims that bear on another through a contradiction: the other-voiced side of a `><`
+    whose other side is in the text's own voice."""
+    voiced = other_voiced(doc)
+    out = set()
+    for a, b, kind in title_edges(doc):
+        if kind == "contradictory" and (a in voiced) != (b in voiced):
+            out.add(a if a in voiced else b)
+    return out
+
+
 def appraisal_titles(doc):
     """Titles of every claim and argument in the appraisal layer."""
     out = set()
@@ -1468,6 +1494,14 @@ def echo_candidates(doc, source_root, positions=None, limit=2, titles=None):
                 continue                      # already recorded as an echo
             best = max(_sentences(t) or [t],
                        key=lambda sn: sum(1 for w in want if w in set(content_words(sn))))
+            # THE SENTENCE MUST HOLD THE CLAIM, NOT THE PARAGRAPH. A long paragraph holds 60% of
+            # almost any claim's words spread over sentences that say other things: Ripple's
+            # methods sentence ("Biomass is a popular variable", 0.26 of the claim's words) was
+            # offered as the announcement of "a strong cascade", and the levy's reception null
+            # (0.54) as the announcement of its opposite (gap tests, 27-28 Sep 2026).
+            score = sum(1 for w in want if w in set(content_words(best))) / len(want)
+            if score < 0.6:
+                continue
             found.append(dict(title=title, chapter=chapter, line=i, score=round(score, 2),
                               where="earlier" if i < pos["line"] else "later",
                               claim_line=pos["line"], sentence=best))
@@ -2642,9 +2676,21 @@ def contribution(doc, declared=None):
         titles.update((a, b))
 
     up, down, any_up, bears_on, borne = {}, {}, {}, set(), set()
+    voiced = other_voiced(doc)
     for a, b, kind in edges:
-        bears_on.add(a)
-        borne.add(b)
+        # A CONTRADICTION BEARS ON NEITHER SIDE -- between two claims in one voice. `A >< B` is
+        # symmetric, and counting it as A bearing on B demoted whichever thesis was typed first
+        # (Ripple and MacNulty, 27 Sep 2026). But a view the text reports, set against the text's
+        # own claim, bears on it as an attack does: Akhlaghi's four rejected rivals are not theses.
+        if kind == "contradictory" and (a in voiced) == (b in voiced):
+            borne.update((a, b))
+        elif kind == "contradictory":
+            src, dst = (a, b) if a in voiced else (b, a)
+            bears_on.add(src)
+            borne.add(dst)
+        else:
+            bears_on.add(a)
+            borne.add(b)
         any_up.setdefault(a, []).append(b)
         if kind != "support":
             continue

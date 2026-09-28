@@ -263,6 +263,12 @@ def run(cli, *args):
     return subprocess.run([*cli, *args], capture_output=True, text=True)
 
 
+def _non_contra_edges(dot):
+    """The DOT's edges other than contradictions, as (from, to)."""
+    return [(a, b) for a, b, attrs in re.findall(r"(n\d+)\s*->\s*(n\d+)\s*(\[[^\]]*\])?", dot)
+            if 'type="contradictory"' not in attrs]
+
+
 def parse_dot(dot):
     nodes, kinds = {}, {}
     # NOT line-anchored. Graphviz puts the FIRST node on the same line as the graph preamble
@@ -2325,7 +2331,12 @@ def _report(cli, path, a):
     src = {x for x, _ in edges}
     dst = {y for _, y in edges}
     isolated = [nodes[n] for n in nodes if n not in src and n not in dst]
-    terminal = [nodes[n] for n in nodes if n not in src]
+    # A CONTRADICTION BEARS ON NEITHER SIDE. `A >< B` is one relation between two theses, but the
+    # DOT draws it as an edge from A, which demoted whichever side was typed first out of the apex
+    # (Ripple against MacNulty, 27 Sep 2026: "modest and spatially variable" lost its rank only
+    # because of the order of two lines).
+    bearing = {x for x, _ in _non_contra_edges(dot)}
+    terminal = [nodes[n] for n in nodes if n not in bearing]
 
     # THE DRAWN MAP LIES ABOUT INTERMEDIATE CONCLUSIONS. An intermediate conclusion that
     # carries relations of its own is exported as a separate statement node, but its carriage
@@ -2339,7 +2350,7 @@ def _report(cli, path, a):
     doc_for_apex = export_json(cli, path)
     if doc_for_apex:
         try:
-            bears = {a for a, _b, _k in _prov.title_edges(doc_for_apex)}
+            bears = {a for a, _b, _k in _prov.title_edges(doc_for_apex) if _k != "contradictory"}
             def _norm(s):
                 return re.sub(r"\s+", " ", (s or "").replace('\\"', '"')).strip()
             to_title = {}
@@ -2350,10 +2361,12 @@ def _report(cli, path, a):
             # THE APPRAISAL IS NEVER THE APEX. A reconstructor's own objection or observation
             # that supports nothing would otherwise be crowned the paper's conclusion.
             appraisal = _prov.appraisal_titles(doc_for_apex)
+            # A REPORTED VIEW SET AGAINST THE TEXT'S OWN CLAIM BEARS ON IT (`><`), as an attack does.
+            rivals = _prov.contradiction_bearers(doc_for_apex)
             kept = []
             for t in terminal:
                 title = to_title.get(_norm(t))
-                if title and title in appraisal:
+                if title and (title in appraisal or title in rivals):
                     continue
                 if title and title in bears:
                     carried.append((t, title))
@@ -2416,16 +2429,33 @@ def _report(cli, path, a):
     hits = []
     for lineno, line in enumerate(text.splitlines(), 1):
         for code, sym in SHORTCODES.items():
-            if code in line:
-                hits.append((lineno, code, sym, line.strip()[:70]))
+            # AN ESCAPED DOT IS NOT A SHORTCODE: the parser prints `i\.v.` as "i.v.", which is
+            # the fix offered below, so it must not be flagged again.
+            for m in re.finditer(r"(?<!\\)" + re.escape(code), line):
+                hits.append((lineno, code, sym, line.strip()[:70], line, m.start()))
+                break
     if hits:
         print(f"\n   SYMBOL SHORTCODES ({len(hits)}) -- Argdown rewrites these silently:")
-        for lineno, code, sym, snippet in hits:
-            finding("symbol-shortcode", "!",
-                    f"`{code}` is rewritten to `{sym}` by the parser, which breaks every "
-                    f"selectedSections and folded= reference to this heading",
-                    line=lineno, text=snippet,
-                    fix=f"remove or space out the `{code}` so it is not read as a shortcode")
+        for lineno, code, sym, snippet, line, at in hits:
+            if line.lstrip().startswith("#"):
+                finding("symbol-shortcode", "!",
+                        f"`{code}` is rewritten to `{sym}` by the parser, which breaks every "
+                        f"selectedSections and folded= reference to this heading",
+                        line=lineno, text=snippet,
+                        fix=f"remove or space out the `{code}` so it is not read as a shortcode")
+            else:
+                # IN A CLAIM, AN ABBREVIATION: metformin's "given i.v." was shown as "given i∨"
+                # (gap tests, 27 Sep 2026). The parser honours a backslash before the dot, and
+                # prints the text as written -- so the quotation still matches its source.
+                word = at > 0 and line[at - 1].isalnum()
+                esc = "\\" + code
+                finding("symbol-shortcode", "!",
+                        f"`{code}` is rewritten to `{sym}` by the parser"
+                        + (f", so the map shows `{line[max(0, at - 1):at]}{sym}` where the text "
+                           f"has an abbreviation" if word else ""),
+                        line=lineno, text=snippet,
+                        fix=f"escape the first dot, `{esc}`: the parser then prints `{code}` as "
+                            f"written" + ("" if word else f"; or write `{sym}` if the symbol is meant"))
             print(f"      ! line {lineno}: {code} -> {sym}   {snippet}")
     else:
         print("   SYMBOL SHORTCODES: none")
