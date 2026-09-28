@@ -520,10 +520,10 @@ check("a blocker is a cause of the outcome, once, of the opposite sign: audits l
       (rtb[("audit", "harm")]["routes"], rtb[("audit", "harm")]["net"]), (1, {"+": 0, "-": 1, "?": 0}))
 check("the failed blocker is walked nowhere, and no gap is found at it",
       [g for g in cb["gaps"] if "culture" in g], [])
-check("a condition may name a state and its value", "audit: absent" in [c for _, _, recs in cb["strata"] for _, g, _ in recs for c in g], True)
+check("a condition may name a state and its value", "audit: absent" in [c for _, _, recs in cb["strata"] for _, g, _, _ in recs for c in g], True)
 # Mutation: _strata requires three records -> [].
 check("a pair whose steps differ by condition is grouped, sign by condition",
-      cb["strata"], [["hazard", "harm", [["+", [], ""], ["+", ["audit: absent"], ""], ["0", ["among trained staff"], ""]]]])
+      cb["strata"], [["hazard", "harm", [["+", [], "", ""], ["+", ["audit: absent"], "", ""], ["0", ["among trained staff"], "", ""]]]])
 bl = "\n".join(mech.census(cb))
 check("the census says each", ["unless  hazard -> harm (+) is blocked where defence holds" in bl,
                                "despite hazard -> harm (+) held although culture acted against it" in bl,
@@ -543,7 +543,7 @@ rt = run(TIMES)
 ct = rt["shape"]["chain"]
 # Mutation: drop the period from _strata's key -> the two nulls merge and the pair is not grouped by time.
 check("one pair's findings in two periods are its time course, each with its period",
-      ct["strata"], [["order", "reoff", [["-", [], "while the order runs"], ["0", [], ""], ["0", [], "after the order ends"]]]])
+      ct["strata"], [["order", "reoff", [["-", [], "while the order runs", ""], ["0", [], "", ""], ["0", [], "after the order ends", ""]]]])
 check("a null says when it holds", ct["null_steps"][0]["periods"], ["after the order ends"])
 check("a step on a trend is named", ct["trends"], [["reoff", "prison", "+"]])
 tl = "\n".join(mech.census(ct))
@@ -594,7 +594,61 @@ check("a threshold is kept with its step", cr["thresholds"], [["order", "work", 
 rl = "\n".join(mech.census(cr))
 check("the census says each", ["regime  2 named" in rl, "thresh  order -> work (+): only past a threshold" in rl], [True, True])
 check("a step in no regime holds in all: a route through it and a regimed step is walked",
-      mech._routes("a", "c", {("a", "b"), ("b", "c")}, ["a", "b", "c"], None, {("a", "b"): {""}, ("b", "c"): {"r1"}})[0], 1)
+      mech._routes("a", "c", {("a", "b"), ("b", "c")}, ["a", "b", "c"], None, {("a", "b"): {("", "")}, ("b", "c"): {("r1", "")}})[0], 1)
+
+print("\nwave 4's faults (28 Sep 2026)")
+# Mutation: drop the period from _regimes -> the route across periods comes back.
+cross = run(TIMES.replace("on: trend}", 'on: trend, period: "after the order ends"}'))["shape"]["chain"]
+check("a route is not composed across two periods",
+      ("order", "prison") in {(r["start"], r["outcome"]) for r in cross["routes"]}, False)
+check("  and a loop is not closed across two periods",
+      (mech._loops(["a", "b"], {("a", "b"), ("b", "a")}), mech._loops(["a", "b"], {("a", "b"), ("b", "a")},
+       regimes={("a", "b"): {("", "p1")}, ("b", "a"): {("", "p2")}})), ([["a", "b"]], []))
+CONT = CHAIN + """
+[Work pays the bills]: "Work lowers what the state spends." #contested
+    {fidelity: "quotation", causes: {from: work, to: cost, sign: "-", basis: asserted}}
+    -> [Recommend]
+"""
+cc = run(CONT)["shape"]["chain"]
+# Mutation: drop "contested" from the layer rule -> the step is the text's and cost is reached.
+check("an objection the text voices is a rival view's step, not the text's", cc["rival_steps"], run(CHAIN)["shape"]["chain"]["rival_steps"] + 1)
+check("  and an outcome reached only in such a view says so",
+      any("`cost` is reached only by the steps of views the text reports" in g for g in cc["gaps"]), True)
+NULLCOND = CHAIN.replace('        cost:    {label: "Cost", actor: state, role: outcome}',
+                         '        cost:    {label: "Cost", actor: state, role: outcome}\n        season:  {label: "Season of sentencing", actor: courts, role: condition}') + """
+[No season effect]: "The season of sentencing made no difference to reoffending."
+    {fidelity: "quotation", causes: {from: season, to: reoff, sign: "0", basis: study}}
+    +> [Recommend]
+"""
+# Mutation: drop null_from in _walk -> "the condition `season` has no step".
+check("a condition whose only step is a finding of no effect is not unlinked",
+      any("`season`" in g for g in run(NULLCOND)["shape"]["chain"]["gaps"]), False)
+TOLD = CHAIN.replace('    question: "How would community orders reduce reoffending?"',
+                     '    question: "How would community orders reduce reoffending?"\n    chains:\n        told: {label: "The deterrence story the brief reports"}').replace(
+    'causes: {from: order, to: reoff, sign: "+", basis: asserted}}\n    -> [Recommend]',
+    'causes: {from: order, to: reoff, sign: "+", basis: asserted, chain: told}}\n    -> [Recommend]')
+rt = run(TOLD)
+told = {c["id"]: c for c in rt["shape"]["chain"]["chains"]}["told"]
+# Mutation: drop the rival fallback in _chain_profiles -> 0 steps, and the "declared but no step" query.
+check("a chain of steps the text reports is walked on them, and says so", (told["steps"], told["layer"]), (1, "rival"))
+check("  with no query that it is empty", [f for f in by(rt, "mechanism") if "declared but no step" in f["message"]], [])
+RANK = {"zcond": {"role": "condition"}, "amod": {}, "out": {"role": "outcome"}}
+# Mutation: iterate entries alphabetically -> amod first.
+check("a declared condition's routes are listed before a state that merely leads out",
+      [r["start"] for r in mech._walk(["zcond", "amod", "out"], RANK, {("zcond", "out"), ("amod", "out")}, True)["routes"]],
+      ["zcond", "amod"])
+rec = lambda given, size: dict(src="a", dst="b", sign="+", given=given, period="", size=size, selects=False)
+# Mutation: drop size from _strata's key -> the two sizes merge or vanish.
+check("a stratum keeps its size beside its condition",
+      mech._strata([rec(["devices: exist"], "stronger"), rec(["devices: absent"], "weaker")]),
+      [["a", "b", [["+", ["devices: absent"], "", "weaker"], ["+", ["devices: exist"], "", "stronger"]]]])
+
+ENDS = {"a": {"role": "condition"}, "b": {}}
+# Mutation: drop `ends` from the dead-end test -> `b` leads nowhere.
+check("what a chain is for is no dead end on the whole map",
+      ([g["kind"] for g in mech._walk(["a", "b"], ENDS, {("a", "b")}, False)["gaps"]],
+       [g["kind"] for g in mech._walk(["a", "b"], ENDS, {("a", "b")}, False, ends={"b"})["gaps"]]),
+      (["dead-end"], []))
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

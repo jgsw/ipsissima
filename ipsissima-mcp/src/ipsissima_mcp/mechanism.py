@@ -260,7 +260,10 @@ def steps(doc, appraisal):
                 continue
             tags = prov.node_tags(node)
             layer = ("appraisal" if title in appraisal
-                     else "rival" if "reported" in tags else "text")
+                     # AN OBJECTION THE TEXT VOICES IS NOT THE TEXT'S CHAIN (#contested, 28 Sep
+                     # 2026): Valentino's "high salience blocks priming" was walked as the
+                     # authors' own step, though they raise it only to deny it.
+                     else "rival" if ("reported" in tags or "contested" in tags) else "text")
             raw = d["causes"]
             for c in (raw if isinstance(raw, list) else [raw]):
                 c = c if isinstance(c, dict) else {}
@@ -384,7 +387,7 @@ def _wholes(states):
     return out
 
 
-def _loops(ids, edges, cap=LOOP_CAP):
+def _loops(ids, edges, cap=LOOP_CAP, regimes=None):
     """Every simple cycle, in order along the loop, each listed once from its first state.
 
     CYCLES, NOT COMPONENTS. The first version reported strongly connected components, and two
@@ -394,20 +397,25 @@ def _loops(ids, edges, cap=LOOP_CAP):
     order = {v: i for i, v in enumerate(ids)}
     adj = _adjacency(edges, ids)
     out = []
+    regimes = regimes or {}
 
-    def walk(start, v, path):
+    # A LOOP IS IN ONE REGIME AND ONE PERIOD, as a route is (28 Sep 2026).
+    def walk(start, v, path, allowed):
         for w in adj.get(v, []):
             if len(out) >= cap:
                 return
+            now = _narrow(allowed, regimes.get((v, w)) or {("", "")})
+            if now is None:
+                continue
             if w == start:
                 out.append(path[:])
             elif w in order and order[w] > order[start] and w not in path:
                 path.append(w)
-                walk(start, w, path)
+                walk(start, w, path, now)
                 path.pop()
 
     for s in ids:
-        walk(s, s, [s])
+        walk(s, s, [s], (None, None))
     return out
 
 
@@ -505,12 +513,30 @@ def _signs(steps_, states):
 
 
 def _regimes(steps_, states):
-    """Each edge's regimes among `steps_`: "" for a step stated in no regime, which holds in all."""
+    """Each edge's (regime, period) pairs among `steps_`: "" for a step stated in no regime or
+    period, which holds in all.
+
+    A PERIOD PARTITIONS ROUTES AS A REGIME DOES. The census walked Obama's 2008 election through
+    the 1990s rejection of explicit messages to opinion -- the very steps Valentino et al. find no
+    longer hold (wave 4, 28 Sep 2026)."""
     out = {}
     for s in steps_:
         for a in [s["src"]] + [j for j in s["jointly"] + s["unless"] if j in states and j != s["dst"]]:
-            out.setdefault((a, s["dst"]), set()).add(s["regime"])
+            out.setdefault((a, s["dst"]), set()).add((s["regime"], s["period"]))
     return out
+
+
+def _narrow(allowed, pairs):
+    """The regimes and periods a route may still be in after a step stated in `pairs`, or None when
+    the step fits none of them. `allowed` is (regimes, periods), each None while unconstrained.
+    The two are narrowed apart: a step in one regime and no period holds in every period."""
+    rs, ps = {r for r, _ in pairs}, {p for _, p in pairs}
+    ar, ap = allowed
+    nr = ar if "" in rs else (rs if ar is None else ar & rs)
+    np_ = ap if "" in ps else (ps if ap is None else ap & ps)
+    if (nr is not None and not nr) or (np_ is not None and not np_):
+        return None
+    return (nr, np_)
 
 
 def _side_edges(steps_, states):
@@ -557,9 +583,8 @@ def _routes(start, goal, edges, ids=(), signs=None, regimes=None):
             # count: checked only on entry this counted 201 where the page counted 200.
             if len(lengths) >= ROUTE_CAP:
                 return
-            rs = regimes.get((v, w)) or {""}
-            now = allowed if "" in rs else (rs if allowed is None else allowed & rs)
-            if now is not None and not now:
+            now = _narrow(allowed, regimes.get((v, w)) or {("", "")})
+            if now is None:
                 continue
             if w == goal:
                 lengths.append(len(path))
@@ -568,7 +593,7 @@ def _routes(start, goal, edges, ids=(), signs=None, regimes=None):
             elif w not in path:
                 walk(w, path + [w], now)
 
-    walk(start, [start], None)
+    walk(start, [start], (None, None))
     return (len(lengths), min(lengths), max(lengths), net) if lengths else (0, None, None, net)
 
 
@@ -590,7 +615,8 @@ def _opened(steps_, edges):
     return out
 
 
-def _walk(ids, states, text_edges, has_block, signs=None, regimes=None):
+def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_from=(), rival_edges=(),
+          ends=()):
     """Where a chain starts, what it reaches, its gaps and its routes: the walk the census makes of
     the whole text's chain, and -- since profile 1.5 -- of each of its chains, on the states that
     chain touches and the roles it gives them."""
@@ -613,21 +639,30 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None):
     used = {x for e in text_edges for x in e}
 
     gaps = []
+    # A CAUSE WHOSE ONLY STEP IS A NULL IS NOT UNLINKED: the text says what it brings about --
+    # nothing (Valentino's randomised timing of the attitude measure, 28 Sep 2026).
     for i in interventions:
-        if not any(a == i for a, _ in text_edges):
+        if i not in null_from and not any(a == i for a, _ in text_edges):
             gaps.append(dict(kind="unlinked-intervention", state=i,
                              message=f"the intervention `{i}` has no step in the text: nothing "
                                      f"says how it brings about anything"))
     for c in conditions:
-        if not any(a == c for a, _ in text_edges):
+        if c not in null_from and not any(a == c for a, _ in text_edges):
             gaps.append(dict(kind="unlinked-condition", state=c,
                              message=f"the condition `{c}` has no step in the text: nothing "
                                      f"says what it brings about"))
+    # AN OUTCOME THE TEXT REPORTS OTHERS' ACCOUNTS OF IS REACHED -- in those views. Stone's three
+    # stories of malnutrition left it "not reached" (wave 4, 28 Sep 2026).
+    rival_reached = set()
+    for a, _ in rival_edges:
+        rival_reached |= _reach(a, rival_edges) - {a}
     for o in outcomes:
         if o not in reached:
             gaps.append(dict(kind="unreached-outcome", state=o,
-                             message=f"the outcome `{o}` is not reached by the text's steps from "
-                                     f"where its chain starts"))
+                             message=(f"the outcome `{o}` is reached only by the steps of views the "
+                                      f"text reports, not by its own" if o in rival_reached else
+                                      f"the outcome `{o}` is not reached by the text's steps from "
+                                      f"where its chain starts")))
     for i in ids:
         # A PART GOES ON AS ITS WHOLE. A state declared `part_of` another stops nowhere when the
         # whole leads on, or is what the chain is for: the metformin pass had a false dead end at
@@ -635,7 +670,9 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None):
         whole = (states[i] or {}).get("part_of")
         onward = (whole is not None and whole != i
                   and (any(a == whole for a, _ in text_edges) or whole in outcomes))
-        if (i in used and i not in outcomes and not (states[i] or {}).get("appraisal")
+        # AND WHAT A CHAIN IS FOR IS NO DEAD END on the whole map: the badger follow-up's outcome,
+        # an outcome only in its own chain, was reported as the chain stopping (gap tests, 27 Sep).
+        if (i in used and i not in outcomes and i not in ends and not (states[i] or {}).get("appraisal")
                 and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
@@ -648,7 +685,11 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None):
                          message="no state has `role: outcome`, so nothing says what the chain is "
                                  "for"))
     routes = []
-    for e in entries:
+    # THE TEXT'S OWN STARTING POINTS FIRST: an intervention, then a declared condition, each in the
+    # order the file declares them; then what merely leads out. Listed alphabetically, a theory's
+    # own route fell behind its moderators' in two papers running (wave 4, 28 Sep 2026).
+    rank = {v: i for i, v in enumerate(ids)}
+    for e in sorted(entries, key=lambda v: (v not in interventions, v not in conditions, rank[v])):
         for o in outcomes:
             if o == e:        # a state that is both where the circle starts and what it explains
                 continue
@@ -895,7 +936,10 @@ def analyse(fm, doc):
                                  {"title": s["title"]}))
     text_edges = text_edges - set(opened)
     regime_of = _regimes(text, states)
-    W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of)
+    null_from = {s["src"] for s in text_all if s["null"]}
+    rival_edges = {(s["src"], s["dst"]) for s in causal if s["layer"] == "rival"}
+    chain_ends = {i for ch in chains.values() for i, r in ch["roles"].items() if "outcome" in _as_list(r)}
+    W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends)
     entries, gaps, used = W["entries"], W["gaps"], W["used"]
     for g in gaps:
         findings.append(("?", "mechanism-gap", g["message"],
@@ -919,7 +963,7 @@ def analyse(fm, doc):
         return any(s["reflexive"] and (s["src"], s["dst"]) in hops for s in pool)
 
     pool_all = [s for s in causal if s["layer"] != "rival"]
-    loops_text = _loops(ids, text_edges)
+    loops_text = _loops(ids, text_edges, regimes=regime_of)
     feedback = []
     for comp in _systems(ids, text_edges):
         members = set(comp)
@@ -938,7 +982,8 @@ def analyse(fm, doc):
     for s in text:
         chains_of.setdefault((s["src"], s["dst"]), set()).update(s["chain"])
     akin_steps, instances = _akin_steps({(s["src"], s["dst"]) for s in text}, kind_of, general, chains_of)
-    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of, instances)
+    chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of, instances,
+                                                [s for s in causal if s["layer"] == "rival"], null_from)
     sign_pool = _signs(pool_all, states)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
@@ -991,7 +1036,7 @@ def analyse(fm, doc):
     return findings, profile
 
 
-def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=()):
+def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=(), rival=(), null_from=()):
     """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
 
     A chain is its steps: the states it touches are those its steps run through (a co-cause
@@ -1002,6 +1047,12 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
     member = {}
     for cid, c in chains.items():
         mine = [s for s in text if cid in s["chain"]]
+        # A CHAIN OF STORIES THE TEXT REPORTS IS WALKED ON THOSE STEPS, and says so: Stone's
+        # malnutrition stories made a chain of "0 steps" (wave 4, 28 Sep 2026).
+        layer = "text"
+        if not mine:
+            mine = [s for s in rival if cid in s["chain"]]
+            layer = "rival" if mine else "text"
         edges = {(s["src"], s["dst"]) for s in mine}
         edges |= _side_edges(mine, states)
         edges -= set(_opened(mine, edges))
@@ -1010,14 +1061,14 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cstates = {i: ({**(states[i] or {}), "role": c["roles"][i]} if i in c["roles"]
                        else states[i]) for i in cids}
         csigns = _signs(mine, states)
-        W = _walk(cids, cstates, edges, True, csigns, _regimes(mine, states))
+        W = _walk(cids, cstates, edges, True, csigns, _regimes(mine, states), null_from)
         best = {(s["src"], s["dst"], s["sign"]) for s in mine}
-        out.append(dict(id=cid, label=c["label"], question=c["question"],
+        out.append(dict(id=cid, label=c["label"], question=c["question"], layer=layer,
                         steps=len(best), claims=len({s["title"] for s in mine}), states=cids,
                         roles={i: sorted(roles_of(cstates[i])) for i in cids if roles_of(cstates[i])},
                         entries=W["entries"], routes=W["routes"],
                         loops=[dict(states=l, reflexive=reflexive(l, mine), polarity=_polarity(l, csigns))
-                               for l in _loops(cids, edges)],
+                               for l in _loops(cids, edges, regimes=_regimes(mine, states))],
                         gaps=[g["message"] for g in W["gaps"]], shared=[]))
         for i in cids:
             member.setdefault(i, []).append(cid)
@@ -1061,11 +1112,14 @@ def _strata(text_all):
     for s in text_all:
         if s["selects"]:
             continue
-        by.setdefault((s["src"], s["dst"]), set()).add((s["sign"] or "", tuple(s["given"]), s["period"]))
+        by.setdefault((s["src"], s["dst"]), set()).add((s["sign"] or "", tuple(s["given"]), s["period"], s["size"]))
     # A PERIOD IS A CONDITION OF TIME (G7): the badger cull's effect during culling and its null
     # after it are one step's time course, not a finding and a contradiction.
-    return sorted([a, b, sorted([sg, list(g), pd] for sg, g, pd in recs)] for (a, b), recs in by.items()
-                  if len(recs) > 1 and any(g or pd for _, g, pd in recs))
+    # AND A SIZE STAYS WITH ITS CONDITION: printed apart, "stronger where devices exist" and the
+    # 1990s' "diminished" against 2010's "large and stable" -- a paper's whole result -- could not
+    # be read (wave 4, 28 Sep 2026).
+    return sorted([a, b, sorted([sg, list(g), pd, sz] for sg, g, pd, sz in recs)] for (a, b), recs in by.items()
+                  if len(recs) > 1 and any(g or pd for _, g, pd, _ in recs))
 
 
 def _nulls(text_all, ok, text_edges=(), ids=()):
@@ -1195,8 +1249,9 @@ def census(profile):
                      f"{' and '.join(by)} acted against it")
     for a, b, recs in p.get("strata", []):
         lines.append(f"      strata  {a} -> {b}: " + "; ".join(
-            f"{sg or 'unsigned'} " + " ".join(x for x in ("where " + " and ".join(g) if g else "", pd) if x)
-            if g or pd else f"{sg or 'unsigned'} unconditioned" for sg, g, pd in recs))
+            (f"{sg or 'unsigned'} " + " ".join(x for x in ("where " + " and ".join(g) if g else "", pd) if x)
+             if g or pd else f"{sg or 'unsigned'} unconditioned") + (f" ({sz})" if sz else "")
+            for sg, g, pd, sz in recs))
     for a, b, sg in p.get("trends", []):
         lines.append(f"      trend   {a} -> {b}{' (' + sg + ')' if sg else ''}: moves the trend of {b}, "
                      f"not its level -- {'slows its rise' if sg == '-' else 'speeds it' if sg == '+' else 'changes it'}")
@@ -1212,7 +1267,8 @@ def census(profile):
                      + f": {ch['steps']} step{'' if ch['steps'] == 1 else 's'}, "
                      f"{len(ch['routes'])} route{'' if len(ch['routes']) == 1 else 's'} to an outcome, "
                      f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
-                     f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}")
+                     f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
+                     + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
         if ch.get("question"):
             lines.append(f"              question: {ch['question']}")
         for st, others in ch["shared"]:

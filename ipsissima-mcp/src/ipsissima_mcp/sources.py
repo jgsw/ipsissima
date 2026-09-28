@@ -297,6 +297,28 @@ def describe(paths, recursive=True):
                 why=f"{newest['name']} was modified most recently ({newest['modified']}), but a "
                     f"file's date is not always its draft order."))
 
+    # ---- two files carrying one text --------------------------------------- #
+    # A RECORD CAN CARRY THE WRONG ATTACHMENT. Ripple et al.'s Zotero record held a second copy of
+    # MacNulty et al.'s comment, and the plan printed identical statistics for the two "papers"
+    # without a word (gap tests, 27 Sep 2026). Two files alike in words, sentences and causal
+    # sentences are almost certainly one text: asked, never assumed.
+    alike = {}
+    for r in sources:
+        c = r["causal"] or {}
+        if r["words"] and (c.get("sentences") or 0) >= 5:
+            alike.setdefault((r["words"], c.get("sentences"), c.get("causal_sentences")), []).append(r)
+    for key, group in sorted(alike.items()):
+        if len(group) > 1:
+            questions.append(dict(
+                id="same-text:" + group[0]["name"],
+                question=f"{' and '.join(r['name'] for r in group)} read as the same text "
+                         f"({key[0]} words, {key[1]} sentences). Are they really different works?",
+                options=[r["name"] for r in group] + ["they differ"],
+                suggested=None,
+                why="identical counts almost always mean one document under two names -- often "
+                    "a reference manager's record carrying another work's file. Open each and "
+                    "check its title before converting both."))
+
     # ---- one map, or one per source --------------------------------------- #
     # NEVER GUESSED. A book's chapters want one map; a folder of articles wants one each; and
     # the two requests look identical from here. Getting it wrong costs a whole reconstruction.

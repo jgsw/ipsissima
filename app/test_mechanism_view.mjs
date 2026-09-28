@@ -219,6 +219,36 @@ const REGF = path.join(FIXTURE, "regimes.argdown");
   check(th.length === 1 && /^raises past a threshold/.test(th[0].chip.label),
         "a step past a threshold says so on its arrow", JSON.stringify(th.map(e => e.chip.label)));
 }
+// AND ON WAVE 4'S FAULTS (28 Sep 2026): periods partition routes and loops; an objection the text
+// voices is a rival view; a condition with only a null is linked; a chain of reported steps is
+// walked on them. Each variant is written to a file so the checker reads the same text.
+{
+  const chainTxt = fs.readFileSync(CHAIN, "utf8"), timesTxt = fs.readFileSync(path.join(FIXTURE, "times.argdown"), "utf8");
+  const variants = {
+    "periods": timesTxt.replace("on: trend}", 'on: trend, period: "after the order ends"}'),
+    "contested": chainTxt + '\n[Work pays the bills]: "Work lowers what the state spends." #contested\n    {fidelity: "quotation", causes: {from: work, to: cost, sign: "-", basis: asserted}}\n    -> [Recommend]\n',
+    "null-condition": chainTxt.replace('        cost:    {label: "Cost", actor: state, role: outcome}',
+      '        cost:    {label: "Cost", actor: state, role: outcome}\n        season:  {label: "Season of sentencing", actor: courts, role: condition}') +
+      '\n[No season effect]: "The season of sentencing made no difference to reoffending."\n    {fidelity: "quotation", causes: {from: season, to: reoff, sign: "0", basis: study}}\n    +> [Recommend]\n',
+    "reported-chain": chainTxt.replace('    question: "How would community orders reduce reoffending?"',
+      '    question: "How would community orders reduce reoffending?"\n    chains:\n        told: {label: "The deterrence story the brief reports"}').replace(
+      'causes: {from: order, to: reoff, sign: "+", basis: asserted}}\n    -> [Recommend]',
+      'causes: {from: order, to: reoff, sign: "+", basis: asserted, chain: told}}\n    -> [Recommend]')
+  };
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "mech-wave4-"));
+  for (const [name, text] of Object.entries(variants)) {
+    const f = path.join(dir, name + ".argdown");
+    fs.writeFileSync(f, text);
+    const pyX = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                             f, "--format", "json"], { encoding: "utf8" })).shape.chain;
+    const MX = MV.model(graphOf.fromText(text));
+    const differ = Object.keys(pyX).filter(k => k !== "question" &&
+      !same(k === "gaps" ? MX.profile.gaps.map(g => g.message) : MX.profile[k], pyX[k]));
+    check(differ.length === 0, `the page and the checker agree on wave 4's case: ${name}`,
+          differ.map(k => `${k}: python ${JSON.stringify(pyX[k])} js ${JSON.stringify(MX.profile[k])}`).join("\n          "));
+  }
+  fs.rmSync(dir, { recursive: true, force: true });
+}
 // AND ON THE PLANTED SYSTEM (profile 1.2): a feedback system, wholes, decides-which. Mutation:
 // build the page's adjacency unsorted -> `feedback` or `loops_text` differ from the checker's.
 const SYSF = path.join(FIXTURE, "system.argdown");

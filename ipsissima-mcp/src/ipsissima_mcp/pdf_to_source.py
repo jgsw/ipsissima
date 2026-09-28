@@ -481,6 +481,12 @@ def page_offset(found, sheet_count):
         return None, []
     votes = Counter(n - i for i, n in found.items())
     offset, _n = votes.most_common(1)[0]
+    # AN OFFSET THAT NUMBERS MOST SHEETS ZERO OR BELOW IS NO PAGINATION. An accepted manuscript on a
+    # repository cover sheet, printed without page numbers, voted for -52 on the strength of a few
+    # stray numbers near its end, and every marker ran from p.-51 (Marti and Gond, 28 Sep 2026).
+    # A cover or two can put a sheet or two at 0 or -1; half the document cannot be.
+    if sum(1 for i in range(sheet_count) if i + offset < 1) > sheet_count / 2:
+        return None, []
     return offset, sorted(i for i, n in found.items() if n - i != offset)
 
 

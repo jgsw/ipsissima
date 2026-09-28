@@ -115,7 +115,8 @@ function model(graph) {
   (m.claims || []).forEach(function (c) {
     var tags = c.tags || [];
     var layer = tags.indexOf("appraisal") >= 0 ? "appraisal"
-              : tags.indexOf("reported") >= 0 ? "rival" : "text";
+              // AN OBJECTION THE TEXT VOICES IS NOT THE TEXT'S CHAIN -- as the checker has it.
+              : (tags.indexOf("reported") >= 0 || tags.indexOf("contested") >= 0) ? "rival" : "text";
     if (layer === "appraisal") appraisalClaims++;
     var supports = (c.id != null ? (supportsOf[c.id] || 0) : 0) + (concluded[c.title] ? 1 : 0);
     (c.causes || []).forEach(function (raw, i) {
@@ -243,20 +244,24 @@ function shortestLoops(comp, edges, ids, k) {
   }).slice(0, k);
 }
 
-function loops(ids, edges) {
+function loops(ids, edges, regimes) {
   var order = {}; ids.forEach(function (v, i) { order[v] = i; });
   var adj = adjacency(edges, ids);
   var out = [];
-  function walk(start, v, path) {
+  regimes = regimes || {};
+  // A LOOP IS IN ONE REGIME AND ONE PERIOD -- as the checker has it.
+  function walk(start, v, path, allowed) {
     (adj[v] || []).forEach(function (w) {
       if (out.length >= LOOP_CAP) return;
+      var now = narrow(allowed, pairsOf(regimes, v, w));
+      if (now == null) return;
       if (w === start) out.push(path.slice());
       else if (has(order, w) && order[w] > order[start] && path.indexOf(w) < 0) {
-        path.push(w); walk(start, w, path); path.pop();
+        path.push(w); walk(start, w, path, now); path.pop();
       }
     });
   }
-  ids.forEach(function (s) { walk(s, s, [s]); });
+  ids.forEach(function (s) { walk(s, s, [s], [null, null]); });
   return out;
 }
 
@@ -313,9 +318,25 @@ function regimesOf(steps, states) {
   var out = {};
   steps.forEach(function (s) {
     [s.from].concat((s.jointly || []).concat(s.unless || []).filter(function (j) { return has(states, j) && j !== s.to; }))
-      .forEach(function (a) { var k = a + "\u0000" + s.to; (out[k] = out[k] || {})[s.regime || ""] = true; });
+      .forEach(function (a) { var k = a + "\u0000" + s.to, m = out[k] = out[k] || {};
+        m[(s.regime || "") + "\u0001" + (s.period || "")] = [s.regime || "", s.period || ""]; });
   });
   return out;
+}
+
+/** mechanism.py's _narrow: the regimes and periods a route may still be in after a step stated
+ *  in `pairs`, or null when it fits none. `allowed` is [regimes, periods], each null while open. */
+function narrow(allowed, pairs) {
+  var rs = [], ps = [];
+  pairs.forEach(function (x) { if (rs.indexOf(x[0]) < 0) rs.push(x[0]); if (ps.indexOf(x[1]) < 0) ps.push(x[1]); });
+  var cut = function (a, xs) { return xs.indexOf("") >= 0 ? a : a == null ? xs : a.filter(function (r) { return xs.indexOf(r) >= 0; }); };
+  var nr = cut(allowed[0], rs), np = cut(allowed[1], ps);
+  if ((nr != null && !nr.length) || (np != null && !np.length)) return null;
+  return [nr, np];
+}
+function pairsOf(regimes, v, w) {
+  var m = regimes[v + "\u0000" + w];
+  return m ? Object.keys(m).map(function (k) { return m[k]; }) : [["", ""]];
 }
 
 /** Routes from start to goal -- mechanism.py's _routes, ONE REGIME TO A ROUTE. */
@@ -326,15 +347,13 @@ function routes(start, goal, edges, ids, signs, regimes) {
   function walk(v, seen, allowed) {
     (adj[v] || []).forEach(function (w) {
       if (lengths.length >= ROUTE_CAP) return;
-      var rs = Object.keys(regimes[v + "\u0000" + w] || { "": true }), now;
-      if (rs.indexOf("") >= 0) now = allowed;
-      else now = allowed == null ? rs : allowed.filter(function (r) { return rs.indexOf(r) >= 0; });
-      if (now != null && !now.length) return;
+      var now = narrow(allowed, pairsOf(regimes, v, w));
+      if (now == null) return;
       if (w === goal) { lengths.push(seen.length); net[netSign(signs || {}, seen.concat([w]))]++; }
       else if (seen.indexOf(w) < 0) walk(w, seen.concat([w]), now);
     });
   }
-  walk(start, [start], null);
+  walk(start, [start], [null, null]);
   return lengths.length ? { routes: lengths.length, shortest: Math.min.apply(null, lengths),
                             longest: Math.max.apply(null, lengths), net: net } : null;
 }
@@ -399,7 +418,8 @@ function akinSteps(edges, kindOf, general, chainsOf) {
 
 /** Where a chain starts, what it reaches, its gaps and its routes -- mechanism.py's _walk, run
  *  on the whole text's chain and, since profile 1.5, on each of its chains. */
-function walkChain(ids, states, edges, signs, regimes) {
+function walkChain(ids, states, edges, signs, regimes, nullFrom, rivalEdges, ends) {
+  nullFrom = nullFrom || {}; ends = ends || {};
   var interventions = ids.filter(function (i) { return hasRole(states[i], "intervention"); });
   var conditions = ids.filter(function (i) { return hasRole(states[i], "condition"); });
   var outcomes = ids.filter(function (i) { return hasRole(states[i], "outcome"); });
@@ -414,25 +434,29 @@ function walkChain(ids, states, edges, signs, regimes) {
   var used = {}; edges.forEach(function (e) { used[e[0]] = used[e[1]] = true; });
   var gaps = [];
   interventions.forEach(function (i) {
-    if (!from[i]) gaps.push({ kind: "unlinked-intervention", state: i,
+    if (!from[i] && !nullFrom[i]) gaps.push({ kind: "unlinked-intervention", state: i,
       message: "the intervention `" + i + "` has no step in the text: nothing says how it " +
                "brings about anything" });
   });
   conditions.forEach(function (c) {
-    if (!from[c]) gaps.push({ kind: "unlinked-condition", state: c,
+    if (!from[c] && !nullFrom[c]) gaps.push({ kind: "unlinked-condition", state: c,
       message: "the condition `" + c + "` has no step in the text: nothing says what it " +
                "brings about" });
   });
+  // AN OUTCOME REACHED ONLY IN VIEWS THE TEXT REPORTS says so -- as the checker has it.
+  var rivalReached = {};
+  (rivalEdges || []).forEach(function (e) { var r = reach(e[0], rivalEdges);
+    for (var k in r) if (k !== e[0]) rivalReached[k] = true; });
   outcomes.forEach(function (o) {
     if (!reached[o]) gaps.push({ kind: "unreached-outcome", state: o,
-      message: "the outcome `" + o + "` is not reached by the text's steps from where its " +
-               "chain starts" });
+      message: rivalReached[o] ? "the outcome `" + o + "` is reached only by the steps of views the text reports, not by its own"
+               : "the outcome `" + o + "` is not reached by the text's steps from where its chain starts" });
   });
   ids.forEach(function (i) {
     // A PART GOES ON AS ITS WHOLE -- as the checker has it.
     var whole = obj(states[i]).part_of;
     var onward = whole != null && whole !== i && (from[whole] || outcomes.indexOf(whole) >= 0);
-    if (used[i] && outcomes.indexOf(i) < 0 && !obj(states[i]).appraisal && !onward && !from[i])
+    if (used[i] && outcomes.indexOf(i) < 0 && !ends[i] && !obj(states[i]).appraisal && !onward && !from[i])
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
@@ -445,7 +469,12 @@ function walkChain(ids, states, edges, signs, regimes) {
     gaps.push({ kind: "no-outcome", state: null,
                 message: "no state has `role: outcome`, so nothing says what the chain is for" });
   var rs = [];
-  entries.forEach(function (e) { outcomes.forEach(function (o) {
+  // THE TEXT'S OWN STARTING POINTS FIRST -- as the checker lists them.
+  var rank = {}; ids.forEach(function (v, i) { rank[v] = i; });
+  var key = function (v) { return [interventions.indexOf(v) < 0 ? 1 : 0, conditions.indexOf(v) < 0 ? 1 : 0, rank[v]]; };
+  entries.slice().sort(function (a, b) { var x = key(a), y = key(b);
+    for (var i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; })
+  .forEach(function (e) { outcomes.forEach(function (o) {
     if (o === e) return;          // both where the circle starts and what it explains
     var r = routes(e, o, edges, ids, signs, regimes);
     if (r) rs.push({ start: e, outcome: o, routes: r.routes, shortest: r.shortest, longest: r.longest, net: r.net });
@@ -501,24 +530,27 @@ function chainIds(c, states, ids, mine) {
 
 /** Each chain walked on its own steps with its own roles, what it shares, and how many of the
  *  text's steps sit in no chain -- mechanism.py's _chain_profiles. */
-function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances) {
+function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances, rival, nullFrom) {
   var out = [], member = {};
   chains.forEach(function (c) {
     var mine = text.filter(function (s) { return s.chain.indexOf(c.id) >= 0; });
+    // A CHAIN OF STORIES THE TEXT REPORTS is walked on those steps -- as the checker has it.
+    var layer = "text";
+    if (!mine.length) { mine = (rival || []).filter(function (s) { return s.chain.indexOf(c.id) >= 0; }); if (mine.length) layer = "rival"; }
     var edges = edgesWithCoCauses(mine, states);
     edges = withoutOpened(edges, openedOf(mine, edges));
     var cids = chainIds(c, states, ids, mine);
     var cstates = chainStates(c, states, cids);
     var csigns = signsOf(mine, states);
-    var W = walkChain(cids, cstates, edges, csigns, regimesOf(mine, states));
+    var W = walkChain(cids, cstates, edges, csigns, regimesOf(mine, states), nullFrom);
     var best = {}, titles = {};
     mine.forEach(function (s) { best[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; titles[s.claim.title] = true; });
     var roles = {};
     cids.forEach(function (i) { var r = rolesOf(cstates[i]).slice().sort(); if (r.length) roles[i] = r; });
-    out.push({ id: c.id, label: c.label, question: c.question,
+    out.push({ id: c.id, label: c.label, question: c.question, layer: layer,
                steps: Object.keys(best).length, claims: Object.keys(titles).length, states: cids,
                roles: roles, entries: W.entries, routes: W.routes,
-               loops: loops(cids, edges).map(function (l) { return { states: l, reflexive: isReflexive(l, mine), polarity: polarity(l, csigns) }; }),
+               loops: loops(cids, edges, regimesOf(mine, states)).map(function (l) { return { states: l, reflexive: isReflexive(l, mine), polarity: polarity(l, csigns) }; }),
                gaps: W.gaps.map(function (g) { return g.message; }), shared: [] });
     cids.forEach(function (i) { (member[i] = member[i] || []).push(c.id); });
   });
@@ -578,7 +610,13 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   var opened = openedOf(text, edges);
   edges = withoutOpened(edges, opened);
   var signOf = signsOf(text, states);
-  var W = walkChain(ids, states, edges, signOf, regimesOf(text, states));
+  var nullFrom = {}; textAll.forEach(function (s) { if (s.isNull) nullFrom[s.from] = true; });
+  var rivalSteps = causal.filter(function (s) { return s.layer === "rival"; });
+  // What a chain is for is no dead end on the whole map -- as the checker has it.
+  var chainEnds = {};
+  (chains || []).forEach(function (c) { Object.keys(c.roles).forEach(function (i) {
+    if (asList(c.roles[i]).indexOf("outcome") >= 0) chainEnds[i] = true; }); });
+  var W = walkChain(ids, states, edges, signOf, regimesOf(text, states), nullFrom, uniqEdges(rivalSteps), chainEnds);
   var entries = W.entries, used = W.used, gaps = W.gaps;
 
   // Keyed by SIGN as well: fee -> health (-) and (+, under a condition) are two steps.
@@ -596,7 +634,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     return pool.some(function (s) { return s.reflexive && hop[s.from + "\u0000" + s.to]; });
   }
   var pool = causal.filter(function (s) { return s.layer !== "rival"; });
-  var loopsText = loops(ids, edges);
+  var loopsText = loops(ids, edges, regimesOf(text, states));
   var rs = W.routes;
   var kindOf = kindMap(kinds, states, ids);
   var kindList = (kinds || []).map(function (k) {
@@ -609,7 +647,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   text.forEach(function (s) { var k = s.from + "\u0000" + s.to, l = chainsOfEdge[k] = chainsOfEdge[k] || [];
     s.chain.forEach(function (c) { if (l.indexOf(c) < 0) l.push(c); }); });
   var AK = akinSteps(uniqEdges(text), kindOf, generalOf, chainsOfEdge);
-  var CP = chainProfiles(chains || [], states, ids, text, isReflexive, kindOf, AK.instances);
+  var CP = chainProfiles(chains || [], states, ids, text, isReflexive, kindOf, AK.instances, rivalSteps, nullFrom);
   var spanned = {};
   Object.keys(used).forEach(function (i) {
     levelsOf(states[i], actors, levels).forEach(function (lv) { spanned[lv] = true; }); });
@@ -718,14 +756,14 @@ function strataOf(textAll) {
     if (s.selects) return;
     var k = s.from + "\u0000" + s.to;
     if (!by[k]) { by[k] = { from: s.from, to: s.to, recs: {} }; order.push(k); }
-    by[k].recs[s.sign + "\u0000" + s.given.join("\u0001") + "\u0000" + s.period] = [s.sign, s.given.slice(), s.period];
+    by[k].recs[s.sign + "\u0000" + s.given.join("\u0001") + "\u0000" + s.period + "\u0000" + s.size] = [s.sign, s.given.slice(), s.period, s.size];
   });
   var cmpList = function (a, b) {
     for (var i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i] < b[i] ? -1 : 1;
     return a.length - b.length; };
   return order.sort().map(function (k) {
     var recs = Object.keys(by[k].recs).map(function (r) { return by[k].recs[r]; });
-    recs.sort(function (a, b) { return a[0] !== b[0] ? (a[0] < b[0] ? -1 : 1) : cmpList(a[1], b[1]) || (a[2] === b[2] ? 0 : a[2] < b[2] ? -1 : 1); });
+    recs.sort(function (a, b) { return a[0] !== b[0] ? (a[0] < b[0] ? -1 : 1) : cmpList(a[1], b[1]) || (a[2] === b[2] ? 0 : a[2] < b[2] ? -1 : 1) || (a[3] === b[3] ? 0 : a[3] < b[3] ? -1 : 1); });
     return [by[k].from, by[k].to, recs];
   }).filter(function (r) { return r[2].length > 1 && r[2].some(function (x) { return x[1].length || x[2]; }); });
 }
@@ -1309,13 +1347,16 @@ function stemsOf(e, shown) {
   // own end: the inhibition mark, where a co-cause's stem runs on to the bar across the arrow.
   e.jointly.concat(e.blockers).forEach(function (j, idx) {
     var n = shown[j], blocks = idx >= e.jointly.length;
+    // A BLOCKER MEETS THE ARROW A THIRD OF THE WAY ALONG: at the head parallel arrows crowd, and
+    // at the middle the chips sit; on the planted defences it was lost in both (28 Sep 2026).
+    var T = blocks ? at(0.3) : J;
     if (!n) return;
     var cands = [];
     var sx = n.x + n.w, sy = n.y + n.h / 2;
-    if (sx + 20 < J[0]) cands.push([[sx, sy], [sx + Math.max(30, (J[0] - sx) / 2), sy], [J[0], J[1] + (sy < J[1] ? -12 : 12)]]);
-    var low = Math.max(n.y + n.h, J[1]) + 28, high = Math.min(n.y, J[1]) - 28;
-    cands.push([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [J[0], low]]);
-    cands.push([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [J[0], high]]);
+    if (sx + 20 < T[0]) cands.push([[sx, sy], [sx + Math.max(30, (T[0] - sx) / 2), sy], [T[0], T[1] + (sy < T[1] ? -12 : 12)]]);
+    var low = Math.max(n.y + n.h, T[1]) + 28, high = Math.min(n.y, T[1]) - 28;
+    cands.push([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [T[0], low]]);
+    cands.push([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [T[0], high]]);
     var best = cands[0], bestHits = Infinity;
     // A blocker's stem stops short of the arrow on a bar, so it must not reach it through the box
     // the arrow enters: on the planted defences it dipped through "Harm" and read as a step into it.
@@ -1323,20 +1364,20 @@ function stemsOf(e, shown) {
     cands.forEach(function (c) {
       var hits = 0;
       for (var i = 1; i < 20; i++) {
-        var u = i / 20, px = bez(c[0][0], c[1][0], c[2][0], J[0], u), py = bez(c[0][1], c[1][1], c[2][1], J[1], u);
+        var u = i / 20, px = bez(c[0][0], c[1][0], c[2][0], T[0], u), py = bez(c[0][1], c[1][1], c[2][1], T[1], u);
         obst.forEach(function (v) { var m = shown[v];
           if (px > m.x + 2 && px < m.x + m.w - 2 && py > m.y + 2 && py < m.y + m.h - 2) hits++; });
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });
-    var end = J, tbar = null;
+    var end = T, tbar = null;
     if (blocks) {
-      var ux = J[0] - best[2][0], uy = J[1] - best[2][1], ul = Math.sqrt(ux * ux + uy * uy) || 1;
+      var ux = T[0] - best[2][0], uy = T[1] - best[2][1], ul = Math.sqrt(ux * ux + uy * uy) || 1;
       ux /= ul; uy /= ul;
-      end = [J[0] - ux * 7, J[1] - uy * 7];
+      end = [T[0] - ux * 7, T[1] - uy * 7];
       tbar = "M" + (end[0] + uy * 7) + "," + (end[1] - ux * 7) + " L" + (end[0] - uy * 7) + "," + (end[1] + ux * 7);
     }
-    e.stems.push({ state: j, blocks: blocks, tbar: tbar,
+    e.stems.push({ state: j, blocks: blocks, tbar: tbar, end: end,
                    path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
                          best[2][0] + "," + best[2][1] + " " + end[0] + "," + end[1] });
   });
@@ -1346,6 +1387,10 @@ function placeChips(edges, nodes, lanes) {
   var fixed = [];
   (lanes || []).forEach(function (ln) { fixed.push({ x: 0, y: ln.y, w: 100000, h: HEAD - 2 }); });
   Object.keys(nodes).forEach(function (v) { var n = nodes[v]; fixed.push({ x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 }); });
+  // A BLOCKER'S BAR IS NOT TO BE COVERED: a chip placed over it hid the only mark that the step
+  // holds unless something else does (28 Sep 2026).
+  edges.forEach(function (e) { (e.stems || []).forEach(function (sm) {
+    if (sm.tbar) fixed.push({ x: sm.end[0] - 11, y: sm.end[1] - 11, w: 22, h: 22 }); }); });
   edges.forEach(function (e) {
     if (!e.stub) return;
     var P = e.curve, x = P[3][0], y = P[3][1];

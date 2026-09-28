@@ -300,6 +300,11 @@ check("a missing first number is inferred from the rest", page_offset(part, 3), 
 stray = {0: 514, 1: 515, 2: 516, 3: 9}
 check("a stray number is an outlier, not a new numbering",
       page_offset(stray, 4), (514, [3]))
+# THE MANUSCRIPT (Marti and Gond, 28 Sep 2026): a few numbers near the end of 55 unnumbered sheets
+# voted for an offset that put 52 sheets at page 0 or below. Mutation: drop the guard -> (-50, []).
+check("an offset that numbers most sheets zero or below is not pagination",
+      page_offset({52: 2, 53: 3, 54: 4}, 55), (None, []))
+check("  while a cover sheet or two before page 1 still is", page_offset({2: 1, 3: 2, 4: 3}, 20), (-1, []))
 check("no numbers at all means fall back to the config", page_offset({}, 3), (None, []))
 
 print("note_opening")

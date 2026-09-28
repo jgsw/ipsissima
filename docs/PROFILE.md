@@ -368,7 +368,9 @@ and the lag could not say them:
 - **The period in which a step holds.** A trial finds culling lowered TB during culling and
   found no effect after it ended. `period: "during culling"` and `period: "after culling ended"` make
   the two records one step's time course. The census prints them together, each with its period,
-  and a null names the period it holds in.
+  and a null names the period it holds in. A period partitions the chain as a regime does. The census
+  composes a route or a loop only from steps that can hold in one period, and a step with no period
+  holds in all of them.
 - **A step on a trend.** An interrupted time series finds a slower rise against the projected trend,
   "a dampening of the rate of increase … rather than a reversal". `on: trend` with `sign: "-"` says
   the step slows the rise. The view's arrow reads "slows" or "speeds", not "lowers" or "raises".
@@ -389,7 +391,9 @@ not yet marked (see Known limits).
 steps. Past a handful of loops through one system of states, the census names the system and
 its shortest loops rather than listing every loop.
 
-A step on a `#reported` claim is the rival view's; on an `#appraisal` claim, the reconstructor's.
+A step on a `#reported` or `#contested` claim is a rival view's, reported apart and never walked as
+the text's own chain. A chain made only of such steps is walked on them, and the census says so.
+A step on an `#appraisal` claim is the reconstructor's.
 A null finding and a selection link are reported and drawn, never walked as part of the chain.
 A step the text states but the argument never needed gets a claim of its own, quoting the text,
 under a heading `# The mechanism, as the text states it {isGroup: true}`.
@@ -466,7 +470,7 @@ rule: name your gaps).
 - **A threshold in words only.** Since 1.8 a step can say it acts past a threshold, and routes keep
   to one regime. A threshold's value and scale, hysteresis (reversing the cause does not reverse
   the effect), and a balancing loop around whichever state holds (Lenton's circulation) are said in
-  words, in `threshold:` or the note. Loops are not yet kept to one regime.
+  words, in `threshold:` or the note.
 - **Possibility, not probability.** `hedged: true` says the text puts a step as a possibility;
   there is no field for a probabilistic claim ("tends to", "raises the chance of").
 - **Every state needs an actor.** A structural state — "the social field" — has to be given one;

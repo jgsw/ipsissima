@@ -125,6 +125,16 @@ def test_sources(d):
     check("eleven causal sentences, the references not counted",
           plan["sources"][0]["causal"]["causal_sentences"], 11)
     check("an offer is not a question", plan["questions"], [])
+    # TWO FILES, ONE TEXT (Yellowstone, 27 Sep 2026): a record carrying another work's PDF.
+    # Mutation: drop the same-text block -> no such question.
+    (d / "twins").mkdir()
+    for n in ("ripple.md", "macnulty.md"):
+        (d / "twins" / n).write_text((d / "brief" / "brief.md").read_text(encoding="utf-8"), encoding="utf-8")
+    plan = sources.describe([str(d / "twins")])
+    check("two files that read as one text are asked about",
+          [q["id"].split(":")[0] for q in plan["questions"] if q["id"].startswith("same-text")], ["same-text"])
+    check("  but one brief alone is not", [q for q in sources.describe([str(d / "brief")])["questions"]
+                                           if q["id"].startswith("same-text")], [])
     plan = sources.describe([str(d / "essay")])
     check("an essay that says `because` twice draws none", plan["offers"], [])
     check("nor does a text with no sentences", sources.describe([str(d / "one")])["offers"], [])
