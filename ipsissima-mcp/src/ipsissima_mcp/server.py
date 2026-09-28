@@ -500,8 +500,14 @@ METHOD_DOCS = {
     "mechanism": ("mechanism-pass.md",
                   "the mechanism pass: mark the causal chain a text asserts on a FINISHED map -- "
                   "only when the user has asked for the mechanism"),
+    # HOW TO READ A MECHANISM, as the argument sheet says how to read an argument (28 Sep 2026):
+    # served with the pass, on request only.
+    "mechanism-method": ("mechanism-cheatsheet.md",
+                         "how to read the chain a text asserts before marking it: strength, "
+                         "necessity, moderators, time and size, rival accounts -- with the pass, "
+                         "only when the user has asked for the mechanism"),
 }
-_ON_REQUEST = {"mechanism"}
+_ON_REQUEST = {"mechanism", "mechanism-method"}
 
 
 @server.tool(
@@ -519,13 +525,15 @@ _ON_REQUEST = {"mechanism"}
         "reply is the compressed form of these documents; this tool serves what it "
         "compresses. A fifth, \"mechanism\", is a separate pass that marks the causal chain a "
         "text asserts on a finished, checked map: serve it ONLY when the user has asked for the "
-        "mechanism of a text, never as part of an ordinary reconstruction."),
+        "mechanism of a text, never as part of an ordinary reconstruction. With it, "
+        "\"mechanism-method\" says how to read a text's causal claims before marking them."),
 )
 def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     """
     Args:
         document: which document — "extraction-prompt", "syntax", "method" or "conventions";
-            or "mechanism", the separate pass, only when the user has asked for it.
+            or "mechanism", the separate pass, and "mechanism-method", how to read for it, only
+            when the user has asked for it.
     """
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
@@ -533,9 +541,12 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     fname, _ = METHOD_DOCS[document]
     if document in _ON_REQUEST:
         return dict(ok=True, document=document, text=_doc(fname),
-                    next=("the map must already check ok and verified; mark the chain as this "
-                          "says, then run argdown_check with source_root until ok and verified, "
-                          "and read the CHAIN section of the census"))
+                    next=(("read \"mechanism-method\" too, on how to read the text's causal "
+                           "claims; " if document == "mechanism" else
+                           "then \"mechanism\" says what to mark and in what notation; ") +
+                          "the map must already check ok and verified; mark the chain, then run "
+                          "argdown_check with source_root until ok and verified, and read the "
+                          "CHAIN section of the census"))
     others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document and k not in _ON_REQUEST)
     return dict(ok=True, document=document, text=_doc(fname),
                 next=(f"read it before writing any node; {others} are served here too, and "
