@@ -95,9 +95,10 @@ EFFECTS = ("strengthens", "weakens", "reverses", "0")
 #: through an intervening agent"; `complex` her web of causes with no single locus.
 ATTRIBUTIONS = ("intentional", "mechanical", "inadvertent", "accidental", "complex")
 #: WHERE A TEXT STANDS ON A VIEW IT REPORTS (profile 1.9, G11). `#reported` said only "set out,
-#: not held"; Stone reports stories she calls "neither right nor wrong" and one (hookworm) she
-#: endorses, and each had to be settled claim by claim with a crux.
-STANCES = ("rejected", "unjudged", "endorsed")
+#: not held"; Stone reports stories she calls "neither right nor wrong", and others she rejects.
+#: A report the author ENDORSES is not a third stance: it is a claim in her own voice, hedged where
+#: the reporting works as a hedge (James, 29 Sep 2026) -- so `endorsed` is named, not read.
+STANCES = ("rejected", "unjudged")
 #: THE TEXT'S OWN WORDS FOR ITS EVIDENCE (profile 1.9, G10), where `basis` is too coarse. These
 #: few are read; anything else is kept as written. `illustration` is a hypothetical case: it
 #: shows how a step could go, not that it does, and is never shaded as evidence.
@@ -313,9 +314,7 @@ def steps(doc, appraisal):
                 mods = [m for m in (mods if isinstance(mods, list) else [mods] if mods else [])]
                 out.append(dict(
                     title=title, kind=kind, tags=sorted(tags),
-                    # A VIEW THE TEXT REPORTS AND ENDORSES IS ITS OWN TOO (profile 1.9): Stiles
-                    # "demonstrated" the hookworm cause, and Stone holds it as her own.
-                    layer="text" if layer == "rival" and stance == "endorsed" else layer,
+                    layer=layer,
                     reported=layer == "rival", stance=stance,
                     fidelity=d.get("fidelity"), warrant=d.get("warrant"),
                     src=c.get("from"), dst=c.get("to"), sign=sign,
@@ -363,10 +362,16 @@ def steps(doc, appraisal):
                     # NECESSARY and SUFFICIENT (1.9, G5): "only if", and whether the cause (with
                     # its co-causes) brings the effect about on its own -- or, `false`, does not.
                     necessary=c.get("necessary"), sufficient=c.get("sufficient"),
+                    # MEASURED BY (1.9): the measure the step's evidence is read from. A step into
+                    # that measure -- a bias in it -- bears on the evidence, not on the world:
+                    # MacNulty's point against Ripple (James's verdict, 29 Sep 2026).
+                    measured_by=_as_list(c.get("measured_by")),
                     # DESIGN (1.9, G10): the text's own words for the evidence.
                     design="" if c.get("design") is None else str(c.get("design")),
                     # ATTRIBUTION (1.9, N-i): what kind of causing the step is.
-                    attribution="" if c.get("attribution") is None else str(c.get("attribution")),
+                    # ...and WHOSE: "intended" by the eater, or guided by the advertiser (James's
+                    # verdict on Stone's stories, 29 Sep 2026): `{type, by}`, `by` an actor.
+                    attribution=_attr(c.get("attribution"))[0], attribution_by=_attr(c.get("attribution"))[1],
                     supports=supports.get(title, 0), raw=c))
     return out
 
@@ -915,10 +920,26 @@ def analyse(fm, doc):
         if s["sufficient"] is True and s["sign"] == "0":
             findings.append(("?", "mechanism", "a finding of no effect cannot be `sufficient`",
                              {"title": s["title"]}))
+        for mb in s["measured_by"]:
+            if mb not in states:
+                findings.append(("!", "mechanism", f"`measured_by: {mb}` is not a declared state",
+                                 {"title": s["title"]}))
+            elif not (states[mb] or {}).get("measures"):
+                findings.append(("?", "mechanism", f"`measured_by: {mb}` names a state that `measures` "
+                                 f"nothing", {"title": s["title"],
+                                              "fix": f"give `{mb}` a `measures:` naming what it measures"}))
+        if s["attribution_by"] and s["attribution_by"] not in actors:
+            findings.append(("!", "mechanism", f"`attribution: {{by: {s['attribution_by']}}}` is not a "
+                             f"declared actor", {"title": s["title"]}))
         if s["attribution"] and s["attribution"] not in ATTRIBUTIONS:
             findings.append(("?", "mechanism", f"`attribution: {s['attribution']}` is not one of "
                              f"{', '.join(ATTRIBUTIONS)}", {"title": s["title"]}))
-        if s["stance"] and s["stance"] not in STANCES:
+        if s["stance"] == "endorsed":
+            findings.append(("?", "mechanism", "a report the text endorses is a claim in its own voice, "
+                             "not a stance on someone else's", {"title": s["title"],
+                             "fix": "drop #reported and `stance`, and mark the step `hedged: true` if "
+                                    "the reporting works as a hedge"}))
+        elif s["stance"] and s["stance"] not in STANCES:
             findings.append(("!", "mechanism", f"`stance: {s['stance']}` is not one of "
                              f"{', '.join(STANCES)}", {"title": s["title"]}))
         elif s["stance"] and not s["reported"]:
@@ -1129,10 +1150,17 @@ def analyse(fm, doc):
         designs=sorted([d, n] for d, n in _count(s["design"] for s in text_all if s["design"]).items()),
         measures=sorted([i, str(st["measures"]), str(st.get("method") or "")] for i, st in states.items()
                         if isinstance(st, dict) and st.get("measures") in states and st.get("measures") != i),
-        attributions=sorted({(s["src"], s["dst"], s["sign"] or "", s["attribution"], s["layer"], s["title"])
+        attributions=sorted({(s["src"], s["dst"], s["sign"] or "", s["attribution"], s["attribution_by"], s["layer"], s["title"])
                              for s in ok if s["attribution"]}),
         stances=sorted([k, n] for k, n in _count(s["stance"] for s in ok if s["reported"] and s["stance"]).items()),
         accounts=_accounts(ids, ok),
+        disputed=_disputed(ok, prov.title_edges(prov.without_appraisal(doc))),
+        rests_on=[[a, b, sg, mb, list(bias)] for a, b, sg, mb, bias in sorted({
+            (s["src"], s["dst"], s["sign"] or "", mb,
+             # a step from the measured state into its measure is the measure working, not a bias
+             tuple(sorted({r["src"] for r in ok if r["dst"] == mb and not r["null"] and not r["selects"]
+                           and r["src"] != (states.get(mb) or {}).get("measures")})))
+            for s in text_all for mb in s["measured_by"] if mb in states})],
     )
     for cp in chain_profiles:
         if not cp["steps"]:
@@ -1141,11 +1169,40 @@ def analyse(fm, doc):
     return findings, profile
 
 
+def _attr(a):
+    """(type, by) from `attribution:`, a type or `{type, by}`."""
+    if isinstance(a, dict):
+        return ("" if a.get("type") is None else str(a.get("type")),
+                "" if a.get("by") is None else str(a.get("by")))
+    return ("" if a is None else str(a), "")
+
+
 def _count(xs):
     out = {}
     for x in xs:
         out[x] = out.get(x, 0) + 1
     return out
+
+
+def _disputed(ok, edges):
+    """[from, to, [title, title]] for each pair of steps on one pair of states whose claims the
+    argument sets against each other (`><` or an attack): two accounts that cannot both hold.
+
+    DRAWN SIDE BY SIDE, TWO ACCOUNTS READ AS TWO FINDINGS. Ripple's "relatively strong" cascade and
+    MacNulty's "modest and spatially variable" one were two arrows with two sizes, and nothing said
+    that both cannot be true (James's verdict, 29 Sep 2026). The argument already says it."""
+    against = {(a, b) for a, b, kind in edges if kind in ("attack", "contradictory")}
+    by = {}
+    for s in ok:
+        if not s["selects"]:
+            by.setdefault((s["src"], s["dst"]), set()).add(s["title"])
+    out = set()
+    for (a, b), titles in by.items():
+        for x in titles:
+            for y in titles:
+                if x < y and ((x, y) in against or (y, x) in against):
+                    out.add((a, b, x, y))
+    return sorted([a, b, [x, y]] for a, b, x, y in out)
 
 
 def _accounts(ids, ok):
@@ -1170,7 +1227,7 @@ def _accounts(ids, ok):
             opened = sorted({(r["src"], r["title"]) for r in steps_
                              if r["dst"] == s["src"] and r["title"] != s["title"]})
             accs.append({"from": s["src"], "title": s["title"], "layer": s["layer"],
-                         "stance": s["stance"], "attribution": s["attribution"],
+                         "stance": s["stance"], "attribution": s["attribution"], "by": s["attribution_by"],
                          "opened_by": [list(x) for x in opened]})
         if len({a["title"] for a in accs}) > 1 and any(a["layer"] == "rival" or a["stance"] for a in accs):
             out.append({"state": i, "accounts": accs})
@@ -1419,17 +1476,24 @@ def census(profile):
             f"{d}: {n}" + (" (hypothetical: shaded as asserted)" if d == "illustration" else "")
             for d, n in p["designs"]))
     by_pair = {}
-    for a, b, sg, att, layer, title in p.get("attributions", []):
-        by_pair.setdefault((a, b), []).append(f"{att} ({title}{'; reported' if layer == 'rival' else ''})")
+    for a, b, sg, att, who, layer, title in p.get("attributions", []):
+        by_pair.setdefault((a, b), []).append(f"{att}{' by ' + who if who else ''} ({title}{'; reported' if layer == 'rival' else ''})")
     for (a, b), atts in sorted(by_pair.items()):
         lines.append(f"      attrib  {a} -> {b}: " + "; ".join(atts))
+    for a, b, sg, mb, bias in p.get("rests_on", []):
+        lines.append(f"      rests   {a} -> {b}: its evidence is read from the measure {mb}"
+                     + (f", which {' and '.join(bias)} bear{'s' if len(bias) == 1 else ''} on -- a bias in "
+                        f"the measure undercuts the step" if bias else ""))
+    for a, b, (x, y) in p.get("disputed", []):
+        lines.append(f"      dispute {a} -> {b}: [{x}] and [{y}] are set against each other in the argument "
+                     f"-- they cannot both hold")
     for acc in p.get("accounts", []):
         lines.append(f"      accounts of {acc['state']}, side by side:")
         for x in acc["accounts"]:
             who = "the text's own" if x["layer"] == "text" and not x["stance"] else \
                   "reported" + (f", {x['stance']}" if x["stance"] else "")
             lines.append(f"              {x['from']} ({x['title']}; {who}"
-                         + (f"; {x['attribution']}" if x["attribution"] else "") + ")"
+                         + (f"; {x['attribution']}" + (f" by {x['by']}" if x.get("by") else "") if x["attribution"] else "") + ")"
                          + (" -- opened by " + "; ".join(f"{f} ({t})" for f, t in x["opened_by"])
                             if x["opened_by"] else ""))
     for st, lvs in p.get("spanning", []):
@@ -1524,9 +1588,6 @@ def census(profile):
         lines.append(f"      rival   {p['rival_steps']} step(s) in views the text reports "
                      f"(#reported)" + (": " + ", ".join(f"{stance[k]} {k}" for k in ("rejected", "unjudged")
                                                       if stance.get(k)) if stance.get("rejected") or stance.get("unjudged") else ""))
-    if stance.get("endorsed"):
-        lines.append(f"      endorse {stance['endorsed']} step(s) the text reports and endorses: walked as "
-                     f"its own")
     if p["appraisal_claims"]:
         lines.append(f"      appraisal  {p['appraisal_claims']} claim(s), {p['appraisal_steps']} "
                      f"step(s) -- the reconstructor's own, excluded from every measure of the "

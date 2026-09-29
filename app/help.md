@@ -596,8 +596,8 @@ step that is a case of the general step.
 
 **Joint causes and states across levels.** Where the text says two things bring something about
 only *together* — a belief and a desire, say — the step is one arrow, and a **stem** runs from the
-second cause to a **bar** across the arrow near its head: the effect passes the bar only with every
-stem in, as linked premises join in the Reasons map. The step's panel says *only together with*.
+second cause into an **AND gate** on the arrow near its head: the effect passes the gate only with
+every cause coming in. The step's panel says *only together with*.
 A state the text puts at more than one level at once — an expectation that is both many people's
 belief and a fact about their society — is drawn as one tall box through every level it holds at.
 
@@ -619,6 +619,19 @@ hazard and harm), a stem runs from that state and stops on a short bar across it
 mark of a blocker. The step's panel says *unless*, and also *despite* where the text says the
 step held although something acted against it.
 
+**Reading a drawing for the first time.** *Read this drawing*, in the bar under the chain, steps
+through the marks this chain uses, lighting one example of each and saying what it means.
+
+**An arrow of several steps.** An arrow labelled "×2" or more holds several of the text's steps
+between the same two states. Click it, then *Draw each step apart* to give each its own arrow.
+
+**Disputed.** Where two accounts of one step are set against each other in the argument — two
+texts that agree on the direction and dispute the size, say — each arrow says **disputed**.
+
+**Evidence read from a measure.** A **dashed stem** to a small **square** on an arrow says the
+step's evidence is read from that measure. It is orange where the text says something biases the
+measure, which undercuts the step.
+
 **A moderator.** Where the text says something strengthens, weakens or reverses a step, rather than
 bringing about its end, a **dotted stem** runs from that state to a small **ring** on the arrow. The
 step's panel says what it does, and also where the text finds that something does *not* moderate
@@ -634,7 +647,9 @@ marker. It is a reading of that state, not a cause of it, and its panel says whi
 measures and how.
 
 **Rival accounts and their types.** A rival arrow can carry the *type* of causing its story
-attributes: *intended*, *inadvertent*, *guided* (through another agent), *accident*, or *complex*.
+attributes, and whose it is: *intended by* the eaters, *guided by* the advertisers, *inadvertent*,
+*accident*, or *complex*. Where each story has a chain of its own, *Draw this story alone* in the
+outcome's panel draws it by itself.
 Where an outcome has several accounts, the outcome's panel lists them side by side: whose each is,
 whether the text rejects it, leaves it unjudged or endorses it, and which story opens another's
 cause. A story the text endorses is drawn as its own.

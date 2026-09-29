@@ -241,8 +241,9 @@ substantially reduces adoption".
 | `necessary` | boolean | The step's `to` holds **only if** its `from` does (*added in 1.9*). |
 | `sufficient` | boolean | `true`: the cause, with any `jointly` co-causes, brings the effect about **on its own**. `false`: the text says it is **not enough** on its own (*added in 1.9*). |
 | `design` | string | The **design** of the evidence, in the text's words; `experiment`, `replication`, `quasi-experiment`, `observational`, `case study`, `illustration`, `anecdote`, `review` and `simulation` are read. An `illustration` is a hypothetical case (*added in 1.9*). |
-| `attribution` | `intentional` \| `mechanical` \| `inadvertent` \| `accidental` \| `complex` | The **type of causing** the step attributes (*added in 1.9*). |
-| `stance` | `rejected` \| `unjudged` \| `endorsed` | On a `#reported` or `#contested` step: where the text **stands** on the view it reports (*added in 1.9*). |
+| `attribution` | `intentional` \| `mechanical` \| `inadvertent` \| `accidental` \| `complex`, or `{type, by}` | The **type of causing** the step attributes, and `by` **whose** action or intention it is, an actor (*added in 1.9*). |
+| `measured_by` | state id, or list of them | The **measure** the step's evidence is read from, a state with `measures` (*added in 1.9*). |
+| `stance` | `rejected` \| `unjudged` | On a `#reported` or `#contested` step: whether the text sets the view out to **reject** it or leaves it **unjudged** (*added in 1.9*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
 view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
@@ -409,25 +410,33 @@ for". `sufficient: true` says the cause, with its `jointly` co-causes if it has 
 about on its own: a joint set that suffices is a step with `jointly` and `sufficient: true`.
 `sufficient: false` records the commoner claim, a cause that is "necessary, but not sufficient" or
 that "may help; it will not guarantee". "In part" and "not solely" stay in `size` or `share`.
-Whether a list of conditions is independent or conjoint is the reconstructor's reading; where the
-text leaves it open, say so in a `note`.
+A list of conditions the text leaves open ("more likely if …, if … and if …") is read as
+conjoint, one step with the rest `jointly`, and the `note` says the text leaves it open; separate
+steps say each condition works alone, which only a text that says so licenses.
 
 **Evidence and measurement (1.9).** `basis` says what kind of backing a step has; `design` says how,
 in the text's own words: a randomised experiment, a replication, an anecdote, a case the text re-reads.
 `design: illustration` marks a **hypothetical** case, which shows how a step could go and not that it
 does: it is shaded as asserted, never as an example. A state may be a **measure** of another:
 `measures: priming, method: "the attitude battery after the treatment"`. Nothing is walked from a
-measure to what it measures, and a measure is no dead end. A step into a measure is a claim about
+measure to what it measures, and a measure is no dead end. A step whose evidence is read from a
+measure says so with `measured_by: <measure>`; a step into that measure from anything but what it
+measures is a bias, and the census and the view show it bearing on the step as an undercut would:
+MacNulty et al.'s case that the volume model overestimates browsed crowns undercuts Ripple et al.'s
+cascade. A step into a measure is a claim about
 the measurement, which is where a method's artefacts belong (Valentino et al.'s timing experiment;
 a crown volume computed from height).
 
-**Rival accounts (1.9).** A text of rival accounts reports them to reject them, to set them out
-without judging, or, sometimes, to endorse one. `stance: rejected | unjudged | endorsed` on a
-`#reported` or `#contested` step records which. An endorsed step is walked as the text's own too.
+**Rival accounts (1.9).** A text of rival accounts reports them to reject them or to set them out
+without judging. `stance: rejected | unjudged` on a `#reported` or `#contested` step records which.
+A report the author endorses (Stone on Stiles, who "demonstrated" the hookworm cause) is the
+author's own claim, in her voice, and is marked as such, `hedged` where the reporting works as a
+hedge; the checker asks when it meets `stance: endorsed`.
 Where an outcome has two or more accounts from different claims, and at least one is reported, the
 census sets them side by side: each account, whose it is, its stance and type, and any story that
 opens its cause. The view shows the same list on the outcome's panel. `attribution` records the
-**type** of causing a step attributes, after Stone (1989): `intentional` (purposeful action, intended
+**type** of causing a step attributes, after Stone (1989), and `attribution: {type, by}` names
+whose action or intention it is (the eater's knowing choice, or the advertiser's guidance): `intentional` (purposeful action, intended
 consequences), `inadvertent` (purposeful action, unintended consequences), `mechanical` (guided
 through another agent or a machine), `accidental` (neither), and `complex` (a web of causes with no
 single locus). Rival stories of one harm often differ in nothing else, and a strategy that moves a
@@ -541,7 +550,7 @@ rule: name your gaps).
 et al. 2018, Stone 1989): `modifies` on a step (a moderator that strengthens, weakens or reverses it,
 or does not); `necessary` and `sufficient` on a step; `design` on a step; `measures` and `method` on a
 state; `attribution` on a step (the type of causing, after Stone); and `stance` on a reported step,
-with an endorsed step walked as the text's own. The census sets rival accounts of one outcome side by
+an endorsed report being the author's own claim. The census sets rival accounts of one outcome side by
 side. Every 1.8 file conforms unchanged.
 
 **1.8** (27 September 2026) added `regime` and `threshold` on a step, `size` and `share` on a step, `period` and `on: trend` on a step, `unless` and `despite` on a step (a blocker, and a blocker that

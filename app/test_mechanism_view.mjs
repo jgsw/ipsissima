@@ -201,8 +201,97 @@ const STORIESF = path.join(FIXTURE, "stories.argdown");
   check(two.length === 2 && two.every(e => e.stems.filter(sm => sm.ring).length === 1) &&
         two.some(e => / · the 1990s/.test(e.chip.label)) && two.some(e => / · 2010-2012/.test(e.chip.label)),
         "a step in two periods is two arrows, each naming its period and carrying its own moderator", JSON.stringify(two.map(e => e.chip.label)));
+  // A state that only blocks or only moderates is still drawn, with its stem (James's verdicts on
+  // the defences and on Marti and Gond's devices, 29 Sep 2026). Mutation: drop unless/modifies
+  // from the layout's ordering -> neither box is drawn and no stem hangs from it.
+  const ALONE = MV.layout(MV.model(graphOf.fromText(`===
+mechanism:
+    levels: [org, floor]
+    actors:
+        org: {label: "Org", level: org}
+        staff: {label: "Staff", level: floor}
+    states:
+        hazard: {label: "Hazard", actor: staff, role: condition}
+        defence: {label: "Defences hold", actor: org}
+        devices: {label: "Devices", actor: org}
+        loss: {label: "Loss", actor: staff, role: outcome}
+===
+
+[Aim]: A.
+
+[H]: Hazards bring losses unless defended.
+    {causes: {from: hazard, to: loss, sign: "+", basis: asserted, unless: defence, modifies: {by: devices, effect: strengthens}}}
+    +> [Aim]
+`)));
+  const hl = ALONE.edges.filter(e => e.from === "hazard" && e.to === "loss")[0];
+  check(!!ALONE.nodes.defence && !!ALONE.nodes.devices && hl && hl.stems.some(sm => sm.tbar) && hl.stems.some(sm => sm.ring),
+        "a state that only blocks or only moderates is drawn, with its stem", JSON.stringify(Object.keys(ALONE.nodes)));
+  // A step's time course reads in time order, and a null names its period (the badgers, James's
+  // verdicts, 29 Sep 2026). Mutation: drop timeOf from the port sort -> "no effect" leaves above.
+  const CULL = MV.layout(MV.model(graphOf.fromText(`===
+mechanism:
+    levels: [gov, farms]
+    actors:
+        govt: {label: "Government", level: gov}
+        herds: {label: "Herds", level: farms}
+    states:
+        proactive: {label: "Proactive culling", actor: govt, role: condition}
+        tbout: {label: "TB outside", actor: herds, role: outcome}
+===
+
+[Aim]: A.
+
+[During]: During culling TB rose outside.
+    {causes: {from: proactive, to: tbout, sign: "+", basis: study, period: "during culling"}}
+    +> [Aim]
+
+[After]: After culling it did not.
+    {causes: {from: proactive, to: tbout, sign: "0", basis: study, period: "after culling ended"}}
+    +> [Aim]
+`)));
+  const dur = CULL.edges.find(e => e.kind !== "null"), aft = CULL.edges.find(e => e.kind === "null");
+  check(!!dur && !!aft && /after culling ended/.test(aft.chip.label) && (dur.curve[0][1] < aft.curve[0][1] || (dur.curve[0][1] === aft.curve[0][1] && dur.curve[0][0] < aft.curve[0][0])),
+        "a null names its period, and a step's periods leave in time order, earliest first as a reader reads",
+        JSON.stringify(CULL.edges.map(e => [e.chip.label, e.curve[0]])));
+  // An arrow that holds several steps opens into one arrow each (James's verdict on "raises ×2").
+  // Mutation: ignore opts.expand in layout -> still one arrow.
+  const TWOMOD = MV.model(graphOf.fromText(`===
+mechanism:
+    levels: [field, actors]
+    actors:
+        field: {label: "Field", level: field}
+        people: {label: "People", level: actors}
+    states:
+        theory: {label: "A new theory", actor: people, role: condition}
+        devices: {label: "Devices", actor: field}
+        backers: {label: "Backers", actor: people}
+        exper: {label: "Experimentation", actor: people, role: outcome}
+===
+
+[Aim]: A.
+
+[P2]: Devices moderate it.
+    {causes: {from: theory, to: exper, sign: "+", basis: asserted, modifies: {by: devices, effect: strengthens}}}
+    +> [Aim]
+
+[P3]: Backers moderate it.
+    {causes: {from: theory, to: exper, sign: "+", basis: asserted, modifies: {by: backers, effect: strengthens}}}
+    +> [Aim]
+`));
+  const one = MV.layout(TWOMOD).edges.filter(e => e.from === "theory" && e.to === "exper");
+  const opened = MV.layout(TWOMOD, { expand: { [one[0].base]: true } }).edges.filter(e => e.from === "theory" && e.to === "exper");
+  check(one.length === 1 && one[0].steps.length === 2 && opened.length === 2 &&
+        opened.every(e => e.expanded && e.steps.length === 1 && e.stems.filter(sm => sm.ring).length === 1),
+        "an arrow of several steps opens into one arrow each, each with its own moderator",
+        JSON.stringify(opened.map(e => [e.chip.label, e.stems.length])));
+  // The evidence rests on a measure the text says is biased (MacNulty against Ripple). Mutation:
+  // drop the rests stems -> no square on the arrow.
+  const rest = LS.edges.filter(e => e.from === "diet" && e.to === "malnourish")[0];
+  check(!!rest && rest.stems.some(sm => sm.square && sm.square.biased && sm.state === "survey"),
+        "a step whose evidence rests on a biased measure carries a stem to a square, in the gap colour",
+        JSON.stringify(rest && rest.stems));
   const att = LS.edges.filter(e => e.from === "choice" && e.to === "malnourish");
-  check(att.length === 1 && / · intended$/.test(att[0].chip.label), "an attribution's type is on its arrow", JSON.stringify(att.map(e => e.chip)));
+  check(att.length === 1 && / · intended by poor households$/.test(att[0].chip.label), "an attribution's type, and whose it is, is on its arrow", JSON.stringify(att.map(e => e.chip)));
 }
 // AND ON TIME (profile 1.8, G7): periods and a step on a trend. Mutation: drop the period from
 // strataOf's key -> `strata` differ; drop the trend words -> the chip says "raises".
@@ -235,6 +324,29 @@ const SIZESF = path.join(FIXTURE, "sizes.argdown");
   const sz = MV.layout(MZ).edges.filter(e => e.from === "order" && e.to === "reoff" && / · -0\.12/.test(e.chip.label));
   check(sz.length === 1 && !/via/.test(sz[0].chip.label),
         "a step's stated value is on its arrow, and a partial route is not labelled as the step", JSON.stringify(MV.layout(MZ).edges.map(e => e.chip.label)));
+}
+{
+  // Two accounts that cannot both hold (Yellowstone). Mutation: drop disputedKey from the chip ->
+  // neither arrow says "disputed"; drop disputedOf -> the profiles differ.
+  const DTXT = fs.readFileSync(SIZESF, "utf8") + `
+[A strong effect]: "Work strongly aids reintegration."
+    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: study, size: "strong"}}
+    +> [Recommend]
+
+[Only a modest effect]: "Work aids reintegration only modestly."
+    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: study, size: "modest"}}
+    >< [A strong effect]
+`;
+  const DM = MV.model(graphOf.fromText(DTXT));
+  const tmpD = path.join(os.tmpdir(), "disputed-" + process.pid + ".argdown");
+  fs.writeFileSync(tmpD, DTXT);
+  const pyD = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           tmpD, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  fs.unlinkSync(tmpD);
+  const darrows = MV.layout(DM).edges.filter(e => e.from === "work" && e.to === "reint" && / · disputed/.test(e.chip.label));
+  check(same(DM.profile.disputed, pyD.disputed) && pyD.disputed.length === 2 && darrows.length === 2,
+        "two accounts set against each other are disputed in the checker and on both their arrows",
+        JSON.stringify([pyD.disputed, DM.profile.disputed, MV.layout(DM).edges.map(e => e.chip.label)]));
 }
 // AND ON REGIMES AND A THRESHOLD (profile 1.8, G2). Mutation: ignore regimes in routes -> `routes`
 // differ; drop the threshold words -> the chip reads a plain "raises".
@@ -979,8 +1091,8 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(400);
     check(await page.locator('#mech .st[data-state="desire"] .gapmark').count() === 0,
           "a co-cause is not marked as linked to nothing");
-    check(await page.locator('#mech [data-stem="desire"]').count() === 1 && await page.locator("#mech .junction").count() === 1,
-          "its stem and bar are drawn");
+    check(await page.locator('#mech [data-stem="desire"]').count() === 1 && await page.locator('#mech .gate[data-gate="and"]').count() === 1,
+          "its stem and AND gate are drawn");
     await page.locator('#mech .st[data-state="desire"]').click();
     await page.waitForTimeout(200);
     const litJ = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
@@ -990,6 +1102,74 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(200);
     check(/only together with Desire to fit in/.test(await page.locator(".amech-side").innerText()),
           "and the step's panel says it holds only together with it");
+
+    // THE GUIDE, BY REAL CLICKS (James's verdict: a reader who has not read the conventions is
+    // lost). Mutations: drop the bar button's handler -> the panel never shows the guide; drop the
+    // edge from a guide step -> nothing is lit.
+    const storiesHtml = path.join(tmp, "stories.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), STORIESF, "-o", storiesHtml], { stdio: "pipe" });
+    await page.goto("file://" + storiesHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    await page.locator('#mech .amech-bar [data-guide-go="0"]').click();
+    await page.waitForTimeout(200);
+    check(/Boxes and bands/i.test(await page.locator(".amech-side").innerText()), "Read this drawing opens on the boxes and bands");
+    const titles = [];
+    for (let i = 0; i < 14; i++) {
+      const next = page.locator('.amech-side button:text-is("Next")');
+      if (!(await next.count())) break;
+      await next.click();
+      await page.waitForTimeout(150);
+      titles.push((await page.locator(".amech-side h3").first().innerText()).toLowerCase());
+      if (/a moderator/.test(titles[titles.length - 1])) {
+        const lit = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
+          .filter(g => !g.classList.contains("dim")).map(g => g.getAttribute("data-edge")));
+        check(lit.length === 1 && lit[0] === "aid>diet", "its moderator step lights the one arrow that has a ring", JSON.stringify(lit));
+      }
+    }
+    check(["an arrow is a step the text asserts", "a view the text reports", "only together", "a moderator", "evidence read from a measure", "needed, enough, not alone"]
+            .every(x => titles.includes(x)) && !titles.includes("unless"),
+          "the guide steps through the marks this drawing has, and only those", JSON.stringify(titles));
+    // AN ARROW OF SEVERAL STEPS OPENS ON A CLICK (James's verdict on "raises ×2"). Mutation: drop
+    // the data-expand handler -> still one arrow.
+    const twoSrc = path.join(tmp, "twomod.argdown"), twoHtml = path.join(tmp, "twomod.html");
+    fs.writeFileSync(twoSrc, `===
+mechanism:
+    levels: [field, actors]
+    actors:
+        field: {label: "Field", level: field}
+        people: {label: "People", level: actors}
+    states:
+        theory: {label: "A new theory", actor: people, role: condition}
+        devices: {label: "Devices", actor: field}
+        backers: {label: "Backers", actor: people}
+        exper: {label: "Experimentation", actor: people, role: outcome}
+===
+
+[Aim]: A.
+
+[P2]: Devices moderate it.
+    {causes: {from: theory, to: exper, sign: "+", basis: asserted, modifies: {by: devices, effect: strengthens}}}
+    +> [Aim]
+
+[P3]: Backers moderate it.
+    {causes: {from: theory, to: exper, sign: "+", basis: asserted, modifies: {by: backers, effect: strengthens}}}
+    +> [Aim]
+`);
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), twoSrc, "-o", twoHtml], { stdio: "pipe" });
+    await page.goto("file://" + twoHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const arrowsOf = () => page.locator('#mech svg g[data-edge="theory>exper"]:not(.chip)').count();
+    const before2 = await arrowsOf();
+    await page.locator('#mech g.chip[data-edge="theory>exper"]').first().click({ force: true });
+    await page.waitForTimeout(200);
+    await page.locator('.amech-side [data-expand]').click();
+    await page.waitForTimeout(300);
+    check(before2 === 1 && await arrowsOf() === 2 && await page.locator('#mech circle.ring[data-moderator]').count() === 2,
+          "clicking Draw each step apart opens the arrow into two, each with its ring", String(before2));
 
     // SEVERAL CHAINS ON SCREEN (profile 1.5). Mutations: open at every chain together -> the
     // first check fails; drop the ⇄ handler -> clicking it leaves the chain as it was.

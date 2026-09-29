@@ -188,9 +188,10 @@ texts state them more often than one expects:
   guarantee", "not solely", "at least in part": `sufficient: false`, and keep the words.
 - **Joint sufficiency is rare.** "If all the boundary conditions are met" is one step with
   `jointly:` naming the rest and `sufficient: true`.
-- **A list is ambiguous.** "More likely if …, if … and if …" leaves open whether the conditions act
-  separately or only together. The notation forces a choice: make it, and say in the `note:` that
-  the text leaves it open.
+- **A list is conjoint unless the text says otherwise.** "More likely if …, if … and if …" leaves
+  open whether the conditions act separately or only together. Read it as conjoint — one step, the
+  other conditions `jointly` — and say in the `note:` that the text leaves it open. Mark them as
+  separate steps only where the text says each works on its own ("any one of", "or").
 - **The same condition can be read four ways.** Marti and Gond call their boundary conditions
   necessary, moderating, determining and a precondition, on different pages. Mark what each
   sentence says, and record the drift.
@@ -242,7 +243,9 @@ claim. `modifies` puts it on the step instead, and the view draws it as a ring o
 **a measure is not a cause**: where the text reports a state through a survey score, a model's
 estimate or a biomarker, and the measurement matters to its case (a timing artefact, an estimate
 computed from the very variable it is compared with), declare the measure as a state with `measures:`
-and `method:`. Steps into it are claims about the measurement; nothing is walked from it.
+and `method:`. Steps into it are claims about the measurement; nothing is walked from it. Give the
+step whose evidence the measure carries `measured_by:`, so that a bias in the measure is seen to
+bear on the step, as a critic's undercut does.
 
 ### Step 5b. When, how much, and in which regime
 
@@ -283,15 +286,20 @@ routes, both theirs. A rival the text never mentions is appraisal. Tell two kind
   reporting bias against performativity — is a mechanism, and is marked as `#reported` steps.
 
 **Say where the text stands on each reported account.** "Reported" is not one thing. The text may
-set it out to reject it, set it out without judging it ("causal theories are neither right nor
-wrong"), or endorse it (Stiles "demonstrated" the hookworm cause). `stance: rejected | unjudged |
-endorsed` settles it once. An endorsed step is walked as the text's own too. The census then sets
+set it out to reject it, or set it out without judging it ("causal theories are neither right nor
+wrong"): `stance: rejected | unjudged`. When the author endorses what she reports (Stiles
+"demonstrated" the hookworm cause), the claim is hers: write it in her voice, not as `#reported`,
+and mark it `hedged` where the reporting works as a hedge, as it often does. The census then sets
 each outcome's accounts side by side, with the story that opens another's cause.
 
 **Say what kind of causing each account attributes.** Where a text is about blame, harm or
 responsibility, rival stories of one harm often differ only in the type of causing: `intentional`,
 `inadvertent`, `mechanical` (guided through another agent), `accidental`, or `complex`, after Stone.
-Mark it with `attribution:`. It is the difference a political reader most needs to see.
+Mark it with `attribution:`, and say whose action or intention it is — `{type: intentional, by:
+the eaters}` is not `{type: mechanical, by: the advertisers}`. It is the difference a political
+reader most needs to see. Where two stories run through one state, give each story its own chain,
+so each can be read alone: drawn together, the radical story's advertisers seemed to set off the
+conservative story's knowing choice.
 
 ### Step 7. Actors and levels
 

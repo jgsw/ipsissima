@@ -151,8 +151,9 @@ substantially reduces adoption".
 | `necessary` | `true` where the text says the effect holds **only if** the cause does: "only when", "sine qua non" |
 | `sufficient` | `true` where the cause (with its `jointly` co-causes) brings the effect about **on its own**; `false` where the text says it is **not enough** alone |
 | `design` | the design of the evidence, in the text's words: `experiment`, `replication`, `anecdote`, `case study`, `illustration` (a hypothetical case) |
-| `attribution` | the **type** of causing the step attributes: `intentional`, `inadvertent`, `mechanical`, `accidental`, `complex` |
-| `stance` | on a `#reported` or `#contested` step: `rejected`, `unjudged` or `endorsed` |
+| `attribution` | the **type** of causing the step attributes: `intentional`, `inadvertent`, `mechanical`, `accidental`, `complex`; as `{type, by: actor}` to say whose |
+| `measured_by` | the measure the step's evidence is read from (a state with `measures`) |
+| `stance` | on a `#reported` or `#contested` step: `rejected` or `unjudged` |
 
 - **A joint cause is one step, not two.** Where the text says two things bring something about only
   together — a belief and a desire, a rule and the means to enforce it, an opportunity and a motive —
@@ -211,8 +212,9 @@ substantially reduces adoption".
   ("necessary, but not sufficient"; "may help; it will not guarantee"), add `sufficient: false`. Where
   it says a set of conditions together brings the effect about, mark one step with `jointly:` naming
   the rest and `sufficient: true`. Where a list of conditions ("more likely if …, if … and if …")
-  leaves open whether they act separately or only together, choose, and say in the claim's `note:`
-  that the text leaves it open.
+  leaves open whether they act separately or only together, read it as conjoint: one step, the rest
+  `jointly`, and say in the claim's `note:` that the text leaves it open. Separate steps only where
+  the text says each works alone.
 - **Say how the text knows, in its words.** `basis` is the kind of backing; `design` is the design:
   a randomised experiment, a replication, a re-reading of someone else's case, an anecdote. A
   **hypothetical** example ("imagine a manager who …") is `design: illustration`: it shows how a step
@@ -222,12 +224,15 @@ substantially reduces adoption".
   estimate computed by a model, a marker — and the measure matters to the argument (a method's
   artefact, a critique that the estimate is biased), declare the measure as its own state with
   `measures: <state>` and `method:`. Steps into the measure are claims about the measurement. Never
-  draw a step from the measure to what it measures.
+  draw a step from the measure to what it measures. Give the step whose evidence the measure carries
+  `measured_by: <measure>`, so that a bias in the measure bears on that step.
 - **Say where the text stands on a story it reports.** A `#reported` step is a view the text sets
-  out; `stance:` says whether it sets it out to reject it, leaves it unjudged, or endorses it. An
-  endorsed step is the text's own as well, and is walked as such. For a text about blame, harm or
+  out; `stance:` says whether it sets it out to reject it or leaves it unjudged. A report the author
+  endorses is her own claim: drop `#reported` and write it in her voice, `hedged: true` where the
+  reporting works as a hedge. For a text about blame, harm or
   responsibility, give each step its `attribution:` — the type of causing it attributes. Rival stories
-  of one harm often differ only in that.
+  of one harm often differ only in that; name whose action or intention it is, `{type, by: actor}`,
+  and where rival stories share a state, give each story its own chain so each can be drawn alone.
 - **Hedged steps.** A step the text puts as a possibility ("may", "might", "could") is the text's own,
   marked `hedged: true`. A step the text sets out only to reject is the rival's (`#reported`).
 - Where two groups respond differently to the same situation — heavy drinkers cut down, dependent

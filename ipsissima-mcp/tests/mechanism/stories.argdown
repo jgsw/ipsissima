@@ -27,6 +27,7 @@ mechanism:
         diet:    {label: "Adequate diet", actor: homes}
         malnourish: {label: "Malnutrition", actor: homes, role: outcome}
         survey:  {label: "Surveyed malnutrition", actor: homes, measures: malnourish, method: "a household survey"}
+        shame:   {label: "Shame about going hungry", actor: homes}
 ===
 
 [Feed the poor]: Government should give food aid.
@@ -42,11 +43,15 @@ mechanism:
 
 [Aid and meals together]: "Aid and school meals together end malnutrition."
     {fidelity: "quotation", causes: {from: diet, to: malnourish, sign: "-", basis: example, design: illustration,
-     jointly: [schools], sufficient: true}}
+     jointly: [schools], sufficient: true, measured_by: survey}}
     +> [Feed the poor]
 
 [The survey counts it]: "The survey records malnutrition where it is."
     {fidelity: "quotation", causes: {from: malnourish, to: survey, sign: "+", basis: statistics}}
+    +> [Feed the poor]
+
+[Shame hides hunger]: "Families ashamed of hunger under-report it to surveyors."
+    {fidelity: "quotation", causes: {from: shame, to: survey, sign: "-", basis: asserted}}
     +> [Feed the poor]
 
 [The liberal story]: "Liberals say the poor are malnourished because they do not know better." #reported
@@ -56,10 +61,10 @@ mechanism:
 
 [The conservative story]: "Conservatives say the poor choose junk food knowingly." #reported
     {fidelity: "quotation", causes: {from: choice, to: malnourish, sign: "+", basis: asserted,
-     attribution: intentional, stance: rejected}}
+     attribution: {type: intentional, by: homes}, stance: rejected}}
     -> [Feed the poor]
 
 [The radical story]: "Radicals say advertisers steer that choice." #reported
     {fidelity: "quotation", causes: {from: adverts, to: choice, sign: "+", basis: asserted,
-     attribution: mechanical, stance: endorsed}}
+     attribution: {type: mechanical, by: firms}, stance: unjudged}}
     +> [Feed the poor]

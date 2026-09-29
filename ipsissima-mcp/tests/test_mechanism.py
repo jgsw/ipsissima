@@ -675,12 +675,20 @@ MODONLY = STORIES.replace("schools: {label: \"School meals\", actor: state}",
 check("  a condition that only moderates is not unlinked",
       any("`schools`" in g for g in run(MODONLY)["shape"]["chain"]["gaps"]), False)
 check("each attribution is kept with its step and whose it is", c9["attributions"],
-      [["adverts", "choice", "+", "mechanical", "text", "The radical story"],
-       ["choice", "malnourish", "+", "intentional", "rival", "The conservative story"],
-       ["ignorance", "malnourish", "+", "inadvertent", "rival", "The liberal story"]])
-# Mutation: drop the endorsed rule in steps() -> 3 rival steps.
-check("a reported story the text endorses is walked as its own", c9["rival_steps"], 2)
-check("  and the stances are counted", c9["stances"], [["endorsed", 1], ["rejected", 1], ["unjudged", 1]])
+      [["adverts", "choice", "+", "mechanical", "firms", "rival", "The radical story"],
+       ["choice", "malnourish", "+", "intentional", "homes", "rival", "The conservative story"],
+       ["ignorance", "malnourish", "+", "inadvertent", "", "rival", "The liberal story"]])
+# Mutation: drop measured_by from steps() -> rests_on is empty.
+check("a step's evidence read from a measure, with what the text says bears on the measure",
+      c9["rests_on"], [["diet", "malnourish", "-", "survey", ["shame"]]])
+check("  and the measured state's own step into its measure is not counted as a bias",
+      "malnourish" in c9["rests_on"][0][4] if c9["rests_on"] else None, False)
+check("the stances are counted", c9["stances"], [["rejected", 1], ["unjudged", 2]])
+# An endorsed report is the author's own claim (James, 29 Sep 2026): named, never read as a stance.
+# Mutation: drop the `endorsed` finding -> the step is quietly walked as a rival's.
+END = run(STORIES.replace("by: firms}, stance: unjudged", "by: firms}, stance: endorsed"))
+check("`stance: endorsed` is named, with the fix: write it in the author's voice",
+      [f["fix"][:14] for f in by(END, "mechanism") if "endorses" in f["message"]], ["drop #reported"])
 acc = {a["state"]: a["accounts"] for a in c9["accounts"]}
 # Mutation: return [] from _accounts -> no accounts.
 check("rival accounts of one outcome are set side by side",
@@ -692,7 +700,7 @@ cl9 = "\n".join(mech.census(c9))
 check("the census says each",
       ["modif   aid -> diet (+): NOT moderated by schools" in cl9, "needed  income -> diet" in cl9,
        "enough  income -> diet: NOT enough on its own" in cl9, "measure survey measures malnourish" in cl9,
-       "accounts of malnourish" in cl9, "endorse 1 step(s)" in cl9], [True] * 6)
+       "accounts of malnourish" in cl9, "rival   3 step(s)" in cl9], [True] * 6)
 check("the fixture raises no fault", [f["message"] for f in by(rs9, "mechanism") if f["severity"] == "!"], [])
 BAD = STORIES.replace("effect: weakens", "effect: dampens").replace(
     "attribution: inadvertent", "attribution: careless").replace(
@@ -706,6 +714,27 @@ check("an unknown effect, attribution, a non-boolean, a stance on the text's own
        any("`necessary:` is `true` or `false`" in m for m in bad),
        any("`stance` says where the text stands" in m for m in bad),
        any("`measures: hunger`" in m for m in bad)], [True] * 5)
+
+
+print("\ntwo accounts that cannot both hold (James's verdict on Yellowstone, 29 Sep 2026)")
+SIZES = (FIXTURE / "sizes.argdown").read_text(encoding="utf-8")
+DISP = SIZES + """
+[A strong effect]: "Work strongly aids reintegration."
+    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: study, size: "strong"}}
+    +> [Recommend]
+
+[Only a modest effect]: "Work aids reintegration only modestly."
+    {fidelity: "quotation", causes: {from: work, to: reint, sign: "+", basis: study, size: "modest"}}
+    >< [A strong effect]
+"""
+cd = run(DISP)["shape"]["chain"]
+# Mutation: return [] from _disputed -> nothing is disputed.
+check("two steps on one pair whose claims are set against each other are disputed",
+      [x for x in cd["disputed"] if x[0] == "work"], [["work", "reint", ["A strong effect", "Only a modest effect"]]])
+check("  and the census says they cannot both hold",
+      "dispute work -> reint: [A strong effect] and [Only a modest effect]" in "\n".join(mech.census(cd)), True)
+check("  as is a rival view against the text's own finding; steps nothing sets against each other are not",
+      run(SIZES)["shape"]["chain"]["disputed"], [["order", "reoff", ["No deterrence found", "Prison deters"]]])
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

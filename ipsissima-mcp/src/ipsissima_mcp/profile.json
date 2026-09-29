@@ -104,8 +104,9 @@
     "necessary": {"type": "boolean", "summary": "The step's `to` holds only where its `from` does: \"only if\". Drawn \"needed for\", not \"raises\" (since 1.9)."},
     "sufficient": {"type": "boolean", "summary": "`true`: the cause, with any `jointly` co-causes, brings the effect about on its own. `false`: the text says it is not enough on its own (since 1.9)."},
     "design": {"type": "string", "values": ["experiment", "replication", "quasi-experiment", "observational", "case study", "illustration", "anecdote", "review", "simulation"], "summary": "The design of the evidence for the step, in the text's words; these values are read, others kept as written. `illustration` is a hypothetical case, shaded as asserted (since 1.9)."},
-    "attribution": {"type": "enum", "values": ["intentional", "mechanical", "inadvertent", "accidental", "complex"], "summary": "The type of causing the step attributes, after Stone (1989): purposeful or not, intended or not, guided through another agent, or a web with no single locus (since 1.9)."},
-    "stance": {"type": "enum", "values": ["rejected", "unjudged", "endorsed"], "summary": "On a #reported or #contested step: where the text stands on the view it reports. An endorsed step is walked as the text's own as well (since 1.9)."}
+    "attribution": {"type": "enum, or {type, by}", "values": ["intentional", "mechanical", "inadvertent", "accidental", "complex"], "summary": "The type of causing the step attributes, after Stone (1989): purposeful or not, intended or not, guided through another agent, or a web with no single locus; `by` names the actor whose action or intention it is (since 1.9)."},
+    "measured_by": {"type": "state id or list of state ids", "summary": "The measure the step's evidence is read from: a state with `measures`. A step into that measure other than from what it measures is a bias that bears on the evidence, drawn as an undercut (since 1.9)."},
+    "stance": {"type": "enum", "values": ["rejected", "unjudged"], "summary": "On a #reported or #contested step: whether the text sets out the view to reject it or leaves it unjudged. A report the text endorses is a claim in its own voice, not a stance (since 1.9)."}
   },
 
   "source_frontmatter": {
