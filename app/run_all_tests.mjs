@@ -47,6 +47,9 @@ const SUITES = [
   // not run `npx playwright install chromium` still runs everything else.
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
+  // THE CHART'S LAYOUT RULES (docs/MECHANISM-LAYOUT.md): no hard breach on any picture of any
+  // fixture or public sample, and no soft number materially worse than its baseline.
+  ["the mechanism chart keeps its rules", "node", [path.join(HERE, "mechanism_quality.mjs")]],
   // F8, designed against the misreading (admitted 27 Sep 2026): the faults the clarity audit
   // found on screen -- help that vanished with the map, an id printed where a name belonged, a
   // bar that dropped every word -- each held by a real-input check.

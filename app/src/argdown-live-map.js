@@ -1563,7 +1563,9 @@ function layoutByText(vis, sizes, wrapWidth, aspect, opts) {
   const colOfItem = new Map();      // id -> the page it is on
   let flowCols = 1, pitch = 0;
   const colRight = i => maxRight + i * pitch;
-  const PAGE_SCALE = 0.8;           // the scale a page is cut to be read at
+  // The scale a page is cut to be read at: 0.8 as the column opens, and whatever the reader has
+  // zoomed to once they zoom (`pageScale`), so a page is always as tall as the pane.
+  const PAGE_SCALE = (opts && opts.pageScale) || 0.8;
   const FLOW_ARC = 84;              // a page's arc margin, each side
   let pagedAt = 0, flowArcCap = 0;
   const laneTops = [...laneBox.values()].map(b => b.top).sort((a, b) => a - b);
@@ -3573,6 +3575,12 @@ function createLiveMap(container, graph, options) {
   // one claim to a row, relations as arcs in the margins (see `layoutByText`). A preference of
   // the reader's, not a fold state: it changes how the text's order is drawn, not what is shown.
   let readColumn = !!(options && options.readColumn);
+  // THE PAGES FOLLOW THE ZOOM (James, 29 Sep 2026). A column cut into pages is cut at the scale it
+  // is read at, so each page is as tall as the pane; zoomed in, the pages ran off the bottom and
+  // the reader scrolled down each one, which is what cutting it into pages was to prevent. Once
+  // the zoom settles, the column is cut again for the new scale, the claim in the middle of the
+  // pane held where it is. Null until the reader zooms; Fit puts it back.
+  let pageScale = null, reflowTimer = /** @type {any} */ (0);
   // THE SHAPE OF THE ARGUMENT, as a layer the reader turns on. Where each claim's reasons fall —
   // before it or after, and how far away — is drawn in the lines' ink and in a sparkline on every
   // band, and it is a diagnostic: an author's question about a draft ("does this come too late?")
@@ -3930,7 +3938,7 @@ function createLiveMap(container, graph, options) {
     let g;
     if (expo) {
       g = layoutByText(vis, sizes, 0, paneAspect,
-                       { reading: readColumn, paneWidth: container.clientWidth || 800,
+                       { reading: readColumn, pageScale, paneWidth: container.clientWidth || 800,
                          paneHeight: Math.max(80, (container.clientHeight || 500) -
                                                   (toolbar ? toolbar.offsetHeight + 14 : 0)) });
     } else {
@@ -5596,6 +5604,50 @@ function createLiveMap(container, graph, options) {
     if (pin && at && typeof at.clientX === "number") { pin.x = at.clientX; pin.y = at.clientY; }
   }
 
+  /** Zoom by `f` about the point (mx, my) of the SVG, which stays where it is -- the wheel's
+   *  algebra, shared by the wheel and by the keyboard's ⌘= and ⌘−. */
+  function zoomAt(f, mx, my) {
+    const k = Math.max(0.15, Math.min(4, view.k * f));
+    view.x = mx - (mx - view.x) * (k / view.k);
+    view.y = my - (my - view.y) * (k / view.k);
+    view.k = k; userMoved = true; readerActed(); viewport.style.transition = ""; applyView();
+    scheduleReflow();
+  }
+  /** ⌘= and ⌘− and the menu's Zoom In and Zoom Out: about the middle of the clear pane. */
+  function zoomBy(f) {
+    const { cw, ch, top } = clearBand();
+    zoomAt(f, cw / 2, top + ch / 2);
+  }
+  /** Cut the reading column's pages again for the zoom the reader has settled on (see
+   *  `pageScale`). Only the column in Exposition is cut into pages; nothing else re-lays out on
+   *  a zoom. Waits for the zoom to stop, and does nothing for a change too small to move a cut. */
+  function scheduleReflow() {
+    if (!expo || !readColumn) return;
+    clearTimeout(reflowTimer);
+    reflowTimer = setTimeout(() => {
+      if (!expo || !readColumn || !lastG) return;
+      const want = Math.max(0.3, Math.min(2.5, view.k));
+      const had = pageScale || (lastFit && lastFit.paged) || 0.8;
+      if (Math.abs(want - had) / had < 0.08) return;
+      // The claim nearest the middle of the pane is held still across the new cut.
+      const r = container.getBoundingClientRect(), { cw, ch, top } = clearBand();
+      const cx = r.left + cw / 2, cy = r.top + top + ch / 2;
+      let best = null, bd = Infinity;
+      for (const n of lastVis.nodes) {
+        const at = controlPoint(n.id, "top");
+        if (!at) continue;
+        const d = Math.hypot(at.x - cx, at.y - cy);
+        if (d < bd) { bd = d; best = n.id; }
+      }
+      pageScale = want;
+      if (best) holdStill([best], "top");
+      render(false);
+      // Cut to the pane's height, the pages are read from their tops: the held claim keeps its
+      // place across, and the camera comes up to where every page starts, as the column opened.
+      if (lastFit && lastFit.paged) { view.y = clearBand().top + 8; glide(); applyView(); }
+    }, 450);
+  }
+
   function holdStill(ids, edge) {
     pin = null;
     const r = container.getBoundingClientRect();
@@ -5811,11 +5863,7 @@ function createLiveMap(container, graph, options) {
       // system, and the two differ the moment a host gives the container a border or padding.
       const r = svg.getBoundingClientRect();
       const mx = ev.clientX - r.left, my = ev.clientY - r.top;
-      const f = ev.deltaY < 0 ? 1.12 : 1 / 1.12;
-      const k = Math.max(0.15, Math.min(4, view.k * f));
-      view.x = mx - (mx - view.x) * (k / view.k);
-      view.y = my - (my - view.y) * (k / view.k);
-      view.k = k; userMoved = true; readerActed(); viewport.style.transition = ""; applyView();
+      zoomAt(ev.deltaY < 0 ? 1.12 : 1 / 1.12, mx, my);
     }, { passive: false });
     svg.addEventListener("pointerdown", ev => {
       // A SECTION'S BACKGROUND IS CANVAS. `.alm-g` was in this list, so a pointerdown anywhere
@@ -5903,6 +5951,7 @@ function createLiveMap(container, graph, options) {
       touches.delete(ev.pointerId);
       if (pinch && touches.size < 2) {
         pinch = null;
+        scheduleReflow();
         // A finger that stays down after a pinch reads as a pan from here on — and never as a
         // click: `down` stays null, so lifting it cannot clear the lit selection.
         const rest = [...touches.values()][0];
@@ -6307,7 +6356,10 @@ function createLiveMap(container, graph, options) {
              // a keystroke — can hand this straight back and the reader keeps their place
              // instead of being thrown to a fresh fit on every edit.
              view: { x: view.x, y: view.y, k: view.k }, userMoved: userMoved,
-             expositionOrder: expo };
+             expositionOrder: expo,
+             // The claims opened one by one with "▼ more", and the scale the reading column's
+             // pages were last cut for: both change the picture, so both are in the fold state.
+             textOpen: [...textOpen], pageScale };
   }
   function setState(patch, refit) {
     if ("collapsedGroups" in patch) state.collapsedGroups = new Set(patch.collapsedGroups);
@@ -6323,9 +6375,15 @@ function createLiveMap(container, graph, options) {
     // the button changed nothing and said nothing.
     if ("spine"           in patch) state.spine           = patch.spine;
     if ("allText"         in patch) { allText = !!patch.allText; textOpen.clear(); measureCache.clear(); }
+    if ("textOpen"        in patch) { textOpen.clear(); for (const id of patch.textOpen || []) textOpen.add(id);
+                                      measureCache.clear(); }
+    if ("pageScale"       in patch) pageScale = patch.pageScale || null;
     // Every claim moves when the layout changes, so the camera is re-framed rather than left
     // looking at wherever the old layout had put things.
-    if ("readColumn"      in patch) { readColumn = !!patch.readColumn; refit = true; }
+    if ("readColumn"      in patch) {
+      if (!!patch.readColumn !== readColumn && !("pageScale" in patch)) pageScale = null;
+      readColumn = !!patch.readColumn; refit = true;
+    }
     if ("shape"           in patch) showShape = !!patch.shape;
     // Switching axis moves every node at once. Re-frame rather than leave the reader looking
     // at whatever happens to be under the old camera position.
@@ -6365,6 +6423,8 @@ function createLiveMap(container, graph, options) {
       if (!("expandedNodes"  in patch)) state.expandedNodes  = new Set();
     }
     render(!!refit);
+    // A ZOOM TO RESTORE, as a fold state identifier carries it: about the middle of the pane.
+    if (patch.zoom > 0) zoomBy(patch.zoom / view.k);
   }
 
   // First paint happens last: measure() and friends are `const`, so anything that calls them
@@ -6559,7 +6619,13 @@ function createLiveMap(container, graph, options) {
   return {
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
-    fit: () => fitTo(lastFit.w, lastFit.h, null, lastFit.reading, lastFit.paged),
+    // Fit also undoes a re-cut of the pages for a zoom: the column goes back to the pages it
+    // opened with, fitted as it opened.
+    fit: () => {
+      if (pageScale != null) { pageScale = null; render(true); return; }
+      fitTo(lastFit.w, lastFit.h, null, lastFit.reading, lastFit.paged);
+    },
+    zoomBy,
     // A card has come over the map. Frame again for the room now left -- unless the reader has
     // taken the camera, whose choice outranks the card.
     reframe: () => {
@@ -7117,7 +7183,7 @@ function encodeFoldState(graph, state) {
   const list = v => (v == null ? [] : Array.from(v));
   const sorted = v => list(v).map(encId).sort().join(",");
   const out = ["ipsfold1", "map=" + mapFingerprint(graph),
-               "view=" + (state.byText ? "pos" : "arg")];
+               "view=" + (state.mech ? "mech" : state.byText ? "pos" : "arg")];
   if (state.depth != null) out.push("depth=" + state.depth);
   if (state.spine != null) out.push("spine=" + state.spine);
   const push = (key, v) => { const s = sorted(v); if (s) out.push(key + "=" + s); };
@@ -7138,8 +7204,37 @@ function encodeFoldState(graph, state) {
   if (state.untagged === false) out.push("untagged=0");
   // Only when ON, the reverse of `untagged`: off is the default.
   if (state.appraisal) out.push("appraisal=1");
+  // HOW MUCH OF EACH CLAIM, AND HOW THE TEXT FLOWS (29 Sep 2026: a Reasons fault James reported
+  // could not be rebuilt from the line, because the line did not say the claims were in full).
+  if (state.allText) out.push("text=full");
+  push("more", state.textOpen);
+  if (state.readColumn) out.push("flow=col");
+  if (state.shape) out.push("shape=1");
+  if (state.pageScale) out.push("pages=" + round2(state.pageScale));
+  // THE MECHANISM ARRANGEMENT'S OWN STATE, when it is the one on screen. Its ids are the chain's
+  // states and chains, which the map's fingerprint does not cover; they are escaped like the rest.
+  const m = state.mech;
+  if (m) {
+    out.push("chain=" + (m.chain == null ? "" : encId(m.chain)));
+    if (m.boxes) out.push("boxes=1");
+    if (m.rival === false) out.push("rival=0");
+    if (m.show === "tested") out.push("show=tested");
+    push("mfolds", m.folded);
+    if (m.ends) out.push("ends=1");
+    push("split", m.expanded);
+    push("mmore", m.opened);
+  }
+  // THE ZOOM, and the pane it was read in: the picture's scale, and -- since a Reasons map lowers
+  // its rung to fit a small pane, and Exposition's pages are cut to the pane -- the size a rebuild
+  // needs to see the same thing. Information for whoever rebuilds it; only the zoom is restored.
+  const z = m ? m.zoom : state.zoom;
+  if (z === "fit") out.push("zoom=fit");
+  else if (z > 0 && Math.abs(z - 1) > 0.005) out.push("zoom=" + round2(z));
+  if (state.pane && state.pane.w > 0 && state.pane.h > 0)
+    out.push("pane=" + Math.round(state.pane.w) + "x" + Math.round(state.pane.h));
   return out.join(" ");
 }
+const round2 = x => String(Math.round(x * 100) / 100);
 
 /** The inverse. Returns a state in its NATIVE shape — Sets, and a Map of Sets — which is what
  *  `filterGraph` reads directly and what `setState` copies from; or throws one plain sentence
@@ -7171,8 +7266,8 @@ function decodeFoldState(graph, text) {
   if (fields.map !== own)
     throw new Error("this state belongs to a different map — it names " + fields.map +
                     " and this file is " + own);
-  if (fields.view !== "arg" && fields.view !== "pos")
-    throw new Error('view must be "arg" or "pos", not "' + fields.view + '"');
+  if (fields.view !== "arg" && fields.view !== "pos" && fields.view !== "mech")
+    throw new Error('view must be "arg", "pos" or "mech", not "' + fields.view + '"');
   const num = (key, min) => {
     if (!(key in fields)) return null;
     const n = Number(fields[key]);
@@ -7204,7 +7299,32 @@ function decodeFoldState(graph, text) {
     })]);
   }
   const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
-                 "facets", "untagged", "appraisal"];
+                 "facets", "untagged", "appraisal", "text", "more", "flow", "shape", "pages",
+                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane"];
+  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore"];
+  if (fields.view !== "mech") for (const key of MECH_ONLY) if (key in fields)
+    throw new Error('"' + key + '" belongs to the Mechanism arrangement, and this state is not in it');
+  // The chain's own ids are not the map's claims, so they are decoded but not checked here: the
+  // chart ignores an id it does not know rather than drawing nonsense.
+  const list = key => (fields[key] ? fields[key].split(",").map(decodeURIComponent) : []);
+  const scale = (key) => {
+    if (!(key in fields)) return null;
+    const n = Number(fields[key]);
+    if (!(n > 0 && n < 100)) throw new Error(key + " must be a positive number, not \"" + fields[key] + "\"");
+    return n;
+  };
+  let zoom = null;
+  if ("zoom" in fields) zoom = fields.zoom === "fit" ? "fit" : scale("zoom");
+  let pane = null;
+  if ("pane" in fields) {
+    const mm = /^(\d+)x(\d+)$/.exec(String(fields.pane));
+    if (!mm) throw new Error('pane must be WIDTHxHEIGHT, not "' + fields.pane + '"');
+    pane = { w: +mm[1], h: +mm[2] };
+  }
+  if ("text" in fields && fields.text !== "full")
+    throw new Error('text must be "full", not "' + fields.text + '"');
+  if ("flow" in fields && fields.flow !== "col")
+    throw new Error('flow must be "col", not "' + fields.flow + '"');
   for (const key of seen) if (!known.includes(key))
     throw new Error('unknown field "' + key + '" — this identifier may come from a newer build');
   return {
@@ -7218,7 +7338,21 @@ function decodeFoldState(graph, text) {
     byText:          fields.view === "pos",
     facets:          "facets" in fields ? new Set(ids("facets", facetIds, "a facet")) : null,
     untagged:        !("untagged" in fields && fields.untagged === "0"),
-    appraisal:       "appraisal" in fields && fields.appraisal === "1"
+    appraisal:       "appraisal" in fields && fields.appraisal === "1",
+    allText:         fields.text === "full",
+    textOpen:        new Set(ids("more", nodeIds, "a claim")),
+    readColumn:      fields.flow === "col",
+    shape:           fields.shape === "1",
+    pageScale:       scale("pages"),
+    zoom:            fields.view === "mech" ? null : zoom,
+    pane,
+    mech: fields.view !== "mech" ? null : {
+      chain: fields.chain ? decodeURIComponent(fields.chain) : null,
+      boxes: fields.boxes === "1", rival: fields.rival !== "0",
+      show: fields.show === "tested" ? "tested" : "all",
+      folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
+      opened: list("mmore"), zoom
+    }
   };
 }
 

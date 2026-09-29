@@ -909,10 +909,92 @@ function nullsOf(textAll, steps, edges, ids) {
 // chip on it sat beside some other arrow's head (J-PAL sample, 26 Sep 2026).
 // LANE HEADS ARE A STRIP ABOVE THE BOXES, not a column beside them: the actors' names ran under
 // the first column's boxes whenever they were longer than the gutter.
-var BW = 168, BH = 56, COL = 300, GUT = 40, ROW = 100, PADY = 16, TOP = 34, HEAD = 26, STUB = 12;
+// HEAD holds a lane's heading AND the badges on the top edge of its first row's boxes, clear of
+// each other (M1: on the Coleman boat in general the ≈ and ↻ badges sat on "An agent, in general").
+var BW = 168, BH = 56, COL = 300, GUT = 40, ROW = 100, PADY = 16, TOP = 34, HEAD = 34, STUB = 12;
+// M9: rows joined by an arrow between them are this far apart, room for the head, its label, and
+// the marks on both boxes' facing edges; other rows keep ROW - BH.
+var STACK_GAP = 84;
+// The marks on a box's edges (M11: placed here, drawn from here). A badge is a circle of BADGE_R
+// on the top border (or the foot, for a measure); the "more" pill sits on the foot at the left.
+var BADGE_R = 10, BADGE_STEP = 26, PILL_W = 50, PILL_H = 15, PILL_X = 32, GAPWORD_W = 128;
+// One arrowhead for every arrow, whatever its weight (M4).
+var HEAD_LEN = 10, HEAD_W = 10;
+// A box's label: three lines of 14px unless opened; the room kept right of the last column for a
+// state's "✕ no link in the text".
+var MAX_LINES = 3, LINE_H = 14, UNLINKED_W = 150;
+// Zoom: each press of + or − is one step; the chart is never drawn smaller or larger than these.
+var ZOOM_STEP = 1.2, ZOOM_MIN = 0.25, ZOOM_MAX = 3;
 
 /** A point at `t` along a cubic. */
 function bez(p0, p1, p2, p3, t) { var u = 1 - t; return u*u*u*p0 + 3*u*u*t*p1 + 3*u*t*t*p2 + t*t*t*p3; }
+/** Do segments p1-p2 and p3-p4 cross (properly, not merely touch)? */
+function segCross(p1, p2, p3, p4) {
+  var d = (p2[0] - p1[0]) * (p4[1] - p3[1]) - (p2[1] - p1[1]) * (p4[0] - p3[0]);
+  if (Math.abs(d) < 1e-9) return false;
+  var t = ((p3[0] - p1[0]) * (p4[1] - p3[1]) - (p3[1] - p1[1]) * (p4[0] - p3[0])) / d;
+  var u = ((p3[0] - p1[0]) * (p2[1] - p1[1]) - (p3[1] - p1[1]) * (p2[0] - p1[0])) / d;
+  return t > 0.001 && t < 0.999 && u > 0.001 && u < 0.999;
+}
+/** A POINT ALONG AN ARROW. An arrow is one cubic, or -- where it is routed round boxes -- several
+ *  joined end to end (`segs`); `t` runs 0 to 1 over the whole, each segment an equal share. */
+function segsOf(e) { return e.segs || [e.curve]; }
+function pathAt(e, t) {
+  var S = segsOf(e), n = S.length, i = Math.min(n - 1, Math.max(0, Math.floor(t * n))), u = Math.min(1, Math.max(0, t * n - i)), P = S[i];
+  return [bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)];
+}
+function pathPts(e, per) {
+  var out = [];
+  segsOf(e).forEach(function (P, si) { for (var i = si ? 1 : 0; i <= per; i++) { var u = i / per;
+    out.push([bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)]); } });
+  return out;
+}
+function segsPath(S) {
+  return S.map(function (P, i) { return (i ? "" : "M" + P[0][0] + "," + P[0][1] + " ") + "C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1]; }).join(" ");
+}
+/** An orthogonal run through the points W, its corners rounded with radius r: the returning arcs'
+ *  shape, as cubic segments. */
+function roundPath(W, r) {
+  var segs = [], cur = W[0];
+  var line = function (A, B) { if (Math.hypot(B[0] - A[0], B[1] - A[1]) < 0.5) return;
+    segs.push([A, [A[0] + (B[0] - A[0]) / 3, A[1] + (B[1] - A[1]) / 3], [A[0] + 2 * (B[0] - A[0]) / 3, A[1] + 2 * (B[1] - A[1]) / 3], B]); };
+  for (var i = 1; i < W.length; i++) {
+    var p = W[i], nx = W[i + 1];
+    if (!nx) { line(cur, p); break; }
+    var li = Math.hypot(p[0] - W[i - 1][0], p[1] - W[i - 1][1]) || 1, lo = Math.hypot(nx[0] - p[0], nx[1] - p[1]) || 1;
+    var rr = Math.min(r, li / 2, lo / 2);
+    var A = [p[0] - (p[0] - W[i - 1][0]) / li * rr, p[1] - (p[1] - W[i - 1][1]) / li * rr];
+    var B = [p[0] + (nx[0] - p[0]) / lo * rr, p[1] + (nx[1] - p[1]) / lo * rr];
+    line(cur, A);
+    segs.push([A, [A[0] + (p[0] - A[0]) * 0.55, A[1] + (p[1] - A[1]) * 0.55], [B[0] + (p[0] - B[0]) * 0.55, B[1] + (p[1] - B[1]) * 0.55], B]);
+    cur = B;
+  }
+  return segs;
+}
+/** Does the polyline enter the rectangle shrunk by `inset`? Exact per segment (Liang-Barsky), so
+ *  the router and the audit agree on a line that grazes a corner, as sampling did not. */
+function polyHitsRect(pts, n, inset) {
+  var x0 = n.x + inset, x1 = n.x + n.w - inset, y0 = n.y + inset, y1 = n.y + n.h - inset;
+  if (x1 <= x0 || y1 <= y0) return false;
+  for (var i = 0; i + 1 < pts.length; i++) {
+    var ax = pts[i][0], ay = pts[i][1], dx = pts[i + 1][0] - ax, dy = pts[i + 1][1] - ay, lo = 0, hi = 1, ok = true;
+    [[-dx, ax - x0], [dx, x1 - ax], [-dy, ay - y0], [dy, y1 - ay]].forEach(function (pq) {
+      if (!ok) return;
+      if (pq[0] === 0) { if (pq[1] < 0) ok = false; return; }
+      var r = pq[1] / pq[0];
+      if (pq[0] < 0) { if (r > hi) ok = false; else if (r > lo) lo = r; }
+      else { if (r < lo) ok = false; else if (r < hi) hi = r; }
+    });
+    if (ok && hi - lo > 1e-6) return true;
+  }
+  return false;
+}
+/** How many times two polylines cross. */
+function crossCount(A, B) {
+  var n = 0;
+  for (var i = 0; i + 1 < A.length; i++) for (var j = 0; j + 1 < B.length; j++) if (segCross(A[i], A[i + 1], B[j], B[j + 1])) n++;
+  return n;
+}
 function overlap(a, b) {
   var w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
   return w > 0 && h > 0 ? w * h : 0;
@@ -956,8 +1038,50 @@ function signWord(signs) {
 
 /** Geometry for the whole chain, every layer included. Pure: the same model gives the same
  *  numbers, and nothing the reader switches changes them. */
+/** WHICH MARKS EACH BOX CARRIES in a drawing of M (FULL, or a chain or the boxes drawn from it):
+ *  the loop and system badges at its top right, ⇄ (in another chain) and ≈ (a kind shared) at its
+ *  top left, ≙ (a measure of another state) at its foot. Pure, so the layout places them (M11) and
+ *  the audit sees them; the drawing reads the same answer. */
+function markSpec(FULL, M) {
+  var SYS = M.profile.feedback.filter(function (f) { return f.loops > LOOPS_LISTED; });
+  var inBig = function (l) { return SYS.some(function (f) { return l.states.every(function (v) { return f.states.indexOf(v) >= 0; }); }); };
+  var LOOPS = M.profile.loops_text.filter(function (l) { return !inBig(l); });
+  var KINDS = (FULL && FULL.profile.kinds) || [];
+  var marks = {};
+  M.ids.forEach(function (v) {
+    var right = [], left = [], foot = [];
+    LOOPS.forEach(function (l, li) { if (l.states.indexOf(v) >= 0) right.push({ kind: "loop", i: li }); });
+    SYS.forEach(function (f, fi) { if (f.states.indexOf(v) >= 0) right.push({ kind: "system", i: fi }); });
+    var elsewhere = M.chain && M.chain.shared && M.chain.shared[v];
+    if (elsewhere && elsewhere.length) left.push({ kind: "shared" });
+    var k = FULL ? obj(FULL.states[v]).kind : null, kd = k == null ? null : KINDS.filter(function (x) { return x.id === String(k); })[0];
+    if (kd && kd.states.some(function (w) { return w !== v; })) left.push({ kind: "kin" });
+    var ms = FULL ? obj(FULL.states[v]).measures : null;
+    if (ms != null && has(FULL.states, ms)) foot.push({ kind: "measure" });
+    marks[v] = { left: left, right: right, foot: foot };
+  });
+  return { marks: marks, loops: LOOPS, systems: SYS };
+}
+
+/** Lay the chain out. Twice where the first pass finds a box too short for the arrows arriving
+ *  at it (M9): the second gives each such box the height its arrivals need, heads a head's width
+ *  apart, and everything below moves down to make room. */
 function layout(M, opts) {
   opts = opts || {};
+  var G = layoutOnce(M, opts), minH = {}, minW = {};
+  // Up to three passes: making room in one place can show a need in another. Needs only grow, so
+  // this settles.
+  for (var pass = 0; pass < 3; pass++) {
+    var grew = false;
+    Object.keys(G.needH || {}).forEach(function (v) { if (!(minH[v] >= G.needH[v])) { minH[v] = G.needH[v]; grew = true; } });
+    Object.keys(G.needW || {}).forEach(function (c) { if (!(minW[c] >= G.needW[c])) { minW[c] = G.needW[c]; grew = true; } });
+    if (!grew) break;
+    G = layoutOnce(M, Object.assign({}, opts, { minH: minH, minW: minW }));
+  }
+  delete G.needH; delete G.needW;
+  return G;
+}
+function layoutOnce(M, opts) {
   // A CO-CAUSE ORDERS THE CHAIN AS A CAUSE DOES (profile 1.4): "belief moves people to act only
   // with a wish to fit in" puts the wish before the act, as the checker's routes have it. So the
   // columns, the systems and the depth-first walk see each co-cause as a step of its own; only
@@ -1077,22 +1201,64 @@ function layout(M, opts) {
     ids.forEach(function (v) { if (!spans(v) && range[v][0] === li) place(v, li); });
     ids.forEach(function (v) { if (spans(v) && range[v][0] === li) place(v, li); });
   });
+  // A BOX THE READER HAS OPENED TO ITS WHOLE LABEL IS TALLER, and its row with it (James, 29 Sep
+  // 2026: a label cut at three lines hid what the state was). Rows are no longer one fixed pitch:
+  // each row of a lane is as tall as the tallest box in it, so what lies below moves down rather
+  // than under the opened box -- as a claim's "more" re-lays the Reasons map. Closed, every row is
+  // ROW apart as before.
+  var labelOf = function (v) { return obj(M.states[v]).label || v; };
+  var boxH = {};
+  ids.forEach(function (v) {
+    var n = wrapWords(labelOf(v), charsFor(BW), Infinity).length;
+    boxH[v] = opts.open && opts.open[v] && !spans(v) && n > MAX_LINES ? Math.max(BH, n * LINE_H + LINE_H + 10) : BH;
+    if (opts.minH && opts.minH[v] && !spans(v)) boxH[v] = Math.max(boxH[v], opts.minH[v]);
+  });
+  var rowHs = M.levels.map(function (lv) {
+    var hs = [];
+    Object.keys(slots).forEach(function (k) {
+      if (k.slice(0, lv.length + 1) !== lv + "|") return;
+      slots[k].forEach(function (v, r) { hs[r] = Math.max(hs[r] || BH, spans(v) ? BH : boxH[v]); });
+    });
+    return hs;
+  });
+  // M9: ROOM IS MADE, NOT SQUEEZED. Two boxes stacked in one column with a step between them have
+  // the arrow, its head, its label and the marks on both facing edges to hold: 44px held none of it
+  // (the Coleman boat's B and C, 30 Sep 2026). That gap grows; the rest keep the old pitch.
+  var joined = {};
+  ordering.forEach(function (st) { if (st.from !== st.to) joined[st.from + "\u0000" + st.to] = joined[st.to + "\u0000" + st.from] = true; });
+  var gapAfter = M.levels.map(function (lv, li) {
+    var gs = [];
+    Object.keys(slots).forEach(function (k) {
+      if (k.slice(0, lv.length + 1) !== lv + "|") return;
+      var col0 = slots[k];
+      for (var r = 0; r + 1 < col0.length; r++)
+        if (joined[col0[r] + "\u0000" + col0[r + 1]]) gs[r] = STACK_GAP;
+    });
+    return gs;
+  });
+  var rowOff = function (li, r) { var t = 0; for (var i = 0; i < r; i++) t += rowHs[li][i] + (gapAfter[li][i] || ROW - BH); return t; };
   var lanes = [], y = TOP;
-  M.levels.forEach(function (lv) {
-    var rows = 0;
-    Object.keys(slots).forEach(function (k) { if (k.slice(0, lv.length + 1) === lv + "|") rows = Math.max(rows, slots[k].length); });
+  M.levels.forEach(function (lv, li) {
+    var rows = rowHs[li].length;
     // A level nothing in the text reaches is a thin strip that says so, not an empty band.
-    var h = rows ? HEAD + rows * ROW + PADY : HEAD + 4;
-    lanes.push({ level: lv, y: y, h: h, empty: !rows,
-                 actors: Object.keys(M.actors).filter(function (a) { return obj(M.actors[a]).level === lv; })
-                           .map(function (a) { return obj(M.actors[a]).label || a; }) });
+    var h = rows ? HEAD + rowOff(li, rows) + PADY : HEAD + 4;
+    var actorsHere = Object.keys(M.actors).filter(function (a) { return obj(M.actors[a]).level === lv; })
+                           .map(function (a) { return obj(M.actors[a]).label || a; });
+    // THE HEADING'S EXTENT, estimated as the chips' are, so labels keep clear of its words (M1) and
+    // not of the whole strip; the page test holds the estimate to what the browser draws.
+    var who = !rows ? "nothing in the text at this level" : actorsHere.join(" · ");
+    lanes.push({ level: lv, y: y, h: h, empty: !rows, actors: actorsHere, who: who,
+                 head: { x: 8, y: y + 4, w: 8 + lv.length * 9 + 10 + who.length * 6.9, h: 18 } });
     y += h;
   });
   var nodes = {}, maxRank = 0;
+  // M9 ACROSS: a gap between two columns is widened where a label on an arrow across it had no
+  // clear place (Badger culling's ranging → contact, 30 Sep 2026); asked for by placeChips below.
+  var xOfCol = function (c) { var x = GUT + c * COL; for (var i = 0; i < c; i++) x += (opts.minW && opts.minW[i]) || 0; return x; };
   ids.forEach(function (v) {
-    var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + slots[M.levels[li] + "|" + col[v]].indexOf(v) * ROW; };
-    var top = rowY(range[v][0]), bottom = rowY(range[v][1]) + BH;
-    nodes[v] = { x: GUT + col[v] * COL, y: top, w: BW, h: bottom - top };
+    var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + rowOff(li, slots[M.levels[li] + "|" + col[v]].indexOf(v)); };
+    var top = rowY(range[v][0]), bottom = rowY(range[v][1]) + (spans(v) ? BH : boxH[v]);
+    nodes[v] = { x: xOfCol(col[v]), y: top, w: BW, h: bottom - top, col: col[v] };
     if (spans(v)) nodes[v].levels = M.levels.slice(range[v][0], range[v][1] + 1);
     maxRank = Math.max(maxRank, col[v]);
   });
@@ -1112,6 +1278,67 @@ function layout(M, opts) {
       gr.forEach(function (v, i) { nodes[v].x += i * (w + 8); nodes[v].w = w; });
     });
   });
+  // WHAT EACH BOX SAYS, and whether it says all of it. Three lines, or as many as a box running
+  // through several lanes has room for; `more` offers the rest, `open` is showing it.
+  ids.forEach(function (v) {
+    var p = nodes[v], all = wrapWords(labelOf(v), charsFor(p.w), Infinity);
+    var cap = spans(v) ? Math.max(MAX_LINES, Math.floor((p.h - LINE_H) / LINE_H)) : MAX_LINES;
+    p.more = all.length > cap;
+    p.open = !!(p.more && opts.open && opts.open[v]);
+    if (p.open && spans(v)) p.h = Math.max(p.h, all.length * LINE_H + LINE_H + 10);
+    p.lines = p.open ? all : wrapWords(labelOf(v), charsFor(p.w), cap);
+  });
+  // A HEADING STOPS SHORT OF A BOX IN ITS STRIP (M1): a state across levels runs down through the
+  // lower lane's heading, and a long list of actors ran on under it (the Coleman boat's Schelling
+  // model, 30 Sep 2026). The words are cut to the room before the first such box, and say
+  // themselves in full on hover.
+  lanes.forEach(function (ln) {
+    var hd = ln.head, stop = Infinity;
+    ids.forEach(function (v) { var n = nodes[v];
+      if (n.y < hd.y + hd.h + 16 && n.y + n.h > hd.y && n.x + n.w > hd.x) stop = Math.min(stop, n.x - 8); });
+    if (hd.x + hd.w <= stop) return;
+    var room = Math.max(0, stop - hd.x - 8 - ln.level.length * 9 - 10), keepN = Math.floor(room / 6.9);
+    ln.whoFull = ln.who;
+    ln.who = keepN >= ln.who.length ? ln.who : keepN > 3 ? ln.who.slice(0, keepN - 1).replace(/\s+\S*$/, "") + "…" : "";
+    hd.w = 8 + ln.level.length * 9 + (ln.who ? 10 + ln.who.length * 6.9 : 0);
+  });
+  // THE MARKS ON EACH BOX, placed here so everything else keeps clear of them (M11). Positions are
+  // relative to the box's top-left corner; `r` is the badge's radius.
+  ids.forEach(function (v) {
+    var p = nodes[v], mk = (opts.marks && opts.marks[v]) || { left: [], right: [], foot: [] };
+    p.badges = [];
+    mk.left.forEach(function (b, i) { p.badges.push({ kind: b.kind, i: b.i, x: BADGE_R + i * BADGE_STEP, y: -5, r: BADGE_R, edge: "top" }); });
+    mk.right.forEach(function (b, j) { p.badges.push({ kind: b.kind, i: b.i, x: p.w - BADGE_R - j * BADGE_STEP, y: -5, r: BADGE_R, edge: "top" }); });
+    mk.foot.forEach(function (b) { p.badges.push({ kind: b.kind, x: p.w - BADGE_R, y: p.h + 5, r: BADGE_R, edge: "foot" }); });
+    p.pill = p.more ? { x: PILL_X - PILL_W / 2, y: p.h - PILL_H / 2, w: PILL_W, h: PILL_H } : null;
+  });
+  // A STATE THE TEXT LINKS TO NOTHING says so beside its box -- and the drawing is wide enough to
+  // hold the words: on the last column "✕ no link in the text" ran off the edge and read "✕ no l"
+  // (James, Valentino's second chain, 29 Sep 2026).
+  var unlinkedRight = false;
+  ids.forEach(function (v) {
+    var s = M.states[v];
+    nodes[v].unlinked = isStart(s) && !M.steps.some(function (x) {
+      return x.layer === "text" && (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0 ||
+                                    (x.modifies || []).some(function (m) { return m.by === v; })); });
+    if (nodes[v].unlinked && col[v] === maxRank) unlinkedRight = true;
+    nodes[v].gapword = nodes[v].unlinked ? { x: nodes[v].w + 10, y: nodes[v].h / 2 - 8, w: GAPWORD_W, h: 14 } : null;
+  });
+  /** Where on a box's top or foot an arrow may meet it: the stretch clear of that edge's marks
+   *  (M4: the head of Admissions' arrow up into "How students think" sat on its "more" pill). */
+  var freeSpan = function (v, edge) {
+    var p = nodes[v], lo = 0, hi = p.w, taken = [];
+    (p.badges || []).forEach(function (b) { if (b.edge === edge) taken.push([b.x - b.r - 4, b.x + b.r + 4]); });
+    if (edge === "foot" && p.pill) taken.push([p.pill.x - 4, p.pill.x + p.pill.w + 4]);
+    // The widest stretch between the taken ones.
+    var cuts = [[-Infinity, 0]].concat(taken.sort(function (a, b) { return a[0] - b[0]; }), [[p.w, Infinity]]);
+    var best = [0, p.w], bw = -1;
+    for (var i = 0; i + 1 < cuts.length; i++) {
+      var a = Math.max(lo, cuts[i][1]), b = Math.min(hi, cuts[i + 1][0]);
+      if (b - a > bw) { bw = b - a; best = [a, b]; }
+    }
+    return best;
+  };
 
   // FOLDING DRAWS, IT DOES NOT MOVE. Every state keeps the place the whole chain gives it (F3: a
   // folded view is a projection of one fixed order); a folded state is simply not drawn, and the
@@ -1226,6 +1453,7 @@ function layout(M, opts) {
     (ins[s0.to] = ins[s0.to] || []).push(k);
   });
   var cyOf = function (v) { return nodes[v].y + nodes[v].h / 2; };
+  var xOfColL = xOfCol;
   // An arrow is disputed where one of its claims is set against a claim on another arrow between the
   // same two states (the model's `against`, from the argument).
   var disputedKey = function (ss) {
@@ -1243,6 +1471,89 @@ function layout(M, opts) {
   var periodRank = {};
   M.steps.forEach(function (s, i) { if (s.period && !has(periodRank, s.period)) periodRank[s.period] = i; });
   var timeOf = function (k) { var pd = groups[k][0].period; return pd && has(periodRank, pd) ? periodRank[pd] : -1; };
+  // THE COLUMNS' FREE GAPS, for routing (M2). An arrow was one curve from its start to its end,
+  // and one that skipped a column ran through whatever box stood in its way: on the Coleman boat in
+  // general, C's arrow to the rules of the game ran behind the agents' mental states, and read as
+  // going into them (30 Sep 2026; 290 such arrows across the research maps). Each column's boxes,
+  // with the room their badges and pills take above and below, leave gaps an arrow can pass through.
+  var drawnHere = function (v) { return !drawn.folded[v] && setAside.indexOf(v) < 0; };
+  var colSpan = {};
+  Object.keys(nodes).forEach(function (v) {
+    if (!drawnHere(v)) return;
+    var n = nodes[v];
+    (colSpan[n.col] = colSpan[n.col] || []).push([n.y - 20, n.y + n.h + 12]);
+  });
+  var used = {};
+  /** The height at which to cross column c, nearest `ideal`, in a gap clear of its boxes and of the
+   *  arrows already routed through it. */
+  var crossAt = function (c, ideal, peek) {
+    var spans = (colSpan[c] || []).slice().sort(function (p, q) { return p[0] - q[0]; });
+    // Not along the drawing's very top edge: an arrow there took its label off the drawing.
+    var gaps = [], top = TOP + 4;
+    spans.forEach(function (sp) { if (sp[0] > top) gaps.push([top, sp[0]]); top = Math.max(top, sp[1]); });
+    gaps.push([top, Infinity]);
+    var best = null, bd = Infinity;
+    gaps.forEach(function (g) {
+      if (g[1] - g[0] < 10) return;
+      var yy = Math.min(Math.max(ideal, g[0] + 5), g[1] - 5);
+      // Apart from the arrows already through this gap, so two routes do not run as one line.
+      var u = used[c] || [], guard = 0;
+      while (u.some(function (w) { return Math.abs(w - yy) < 7; }) && guard++ < 12) yy += yy + 7 < g[1] - 5 ? 7 : -7;
+      if (Math.abs(yy - ideal) < bd) { bd = Math.abs(yy - ideal); best = yy; }
+    });
+    if (!peek) (used[c] = used[c] || []).push(best);
+    return best;
+  };
+  var hitsBox = function (segs, skip) {
+    return Object.keys(nodes).some(function (v) {
+      if (!drawnHere(v) || skip.indexOf(v) >= 0) return false;
+      return polyHitsRect(pathPts({ segs: segs }, 40), nodes[v], 2);
+    });
+  };
+  /** A forward arrow from S to E, through the columns between: level across each column, in a gap,
+   *  and a curve between, each meeting the next level so the whole reads as one line. `down` is
+   *  true where it leaves from a box's top or foot, and so starts vertical. */
+  var routeThrough = function (S, E, c0, c1, vertStart) {
+    var pts = [], prev = S;
+    for (var c = c0 + 1; c < c1; c++) {
+      var xl = xOfCol(c) - 8, xr = xOfCol(c) + BW + 8;
+      var ideal = prev[1] + (E[1] - prev[1]) * (xl - prev[0]) / Math.max(1, E[0] - prev[0]);
+      var yy = crossAt(c, ideal);
+      pts.push([xl, yy], [xr, yy]);
+      prev = [xr, yy];
+    }
+    var segs = [], at = S;
+    var join = function (A, B, vert) {
+      var c2 = Math.max(18, (B[0] - A[0]) / 2);
+      segs.push(vert ? [A, [A[0], A[1] + (B[1] - A[1]) * 0.75], [B[0] - c2, B[1]], B]
+                     : [A, [A[0] + c2, A[1]], [B[0] - c2, B[1]], B]);
+    };
+    for (var i = 0; i < pts.length; i += 2) {
+      join(at, pts[i], !segs.length && vertStart);
+      var L = pts[i], R = pts[i + 1], w3 = (R[0] - L[0]) / 3;
+      segs.push([L, [L[0] + w3, L[1]], [R[0] - w3, R[1]], R]);
+      at = R;
+    }
+    join(at, E, !segs.length && vertStart);
+    return segs;
+  };
+
+  // WHERE EACH ROUTED ARROW HEADS, before its port is chosen: an arrow that goes under a box on its
+  // way leaves from low on its side, whatever the height of where it ends (the Coleman boat in
+  // general: C's two arrows crossed as they left it, 30 Sep 2026).
+  var aimOut = {}, aimIn = {};
+  order.forEach(function (k) {
+    var s0 = groups[k][0], a = nodes[s0.from], b = nodes[s0.to];
+    if (isBackKey[k] || isVertKey[k] || isSideKey[k] || b.col - a.col < 2) return;
+    var S = [a.x + a.w, cyOf(s0.from)], E = [b.x - 2 - STUB, cyOf(s0.to)], cc0 = Math.max(40, (E[0] - S[0]) / 2);
+    if (!hitsBox([[S, [S[0] + cc0, S[1]], [E[0] - cc0, E[1]], E]], [s0.from, s0.to])) return;
+    var ys = [], prev = S;
+    for (var cc = a.col + 1; cc < b.col; cc++) {
+      var xl = xOfCol(cc) - 8, ideal = prev[1] + (E[1] - prev[1]) * (xl - prev[0]) / Math.max(1, E[0] - prev[0]);
+      var yy = crossAt(cc, ideal, true); ys.push(yy); prev = [xOfCol(cc) + BW + 8, yy];
+    }
+    aimOut[k] = ys[0]; aimIn[k] = ys[ys.length - 1];
+  });
   var portY = {}, portIn = {}, portSide = {}, portX = {};
   // AN ARROW TO A STATE WELL BELOW OR ABOVE LEAVES FROM THE BOX'S BOTTOM OR TOP. Seven arrows
   // leaving the FAST intervention's right side and dropping into the lane below ran as one tight
@@ -1271,20 +1582,30 @@ function layout(M, opts) {
         var a = cyOf(groups[p][0].to), b = cyOf(groups[q][0].to);
         return (where === "bottom" ? b - a : a - b) || timeOf(p) - timeOf(q) || (p < q ? -1 : p > q ? 1 : 0);
       });
-      list.forEach(function (k, i) { portSide[k] = where; portX[k] = n.x + 14 + (n.w - 28) * (i + 0.5) / list.length; });
+      var fs = freeSpan(v, where === "bottom" ? "foot" : "top"), a0 = fs[0] + 8, a1 = fs[1] - 8;
+      list.forEach(function (k, i) { portSide[k] = where; portX[k] = n.x + a0 + (a1 - a0) * (i + 0.5) / list.length; });
     };
     fan(below, "bottom"); fan(above, "top");
     outs[v] = side;
   });
   var spread = function (list, key, other, into) {
+    var aim = key === "from" ? aimOut : aimIn;
+    var yOf = function (k2) { return has(aim, k2) ? aim[k2] : cyOf(groups[k2][0][other]); };
     list.sort(function (p, q) {
       var a = groups[p][0], b = groups[q][0];
-      return cyOf(a[other]) - cyOf(b[other]) || nodes[a[other]].x - nodes[b[other]].x || timeOf(p) - timeOf(q) || (p < q ? -1 : p > q ? 1 : 0);
+      return yOf(p) - yOf(q) || nodes[a[other]].x - nodes[b[other]].x || timeOf(p) - timeOf(q) || (p < q ? -1 : p > q ? 1 : 0);
     });
     list.forEach(function (k, i) { var n = nodes[groups[k][0][key]]; into[k] = n.y + 8 + (n.h - 16) * (i + 0.5) / list.length; });
   };
   Object.keys(outs).forEach(function (v) { spread(outs[v], "from", "to", portY); });
   Object.keys(ins).forEach(function (v) { spread(ins[v], "to", "from", portIn); });
+  // A SIDE TOO SHORT FOR ITS ARRIVALS: their heads would sit on each other (1,252 such pairs across
+  // the research maps, 30 Sep 2026). Asked for here, granted by the second pass in `layout`.
+  var needH = {};
+  Object.keys(ins).forEach(function (v) {
+    var want = 16 + (HEAD_W + 4) * ins[v].length;
+    if (want > nodes[v].h + 0.5) needH[v] = want;
+  });
 
   var edges = order.map(function (k) {
     var ss = groups[k], s0 = ss[0], a = nodes[s0.from], b = nodes[s0.to];
@@ -1306,13 +1627,15 @@ function layout(M, opts) {
     var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : "text";   // kind is "step" when mixed
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
-    var d, stub, P;
+    var d, stub, P, segs = null;
     if (isVertKey[k]) {
       // Downward arrows to the left of the centre, upward ones to the right, spread if several.
       var down = b.y > a.y, mine = pairKeys[[s0.from, s0.to].sort().join("\u0000")];
       var ways = mine.filter(function (q) { return (nodes[groups[q][0].to].y > nodes[groups[q][0].from].y) === down; });
       var both = mine.length > ways.length;
-      var vx = a.x + a.w / 2 + (both ? (down ? -14 : 14) : 0) + (ways.indexOf(k) - (ways.length - 1) / 2) * 10 * (down ? -1 : 1);
+      var fa = freeSpan(s0.from, down ? "foot" : "top"), fb = freeSpan(s0.to, down ? "top" : "foot");
+      var lo = Math.max(fa[0], fb[0]) + 8, hi = Math.min(fa[1], fb[1]) - 8, mid = (lo + hi) / 2;
+      var vx = a.x + (hi > lo ? mid : a.w / 2) + (both ? (down ? -14 : 14) : 0) + (ways.indexOf(k) - (ways.length - 1) / 2) * 10 * (down ? -1 : 1);
       var vy1 = down ? a.y + a.h : a.y, vy2 = down ? b.y - 2 : b.y + b.h + 2, vyE = down ? vy2 - STUB : vy2 + STUB;
       P = [[vx, vy1], [vx, vy1 + (vyE - vy1) / 3], [vx, vy1 + 2 * (vyE - vy1) / 3], [vx, vyE]];
       stub = "M" + vx + "," + vyE + " L" + vx + "," + vy2;
@@ -1324,39 +1647,61 @@ function layout(M, opts) {
       P = [[ex, ya], [ex + sgn * bulge, ya], [sxE + sgn * (bulge - STUB), yb], [sxE, yb]];
       stub = "M" + sxE + "," + yb + " L" + sx2 + "," + yb;
     } else if (isBack) {
+      // A RETURNING ARC runs under the boxes, from its source's foot to its target's (M2). Where a
+      // box stands below either end in its column, that leg cannot go straight down or up through
+      // it: it goes out of the box's side into the gap beside the column instead, and a target so
+      // blocked is entered from its left side (Merton's bank loop, 29 Sep 2026). The run under is
+      // at the shallowest depth clear of every box between.
+      var below = function (n) { return Object.keys(nodes).some(function (w) { var m = nodes[w];
+        return drawnHere(w) && m !== n && m.y > n.y && m.x < n.x + n.w && m.x + m.w > n.x; }); };
+      var outSide = below(a), inSide = below(b);
       var x1 = a.x + a.w / 2 + off, y1 = a.y + a.h, x2 = b.x + b.w / 2 + off, y2 = b.y + b.h;
-      var dip = Math.max(y1, y2) + 46 + Math.abs(off) * 2;
-      // A BOX STACKED BELOW THE ONE RETURNED TO: coming up from underneath, the arc crossed it and
-      // met the arrow between them (Merton's bank loop, James's verdict, 29 Sep 2026). It comes in
-      // from the left side instead.
-      var under = Object.keys(nodes).some(function (w) { var m = nodes[w]; return m !== b && m.x === b.x && m.y > b.y; });
-      if (under) {
-        dip = Math.max(dip, Object.keys(nodes).reduce(function (lo, w) { var m = nodes[w];
-          return m.x === b.x && m.y > b.y ? Math.max(lo, m.y + m.h + 30) : lo; }, 0));
-        var yin = b.y + b.h / 2 + 8, xin = b.x - 2, xe = xin - STUB;
-        P = [[x1, y1], [x1, dip], [xe - 60, yin], [xe, yin]];
-        stub = "M" + xe + "," + yin + " L" + xin + "," + yin;
-      } else {
-        P = [[x1, y1], [x1, dip], [x2, dip], [x2, y2 + STUB + 2]];
-        stub = "M" + x2 + "," + (y2 + STUB + 2) + " L" + x2 + "," + (y2 + 2);
-      }
+      var yo = a.y + a.h / 2 + 8, gxa = a.x + a.w + 22 + Math.abs(off), yin = b.y + b.h / 2 + 8, xin = b.x - 2, xe = xin - STUB, gxb = xe - 26 - Math.abs(off);
+      var shape = function (dp) {
+        var W = outSide ? [[a.x + a.w, yo], [gxa, yo], [gxa, dp]] : [[x1, y1], [x1, dp]];
+        W = W.concat(inSide ? [[gxb, dp], [gxb, yin], [xe, yin]] : [[x2, dp], [x2, y2 + STUB + 2]]);
+        return roundPath(W, 18);
+      };
+      var dip0 = Math.max(outSide ? yo : y1, inSide ? yin : y2) + 30 + Math.abs(off) * 2;
+      var dips = [dip0];
+      Object.keys(nodes).forEach(function (w) { var m = nodes[w];
+        if (drawnHere(w) && m.y + m.h + 30 > dip0 && m.x + m.w > Math.min(x1, x2, gxb) - 20 && m.x < Math.max(x1, x2, gxa) + 20) dips.push(m.y + m.h + 34 + Math.abs(off)); });
+      dips.sort(function (p, q) { return p - q; });
+      var pickDip = dips[dips.length - 1];
+      for (var di = 0; di < dips.length; di++) if (!hitsBox(shape(dips[di]), [s0.from, s0.to])) { pickDip = dips[di]; break; }
+      segs = shape(pickDip);
+      var lastB = segs[segs.length - 1];
+      P = [segs[0][0], segs[0][1], lastB[2], lastB[3]];
+      stub = inSide ? "M" + xe + "," + yin + " L" + xin + "," + yin
+                    : "M" + x2 + "," + (y2 + STUB + 2) + " L" + x2 + "," + (y2 + 2);
     } else {
       var X2 = b.x - 2, Y2 = portIn[k], XE = X2 - STUB;
+      var S0;
       if (portSide[k]) {
         var BX = portX[k], BY = portSide[k] === "bottom" ? a.y + a.h : a.y;
         var c2 = Math.max(30, (XE - BX) / 2);
         P = [[BX, BY], [BX, BY + (Y2 - BY) * 0.75], [XE - c2, Y2], [XE, Y2]];
+        S0 = [BX, BY];
       } else {
         var X1 = a.x + a.w, Y1 = portY[k], c = Math.max(40, (XE - X1) / 2);
         P = [[X1, Y1], [X1 + c, Y1], [XE - c, Y2], [XE, Y2]];
+        S0 = [X1, Y1];
+      }
+      // Routed only where the one curve would run through a box; a clear arrow keeps its curve.
+      if (b.col - a.col > 1 && hitsBox([P], [s0.from, s0.to])) {
+        segs = routeThrough(S0, [XE, Y2], a.col, b.col, !!portSide[k]);
+        var last = segs[segs.length - 1];
+        P = [segs[0][0], segs[0][1], last[2], last[3]];
       }
       stub = "M" + XE + "," + Y2 + " L" + X2 + "," + Y2;
     }
-    d = "M" + P[0][0] + "," + P[0][1] + " C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1];
+    d = segs ? segsPath(segs) : "M" + P[0][0] + "," + P[0][1] + " C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1];
     // A null finding has no head, so no stub: its line runs all the way in.
-    if (kind === "null") { d += " L" + (isVertKey[k] ? P[3][0] + "," + (P[3][1] + (b.y > a.y ? STUB : -STUB))
-                                        : isSideKey[k] ? (P[3][0] + (b.y > a.y ? STUB : -STUB)) + "," + P[3][1]
-                                        : isBack ? P[3][0] + "," + (P[3][1] - STUB) : (P[3][0] + STUB) + "," + P[3][1]); stub = null; }
+    // It runs on along its own last direction, whichever side of the box it comes in by.
+    if (kind === "null") {
+      var nd = [P[3][0] - P[2][0], P[3][1] - P[2][1]], nl = Math.hypot(nd[0], nd[1]) || 1;
+      d += " L" + (P[3][0] + nd[0] / nl * STUB) + "," + (P[3][1] + nd[1] / nl * STUB); stub = null;
+    }
     var signs = [];
     ss.forEach(function (s) { if (s.sign && signs.indexOf(s.sign) < 0) signs.push(s.sign); });
     // ↻ marks the step that closes a loop: an arc that returns, or a step in one column that the
@@ -1424,9 +1769,10 @@ function layout(M, opts) {
     ss.forEach(function (x) { (x.modifies || []).forEach(function (m) {
       if (has(M.states, m.by) && nodes[m.by] && m.by !== s0.to && m.by !== s0.from &&
           !modifiers.some(function (y) { return y.state === m.by; })) modifiers.push({ state: m.by, effect: m.effect }); }); });
-    return { key: k, base: baseOf[k] || k, expanded: (baseOf[k] || k) !== k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, modifiers: modifiers, rests: rests, stems: [], junction: /** @type {null | {x:number,y:number,bar:string,gate:string,back:number[]}} */ (null),
+    return { key: k, base: baseOf[k] || k, expanded: (baseOf[k] || k) !== k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, modifiers: modifiers, rests: rests, stems: [], junction: /** @type {null | {x:number,y:number,bar:string,gate:string,back:number[],u?:number[],n?:number[],box?:any}} */ (null),
+             head: /** @type {null | {x:number,y:number,w:number,h:number}} */ (null), gateT: 0,
              ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
-             steps: ss, path: d, stub: stub, curve: P,
+             steps: ss, path: d, stub: stub, curve: P, segs: segs,
              // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
              // where many chips crowd, and not the + and − that mean support and attack in Reasons.
              chip: (function () {
@@ -1439,9 +1785,117 @@ function layout(M, opts) {
   });
   var shown = {};
   Object.keys(nodes).forEach(function (v) { if (!drawn.folded[v] && setAside.indexOf(v) < 0) shown[v] = nodes[v]; });
-  edges.forEach(function (e) { stemsOf(e, shown); });
-  placeChips(edges, shown, lanes);
-  return { width: GUT + maxRank * COL + BW + 40, height: y + 70, lanes: lanes, nodes: nodes,
+  // EVERY HEAD ON A SIDE OF A BOX, APART (M1). Each kind of arrow chose where it arrives on its own
+  // -- an arc returning into a box's foot, a straight arrow up into the same foot -- and their heads
+  // met (Merton's prejudice, 30 Sep 2026). Here all the heads on one side of one box are spread
+  // along it, in the order they came, a head's width and a little apart, within what the side's
+  // marks leave free; a side with no room for them asks the second pass for a taller box.
+  var sideOf = function (e) {
+    if (!e.stub) return null;
+    var m = /M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/.exec(e.stub), b = nodes[e.to];
+    var x1 = +m[3], y1 = +m[4];
+    if (+m[2] === y1) return Math.abs(x1 - b.x) < Math.abs(x1 - b.x - b.w) ? "L" : "R";
+    return Math.abs(y1 - b.y) < Math.abs(y1 - b.y - b.h) ? "T" : "B";
+  };
+  var bySide = {};
+  edges.forEach(function (e) { var sd = sideOf(e); if (sd) (bySide[e.to + "\u0000" + sd] = bySide[e.to + "\u0000" + sd] || []).push(e); });
+  var reStub = function (e) { e.path = segsPath(segsOf(e)); };
+  Object.keys(bySide).forEach(function (key) {
+    var list = bySide[key]; if (list.length < 2) return;
+    var v = key.split("\u0000")[0], sd = key.split("\u0000")[1], b = nodes[v], across = sd === "L" || sd === "R";
+    var coord = function (e) { var m = /L([-\d.]+),([-\d.]+)/.exec(e.stub); return across ? +m[2] : +m[1]; };
+    list.sort(function (p, q) { return coord(p) - coord(q); });
+    var gap = HEAD_W + 3, ok = true;
+    for (var i = 1; i < list.length; i++) if (coord(list[i]) - coord(list[i - 1]) < gap) ok = false;
+    if (ok) return;
+    var lo, hi;
+    if (across) { lo = b.y + 8; hi = b.y + b.h - 8; }
+    else { var fs = freeSpan(v, sd === "T" ? "top" : "foot"); lo = b.x + fs[0] + 6; hi = b.x + fs[1] - 6; }
+    if ((hi - lo) < gap * (list.length - 1)) {
+      if (across) needH[v] = Math.max(needH[v] || 0, 16 + gap * list.length);
+      var mid = (lo + hi) / 2; lo = mid - gap * (list.length - 1) / 2; hi = mid + gap * (list.length - 1) / 2;
+    }
+    list.forEach(function (e, i) {
+      var want = list.length === 1 ? (lo + hi) / 2 : lo + (hi - lo) * i / (list.length - 1), d = want - coord(e), P = e.curve, ax = across ? 1 : 0;
+      if (Math.abs(d) < 0.01) return;
+      // A straight arrow between stacked boxes moves whole, so it stays straight; any other moves
+      // its end and the control point before it, so it still arrives along its stub.
+      if (e.vertical) P.forEach(function (pt) { pt[0] += d; });
+      else { P[3][ax] += d; P[2][ax] += d; }
+      e.stub = e.stub.replace(/M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/, function (_, a1, b1, c1, d1) {
+        return across ? "M" + a1 + "," + (+b1 + d) + " L" + c1 + "," + (+d1 + d) : "M" + (+a1 + d) + "," + b1 + " L" + (+c1 + d) + "," + d1; });
+      reStub(e);
+    });
+  });
+  // THE HEAD'S OWN RECTANGLE, from the stub it rides (M4): what labels keep clear of, and what the
+  // audit holds apart from everything but the box it points into.
+  edges.forEach(function (e) {
+    if (!e.stub) { e.head = null; return; }
+    var m = /M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/.exec(e.stub);
+    var x0 = +m[1], y0 = +m[2], x1 = +m[3], y1 = +m[4];
+    var hx = x1 - (x1 - x0) / (Math.hypot(x1 - x0, y1 - y0) || 1) * HEAD_LEN, hy = y1 - (y1 - y0) / (Math.hypot(x1 - x0, y1 - y0) || 1) * HEAD_LEN;
+    var lo = [Math.min(hx, x1), Math.min(hy, y1)], hi = [Math.max(hx, x1), Math.max(hy, y1)];
+    var hw = HEAD_W / 2;
+    e.head = x0 === x1 ? { x: x1 - hw, y: lo[1], w: HEAD_W, h: hi[1] - lo[1] }
+                       : { x: lo[0], y: y1 - hw, w: hi[0] - lo[0], h: HEAD_W };
+  });
+  // GATES APART (M1): where several joint steps run into one state, their gates at one point along
+  // each arrow sat on each other near the head (Badger culling's TB). Each takes the first place
+  // along its arrow clear of the gates already placed.
+  var gatesAt = [];
+  edges.forEach(function (e) {
+    if (!e.jointly.length || e.back) return;
+    var pick = JUNCTION_T;
+    for (var gi = 0; gi < GATE_T.length; gi++) {
+      var tt = GATE_T[gi], gq = pathAt(e, tt), gxp = gq[0], gyp = gq[1];
+      var gbox = { x: gxp - 16, y: gyp - 16, w: 32, h: 32 };
+      var hitsBox = Object.keys(shown).some(function (v) { var n = shown[v];
+        return overlap(gbox, { x: n.x - 4, y: n.y - 16, w: n.w + 8, h: n.h + 32 }) > 0; }) ||
+        lanes.some(function (ln) { return overlap(gbox, ln.head) > 0; });
+      if (!hitsBox && gatesAt.every(function (q) { return Math.hypot(q[0] - gxp, q[1] - gyp) > 34; })) { pick = tt; break; }
+    }
+    e.gateT = pick;
+    gatesAt.push(pathAt(e, pick));
+  });
+  var taken = gatesAt.slice();
+  // A stem heading right goes through the columns between as an arrow does.
+  var stemRouter = function (n, S, T) {
+    var cT = 0;
+    for (var c = 0; c <= maxRank; c++) if (xOfCol(c) - 8 <= T[0]) cT = c;
+    if (T[0] <= xOfCol(cT) + BW + 8 && T[0] >= xOfCol(cT) - 8) cT = cT; else cT = cT + 1;
+    if (cT - n.col < 2) return null;
+    return routeThrough(S, T, n.col, cT, false);
+  };
+  edges.forEach(function (e) { stemsOf(e, shown, taken, stemRouter, lanes); });
+  var chipFails = placeChips(edges, shown, lanes);
+  // Wide enough for every lane's heading too (M3: a one-column chain cut its headings off).
+  var headRight = Math.max.apply(null, lanes.map(function (ln) { return ln.head ? ln.head.x + ln.head.w + 10 : 0; }).concat([0]));
+  var needW = {};
+  ids.forEach(function (v) {
+    var n = nodes[v];
+    if (n.gapword && n.col < maxRank) {
+      var want = GAPWORD_W + 30 - (COL - BW) + ((opts.minW && opts.minW[n.col]) || 0);
+      if (want > ((opts.minW && opts.minW[n.col]) || 0)) needW[n.col] = Math.max(needW[n.col] || 0, want);
+    }
+  });
+  chipFails.forEach(function (e) {
+    var a = nodes[e.from], b = nodes[e.to];
+    if (!a || !b || b.col <= a.col) return;
+    // The widest gap the arrow crosses gets the room: a label sits where there is most already.
+    var c = a.col, want = e.chip.w + 44 - (COL - BW) + ((opts.minW && opts.minW[c]) || 0);
+    needW[c] = Math.max(needW[c] || 0, Math.min(want, 400));
+  });
+  // THE DRAWING HOLDS EVERYTHING DRAWN (M3), routes and labels included: a returning arc goes out
+  // into the gap beside the last column, and its label went off the edge with it.
+  var extX = 0, extY = 0;
+  edges.forEach(function (e) {
+    pathPts(e, 8).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); });
+    extX = Math.max(extX, e.chip.x + e.chip.w / 2); extY = Math.max(extY, e.chip.y + e.chip.h / 2);
+    e.stems.forEach(function (sm) { (sm.pts || []).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); }); });
+  });
+  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16);
+  var height = Math.max(y + 70, extY + 16);
+  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes,
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
            ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain };
@@ -1541,15 +1995,16 @@ function foldable(M, voice) {
  *  clear. Deterministic: the same chain places its chips the same way. */
 var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9,
               0.25, 0.75, 0.33, 0.67, 0.2, 0.8, 0.12, 0.88, 0.05, 0.95];
-var CHIP_DY = [0, -13, 13, -24, 24, -36, 36];
+var CHIP_DY = [0, -13, 13, -24, 24, -36, 36, -50, 50];
 /** JOINT CAUSES, DRAWN AS THE REASONS MAP DRAWS LINKED PREMISES. Each co-cause sends a stem to a
  *  bar across the arrow near its head: the effect passes the bar only with every stem in. Drawn
  *  only from a co-cause on the page; the panel names every one whatever is drawn. */
-var JUNCTION_T = 0.8;
-function stemsOf(e, shown) {
+var JUNCTION_T = 0.8, GATE_T = [0.8, 0.7, 0.62, 0.54, 0.46, 0.38, 0.86, 0.3, 0.22];
+function stemsOf(e, shown, taken, router, lanes) {
+  taken = taken || [];
   if (!e.jointly.length && !e.blockers.length && !(e.modifiers || []).length && !(e.rests || []).length) return;
-  var P = e.curve, t = e.back ? 0.5 : JUNCTION_T;
-  var at = function (u) { return [bez(P[0][0], P[1][0], P[2][0], P[3][0], u), bez(P[0][1], P[1][1], P[2][1], P[3][1], u)]; };
+  var t = e.back ? 0.5 : e.gateT || JUNCTION_T;
+  var at = function (u) { return pathAt(e, u); };
   var J = at(t), J1 = at(t - 0.02), J2 = at(Math.min(1, t + 0.02));
   var dx = J2[0] - J1[0], dy = J2[1] - J1[1], len = Math.sqrt(dx * dx + dy * dy) || 1;
   var nx = -dy / len * 8, ny = dx / len * 8;
@@ -1562,8 +2017,31 @@ function stemsOf(e, shown) {
   var gate = "M" + (B[0] + gx) + "," + (B[1] + gy) + " L" + (F[0] + gx) + "," + (F[1] + gy) +
              " C" + (F[0] + gx + ux * 15) + "," + (F[1] + gy + uy * 15) + " " + (F[0] - gx + ux * 15) + "," + (F[1] - gy + uy * 15) +
              " " + (F[0] - gx) + "," + (F[1] - gy) + " L" + (B[0] - gx) + "," + (B[1] - gy) + " Z";
-  e.junction = e.jointly.length ? { x: J[0], y: J[1], gate: gate, back: B,
+  // The gate's rectangle, for everything else to keep clear of (M1).
+  var gpts = [[B[0] + gx, B[1] + gy], [B[0] - gx, B[1] - gy], [F[0] + gx + ux * 12, F[1] + gy + uy * 12], [F[0] - gx + ux * 12, F[1] - gy + uy * 12]];
+  var gxs = gpts.map(function (q) { return q[0]; }), gys = gpts.map(function (q) { return q[1]; });
+  e.junction = e.jointly.length ? { x: J[0], y: J[1], gate: gate, back: B, u: [ux, uy], n: [nx / 8, ny / 8],
+                                    box: { x: Math.min.apply(null, gxs), y: Math.min.apply(null, gys),
+                                           w: Math.max.apply(null, gxs) - Math.min.apply(null, gxs), h: Math.max.apply(null, gys) - Math.min.apply(null, gys) },
                                     bar: "M" + (J[0] - nx) + "," + (J[1] - ny) + " L" + (J[0] + nx) + "," + (J[1] + ny) } : null;
+  // M5: THE INPUTS OF A GATE COME IN APART. The arrow's own line enters the middle of the gate's
+  // back; each co-cause its own point on the side it comes from, running in along the arrow's
+  // direction for the last stretch -- where two ran to one point from opposite sides they crossed
+  // on the way in (Reason's high-reliability organizations, 30 Sep 2026).
+  var mainPts = [];
+  for (var mi = 0; mi <= 24; mi++) mainPts.push(pathAt(e, t * mi / 24));
+  // Each co-cause's side of the arrow, and its place on that side: the one standing further out takes
+  // the outer point, so two on one side come in without crossing.
+  var gateSlot = {};
+  if (e.junction) {
+    var bySideJ = { "1": [], "-1": [] };
+    e.jointly.forEach(function (j) { var n = shown[j]; if (!n) return;
+      var cx1 = n.x + n.w / 2 - e.junction.back[0], cy1 = n.y + n.h / 2 - e.junction.back[1];
+      var dist = -uy * cx1 + ux * cy1;
+      bySideJ[dist >= 0 ? "1" : "-1"].push({ j: j, d: Math.abs(dist) }); });
+    ["1", "-1"].forEach(function (sd) {
+      bySideJ[sd].sort(function (p, q) { return p.d - q.d; }).forEach(function (o, i) { gateSlot[o.j] = { side: +sd, off: 5 + 4 * i }; }); });
+  }
   // THE STEM GOES ROUND, NOT THROUGH. On the planted boat the wish sat in the row of the belief it
   // joins, one column back, and a stem from its right side ran straight through the belief's box.
   // Three ways are tried -- from the side, under the row, over it -- and the first that crosses
@@ -1582,68 +2060,147 @@ function stemsOf(e, shown) {
     // A BLOCKER MEETS THE ARROW A THIRD OF THE WAY ALONG: at the head parallel arrows crowd, and
     // at the middle the chips sit; on the planted defences it was lost in both (28 Sep 2026).
     // Two moderators of one arrow get a ring each, spaced along it: on one point they read as one.
-    var T = blocks ? at(0.3) : moderates ? at(0.66 - 0.12 * (idx - nj - nb))
-          : rests ? at(0.42 - 0.08 * (idx - nj - nb - nm))
-          : e.junction ? e.junction.back : J;
+    var t0 = blocks ? 0.3 : moderates ? 0.66 - 0.12 * (idx - nj - nb) : rests ? 0.42 - 0.08 * (idx - nj - nb - nm) : null;
+    // A mark on the arrow sits where the arrow is clear of every box (M1): where the arrow crossed a
+    // box, its ring sat on the box.
+    if (t0 != null) {
+      var clearAt = function (tt) { var q = at(tt); return !Object.keys(shown).some(function (v) { var m = shown[v];
+        return q[0] > m.x - 10 && q[0] < m.x + m.w + 10 && q[1] > m.y - 10 && q[1] < m.y + m.h + 10; }) &&
+        taken.every(function (k) { return Math.hypot(k[0] - q[0], k[1] - q[1]) > 26; }) &&
+        (lanes || []).every(function (ln) { return !ln.head || overlap({ x: q[0] - 12, y: q[1] - 12, w: 24, h: 24 }, ln.head) === 0; }); };
+      for (var dt = 0; dt <= 0.5; dt += 0.05) {
+        if (clearAt(Math.min(0.9, t0 + dt))) { t0 = Math.min(0.9, t0 + dt); break; }
+        if (clearAt(Math.max(0.1, t0 - dt))) { t0 = Math.max(0.1, t0 - dt); break; }
+      }
+    }
+    var T = t0 != null ? at(t0) : e.junction ? e.junction.back : J;
+    if (t0 != null) taken.push(T);
     if (!n) return;
+    var joins = !blocks && !moderates && !rests && !!e.junction;
+    if (joins) {
+      // Which side of the arrow the co-cause stands on decides which half of the back it enters.
+      var slot = gateSlot[j] || { side: 1, off: 5 };
+      T = [T[0] + (-uy) * slot.side * slot.off, T[1] + ux * slot.side * slot.off];
+    }
     var cands = [];
     var sx = n.x + n.w, sy = n.y + n.h / 2;
-    if (sx + 20 < T[0]) cands.push([[sx, sy], [sx + Math.max(30, (T[0] - sx) / 2), sy], [T[0], T[1] + (sy < T[1] ? -12 : 12)]]);
+    // A co-cause's last control point lies straight back along the arrow from its point on the gate,
+    // so it runs in parallel to the arrow and alongside it, not across it.
+    var lead = function (c) { if (joins) c[2] = [T[0] - ux * 26, T[1] - uy * 26]; return c; };
+    if (sx + 20 < T[0]) cands.push(lead([[sx, sy], [sx + Math.max(30, (T[0] - sx) / 2), sy], [T[0], T[1] + (sy < T[1] ? -12 : 12)]]));
     var low = Math.max(n.y + n.h, T[1]) + 28, high = Math.min(n.y, T[1]) - 28;
-    cands.push([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [T[0], low]]);
-    cands.push([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [T[0], high]]);
+    cands.push(lead([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [T[0], low]]));
+    cands.push(lead([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [T[0], high]]));
+    // And under or over everything between the two, where the near ways all cross a box.
+    var xa = Math.min(n.x, T[0]) - 10, xb = Math.max(n.x + n.w, T[0]) + 10, deep = low, tall = high;
+    others.concat([e.to]).forEach(function (v) { var m = shown[v];
+      if (m.x < xb && m.x + m.w > xa) { deep = Math.max(deep, m.y + m.h + 26); tall = Math.min(tall, m.y - 26); } });
+    if (deep > low) cands.push(lead([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, deep], [T[0], deep]]));
+    if (tall < high) cands.push(lead([[n.x + n.w / 2, n.y], [n.x + n.w / 2, tall], [T[0], tall]]));
+    // Every candidate as segments ending at T; and, where the arrow is to the right, one routed
+    // through the gaps of the columns between, as an arrow is (M2).
+    cands = cands.map(function (c) { return [[c[0], c[1], c[2], T]]; });
+    // Out of the box's side into the gap beside it, along the gap, then across to the arrow: the way
+    // round a stack of boxes that every curve crosses.
+    [[sx, sx + 18], [n.x, n.x - 18]].forEach(function (g) {
+      var W = [[g[0], sy], [g[1], sy], [g[1], T[1]]];
+      if (Math.abs(T[0] - g[1]) < 30) return;
+      var segs0 = roundPath(W, 14), from = W[2], dx = T[0] - from[0];
+      segs0.push([from, [from[0] + dx / 3, from[1]], joins ? [T[0] - ux * 26, T[1] - uy * 26] : [from[0] + 2 * dx / 3, T[1]], T]);
+      cands.push(segs0);
+    });
+    if (router && sx + 40 < T[0]) {
+      var rs = router(n, [sx, sy], T);
+      if (rs) { if (joins) rs[rs.length - 1][2] = [T[0] - ux * 26, T[1] - uy * 26]; cands.push(rs); }
+    }
     var best = cands[0], bestHits = Infinity;
     // A blocker's stem stops short of the arrow on a bar, so it must not reach it through the box
     // the arrow enters: on the planted defences it dipped through "Harm" and read as a step into it.
     var obst = blocks || moderates || rests ? others.concat([e.to]) : others;
     cands.forEach(function (c) {
-      var hits = 0;
-      for (var i = 1; i < 20; i++) {
-        var u = i / 20, px = bez(c[0][0], c[1][0], c[2][0], T[0], u), py = bez(c[0][1], c[1][1], c[2][1], T[1], u);
-        obst.forEach(function (v) { var m = shown[v];
-          if (px > m.x + 2 && px < m.x + m.w - 2 && py > m.y + 2 && py < m.y + m.h - 2) hits++; });
+      var hits = 0, pts = pathPts({ segs: c }, 20);
+      // The audit's own test (M2), so what is chosen here is what passes there.
+      obst.forEach(function (v) { if (polyHitsRect(pts, shown[v], 2)) hits += 10; });
+      // Among ways equally clear, the shorter (M8): a stem looped up over the whole chart where a
+      // way through the column gaps was clear too (Reason's high-reliability organizations).
+      for (var li = 1; li < pts.length; li++) hits += Math.hypot(pts[li][0] - pts[li - 1][0], pts[li][1] - pts[li - 1][1]) / 400;
+      // A gate's input that crosses the arrow's own line, or another input, on its way in costs as a
+      // box does (M5).
+      if (joins) {
+        hits += 20 * crossCount(pts.slice(0, -2), mainPts.slice(0, -2));
+        e.stems.forEach(function (o) { if (o.joins) hits += 20 * crossCount(pts.slice(0, -2), o.pts.slice(0, -2)); });
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });
-    var end = T, tbar = null, ring = null, square = null;
+    var end = T, tbar = null, ring = null, square = null, lastSeg = best[best.length - 1];
     if (rests) {
-      var qx = T[0] - best[2][0], qy = T[1] - best[2][1], ql = Math.sqrt(qx * qx + qy * qy) || 1;
+      var qx = T[0] - lastSeg[2][0], qy = T[1] - lastSeg[2][1], ql = Math.sqrt(qx * qx + qy * qy) || 1;
       end = [T[0] - qx / ql * 5, T[1] - qy / ql * 5];
       square = { x: T[0], y: T[1], biased: (e.rests.filter(function (r) { return r.state === j; })[0] || {}).biased };
     }
     if (moderates) {
-      var mx = T[0] - best[2][0], my = T[1] - best[2][1], ml = Math.sqrt(mx * mx + my * my) || 1;
+      var mx = T[0] - lastSeg[2][0], my = T[1] - lastSeg[2][1], ml = Math.sqrt(mx * mx + my * my) || 1;
       end = [T[0] - mx / ml * 5, T[1] - my / ml * 5];
       ring = { x: T[0], y: T[1], r: 5, effect: (e.modifiers.filter(function (m) { return m.state === j; })[0] || {}).effect };
     }
     if (blocks) {
-      var ux = T[0] - best[2][0], uy = T[1] - best[2][1], ul = Math.sqrt(ux * ux + uy * uy) || 1;
-      ux /= ul; uy /= ul;
-      end = [T[0] - ux * 7, T[1] - uy * 7];
-      tbar = "M" + (end[0] + uy * 7) + "," + (end[1] - ux * 7) + " L" + (end[0] - uy * 7) + "," + (end[1] + ux * 7);
+      // bx/by, not ux/uy: a `var` here is the whole function's, and shadowed the arrow's own
+      // direction that a gate's inputs are led in along -- their control points came out NaN.
+      var bx = T[0] - lastSeg[2][0], by = T[1] - lastSeg[2][1], bl = Math.sqrt(bx * bx + by * by) || 1;
+      bx /= bl; by /= bl;
+      end = [T[0] - bx * 7, T[1] - by * 7];
+      tbar = "M" + (end[0] + by * 7) + "," + (end[1] - bx * 7) + " L" + (end[0] - by * 7) + "," + (end[1] + bx * 7);
     }
-    e.stems.push({ state: j, blocks: blocks, tbar: tbar, ring: ring, square: square, end: end,
-                   path: "M" + best[0][0] + "," + best[0][1] + " C" + best[1][0] + "," + best[1][1] + " " +
-                         best[2][0] + "," + best[2][1] + " " + end[0] + "," + end[1] });
+    var ssegs = best.slice(0, -1).concat([[lastSeg[0], lastSeg[1], lastSeg[2], end]]);
+    var curve = ssegs[ssegs.length - 1], spts = pathPts({ segs: ssegs }, 20);
+    e.stems.push({ state: j, blocks: blocks, joins: joins, tbar: tbar, ring: ring, square: square, end: end, curve: curve, pts: spts,
+                   segs: ssegs, path: segsPath(ssegs) });
   });
 }
 
+/** A point on a curve, moved `d` along its normal: beside a steep line a label steps sideways,
+ *  where stepping up or down would only slide it along the line (the Coleman boat's two arrows
+ *  between stacked boxes, whose labels sat on each other). */
+function chipAt(e, t, d, w) {
+  var q = pathAt(e, t), x = q[0], y = q[1];
+  if (!d) return [x, y];
+  var q1 = pathAt(e, Math.max(0, t - 0.02)), q2 = pathAt(e, Math.min(1, t + 0.02));
+  var dx = q2[0] - q1[0], dy = q2[1] - q1[1];
+  var len = Math.hypot(dx, dy) || 1;
+  // Mostly level lines keep the old vertical step (the normal is nearly vertical anyway); steep ones
+  // step across, far enough to clear the line with the label's width.
+  if (Math.abs(dy) < Math.abs(dx)) return [x, y + d];
+  // Beside a steep line, the label's near edge a few pixels from the line (the Coleman boat's "link ↻"
+  // sat a whole label's width away), further out only as the nearer places are taken.
+  return [x + (d > 0 ? 1 : -1) * ((w || 60) / 2 + 4 + (Math.abs(d) - 13)), y];
+}
+function pad(r, m) { return { x: r.x - m, y: r.y - m, w: r.w + 2 * m, h: r.h + 2 * m }; }
+/** The rectangles of a box's marks, in the drawing's coordinates. */
+function markRects(n) {
+  var out = [];
+  (n.badges || []).forEach(function (b) { out.push({ x: n.x + b.x - b.r, y: n.y + b.y - b.r, w: 2 * b.r, h: 2 * b.r, kind: "badge" }); });
+  if (n.pill) out.push({ x: n.x + n.pill.x, y: n.y + n.pill.y, w: n.pill.w, h: n.pill.h, kind: "pill" });
+  if (n.gapword) out.push({ x: n.x + n.gapword.x, y: n.y + n.gapword.y, w: n.gapword.w, h: n.gapword.h, kind: "gap" });
+  return out;
+}
 function placeChips(edges, nodes, lanes) {
   var fixed = [];
-  (lanes || []).forEach(function (ln) { fixed.push({ x: 0, y: ln.y, w: 100000, h: HEAD - 2 }); });
-  Object.keys(nodes).forEach(function (v) { var n = nodes[v]; fixed.push({ x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 }); });
+  // EVERYTHING DRAWN IS AN OBSTACLE (M1): the headings' words, the boxes and every mark on them,
+  // the gates. Labels were placed clear of boxes and of each other only, and sat on badges.
+  (lanes || []).forEach(function (ln) { var hd = ln.head || { x: 0, y: ln.y, w: 100000, h: HEAD - 2 }; fixed.push(pad(hd, 3)); });
+  Object.keys(nodes).forEach(function (v) {
+    var n = nodes[v];
+    fixed.push({ x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 });
+    markRects(n).forEach(function (r) { fixed.push(pad(r, 3)); });
+  });
+  edges.forEach(function (e) { if (e.junction && e.junction.box) fixed.push(pad(e.junction.box, 3)); });
   // A BLOCKER'S BAR IS NOT TO BE COVERED: a chip placed over it hid the only mark that the step
   // holds unless something else does (28 Sep 2026).
   edges.forEach(function (e) { (e.stems || []).forEach(function (sm) {
     if (sm.tbar) fixed.push({ x: sm.end[0] - 11, y: sm.end[1] - 11, w: 22, h: 22 });
     if (sm.ring) fixed.push({ x: sm.ring.x - 10, y: sm.ring.y - 10, w: 20, h: 20 });
     if (sm.square) fixed.push({ x: sm.square.x - 10, y: sm.square.y - 10, w: 20, h: 20 }); }); });
-  edges.forEach(function (e) {
-    if (!e.stub) return;
-    var P = e.curve, x = P[3][0], y = P[3][1];
-    fixed.push(e.vertical ? { x: x - 9, y: Math.min(y, P[0][1] < y ? y : y - STUB) - 2, w: 18, h: STUB + 6 }
-             : e.back ? { x: x - 9, y: y - STUB - 12, w: 18, h: STUB + 14 } : { x: x - 4, y: y - 9, w: STUB + 12, h: 18 });
-  });
+  edges.forEach(function (e) { if (e.head) fixed.push(pad(e.head, 4)); });
   var rankOf = function (e) {
     return (e.layer === "text" ? 0 : e.layer === "rival" ? 10 : 20) +
            (e.kind === "step" ? TIERS.indexOf(e.tier) : 5);
@@ -1655,12 +2212,7 @@ function placeChips(edges, nodes, lanes) {
   // bundle of lines -- Reason's first column sends a dozen arrows down one corridor -- sat on four
   // lines at once and belonged visibly to none (27 Sep 2026). Every line is sampled, and a place
   // where OTHER lines pass through the chip costs as a partial overlap would.
-  var samples = edges.map(function (e) {
-    var P = e.curve, out = [];
-    for (var u = 0; u <= 32; u++) { var tt = u / 32;
-      out.push([bez(P[0][0], P[1][0], P[2][0], P[3][0], tt), bez(P[0][1], P[1][1], P[2][1], P[3][1], tt)]); }
-    return out;
-  });
+  var samples = edges.map(function (e) { return pathPts(e, 32); });
   var crossings = function (box, self) {
     var n = 0;
     for (var q = 0; q < samples.length; q++) {
@@ -1672,16 +2224,16 @@ function placeChips(edges, nodes, lanes) {
     return n;
   };
   order.forEach(function (i) {
-    var e = edges[i], P = e.curve, best = null, bestCost = Infinity;
+    var e = edges[i], P = e, best = null, bestCost = Infinity;
     // On the line first, at every point tried; only then a step above or below it, which still
     // reads as the arrow's own label where the line is crowded.
     for (var k = 0; k < CHIP_T.length * CHIP_DY.length; k++) {
       var t = CHIP_T[k % CHIP_T.length], dy = CHIP_DY[Math.floor(k / CHIP_T.length)];
-      var cx = bez(P[0][0], P[1][0], P[2][0], P[3][0], t), cy = bez(P[0][1], P[1][1], P[2][1], P[3][1], t) + dy;
+      var at = chipAt(P, t, dy, e.chip.w), cx = at[0], cy = at[1];
       var box = { x: cx - e.chip.w / 2, y: cy - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
       // Never off the drawing: a route's chip was pushed past the left edge when folding sent
       // it out of the bottom of a box in the first column.
-      var cost = box.x < 4 ? 1e6 : 0;
+      var cost = box.x < 4 || box.y < 2 ? 1e6 : 0;
       fixed.forEach(function (f) { cost += overlap(box, f); });
       placed.forEach(function (f) { cost += 2 * overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }); });
       if (cost < bestCost) { best = { x: cx, y: cy, box: box }; bestCost = cost; }
@@ -1694,18 +2246,18 @@ function placeChips(edges, nodes, lanes) {
   // clear of every box, arrowhead and chip -- so the first pass's guarantee stands, and a chip moves
   // only where there is room. A place on its own line is preferred to one beside it.
   var clear = function (box, self) {
-    if (box.x < 4) return false;
+    if (box.x < 4 || box.y < 2) return false;
     if (fixed.some(function (f) { return overlap(box, f) > 0; })) return false;
     return !placed.some(function (f, j) { return j !== self && f && overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }) > 0; });
   };
   order.forEach(function (i) {
-    var e = edges[i], P = e.curve, cur = placed[i];
+    var e = edges[i], P = e, cur = placed[i];
     var score = function (box, dy) { return crossings(box, i) + (dy ? 2 + Math.abs(dy) / 12 : 0); };
     var bestScore = clear(cur, i) ? score(cur, Math.abs(cur.y + cur.h / 2 - e.chip.y) > 0.5 ? 1 : 0) : Infinity, move = null;
     if (!bestScore) return;
     for (var k = 0; k < CHIP_T.length * CHIP_DY.length; k++) {
       var t = CHIP_T[k % CHIP_T.length], dy = CHIP_DY[Math.floor(k / CHIP_T.length)];
-      var cx = bez(P[0][0], P[1][0], P[2][0], P[3][0], t), cy = bez(P[0][1], P[1][1], P[2][1], P[3][1], t) + dy;
+      var at = chipAt(P, t, dy, e.chip.w), cx = at[0], cy = at[1];
       var box = { x: cx - e.chip.w / 2, y: cy - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
       if (!clear(box, i)) continue;
       var sc = score(box, dy);
@@ -1713,6 +2265,121 @@ function placeChips(edges, nodes, lanes) {
     }
     if (move) { e.chip.x = Math.round(move.x * 10) / 10; e.chip.y = Math.round(move.y * 10) / 10; placed[i] = move.box; }
   });
+  // What found no clear place: the layout makes room for it (M9).
+  return order.filter(function (i) { return !clear(placed[i], i); }).map(function (i) { return edges[i]; });
+}
+
+/* ============================================================ the rules, checked
+ *
+ * `audit` takes a finished layout and reports every breach of the hard rules in
+ * docs/MECHANISM-LAYOUT.md (M1 to M5) and the soft numbers (M6 to M8). It reads only what `layout`
+ * returns, which is what the drawing draws (M11), so it needs no browser. */
+function curvePts(P, n) {
+  var out = [];
+  for (var i = 0; i <= n; i++) { var t = i / n; out.push([bez(P[0][0], P[1][0], P[2][0], P[3][0], t), bez(P[0][1], P[1][1], P[2][1], P[3][1], t)]); }
+  return out;
+}
+function audit(G, opts) {
+  opts = opts || {};
+  var hard = [], soft = { chipCrossings: 0, crossings: 0, detours: 0 };
+  var shown = {};
+  Object.keys(G.nodes).forEach(function (v) { if (G.folded.indexOf(v) < 0 && G.setAside.indexOf(v) < 0) shown[v] = G.nodes[v]; });
+  var edges = G.edges.filter(function (e) { return shown[e.from] && shown[e.to] && (opts.layers ? opts.layers(e) : true); });
+  var name = function (v) { return String(v).slice(0, 40); };
+  // EVERY DRAWN THING, with who owns it: a mark may sit on its own box's border, and a head or a
+  // gate on its own arrow, and nothing else may touch anything.
+  var items = [];
+  G.lanes.forEach(function (ln, i) { if (ln.head) items.push({ r: ln.head, what: "heading of " + ln.level, lane: i }); });
+  Object.keys(shown).forEach(function (v) {
+    var n = shown[v];
+    items.push({ r: { x: n.x, y: n.y, w: n.w, h: n.h }, what: "box " + name(v), box: v });
+    markRects(n).forEach(function (m) { items.push({ r: m, what: m.kind + " on " + name(v), on: v }); });
+  });
+  edges.forEach(function (e, i) {
+    var id = name(e.from) + " → " + name(e.to);
+    items.push({ r: { x: e.chip.x - e.chip.w / 2, y: e.chip.y - e.chip.h / 2, w: e.chip.w, h: e.chip.h }, what: "label of " + id, edge: i });
+    if (e.head) items.push({ r: e.head, what: "head of " + id, edge: i, into: e.to });
+    if (e.junction && e.junction.box) items.push({ r: e.junction.box, what: "AND gate on " + id, edge: i });
+    e.stems.forEach(function (sm) {
+      if (sm.ring) items.push({ r: { x: sm.ring.x - sm.ring.r, y: sm.ring.y - sm.ring.r, w: 2 * sm.ring.r, h: 2 * sm.ring.r }, what: "ring on " + id, edge: i });
+      if (sm.square) items.push({ r: { x: sm.square.x - 4.5, y: sm.square.y - 4.5, w: 9, h: 9 }, what: "square on " + id, edge: i });
+      if (sm.tbar) items.push({ r: { x: sm.end[0] - 7, y: sm.end[1] - 7, w: 14, h: 14 }, what: "bar on " + id, edge: i });
+    });
+  });
+  var cut = function (a, b) {
+    return Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1 && Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y) > 1;
+  };
+  var excused = function (A, B) {
+    if (A.on != null && B.box === A.on || B.on != null && A.box === B.on) return true;           // a mark on its own box
+    if (A.into != null && B.box === A.into || B.into != null && A.box === B.into) return true;   // a head into its box
+    if (A.edge != null && A.edge === B.edge && !/label/.test(A.what + B.what)) return true;       // a gate, ring or head on its own arrow
+    return false;
+  };
+  for (var i = 0; i < items.length; i++) for (var j = i + 1; j < items.length; j++) {
+    var A = items[i], B = items[j];
+    if (A.lane != null && B.lane != null) continue;
+    if (cut(A.r, B.r) && !excused(A, B)) hard.push({ rule: "M1", what: A.what + " overlaps " + B.what });
+  }
+  // M3: on the drawing.
+  items.forEach(function (it) {
+    if (it.r.x < -0.5 || it.r.y < -0.5 || it.r.x + it.r.w > G.width + 0.5 || it.r.y + it.r.h > G.height + 0.5)
+      hard.push({ rule: "M3", what: it.what + " is off the drawing" });
+  });
+  // M2: lines through boxes.
+  var inside = function (pt, n) { return pt[0] > n.x + 2 && pt[0] < n.x + n.w - 2 && pt[1] > n.y + 2 && pt[1] < n.y + n.h - 2; };
+  var lines = edges.map(function (e) { return pathPts(e, 40); });
+  edges.forEach(function (e, i) {
+    var id = name(e.from) + " → " + name(e.to);
+    Object.keys(shown).forEach(function (v) {
+      if (v === e.from || v === e.to) return;
+      if (polyHitsRect(lines[i], shown[v], 2)) hard.push({ rule: "M2", what: "the arrow " + id + " runs through " + name(v) });
+    });
+    e.stems.forEach(function (sm) {
+      Object.keys(shown).forEach(function (v) {
+        if (v === sm.state || (!sm.blocks && v === e.to)) return;
+        if (polyHitsRect(sm.pts || curvePts(sm.curve, 20), shown[v], 2))
+          hard.push({ rule: "M2", what: "the stem from " + name(sm.state) + " to " + id + " runs through " + name(v) });
+      });
+    });
+    // M4: the curve meets its stub along the stub's direction.
+    if (e.stub) {
+      var m = /M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/.exec(e.stub);
+      var sx = +m[3] - +m[1], sy = +m[4] - +m[2];
+      var SG = segsOf(e), P = SG[SG.length - 1], cx = P[3][0] - P[2][0], cy = P[3][1] - P[2][1];
+      if (Math.hypot(cx, cy) < 1e-6) { cx = P[3][0] - P[1][0]; cy = P[3][1] - P[1][1]; }
+      var cos = (sx * cx + sy * cy) / ((Math.hypot(sx, sy) || 1) * (Math.hypot(cx, cy) || 1));
+      if (cos < Math.cos(15 * Math.PI / 180)) hard.push({ rule: "M4", what: "the head of " + id + " arrives at " + Math.round(Math.acos(Math.max(-1, Math.min(1, cos))) * 180 / Math.PI) + "° to its line" });
+    }
+    // M5: a gate's inputs come in apart.
+    if (e.junction) {
+      var t = e.back ? 0.5 : e.gateT || JUNCTION_T, main = [];
+      for (var q = 0; q <= 24; q++) main.push(pathAt(e, t * q / 24));
+      var ins = e.stems.filter(function (sm) { return sm.joins; });
+      ins.forEach(function (sm, a) {
+        var pa = (sm.pts || curvePts(sm.curve, 20)).slice(0, -2);
+        if (crossCount(pa, main.slice(0, -2))) hard.push({ rule: "M5", what: "the input from " + name(sm.state) + " crosses the arrow " + id + " on its way into the gate" });
+        ins.slice(a + 1).forEach(function (o) {
+          if (crossCount(pa, (o.pts || curvePts(o.curve, 20)).slice(0, -2))) hard.push({ rule: "M5", what: "the inputs from " + name(sm.state) + " and " + name(o.state) + " cross on their way into the gate of " + id });
+          if (Math.hypot(sm.end[0] - o.end[0], sm.end[1] - o.end[1]) < 3) hard.push({ rule: "M5", what: "two inputs enter the gate of " + id + " at one point" });
+        });
+      });
+    }
+    // M6: other lines through this label.
+    var cb = { x: e.chip.x - e.chip.w / 2, y: e.chip.y - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
+    lines.forEach(function (L, k) { if (k !== i && L.some(function (pt) { return pt[0] > cb.x && pt[0] < cb.x + cb.w && pt[1] > cb.y && pt[1] < cb.y + cb.h; })) soft.chipCrossings++; });
+    // M8: detours.
+    var len = 0; for (var z = 1; z < lines[i].length; z++) len += Math.hypot(lines[i][z][0] - lines[i][z - 1][0], lines[i][z][1] - lines[i][z - 1][1]);
+    var L0 = lines[i][0], L1 = lines[i][lines[i].length - 1];
+    if (len > 2.5 * Math.max(40, Math.hypot(L1[0] - L0[0], L1[1] - L0[1]))) soft.detours++;
+  });
+  // M7: crossings between arrows, not counting where two share an end.
+  for (var a = 0; a < edges.length; a++) for (var b = a + 1; b < edges.length; b++) {
+    var ea = edges[a], eb = edges[b];
+    var share = ea.from === eb.from || ea.to === eb.to || ea.from === eb.to || ea.to === eb.from;
+    var A2 = share ? lines[a].slice(3, -3) : lines[a], B2 = share ? lines[b].slice(3, -3) : lines[b];
+    soft.crossings += crossCount(A2, B2);
+  }
+  return { hard: hard, soft: soft };
 }
 
 /* ============================================================ drawing */
@@ -1728,16 +2395,21 @@ function el(name, attrs, parent) {
   if (parent) parent.appendChild(e);
   return e;
 }
-function wrapWords(s, n) {
+/** A label in lines of about `n` characters, cut with an ellipsis at `max` lines (three unless
+ *  told otherwise; Infinity for the whole label). */
+function wrapWords(s, n, max) {
   var words = String(s).split(/\s+/), lines = [], cur = "";
+  var cap = max == null ? MAX_LINES : max;
   words.forEach(function (w) {
     if ((cur + " " + w).trim().length > n) { if (cur.trim()) lines.push(cur.trim()); cur = w; }
     else cur += " " + w;
   });
   if (cur.trim()) lines.push(cur.trim());
-  if (lines.length > 3) { lines = lines.slice(0, 3); lines[2] = lines[2].replace(/\s*\S*$/, "") + "…"; }
+  if (lines.length > cap) { lines = lines.slice(0, cap); lines[cap - 1] = lines[cap - 1].replace(/\s*\S*$/, "") + "…"; }
   return lines;
 }
+/** How many characters a line of a box this wide holds. */
+function charsFor(w) { return Math.max(8, Math.round(24 * w / BW)); }
 
 var styled = false;
 function injectStyle() {
@@ -1841,6 +2513,11 @@ function injectStyle() {
     "  border-radius:5px;padding:1px 7px;cursor:pointer;color:var(--fg,#1a1a1a)}",
     ".amech-tog select{font:inherit;font-size:11px;border:0;background:none;color:inherit}",
     ".amech-tog.fit{font:inherit;font-size:11px;color:inherit}",
+    ".amech-zoom{display:inline-flex;gap:0}.amech-zoom .zm{font:inherit;font-size:12px;color:inherit;border-radius:0;min-width:26px;justify-content:center}",
+    ".amech-zoom .zm:first-child{border-radius:5px 0 0 5px}.amech-zoom .zm:last-child{border-radius:0 5px 5px 0}",
+    ".amech-zoom .zm+.zm{margin-left:-1px}.amech-zoom .pct{font-size:11px;min-width:44px;font-variant-numeric:tabular-nums}",
+    ".amech .st .more{cursor:pointer}.amech .st .more rect{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1;opacity:.95}",
+    ".amech .st .more text{font-size:9.5px;font-weight:600;fill:var(--accent,#3a7bd5)}.amech .st .more:hover text{text-decoration:underline}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
     ".amech .st.intervention text.gapmark,.amech .gapmark{fill:var(--mv-gap);font-size:11px;font-weight:600}"
   ].join("\n");
@@ -1956,7 +2633,8 @@ function create(container, graph, opts) {
   // one choice away.
   var CHAINS = FULL.chains || [];
   var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
-               chain: CHAINS.length ? CHAINS[0].id : null, then: null };
+               chain: CHAINS.length ? CHAINS[0].id : null, then: null,
+               opened: {}, zoom: null };
   // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
   // which chains each is in, read off the whole file whatever is being shown.
   var KINDS = FULL.profile.kinds || [];
@@ -1990,6 +2668,28 @@ function create(container, graph, opts) {
     getBoxes: function () { return keep.boxes; },
     setChain: function (id) { keep.chain = CHAINS.some(function (c) { return c.id === id; }) ? id : null; remount(); },
     getChain: function () { return keep.chain; },
+    zoomBy: function (f) { cur.zoomBy(f); },
+    fit: function () { cur.fit(); },
+    /** Everything the reader has set on the chart, in one plain object -- what the fold state
+     *  identifier encodes for this arrangement, so a drawing fault can be reported and rebuilt. */
+    getView: function () {
+      var v = cur.getView();
+      return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal,
+               opened: Object.keys(keep.opened).sort(), show: v.show, ends: v.ends, folded: v.folded,
+               expanded: v.expanded, zoom: v.zoom };
+    },
+    /** The inverse: ids this chain does not know are ignored rather than drawn as nonsense. */
+    setView: function (v) {
+      if (!v) return;
+      if ("chain" in v) keep.chain = v.chain && CHAINS.some(function (c) { return c.id === v.chain; }) ? v.chain : null;
+      if ("boxes" in v) keep.boxes = !!v.boxes && hasWholes;
+      if ("rival" in v) keep.rival = v.rival !== false;
+      if ("appraisal" in v) keep.appraisal = !!v.appraisal;
+      keep.opened = {}; (v.opened || []).forEach(function (x) { if (has(FULL.states, x)) keep.opened[x] = true; });
+      keep.zoom = null;
+      remount();
+      cur.setView(v);
+    },
     destroy: function () { container.innerHTML = ""; container.classList.remove("amech"); }
   };
 
@@ -2009,7 +2709,11 @@ function create(container, graph, opts) {
   var folded = {}, canFold = foldable(M), toEnds = hasEnds ? foldable(M, "text") : [];
   var ends = false;
   var expanded = {};
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded });
+  // Boxes the reader has opened to their whole label (▼ more), kept across a remount as the
+  // layers are, so moving between chains does not shut them.
+  var opened = keep.opened;
+  var MS = markSpec(FULL, M);
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -2018,16 +2722,14 @@ function create(container, graph, opts) {
   // THE LOOPS AND THE SYSTEMS the text closes, in its own voice. A few loops are listed and marked
   // one by one, in order; a system with more than a reader can follow is marked as ONE system,
   // with its shortest loops offered -- Wimmer's feedback came to 50+ loops and 410 badges.
-  var SYS = M.profile.feedback.filter(function (f) { return f.loops > LOOPS_LISTED; });
-  var inBig = function (l) { return SYS.some(function (f) { return l.states.every(function (v) { return f.states.indexOf(v) >= 0; }); }); };
-  var LOOPS = M.profile.loops_text.filter(function (l) { return !inBig(l); });
+  var SYS = MS.systems, LOOPS = MS.loops;
   var sysName = function (i) { return String.fromCharCode(65 + i); };
   function loopNames(l) {
     return l.states.concat(l.states[0]).map(function (v) { return obj(M.states[v]).label || v; }).join(" → ");
   }
   // WHAT IS SHOWN. "tested" keeps only the steps the text backs with a study, statistics or a
   // model -- nulls included, since a null is a finding -- so the evidence can be read on its own.
-  var show = "all", fit = false;
+  var show = "all", fit = false, zk = 1;
   var anyUntested = G.edges.some(function (e) { return !e.steps.some(function (x) { return x.tier === "evidence"; }); });
 
   // THE QUESTION HEADS THE CHART; THE CONTROLS SIT BELOW IT, as the other arrangements' do
@@ -2059,6 +2761,12 @@ function create(container, graph, opts) {
     // Offered only where the map declares wholes (F2). Named for what a click will show.
     (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
       (keep.boxes ? "Show every state" : "The text’s own boxes") + '</button>' : '') +
+    // ZOOM, as the other arrangements have it (James, 29 Sep 2026): out, the size it is at (a press
+    // puts it back to actual size), in, and the fit to the pane's width. Pinch or Ctrl/⌘-scroll
+    // zooms at the pointer; the plain wheel scrolls, as the chart is a page that scrolls.
+    '<span class="amech-zoom"><button type="button" class="amech-tog zm" data-zoom="out" title="Zoom out (⌘− or Ctrl −)">−</button>' +
+    '<button type="button" class="amech-tog zm pct" data-zoom="1" title="The size the chain is drawn at; press for its actual size">100%</button>' +
+    '<button type="button" class="amech-tog zm" data-zoom="in" title="Zoom in (⌘= or Ctrl =)">+</button></span>' +
     '<button type="button" class="amech-tog fit" data-fit title="Scale the chain to the width of the pane; press again for its actual size">Fit to width</button>' +
     // A GUIDE TO THIS DRAWING'S MARKS (James's verdict: a reader who has not read the conventions
     // sees "raises" and "no effect" on one pair and is lost). It walks the marks this chain uses,
@@ -2087,17 +2795,17 @@ function create(container, graph, opts) {
   el("rect", { width: 6, height: 6, fill: "var(--mv-appraisal-bg)" }, pat);
   el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "var(--mv-appraisal)", "stroke-width": 1, opacity: 0.35 }, pat);
   INKS.forEach(function (t) {
-    var mk = el("marker", { id: "amech-ar-" + t, viewBox: "0 0 10 10", refX: 9, refY: 5,
-                            markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" }, defs);
+    // ONE SIZE OF HEAD (M4): in the line's own units a head grew with its weight, and a tested
+    // step's head was a slab wider than the stub it rode (the law school rankings, 30 Sep 2026).
+    var mk = el("marker", { id: "amech-ar-" + t, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
+                            markerWidth: HEAD_LEN, markerHeight: HEAD_W, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, mk);
     // A NULL FINDING ENDS IN A BAR: the line reaches the state and nothing passes.
     var bar = el("marker", { id: "amech-bar-" + t, viewBox: "0 0 4 12", refX: 2, refY: 6,
                              markerWidth: 4, markerHeight: 12, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
     el("rect", { x: 0.5, y: 0, width: 3, height: 12, fill: "var(--mv-" + t + ")" }, bar);
   });
-  G.lanes.forEach(function (ln, i) {
-    el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, svg);
-  });
+  var gL = el("g", {}, svg);
   // THREE LAYERS, and the chips on top. Each arrow carries a 14px invisible hit stroke so it can
   // be clicked at all, and where arrows run close -- a rival view beside the text's own step --
   // one arrow's stroke lay over the other's chip: driving the page with real clicks, the "x7"
@@ -2105,12 +2813,22 @@ function create(container, graph, opts) {
   // target, so every chip is drawn above every stroke. The lanes' headings sit between the two,
   // on a halo, so an arrow crossing a heading never runs through its words.
   var gE = el("g", {}, svg), gH = el("g", {}, svg), gC = el("g", {}, svg), gN = el("g", {}, svg);
-  G.lanes.forEach(function (ln) {
-    var head = el("text", { x: 12, y: ln.y + 17, "class": "lane-l" }, gH);
-    head.textContent = ln.level.toUpperCase();
-    var who = el("tspan", { "class": "actor-l", dx: 10 }, head);
-    who.textContent = ln.empty ? "nothing in the text at this level" : ln.actors.join(" · ");
-  });
+  /** The lanes and the drawing's size, which a box opened to its whole label changes. */
+  function drawFrame() {
+    while (gL.firstChild) gL.removeChild(gL.firstChild);
+    while (gH.firstChild) gH.removeChild(gH.firstChild);
+    G.lanes.forEach(function (ln, i) {
+      el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, gL);
+      var head = el("text", { x: 12, y: ln.y + 17, "class": "lane-l" }, gH);
+      head.textContent = ln.level.toUpperCase();
+      var who = el("tspan", { "class": "actor-l", dx: 10 }, head);
+      who.textContent = ln.who;
+      if (ln.whoFull) el("title", {}, head).textContent = ln.level.toUpperCase() + " — " + ln.whoFull;
+    });
+    svg.setAttribute("width", String(G.width)); svg.setAttribute("height", String(G.height));
+    svg.setAttribute("viewBox", "0 0 " + G.width + " " + G.height);
+    sizeSvg();
+  }
   el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent = "in sequence, left to right →";
 
   var drawnEdges = [], drawnNodes = {};
@@ -2210,75 +2928,73 @@ function create(container, graph, opts) {
                         transform: "translate(" + p.x + "," + p.y + ")" }, gN);
       if (hasRole(s, "outcome")) el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: 9 }, g);
       el("rect", { "class": "box", width: p.w, height: p.h, rx: 7 }, g);
-      var lines = wrapWords(s.label || v, Math.max(8, Math.round(24 * p.w / BW)));
+      var lines = p.lines || wrapWords(s.label || v, charsFor(p.w));
       lines.forEach(function (t, i) {
-        el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * 14 + 4, "text-anchor": "middle" }, g).textContent = t;
+        // Lifted a little where the foot carries the "more" pill, so the last line stays clear of it.
+        el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * LINE_H + 4 - (p.more ? 4 : 0), "text-anchor": "middle" }, g).textContent = t;
       });
+      // THE WHOLE LABEL ON ASKING, as a claim's "▼ more" in Reasons: a pill on the box's foot. The
+      // box grows and the rows below make room; "▲ less" puts it back.
+      if (p.more) {
+        var mo = el("g", { "class": "more", "data-more": v, transform: "translate(" + (p.pill.x + p.pill.w / 2) + "," + (p.pill.y + p.pill.h / 2) + ")" }, g);
+        el("rect", { x: -p.pill.w / 2, y: -p.pill.h / 2, width: p.pill.w, height: p.pill.h, rx: p.pill.h / 2 }, mo);
+        el("text", { "text-anchor": "middle", y: 3.5 }, mo).textContent = p.open ? "▲ less" : "▼ more";
+        el("title", {}, mo).textContent = p.open ? "Show the first lines only" : "Show the whole of “" + (s.label || v) + "”";
+        mo.addEventListener("click", function (ev) { ev.stopPropagation(); setOpen(v, !p.open); });
+      }
       var tt = el("title", {}, g); tt.textContent = (s.label || v) + " — click to see only the paths through it";
       drawnNodes[v] = g;
-      // A LOOP IS MARKED ON EVERY STATE IN IT, not only on the arrow that closes it: the closing
-      // arc alone was easy to miss, and a reader tracing Merton's circle across the page could
-      // not tell where it began. The badge is also a control (F2): it shows that loop alone.
-      var inLoops = [];
-      LOOPS.forEach(function (l, li) { if (l.states.indexOf(v) >= 0) inLoops.push(li); });
-      inLoops.forEach(function (li, j) {
-        var mk = el("g", { "class": "loopmark", "data-loop": li, transform: "translate(" + (p.w - 10 - j * 26) + ",-5)" }, g);   // on the border, clear of the label
-        el("circle", { r: 10 }, mk);
-        el("text", { "text-anchor": "middle", y: 4 }, mk).textContent = "↻" + (LOOPS.length > 1 ? li + 1 : "");
-        el("title", {}, mk).textContent = "In loop " + (li + 1) + ": " + loopNames(LOOPS[li]) + " — click to see it alone";
-        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ cycle: LOOPS[li], name: "Loop " + (li + 1) }); });
-      });
-      var sysOf = [];
-      SYS.forEach(function (f, fi) { if (f.states.indexOf(v) >= 0) sysOf.push(fi); });
-      sysOf.forEach(function (fi, j) {
-        var mk = el("g", { "class": "loopmark sys", "data-system": fi,
-                           transform: "translate(" + (p.w - 10 - (inLoops.length + j) * 26) + ",-5)" }, g);
-        el("circle", { r: 10 }, mk);
-        el("text", { "text-anchor": "middle", y: 4 }, mk).textContent = "⟳" + sysName(fi);
-        el("title", {}, mk).textContent = "In feedback system " + sysName(fi) + ": " + SYS[fi].states.length +
-          " states, " + SYS[fi].loops + (SYS[fi].capped ? "+" : "") + " loops — click to see it alone";
-        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: fi }); });
-      });
-      // WHAT COUPLES THE CHAINS (profile 1.5): a state this chain shares with another carries ⇄ at
-      // its left corner; a click opens the other chain, where the state plays its part there.
+      // THE MARKS, WHERE THE LAYOUT PUT THEM (M11). A loop is marked on every state in it, not only
+      // on the arrow that closes it: the closing arc alone was easy to miss, and a reader tracing
+      // Merton's circle across the page could not tell where it began. Each badge is also a control
+      // (F2). ⇄ couples the chains (profile 1.5), ≈ is a kind shared across cases (1.6), ≙ a measure
+      // of another state (1.9).
       var elsewhere = M.chain && M.chain.shared[v];
-      if (elsewhere && elsewhere.length) {
-        var other = CHAINS.filter(function (c) { return c.id === elsewhere[0]; })[0];
-        var sh = el("g", { "class": "loopmark shared", "data-shared": elsewhere[0], transform: "translate(10,-5)" }, g);
-        el("circle", { r: 10 }, sh);
-        el("text", { "text-anchor": "middle", y: 4 }, sh).textContent = "⇄";
-        el("title", {}, sh).textContent = "Also in " + elsewhere.map(function (o) {
-          var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
-          " — click to see " + (other && other.label || elsewhere[0]);
-        sh.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; keep.then = { state: v }; remount(); });
-      }
-      // ITS KIN (profile 1.6): ≈ where another state, here or in another chain, is of its kind.
-      var kin = kinOf(v);
-      if (kin.length) {
-        var km = el("g", { "class": "loopmark kin", "data-kind": kindOfState(v),
-                           transform: "translate(" + (elsewhere && elsewhere.length ? 36 : 10) + ",-5)" }, g);
-        el("circle", { r: 10 }, km);
-        el("text", { "text-anchor": "middle", y: 4 }, km).textContent = "≈";
-        var gk = generalOfKind(kindOfState(v));
-        el("title", {}, km).textContent = (gk === v ? "The general case of which these are cases: " : gk ? "A case of the general " +
-          "“" + (obj(FULL.states[gk]).label || gk) + "”; the same kind of thing as " : "The same kind of thing as ") + kin.map(function (w) {
-          var cs = chainsOfState(w); return "“" + (obj(FULL.states[w]).label || w) + "”" + (cs.length ? " (" + cs.map(chainLabel).join(", ") + ")" : ""); }).join(" and ") +
-          " — a different state, in a different case; click to see them";
-        km.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
-      }
-      // A MEASURE OF ANOTHER STATE (profile 1.9): ≙ at its right foot, naming what it reads.
-      var measOf = obj(FULL.states[v]).measures;
-      if (measOf != null && has(FULL.states, measOf)) {
-        var mm = el("g", { "class": "loopmark measure", "data-measures": measOf, transform: "translate(" + (p.w - 10) + "," + (p.h + 5) + ")" }, g);
-        el("circle", { r: 10 }, mm);
-        el("text", { "text-anchor": "middle", y: 4 }, mm).textContent = "≙";
-        el("title", {}, mm).textContent = "A measure of “" + (obj(FULL.states[measOf]).label || measOf) + "”" +
-          (obj(FULL.states[v]).method ? ", by " + obj(FULL.states[v]).method : "") + " — a reading of it, not a cause of it";
-      }
+      (p.badges || []).forEach(function (b) {
+        var mk = el("g", { "class": "loopmark" + (b.kind === "system" ? " sys" : b.kind === "loop" ? "" : " " + b.kind),
+                           transform: "translate(" + b.x + "," + b.y + ")" }, g);
+        el("circle", { r: b.r }, mk);
+        var tx = el("text", { "text-anchor": "middle", y: 4 }, mk), ti = el("title", {}, mk);
+        if (b.kind === "loop") {
+          var li = b.i;
+          mk.setAttribute("data-loop", li);
+          tx.textContent = "↻" + (LOOPS.length > 1 ? li + 1 : "");
+          ti.textContent = "In loop " + (li + 1) + ": " + loopNames(LOOPS[li]) + " — click to see it alone";
+          mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ cycle: LOOPS[li], name: "Loop " + (li + 1) }); });
+        } else if (b.kind === "system") {
+          var fi = b.i;
+          mk.setAttribute("data-system", fi);
+          tx.textContent = "⟳" + sysName(fi);
+          ti.textContent = "In feedback system " + sysName(fi) + ": " + SYS[fi].states.length +
+            " states, " + SYS[fi].loops + (SYS[fi].capped ? "+" : "") + " loops — click to see it alone";
+          mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: fi }); });
+        } else if (b.kind === "shared") {
+          var other = CHAINS.filter(function (c) { return c.id === elsewhere[0]; })[0];
+          mk.setAttribute("data-shared", elsewhere[0]);
+          tx.textContent = "⇄";
+          ti.textContent = "Also in " + elsewhere.map(function (o) {
+            var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
+            " — click to see " + (other && other.label || elsewhere[0]);
+          mk.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; keep.then = { state: v }; remount(); });
+        } else if (b.kind === "kin") {
+          var kin = kinOf(v), gk = generalOfKind(kindOfState(v));
+          mk.setAttribute("data-kind", kindOfState(v));
+          tx.textContent = "≈";
+          ti.textContent = (gk === v ? "The general case of which these are cases: " : gk ? "A case of the general " +
+            "“" + (obj(FULL.states[gk]).label || gk) + "”; the same kind of thing as " : "The same kind of thing as ") + kin.map(function (w) {
+            var cs = chainsOfState(w); return "“" + (obj(FULL.states[w]).label || w) + "”" + (cs.length ? " (" + cs.map(chainLabel).join(", ") + ")" : ""); }).join(" and ") +
+            " — a different state, in a different case; click to see them";
+          mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ kind: kindOfState(v) }); });
+        } else if (b.kind === "measure") {
+          var measOf = obj(FULL.states[v]).measures;
+          mk.setAttribute("data-measures", measOf);
+          tx.textContent = "≙";
+          ti.textContent = "A measure of “" + (obj(FULL.states[measOf]).label || measOf) + "”" +
+            (obj(FULL.states[v]).method ? ", by " + obj(FULL.states[v]).method : "") + " — a reading of it, not a cause of it";
+        }
+      });
       // A co-cause is linked: its step is the one it joins (profile 1.4).
-      if (isStart(s) && !M.steps.some(function (x) { return (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0 ||
-                                                           (x.modifies || []).some(function (m) { return m.by === v; })) && x.layer === "text"; }))
-        el("text", { x: p.w + 10, y: p.h / 2 + 4, "class": "gapmark" }, g).textContent = "✕ no link in the text";
+      if (p.gapword) el("text", { x: p.gapword.x, y: p.gapword.y + 12, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
     });
   }
@@ -2426,8 +3142,13 @@ function create(container, graph, opts) {
       if (ink[r[0]]) out += row(line("var(--mv-" + r[0] + ")", 2, ""), r[1]);
     });
     if (isNull) out += row(line("var(--mv-text)", 1.4, "", true), "no effect found: nothing passes");
-    if (joint) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C12,14 16,11 20,11" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
-      '<line x1="2" y1="6" x2="44" y2="6" stroke="var(--mv-text)" stroke-width="2"/><path d="M20,1 L26,1 C34,1 34,15 26,15 L20,15 Z" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.8"/></svg>',
+    // THE GATE AS THE CHART DRAWS IT (James, 30 Sep 2026: the old icon was cut off at top and foot):
+    // the arrow into the middle of its flat back, the co-cause into its own point beside it, and the
+    // arrow on out of its round front.
+    if (joint) out += row('<svg width="46" height="22" viewBox="0 0 46 22" aria-hidden="true">' +
+      '<line x1="2" y1="11" x2="44" y2="11" stroke="var(--mv-text)" stroke-width="2"/>' +
+      '<path d="M2,20 C10,20 12,15 18,15" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
+      '<path d="M18,3 L24,3 C33,3 33,19 24,19 L18,19 Z" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.6"/></svg>',
       "an AND gate: the step runs only with every cause coming in");
     if (blocked) out += row('<svg width="46" height="16" aria-hidden="true"><path d="M2,14 C12,14 18,10 20,10" fill="none" stroke="var(--mv-text)" stroke-width="2"/>' +
       '<line x1="20" y1="4" x2="20" y2="16" stroke="var(--mv-text)" stroke-width="4"/><line x1="2" y1="3" x2="44" y2="3" stroke="var(--mv-text)" stroke-width="2"/></svg>',
@@ -2771,7 +3492,7 @@ function create(container, graph, opts) {
     if (selected && selected.edge && selected.edge.layer !== "text" && !layers[selected.edge.layer]) selected = null;
     if (selected && selected.state && obj(M.states[selected.state]).appraisal && !layers.appraisal) selected = null;
     if (selected && selected.edge && !visible(selected.edge)) selected = null;
-    drawEdges(); drawNodes(); renderSide(); applyFocus();
+    drawFrame(); drawEdges(); drawNodes(); renderSide(); applyFocus();
     if (opts.onLayers) opts.onLayers({ rival: layers.rival, appraisal: layers.appraisal });
   }
   Array.prototype.forEach.call(bar.querySelectorAll("input[data-layer]"), function (inp) {
@@ -2787,7 +3508,7 @@ function create(container, graph, opts) {
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
@@ -2795,6 +3516,36 @@ function create(container, graph, opts) {
     apply();
   }
   function setFolded(v, on) { if (on) folded[v] = true; else delete folded[v]; refold(); }
+  /** Open a box to its whole label, or shut it. Re-laid out like a fold, keeping what is selected. */
+  function setOpen(v, on) {
+    if (on) opened[v] = true; else delete opened[v];
+    var was = selected && selected.state ? { state: selected.state } : null;
+    refold();
+    if (was && G.nodes[was.state]) select(was);
+  }
+  var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
+  var pctBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-zoom='1']"));
+  /** The scale the chart is drawn at: the reader's, or the pane's width when fitted. */
+  function scaleNow() { return fit ? Math.max(0.05, (stage.clientWidth - 4) / G.width) : zk; }
+  function sizeSvg() {
+    var k = scaleNow();
+    // Style over the attributes: the drawing's own size stays what the layout says.
+    var sv = /** @type {SVGElement} */ (svg);
+    sv.style.width = Math.round(G.width * k) + "px"; sv.style.height = Math.round(G.height * k) + "px";
+    if (fitBtn) fitBtn.textContent = fit ? "Actual size" : "Fit to width";
+    if (pctBtn) pctBtn.textContent = Math.round(k * 100) + "%";
+  }
+  function setFit(on) { fit = !!on; if (!fit) zk = 1; keep.zoom = fit ? "fit" : null; sizeSvg(); }
+  function setZoom(k, cx, cy) {
+    var was = scaleNow(), now = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, k));
+    // The point under the pointer (or the middle of the pane) stays where it is.
+    var ax = cx == null ? stage.clientWidth / 2 : cx, ay = cy == null ? stage.clientHeight / 2 : cy;
+    var px = (stage.scrollLeft + ax) / was, py = (stage.scrollTop + ay) / was;
+    fit = false; zk = now; keep.zoom = Math.abs(now - 1) < 1e-6 ? null : now;
+    sizeSvg();
+    stage.scrollLeft = px * now - ax; stage.scrollTop = py * now - ay;
+  }
+  function zoomBy(f, cx, cy) { setZoom(scaleNow() * f, cx, cy); }
   if (foldAll) foldAll.addEventListener("click", function () {
     if (G.folded.length) { folded = {}; ends = false; }
     else { toEnds.forEach(function (v) { folded[v] = true; }); ends = true; }
@@ -2802,16 +3553,25 @@ function create(container, graph, opts) {
   });
   var showSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-show]"));
   if (showSel) showSel.addEventListener("change", function () { show = showSel.value; apply(); });
-  var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
   svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-  fitBtn.addEventListener("click", function () {
-    fit = !fit;
-    // Style over the attributes: the drawing's own size stays what the layout says.
-    var sv = /** @type {SVGElement} */ (svg);
-    sv.style.width = fit ? "100%" : ""; sv.style.height = fit ? "auto" : "";
-    fitBtn.textContent = fit ? "Actual size" : "Fit to width";
+  fitBtn.addEventListener("click", function () { setFit(!fit); });
+  Array.prototype.forEach.call(bar.querySelectorAll("[data-zoom]"), function (b) {
+    b.addEventListener("click", function () {
+      var z = b.getAttribute("data-zoom");
+      if (z === "1") setZoom(1); else zoomBy(z === "in" ? ZOOM_STEP : 1 / ZOOM_STEP);
+    });
   });
+  // PINCH, OR CTRL/⌘ AND THE WHEEL, zooms at the pointer (a trackpad's pinch arrives as a wheel
+  // with ctrlKey). The plain wheel is left to scroll the chart.
+  stage.addEventListener("wheel", function (ev) {
+    if (!ev.ctrlKey && !ev.metaKey) return;
+    ev.preventDefault();
+    var r = stage.getBoundingClientRect();
+    zoomBy(Math.pow(ZOOM_STEP, -ev.deltaY / (ev.deltaMode ? 3 : 100)), ev.clientX - r.left, ev.clientY - r.top);
+  }, { passive: false });
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(function () { if (fit) sizeSvg(); }).observe(stage);
   apply();
+  if (keep.zoom) { if (keep.zoom === "fit") setFit(true); else setZoom(keep.zoom); }
 
   return {
     model: M,
@@ -2826,12 +3586,25 @@ function create(container, graph, opts) {
     setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
     setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
     getFolded: function () { return G.folded.slice(); },
-    select: function (x) { if (x && (x.kind || (x.state && G.nodes[x.state]))) select(x); }
+    select: function (x) { if (x && (x.kind || (x.state && G.nodes[x.state]))) select(x); },
+    zoomBy: function (f) { zoomBy(f); },
+    fit: function () { setFit(true); },
+    getView: function () { return { show: show, ends: ends, folded: Object.keys(folded).sort(), expanded: Object.keys(expanded).sort(),
+                                    zoom: fit ? "fit" : zk }; },
+    setView: function (v) {
+      if (!v) return;
+      if (v.show) { show = v.show === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; }
+      folded = {}; (v.folded || []).forEach(function (x) { folded[x] = true; });
+      ends = !!v.ends && hasEnds;
+      expanded = {}; (v.expanded || []).forEach(function (x) { expanded[x] = true; });
+      refold();
+      if (v.zoom === "fit") setFit(true); else if (typeof v.zoom === "number") setZoom(v.zoom);
+    }
   };
   }
 }
 
-var API = { model: model, layout: layout, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;

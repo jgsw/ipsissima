@@ -605,6 +605,62 @@ check(same(MV.FIDELITY_DASH, { quotation: "", paraphrase: "6 2", compression: "4
   check(ore && !ore.back, "a loop closed only by the appraisal does not turn the text's own step back on itself");
 }
 
+/* A LABEL TOO LONG FOR ITS BOX (James, 29 Sep 2026): cut at three lines, it hid what the state
+ * was; and a state the text links to nothing, on the last column, had its "✕ no link in the text"
+ * cut off by the drawing's edge ("✕ no l", on Valentino's second chain). */
+const LONG_SRC = `===
+mechanism:
+    levels: [people]
+    actors:
+        p: {label: "People", level: people}
+    states:
+        a: {label: "A start", actor: p, role: intervention}
+        b: {label: "The acceptability of explicitly hostile racial rhetoric, the norm of egalitarianism eroded over a decade", actor: p}
+        c: {label: "Below it", actor: p, role: outcome}
+        d: {label: "A message", actor: p, role: condition}
+===
+
+[Aim]: A.
+
+[S1]: a raises b.
+    {causes: {from: a, to: b, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[S2]: a raises c.
+    {causes: {from: a, to: c, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[S3]: a raises d.
+    {causes: {from: a, to: d, sign: "+", basis: asserted}}
+    +> [Aim]
+`;
+console.log("\nlong labels, and room for what is said beside a box");
+{
+  const LM = MV.model(graphOf.fromText(LONG_SRC));
+  const shut = MV.layout(LM, {}), open = MV.layout(LM, { open: { b: true } });
+  const col = L0 => ["b", "c", "d"].map(v => L0.nodes[v]).sort((x, y) => x.y - y.y);
+  check(shut.nodes.b.more && !shut.nodes.b.open && shut.nodes.b.lines.length === 3 && /…$/.test(shut.nodes.b.lines[2]) &&
+        shut.nodes.b.h === shut.box.h,
+        "a label longer than three lines is cut at three, and offers the rest", JSON.stringify(shut.nodes.b.lines));
+  check(!shut.nodes.c.more, "a short one offers nothing");
+  const below = v => col(open).filter(n => n.y > open.nodes[v].y);
+  // Mutation: keep every row ROW apart -> the opened box runs over the one below it.
+  check(open.nodes.b.open && open.nodes.b.lines.length > 3 && open.nodes.b.lines.join(" ") === LM.states.b.label &&
+        open.nodes.b.h > shut.nodes.b.h,
+        "opened, the box holds its whole label and is taller", JSON.stringify(open.nodes.b.lines));
+  const stack = col(open);
+  check(stack.every((n, i) => i === 0 || n.y >= stack[i - 1].y + stack[i - 1].h + 20),
+        "and what was below it moves down: nothing in its column is overlapped", JSON.stringify(stack.map(n => [n.y, n.h])));
+  check(below("b").every(n => n.y - col(shut).find(m => m.x === n.x && m.w === n.w && Math.abs(m.y - n.y) < 400).y >= 0) &&
+        open.height > shut.height, "the lane grows with it, and so does the drawing", `${shut.height} -> ${open.height}`);
+  check(same(MV.layout(LM, { open: { b: true } }), open), "the layout is still a pure function of what is opened");
+  // Mutation: keep the 40px margin -> the words run past the drawing's right edge.
+  check(shut.nodes.d.unlinked && shut.width >= shut.nodes.d.x + shut.nodes.d.w + 10 + 120,
+        "a state the text links to nothing, on the last column, has the drawing's room for saying so",
+        `${shut.nodes.d.x + shut.nodes.d.w} of ${shut.width}`);
+  check(!shut.nodes.b.unlinked && !shut.nodes.a.unlinked, "and no other state is said to be unlinked");
+}
+
 console.log("\nseveral chains (profile 1.5)");
 {
   const MC = MV.model(graphOf(CHAINSF));
@@ -1229,6 +1285,89 @@ mechanism:
           /The general step, and its cases/i.test(genSide) &&
           /Northern herders' migration → The north's forest cover is a case of Rural-urban migration → Forest cover/.test(genSide),
           "the kind's panel names the general state, its cases, and each case of the general step", genSide.slice(0, 400));
+    // THE WHOLE LABEL, ZOOM, AND THE FOLD STATE OF THE CHART (29 Sep 2026). Mutations: drop the
+    // pill's click handler -> the box stays three lines; drop the zoom handler -> the size stays;
+    // leave `mech` out of the identifier -> the restore opens Reasons.
+    const longSrc = path.join(tmp, "long.argdown"), longHtml = path.join(tmp, "long.html");
+    fs.writeFileSync(longSrc, LONG_SRC);
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), longSrc, "-o", longHtml], { stdio: "pipe" });
+    await page.goto("file://" + longHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const boxOf = v => page.evaluate(v => { const r = document.querySelector(`#mech .st[data-state="${v}"] rect.box`).getBoundingClientRect();
+                                            return { y: r.top, h: r.height }; }, v);
+    const b0 = await boxOf("b"), low0 = await boxOf(b0.y < (await boxOf("c")).y ? "c" : "d");
+    check(await page.locator('#mech .st[data-state="b"] .more').count() === 1 &&
+          await page.locator('#mech .st[data-state="c"] .more').count() === 0,
+          "a box whose label is cut carries a ▼ more pill, and no other does");
+    await page.locator('#mech .st[data-state="b"] .more').click();
+    await page.waitForTimeout(300);
+    const b1 = await boxOf("b");
+    const texts = await page.evaluate(() => [...document.querySelectorAll('#mech .st[data-state="b"] > text')].map(t => t.textContent));
+    check(b1.h > b0.h + 10 && texts.join(" ").includes("over a decade") &&
+          (await page.locator('#mech .st[data-state="b"] .more').textContent()).includes("less"),
+          "clicking it shows the whole label in a taller box, and offers ▲ less", `${b0.h} -> ${b1.h}: ${texts.join(" / ")}`);
+    const lowName = b0.y < (await boxOf("c")).y ? "c" : "d";
+    check((await boxOf(lowName)).y > low0.y, "and the box below makes room");
+    const svgW = () => page.evaluate(() => document.querySelector("#mech svg").getBoundingClientRect().width);
+    const w0 = await svgW();
+    await page.locator('#mech [data-zoom="in"]').click();
+    await page.waitForTimeout(150);
+    const w1 = await svgW();
+    check(Math.abs(w1 / w0 - 1.2) < 0.02 && (await page.locator('#mech [data-zoom="1"]').innerText()) === "120%",
+          "+ zooms the chart in a step, and says the size", `${w0} -> ${w1}`);
+    await page.locator("#mech .amech-stage").hover();
+    await page.keyboard.press("Control+Equal");
+    await page.waitForTimeout(150);
+    check((await page.locator('#mech [data-zoom="1"]').innerText()) === "144%", "and so does Ctrl = on the keyboard",
+          await page.locator('#mech [data-zoom="1"]').innerText());
+    await page.keyboard.press("Control+Minus");
+    await page.waitForTimeout(150);
+    // The fold state names the chart as it is, and puts it back on a fresh page.
+    await page.locator("#helpbtn").click();
+    await page.locator("#help button", { hasText: "About Ipsissima" }).click();
+    await page.waitForTimeout(200);
+    const line = await page.locator("#foldstateid").innerText();
+    check(/\bview=mech\b/.test(line) && /\bmmore=b\b/.test(line) && /\bzoom=1\.2\b/.test(line),
+          "the fold state names the Mechanism chart, the opened box and the zoom", line);
+    await page.goto("file://" + longHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#helpbtn").click();
+    await page.locator("#help button", { hasText: "About Ipsissima" }).click();
+    await page.locator("#about button", { hasText: /^Debug$/ }).click();
+    await page.locator("#foldstatein").fill(line);
+    await page.locator("#foldstatego").click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#mech").isVisible() &&
+          (await page.locator('#mech .st[data-state="b"] .more').textContent()).includes("less") &&
+          (await page.locator('#mech [data-zoom="1"]').innerText()) === "120%",
+          "and Restore on a fresh page puts the chart back: the arrangement, the opened box and the zoom",
+          await page.locator("#foldstateerr").innerText().catch(() => ""));
+
+    // WHAT THE LAYOUT ESTIMATES, HELD TO WHAT THE BROWSER DRAWS (M11). The audit measures the
+    // layout's geometry; these say that geometry is what is on screen. Mutations: draw a badge at
+    // a fixed offset again -> the first fails; shrink the chip width estimate -> the second.
+    await page.goto("file://" + withChain);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const fit = await page.evaluate(() => {
+      const svg = document.querySelector("#mech svg");
+      const bad = [];
+      for (const chip of svg.querySelectorAll("g.chip")) {
+        const r = chip.querySelector("rect").getBBox();
+        for (const t of chip.querySelectorAll("text")) { const b = t.getBBox();
+          if (b.x < r.x - 0.5 || b.x + b.width > r.x + r.width + 0.5) bad.push("chip " + chip.getAttribute("data-edge") + ": " + t.textContent); }
+      }
+      const heads = [...svg.querySelectorAll("text.lane-l")].map(t => t.getBBox().width);
+      return { bad, heads };
+    });
+    check(fit.bad.length === 0, "every label's words fit the rectangle the layout gave it", fit.bad.join("; "));
+    const est = MV.layout(MV.model(G), { marks: MV.markSpec(MV.model(G), MV.model(G)).marks }).lanes.map(l => l.head.w - 8);
+    check(fit.heads.every((w, i) => w <= est[i] + 2), "every heading fits the width the layout reserved for it",
+          JSON.stringify({ drawn: fit.heads.map(Math.round), reserved: est.map(Math.round) }));
+
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {
     await browser.close();

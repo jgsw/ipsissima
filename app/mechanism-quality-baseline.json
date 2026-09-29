@@ -1,0 +1,72 @@
+{
+ "blockers": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "chain": {
+  "chipCrossings": 5,
+  "crossings": 30,
+  "detours": 0
+ },
+ "chains": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "generals": {
+  "chipCrossings": 2,
+  "crossings": 2,
+  "detours": 0
+ },
+ "joint": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "kinds": {
+  "chipCrossings": 0,
+  "crossings": 1,
+  "detours": 0
+ },
+ "loop": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "regimes": {
+  "chipCrossings": 5,
+  "crossings": 30,
+  "detours": 0
+ },
+ "sizes": {
+  "chipCrossings": 1,
+  "crossings": 39,
+  "detours": 0
+ },
+ "stories": {
+  "chipCrossings": 1,
+  "crossings": 3,
+  "detours": 0
+ },
+ "system": {
+  "chipCrossings": 1,
+  "crossings": 21,
+  "detours": 0
+ },
+ "times": {
+  "chipCrossings": 8,
+  "crossings": 38,
+  "detours": 0
+ },
+ "via": {
+  "chipCrossings": 1,
+  "crossings": 39,
+  "detours": 0
+ },
+ "bates-2012-price-is-wrong": {
+  "chipCrossings": 37,
+  "crossings": 193,
+  "detours": 0
+ }
+}

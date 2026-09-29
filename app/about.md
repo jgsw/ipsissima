@@ -163,9 +163,11 @@ Worth quoting if something goes wrong.
 
 ### The fold state
 
-One line that names exactly what is folded and shown right now — which sections are shut, which
-claims the reader folded or opened by hand, the depth, the view. **Report a folding bug with the
-`.argdown` file and this line**, and the state can be rebuilt instead of guessed at. A click
+One line that names exactly what is on screen right now, in whichever arrangement — which
+sections are shut, which claims the reader folded or opened by hand, the depth, whether the claims
+are short or in full, Exposition's flow, and in Mechanism the chain, its folds and the boxes opened
+to their whole label; with the zoom, and the size of the pane. **Report a problem in any view with
+the `.argdown` file and this line**, and the picture can be rebuilt instead of guessed at. A click
 selects the whole line.
 
 <p><code id="foldstateid">no map on screen</code></p>

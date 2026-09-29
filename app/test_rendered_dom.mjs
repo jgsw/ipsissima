@@ -2775,6 +2775,36 @@ async function pagesChecks(browser) {
             "  and clicking its stub goes to the claim at the other end", JSON.stringify(there));
     } else check(false, "  and clicking its stub goes to the claim at the other end", "no stub found");
   }
+
+  // ZOOMED, THE PAGES ARE CUT AGAIN FOR THE NEW SIZE (James, 29 Sep 2026): each still as tall as
+  // the pane, so the reader reads down a page without scrolling at whatever size they chose; and
+  // Fit puts back the cut the column opened with. Driven by the keyboard's Ctrl = and Ctrl 0.
+  // Mutation: drop `scheduleReflow` from zoomAt -> the zoomed pages run off the bottom.
+  const pageShape = () => page.evaluate(() => {
+    const vp = /** @type {HTMLElement} */ (document.querySelector("#map .alm-viewport"));
+    const k = +(/scale\(([\d.]+)\)/.exec(vp.style.transform) || [0, 1])[1];
+    const cols = {};
+    for (const n of document.querySelectorAll("#map .alm-n")) {
+      const r = n.getBoundingClientRect(), c = Math.round(r.left / (300 * k));
+      (cols[c] = cols[c] || []).push(r);
+    }
+    const tallest = Math.max(...Object.values(cols).map(rs => Math.max(...rs.map(r => r.bottom)) - Math.min(...rs.map(r => r.top))));
+    return { k, tallest, pane: document.getElementById("map").clientHeight,
+             cont: document.querySelectorAll('#map .alm-g[data-id^="cont:"]').length };
+  });
+  const opened = await pageShape();
+  await page.mouse.move(800, 450);
+  for (let i = 0; i < 3; i++) { await page.keyboard.press("Control+Equal"); await page.waitForTimeout(60); }
+  await page.waitForTimeout(1600);
+  const zoomed = await pageShape();
+  check(zoomed.k > opened.k * 1.5 && zoomed.cont > opened.cont && zoomed.tallest <= zoomed.pane,
+        "  zoomed in from the keyboard, the column is cut into more, shorter pages, each within the pane",
+        JSON.stringify({ opened, zoomed }));
+  await page.keyboard.press("Control+0");
+  await page.waitForTimeout(1600);
+  const fitted = await pageShape();
+  check(fitted.cont === opened.cont && Math.abs(fitted.k - opened.k) < 0.01,
+        "  and Ctrl 0 fits it again, cut as it opened", JSON.stringify(fitted));
   await ctx.close();
 
   // A NARROW PANE keeps the one column: the map squeezed beside a wide Manuscript, to less

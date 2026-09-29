@@ -86,9 +86,10 @@ choose **What does this mean?** to come back here.
 Every box is one claim. Arrows run *from a reason to what it bears on*, so an arrow points at the
 claim it is about.
 
-- **Scroll** — zoom in and out
+- **Scroll** — zoom in and out; <kbd>Cmd/Ctrl =</kbd> and <kbd>Cmd/Ctrl −</kbd> do the same from the
+  keyboard, in all three arrangements
 - **Drag** — pan across the map, from anywhere including the inside of a section
-- **Fit**, in the title bar (<kbd>Cmd/Ctrl-0</kbd> in the app) — the whole map in the window again
+- **Fit**, in the title bar (<kbd>Cmd/Ctrl-0</kbd>) — the whole map in the window again
 - **Click a box** — it becomes the current claim, and nothing is hidden. The badge under it
   folds: **+3** says three reasons are hidden there and shows them; **−** puts them away again
 - **Click a section's header** — the named strip along its top: fold the section into a single
@@ -473,7 +474,9 @@ at a size that can be read, and scrolls like a page.
 a journal's columns. Each page is as tall as the pane at a size that can be read, so you read it
 top to bottom without scrolling, then go on to the top of the next, panning across when you
 reach the edge. A section that runs over a page break carries on under its name, marked
-*(continued)*.
+*(continued)*. **Zoom, and the pages are cut again** once you stop: still each as tall as the pane,
+so there are more and shorter pages zoomed in, fewer and longer zoomed out. **Fit** puts back the
+pages the column opened with.
 
 A relation to the page beside is drawn through the gap between them. A relation to a page further
 off would cross everything in between, so it is drawn as a **connector**: a short stub at each
@@ -686,8 +689,15 @@ timing with its own step. The **Legend** beside the chain shows each kind of lin
 Click an arrow to see its claims, and a claim to reach its passage in the text. **Click a state**
 to see only the paths through it — what leads to it and what it leads to — with the rest faded.
 **Back to the whole chain**, or <kbd>Esc</kbd>, brings everything back. **Show only what the text
-tested** keeps the steps backed by a study, statistics or a model. **Fit to width** scales a wide
-chain to the window.
+tested** keeps the steps backed by a study, statistics or a model.
+
+A state's name is cut at three lines; **▼ more** on the foot of its box shows the whole of it, and
+the rows below move down to make room. **▲ less** puts it back.
+
+**−** and **+** zoom the chain out and in, and the size between them, pressed, puts it back to its
+actual size; so do <kbd>Cmd/Ctrl −</kbd> and <kbd>Cmd/Ctrl =</kbd>, and a pinch or
+<kbd>Cmd/Ctrl</kbd> with the scroll wheel, which zooms at the pointer. The plain scroll wheel
+scrolls the chain. **Fit to width** scales a wide chain to the window.
 
 The panel beside the chain gives its shape — how many steps, across how many levels, over how
 long — and its **gaps**: where the text's chain stops, or never reaches an outcome. A gap is a
@@ -1436,6 +1446,9 @@ anything drops off the screen; resting on one says what it is.
 **On the map**
 
 - **Scroll** to zoom, **drag** to pan, **Fit** to see it all
+- <kbd>Cmd/Ctrl =</kbd> and <kbd>Cmd/Ctrl −</kbd> zoom in and out, and <kbd>Cmd/Ctrl-0</kbd> fits —
+  in Reasons, Exposition and Mechanism alike (in a browser, not while you are in the Argdown or the
+  Manuscript, where they zoom the page as usual)
 - <kbd>Tab</kbd> moves between claims and their badges; <kbd>Enter</kbd> or <kbd>Space</kbd>
   selects a claim or presses a badge
 - <kbd>Shift</kbd>+<kbd>Enter</kbd> on a claim, **double-click** or <kbd>Shift</kbd>**-click** —
@@ -1457,6 +1470,7 @@ anything drops off the screen; resting on one says what it is.
 | <kbd>Cmd/Ctrl-1</kbd> <kbd>2</kbd> <kbd>3</kbd> | Reasons, Exposition, Mechanism |
 | <kbd>Cmd/Ctrl-Alt-1</kbd> to <kbd>4</kbd> | the Map, Argdown, Notes and Manuscript panes |
 | <kbd>Cmd/Ctrl-0</kbd> | fit the map to the window |
+| <kbd>Cmd/Ctrl =</kbd>, <kbd>Cmd/Ctrl −</kbd> | zoom in, zoom out |
 | <kbd>Cmd/Ctrl-O</kbd>, <kbd>Cmd/Ctrl-Shift-O</kbd> | open a file, open a folder |
 | <kbd>Cmd/Ctrl-N</kbd>, <kbd>Cmd/Ctrl-Shift-N</kbd> | a new reconstruction, a new debate map |
 | <kbd>Cmd/Ctrl-S</kbd>, <kbd>Cmd/Ctrl-Shift-S</kbd> | save, save as |

@@ -194,5 +194,44 @@ ok("a field from the future is refused",
 ok("text that is not an identifier says so",
    threw(() => decodeFoldState(tiny, "hello there"), /starts with "ipsfold1"/));
 
+/* EVERY ARRANGEMENT, NOT ONLY REASONS (James, 29 Sep 2026: "it would be good to be able to report
+ * UI problems in each of the main views"). A Reasons fault he reported could not be rebuilt from
+ * the line, because it did not say the claims were in full; and Exposition's flow and Mechanism's
+ * chart were not in it at all. Each is asserted to survive, and the chart's fields to be refused
+ * outside the chart. */
+console.log("\nevery arrangement");
+{
+  const withText = Object.assign({}, empty, { allText: true, textOpen: new Set(["n2"]), readColumn: true,
+                                              shape: true, pageScale: 1.27, byText: true,
+                                              zoom: 1.4427, pane: { w: 1400.4, h: 812 } });
+  const enc = encodeFoldState(tiny, withText);
+  const dec = decodeFoldState(tiny, enc);
+  ok("the claims in full, one opened by hand, the column, the shape and the pages' cut survive",
+     dec.allText && dec.textOpen.has("n2") && dec.readColumn && dec.shape && dec.pageScale === 1.27, enc);
+  ok("the zoom and the pane are carried, rounded", /\bzoom=1\.44\b/.test(enc) && /\bpane=1400x812\b/.test(enc) &&
+     dec.zoom === 1.44 && dec.pane.w === 1400 && dec.pane.h === 812, enc);
+  ok("and re-encode to the same line", encodeFoldState(tiny, Object.assign(dec, { zoom: dec.zoom, pane: dec.pane })) === enc, enc);
+  ok("a zoom of 1 says nothing", !/zoom=/.test(encodeFoldState(tiny, Object.assign({}, empty, { zoom: 1 }))));
+  ok("a claim opened by hand that is not the map's is refused",
+     threw(() => decodeFoldState(tiny, good + " more=zz"), /not a claim/));
+
+  const mech = { chain: "norms|2", boxes: true, rival: false, show: "tested", folded: ["b", "a"],
+                 ends: true, expanded: ["x\u0000y"], opened: ["s 1"], zoom: "fit" };
+  const menc = encodeFoldState(tiny, Object.assign({}, empty, { mech }));
+  const mdec = decodeFoldState(tiny, menc);
+  ok("the Mechanism arrangement says so", /\bview=mech\b/.test(menc), menc);
+  ok("its chain, boxes, layers, filter, folds, ends, opened arrows and boxes, and fit survive",
+     mdec.mech && mdec.mech.chain === "norms|2" && mdec.mech.boxes && mdec.mech.rival === false &&
+     mdec.mech.show === "tested" && mdec.mech.folded.join() === "a,b" && mdec.mech.ends &&
+     mdec.mech.expanded[0] === "x\u0000y" && mdec.mech.opened[0] === "s 1" && mdec.mech.zoom === "fit",
+     JSON.stringify(mdec.mech));
+  ok("and re-encode to the same line", encodeFoldState(tiny, Object.assign({}, mdec, { mech: mdec.mech })) === menc, menc);
+  ok("every chain together is an empty chain, not a missing one",
+     decodeFoldState(tiny, encodeFoldState(tiny, Object.assign({}, empty, { mech: { chain: null } }))).mech.chain === null);
+  ok("a chart's field outside the chart is refused",
+     threw(() => decodeFoldState(tiny, good + " chain=x"), /Mechanism arrangement/));
+  ok("a zoom that is not a number is refused", threw(() => decodeFoldState(tiny, good + " zoom=big"), /positive number/));
+}
+
 if (failed) { console.log(`\n${failed} check(s) FAILED`); process.exit(1); }
 console.log("\nthe identifier round-trips and refuses correctly");

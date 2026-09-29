@@ -135,6 +135,9 @@ fn build_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::
         .item(&item("pane-text", "Manuscript", Some("CmdOrCtrl+Alt+4"))?)
         .separator()
         .item(&item("fit", "Fit the Map to the Window", Some("CmdOrCtrl+0"))?)
+        // Zoom for all three arrangements, beside the fit that frames them (29 Sep 2026).
+        .item(&item("zoom-in", "Zoom In", Some("CmdOrCtrl+="))?)
+        .item(&item("zoom-out", "Zoom Out", Some("CmdOrCtrl+-"))?)
         .item(&item("layout", "Layout…", None)?)
         .separator()
         .fullscreen()

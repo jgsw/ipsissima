@@ -2627,6 +2627,18 @@ function openAbout(){ buildAbout(); showAboutTab(0); $("about").hidden = false; 
 function closeAbout(){ $("about").hidden = true; }
 
 /** Everything measured rather than asserted. */
+/** What the fold state identifier encodes: the map's own state, the Mechanism chart's when it is
+ *  the arrangement on screen, the zoom, and the size of the pane it is read in. */
+function foldStateNow(){
+  var st = LIVE.getState();
+  var mech = ARRANGEMENT === "mechanism" && MECH && !$("mech").hidden;
+  var pane = mech ? $("mech") : $("map");
+  return Object.assign({}, st, {
+    mech: mech ? MECH.getView() : null,
+    zoom: st.view ? st.view.k : null,
+    pane: pane ? { w: pane.clientWidth, h: pane.clientHeight } : null
+  });
+}
 function fillAbout(){
   var b = window.__IPSISSIMA__ || {};
   var set = function(id, text){ var el = $(id); if (el) el.textContent = text; };
@@ -2681,7 +2693,7 @@ function fillAbout(){
   if (fid) {
     try {
       fid.textContent = (LIVE && CURRENT_GRAPH)
-        ? window.ArgdownLiveMap.encodeFoldState(CURRENT_GRAPH, LIVE.getState())
+        ? window.ArgdownLiveMap.encodeFoldState(CURRENT_GRAPH, foldStateNow())
         : "no map on screen";
     } catch (e) { fid.textContent = "unavailable — " + ((e && e.message) || e); }
   }
@@ -2692,10 +2704,25 @@ function fillAbout(){
       if (!s || !LIVE || !CURRENT_GRAPH) return;
       try {
         var p = window.ArgdownLiveMap.decodeFoldState(CURRENT_GRAPH, s);
-        LIVE.setState({ collapsedGroups: p.collapsedGroups, collapsedNodes: p.collapsedNodes,
-                        expandedNodes: p.expandedNodes, groupFolded: p.groupFolded,
-                        collapsedLanes: p.collapsedLanes, depth: p.depth, facets: p.facets,
-                        spine: p.spine, expositionOrder: p.byText }, true);
+        if (p.mech && !(CURRENT_GRAPH.mechanism && window.ArgdownMechanism))
+          throw new Error("This state is in the Mechanism arrangement, and this map declares no chain.");
+        var fold = { collapsedGroups: p.collapsedGroups, collapsedNodes: p.collapsedNodes,
+                     expandedNodes: p.expandedNodes, groupFolded: p.groupFolded,
+                     collapsedLanes: p.collapsedLanes, depth: p.depth, facets: p.facets,
+                     spine: p.spine, untagged: p.untagged, allText: p.allText,
+                     textOpen: p.textOpen, readColumn: p.readColumn, shape: p.shape,
+                     pageScale: p.pageScale };
+        setAppraisalOn(p.appraisal);
+        // THE ARRANGEMENT FIRST, then the state: choosing an arrangement re-frames the map, and
+        // would throw away the zoom the state carries.
+        if (p.mech) {
+          LIVE.setState(fold, false);
+          setArrangement("mechanism");
+          if (MECH) MECH.setView(Object.assign({}, p.mech, { appraisal: p.appraisal }));
+        } else {
+          setArrangement(p.byText ? "exposition" : "reasons");
+          LIVE.setState(Object.assign(fold, { expositionOrder: p.byText, zoom: p.zoom }), true);
+        }
         inp.value = "";
         if (p.byText && !LIVE.getState().byText) {
           // setState fell back: the by-position view needs positions this build's graph does
@@ -4829,11 +4856,17 @@ function splitWidth(x, box, swapped, viewport){
  *  toggle, pressed here only when the chart is not already fitted. */
 function fitView(){
   if (ARRANGEMENT === "mechanism" && !$("mech").hidden) {
-    var fb = $("mech").querySelector("[data-fit]");
-    if (fb && fb.textContent === "Fit to width") fb.click();
+    if (MECH) MECH.fit();
     return;
   }
   if (LIVE) LIVE.fit();
+}
+/** Zoom whichever arrangement is on screen by one step: View ▸ Zoom In and Zoom Out, ⌘= and ⌘−
+ *  (James, 29 Sep 2026: the three arrangements had three different ways to zoom, and none on
+ *  the keyboard). About the middle of the pane, as the Fit beside them frames the whole. */
+function zoomView(dir){
+  if (ARRANGEMENT === "mechanism" && !$("mech").hidden) { if (MECH) MECH.zoomBy(dir > 0 ? 1.2 : 1 / 1.2); return; }
+  if (LIVE && PANES.map) LIVE.zoomBy(dir > 0 ? 1.2 : 1 / 1.2);
 }
 $("fitbtn").onclick = fitView;
 // ONE HANDLER, THREE DOORBELLS. The menu item, the keyboard and these buttons all run this —
@@ -7059,6 +7092,15 @@ window.addEventListener("beforeunload", function(e){
 
 document.addEventListener("keydown", function(e){
   if ((e.metaKey || e.ctrlKey) && e.key === "s" && ED) { e.preventDefault(); saveArgdown(); }
+  // ⌘= / ⌘− (Ctrl on Windows and Linux) zoom the map, and ⌘0 fits it. In the application the
+  // View menu owns these keys and sends them here by name; in a browser they would zoom the whole
+  // page, so they are taken only while the pointer's business is the map -- not while typing in
+  // the Argdown or reading the Manuscript, where the browser's own page zoom is what is meant.
+  if (!HOST && (e.metaKey || e.ctrlKey) && !e.altKey && LIVE && PANES.map && !typingOrReading(e)) {
+    if (e.key === "=" || e.key === "+") { e.preventDefault(); zoomView(1); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); zoomView(-1); }
+    else if (e.key === "0") { e.preventDefault(); fitView(); }
+  }
   // UNDO FROM ANYWHERE, not only from inside the editor. A comment written or deleted on the map
   // is an edit to the file like any other, and the reader who has just made one is standing on
   // the map, where CodeMirror's own key handler never sees the keystroke. Left alone when the
@@ -7068,6 +7110,14 @@ document.addEventListener("keydown", function(e){
     if (e.shiftKey) ED.redo(); else ED.undo();
   }
 });
+
+/** Is this key meant for a text the reader is in -- the Argdown, a field, the Manuscript? */
+function typingOrReading(e){
+  var t = e.target;
+  if (!t || !t.closest) return false;
+  if (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return true;
+  return !!t.closest("#side, .cm-editor");
+}
 
 /* Kept as the name the locate paths already call; the pane machinery does the work now. */
 function msOpen(on){ setPane("text", on); }
@@ -8783,6 +8833,8 @@ if (HOST) {
       "pane-notes":      function(){ pane("notes"); },
       "pane-text":       function(){ pane("text"); },
       "fit":             fitView,
+      "zoom-in":         function(){ zoomView(1); },
+      "zoom-out":        function(){ zoomView(-1); },
       "layout":          function(){ $("laybtn").click(); },
       // The application's only door to a comparison — see cmpSyncHeader for why the
       // Manuscript's header carries none here.
