@@ -736,6 +736,18 @@ check("  and the census says they cannot both hold",
 check("  as is a rival view against the text's own finding; steps nothing sets against each other are not",
       run(SIZES)["shape"]["chain"]["disputed"], [["order", "reoff", ["No deterrence found", "Prison deters"]]])
 
+
+print("\na null in words that deny sufficiency (James's verdicts on Merton, 29 Sep 2026)")
+LIMIT = CHAIN + """
+[Work alone will not do it]: "Work will not itself keep people out of prison."
+    {fidelity: "quotation", causes: {from: work, to: reoff, sign: "0", basis: asserted}}
+    +> [Recommend]
+"""
+lim = [f for f in by(run(LIMIT), "mechanism") if "limit an effect" in f["message"]]
+# Mutation: drop the NOT_ENOUGH finding -> nothing is queried.
+check("a null worded as a limit is queried, with the fix", [f["fix"][:22] for f in lim], ["if the text says the ca"[:22]])
+check("  and a plain null is not", [f for f in by(run(CHAIN), "mechanism") if "limit an effect" in f["message"]], [])
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

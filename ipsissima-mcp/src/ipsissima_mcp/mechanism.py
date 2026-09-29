@@ -105,6 +105,13 @@ STANCES = ("rejected", "unjudged")
 DESIGNS = ("experiment", "replication", "quasi-experiment", "observational", "case study",
            "illustration", "anecdote", "review", "simulation")
 
+#: WORDS THAT DENY SUFFICIENCY, NOT EFFECT. "Will not itself destroy", "do not quietly vanish",
+#: "perhaps not exorcized": Merton limits a remedy's effect, and three nulls read him as finding
+#: none (James's verdicts on the Merton map, 29 Sep 2026). A null in such words is queried.
+NOT_ENOUGH = re.compile(r"\b(itself|by itself|alone|on its own|single-handedly|quietly|entirely|completely|"
+                        r"fully|wholly|not enough|not sufficient|insufficient|no guarantee|not guarantee|"
+                        r"exorci[sz]ed|cure-all|panacea)\b", re.I)
+
 #: Enough routes to say "many"; counting every simple path in a dense chain is exponential.
 ROUTE_CAP = 200
 #: Routes the census prints before it says how many more there are.
@@ -314,6 +321,7 @@ def steps(doc, appraisal):
                 mods = [m for m in (mods if isinstance(mods, list) else [mods] if mods else [])]
                 out.append(dict(
                     title=title, kind=kind, tags=sorted(tags),
+                    text=" ".join(m.get("text") or "" for m in (node.get("members") or [])),
                     layer=layer,
                     reported=layer == "rival", stance=stance,
                     fidelity=d.get("fidelity"), warrant=d.get("warrant"),
@@ -993,6 +1001,12 @@ def analyse(fm, doc):
             findings.append(("?", "mechanism",
                              f"sign `{s['sign']}` is not `+`, `-`, `0` (no effect) or `which` "
                              f"(decides which)", {"title": s["title"]}))
+        if s["null"] and NOT_ENOUGH.search(s["text"] or ""):
+            findings.append(("?", "mechanism", f"a finding of no effect ({s['src']} -> {s['dst']}), in words that "
+                             f"limit an effect rather than deny it (\"{NOT_ENOUGH.search(s['text']).group(0)}\")",
+                             {"title": s["title"],
+                              "fix": "if the text says the cause is not enough on its own, mark it with its sign "
+                                     "and `sufficient: false`; keep `\"0\"` only for a finding of no effect"}))
         if s["null"] and s["selects"]:
             findings.append(("?", "mechanism",
                              "a step cannot be both a null finding and a selection link",

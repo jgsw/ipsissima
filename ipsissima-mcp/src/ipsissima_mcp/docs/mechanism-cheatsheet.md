@@ -266,6 +266,12 @@ when the notation could not hold it.
 
 ### Step 6. Nulls, rivals and reported views
 
+**"Not by itself" is not "no effect".** "Nor will a continuing educational campaign itself destroy
+prejudice"; "false ideas do not quietly vanish when confronted with the truth"; "perhaps panics have
+not been exorcized": each limits a remedy's effect and denies it is enough, and none says it does
+nothing. Mark the step with its sign and `sufficient: false`. Three steps of the Merton map were
+first read as nulls this way, and the checker now queries a null worded like this.
+
 **A null is the text's finding about a step, not the absence of one.** *No significant effect* is
 not *no effect* (Altman and Bland 1995). Govier's modus tollens — no correlation, therefore no
 causation (pp. 289–90) — holds for a true correlation, not for one study's non-significant
