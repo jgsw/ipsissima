@@ -920,6 +920,37 @@ var STACK_GAP = 84;
 var BADGE_R = 10, BADGE_STEP = 26, PILL_W = 50, PILL_H = 15, PILL_X = 32, GAPWORD_W = 128;
 // One arrowhead for every arrow, whatever its weight (M4).
 var HEAD_LEN = 10, HEAD_W = 10;
+// Nested levels: each frame is inset this far inside its parent, and closes this far below the
+// frame inside it.
+var NEST_INSET = 16, NEST_CLOSE = 10;
+
+/** THE LEVELS AS A TREE OF WHOLES (Craver 2025: levels of mechanisms are branches in a tree of
+ *  composition, local to a mechanism, not strata across all of nature). `spec` is "chain" -- each
+ *  level inside the one listed before it -- or { parent: { level: parentLevel } }, where siblings
+ *  sit side by side inside their parent. The levels must be listed so that every level's
+ *  descendants follow it without a break; otherwise nesting is refused (null) and the chart keeps
+ *  its bands. Returns each level's depth and the index of its last descendant. */
+function nestTree(levels, spec) {
+  if (!spec || levels.length < 2) return null;
+  var parent = {};
+  if (spec === "chain") levels.forEach(function (lv, i) { parent[lv] = i ? levels[i - 1] : null; });
+  else levels.forEach(function (lv) { var p = spec.parent && spec.parent[lv]; parent[lv] = p != null && levels.indexOf(p) >= 0 ? p : null; });
+  var depth = {}, last = {};
+  var dOf = function (lv, seen) { if (has(depth, lv)) return depth[lv]; if (seen[lv]) return 0; seen[lv] = true;
+    return (depth[lv] = parent[lv] == null ? 0 : dOf(parent[lv], seen) + 1); };
+  levels.forEach(function (lv) { dOf(lv, {}); });
+  var isDesc = function (lv, anc) { for (var p = parent[lv], g = 0; p != null && g < 50; p = parent[p], g++) if (p === anc) return true; return false; };
+  for (var i = 0; i < levels.length; i++) {
+    var j = i;
+    while (j + 1 < levels.length && isDesc(levels[j + 1], levels[i])) j++;
+    // Contiguous: nothing after the block is a descendant of it.
+    for (var k = j + 1; k < levels.length; k++) if (isDesc(levels[k], levels[i])) return null;
+    last[levels[i]] = j;
+  }
+  var maxDepth = Math.max.apply(null, levels.map(function (lv) { return depth[lv]; }));
+  if (!maxDepth) return null;
+  return { parent: parent, depth: depth, last: last, maxDepth: maxDepth };
+}
 // A box's label: three lines of 14px unless opened; the room kept right of the last column for a
 // state's "✕ no link in the text".
 var MAX_LINES = 3, LINE_H = 14, UNLINKED_W = 150;
@@ -1237,6 +1268,9 @@ function layoutOnce(M, opts) {
     return gs;
   });
   var rowOff = function (li, r) { var t = 0; for (var i = 0; i < r; i++) t += rowHs[li][i] + (gapAfter[li][i] || ROW - BH); return t; };
+  // NESTED LEVELS (opts.nest): each level a frame inside its parent's, instead of a band beside it.
+  var nest = nestTree(M.levels, opts.nest);
+  var closeAt = function (li) { return nest ? M.levels.filter(function (lv) { return nest.last[lv] === li; }).length : 0; };
   var lanes = [], y = TOP;
   M.levels.forEach(function (lv, li) {
     var rows = rowHs[li].length;
@@ -1247,14 +1281,17 @@ function layoutOnce(M, opts) {
     // THE HEADING'S EXTENT, estimated as the chips' are, so labels keep clear of its words (M1) and
     // not of the whole strip; the page test holds the estimate to what the browser draws.
     var who = !rows ? "nothing in the text at this level" : actorsHere.join(" · ");
-    lanes.push({ level: lv, y: y, h: h, empty: !rows, actors: actorsHere, who: who,
-                 head: { x: 8, y: y + 4, w: 8 + lv.length * 9 + 10 + who.length * 6.9, h: 18 } });
-    y += h;
+    var dep = nest ? nest.depth[lv] : 0;
+    lanes.push({ level: lv, y: y, h: h, empty: !rows, actors: actorsHere, who: who, depth: dep,
+                 head: { x: 8 + dep * NEST_INSET, y: y + 4, w: 8 + lv.length * 9 + 10 + who.length * 6.9, h: 18 } });
+    // Room below a lane for every frame that closes there, innermost first.
+    y += h + closeAt(li) * NEST_CLOSE;
   });
   var nodes = {}, maxRank = 0;
   // M9 ACROSS: a gap between two columns is widened where a label on an arrow across it had no
   // clear place (Badger culling's ranging → contact, 30 Sep 2026); asked for by placeChips below.
-  var xOfCol = function (c) { var x = GUT + c * COL; for (var i = 0; i < c; i++) x += (opts.minW && opts.minW[i]) || 0; return x; };
+  var nestPad = nest ? nest.maxDepth * NEST_INSET : 0;
+  var xOfCol = function (c) { var x = GUT + nestPad + c * COL; for (var i = 0; i < c; i++) x += (opts.minW && opts.minW[i]) || 0; return x; };
   ids.forEach(function (v) {
     var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + rowOff(li, slots[M.levels[li] + "|" + col[v]].indexOf(v)); };
     var top = rowY(range[v][0]), bottom = rowY(range[v][1]) + (spans(v) ? BH : boxH[v]);
@@ -1893,9 +1930,15 @@ function layoutOnce(M, opts) {
     extX = Math.max(extX, e.chip.x + e.chip.w / 2); extY = Math.max(extY, e.chip.y + e.chip.h / 2);
     e.stems.forEach(function (sm) { (sm.pts || []).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); }); });
   });
-  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16);
+  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16) + nestPad;
   var height = Math.max(y + 70, extY + 16);
-  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes,
+  // THE FRAMES, from their lane's top to below the last lane inside them, each inset by its depth.
+  var frames = !nest ? null : M.levels.map(function (lv, li) {
+    var L = lanes[nest.last[lv]], d = nest.depth[lv];
+    var bottom = L.y + L.h + (nest.depth[M.levels[nest.last[lv]]] - d) * NEST_CLOSE + 4;
+    return { level: lv, depth: d, x: 4 + d * NEST_INSET, y: lanes[li].y + 2, w: width - 8 - 2 * d * NEST_INSET, h: bottom - lanes[li].y - 2 };
+  });
+  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames,
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
            ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain };
@@ -2486,6 +2529,8 @@ function injectStyle() {
     ".amech .st rect.box{fill:var(--alm-node-bg,#fff);stroke:var(--fg,#1a1a1a);stroke-width:1}",
     ".amech .st.intervention rect.box{fill:var(--mv-text);stroke:var(--mv-text)}",
     ".amech .st.intervention text{fill:var(--alm-node-bg,#fff)}",
+    // A badge on a dark box keeps its own ink: the white of the box's label made its glyph vanish.
+    ".amech .st.intervention .loopmark text{fill:var(--mv-text)}.amech .st.intervention .more text{fill:var(--accent,#3a7bd5)}",
     ".amech .st.outcome rect.outer{fill:none;stroke:var(--fg,#1a1a1a)}",
     // A CONDITION is a starting point the text does not recommend: the intervention's navy, but
     // as a tint, so what the text would DO and what it takes as given read apart at a glance.
@@ -2516,6 +2561,7 @@ function injectStyle() {
     ".amech-zoom{display:inline-flex;gap:0}.amech-zoom .zm{font:inherit;font-size:12px;color:inherit;border-radius:0;min-width:26px;justify-content:center}",
     ".amech-zoom .zm:first-child{border-radius:5px 0 0 5px}.amech-zoom .zm:last-child{border-radius:0 5px 5px 0}",
     ".amech-zoom .zm+.zm{margin-left:-1px}.amech-zoom .pct{font-size:11px;min-width:44px;font-variant-numeric:tabular-nums}",
+    ".amech .frame{stroke:var(--alm-group-line,#d6d6d6);stroke-width:1}",
     ".amech .st .more{cursor:pointer}.amech .st .more rect{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1;opacity:.95}",
     ".amech .st .more text{font-size:9.5px;font-weight:600;fill:var(--accent,#3a7bd5)}.amech .st .more:hover text{text-decoration:underline}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
@@ -2634,7 +2680,11 @@ function create(container, graph, opts) {
   var CHAINS = FULL.chains || [];
   var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
                chain: CHAINS.length ? CHAINS[0].id : null, then: null,
-               opened: {}, zoom: null };
+               opened: {}, zoom: null,
+               // Levels as bands (null), or as frames nested one inside another ("chain", or a tree
+               // { parent: {...} } handed in by a host). A reader's choice, not the default: most
+               // texts' levels are not wholes containing parts (James, 30 Sep 2026).
+               nest: opts.nest || null };
   // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
   // which chains each is in, read off the whole file whatever is being shown.
   var KINDS = FULL.profile.kinds || [];
@@ -2674,7 +2724,7 @@ function create(container, graph, opts) {
      *  identifier encodes for this arrangement, so a drawing fault can be reported and rebuilt. */
     getView: function () {
       var v = cur.getView();
-      return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal,
+      return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal, nest: keep.nest === "chain" ? "chain" : keep.nest ? "tree" : null,
                opened: Object.keys(keep.opened).sort(), show: v.show, ends: v.ends, folded: v.folded,
                expanded: v.expanded, zoom: v.zoom };
     },
@@ -2685,6 +2735,7 @@ function create(container, graph, opts) {
       if ("boxes" in v) keep.boxes = !!v.boxes && hasWholes;
       if ("rival" in v) keep.rival = v.rival !== false;
       if ("appraisal" in v) keep.appraisal = !!v.appraisal;
+      if ("nest" in v) keep.nest = v.nest === "chain" ? "chain" : null;
       keep.opened = {}; (v.opened || []).forEach(function (x) { if (has(FULL.states, x)) keep.opened[x] = true; });
       keep.zoom = null;
       remount();
@@ -2713,7 +2764,7 @@ function create(container, graph, opts) {
   // layers are, so moving between chains does not shut them.
   var opened = keep.opened;
   var MS = markSpec(FULL, M);
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks });
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: keep.nest });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -2764,6 +2815,10 @@ function create(container, graph, opts) {
     // ZOOM, as the other arrangements have it (James, 29 Sep 2026): out, the size it is at (a press
     // puts it back to actual size), in, and the fit to the pane's width. Pinch or Ctrl/⌘-scroll
     // zooms at the pointer; the plain wheel scrolls, as the chart is a page that scrolls.
+    // LEVELS AS BANDS OR NESTED (offered where there are two levels or more). Named for what a
+    // click will show.
+    (M.levels.length > 1 ? '<button type="button" class="amech-tog nest" data-nest title="Draw each level as a frame inside the one above it, or as bands one above another. Nesting says each level is part of the one around it: right for an organ in an organism, wrong for a herbivore under a carnivore">' +
+      (keep.nest ? "Levels as bands" : "Nest the levels") + '</button>' : '') +
     '<span class="amech-zoom"><button type="button" class="amech-tog zm" data-zoom="out" title="Zoom out (⌘− or Ctrl −)">−</button>' +
     '<button type="button" class="amech-tog zm pct" data-zoom="1" title="The size the chain is drawn at; press for its actual size">100%</button>' +
     '<button type="button" class="amech-tog zm" data-zoom="in" title="Zoom in (⌘= or Ctrl =)">+</button></span>' +
@@ -2817,9 +2872,14 @@ function create(container, graph, opts) {
   function drawFrame() {
     while (gL.firstChild) gL.removeChild(gL.firstChild);
     while (gH.firstChild) gH.removeChild(gH.firstChild);
+    // NESTED: each level a frame inside its parent's, deeper frames a shade darker.
+    if (G.frames) G.frames.forEach(function (f) {
+      el("rect", { x: f.x, y: f.y, width: f.w, height: f.h, rx: 10, "class": "frame", "data-level": f.level,
+                   fill: f.depth % 2 ? "var(--mv-lane-a)" : "var(--mv-lane-b)" }, gL);
+    });
     G.lanes.forEach(function (ln, i) {
-      el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, gL);
-      var head = el("text", { x: 12, y: ln.y + 17, "class": "lane-l" }, gH);
+      if (!G.frames) el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, gL);
+      var head = el("text", { x: ln.head.x + 4, y: ln.y + 17, "class": "lane-l" }, gH);
       head.textContent = ln.level.toUpperCase();
       var who = el("tspan", { "class": "actor-l", dx: 10 }, head);
       who.textContent = ln.who;
@@ -3499,6 +3559,8 @@ function create(container, graph, opts) {
     inp.addEventListener("change", function () {
       layers[inp.getAttribute("data-layer")] = inp.checked; keep[inp.getAttribute("data-layer")] = inp.checked; apply(); });
   });
+  var nestBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-nest]"));
+  if (nestBtn) nestBtn.addEventListener("click", function () { keep.nest = keep.nest ? null : "chain"; refold(); nestBtn.textContent = keep.nest ? "Levels as bands" : "Nest the levels"; });
   var boxesBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-boxes]"));
   if (boxesBtn) boxesBtn.addEventListener("click", function () { keep.boxes = !keep.boxes; remount(); });
   var chainSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-chain]"));
@@ -3508,7 +3570,7 @@ function create(container, graph, opts) {
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: keep.nest });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
@@ -3604,7 +3666,7 @@ function create(container, graph, opts) {
   }
 }
 
-var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;

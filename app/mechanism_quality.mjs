@@ -62,6 +62,7 @@ function pictures(FULL) {
                       M.ids.some(v => /outcome/.test(JSON.stringify(M.states[v].role || "")));
       if (toEnds.length && hasEnds)
         out.push([(tag ? tag + ", " : "") + "to its ends", M, { marks, ends: true, folded: Object.fromEntries(toEnds.map(v => [v, true])) }]);
+      if (M.levels.length > 1) out.push([(tag ? tag + ", " : "") + "levels nested", M, { marks, nest: "chain" }]);
       const G0 = MV.layout(M, { marks });
       const cut = Object.keys(G0.nodes).filter(v => G0.nodes[v].more);
       if (cut.length) out.push([(tag ? tag + ", " : "") + "labels opened", M, { marks, open: Object.fromEntries(cut.map(v => [v, true])) }]);

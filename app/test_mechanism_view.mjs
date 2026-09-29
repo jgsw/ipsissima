@@ -661,6 +661,27 @@ console.log("\nlong labels, and room for what is said beside a box");
   check(!shut.nodes.b.unlinked && !shut.nodes.a.unlinked, "and no other state is said to be unlinked");
 }
 
+/* NESTED LEVELS (30 Sep 2026): a choice, never the default, and a tree, not a chain read off the
+ * list (Craver 2025; Ylikoski 2024). Mutations: nest from the list's order whatever the tree says
+ * -> the siblings check fails; drop the contiguity test -> the refusal check fails. */
+console.log("\nnested levels");
+{
+  const T = MV.nestTree(["nation", "elites", "citizens"], { parent: { elites: "nation", citizens: "nation" } });
+  check(T && T.depth.elites === 1 && T.depth.citizens === 1 && T.last.nation === 2 && T.last.elites === 1,
+        "a tree makes siblings: elites and citizens each one deep, inside the nation", JSON.stringify(T));
+  const C = MV.nestTree(["a", "b", "c"], "chain");
+  check(C && C.depth.c === 2 && C.last.a === 2, "a chain puts each level inside the one before");
+  check(MV.nestTree(["a", "b", "c"], { parent: { c: "a" } }) === null,
+        "a tree the list's order cannot draw (a child after a non-descendant) is refused, and the bands kept");
+  check(MV.nestTree(["a", "b"], null) === null && MV.layout(M, {}).frames === null, "and bands are the default");
+  const JM = MV.model(graphOf(JOINTF));
+  const NL = MV.layout(JM, { nest: "chain" });
+  const inside = (i, o) => i.x >= o.x && i.y >= o.y && i.x + i.w <= o.x + o.w && i.y + i.h <= o.y + o.h;
+  check(NL.frames && NL.frames.every((f, i) => i === 0 || inside(f, NL.frames[i - 1])),
+        "nested, each frame lies inside the one around it", JSON.stringify(NL.frames));
+  check(MV.audit(NL).hard.length === 0, "and the nested chart keeps every hard rule", JSON.stringify(MV.audit(NL).hard.slice(0, 3)));
+}
+
 console.log("\nseveral chains (profile 1.5)");
 {
   const MC = MV.model(graphOf(CHAINSF));

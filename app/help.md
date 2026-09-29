@@ -699,6 +699,11 @@ actual size; so do <kbd>Cmd/Ctrl −</kbd> and <kbd>Cmd/Ctrl =</kbd>, and a pinc
 <kbd>Cmd/Ctrl</kbd> with the scroll wheel, which zooms at the pointer. The plain scroll wheel
 scrolls the chain. **Fit to width** scales a wide chain to the window.
 
+**Nest the levels** draws each level as a frame inside the one above it, instead of as a band
+beneath it; **Levels as bands** puts them back. Nesting says each level is part of the one around
+it: right for an organ in an organism, wrong for a herbivore under a carnivore, so bands are the
+default.
+
 The panel beside the chain gives its shape — how many steps, across how many levels, over how
 long — and its **gaps**: where the text's chain stops, or never reaches an outcome. A gap is a
 finding about the text, not a fault in the map.

@@ -7217,6 +7217,7 @@ function encodeFoldState(graph, state) {
   if (m) {
     out.push("chain=" + (m.chain == null ? "" : encId(m.chain)));
     if (m.boxes) out.push("boxes=1");
+    if (m.nest === "chain") out.push("nest=chain");
     if (m.rival === false) out.push("rival=0");
     if (m.show === "tested") out.push("show=tested");
     push("mfolds", m.folded);
@@ -7300,8 +7301,8 @@ function decodeFoldState(graph, text) {
   }
   const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
                  "facets", "untagged", "appraisal", "text", "more", "flow", "shape", "pages",
-                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane"];
-  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore"];
+                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane", "nest"];
+  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "nest"];
   if (fields.view !== "mech") for (const key of MECH_ONLY) if (key in fields)
     throw new Error('"' + key + '" belongs to the Mechanism arrangement, and this state is not in it');
   // The chain's own ids are not the map's claims, so they are decoded but not checked here: the
@@ -7348,7 +7349,7 @@ function decodeFoldState(graph, text) {
     pane,
     mech: fields.view !== "mech" ? null : {
       chain: fields.chain ? decodeURIComponent(fields.chain) : null,
-      boxes: fields.boxes === "1", rival: fields.rival !== "0",
+      boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "chain" ? "chain" : null,
       show: fields.show === "tested" ? "tested" : "all",
       folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
       opened: list("mmore"), zoom

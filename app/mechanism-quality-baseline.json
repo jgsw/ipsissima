@@ -5,18 +5,18 @@
   "detours": 0
  },
  "chain": {
-  "chipCrossings": 5,
-  "crossings": 30,
+  "chipCrossings": 8,
+  "crossings": 45,
   "detours": 0
  },
  "chains": {
   "chipCrossings": 0,
-  "crossings": 0,
+  "crossings": 2,
   "detours": 0
  },
  "generals": {
-  "chipCrossings": 2,
-  "crossings": 2,
+  "chipCrossings": 3,
+  "crossings": 3,
   "detours": 0
  },
  "joint": {
@@ -35,38 +35,38 @@
   "detours": 0
  },
  "regimes": {
-  "chipCrossings": 5,
-  "crossings": 30,
+  "chipCrossings": 8,
+  "crossings": 45,
   "detours": 0
  },
  "sizes": {
-  "chipCrossings": 1,
-  "crossings": 39,
+  "chipCrossings": 2,
+  "crossings": 62,
   "detours": 0
  },
  "stories": {
-  "chipCrossings": 1,
-  "crossings": 3,
+  "chipCrossings": 2,
+  "crossings": 6,
   "detours": 0
  },
  "system": {
-  "chipCrossings": 1,
-  "crossings": 21,
-  "detours": 0
- },
- "times": {
-  "chipCrossings": 8,
+  "chipCrossings": 2,
   "crossings": 38,
   "detours": 0
  },
+ "times": {
+  "chipCrossings": 13,
+  "crossings": 57,
+  "detours": 0
+ },
  "via": {
-  "chipCrossings": 1,
-  "crossings": 39,
+  "chipCrossings": 2,
+  "crossings": 62,
   "detours": 0
  },
  "bates-2012-price-is-wrong": {
-  "chipCrossings": 37,
-  "crossings": 193,
+  "chipCrossings": 72,
+  "crossings": 322,
   "detours": 0
  }
 }
