@@ -699,10 +699,16 @@ actual size; so do <kbd>Cmd/Ctrl −</kbd> and <kbd>Cmd/Ctrl =</kbd>, and a pinc
 <kbd>Cmd/Ctrl</kbd> with the scroll wheel, which zooms at the pointer. The plain scroll wheel
 scrolls the chain. **Fit to width** scales a wide chain to the window.
 
-**Nest the levels** draws each level as a frame inside the one above it, instead of as a band
+The top line of the drawing says **what the levels are**: parts within wholes, regions within
+regions, a chain of command, larger and smaller, a food chain, separate systems — and whether that is
+what the text says or the reconstructor's reading. Where the map does not say, the line says so.
+
+**Nest the levels** draws each level as a frame inside the one it is part of, instead of as a band
 beneath it; **Levels as bands** puts them back. Nesting says each level is part of the one around
 it: right for an organ in an organism, wrong for a herbivore under a carnivore, so bands are the
-default.
+default. Where the map says its levels nest, the frames follow what it declares, so two groups
+within one society sit side by side; where it says they do not, nesting is not offered; where it
+says nothing, the frames are drawn under a note that they are an assumption.
 
 The panel beside the chain gives its shape — how many steps, across how many levels, over how
 long — and its **gaps**: where the text's chain stops, or never reaches an outcome. A gap is a

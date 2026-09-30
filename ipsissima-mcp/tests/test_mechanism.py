@@ -748,6 +748,34 @@ lim = [f for f in by(run(LIMIT), "mechanism") if "limit an effect" in f["message
 check("a null worded as a limit is queried, with the fix", [f["fix"][:22] for f in lim], ["if the text says the ca"[:22]])
 check("  and a plain null is not", [f for f in by(run(CHAIN), "mechanism") if "limit an effect" in f["message"]], [])
 
+print("\nprofile 1.10: what the levels are, and the tree they nest in (James, 30 Sep 2026)")
+LV = "    levels: [macro, meso, micro]"
+assert LV in CHAIN
+def levels_as(extra):
+    return CHAIN.replace(LV, LV + "\n" + extra)
+od = run(levels_as("    ordering: composition\n    within: {meso: macro, micro: macro}"))
+# Mutations: drop `ordering` from the profile -> the first fails; skip `within` -> the second.
+check("`ordering:` is in the profile, as the reconstructor's reading",
+      od["shape"]["chain"]["ordering"]["kind"], "composition")
+check("  and `within:` as a tree, siblings within one whole",
+      od["shape"]["chain"]["ordering"]["within"], [["meso", "macro"], ["micro", "macro"]])
+check("  and the census says what the levels are",
+      any("levels are parts within wholes (composition), as the reconstructor reads them" in l for l in mech.census(od["shape"]["chain"])), True)
+st = run(levels_as('    ordering: {kind: space, pinpoint: "p. 3"}'))
+check("a pinpoint makes it the text's own", st["shape"]["chain"]["ordering"]["stated"], "p. 3")
+msgs = lambda text: [f["message"] for f in by(run(text), "mechanism")]
+check("an ordering not in the list is a fault",
+      any("is not one of composition" in m for m in msgs(levels_as("    ordering: nesting"))), True)
+check("`within:` naming an undeclared level is a fault",
+      any("not one of the declared levels" in m for m in msgs(levels_as("    within: {meso: nation}"))), True)
+check("a tree the list's order cannot draw is queried, with the order that can",
+      [f["fix"] for f in by(run(levels_as("    within: {micro: macro}")), "mechanism") if "outside the run" in f["message"]],
+      ["list each level's parts straight after it: levels: [macro, micro, meso]"])
+check("`within:` beside an ordering that is not containment is queried",
+      any("is not a containment" in m for m in msgs(levels_as("    ordering: sequence\n    within: {meso: macro}"))), True)
+check("a map that does not say is told so in the census",
+      any("does not say what ordering its levels are" in l for l in mech.census(run(CHAIN)["shape"]["chain"])), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

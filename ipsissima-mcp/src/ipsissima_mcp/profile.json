@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.9",
+  "version": "1.10",
   "date": "2026-09-28",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -72,6 +72,8 @@
   "mechanism": {
     "question": {"type": "string"},
     "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
+    "ordering": {"type": "composition | space | authority | scale | sequence | systems | mixed | unstated, or {kind, pinpoint}", "summary": "What kind of ordering the levels are; the reconstructor's reading unless a pinpoint shows where the text says it (since 1.10)."},
+    "within": {"type": "map of level to level", "summary": "Each level's parent, where the levels nest: a tree, siblings side by side within their parent (since 1.10)."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
     "kinds": {"type": "map of id to kind", "keys": {"label": "string", "general": "a state id of this kind: the general claim, of which the kind's other states are cases (since 1.7)"}, "summary": "Kinds of state that recur across cases; states of one kind are never walked as one (since 1.6)."},
     "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},

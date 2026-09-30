@@ -1366,6 +1366,43 @@ mechanism:
           "and Restore on a fresh page puts the chart back: the arrangement, the opened box and the zoom",
           await page.locator("#foldstateerr").innerText().catch(() => ""));
 
+    // WHAT THE LEVELS ARE, ON THE PAGE (profile 1.10). Mutations: nest from the list whatever
+    // `within:` says -> the tree check fails; offer the switch for `systems` -> the third fails;
+    // show the banner for a declared tree -> the second fails.
+    const LVL = "    levels: [macro, meso, micro]";
+    const chainText = fs.readFileSync(CHAIN, "utf8");
+    const levelsPage = async (extra, name) => {
+      const src = path.join(tmp, name + ".argdown"), out = path.join(tmp, name + ".html");
+      fs.writeFileSync(src, chainText.replace(LVL, LVL + "\n" + extra));
+      execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), src, "--source-root", FIXTURE, "-o", out], { stdio: "pipe" });
+      await page.goto("file://" + out);
+      await page.waitForTimeout(600);
+      await page.locator("#mechbtn").click();
+      await page.waitForTimeout(400);
+    };
+    await page.goto("file://" + withChain);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const capOf = () => page.locator("#mech svg text.caption").textContent();
+    check(/does not say what ordering/.test(await capOf()), "a map that does not say what its levels are is said not to, on the drawing");
+    await page.locator("#mech [data-nest]").click();
+    await page.waitForTimeout(300);
+    check(await page.locator("#mech .amech-nestbanner").isVisible() && await page.locator("#mech rect.frame").count() === 3,
+          "nesting it draws frames, under a banner saying they are an assumption");
+    await levelsPage("    ordering: composition\n    within: {meso: macro, micro: macro}", "tree");
+    check(/parts within wholes, as the reconstructor reads them/.test(await capOf()), "a declared ordering is said in words");
+    await page.locator("#mech [data-nest]").click();
+    await page.waitForTimeout(300);
+    const fr = await page.evaluate(() => [...document.querySelectorAll("#mech rect.frame")].map(r => [r.getAttribute("data-level"), +r.getAttribute("x")]));
+    const xOf = lv => (fr.find(f => f[0] === lv) || [])[1];
+    check(fr.length === 3 && xOf("meso") === xOf("micro") && xOf("meso") > xOf("macro") &&
+          !(await page.locator("#mech .amech-nestbanner").isVisible()),
+          "a declared tree nests as a tree -- siblings side by side, one deep -- with no banner", JSON.stringify(fr));
+    await levelsPage("    ordering: systems", "systems");
+    check(await page.locator("#mech [data-nest]").count() === 0 && /separate systems/.test(await capOf()),
+          "levels declared as separate systems are not offered nesting");
+
     // WHAT THE LAYOUT ESTIMATES, HELD TO WHAT THE BROWSER DRAWS (M11). The audit measures the
     // layout's geometry; these say that geometry is what is on screen. Mutations: draw a badge at
     // a fixed offset again -> the first fails; shrink the chip width estimate -> the second.

@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.9 — 28 September 2026.** The machine-readable registry of everything below is
+**Version 1.10 — 30 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -202,6 +202,8 @@ mechanism:
 | `question` | string | What the chain answers. |
 | `chains.<id>` | `{label, question, roles}` | One of **several** chains the text sets out, each answering its own question; `roles` maps a state id to the role it plays in this chain, where that differs from its own (*added in 1.5*). |
 | `levels` | list | Levels of social complexity, top first. Default `[macro, meso, micro]`. |
+| `ordering` | `composition` \| `space` \| `authority` \| `scale` \| `sequence` \| `systems` \| `mixed` \| `unstated`, or `{kind, pinpoint}` | **What kind of ordering the levels are** — the reconstructor's reading, unless `pinpoint` shows where the text says it (*added in 1.10*). |
+| `within` | map of level to level | **Each level's parent**, where the levels nest: a tree, so siblings sit side by side within their parent (*added in 1.10*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method}` | A change in an actor's condition or conduct. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*). |
@@ -453,6 +455,48 @@ A null finding and a selection link are reported and drawn, never walked as part
 A step the text states but the argument never needed gets a claim of its own, quoting the text,
 under a heading `# The mechanism, as the text states it {isGroup: true}`.
 
+**What the levels are (1.10).** A `levels:` list says the text orders things, and not by what. The
+research maps used one key for composition (organ, cell, molecule), spatial scale (global,
+subcontinental, local), a food chain (carnivores, herbivores, plants), separate systems acting on
+each other (culling operations, badger populations, cattle herds) and roles side by side within a
+whole (elites and citizens within the nation), and a reader of the chart who had not read the paper
+could not tell which (James, 30 September 2026). Ylikoski (2024) makes the general point: in the
+social sciences "level" is a placeholder for several orderings, and trouble comes when they are run
+together. So a map says which:
+
+| `ordering` | the levels are | they nest |
+|---|---|---|
+| `composition` | parts within wholes | yes |
+| `space` | regions within regions | yes |
+| `authority` | a chain of command, or units within units | yes |
+| `scale` | larger and smaller, contrasted, without containment | no |
+| `sequence` | an order along a chain: a food chain, a supply chain | no |
+| `systems` | separate systems that act on one another; their order is a convention | no |
+| `mixed` | more than one of these in one list | — |
+| `unstated` | an ordering the text does not name | — |
+
+It is the reconstructor's reading unless the text says it, when `{kind, pinpoint}` gives the place.
+Where the levels nest, `within:` gives each level's parent. Levels of mechanisms are a **tree** of
+composition, local to the mechanism (Craver 2025), not strata across all of nature, so nesting is
+never read off the order of the list: Valentino's elites and citizens are both within the nation,
+and neither within the other.
+
+```yaml
+mechanism:
+    levels: [nation, elites, citizens]
+    ordering: composition
+    within: {elites: nation, citizens: nation}
+```
+
+The checker says what the levels are in its census, and asks for `ordering:` where a map with more
+than one level does not say. It refuses an `ordering` it does not know and a `within:` naming a level
+that is not declared, and queries a `within:` beside an ordering that is not a containment, and a
+tree the list cannot draw nested -- a level listed outside the run of its whole -- giving the order
+that can. The Mechanism chart writes the ordering in words on the drawing, draws the levels as bands
+by default, nests them as the declared tree on request, and offers no nesting for levels declared
+not to nest; a map that declares nothing can be nested under a banner saying the frames are an
+assumption.
+
 ## 6. The source file
 
 The text a map reads is a Markdown file. Its YAML front matter may carry:
@@ -496,7 +540,8 @@ rule: name your gaps).
   outcome in one phase and a condition of the next. Since 1.5 a chain may give a state a role of its
   own, so phases the text sets out as separate questions can be separate chains; a single cycle
   whose phases are not separate questions still says *when* only in the state's `note:`.
-- **Scales, not levels.** `levels` is one list for the whole file, and every chain shares it. The
+- **Scales, not levels.** `levels` is one list for the whole file, and every chain shares it, as
+  does its `ordering` (1.10), which says what the list is but cannot give two chains two orderings. The
   Coleman-boat paper talks of "scales rather than levels", with a macro that "is not a fixed-size
   scale": its deforestation example's local, regional and national endpoints all fall into
   `macro`. Name the scale in the state's label.
@@ -545,6 +590,11 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.10** (30 September 2026) added `ordering` (what kind of ordering the levels are, the
+reconstructor's reading unless pinpointed) and `within` (the tree the levels nest in), after James's
+comparison of banded and nested charts and Ylikoski (2024) and Craver (2025) on levels. Every 1.9 file
+conforms unchanged; the census asks for `ordering:` where a map with levels does not say.
 
 **1.9** (28 September 2026) added, from the fourth wave of gap tests (Marti and Gond 2018, Valentino
 et al. 2018, Stone 1989): `modifies` on a step (a moderator that strengthens, weakens or reverses it,

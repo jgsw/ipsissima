@@ -56,6 +56,7 @@ goes wrong. Explanatory sections and asides count; footnotes count when they car
 mechanism:
     question: "How would free distribution raise use of preventive health products?"
     levels: [macro, meso, micro]          # top to bottom; declare the text's own if it has them
+    ordering: composition                 # what the levels are (1.10): see below
     actors:
         ngo:       {label: "Governments and NGOs distributing products", level: meso}
         household: {label: "Poor household", level: micro}
@@ -114,6 +115,14 @@ mechanism:
   Leave it out where the cases are equals.
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
+- **Say what the levels are** (*1.10*): `ordering:` is `composition` (parts within wholes), `space`
+  (regions within regions), `authority` (a chain of command), `scale` (larger and smaller, without
+  containment), `sequence` (a food chain, a supply chain), `systems` (separate systems acting on one
+  another), `mixed`, or `unstated` where the text orders its levels without saying by what. It is
+  your reading unless the text says it: then `{kind, pinpoint}`. Where the levels nest, `within:`
+  gives each its parent, as a tree — `{elites: nation, citizens: nation}`, never read off the order of
+  the list — and the list puts each level's parts straight after it. If you cannot tell what the
+  levels are doing, write `unstated` and say so to the user: that is a finding about the text.
 
 ## 3. Mark the steps
 

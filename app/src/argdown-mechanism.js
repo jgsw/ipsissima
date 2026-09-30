@@ -32,6 +32,48 @@
 "use strict";
 
 var DEFAULT_LEVELS = ["macro", "meso", "micro"];
+// WHAT KIND OF ORDERING THE LEVELS ARE (profile 1.10) -- mechanism.py's ORDERINGS, word for word.
+var ORDERINGS = { composition: "parts within wholes", space: "regions within regions", authority: "a chain of command",
+                  scale: "larger and smaller, not containing", sequence: "an order along a chain", systems: "separate systems",
+                  mixed: "more than one ordering", unstated: "an ordering the text does not name" };
+var NESTING = ["composition", "space", "authority"];
+/** What the chart says its levels are, in words: the reader who has not read the paper is told
+ *  (James, 30 Sep 2026: "I wasn't really sure what the levels in the paper were supposed to be
+ *  doing"). A map that does not say is said not to. */
+function orderingWords(o) {
+  if (!o || !o.kind) return "levels: the map does not say what ordering they are";
+  return "levels: " + ORDERINGS[o.kind] + (o.stated ? ", as the text says (" + o.stated + ")" : ", as the reconstructor reads them");
+}
+/** The nesting a map declares: its `within:` tree, or a chain where it says its levels nest
+ *  without giving a tree; null where it says they do not nest. `declared` is false where the map
+ *  says nothing (or `mixed`, `unstated`), and the frames are the reader's assumption. */
+function nestingOf(o) {
+  o = o || { kind: null, within: [] };
+  if (o.kind && NESTING.indexOf(o.kind) < 0 && o.kind !== "mixed" && o.kind !== "unstated") return { offer: false };
+  var declared = !!o.kind && NESTING.indexOf(o.kind) >= 0;
+  var spec = /** @type {any} */ ("chain");
+  if (o.within && o.within.length) { var par = {}; o.within.forEach(function (q) { par[q[0]] = q[1]; }); spec = { parent: par }; }
+  return { offer: true, declared: declared, spec: spec };
+}
+/** `ordering:` and `within:` as the checker's level_order reads them: {kind, stated, within}. */
+function levelOrder(block, levels) {
+  var raw = block.ordering, kind = null, stated = null;
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) { kind = raw.kind == null ? null : raw.kind; stated = raw.pinpoint == null ? null : raw.pinpoint; }
+  else if (raw != null) kind = raw;
+  if (kind != null) { kind = String(kind); if (!has(ORDERINGS, kind)) kind = null; }
+  var pairs = [], w = block.within;
+  if (w && typeof w === "object" && !Array.isArray(w))
+    Object.keys(w).forEach(function (c) { var par = String(w[c]); c = String(c);
+      if (levels.indexOf(c) >= 0 && levels.indexOf(par) >= 0 && c !== par) pairs.push([c, par]); });
+  var parent = {}; pairs.forEach(function (q) { parent[q[0]] = q[1]; });
+  for (var i = 0; i < levels.length; i++) {
+    var seen = {}, pp = parent[levels[i]];
+    while (pp != null && !seen[pp]) { seen[pp] = true; pp = parent[pp]; }
+    if (pp != null) { pairs = []; break; }
+  }
+  pairs.sort(function (a, b) { return levels.indexOf(a[0]) - levels.indexOf(b[0]); });
+  return { kind: kind, stated: stated == null ? null : String(stated), within: pairs };
+}
 var BASES = ["study", "statistics", "model", "example", "testimony", "asserted"];
 var TIERS = ["evidence", "argued", "asserted", "imputed"];
 var TIER_OF_BASIS = { study: "evidence", statistics: "evidence", model: "evidence",
@@ -178,11 +220,12 @@ function model(graph) {
     if ((e.type === "attack" || e.type === "contradictory") && titleOfId[e.from] != null && titleOfId[e.to] != null)
       against[titleOfId[e.from] + "\u0000" + titleOfId[e.to]] = against[titleOfId[e.to] + "\u0000" + titleOfId[e.from]] = true;
   });
-  return { levels: levels, actors: actors, states: states, ids: ids, steps: ok,
+  var ordering = levelOrder(block, levels);
+  return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            profile: profile(levels, actors, states, ids, ok,
-                            m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against) };
+                            m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering) };
 }
 
 function reach(start, edges) {
@@ -640,7 +683,7 @@ function disputedOf(steps, against) {
   return uniqSorted(out);
 }
 
-function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against) {
+function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against, ordering) {
   var causal = steps.filter(function (s) { return !s.isNull && !s.selects; });
   var textAll = steps.filter(function (s) { return s.layer === "text"; });
   var text = causal.filter(function (s) { return s.layer === "text"; });
@@ -701,6 +744,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
   return {
     levels: levels,
     levels_spanned: levels.filter(function (lv) { return spanned[lv]; }),
+    ordering: ordering || { kind: null, stated: null, within: [] },
     states: ids.length, steps: Object.keys(best).length,
     claims: Object.keys(claimTitles).length,
     lags: Object.keys(lags).sort(),
@@ -1930,7 +1974,10 @@ function layoutOnce(M, opts) {
     extX = Math.max(extX, e.chip.x + e.chip.w / 2); extY = Math.max(extY, e.chip.y + e.chip.h / 2);
     e.stems.forEach(function (sm) { (sm.pts || []).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); }); });
   });
-  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16) + nestPad;
+  // WHAT THE LEVELS ARE, in words, on the drawing's top line after "in sequence, left to right".
+  var caption = M.levels.length > 1 ? { text: orderingWords(M.ordering), x: GUT + 200, y: 22 } : null;
+  if (caption) caption.w = caption.text.length * 6.4;
+  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16, caption ? caption.x + caption.w + 16 : 0) + nestPad;
   var height = Math.max(y + 70, extY + 16);
   // THE FRAMES, from their lane's top to below the last lane inside them, each inset by its depth.
   var frames = !nest ? null : M.levels.map(function (lv, li) {
@@ -1938,7 +1985,7 @@ function layoutOnce(M, opts) {
     var bottom = L.y + L.h + (nest.depth[M.levels[nest.last[lv]]] - d) * NEST_CLOSE + 4;
     return { level: lv, depth: d, x: 4 + d * NEST_INSET, y: lanes[li].y + 2, w: width - 8 - 2 * d * NEST_INSET, h: bottom - lanes[li].y - 2 };
   });
-  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames,
+  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames, caption: caption,
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
            ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain };
@@ -2504,6 +2551,8 @@ function injectStyle() {
     ".amech-banner{margin:8px 12px 0;padding:7px 11px;border-radius:7px;font-size:13px;",
     "  background:var(--mv-appraisal-bg);border:1px solid var(--mv-appraisal)}",
     ".amech-banner[hidden]{display:none}",
+    ".amech-nestbanner{margin:8px 12px 0;padding:7px 11px;border-radius:7px;font-size:13px;border:1px dashed var(--alm-group-line,#ccc);color:inherit}",
+    ".amech-nestbanner[hidden]{display:none}",
     ".amech-body{flex:1 1 auto;display:flex;min-height:0}",
     ".amech-stage{flex:1 1 auto;overflow:auto;min-width:0}",
     ".amech-side{flex:0 0 320px;overflow:auto;border-left:1px solid var(--line,#ddd);padding:10px 14px;font-size:13px}",
@@ -2562,6 +2611,7 @@ function injectStyle() {
     ".amech-zoom .zm:first-child{border-radius:5px 0 0 5px}.amech-zoom .zm:last-child{border-radius:0 5px 5px 0}",
     ".amech-zoom .zm+.zm{margin-left:-1px}.amech-zoom .pct{font-size:11px;min-width:44px;font-variant-numeric:tabular-nums}",
     ".amech .frame{stroke:var(--alm-group-line,#d6d6d6);stroke-width:1}",
+    ".amech .caption.unsaid{font-style:italic}",
     ".amech .st .more{cursor:pointer}.amech .st .more rect{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1;opacity:.95}",
     ".amech .st .more text{font-size:9.5px;font-weight:600;fill:var(--accent,#3a7bd5)}.amech .st .more:hover text{text-decoration:underline}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
@@ -2618,9 +2668,9 @@ function collapseModel(M) {
     if (a !== s.from || b !== s.to) { c.partFrom = s.from; c.partTo = s.to; }
     steps.push(c);
   });
-  return { levels: M.levels, actors: M.actors, states: states, ids: ids, steps: steps,
+  return { levels: M.levels, ordering: M.ordering, actors: M.actors, states: states, ids: ids, steps: steps,
            dropped: M.dropped, appraisalClaims: M.appraisalClaims, question: M.question,
-           profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims),
+           profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims, undefined, undefined, undefined, M.ordering),
            chains: [], chain: M.chain, kinds: M.kinds,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
@@ -2654,11 +2704,11 @@ function chainModel(M, id) {
   var actors = {};
   ids.forEach(function (i) { var a = obj(M.states[i]).actor; if (has(M.actors, a)) actors[a] = M.actors[a]; });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
-  return { levels: M.levels, actors: actors, states: states, ids: ids, steps: steps,
+  return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
            question: c.question || M.question, chains: [], kinds: M.kinds,
            chain: { id: c.id, label: c.label || c.id, shared: shared },
-           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds) };
+           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering) };
 }
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
@@ -2724,7 +2774,7 @@ function create(container, graph, opts) {
      *  identifier encodes for this arrangement, so a drawing fault can be reported and rebuilt. */
     getView: function () {
       var v = cur.getView();
-      return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal, nest: keep.nest === "chain" ? "chain" : keep.nest ? "tree" : null,
+      return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal, nest: keep.nest ? "on" : null,
                opened: Object.keys(keep.opened).sort(), show: v.show, ends: v.ends, folded: v.folded,
                expanded: v.expanded, zoom: v.zoom };
     },
@@ -2735,7 +2785,7 @@ function create(container, graph, opts) {
       if ("boxes" in v) keep.boxes = !!v.boxes && hasWholes;
       if ("rival" in v) keep.rival = v.rival !== false;
       if ("appraisal" in v) keep.appraisal = !!v.appraisal;
-      if ("nest" in v) keep.nest = v.nest === "chain" ? "chain" : null;
+      if ("nest" in v) keep.nest = v.nest ? "on" : null;
       keep.opened = {}; (v.opened || []).forEach(function (x) { if (has(FULL.states, x)) keep.opened[x] = true; });
       keep.zoom = null;
       remount();
@@ -2764,7 +2814,10 @@ function create(container, graph, opts) {
   // layers are, so moving between chains does not shut them.
   var opened = keep.opened;
   var MS = markSpec(FULL, M);
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: keep.nest });
+  var NEST = nestingOf(M.ordering);
+  if (!NEST.offer) keep.nest = null;
+  var nestSpec = function () { return keep.nest ? NEST.spec : null; };
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: nestSpec() });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -2817,7 +2870,7 @@ function create(container, graph, opts) {
     // zooms at the pointer; the plain wheel scrolls, as the chart is a page that scrolls.
     // LEVELS AS BANDS OR NESTED (offered where there are two levels or more). Named for what a
     // click will show.
-    (M.levels.length > 1 ? '<button type="button" class="amech-tog nest" data-nest title="Draw each level as a frame inside the one above it, or as bands one above another. Nesting says each level is part of the one around it: right for an organ in an organism, wrong for a herbivore under a carnivore">' +
+    (M.levels.length > 1 && NEST.offer ? '<button type="button" class="amech-tog nest" data-nest title="Draw each level as a frame inside the one it is part of, or as bands one above another">' +
       (keep.nest ? "Levels as bands" : "Nest the levels") + '</button>' : '') +
     '<span class="amech-zoom"><button type="button" class="amech-tog zm" data-zoom="out" title="Zoom out (⌘− or Ctrl −)">−</button>' +
     '<button type="button" class="amech-tog zm pct" data-zoom="1" title="The size the chain is drawn at; press for its actual size">100%</button>' +
@@ -2836,6 +2889,12 @@ function create(container, graph, opts) {
       ? ' <button type="button" class="amech-helplink" data-help="The reconstructor&#39;s ' +
         'appraisal">What is this?</button>' : '');
   container.appendChild(banner);
+  // NESTING A MAP THAT DOES NOT SAY ITS LEVELS NEST: the frames are then the reader's assumption,
+  // and say so (James's choice, 30 Sep 2026).
+  var nestBanner = document.createElement("div"); nestBanner.className = "amech-nestbanner"; nestBanner.hidden = true;
+  nestBanner.innerHTML = '<b>Nested by assumption.</b> These frames take each level to be part of the one above it. ' +
+    'The map does not say its levels nest' + (M.ordering && M.ordering.kind ? ' (it calls them ' + esc(ORDERINGS[M.ordering.kind]) + ')' : '') + '.';
+  container.appendChild(nestBanner);
   var body = document.createElement("div"); body.className = "amech-body";
   var stage = document.createElement("div"); stage.className = "amech-stage";
   var side = document.createElement("div"); side.className = "amech-side";
@@ -2885,11 +2944,14 @@ function create(container, graph, opts) {
       who.textContent = ln.who;
       if (ln.whoFull) el("title", {}, head).textContent = ln.level.toUpperCase() + " — " + ln.whoFull;
     });
+    while (gCap.firstChild) gCap.removeChild(gCap.firstChild);
+    if (G.caption) el("text", { x: G.caption.x, y: G.caption.y, "class": "actor-l caption" + (M.ordering && M.ordering.kind ? "" : " unsaid") }, gCap).textContent = G.caption.text;
     svg.setAttribute("width", String(G.width)); svg.setAttribute("height", String(G.height));
     svg.setAttribute("viewBox", "0 0 " + G.width + " " + G.height);
     sizeSvg();
   }
   el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent = "in sequence, left to right →";
+  var gCap = el("g", {}, svg);
 
   var drawnEdges = [], drawnNodes = {};
   function visible(e) {
@@ -3285,6 +3347,8 @@ function create(container, graph, opts) {
         ' (⇄ on the state opens the other).' : ' It shares no state with another chain.') + '</div>' : '';
     return chainNote + boxesNote + foldedHTML() + '<h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
+      (P.levels.length > 1 ? '<div class="amech-row"><span class="k">levels are</span><span>' + esc(orderingWords(P.ordering).replace(/^levels: /, "")) +
+        (P.ordering && P.ordering.within && P.ordering.within.length ? '; ' + esc(P.ordering.within.map(function (q) { return q[0] + " within " + q[1]; }).join(", ")) : '') + '</span></div>' : '') +
       '<div class="amech-row"><span class="k">height</span><span>' + P.levels_spanned.length + ' of ' + P.levels.length + ' levels' +
         (P.levels_spanned.length ? ': ' + esc(P.levels_spanned.join(", ")) : '') + '</span></div>' +
       // EACH LAG WITH ITS STEP, one to a line: joined with "; ", timings that hold "; " could not be read.
@@ -3548,6 +3612,7 @@ function create(container, graph, opts) {
   function apply() {
     if (acount) acount.textContent = "not in the text · " + M.appraisalClaims + (layers.appraisal ? " shown" : " hidden");
     banner.hidden = !layers.appraisal;
+    nestBanner.hidden = !(keep.nest && !NEST.declared);
     // A selection that the switch has just taken off the page goes with it.
     if (selected && selected.edge && selected.edge.layer !== "text" && !layers[selected.edge.layer]) selected = null;
     if (selected && selected.state && obj(M.states[selected.state]).appraisal && !layers.appraisal) selected = null;
@@ -3560,7 +3625,7 @@ function create(container, graph, opts) {
       layers[inp.getAttribute("data-layer")] = inp.checked; keep[inp.getAttribute("data-layer")] = inp.checked; apply(); });
   });
   var nestBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-nest]"));
-  if (nestBtn) nestBtn.addEventListener("click", function () { keep.nest = keep.nest ? null : "chain"; refold(); nestBtn.textContent = keep.nest ? "Levels as bands" : "Nest the levels"; });
+  if (nestBtn) nestBtn.addEventListener("click", function () { keep.nest = keep.nest ? null : "on"; refold(); nestBtn.textContent = keep.nest ? "Levels as bands" : "Nest the levels"; });
   var boxesBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-boxes]"));
   if (boxesBtn) boxesBtn.addEventListener("click", function () { keep.boxes = !keep.boxes; remount(); });
   var chainSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-chain]"));
@@ -3570,7 +3635,7 @@ function create(container, graph, opts) {
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: keep.nest });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: nestSpec() });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
@@ -3666,7 +3731,7 @@ function create(container, graph, opts) {
   }
 }
 
-var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;

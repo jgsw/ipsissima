@@ -315,6 +315,11 @@ more Y" as "people with X do Y" is Govier's fallacy of division (ch. 9) in causa
 text moves between levels, that move is a step (the Coleman boat's arrows), marked as the text
 makes it. Give a state `levels:` only where the text says it holds at both.
 
+Then say what the levels are (`ordering:`). "Level" does several jobs — part within whole, region
+within region, rank, size, a place in a food chain — and a reader cannot tell which from the list
+(Ylikoski 2024). Nest them (`within:`) only where the text treats one as part of another, and as a
+tree: two groups within one society are siblings, not one inside the other (Craver 2025).
+
 ### Step 8. Never close a gap
 
 The chain will stop short: an outcome reached by nothing, an intervention linked to nothing, two

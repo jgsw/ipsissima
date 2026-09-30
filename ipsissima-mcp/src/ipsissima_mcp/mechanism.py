@@ -152,6 +152,104 @@ def _data(node):
     return out
 
 
+# WHAT KIND OF ORDERING THE LEVELS ARE (profile 1.10). A `levels:` list says only that the text
+# orders things, not by what: across twelve research maps the same key carried composition,
+# spatial scale, a food chain, separate systems and roles side by side within a whole (Ylikoski
+# 2024: "level" is a placeholder for several orderings; Craver 2025: levels of mechanisms are a
+# tree of composition). A reader of the chart who had not read the paper could not tell which
+# (James, 30 Sep 2026). `ordering:` says it; `within:` gives each level its parent, for the tree.
+ORDERINGS = {
+    "composition": "parts within wholes",
+    "space": "regions within regions",
+    "authority": "a chain of command",
+    "scale": "larger and smaller, not containing",
+    "sequence": "an order along a chain",
+    "systems": "separate systems",
+    "mixed": "more than one ordering",
+    "unstated": "an ordering the text does not name",
+}
+NESTING = ("composition", "space", "authority")
+
+
+def level_order(block, levels):
+    """(ordering, problems): what `ordering:` and `within:` declare about the levels.
+
+    `ordering` is {"kind", "stated", "within"}: the kind of ordering or None; the pinpoint where the
+    text says so, or None when it is the reconstructor's reading; and `within` as sorted
+    [child, parent] pairs. The tree must be drawable in the list's own order -- every level's
+    descendants straight after it -- or nesting would draw a part outside its whole."""
+    problems = []
+    block = block if isinstance(block, dict) else {}
+    raw = block.get("ordering")
+    kind, stated = None, None
+    if isinstance(raw, dict):
+        kind, stated = raw.get("kind"), raw.get("pinpoint")
+    elif raw is not None:
+        kind = raw
+    if kind is not None:
+        kind = str(kind)
+        if kind not in ORDERINGS:
+            problems.append(("!", f"`ordering: {kind}` is not one of {', '.join(ORDERINGS)}",
+                             {"fix": "name the kind of ordering the levels are, or `unstated`"}))
+            kind = None
+    within = block.get("within")
+    pairs = []
+    if within is not None:
+        if not isinstance(within, dict):
+            problems.append(("!", "`within:` must map a level to the level it is within", {}))
+        else:
+            for c, par in within.items():
+                c, par = str(c), str(par)
+                bad = [x for x in (c, par) if x not in levels]
+                if bad:
+                    problems.append(("!", f"`within: {{{c}: {par}}}` names `{bad[0]}`, which is not one "
+                                          f"of the declared levels", {}))
+                    continue
+                if c == par:
+                    problems.append(("!", f"`within:` puts `{c}` within itself", {}))
+                    continue
+                pairs.append([c, par])
+    parent = {c: par for c, par in pairs}
+    # A cycle, or a tree the list's order cannot draw.
+    for lv in levels:
+        seen, p = set(), parent.get(lv)
+        while p is not None and p not in seen:
+            seen.add(p); p = parent.get(p)
+        if p is not None:
+            problems.append(("!", f"`within:` runs in a circle through `{lv}`", {}))
+            parent, pairs = {}, []
+            break
+    def anc(lv):
+        out, p = [], parent.get(lv)
+        while p is not None and len(out) < 50:
+            out.append(p); p = parent.get(p)
+        return out
+    for i, lv in enumerate(levels):
+        j = i
+        while j + 1 < len(levels) and lv in anc(levels[j + 1]):
+            j += 1
+        if any(lv in anc(x) for x in levels[j + 1:]):
+            want = []
+            def walk(x):
+                want.append(x)
+                for y in levels:
+                    if parent.get(y) == x:
+                        walk(y)
+            for x in levels:
+                if x not in parent:
+                    walk(x)
+            problems.append(("?", f"`within:` puts a level outside the run of its whole: in the order "
+                                  f"`levels:` lists them the tree cannot be drawn nested",
+                             {"fix": f"list each level's parts straight after it: levels: [{', '.join(want)}]"}))
+            break
+    if pairs and kind is not None and kind not in NESTING:
+        problems.append(("?", f"`within:` says the levels nest, but `ordering: {kind}` "
+                              f"({ORDERINGS[kind]}) is not a containment",
+                         {"fix": "drop `within:`, or say the ordering is composition, space or authority"}))
+    return {"kind": kind, "stated": None if stated is None else str(stated),
+            "within": sorted(pairs, key=lambda q: levels.index(q[0]))}, problems
+
+
 def declared(fm):
     """(mechanism block or None, levels, actors, states, problems) from the front matter."""
     m = (fm or {}).get("mechanism")
@@ -874,6 +972,9 @@ def analyse(fm, doc):
                          {"fix": "declare `mechanism:` with its levels, actors and states"}))
     for sev, msg, where in problems:
         findings.append((sev, "mechanism", msg, where))
+    ordering, order_problems = level_order(block, levels)
+    for sev, msg, where in order_problems:
+        findings.append((sev, "mechanism", msg, where))
 
     chains = _chains(block)
     for s in all_steps:
@@ -1118,6 +1219,8 @@ def analyse(fm, doc):
     profile = dict(
         question=(block or {}).get("question"),
         levels=levels, levels_spanned=[lv for lv in levels if lv in spans],
+        # WHAT THE LEVELS ARE (1.10): the kind of ordering, where the text says so, and the tree.
+        ordering=ordering,
         states=len(states), steps=len(best),
         claims=len({s["title"] for s in text}),
         lags=sorted({str(s["lag"]) for s in text if s["lag"]}),
@@ -1372,6 +1475,13 @@ def census(profile):
     lines.append(f"      height  {tall} of {len(p['levels'])} level(s)"
                  + (f": {', '.join(p['levels_spanned'])}" if tall else "")
                  + ("  (tall: expect to need several kinds of evidence)" if tall >= 3 else ""))
+    od = p.get("ordering") or {}
+    if od.get("kind"):
+        lines.append(f"      levels are {ORDERINGS[od['kind']]} ({od['kind']}), "
+                     + (f"as the text says ({od['stated']})" if od.get("stated") else "as the reconstructor reads them")
+                     + ("; within: " + ", ".join(f"{c} in {par}" for c, par in od["within"]) if od.get("within") else ""))
+    elif len(p["levels"]) > 1:
+        lines.append("      levels  the map does not say what ordering its levels are (`ordering:`)")
     if p.get("timed"):
         for a, b, lag in p["timed"]:
             lines.append(f"      length  {a} -> {b}: {lag}")

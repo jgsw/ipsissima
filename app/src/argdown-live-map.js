@@ -7217,7 +7217,7 @@ function encodeFoldState(graph, state) {
   if (m) {
     out.push("chain=" + (m.chain == null ? "" : encId(m.chain)));
     if (m.boxes) out.push("boxes=1");
-    if (m.nest === "chain") out.push("nest=chain");
+    if (m.nest) out.push("nest=1");
     if (m.rival === false) out.push("rival=0");
     if (m.show === "tested") out.push("show=tested");
     push("mfolds", m.folded);
@@ -7349,7 +7349,7 @@ function decodeFoldState(graph, text) {
     pane,
     mech: fields.view !== "mech" ? null : {
       chain: fields.chain ? decodeURIComponent(fields.chain) : null,
-      boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "chain" ? "chain" : null,
+      boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "1" || fields.nest === "chain" ? "on" : null,
       show: fields.show === "tested" ? "tested" : "all",
       folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
       opened: list("mmore"), zoom
