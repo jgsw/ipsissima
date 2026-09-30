@@ -207,6 +207,24 @@ export function traps(text) {
 const REF = /\[([^\[\]\n]+)\]|<([^<>\n]+)>/g;
 const refMark = Decoration.mark({ class: "cm-ad-ref" });
 
+/** The name of the `[…]` or `<…>` reference covering document position `pos`, or null.
+ *
+ *  READ FROM THE DOCUMENT, NOT FROM THE CLICKED ELEMENT. Another decoration crossing the
+ *  reference splits its mark into several spans. Find's highlight on "faith" inside
+ *  `<Faith can create its own facts>` leaves "<", "Faith" and " can create its own facts>" as
+ *  three spans. The element's text was then only the piece under the pointer, which names no
+ *  claim, so the click did nothing while a search was open (reported by the author, 30 Sep
+ *  2026). The line's text holds the whole title however the marks are cut. */
+export function refNameAt(state, pos) {
+  const line = state.doc.lineAt(pos), off = pos - line.from;
+  const re = new RegExp(REF.source, "g");
+  let m;
+  while ((m = re.exec(line.text))) {
+    if (off >= m.index && off < m.index + m[0].length) return m[1] != null ? m[1] : m[2];
+  }
+  return null;
+}
+
 function claimRefs(knows) {
   const build = view => {
     const out = [];
@@ -422,8 +440,8 @@ export function create(parent, opts) {
             const t = /** @type {any} */ (e.target);
             const el = t && t.closest && t.closest(".cm-ad-ref");
             if (!el || !o.onClaimClick) return false;
-            const name = el.textContent.replace(/^[[<]|[\]>]$/g, "");
-            o.onClaimClick(name);
+            const name = refNameAt(view.state, view.posAtDOM(el));
+            if (name) o.onClaimClick(name);
             return false;
           }
         }),

@@ -1366,6 +1366,58 @@ async function editorChecks(browser) {
   await ctx.close();
 }
 
+/* A CLAIM LINK STILL FOLLOWS WHILE FIND IS OPEN (reported by the author, 30 Sep 2026). Find's
+ * highlight on part of a title splits the link's mark into pieces, and the click used to read
+ * the name off the piece it landed on: "-claim]" names nothing, so the map stayed where it was.
+ * Driven as the author met it: open Find, search for "main", then click with the mouse on the
+ * part of `[main-claim]` the search did NOT highlight. The first check proves the link really
+ * was split, so a pass means the bug's path was exercised, not avoided. */
+async function refClickChecks(browser) {
+  const out = path.join(tmp, "editor-standalone.html");
+  if (!fs.existsSync(out)) { check(false, "find + link: the editor build exists", out); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+  });
+  await page.click("#picknew");
+  await page.waitForSelector(".cm-content", { timeout: 20000 });
+  await page.waitForSelector("#adfind:not([hidden])", { timeout: 10000 });
+  await page.click("#adfind");
+  await page.waitForSelector(".cm-search input[name=search]", { timeout: 5000 });
+  await page.fill(".cm-search input[name=search]", "");
+  await page.type(".cm-search input[name=search]", "main", { delay: 30 });
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  // The reference `(3) [main-claim]`, not the definition: its last piece, outside the match.
+  const target = await page.evaluate(() => {
+    const pieces = [...document.querySelectorAll(".cm-ad-ref")]
+      .filter(e => e.textContent === "-claim]" && e.getBoundingClientRect().width > 0);
+    const e = pieces[pieces.length - 1];
+    if (!e) return null;
+    e.scrollIntoView({ block: "center" });
+    const r = e.getBoundingClientRect();
+    // A piece reading "-claim]" exists only because the highlight on "main" cut the link.
+    return { x: r.x + r.width / 2, y: r.y + r.height / 2,
+             split: [...document.querySelectorAll(".cm-searchMatch .cm-ad-ref, .cm-searchMatch")]
+                      .some(m => m.textContent === "main") };
+  });
+  check(!!target && target.split, "find + link: Find's highlight splits the claim link into pieces",
+        JSON.stringify(target));
+  if (!target) { await ctx.close(); return; }
+  const litBefore = await page.evaluate(() => document.querySelectorAll(".is-lit").length);
+  await page.mouse.click(target.x, target.y);
+  await page.waitForTimeout(400);
+  const lit = await page.evaluate(() =>
+    [...document.querySelectorAll(".is-lit")].map(e => e.textContent.replace(/\s+/g, " ").trim()));
+  check(litBefore === 0 && lit.length > 0 && lit.some(t => /main-claim|finally arguing/.test(t)),
+        "  and a click on the part the search did not highlight still lights the claim on the map",
+        JSON.stringify({ litBefore, lit: lit.map(t => t.slice(0, 160)) }));
+  await ctx.close();
+}
+
 /* A REAL DRAG, made stubborn. A claim landing opens the Argdown pane and schedules the
  * preview's own redraw, and for a beat afterwards the Manuscript pane is still re-settling —
  * a bounding box read in that beat sends the drag somewhere stale, and the selection comes
@@ -2838,6 +2890,7 @@ await voiceChecks(browser);
 await tocChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
+await refClickChecks(browser);
 await quoteChecks(browser);
 await guidedChecks(browser);
 await exportChecks(browser);
