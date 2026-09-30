@@ -1,0 +1,53 @@
+// A planted PROCESS chain (profile 1.11, 30 Sep 2026): a cycle of reproduction that the text says
+// does not come to rest; states that say what kind of occurrence they are; steps that make, keep,
+// erode and transform rather than raise or lower; a process with no owner, placed by its levels; and
+// constitutive relations -- one to an actor, one to a state that is also caused (both at once), and
+// one the text sets against a causal reading it reports.
+===
+title: "Process -- a planted cycle of making and keeping"
+mechanism:
+    question: "How does a group keep itself in being?"
+    levels: [macro, micro]
+    ordering: scale
+    form: cycle
+    settles: false
+    actors:
+        group:   {label: "The group", level: macro}
+        members: {label: "Its members", level: micro}
+    states:
+        meet:     {label: "Members meet, week by week", actor: members, aspect: activity}
+        ties:     {label: "Ties among members", actor: members, aspect: condition}
+        boundary: {label: "The boundary of the group", actor: group, aspect: condition, role: outcome}
+        drift:    {label: "Members drift apart", levels: [micro], aspect: activity}
+        split:    {label: "The group splits", actor: group, aspect: event}
+        rite:     {label: "A shared rite", actor: group, aspect: development}
+        size:     {label: "Number of members", actor: group, aspect: quantity}
+===
+
+[Meeting keeps ties]: Meeting keeps the members' ties going.
+    {causes: {from: meet, to: ties, sign: "+", on: persistence, basis: asserted}}
+
+[Ties bring meeting]: Ties bring members to meet.
+    {causes: {from: ties, to: meet, sign: "+", basis: asserted}}
+
+[Ties make the boundary]: Ties make the boundary, and partly constitute it.
+    {causes: {from: ties, to: boundary, sign: "+", on: being, basis: asserted},
+     constitutes: {from: ties, to: boundary, extent: partial, whole: organised, basis: account}}
+
+[Drift erodes ties]: Drift wears the ties away.
+    {causes: {from: drift, to: ties, sign: "-", on: persistence, basis: asserted}}
+
+[The split transforms the boundary]: A split changes what kind of boundary it is.
+    {causes: {from: split, to: boundary, sign: which, on: character, basis: example}}
+
+[Meeting constitutes the group]: The meeting is what the group is.
+    {constitutes: {from: meet, to: group, extent: partial, whole: organised, under: "a process account", basis: account}}
+
+[The rite constitutes the boundary]: The rite partly constitutes the boundary.
+    {constitutes: {from: rite, to: boundary, extent: partial, whole: aggregate, basis: definition}}
+
+[The rite only causes the boundary]: On the orthodox view the rite merely causes the boundary. #reported
+    {causes: {from: rite, to: boundary, sign: "+", basis: asserted, stance: rejected}}
+
+[Numbers grow]: Numbers rise with meeting.
+    {causes: {from: meet, to: size, sign: "+", basis: asserted}}

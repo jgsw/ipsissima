@@ -112,6 +112,59 @@ NOT_ENOUGH = re.compile(r"\b(itself|by itself|alone|on its own|single-handedly|q
                         r"fully|wholly|not enough|not sufficient|insufficient|no guarantee|not guarantee|"
                         r"exorci[sz]ed|cure-all|panacea)\b", re.I)
 
+# PROCESS, FORMATION AND CONSTITUTION (profile 1.11, 30 Sep 2026). The chart was built as a noun-
+# and-arrow language: states that are amounts, levels and rates, joined by steps that raise or lower
+# them. Arthur (2023, "Economics in Nouns and Verbs") names what such a language cannot see --
+# formation: things coming into being, being kept going, changing in kind -- and Wimmer, Hu,
+# Martinez-Pena and Ylikoski and Wilson (2023) each needed it (NOTES-process.md and
+# NOTES-constitution.md in the research folder). What 1.11 adds, each optional and each read from
+# the text's own words:
+#: WHAT KIND OF OCCURRENCE A STATE IS. A `quantity` is an amount, level or rate (a noun); an
+#: `activity` goes on and is complete at every moment ("fishers diversify"); a `development` heads
+#: to an end through stages (a theory becoming self-fulfilling); an `event` happens at a time; a
+#: `condition` is a standing arrangement. Recorded from the text's grammar, not the reconstructor's
+#: metaphysics, so the census can say whether a chain is told in nouns or in verbs.
+ASPECTS = ("quantity", "activity", "development", "event", "condition")
+NOUN_ASPECTS = ("quantity", "condition")
+#: WHAT A STEP ACTS ON. `level` and `trend` since 1.8; since 1.11 a step may MAKE or UNMAKE its `to`
+#: (`being`, + and -), MAINTAIN or ERODE it (`persistence`: Hu's institutions "produce and maintain
+#: race", Wimmer's "stabilizing" feedbacks), or change what KIND of thing it is (`character`,
+#: `sign: which`: Arthur's structural change, Wimmer's "transformative" feedbacks).
+ONS = ("level", "trend", "being", "persistence", "character")
+FORMATION = ("being", "persistence", "character")
+#: THE FORM OF A CHAIN. A `cycle` is a cycle of reproduction and transformation (Wimmer p. 1009:
+#: variables "dependent" or "independent" depending on "which phase in the cycle"); it is not asked
+#: where it starts or what it is for. `settles` says whether the text says it comes to rest.
+FORMS = ("chain", "cycle")
+#: HOW A WHOLE STANDS TO WHAT CONSTITUTES IT: no more than their sum; dependent on their
+#: organisation ("more than mere aggregation", Martinez-Pena and Ylikoski p. 10; Wilson's "fallacy
+#: of composition", p. 359); or nothing but them (reduction: the kettle's boiling).
+WHOLES = ("aggregate", "organised", "reducible")
+EXTENTS = ("partial", "entire")
+#: A CONSTITUTIVE RELATION'S BASIS may be an account's judgement or a definition as well as what a
+#: step's may be: which relations constitute race is "not reducible to data-mining" (Hu, p. 14).
+CONSTITUTION_BASES = BASES + ("account", "definition")
+
+
+def form_of(block):
+    """(form, settles, problems) that a mechanism block or a chain declares (profile 1.11)."""
+    block = block if isinstance(block, dict) else {}
+    problems = []
+    form = block.get("form")
+    form = "chain" if form is None else str(form)
+    if form not in FORMS:
+        problems.append(("!", f"`form: {form}` is not `chain` or `cycle`", {}))
+        form = "chain"
+    settles = block.get("settles")
+    if settles is not None and not isinstance(settles, bool):
+        problems.append(("!", f"`settles:` is `true` or `false`, not `{settles}`", {}))
+        settles = None
+    elif settles is not None and form != "cycle":
+        problems.append(("?", "`settles` says whether a cycle comes to rest, and this is not declared "
+                              "`form: cycle`", {}))
+    return form, settles, problems
+
+
 #: Enough routes to say "many"; counting every simple path in a dense chain is exponential.
 ROUTE_CAP = 200
 #: Routes the census prints before it says how many more there are.
@@ -280,9 +333,19 @@ def declared(fm):
                              {"actor": str(aid)}))
     for sid, s in states.items():
         s = s if isinstance(s, dict) else {}
-        if s.get("actor") not in actors:
+        # A PROCESS WITH NO OWNER (profile 1.11): a cascade of scarcity, the dynamics of boundary
+        # making. Such a state names no actor and is placed by its own `levels:`.
+        if s.get("actor") is None and _as_list(s.get("levels")):
+            pass
+        elif s.get("actor") is None:
+            problems.append(("!", f"state `{sid}` names no actor: name one, or give its `levels:` "
+                                  f"where it is a process with no owner", {"state": str(sid)}))
+        elif s.get("actor") not in actors:
             problems.append(("!", f"state `{sid}` names actor `{s.get('actor')}`, which is not "
                                   f"declared under `actors:`", {"state": str(sid)}))
+        if s.get("aspect") is not None and str(s.get("aspect")) not in ASPECTS:
+            problems.append(("?", f"state `{sid}` has `aspect: {s.get('aspect')}`; the aspects read are "
+                                  f"{', '.join(ASPECTS)}", {"state": str(sid)}))
         # A STATE ACROSS LEVELS (profile 1.4): Wimmer's consensus, reached in micro-level
         # negotiation and holding as a macro-level fact; the Coleman boat's transformational step.
         for lv in _as_list(s.get("levels")):
@@ -351,8 +414,12 @@ def declared(fm):
     chains = m.get("chains")
     if chains is not None and not isinstance(chains, dict):
         problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
+    for sev, msg, where in form_of(m)[2]:
+        problems.append((sev, msg, where))
     for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
+        for sev, msg, _ in form_of(ch)[2]:
+            problems.append((sev, f"chain `{cid}`: {msg}", {"chain": str(cid)}))
         roles = ch.get("roles") or {}
         if not isinstance(roles, dict):
             problems.append(("!", f"chain `{cid}`: `roles:` must map state ids to roles", {"chain": str(cid)}))
@@ -479,6 +546,38 @@ def steps(doc, appraisal):
                     # verdict on Stone's stories, 29 Sep 2026): `{type, by}`, `by` an actor.
                     attribution=_attr(c.get("attribution"))[0], attribution_by=_attr(c.get("attribution"))[1],
                     supports=supports.get(title, 0), raw=c))
+    return out
+
+
+def constitutions(doc, appraisal):
+    """Every constitutive relation asserted in the file (profile 1.11), one record per relation.
+
+    NOT A STEP. "X (partly) constitutes Y" says what Y is made up of, not what brings it about: it is
+    never walked, never composed with steps into a route, and never shaded by light and shadow. Hu
+    (2023) turns on the difference -- acting on a feature that constitutes race is acting on race,
+    acting on one merely caused by it is not (p. 16) -- and holds of one pair that it is related
+    both ways at once ("do not only reflect and reinforce ... They ... partly form", p. 14). So the
+    relation is carried by a claim, as a step is: it has a page, words and a fidelity, and a voice.
+    Its `to` may be an ACTOR: a group or a system is what the ongoing states constitute (the process
+    view's "things are stabilities of processes"). Cycles are allowed -- a whole shapes the parts
+    that make it up -- which is why this is not `part_of`, a tree."""
+    import argdown_provenance as prov
+    out = []
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            d = _data(node)
+            if "constitutes" not in d:
+                continue
+            tags = prov.node_tags(node)
+            layer = ("appraisal" if title in appraisal
+                     else "rival" if ("reported" in tags or "contested" in tags) else "text")
+            raw = d["constitutes"]
+            for c in (raw if isinstance(raw, list) else [raw]):
+                c = c if isinstance(c, dict) else {}
+                txt = lambda k: "" if c.get(k) is None else str(c.get(k))
+                out.append(dict(title=title, layer=layer, src=c.get("from"), dst=c.get("to"),
+                                extent=txt("extent"), whole=txt("whole"), basis=c.get("basis"),
+                                under=txt("under"), stance=txt("stance"), raw=c))
     return out
 
 
@@ -779,10 +878,15 @@ def _opened(steps_, edges):
 
 
 def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_from=(), rival_edges=(),
-          ends=()):
+          ends=(), cycle=False, constituted=None):
     """Where a chain starts, what it reaches, its gaps and its routes: the walk the census makes of
     the whole text's chain, and -- since profile 1.5 -- of each of its chains, on the states that
-    chain touches and the roles it gives them."""
+    chain touches and the roles it gives them.
+
+    `cycle` (profile 1.11): the chain is declared a cycle, so it is not asked where it starts or
+    what it is for, and every state its loops pass through counts as reached. `constituted` maps a
+    state to the wholes it constitutes, each a state or an actor ("actor:" + id)."""
+    constituted = constituted or {}
     interventions = [i for i in ids if "intervention" in roles_of(states[i])]
     conditions = [i for i in ids if "condition" in roles_of(states[i])]
     outcomes = [i for i in ids if "outcome" in roles_of(states[i])]
@@ -799,6 +903,12 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
     reached = set()
     for e in entries:
         reached |= _reach(e, text_edges)
+    # A CYCLE HAS NO START: whatever its loops pass through, and all that leads on from there, is
+    # reached (profile 1.11).
+    if cycle:
+        for comp in _systems(ids, text_edges):
+            for v in comp:
+                reached |= _reach(v, text_edges)
     used = {x for e in text_edges for x in e}
 
     gaps = []
@@ -833,6 +943,10 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
         whole = (states[i] or {}).get("part_of")
         onward = (whole is not None and whole != i
                   and (any(a == whole for a, _ in text_edges) or whole in outcomes))
+        # AND A STATE GOES ON AS WHAT IT CONSTITUTES (1.11): a group or a system its states make up,
+        # or a whole that leads on or is what the chain is for.
+        onward = onward or any(w.startswith("actor:") or w in outcomes or any(a == w for a, _ in text_edges)
+                               for w in constituted.get(i, ()))
         # AND WHAT A CHAIN IS FOR IS NO DEAD END on the whole map: the badger follow-up's outcome,
         # an outcome only in its own chain, was reported as the chain stopping (gap tests, 27 Sep).
         # A MEASURE STOPS WHERE IT IS READ (1.9): nothing is expected to follow from an estimate.
@@ -841,11 +955,11 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
                 and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
-    if has_block and not interventions and not conditions:
+    if has_block and not cycle and not interventions and not conditions:
         gaps.append(dict(kind="no-intervention", state=None,
                          message="no state has `role: intervention` or `role: condition`, so the "
                                  "chain has no stated cause to run from"))
-    if has_block and not outcomes:
+    if has_block and not cycle and not outcomes:
         gaps.append(dict(kind="no-outcome", state=None,
                          message="no state has `role: outcome`, so nothing says what the chain is "
                                  "for"))
@@ -920,9 +1034,13 @@ def _chains(block):
     for cid, ch in (raw.items() if isinstance(raw, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
         roles = ch.get("roles") if isinstance(ch.get("roles"), dict) else {}
+        # ITS FORM (1.11): its own where it declares one, the whole block's otherwise.
+        own = ch.get("form") is not None
+        form, settles, _ = form_of(ch if own else block)
         out[str(cid)] = dict(label=None if ch.get("label") is None else str(ch.get("label")),
                              question=None if ch.get("question") is None else str(ch.get("question")),
-                             roles={str(k): v for k, v in roles.items()})
+                             roles={str(k): v for k, v in roles.items()},
+                             form=form, settles=settles)
     return out
 
 
@@ -963,9 +1081,9 @@ def analyse(fm, doc):
                                   "fix": "keep the appraisal outside the author's arguments: "
                                          "attach it with +> or -> instead"}))
 
-    if block is None and not all_steps:
+    if block is None and not all_steps and not constitutions(doc, appraisal):
         return findings, None
-    if block is None:
+    if block is None and all_steps:
         findings.append(("!", "mechanism",
                          f"{len(all_steps)} step(s) are marked with `causes:` but the front "
                          f"matter declares no `mechanism:` block, so no state they name exists",
@@ -975,6 +1093,51 @@ def analyse(fm, doc):
     ordering, order_problems = level_order(block, levels)
     for sev, msg, where in order_problems:
         findings.append((sev, "mechanism", msg, where))
+    form, settles, _ = form_of(block)
+
+    # ---- what constitutes what (profile 1.11): never walked ---- #
+    all_const = constitutions(doc, appraisal)
+    if block is None and all_const:
+        findings.append(("!", "mechanism", f"{len(all_const)} relation(s) are marked with `constitutes:` but "
+                         f"the front matter declares no `mechanism:` block", {}))
+    for c in all_const:
+        where = {"title": c["title"]}
+        if c["src"] is None:
+            findings.append(("!", "mechanism", "a constitutive relation has no `from:`", where))
+        elif c["src"] not in states:
+            findings.append(("!", "mechanism", f"`constitutes: {{from: {c['src']}}}` is not a declared state", where))
+        if c["dst"] is None:
+            findings.append(("!", "mechanism", "a constitutive relation has no `to:`", where))
+        elif c["dst"] not in states and c["dst"] not in actors:
+            findings.append(("!", "mechanism", f"`constitutes: {{to: {c['dst']}}}` is neither a declared state "
+                             f"nor a declared actor", where))
+        elif c["dst"] == c["src"]:
+            findings.append(("!", "mechanism", f"`{c['src']}` is said to constitute itself", where))
+        if c["extent"] and c["extent"] not in EXTENTS:
+            findings.append(("?", "mechanism", f"`extent: {c['extent']}` is not `partial` or `entire`", where))
+        if c["whole"] and c["whole"] not in WHOLES:
+            findings.append(("?", "mechanism", f"`whole: {c['whole']}` is not one of {', '.join(WHOLES)}", where))
+        if c["basis"] is not None and c["basis"] not in CONSTITUTION_BASES:
+            findings.append(("?", "mechanism", f"basis `{c['basis']}` is not one of "
+                             f"{', '.join(CONSTITUTION_BASES)}", where))
+        if c["stance"] and c["stance"] not in STANCES:
+            findings.append(("!", "mechanism", f"`stance: {c['stance']}` is not one of {', '.join(STANCES)}", where))
+        elif c["stance"] and c["layer"] != "rival":
+            findings.append(("?", "mechanism", "`stance` says where the text stands on a view it reports, and "
+                             "this claim is not tagged #reported or #contested", where))
+        for end in ("src", "dst"):
+            if c["layer"] != "appraisal" and c[end] in states and (states[c[end]] or {}).get("appraisal"):
+                findings.append(("!", "mechanism", f"a relation the text asserts runs through `{c[end]}`, "
+                                 f"which is declared as the appraisal's own state", where))
+    const_ok = [c for c in all_const if c["src"] in states and (c["dst"] in states or c["dst"] in actors)
+                and c["dst"] != c["src"]]
+    constituted = {}
+    for c in const_ok:
+        if c["layer"] == "text":
+            w = c["dst"] if c["dst"] in states else "actor:" + str(c["dst"])
+            constituted.setdefault(c["src"], [])
+            if w not in constituted[c["src"]]:
+                constituted[c["src"]].append(w)
 
     chains = _chains(block)
     for s in all_steps:
@@ -1058,8 +1221,16 @@ def analyse(fm, doc):
         if s["design"] == "illustration" and s["basis"] in ("study", "statistics", "model"):
             findings.append(("?", "mechanism", f"`design: illustration` is a hypothetical case, and "
                              f"`basis: {s['basis']}` says the text tested the step", {"title": s["title"]}))
-        if s["on"] not in ("level", "trend"):
-            findings.append(("!", "mechanism", f"`on: {s['on']}` is not `level` or `trend`",
+        if s["on"] not in ONS:
+            findings.append(("!", "mechanism", f"`on: {s['on']}` is not one of {', '.join(ONS)}",
+                             {"title": s["title"]}))
+        elif s["on"] == "character" and s["sign"] in ("+", "-", "0"):
+            findings.append(("?", "mechanism", f"`on: character` says the step changes what kind of thing "
+                             f"{s['dst']} is, not how much of it there is, and `sign: {s['sign']}` says how much",
+                             {"title": s["title"], "fix": "give it `sign: which`"}))
+        elif s["on"] in ("being", "persistence") and s["sign"] == "which":
+            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({'makes' if s['on'] == 'being' else 'maintains'}) "
+                             f"or `-` ({'unmakes' if s['on'] == 'being' else 'erodes'}), not `which`",
                              {"title": s["title"]}))
         for g in s["given_raw"]:
             if isinstance(g, dict) and g.get("state") not in states:
@@ -1168,7 +1339,8 @@ def analyse(fm, doc):
     null_from |= {m["by"] for s in text_all for m in s["modifies"] if m["by"] in states}
     rival_edges = {(s["src"], s["dst"]) for s in causal if s["layer"] == "rival"}
     chain_ends = {i for ch in chains.values() for i, r in ch["roles"].items() if "outcome" in _as_list(r)}
-    W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends)
+    W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends,
+              cycle=form == "cycle", constituted=constituted)
     entries, gaps, used = W["entries"], W["gaps"], W["used"]
     for g in gaps:
         findings.append(("?", "mechanism-gap", g["message"],
@@ -1212,7 +1384,8 @@ def analyse(fm, doc):
         chains_of.setdefault((s["src"], s["dst"]), set()).update(s["chain"])
     akin_steps, instances = _akin_steps({(s["src"], s["dst"]) for s in text}, kind_of, general, chains_of)
     chain_profiles, unchained = _chain_profiles(chains, states, text, ids, reflexive, kind_of, instances,
-                                                [s for s in causal if s["layer"] == "rival"], null_from)
+                                                [s for s in causal if s["layer"] == "rival"], null_from,
+                                                constituted)
     sign_pool = _signs(pool_all, states)
 
     spans = {lv for i in used for lv in levels_of(states[i], actors, levels)}
@@ -1278,6 +1451,22 @@ def analyse(fm, doc):
              tuple(sorted({r["src"] for r in ok if r["dst"] == mb and not r["null"] and not r["selects"]
                            and r["src"] != (states.get(mb) or {}).get("measures")})))
             for s in text_all for mb in s["measured_by"] if mb in states})],
+        # PROCESS, FORMATION AND CONSTITUTION (profile 1.11).
+        form=dict(form=form, settles=settles),
+        aspects=sorted([a, n] for a, n in _count(str(st.get("aspect")) for st in states.values()
+                                                 if isinstance(st, dict) and str(st.get("aspect")) in ASPECTS).items()),
+        formation=sorted({(s["src"], s["dst"], s["sign"] or "", s["on"]) for s in text_all if s["on"] in FORMATION}),
+        constitution=sorted({(c["src"], c["dst"], c["extent"], c["whole"], c["under"], c["layer"], c["title"])
+                             for c in const_ok}),
+        # CAUSED AND CONSTITUTED AT ONCE, in the text's own voice (Hu p. 14: policing does "not only
+        # reflect and reinforce" racial injustice but "partly form[s]" the category).
+        both=sorted({(c["src"], c["dst"]) for c in const_ok if c["layer"] == "text"
+                     and (c["src"], c["dst"]) in {(s["src"], s["dst"]) for s in text}}),
+        # TWO READINGS OF ONE PAIR in different voices: causal in a view the text reports, constitutive
+        # in its own, or the other way round (Hu p. 8; p. 22's orthodox and thick accounts of class).
+        readings=sorted({(c["src"], c["dst"], s["layer"], c["layer"]) for c in const_ok for s in causal
+                         if (s["src"], s["dst"]) == (c["src"], c["dst"]) and s["layer"] != c["layer"]
+                         and "appraisal" not in (s["layer"], c["layer"])}),
     )
     for cp in chain_profiles:
         if not cp["steps"]:
@@ -1351,7 +1540,8 @@ def _accounts(ids, ok):
     return out
 
 
-def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=(), rival=(), null_from=()):
+def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=(), rival=(), null_from=(),
+                    constituted=None):
     """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
 
     A chain is its steps: the states it touches are those its steps run through (a co-cause
@@ -1376,7 +1566,8 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cstates = {i: ({**(states[i] or {}), "role": c["roles"][i]} if i in c["roles"]
                        else states[i]) for i in cids}
         csigns = _signs(mine, states)
-        W = _walk(cids, cstates, edges, True, csigns, _regimes(mine, states), null_from)
+        W = _walk(cids, cstates, edges, True, csigns, _regimes(mine, states), null_from,
+                  cycle=c["form"] == "cycle", constituted=constituted)
         best = {(s["src"], s["dst"], s["sign"]) for s in mine}
         out.append(dict(id=cid, label=c["label"], question=c["question"], layer=layer,
                         steps=len(best), claims=len({s["title"] for s in mine}), states=cids,
@@ -1412,6 +1603,8 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cp["case_of"] = [[o["id"], n] for o in out if o["id"] != cp["id"]
                          for n in [len({tuple(case) for gen, case in instances
                                         if tuple(case) in mine and tuple(gen) in edges_of[o["id"]]})] if n]
+        # ITS FORM (1.11): a chain or a cycle, and whether the text says the cycle comes to rest.
+        cp["form"] = dict(form=chains[cp["id"]].get("form", "chain"), settles=chains[cp["id"]].get("settles"))
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -1482,6 +1675,21 @@ def census(profile):
                      + ("; within: " + ", ".join(f"{c} in {par}" for c, par in od["within"]) if od.get("within") else ""))
     elif len(p["levels"]) > 1:
         lines.append("      levels  the map does not say what ordering its levels are (`ordering:`)")
+    fm = p.get("form") or {}
+    if fm.get("form") == "cycle":
+        lines.append("      form    a cycle: not asked where it starts or what it is for -- "
+                     + {True: "the text says it comes to rest", False: "the text says it does not come to rest",
+                        None: "the text does not say whether it comes to rest"}[fm.get("settles")])
+    if p.get("aspects"):
+        n = dict(p["aspects"])
+        nouns = sum(v for k, v in n.items() if k in NOUN_ASPECTS)
+        verbs = sum(v for k, v in n.items() if k not in NOUN_ASPECTS)
+        told = ("mostly in nouns" if nouns > 2 * verbs else "mostly in verbs" if verbs > 2 * nouns
+                else "in nouns and verbs")
+        lines.append(f"      aspect  {sum(n.values())} of {p['states']} state(s) say what kind of occurrence they are: "
+                     + ", ".join(f"{k} {v}" for k, v in p["aspects"])
+                     + f" -- told {told} (nouns: quantities and conditions; verbs: activities, "
+                       f"developments and events)")
     if p.get("timed"):
         for a, b, lag in p["timed"]:
             lines.append(f"      length  {a} -> {b}: {lag}")
@@ -1592,6 +1800,25 @@ def census(profile):
         cause = a + (" with " + ", ".join(with_) if with_ else "")
         lines.append(f"      enough  {cause} -> {b}: " + ("brings it about on its own" if suff else
                      "NOT enough on its own, the text says"))
+    for a, b, sg, on in p.get("formation", []):
+        what = {("being", "+"): "makes", ("being", "-"): "unmakes", ("persistence", "+"): "maintains",
+                ("persistence", "-"): "erodes"}.get((on, sg), "transforms" if on == "character" else f"acts on the {on} of")
+        gloss = {"makes": f"brings {b} into being", "unmakes": f"brings {b} to an end",
+                 "maintains": f"keeps {b} going", "erodes": f"wears {b} away",
+                 "transforms": f"changes what kind of thing {b} is"}.get(what, "")
+        tag = {"maintains": "keeps", "transforms": "changes"}.get(what, what)
+        lines.append(f"      {tag[:7]:<7} {a} -> {b}: {gloss or what} -- not more or less of it")
+    for a, b, ext, whole, under, layer, title in p.get("constitution", []):
+        lines.append(f"      constit {a} {'partly ' if ext == 'partial' else ''}constitutes {b}"
+                     + (f", {'no more than their sum' if whole == 'aggregate' else 'through its organisation' if whole == 'organised' else 'and is nothing but them' if whole == 'reducible' else whole}" if whole else "")
+                     + (f", on {under}" if under else "")
+                     + f" ({title}{'; reported' if layer == 'rival' else '; the appraisal' if layer == 'appraisal' else ''})"
+                     + " -- what makes it up, not a cause: never walked")
+    for a, b in p.get("both", []):
+        lines.append(f"      both    {a} -> {b} is a step and {a} constitutes {b}: caused and constituted at once")
+    for a, b, sl, cl in p.get("readings", []):
+        voice = {"text": "the text's own", "rival": "a view the text reports"}
+        lines.append(f"      reading {a} -> {b}: causal in {voice.get(sl, sl)}, constitutive in {voice.get(cl, cl)}")
     for st, of, how in p.get("measures", []):
         lines.append(f"      measure {st} measures {of}" + (f" ({how})" if how else "")
                      + " -- a reading of it, not a cause: steps into it are about the measurement")
@@ -1631,6 +1858,7 @@ def census(profile):
                      f"{len(ch['routes'])} route{'' if len(ch['routes']) == 1 else 's'} to an outcome, "
                      f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
                      f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
+                     + (" -- a cycle" if (ch.get("form") or {}).get("form") == "cycle" else "")
                      + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
         if ch.get("question"):
             lines.append(f"              question: {ch['question']}")
@@ -1720,11 +1948,13 @@ def census(profile):
 
 
 def step_titles(doc):
-    """Titles of every claim or argument that asserts a step (`causes:`)."""
+    """Titles of every claim or argument that asserts a step (`causes:`) or, since 1.11, a
+    constitutive relation (`constitutes:`)."""
     out = set()
     for kind in ("statements", "arguments"):
         for title, node in (doc.get(kind) or {}).items():
-            if "causes" in _data(node):
+            d = _data(node)
+            if "causes" in d or "constitutes" in d:
                 out.add(title)
     return out
 

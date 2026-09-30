@@ -123,8 +123,42 @@ mechanism:
   gives each its parent, as a tree — `{elites: nation, citizens: nation}`, never read off the order of
   the list — and the list puts each level's parts straight after it. If you cannot tell what the
   levels are doing, write `unstated` and say so to the user: that is a finding about the text.
+- **Keep the text's verbs** (*1.11*). Where the text says what happens as a doing — "families send a
+  member to the city", "patients wait in ambulances" — label the state with the verb, not a noun
+  ("rural–urban migration", "ambulance waiting times"). Where the text's own grammar makes it clear,
+  give it `aspect:`:
+  - `quantity`: an amount, level or rate;
+  - `activity`: ongoing, and complete at every moment;
+  - `development`: heading to an end through stages;
+  - `event`: it happens at a time;
+  - `condition`: a standing arrangement.
+
+  Leave `aspect:` out where you would be guessing.
+- **A cycle** (*1.11*). Where the text describes a cycle of reproduction and transformation rather
+  than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
+  `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
+  whether it comes to rest.
+- **A process with no owner** (*1.11*): a cascade, a flow, the dynamics of a field. It may leave out
+  `actor` and give `levels:` instead. Where the text does attribute it to something, use that as its
+  actor.
 
 ## 3. Mark the steps
+
+**Making, keeping and changing in kind** (*1.11*). A step that brings its effect into being or ends
+it is `on: being` (`+` makes, `-` unmakes). One that keeps its effect going or wears it away is
+`on: persistence` (`+` maintains or reproduces, `-` erodes). One that changes what kind of thing its
+effect is, is `on: character` with `sign: which`. Use these where the text's verb is *produce,
+create, maintain, sustain, reproduce, erode, transform*: "raises" would turn the verb into a noun.
+
+**Constitution is not a step** (*1.11*). Where the text says something *constitutes*, *partly
+forms*, *makes up* or *defines* something else, mark it with `constitutes:`, never with `causes:`:
+`{from, to, extent, whole, basis, under}`. Its `to` may be an actor, such as a group or a system the
+states make up. A text may say one pair is related both ways at once (Hu: policing does "not only
+reflect and reinforce" racial injustice but "partly form[s]" the category). Then mark both, a
+`causes:` and a `constitutes:` on the same claim. Moving between scales by "zooming out" (the macro
+outcome *is* the micro conduct seen at a larger scale) is constitution, `whole: aggregate` or
+`organised`, not a step. "Counts as" (acting on X is acting on Y) is neither: leave it to the
+argument map.
 
 On a claim that states a step, add `causes:` — one map, or a list when the claim states several:
 

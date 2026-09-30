@@ -372,7 +372,8 @@ export function mechanismOf(res, titleToId) {
       const members = (rec && rec.members) || [];
       const data = Object.assign({}, rec && rec.data);
       for (const m of members) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
-      if (data.causes == null) continue;
+      // A claim that asserts a step, or (profile 1.11) a constitutive relation.
+      if (data.causes == null && data.constitutes == null) continue;
       const tags = new Set((rec && rec.tags) || []);
       for (const m of members) for (const t of (m.tags || [])) tags.add(t);
       let text = "";
@@ -387,7 +388,9 @@ export function mechanismOf(res, titleToId) {
         fidelity: data.fidelity == null ? null : String(data.fidelity),
         warrant: data.warrant == null ? null : String(data.warrant),
         pinpoint: data.pinpoint == null ? null : String(data.pinpoint),
-        causes: (Array.isArray(data.causes) ? data.causes : [data.causes])
+        causes: (data.causes == null ? [] : Array.isArray(data.causes) ? data.causes : [data.causes])
+                  .filter(c => c && typeof c === "object"),
+        constitutes: (data.constitutes == null ? [] : Array.isArray(data.constitutes) ? data.constitutes : [data.constitutes])
                   .filter(c => c && typeof c === "object")
       });
     }

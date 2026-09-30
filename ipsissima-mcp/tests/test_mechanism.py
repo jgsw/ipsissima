@@ -550,8 +550,8 @@ tl = "\n".join(mech.census(ct))
 check("the census says each", ["strata  order -> reoff: - while the order runs; 0 unconditioned; 0 after the order ends" in tl,
                                "trend   reoff -> prison (+): moves the trend of prison, not its level" in tl,
                                "(after the order ends)" in tl], [True, True, True])
-check("`on` is `level` or `trend`",
-      any("`on: rate` is not `level` or `trend`" in f["message"] for f in by(run(TIMES.replace("on: trend", "on: rate")), "mechanism")), True)
+check("`on` is one of the values read",
+      any("`on: rate` is not one of level, trend, being, persistence, character" in f["message"] for f in by(run(TIMES.replace("on: trend", "on: rate")), "mechanism")), True)
 
 print("\nprofile 1.8: magnitude (size, share)")
 # G3 (gap tests, 27 Sep 2026): every text gave sizes; Yellowstone's dispute is ONLY about size.
@@ -775,6 +775,45 @@ check("`within:` beside an ordering that is not containment is queried",
       any("is not a containment" in m for m in msgs(levels_as("    ordering: sequence\n    within: {meso: macro}"))), True)
 check("a map that does not say is told so in the census",
       any("does not say what ordering its levels are" in l for l in mech.census(run(CHAIN)["shape"]["chain"])), True)
+
+print("\nprofile 1.11: process, formation and constitution (Arthur 2023; Hu 2023; James, 30 Sep 2026)")
+PROC = (FIXTURE / "process.argdown").read_text(encoding="utf-8")
+pr = run(PROC, name="process.argdown")["shape"]["chain"]
+# Mutations: drop the cycle from _walk -> the gap checks fail; drop `on` from the formation rows ->
+# the fourth; walk a constitution as a step -> the route check fails.
+check("a cycle is declared, and whether it comes to rest", pr["form"], {"form": "cycle", "settles": False})
+check("  and it is not asked where it starts or what it is for",
+      [g for g in pr["gaps"] if "no state has" in g or g.startswith("the outcome")], [])
+check("each state's aspect is counted",
+      pr["aspects"], [["activity", 2], ["condition", 2], ["development", 1], ["event", 1], ["quantity", 1]])
+check("steps that make, keep, erode and transform are listed with what they act on",
+      pr["formation"], [["drift", "ties", "-", "persistence"], ["meet", "ties", "+", "persistence"],
+                        ["split", "boundary", "which", "character"], ["ties", "boundary", "+", "being"]])
+check("constitutive relations are listed, to a state or to an actor",
+      [r[:2] for r in pr["constitution"]], [["meet", "group"], ["rite", "boundary"], ["ties", "boundary"]])
+check("  caused and constituted at once", pr["both"], [["ties", "boundary"]])
+check("  and a rival causal reading of a pair the text holds constitutive",
+      pr["readings"], [["rite", "boundary", "rival", "text"]])
+check("a constitution is never walked: no route runs from what only constitutes",
+      [r for r in pr["routes"] if r["start"] == "rite"], [])
+census_p = "\n".join(mech.census(pr))
+check("the census says it in verbs",
+      all(w in census_p for w in ("keeps   meet -> ties", "erodes  drift -> ties", "makes   ties -> boundary",
+                                  "changes split -> boundary", "constit meet partly constitutes group",
+                                  "both    ties -> boundary", "reading rite -> boundary", "form    a cycle")), True)
+pm = lambda text: [f["message"] for f in by(run(text, name="process.argdown"), "mechanism")]
+check("a process with no owner and no levels is a fault",
+      any("names no actor" in m for m in pm(PROC.replace("levels: [micro], aspect: activity", "aspect: activity"))), True)
+check("an aspect not in the list is queried",
+      any("aspect: verb" in m for m in pm(PROC.replace("aspect: event", "aspect: verb"))), True)
+check("`on: character` with a + is queried: a change in kind is `which`",
+      any("changes what kind of thing" in m for m in pm(PROC.replace("sign: which, on: character", 'sign: "+", on: character'))), True)
+check("a constitution naming neither a state nor an actor is a fault",
+      any("neither a declared state nor a declared actor" in m for m in pm(PROC.replace("to: group, extent", "to: club, extent"))), True)
+check("`settles` without a cycle is queried",
+      any("`settles` says whether a cycle" in m for m in pm(PROC.replace("    form: cycle\n", ""))), True)
+check("a claim that only constitutes is the chain's material, not inert",
+      run(PROC, name="process.argdown")["shape"]["contribution"]["inert"], 0)
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

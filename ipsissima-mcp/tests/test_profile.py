@@ -86,7 +86,7 @@ check("the signs are mechanism.py's", P["causes"]["sign"]["values"] == list(mech
       f"{P['causes']['sign']['values']} vs {list(mechanism.SIGNS)}")
 check("the bases are mechanism.py's", sorted(re.findall(r'"(\w+)":', basis)) == sorted(P["causes"]["basis"]["values"]))
 state_keys = set(P["mechanism"]["states"]["keys"])
-js_state = set(re.findall(r'\bs\.(label|actor|role|measured|appraisal|note|measures|method)\b', MECH_JS))
+js_state = set(re.findall(r'\bs\.(label|actor|role|measured|appraisal|note|measures|method|aspect)\b', MECH_JS))
 if re.search(r'\)\.part_of\b', MECH_JS):
     js_state.add("part_of")
 # A state's levels are read through levelsOf() since profile 1.4.

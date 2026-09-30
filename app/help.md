@@ -649,6 +649,23 @@ text denies that it does.
 marker. It is a reading of that state, not a cause of it, and its panel says which state it
 measures and how.
 
+**Making, keeping, changing.** Some arrows say what a step does to something's existence rather than
+its amount:
+- **makes** and **unmakes**: it brings something into being or ends it;
+- **maintains** and **erodes**: it keeps something going or wears it away;
+- **transforms**: it changes what kind of thing it is.
+
+A box with **round ends** is an ongoing doing, an activity or a development, and not an amount. Where
+the map declares its chain a **cycle**, the panel says so, and whether the text says the cycle comes
+to rest; the chart does not ask where a cycle starts or ends.
+
+**What makes something up.** A box marked **⊂** makes up something else, and a box marked **⊃** is
+made up of other boxes. This is what a thing is made of, not a cause of it, so it is never drawn as an
+arrow and never followed as part of a route. The box's panel lists each relation with its claim: how
+much of the whole it makes up, and whether the text treats the whole as no more than its parts or as
+depending on how they are organised. A text can say the same pair is both caused and made up at once;
+then there is an arrow, and the marks as well.
+
 **Rival accounts and their types.** A rival arrow can carry the *type* of causing its story
 attributes, and whose it is: *intended by* the eaters, *guided by* the advertisers, *inadvertent*,
 *accident*, or *complex*. Where each story has a chain of its own, *Draw this story alone* in the

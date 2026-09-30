@@ -171,6 +171,54 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         blocked[0].stems[0].blocks && !!blocked[0].stems[0].tbar && !blocked[0].junction,
         "a blocker is drawn as a stem ending in a bar, not a co-cause's junction", JSON.stringify(blocked.map(e => [e.key, e.stems])));
 }
+// AND ON PROCESS, FORMATION AND CONSTITUTION (profile 1.11): a cycle that does not settle, states
+// that say what kind of occurrence they are, steps that make, keep, erode and transform, a process
+// with no owner, and constitutive relations (to an actor; both at once; a rival causal reading).
+// Mutations: drop the cycle's reach in walkChain -> `gaps` differ; drop `readings` -> it differs;
+// key formation steps with the plain ones -> the chip says "raises"; draw ⊂ as a step -> an edge
+// appears between meet and the group's states.
+{
+  const PROCF = path.join(FIXTURE, "process.argdown");
+  const pyP = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           PROCF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MP = MV.model(graphOf(PROCF));
+  const differ = Object.keys(pyP).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MP.profile.gaps.map(g => g.message) : MP.profile[k], pyP[k]));
+  check(differ.length === 0 && pyP.form.form === "cycle" && pyP.form.settles === false && pyP.formation.length === 4 &&
+        pyP.constitution.length === 3 && pyP.both.length === 1 && pyP.readings.length === 1 && pyP.aspects.length === 5,
+        "the page and the checker agree on cycles, aspects, making and keeping, and constitution",
+        differ.map(k => `${k}: python ${JSON.stringify(pyP[k])} js ${JSON.stringify(MP.profile[k])}`).join("\n          "));
+  check(!pyP.gaps.some(g => /no state has `role|^the outcome /.test(g)),
+        "a cycle is not asked where it starts or whether its outcome is reached", JSON.stringify(pyP.gaps));
+  // With nothing leading into the loop from outside, only the cycle's own reach gets to the outcome.
+  const inner = fs.readFileSync(PROCF, "utf8").replace(/\[Drift erodes ties\][^\n]*\n[^\n]*\n/, "")
+                  .replace(/\[The split transforms the boundary\][^\n]*\n[^\n]*\n/, "");
+  const MI = MV.model(graphOf.fromText(inner));
+  check(!MI.profile.gaps.some(g => /^the outcome /.test(g.message)),
+        "in a cycle, what the loop leads to is reached though nothing leads into the loop",
+        JSON.stringify(MI.profile.gaps.map(g => g.message)));
+  const LP = MV.layout(MP, { marks: MV.markSpec(MP, MP).marks });
+  const word = (a, b) => LP.edges.filter(e => e.from === a && e.to === b).map(e => e.chip.label.split(" ·")[0]);
+  check(same(word("meet", "ties"), ["maintains"]) && same(word("drift", "ties"), ["erodes"]) &&
+        word("ties", "boundary").includes("makes") && same(word("split", "boundary"), ["transforms"]),
+        "a step that makes, keeps, erodes or transforms says so in a verb on its arrow",
+        JSON.stringify(LP.edges.map(e => [e.from, e.to, e.chip.label])));
+  check(!LP.edges.some(e => e.from === "meet" && e.to !== "ties" && e.to !== "size") &&
+        !LP.edges.some(e => e.from === "rite" && e.layer === "text"),
+        "a constitutive relation is never drawn as an arrow", JSON.stringify(LP.edges.map(e => [e.from, e.to, e.layer])));
+  const foot = v => (LP.nodes[v].badges || []).filter(b => b.edge === "foot").map(b => b.kind);
+  check(foot("meet").includes("constitutes") && foot("boundary").includes("constituted") && foot("rite").includes("constitutes"),
+        "what makes something up, and what is made up, carry ⊂ and ⊃ at their foot", JSON.stringify({ meet: foot("meet"), boundary: foot("boundary"), rite: foot("rite") }));
+  check(!!LP.nodes.drift, "a process with no owner is drawn, at its own level", JSON.stringify(Object.keys(LP.nodes)));
+  // A state whose only tie is what it makes up is still drawn, before its whole (the health-system
+  // map's flows were left out, and their ⊂ with them). Mutation: drop constitutions from `used`.
+  const onlyMakes = fs.readFileSync(PROCF, "utf8").replace(/\[The rite only causes the boundary\][^\n]*\n[^\n]*\n/, "");
+  const MO = MV.model(graphOf.fromText(onlyMakes)), LO = MV.layout(MO, { marks: MV.markSpec(MO, MO).marks });
+  check(!!LO.nodes.rite && (LO.nodes.rite.badges || []).some(b => b.kind === "constitutes") &&
+        LO.nodes.rite.x < LO.nodes.boundary.x && !LO.edges.some(e => e.from === "rite"),
+        "a state that only makes something up is drawn, with its ⊂, before its whole, and with no arrow",
+        JSON.stringify({ rite: LO.nodes.rite && [LO.nodes.rite.x, LO.nodes.rite.badges], boundary: LO.nodes.boundary && LO.nodes.boundary.x }));
+}
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
 // `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"

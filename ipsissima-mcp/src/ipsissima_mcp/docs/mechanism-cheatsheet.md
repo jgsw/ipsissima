@@ -312,13 +312,32 @@ conservative story's knowing choice.
 Actors are positions the text names — "courts", "the household" — at the text's own levels. A
 population-level finding is not an individual-level mechanism: reading "areas with more X have
 more Y" as "people with X do Y" is Govier's fallacy of division (ch. 9) in causal form. Where the
-text moves between levels, that move is a step (the Coleman boat's arrows), marked as the text
-makes it. Give a state `levels:` only where the text says it holds at both.
+text moves between levels by a cause, that move is a step (the Coleman boat's arrows), marked as the
+text makes it. Where it moves by composition, it is not a step: "we only need to zoom out to the
+macro scale" (Martínez-Peña and Ylikoski p. 11) says the macro outcome is made up of the micro
+conduct. Mark that with `constitutes:` (1.11), saying whether the text treats the whole as an
+`aggregate`, as depending on the parts' `organised` interaction, or as `reducible` to them. Give a
+state `levels:` only where the text says it holds at both.
 
 Then say what the levels are (`ordering:`). "Level" does several jobs — part within whole, region
 within region, rank, size, a place in a food chain — and a reader cannot tell which from the list
 (Ylikoski 2024). Nest them (`within:`) only where the text treats one as part of another, and as a
 tree: two groups within one society are siblings, not one inside the other (Craver 2025).
+
+### Step 7b. Keep the verbs
+
+A chart of states and arrows is a language of nouns: amounts, levels and rates that raise and lower
+one another. Arthur (2023) shows what such a language loses: formation, meaning things coming into
+being, being kept going, and changing in kind. It loses them because it records that companies are
+started as "the number of companies started". Do not do that to the text.
+- Label a state with the text's verb where it has one.
+- Mark steps that make, keep or transform with `on: being`, `persistence` or `character`, not with
+  a sign that turns them back into more or less.
+- Declare a cycle as one (`form: cycle`) where the text describes reproduction rather than a
+  chain from a cause to an end.
+
+The census then says whether the chain is told in nouns or verbs. If it is told in nouns and the text
+was not, look again.
 
 ### Step 8. Never close a gap
 
