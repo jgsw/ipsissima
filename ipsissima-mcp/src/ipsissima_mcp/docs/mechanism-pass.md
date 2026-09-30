@@ -138,6 +138,16 @@ mechanism:
   than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
   `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
   whether it comes to rest.
+- **Possibility** (*1.12*):
+  - a step that opens up or closes off what *can* happen is `on: possibility` (`+` or `-`);
+  - a state the text sets out only as a possibility (an option, a path not yet taken) is
+    `status: possible`;
+  - an outcome the text says cannot be specified in advance is `status: open`.
+
+  Do not mark a merely hedged step this way: `hedged: true` says the text is unsure whether the step
+  holds; `possible` says the state itself is not actual.
+- **Several actors together** (*1.12*): where the text makes a doing or a relation belong to several
+  actors at once — people and land, fishers and their species — give `actor:` a list.
 - **A process with no owner** (*1.11*): a cascade, a flow, the dynamics of a field. It may leave out
   `actor` and give `levels:` instead. Where the text does attribute it to something, use that as its
   actor.
@@ -157,7 +167,9 @@ states make up. A text may say one pair is related both ways at once (Hu: polici
 reflect and reinforce" racial injustice but "partly form[s]" the category). Then mark both, a
 `causes:` and a `constitutes:` on the same claim. Moving between scales by "zooming out" (the macro
 outcome *is* the micro conduct seen at a larger scale) is constitution, `whole: aggregate` or
-`organised`, not a step. "Counts as" (acting on X is acting on Y) is neither: leave it to the
+`organised`, not a step. Where the text says the whole and its parts make each other (the parts
+are what they are only within the whole), use `whole: mutual`, and mark both directions if the text
+says both. "Counts as" (acting on X is acting on Y) is neither: leave it to the
 argument map.
 
 On a claim that states a step, add `causes:` — one map, or a list when the claim states several:

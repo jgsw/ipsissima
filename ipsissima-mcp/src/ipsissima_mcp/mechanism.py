@@ -130,8 +130,18 @@ NOUN_ASPECTS = ("quantity", "condition")
 #: (`being`, + and -), MAINTAIN or ERODE it (`persistence`: Hu's institutions "produce and maintain
 #: race", Wimmer's "stabilizing" feedbacks), or change what KIND of thing it is (`character`,
 #: `sign: which`: Arthur's structural change, Wimmer's "transformative" feedbacks).
-ONS = ("level", "trend", "being", "persistence", "character")
-FORMATION = ("being", "persistence", "character")
+ONS = ("level", "trend", "being", "persistence", "character", "possibility")
+#: WHAT CAN HAPPEN, NOT WHAT DOES (profile 1.12). A step may OPEN or CLOSE a possibility (`on:
+#: possibility`, + and -): Hertz et al. (2020) make the "possibility space" -- what can enter an
+#: event at a moment, reconfigured by every event -- a core concept of a process ontology, and
+#: Wilson (2023, p. 361) has means-improvement shape values-improvement "by opening up new
+#: possibilities".
+FORMATION = ("being", "persistence", "character", "possibility")
+#: WHETHER A STATE IS ACTUAL (profile 1.12). `possible`: a possibility the text sets out, not (or not
+#: yet) actual -- an option, a path open to the actors. `open`: what the text says cannot be specified
+#: in advance -- the "surplus" of a process of individuation, "the virtual" (Hertz et al. 2025, after
+#: Deleuze), as against the possible, which is read off what things now are.
+STATUSES = ("actual", "possible", "open")
 #: THE FORM OF A CHAIN. A `cycle` is a cycle of reproduction and transformation (Wimmer p. 1009:
 #: variables "dependent" or "independent" depending on "which phase in the cycle"); it is not asked
 #: where it starts or what it is for. `settles` says whether the text says it comes to rest.
@@ -139,7 +149,12 @@ FORMS = ("chain", "cycle")
 #: HOW A WHOLE STANDS TO WHAT CONSTITUTES IT: no more than their sum; dependent on their
 #: organisation ("more than mere aggregation", Martinez-Pena and Ylikoski p. 10; Wilson's "fallacy
 #: of composition", p. 359); or nothing but them (reduction: the kettle's boiling).
-WHOLES = ("aggregate", "organised", "reducible")
+WHOLES = ("aggregate", "organised", "reducible", "mutual")
+#: `mutual` (profile 1.12): the whole and what makes it up make each other -- the parts are what
+#: they are only within it. Hertz et al. (2020) deny that an emergent whole is "a simple combination,
+#: aggregation or particular organization of the individual components"; Hertz et al. (2025) put
+#: the locus of causality "neither in parts, nor in wholes, but in the 'organization' of performative
+#: relations". `organised` still assumes given parts; `mutual` does not.
 EXTENTS = ("partial", "entire")
 #: A CONSTITUTIVE RELATION'S BASIS may be an account's judgement or a definition as well as what a
 #: step's may be: which relations constitute race is "not reducible to data-mining" (Hu, p. 14).
@@ -335,14 +350,21 @@ def declared(fm):
         s = s if isinstance(s, dict) else {}
         # A PROCESS WITH NO OWNER (profile 1.11): a cascade of scarcity, the dynamics of boundary
         # making. Such a state names no actor and is placed by its own `levels:`.
-        if s.get("actor") is None and _as_list(s.get("levels")):
+        # SEVERAL ACTORS TOGETHER (profile 1.12): a relation, or a doing no one of them does alone --
+        # the ayllu, where people and land "exist together" (Hertz et al. 2020, after De la Cadena).
+        who = _as_list(s.get("actor"))
+        if not who and _as_list(s.get("levels")):
             pass
-        elif s.get("actor") is None:
+        elif not who:
             problems.append(("!", f"state `{sid}` names no actor: name one, or give its `levels:` "
                                   f"where it is a process with no owner", {"state": str(sid)}))
-        elif s.get("actor") not in actors:
-            problems.append(("!", f"state `{sid}` names actor `{s.get('actor')}`, which is not "
-                                  f"declared under `actors:`", {"state": str(sid)}))
+        for a in who:
+            if a not in actors:
+                problems.append(("!", f"state `{sid}` names actor `{a}`, which is not "
+                                      f"declared under `actors:`", {"state": str(sid)}))
+        if s.get("status") is not None and str(s.get("status")) not in STATUSES:
+            problems.append(("?", f"state `{sid}` has `status: {s.get('status')}`; the statuses read are "
+                                  f"{', '.join(STATUSES)}", {"state": str(sid)}))
         if s.get("aspect") is not None and str(s.get("aspect")) not in ASPECTS:
             problems.append(("?", f"state `{sid}` has `aspect: {s.get('aspect')}`; the aspects read are "
                                   f"{', '.join(ASPECTS)}", {"state": str(sid)}))
@@ -635,8 +657,10 @@ def levels_of(state, actors, levels):
     own = [lv for lv in _as_list((state or {}).get("levels") if isinstance(state, dict) else None) if lv in levels]
     if own:
         return sorted(set(own), key=levels.index)
-    lv = (actors.get((state or {}).get("actor")) or {}).get("level") if isinstance(state, dict) else None
-    return [lv] if lv else []
+    # Its actor's level -- or, since 1.12, each of its actors' levels, top first.
+    who = _as_list(state.get("actor")) if isinstance(state, dict) else []
+    lvs = {(actors.get(a) or {}).get("level") for a in who} - {None}
+    return [lv for lv in levels if lv in lvs]
 
 
 def _wholes(states):
@@ -1228,9 +1252,9 @@ def analyse(fm, doc):
             findings.append(("?", "mechanism", f"`on: character` says the step changes what kind of thing "
                              f"{s['dst']} is, not how much of it there is, and `sign: {s['sign']}` says how much",
                              {"title": s["title"], "fix": "give it `sign: which`"}))
-        elif s["on"] in ("being", "persistence") and s["sign"] == "which":
-            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({'makes' if s['on'] == 'being' else 'maintains'}) "
-                             f"or `-` ({'unmakes' if s['on'] == 'being' else 'erodes'}), not `which`",
+        elif s["on"] in ("being", "persistence", "possibility") and s["sign"] == "which":
+            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({ {'being': 'makes', 'persistence': 'maintains', 'possibility': 'opens'}[s['on']] }) "
+                             f"or `-` ({ {'being': 'unmakes', 'persistence': 'erodes', 'possibility': 'closes'}[s['on']] }), not `which`",
                              {"title": s["title"]}))
         for g in s["given_raw"]:
             if isinstance(g, dict) and g.get("state") not in states:
@@ -1467,12 +1491,28 @@ def analyse(fm, doc):
         readings=sorted({(c["src"], c["dst"], s["layer"], c["layer"]) for c in const_ok for s in causal
                          if (s["src"], s["dst"]) == (c["src"], c["dst"]) and s["layer"] != c["layer"]
                          and "appraisal" not in (s["layer"], c["layer"])}),
+        # WHAT IS NOT (YET) ACTUAL (1.12), and WHAT MAKES EACH OTHER UP.
+        statuses=sorted([i, str(st.get("status"))] for i, st in states.items()
+                        if isinstance(st, dict) and str(st.get("status")) in ("possible", "open")),
+        mutual=sorted({tuple(sorted((c["src"], c["dst"]))) for c in const_ok if c["layer"] == "text"
+                       and any(d["layer"] == "text" and (d["src"], d["dst"]) == (c["dst"], c["src"]) for d in const_ok)}),
+        # A LOOP THAT KEEPS ITSELF IN BEING (1.12): every hop a step that makes or maintains its next --
+        # Wimmer's "stabilizing" feedbacks, the entanglements that "keep a given cut in place" (Hertz et
+        # al. 2025), Bickhard's recursive self-maintenance.
+        sustaining=[l for l in loops_text if _sustains(l, text)],
     )
     for cp in chain_profiles:
         if not cp["steps"]:
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
                              f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
     return findings, profile
+
+
+def _sustains(loop, steps_):
+    """Whether every hop of `loop` is a step of `steps_` that makes or maintains its next (+)."""
+    hops = list(zip(loop, loop[1:] + loop[:1]))
+    return all(any(s["src"] == a and s["dst"] == b and s["on"] in ("being", "persistence") and s["sign"] == "+"
+                   for s in steps_) for a, b in hops)
 
 
 def _attr(a):
@@ -1803,17 +1843,32 @@ def census(profile):
     for a, b, sg, on in p.get("formation", []):
         what = {("being", "+"): "makes", ("being", "-"): "unmakes", ("persistence", "+"): "maintains",
                 ("persistence", "-"): "erodes"}.get((on, sg), "transforms" if on == "character" else f"acts on the {on} of")
-        gloss = {"makes": f"brings {b} into being", "unmakes": f"brings {b} to an end",
+        if on == "possibility":
+            what = "opens" if sg == "+" else "closes" if sg == "-" else f"acts on the possibility of"
+        gloss = {"opens": f"opens up the possibility of {b}", "closes": f"closes off the possibility of {b}",
+                 "makes": f"brings {b} into being", "unmakes": f"brings {b} to an end",
                  "maintains": f"keeps {b} going", "erodes": f"wears {b} away",
                  "transforms": f"changes what kind of thing {b} is"}.get(what, "")
         tag = {"maintains": "keeps", "transforms": "changes"}.get(what, what)
         lines.append(f"      {tag[:7]:<7} {a} -> {b}: {gloss or what} -- not more or less of it")
     for a, b, ext, whole, under, layer, title in p.get("constitution", []):
         lines.append(f"      constit {a} {'partly ' if ext == 'partial' else ''}constitutes {b}"
-                     + (f", {'no more than their sum' if whole == 'aggregate' else 'through its organisation' if whole == 'organised' else 'and is nothing but them' if whole == 'reducible' else whole}" if whole else "")
+                     + (f", {'no more than their sum' if whole == 'aggregate' else 'through its organisation' if whole == 'organised' else 'and is nothing but them' if whole == 'reducible' else 'each making the other' if whole == 'mutual' else whole}" if whole else "")
                      + (f", on {under}" if under else "")
                      + f" ({title}{'; reported' if layer == 'rival' else '; the appraisal' if layer == 'appraisal' else ''})"
                      + " -- what makes it up, not a cause: never walked")
+    for a, b in p.get("mutual", []):
+        lines.append(f"      mutual  {a} and {b} make each other up: co-constituted, neither given before the other")
+    for l in p.get("sustaining", []):
+        lines.append("      sustain " + " -> ".join(l + l[:1]) + ": every step makes or maintains the next -- "
+                     "a loop that keeps itself in being")
+    by_status = {}
+    for i, stt in p.get("statuses", []):
+        by_status.setdefault(stt, []).append(i)
+    for stt, ids_ in sorted(by_status.items()):
+        lines.append(f"      {stt:<7} {', '.join(ids_)} -- "
+                     + ("possibilities the text sets out, not (yet) actual: a route through them is a possible route"
+                        if stt == "possible" else "what the text says cannot be specified in advance"))
     for a, b in p.get("both", []):
         lines.append(f"      both    {a} -> {b} is a step and {a} constitutes {b}: caused and constituted at once")
     for a, b, sl, cl in p.get("readings", []):

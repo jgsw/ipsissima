@@ -77,7 +77,7 @@ function levelOrder(block, levels) {
 var BASES = ["study", "statistics", "model", "example", "testimony", "asserted"];
 // PROCESS, FORMATION AND CONSTITUTION (profile 1.11) -- mechanism.py's ASPECTS, FORMATION and FORMS.
 var ASPECTS = ["quantity", "activity", "development", "event", "condition"];
-var FORMATION = ["being", "persistence", "character"];
+var FORMATION = ["being", "persistence", "character", "possibility"];
 /** The form a block or a chain declares -- mechanism.py's form_of, less its problems. */
 function formOf(b) {
   b = obj(b);
@@ -120,8 +120,10 @@ function levelsOf(state, actors, levels) {
   asList(obj(state).levels).forEach(function (lv) { if (levels.indexOf(lv) >= 0) own[lv] = true; });
   var list = levels.filter(function (lv) { return own[lv]; });
   if (list.length) return list;
-  var lv = obj(actors[obj(state).actor]).level;
-  return lv ? [lv] : [];
+  // Its actor's level -- or, since 1.12, each of its actors' levels, top first.
+  var lvs = {};
+  asList(obj(state).actor).forEach(function (a) { var l = obj(actors[a]).level; if (l) lvs[l] = true; });
+  return levels.filter(function (l) { return lvs[l]; });
 }
 
 /* ============================================================ the model */
@@ -904,8 +906,20 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     readings: uniqSorted([].concat.apply([], consts.map(function (c) {
       return causal.filter(function (s) { return s.from === c.from && s.to === c.to && s.layer !== c.layer &&
                                                  s.layer !== "appraisal" && c.layer !== "appraisal"; })
-                   .map(function (s) { return [c.from, c.to, s.layer, c.layer]; }); })))
+                   .map(function (s) { return [c.from, c.to, s.layer, c.layer]; }); }))),
+    // WHAT IS NOT (YET) ACTUAL, WHAT MAKES EACH OTHER UP, AND WHAT KEEPS ITSELF IN BEING (1.12).
+    statuses: ids.filter(function (i) { var t = obj(states[i]).status; return t === "possible" || t === "open"; })
+                 .map(function (i) { return [i, String(obj(states[i]).status)]; }).sort(cmpDeep),
+    mutual: uniqSorted(consts.filter(function (c) { return c.layer === "text" && !c.toActor && consts.some(function (d) {
+                         return d.layer === "text" && !d.toActor && d.from === c.to && d.to === c.from; }); })
+                             .map(function (c) { return [c.from, c.to].sort(); })),
+    sustaining: loopsText.filter(function (l) { return sustains(l, text); })
   };
+}
+/** Whether every hop of a loop is a step that makes or maintains its next -- mechanism.py's _sustains. */
+function sustains(loop, steps) {
+  return loop.every(function (a, i) { var b = loop[(i + 1) % loop.length];
+    return steps.some(function (s) { return s.from === a && s.to === b && (s.on === "being" || s.on === "persistence") && s.sign === "+"; }); });
 }
 
 /** Python's ordering of nested lists of strings, numbers and booleans. */
@@ -1170,6 +1184,7 @@ var EFFECT_WORD = { strengthens: "strengthens it", weakens: "weakens it", revers
  *  verbs, which a "raises" or "lowers" would turn back into nouns. Null for any other step. */
 function formationWord(on, sign) {
   if (on === "character") return "transforms";
+  if (on === "possibility") return sign === "+" ? "opens up" : sign === "-" ? "closes off" : null;
   if (on === "being") return sign === "+" ? "makes" : sign === "-" ? "unmakes" : null;
   if (on === "persistence") return sign === "+" ? "maintains" : sign === "-" ? "erodes" : null;
   return null;
@@ -1199,6 +1214,9 @@ function markSpec(FULL, M) {
     SYS.forEach(function (f, fi) { if (f.states.indexOf(v) >= 0) right.push({ kind: "system", i: fi }); });
     var elsewhere = M.chain && M.chain.shared && M.chain.shared[v];
     if (elsewhere && elsewhere.length) left.push({ kind: "shared" });
+    // NOT (YET) ACTUAL (1.12): ◌ a possibility, … what cannot be specified in advance.
+    var stt = obj(M.states[v]).status;
+    if (stt === "possible" || stt === "open") left.push({ kind: stt });
     var k = FULL ? obj(FULL.states[v]).kind : null, kd = k == null ? null : KINDS.filter(function (x) { return x.id === String(k); })[0];
     if (kd && kd.states.some(function (w) { return w !== v; })) left.push({ kind: "kin" });
     var ms = FULL ? obj(FULL.states[v]).measures : null;
@@ -2568,7 +2586,7 @@ function esc(s) {
 }
 function el(name, attrs, parent) {
   var e = document.createElementNS(NS, name);
-  for (var k in attrs) e.setAttribute(k, attrs[k]);
+  for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
   if (parent) parent.appendChild(e);
   return e;
 }
@@ -2668,6 +2686,8 @@ function injectStyle() {
     // A badge on a dark box keeps its own ink: the white of the box's label made its glyph vanish.
     ".amech .st.intervention .loopmark text{fill:var(--mv-text)}.amech .st.intervention .more text{fill:var(--accent,#3a7bd5)}",
     ".amech .st.outcome rect.outer{fill:none;stroke:var(--fg,#1a1a1a)}",
+    // NOT (YET) ACTUAL (1.12): hollow, and in italic.
+    ".amech .st.notactual rect.box{fill:var(--bg,#fff);fill-opacity:.35;stroke:var(--fg-dim,#666)}.amech .st.notactual > text{font-style:italic}",
     // A CONDITION is a starting point the text does not recommend: the intervention's navy, but
     // as a tint, so what the text would DO and what it takes as given read apart at a glance.
     ".amech .st.condition rect.box{fill:var(--mv-cond-bg);stroke:var(--mv-text)}",
@@ -2797,7 +2817,7 @@ function chainModel(M, id) {
   // Only the actors its states name: the lanes' headings list who acts at each level, and above
   // the Kenya chain they listed the fisheries' and Madagascar's actors too.
   var actors = {};
-  ids.forEach(function (i) { var a = obj(M.states[i]).actor; if (has(M.actors, a)) actors[a] = M.actors[a]; });
+  ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cform = { form: c.form || "chain", settles: c.settles == null ? null : c.settles };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
@@ -3153,6 +3173,10 @@ function create(container, graph, opts) {
       var rx = doing ? Math.min(p.h / 2, 18) : 7;
       if (s.aspect != null) g.setAttribute("data-aspect", String(s.aspect));
       if (hasRole(s, "outcome")) el("rect", { "class": "outer", x: -4, y: -4, width: p.w + 8, height: p.h + 8, rx: rx + 2 }, g);
+      // WHAT IS NOT (YET) ACTUAL IS DRAWN HOLLOW, ITS WORDS IN ITALIC (1.12), and marked ◌ or … at its top
+      // left. Never dashed: on these charts a pattern is fidelity, as on every box (F5).
+      var notActual = s.status === "possible" || s.status === "open";
+      if (notActual) { g.setAttribute("data-status", String(s.status)); g.setAttribute("class", cls + " notactual"); }
       el("rect", { "class": "box", width: p.w, height: p.h, rx: rx }, g);
       var lines = p.lines || wrapWords(s.label || v, charsFor(p.w));
       lines.forEach(function (t, i) {
@@ -3217,6 +3241,11 @@ function create(container, graph, opts) {
           tx.textContent = "≙";
           ti.textContent = "A measure of “" + (obj(FULL.states[measOf]).label || measOf) + "”" +
             (obj(FULL.states[v]).method ? ", by " + obj(FULL.states[v]).method : "") + " — a reading of it, not a cause of it";
+        } else if (b.kind === "possible" || b.kind === "open") {
+          mk.setAttribute("data-status", b.kind);
+          tx.textContent = b.kind === "possible" ? "◌" : "…";
+          ti.textContent = b.kind === "possible" ? "A possibility the text sets out: not (yet) actual"
+                                                 : "Open: what the text says cannot be specified in advance";
         } else if (b.kind === "constitutes" || b.kind === "constituted") {
           // WHAT CONSTITUTES WHAT (1.11): named in the tooltip, listed in the panel; a click shows it.
           var mine = (M.constitutions || []).filter(function (c) { return c.layer !== "appraisal" &&
@@ -3329,6 +3358,7 @@ function create(container, graph, opts) {
       (s.on === "being" ? " · <b>" + (s.sign === "-" ? "unmakes" : "makes") + "</b>: it brings its effect " + (s.sign === "-" ? "to an end" : "into being") + ", not more or less of it" : "") +
       (s.on === "persistence" ? " · <b>" + (s.sign === "-" ? "erodes" : "maintains") + "</b>: it " + (s.sign === "-" ? "wears its effect away" : "keeps its effect going") + ", not more or less of it" : "") +
       (s.on === "character" ? " · <b>transforms</b>: it changes what kind of thing its effect is" : "") +
+      (s.on === "possibility" ? " · <b>" + (s.sign === "-" ? "closes off" : "opens up") + "</b>: it changes what can happen, not what does" : "") +
       ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
       ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
         ": this link and that route are one, counted once" : "") +
@@ -3405,6 +3435,9 @@ function create(container, graph, opts) {
     if (drawnIds.some(function (v) { var a = obj(M.states[v]).aspect; return a === "activity" || a === "development"; }))
       out += '<div class="g">Boxes</div>' + row('<svg width="46" height="16" aria-hidden="true"><rect x="3" y="2" width="40" height="12" rx="6" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.4"/></svg>',
         "round ends: an ongoing doing, an activity or a development, not an amount");
+    if (drawnIds.some(function (v) { var t = obj(M.states[v]).status; return t === "possible" || t === "open"; }))
+      out += row('<svg width="46" height="16" aria-hidden="true"><text x="8" y="12" font-size="12" fill="var(--mv-text)">◌ …</text></svg>',
+        "a hollow box in italic: not (yet) actual. ◌ a possibility the text sets out; … what it says cannot be specified in advance");
     var CSd = (M.constitutions || []).filter(function (c) { return c.layer !== "appraisal"; });
     if (CSd.length) out += row('<svg width="46" height="16" aria-hidden="true"><text x="8" y="12" font-size="12" fill="var(--mv-text)">⊂ ⊃</text></svg>',
         "⊂ makes up something else; ⊃ is made up of drawn states. What a thing is made of, not a cause of it: never an arrow");
@@ -3537,8 +3570,8 @@ function create(container, graph, opts) {
         "A dashed stem to a small square: the step's evidence is read from that measure. It is orange where the text says something biases the measure, which undercuts the step.");
     add(function (e) { return /slows|speeds/.test(e.chip.label); }, "On a trend",
         "<b>slows</b> or <b>speeds</b>: the step changes how fast something is rising or falling, not its level.");
-    add(function (e) { return /^(makes|unmakes|maintains|erodes|transforms)\b/.test(e.chip.label); }, "Making, keeping, changing",
-        "<b>makes</b> or <b>unmakes</b>: the step brings something into being or ends it. <b>maintains</b> or <b>erodes</b>: it keeps something going or wears it away. <b>transforms</b>: it changes what kind of thing it is. None of these is more or less of something.");
+    add(function (e) { return /^(makes|unmakes|maintains|erodes|transforms|opens up|closes off)\b/.test(e.chip.label); }, "Making, keeping, changing",
+        "<b>makes</b> or <b>unmakes</b>: the step brings something into being or ends it. <b>maintains</b> or <b>erodes</b>: it keeps something going or wears it away. <b>transforms</b>: it changes what kind of thing it is. <b>opens up</b> or <b>closes off</b>: it changes what can happen, not what does. None of these is more or less of something.");
     add(function (e) { return /needed for|enough for|not alone/.test(e.chip.label); }, "Needed, enough, not alone",
         "<b>needed for</b>: the effect holds only where the cause does. <b>enough for</b>: the cause brings it about on its own. <b>not alone</b>: the text says it is not enough by itself.");
     add(function (e) { return / · disputed/.test(e.chip.label); }, "Disputed",
@@ -3627,17 +3660,23 @@ function create(container, graph, opts) {
       side.innerHTML = '<h3>' + esc(selected.name || "Loop") + '</h3>' +
         '<div class="amech-focus">Showing one loop the text closes: ' + esc(loopNames(L)) + '.' +
         (L.reflexive ? ' It is <b>reflexive</b>: it runs through a belief, a prediction or a classification that the loop itself acts on.' : '') +
+        ((M.profile.sustaining || []).some(function (x) { return x.join("\u0000") === L.states.join("\u0000"); })
+          ? ' It <b>keeps itself in being</b>: every step makes or maintains the next.' : '') +
         '</div>' +
         hopEdges.map(function (es) { return es.map(function (e) { return e.steps.map(stepHTML).join(""); }).join(""); }).join("") +
         '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
     } else if (selected && selected.state) {
-      var s = obj(M.states[selected.state]), a = obj(M.actors[s.actor]);
+      var s = obj(M.states[selected.state]), who = asList(s.actor), a = obj(M.actors[who[0]]);
       side.innerHTML = '<h3>' + esc(s.label || selected.state) + '</h3>' +
         '<div class="amech-focus">Showing only the paths through this state: what leads to it, and what it leads to.</div>' +
         '<div class="amech-row"><span class="k">actor</span><span>' + (s.actor == null
           // A PROCESS WITH NO OWNER (1.11) says so, and where it runs.
           ? 'none: a process with no owner' + (asList(s.levels).length ? ' (' + esc(asList(s.levels).join(", ")) + ')' : '')
-          : esc(a.label || s.actor || "") + (a.level ? ' (' + esc(a.level) + ')' : '')) + '</span></div>' +
+          // SEVERAL ACTORS TOGETHER (1.12): a relation, or a doing none of them does alone.
+          : who.length > 1 ? esc(who.map(function (x) { return obj(M.actors[x]).label || x; }).join(" and ")) + ', together'
+          : esc(a.label || who[0] || "") + (a.level ? ' (' + esc(a.level) + ')' : '')) + '</span></div>' +
+        (s.status === "possible" || s.status === "open" ? '<div class="amech-row"><span class="k">status</span><span>' +
+          (s.status === "possible" ? 'possible: a possibility the text sets out, not (yet) actual' : 'open: what the text says cannot be specified in advance') + '</span></div>' : '') +
         (rolesOf(s).length ? '<div class="amech-row"><span class="k">role</span><span>' + esc(rolesOf(s).join(", ")) + '</span></div>' : '') +
         (s.aspect != null && ASPECTS.indexOf(String(s.aspect)) >= 0 ? '<div class="amech-row"><span class="k">is</span><span>' +
           esc(({ quantity: "a quantity: an amount, level or rate", activity: "an activity: ongoing, complete at every moment",

@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.11 — 30 September 2026.** The machine-readable registry of everything below is
+**Version 1.12 — 30 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -208,7 +208,7 @@ mechanism:
 | `settles` | boolean | On a cycle: whether the text says it **comes to rest** (*added in 1.11*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*). |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -226,7 +226,7 @@ substantially reduces adoption".
 | `basis` | `study` \| `statistics` \| `model` \| `example` \| `testimony` \| `asserted` | What the **text** offers for the step. The first three count as tested; `example` and `testimony`, and an asserted step the map argues for, as argued. |
 | `lag` | string | Timing the text states. |
 | `period` | string | **When** the step holds, in the text's words anchored to an event: "during culling", "after the order ends" (*added in 1.8*). |
-| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). |
+| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). |
 | `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
 | `how` | `{actor, situation, habit, response}` | Gross's decomposition of a step, only where the text gives it. |
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
@@ -540,7 +540,7 @@ social position that is the category, Black".
 | `from` | a state id | What makes the whole up. |
 | `to` | a state id, or an **actor** id | The whole. An actor is a group or a system that the ongoing states constitute: a thing as a stability of processes. |
 | `extent` | `partial` \| `entire` | Part of the whole, or all of it. |
-| `whole` | `aggregate` \| `organised` \| `reducible` | How the whole stands to what makes it up: no more than their sum; dependent on their organisation ("more than mere aggregation", Martínez-Peña and Ylikoski 2024, p. 10); or nothing but them. |
+| `whole` | `aggregate` \| `organised` \| `reducible` \| `mutual` | How the whole stands to what makes it up: no more than their sum; dependent on their organisation ("more than mere aggregation", Martínez-Peña and Ylikoski 2024, p. 10); nothing but them; or, since 1.12, **each making the other**: the parts are what they are only within the whole. |
 | `basis` | a step's bases, or `account` \| `definition` | Whether a relation constitutes something may be "a conceptual, and … political, question that is not reducible to data-mining" (Hu, p. 14). |
 | `under` | string | The account under which it holds, in the text's words. |
 | `stance` | `rejected` \| `unjudged` | On a `#reported` or `#contested` claim, as for a step. |
@@ -557,6 +557,34 @@ that make it up. It may also hold beside a step on the same pair. The census rep
 
 A state goes on as what it constitutes, so it is not a dead end when that whole leads on, is what the
 chain is for, or is an actor.
+
+**Relations and possibility (1.12).** Two papers from the process-relational turn in
+social-ecological research took 1.11 further:
+- Hertz, Mancilla García and Schlüter, "From Nouns to Verbs" (*People and Nature* 2020);
+- Hertz, Klein, Mancilla García and Schlüter, "Transforming a World That Never Stands Still"
+  (*Ecosystems and People* 2025).
+
+They confirmed that a thing is a sequence of events "upheld by" recurrent processes; 1.11's
+`constitutes:` to an actor and `on: persistence` say that. They added four things:
+
+- **Possibility.** A process ontology takes as a core concept the "possibility space" of what can
+  happen at a moment, which every event reconfigures. `on: possibility` marks a step that **opens up**
+  (`+`) or **closes off** (`-`) the possibility of its `to`: what can happen, not what does. A state's
+  `status: possible` says it is a possibility the text sets out, not (or not yet) actual.
+  `status: open` says the text holds it cannot be specified in advance. That is Hertz et al.'s
+  "surplus", "the virtual", as against the possible, which is read off what things now are. Both
+  are drawn hollow and in italic, marked ◌ and … (never dashed: on the chart a pattern means
+  fidelity).
+- **Mutual constitution.** An emergent whole is not "a simple combination, aggregation or particular
+  organization of the individual components" (2020). `organised` still assumes the parts are given;
+  `whole: mutual` says the whole and what makes it up make each other. The census names a pair each
+  of which constitutes the other as **co-constituted**.
+- **Relations of several actors.** Where the text makes a doing or a relation belong to several
+  actors at once, `actor:` takes a list; the state runs across all their levels. Their example is
+  the ayllu, in which people and land "exist together" (after De la Cadena).
+- **Loops that keep themselves in being.** The census names a loop in which every step makes or
+  maintains the next. Examples are practices "entangled in that they entail each other and thereby
+  keep a given cut in place" (2025, Box 1), and Wimmer's stabilising feedbacks.
 
 ## 6. The source file
 
@@ -608,6 +636,14 @@ rule: name your gaps).
   formation too. The reconstructor's first safeguard is not a key: keep the text's verbs in the
   states' labels. "Families send a member to the city" turned into "rural–urban migration" is the
   map doing to the text what Arthur says algebra does to the economy.
+- **Theories of change, and principles.** A conventional theory of change assumes "a linear causal
+  chain of events that can be traced back to a specific origin". That is the shape the chart draws
+  best. Complexity-aware and relational ones are organised around phases, principles or heuristics
+  instead (Hertz et al. 2025). A principle that guides action is a claim in the argument map, not a
+  step.
+- **Who enacts, or benefits from, an arrangement.** `attribution: {type, by}` says whose causing a
+  step is. There is no mark for who *benefits* from a state of affairs held in place; say it in the
+  argument, or as a step to that actor's state.
 - **Constitution is marked, not drawn.** A constitutive relation shows as ⊂ and ⊃ at the feet of the
   boxes and in the panel, not as a line between them. "Counts as" (Hu p. 17: acting on the features
   "is the same as" acting on race) is a third relation, neither causal nor constitutive, and belongs
@@ -662,6 +698,15 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.12** (30 September 2026) added, after Hertz et al. (2020, 2025):
+- `on: possibility` on a step;
+- `status` on a state (`actual`, `possible`, `open`);
+- `whole: mutual` on a constitutive relation;
+- `actor` as a list.
+
+The census also names co-constituted pairs and loops that keep themselves in being. Every 1.11
+file conforms unchanged.
 
 **1.11** (30 September 2026) added, for process texts and after Arthur (2023) and Hu (2023):
 - `aspect` on a state;

@@ -336,6 +336,14 @@ started as "the number of companies started". Do not do that to the text.
 - Declare a cycle as one (`form: cycle`) where the text describes reproduction rather than a
   chain from a cause to an end.
 
+Where the text is about what could happen rather than what does, say so:
+- `on: possibility` for a step that opens up or closes off a possibility;
+- `status: possible` for a possibility the text sets out;
+- `status: open` for what it says cannot be specified in advance.
+
+A process-relational text may hold that a whole and its parts make each other (`whole: mutual`), or
+that a relation belongs to several actors at once (`actor: [a, b]`) (Hertz et al. 2020, 2025).
+
 The census then says whether the chain is told in nouns or verbs. If it is told in nouns and the text
 was not, look again.
 

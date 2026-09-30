@@ -1,0 +1,42 @@
+// A planted PROCESS-RELATIONAL chain (profile 1.12, 30 Sep 2026): a doing of people and land
+// together (two actors), a loop that keeps itself in being, steps that open and close
+// possibilities, a state that is only possible and one the text says cannot be specified in
+// advance, and a whole and its part that make each other up.
+===
+title: "Relations -- a planted fishery that keeps itself going"
+mechanism:
+    question: "How does a fishery keep itself in being, and what could it become?"
+    levels: [practice, beings]
+    ordering: scale
+    actors:
+        fishery: {label: "The fishery as a practice", level: practice}
+        fishers: {label: "Fishers", level: beings}
+        fish:    {label: "The fish", level: beings}
+    states:
+        fishing:  {label: "Fishers and fish take part in fishing, together", actor: [fishers, fish], aspect: activity}
+        identity: {label: "Fishers' identity tied to their species", actor: fishers, aspect: condition}
+        resource: {label: "Fish become determinate as a resource", actor: fish, aspect: development, role: condition}
+        quota:    {label: "A quota system", actor: fishery, aspect: condition, role: intervention}
+        grafting: {label: "Fishers experiment with new relations to the sea", actor: fishers, aspect: activity, status: possible}
+        surplus:  {label: "A practice not yet thinkable", actor: fishery, status: open, role: outcome}
+        practice: {label: "The fishing practice as a whole", actor: fishery, aspect: condition, role: outcome}
+===
+
+[Fishing keeps identity]: Fishing keeps the fishers' identity going.
+    {causes: {from: fishing, to: identity, sign: "+", on: persistence, basis: asserted}}
+
+[Identity keeps fishing]: That identity keeps them fishing.
+    {causes: {from: identity, to: fishing, sign: "+", on: persistence, basis: asserted}}
+
+[Quotas close off other relations]: A quota system keeps fish a resource and closes off other ways of relating to them.
+    {causes: {from: quota, to: grafting, sign: "-", on: possibility, basis: asserted}}
+
+[Experiment opens the unthinkable]: Experimenting with new relations opens a practice not yet thinkable.
+    {causes: {from: grafting, to: surplus, sign: "+", on: possibility, basis: asserted, hedged: true}}
+
+[Resource frames the practice]: Fish as a resource shapes the whole practice.
+    {causes: {from: resource, to: practice, sign: which, on: character, basis: asserted}}
+
+[Practice and fishing make each other]: The practice is made up of fishing, and fishing is what it is only within the practice.
+    {constitutes: [{from: fishing, to: practice, extent: partial, whole: mutual, basis: account},
+                   {from: practice, to: fishing, extent: partial, whole: mutual, basis: account}]}

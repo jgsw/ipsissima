@@ -219,6 +219,33 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         "a state that only makes something up is drawn, with its ⊂, before its whole, and with no arrow",
         JSON.stringify({ rite: LO.nodes.rite && [LO.nodes.rite.x, LO.nodes.rite.badges], boundary: LO.nodes.boundary && LO.nodes.boundary.x }));
 }
+// AND ON PROCESS-RELATIONAL TEXTS (profile 1.12): a doing of several actors together, a loop that
+// keeps itself in being, steps that open and close possibilities, states not (yet) actual, and a
+// whole and its part that make each other up. Mutations: drop `sustaining` -> it differs; read only
+// the first actor's level -> the spanning check fails; key possibility steps with plain ones -> the
+// chip says "lowers".
+{
+  const RELF = path.join(FIXTURE, "relations.argdown");
+  const pyR = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           RELF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MR = MV.model(graphOf(RELF));
+  const differ = Object.keys(pyR).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MR.profile.gaps.map(g => g.message) : MR.profile[k], pyR[k]));
+  check(differ.length === 0 && pyR.sustaining.length === 1 && pyR.mutual.length === 1 && pyR.statuses.length === 2 &&
+        pyR.formation.filter(r => r[3] === "possibility").length === 2,
+        "the page and the checker agree on possibility, status, mutual constitution and loops that keep themselves going",
+        differ.map(k => `${k}: python ${JSON.stringify(pyR[k])} js ${JSON.stringify(MR.profile[k])}`).join("\n          "));
+  const LR = MV.layout(MR, { marks: MV.markSpec(MR, MR).marks });
+  const word = (a, b) => LR.edges.filter(e => e.from === a && e.to === b).map(e => e.chip.label.split(" ·")[0]);
+  check(same(word("quota", "grafting"), ["closes off"]) && word("grafting", "surplus")[0].startsWith("opens up"),
+        "a step on a possibility says it opens it up or closes it off", JSON.stringify(LR.edges.map(e => [e.from, e.to, e.chip.label])));
+  const two = MV.model(graphOf.fromText(fs.readFileSync(RELF, "utf8").replace("actor: [fishers, fish]", "actor: [fishers, fishery]")));
+  check(two.profile.spanning.some(r => r[0] === "fishing" && same(r[1], ["practice", "beings"])),
+        "a state of several actors runs across all their levels", JSON.stringify(two.profile.spanning));
+  const top = v => (LR.nodes[v].badges || []).filter(b => b.edge === "top").map(b => b.kind);
+  check(top("grafting").includes("possible") && top("surplus").includes("open") && !top("fishing").some(k => k === "possible" || k === "open"),
+        "what is not (yet) actual is marked ◌ or … by the layout, and nothing else is", JSON.stringify({ grafting: top("grafting"), surplus: top("surplus") }));
+}
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
 // `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"

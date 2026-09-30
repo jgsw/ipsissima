@@ -815,6 +815,27 @@ check("`settles` without a cycle is queried",
 check("a claim that only constitutes is the chain's material, not inert",
       run(PROC, name="process.argdown")["shape"]["contribution"]["inert"], 0)
 
+print("\nprofile 1.12: process-relational texts (Hertz et al. 2020, 2025; James, 30 Sep 2026)")
+REL = (FIXTURE / "relations.argdown").read_text(encoding="utf-8")
+rl = run(REL, name="relations.argdown")["shape"]["chain"]
+# Mutations: drop `possibility` from ONS -> the first fails; take one actor's level -> the third.
+check("steps that open and close possibilities are listed",
+      [r for r in rl["formation"] if r[3] == "possibility"], [["grafting", "surplus", "+", "possibility"], ["quota", "grafting", "-", "possibility"]])
+check("states not (yet) actual are listed with their status", rl["statuses"], [["grafting", "possible"], ["surplus", "open"]])
+two = run(REL.replace("actor: [fishers, fish]", "actor: [fishers, fishery]"), name="relations.argdown")["shape"]["chain"]
+check("a state of several actors runs across their levels", [r for r in two["spanning"] if r[0] == "fishing"], [["fishing", ["practice", "beings"]]])
+check("a whole and its part that make each other up are co-constituted", rl["mutual"], [["fishing", "practice"]])
+check("a loop of maintaining keeps itself in being", rl["sustaining"], [["fishing", "identity"]])
+cr = "\n".join(mech.census(rl))
+check("the census says each", all(w in cr for w in ("opens   grafting -> surplus", "closes  quota -> grafting", "mutual  fishing and practice",
+                                                    "sustain fishing -> identity -> fishing", "possible grafting", "open    surplus")), True)
+rm = lambda text: [f["message"] for f in by(run(text, name="relations.argdown"), "mechanism")]
+check("an undeclared actor in a list is a fault",
+      any("names actor `boats`" in m for m in rm(REL.replace("actor: [fishers, fish]", "actor: [fishers, boats]"))), True)
+check("a status not in the list is queried", any("status: maybe" in m for m in rm(REL.replace("status: possible", "status: maybe"))), True)
+check("`on: possibility` with `which` is queried",
+      any("opens" in m and "not `which`" in m for m in rm(REL.replace('sign: "-", on: possibility', 'sign: which, on: possibility'))), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

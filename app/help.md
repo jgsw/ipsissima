@@ -655,6 +655,10 @@ its amount:
 - **maintains** and **erodes**: it keeps something going or wears it away;
 - **transforms**: it changes what kind of thing it is.
 
+**opens up** and **closes off** say the step changes what *can* happen, not what does. A **hollow
+box in italic** is not (yet) actual. **◌** marks a possibility the text sets out; **…** marks what the
+text says cannot be specified in advance.
+
 A box with **round ends** is an ongoing doing, an activity or a development, and not an amount. Where
 the map declares its chain a **cycle**, the panel says so, and whether the text says the cycle comes
 to rest; the chart does not ask where a cycle starts or ends.
