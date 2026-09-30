@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.13",
+  "version": "1.14",
   "date": "2026-09-28",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -79,9 +79,10 @@
     "settles": {"type": "boolean", "summary": "On a cycle: whether the text says it comes to rest (since 1.11)."},
     "goal": {"type": "explain | intervene | predict | attribute", "summary": "What the chain is for: to explain why and how, to find what to do, to predict, or to attribute responsibility. Also on each chain (since 1.13)."},
     "contrast": {"type": "string", "summary": "The foil the question sets: why this, rather than what. Also on each chain (since 1.13)."},
+    "account": {"type": "regularity | manipulability | mechanism | counterfactual | intra-action, or a list of them", "summary": "The account of causation the text reasons with: what an arrow means differs with each. Held against the map: manipulability wants an experimental design, intra-action a constitutive relation. Also on each chain (since 1.14)."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
     "kinds": {"type": "map of id to kind", "keys": {"label": "string", "general": "a state id of this kind: the general claim, of which the kind's other states are cases (since 1.7)"}, "summary": "Kinds of state that recur across cases; states of one kind are never walked as one (since 1.6)."},
-    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)", "goal": "explain | intervene | predict | attribute (since 1.13)", "contrast": "string (since 1.13)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
+    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)", "goal": "explain | intervene | predict | attribute (since 1.13)", "contrast": "string (since 1.13)", "account": "regularity | manipulability | mechanism | counterfactual | intra-action, or a list (since 1.14)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
     "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id, or (since 1.12) a list of them: a relation or a doing of several actors together; may be left out where `levels` places a process with no owner (since 1.11)", "status": "actual | possible | open: whether the state is actual, a possibility the text sets out, or what the text says cannot be specified in advance (since 1.12)", "aspect": "quantity | activity | development | event | condition: what kind of occurrence the state is, from the text's own grammar (since 1.11)", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)", "kind": "a kind id: the declared kind this state is a case of (since 1.6)", "measures": "a state id: the state this one is a measure, indicator or estimate of -- a reading of it, never walked as its cause (since 1.9)", "method": "string: how that measure is taken, in the text's words (since 1.9)"}}
   },
 
@@ -92,7 +93,7 @@
     "basis": {"type": "enum", "values": ["study", "statistics", "model", "example", "testimony", "asserted"], "summary": "What the text offers for the step."},
     "lag": {"type": "string"},
     "period": {"type": "string", "summary": "When the step holds, in the text's words anchored to an event: during culling, after it ended (since 1.8)."},
-    "on": {"type": "level | trend | being | persistence | character", "summary": "Whether the step moves the level of its `to` (the default) or its trend: slows a rise, speeds a fall (since 1.8); or (since 1.11) makes or unmakes it (being, + or -), maintains or erodes it (persistence, + or -), or changes what kind of thing it is (character, with sign: which); or (since 1.12) opens or closes the possibility of it (possibility, + or -)."},
+    "on": {"type": "level | trend | being | persistence | character | possibility | chance | stock", "summary": "Whether the step moves the level of its `to` (the default) or its trend: slows a rise, speeds a fall (since 1.8); or (since 1.11) makes or unmakes it (being, + or -), maintains or erodes it (persistence, + or -), or changes what kind of thing it is (character, with sign: which); or (since 1.12) opens or closes the possibility of it (possibility, + or -); or (since 1.14) makes it more or less likely (chance, + or -), or adds to or drains it, a stock (stock, + or -): an inflow or an outflow, which the stock need not move with."},
     "given": {"type": "list of strings or {state, value}", "summary": "Conditions the text states, in its words, or (since 1.8) a declared state and the value it has."},
     "how": {"type": "map", "keys": {"actor": "an actor id", "situation": "string", "habit": "string", "response": "string"}},
     "reflexive": {"type": "boolean"},

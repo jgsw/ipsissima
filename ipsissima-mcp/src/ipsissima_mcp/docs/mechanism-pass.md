@@ -141,6 +141,11 @@ mechanism:
 - **What the chain is for, and against what** (*1.13*): `goal:` is `explain`, `intervene`, `predict`
   or `attribute` (responsibility), where the text makes it plain. `contrast:` gives the foil its
   question sets ("why here, rather than there").
+- **How the text reasons about causes** (*1.14*): `account:` is `regularity` (regular succession),
+  `manipulability` (change the cause and the effect changes), `mechanism`, `counterfactual` (what
+  would have happened otherwise) or `intra-action` (relations that make what they relate). Give it,
+  as a list if need be, only where the text's method or theory makes it plain. The checker holds
+  `manipulability` to an experimental `design:` and `intra-action` to a `constitutes:`.
 - **Possibility** (*1.12*):
   - a step that opens up or closes off what *can* happen is `on: possibility` (`+` or `-`);
   - a state the text sets out only as a possibility (an option, a path not yet taken) is
@@ -168,6 +173,16 @@ create, maintain, sustain, reproduce, erode, transform*: "raises" would turn the
 causal step in those words. Mark the step as causal only if the text says one brings the other about.
 Say whether a step is about a particular case or a general relation (`scope: singular | general`)
 where the difference matters: a general claim needs more than one case.
+
+**Stocks and chances** (*1.14*). Where the `from` is a flow into or out of the `to`, mark
+`on: stock`: births *add to* a population (`+`), a catch *drains* it (`-`). The stock need not move
+with the flow, so a loop through it says less than its sign suggests, and the census names such
+loops. Where the text says the step raises or lowers the *chance* of its effect ("raises the risk
+of", "makes more likely", "tends to"), mark `on: chance`.
+
+**An extrapolation** (*1.14*). If the text finds a step in one case and then claims it in general,
+mark both, with `scope: singular` and `scope: general`. The census lists the pair: the general claim
+is derived and needs more than the case.
 
 **A functional explanation is a loop** (*1.13*). "X persists because it does Y" means X brings Y
 about and Y maintains X (`on: persistence`). If the text names the second step's mechanism without

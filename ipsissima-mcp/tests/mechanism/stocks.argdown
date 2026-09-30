@@ -1,0 +1,46 @@
+// A planted fishery for STOCKS, CHANCES AND ACCOUNTS (profile 1.14, after Banitz et al. 2022,
+// Hertz et al. 2024 and Martinez Pena et al. 2023): a stock that births add to and a catch drains,
+// with a loop that runs through the inflow; a step that makes collapse likelier rather than more;
+// an account of causation on the map and one on a chain, each held against what the map shows; and
+// a step found in one case and also claimed in general -- an extrapolation.
+===
+title: "Stocks -- a planted fishery"
+mechanism:
+    question: "Why did the fishery collapse?"
+    account: [regularity, intra-action]
+    levels: [fishery, boats]
+    ordering: composition
+    within: {boats: fishery}
+    actors:
+        fishery: {label: "The fishery", level: fishery}
+        boats:   {label: "The boats", level: boats}
+    states:
+        births:     {label: "Fish born each year", actor: fishery, aspect: quantity}
+        population: {label: "The fish population", actor: fishery, aspect: quantity}
+        catch:      {label: "Fish caught each year", actor: boats, aspect: quantity}
+        collapse:   {label: "The fishery collapses", actor: fishery, aspect: event, role: outcome}
+        quota:      {label: "A catch quota", actor: fishery, role: intervention}
+    chains:
+        policy:
+            label: "Quota and catch"
+            question: "Does a quota cut the catch?"
+            account: manipulability
+===
+
+[Births add to the stock]: The fish born each year add to the population.
+    {causes: {from: births, to: population, sign: "+", on: stock, basis: asserted}}
+
+[The stock breeds]: The more fish there are, the more are born.
+    {causes: {from: population, to: births, sign: "+", basis: asserted}}
+
+[The catch drains the stock]: The catch takes fish out of the population.
+    {causes: {from: catch, to: population, sign: "-", on: stock, basis: asserted}}
+
+[A thin stock risks collapse]: A thinner population raises the risk that the fishery collapses.
+    {causes: {from: population, to: collapse, sign: "-", on: chance, basis: statistics}}
+
+[The quota cut this catch]: In this bay the quota cut the catch.
+    {causes: {from: quota, to: catch, sign: "-", basis: example, scope: singular, chain: policy}}
+
+[Quotas cut catches]: Quotas cut catches.
+    {causes: {from: quota, to: catch, sign: "-", basis: asserted, scope: general, chain: policy}}

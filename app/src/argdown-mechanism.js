@@ -81,6 +81,9 @@ var FORMATION = ["being", "persistence", "character", "possibility"];
 // CAUSAL REASONING (profile 1.13) -- mechanism.py's GOALS and SCOPES.
 var GOALS = ["explain", "intervene", "predict", "attribute"];
 var SCOPES = ["singular", "general"];
+// HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14) -- mechanism.py's ACCOUNTS.
+var ACCOUNTS = ["regularity", "manipulability", "mechanism", "counterfactual", "intra-action"];
+function accountOf(b) { return asList(obj(b).account).filter(function (a) { return ACCOUNTS.indexOf(a) >= 0; }); }
 function goalOf(b) { var g = obj(b).goal; return g != null && GOALS.indexOf(String(g)) >= 0 ? String(g) : null; }
 /** The form a block or a chain declares -- mechanism.py's form_of, less its problems. */
 function formOf(b) {
@@ -255,7 +258,7 @@ function model(graph) {
   });
   var ordering = levelOrder(block, levels);
   var form = formOf(block);
-  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast) };
+  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast), account: accountOf(block) };
   return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
@@ -472,7 +475,9 @@ function chainsOf(block) {
                question: c.question == null ? null : String(c.question), roles: obj(c.roles),
                form: f.form, settles: f.settles,
                // ITS GOAL (1.13), its own or the block's, and its CONTRAST -- as the checker has it.
-               goal: goalOf(c) || goalOf(block), contrast: c.contrast == null ? null : String(c.contrast) });
+               goal: goalOf(c) || goalOf(block), contrast: c.contrast == null ? null : String(c.contrast),
+               // ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
+               account: accountOf(c).length ? accountOf(c) : accountOf(block) });
   });
   return out;
 }
@@ -707,6 +712,7 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     cp.form = { form: ch.form || "chain", settles: ch.settles == null ? null : ch.settles };
     cp.goal = ch.goal == null ? null : ch.goal;
     cp.contrast = ch.contrast == null ? null : ch.contrast;
+    cp.account = ch.account || [];
   });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
@@ -738,7 +744,7 @@ function disputedOf(steps, against) {
 }
 
 function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against, ordering, form, consts, reasoning) {
-  form = form || { form: "chain", settles: null }; consts = consts || []; reasoning = reasoning || { goal: null, contrast: null };
+  form = form || { form: "chain", settles: null }; consts = consts || []; reasoning = reasoning || { goal: null, contrast: null, account: [] };
   // What each state constitutes, in the text's own voice (1.11) -- as the checker has it.
   var constituted = {};
   consts.forEach(function (c) { if (c.layer !== "text") return;
@@ -927,6 +933,17 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     sustaining: loopsText.filter(function (l) { return sustains(l, text); }),
     // CAUSAL REASONING (1.13) -- mechanism.py's, field for field.
     goal: reasoning.goal, contrast: reasoning.contrast,
+    // STOCKS, CHANCES AND ACCOUNTS (1.14) -- mechanism.py's, field for field.
+    account: reasoning.account || [],
+    chances: uniqSorted(textAll.filter(function (s) { return s.on === "chance"; }).map(function (s) { return [s.from, s.to, s.sign]; })),
+    stocks: uniqSorted(textAll.filter(function (s) { return s.on === "stock"; }).map(function (s) { return [s.from, s.to, s.sign]; })),
+    stock_loops: loopsText.filter(function (l) { return l.some(function (a, i) { var b = l[(i + 1) % l.length];
+      return text.some(function (s) { return s.on === "stock" && s.from === a && s.to === b; }); }); }),
+    extrapolated: (function () {
+      var g = {}; textAll.forEach(function (s) { if (s.scope === "general") g[s.from + "\u0000" + s.to] = true; });
+      return uniqSorted(textAll.filter(function (s) { return s.scope === "singular" && g[s.from + "\u0000" + s.to]; })
+                               .map(function (s) { return [s.from, s.to]; }));
+    })(),
     associations: uniqSorted(steps.filter(function (s) { return s.assoc && s.layer !== "appraisal"; })
                                   .map(function (s) { return [s.from, s.to, s.sign, s.layer]; })),
     common_causes: (function () {
@@ -1213,6 +1230,9 @@ function formationWord(on, sign) {
   if (on === "possibility") return sign === "+" ? "opens up" : sign === "-" ? "closes off" : null;
   if (on === "being") return sign === "+" ? "makes" : sign === "-" ? "unmakes" : null;
   if (on === "persistence") return sign === "+" ? "maintains" : sign === "-" ? "erodes" : null;
+  // A CHANCE AND A STOCK (1.14): neither says its effect moves with its cause.
+  if (on === "chance") return sign === "+" ? "makes likelier" : sign === "-" ? "makes less likely" : null;
+  if (on === "stock") return sign === "+" ? "adds to" : sign === "-" ? "drains" : null;
   return null;
 }
 function signWord(signs) {
@@ -2849,7 +2869,7 @@ function chainModel(M, id) {
   ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cform = { form: c.form || "chain", settles: c.settles == null ? null : c.settles };
-  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast };
+  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast, account: c.account || [] };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
   return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
@@ -3394,6 +3414,8 @@ function create(container, graph, opts) {
       (s.on === "persistence" ? " · <b>" + (s.sign === "-" ? "erodes" : "maintains") + "</b>: it " + (s.sign === "-" ? "wears its effect away" : "keeps its effect going") + ", not more or less of it" : "") +
       (s.on === "character" ? " · <b>transforms</b>: it changes what kind of thing its effect is" : "") +
       (s.on === "possibility" ? " · <b>" + (s.sign === "-" ? "closes off" : "opens up") + "</b>: it changes what can happen, not what does" : "") +
+      (s.on === "chance" ? " · <b>" + (s.sign === "-" ? "makes less likely" : "makes likelier") + "</b>: it changes the chance of its effect, not whether it happens" : "") +
+      (s.on === "stock" ? " · <b>" + (s.sign === "-" ? "drains" : "adds to") + "</b>: a flow " + (s.sign === "-" ? "out of" : "into") + " a stock; the stock need not move with it" : "") +
       ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
       ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
         ": this link and that route are one, counted once" : "") +
@@ -3551,6 +3573,12 @@ function create(container, graph, opts) {
         intervene: "to find what to do to bring an effect about", predict: "to predict what will happen",
         attribute: "to attribute responsibility: what cause was decisive, and whose" })[P.goal]) + '</span></div>' : '') +
       (P.contrast ? '<div class="amech-row"><span class="k">rather than</span><span>' + esc(P.contrast) + '</span></div>' : '') +
+      // ITS ACCOUNT OF CAUSATION (1.14): what an arrow means differs with each.
+      ((P.account || []).length ? '<div class="amech-row"><span class="k">causation as</span><span>' + esc(P.account.map(function (a) { return ({
+        regularity: "regular succession", manipulability: "what changes when you intervene", mechanism: "a mechanism",
+        counterfactual: "what would have happened otherwise", "intra-action": "relations that make what they relate" })[a]; }).join("; ")) + '</span></div>' : '') +
+      ((P.stock_loops || []).length ? '<div class="amech-row"><span class="k">stock loops</span><span>' + P.stock_loops.length +
+        ' loop' + (P.stock_loops.length === 1 ? '' : 's') + ' through a flow into a stock: the sign counts flows, and the states need not move together</span></div>' : '') +
       (P.form && P.form.form === "cycle" ? '<div class="amech-row"><span class="k">form</span><span>a cycle, not asked where it starts or ends; ' +
         (P.form.settles === true ? 'the text says it comes to rest' : P.form.settles === false ? 'the text says it does not come to rest' : 'the text does not say whether it comes to rest') + '</span></div>' : '') +
       ((P.aspects || []).length ? '<div class="amech-row"><span class="k">told in</span><span>' + esc(P.aspects.map(function (a) { return a[1] + " " + a[0]; }).join(", ")) + '</span></div>' : '') +
@@ -3579,6 +3607,9 @@ function create(container, graph, opts) {
       '“raises” (more of the first, more of the second) or “lowers” (more of the first, less of the second). ' +
       'These are effects, not the support and attack of the Reasons map. ' +
       '×n: claims behind one arrow. ◇: conditions stated. ↻: closes a loop. “via”: a route through folded states. ' +
+      // A MISSING ARROW (1.14): silence, not a finding of no effect -- unlike a causal diagram of a
+      // system, where no arrow says no direct relation (Banitz et al. 2022, Fig. 2A).
+      'No arrow between two states means the text does not say; it does not mean there is no effect. The text says so only where a “no effect” line is drawn. ' +
       'Click a state to see only the paths through it, or to fold it into its arrows.</div>' +
       (M.dropped ? '<div class="amech-q" style="color:var(--mv-gap)">' + M.dropped + ' step(s) name an undeclared state and are not drawn; the checker names them.</div>' : '');
   }

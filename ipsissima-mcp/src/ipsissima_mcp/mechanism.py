@@ -109,6 +109,13 @@ DESIGNS = ("experiment", "replication", "quasi-experiment", "natural experiment"
 #: find what to do to bring an effect about, to predict, or to attribute responsibility -- "what
 #: cause was decisive in bringing about an effect?" (p. 112).
 GOALS = ("explain", "intervene", "predict", "attribute")
+#: HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14): the account of causation it works with -- regular
+#: succession, manipulation, a mechanism, counterfactual difference, or intra-action, where relations
+#: constitute what they relate (Hertz et al. 2024, "Eliciting the plurality of causal reasoning", Table 1;
+#: counterfactual dependence from the Primer, ch. 4).
+#: What an arrow means differs with each.
+ACCOUNTS = ("regularity", "manipulability", "mechanism", "counterfactual", "intra-action")
+EXPERIMENTAL = ("experiment", "replication", "quasi-experiment", "natural experiment")
 #: WHAT A STEP IS ABOUT: a particular case ("the assassination caused the war") or a general
 #: relation between kinds or variables ("exercise increases fitness"). They need different evidence:
 #: a general claim cannot be read off one case without background knowledge (pp. 44-47).
@@ -144,7 +151,15 @@ NOUN_ASPECTS = ("quantity", "condition")
 #: (`being`, + and -), MAINTAIN or ERODE it (`persistence`: Hu's institutions "produce and maintain
 #: race", Wimmer's "stabilizing" feedbacks), or change what KIND of thing it is (`character`,
 #: `sign: which`: Arthur's structural change, Wimmer's "transformative" feedbacks).
-ONS = ("level", "trend", "being", "persistence", "character", "possibility")
+ONS = ("level", "trend", "being", "persistence", "character", "possibility", "chance", "stock")
+#: (profile 1.14) `chance`: the step raises or lowers the CHANCE of its `to` -- "increases the risk of",
+#: "makes more likely". General causation is probabilistic, p(B|A) > p(B) (Johansson et al. 2024,
+#: p. 49), and an arrow alone cannot say "sometimes, often, or always" (Banitz et al. 2022, "Visualization
+#: of causation in social-ecological systems").
+#: `stock`: the step ADDS TO (+) or DRAINS (-) its `to`, a stock -- an inflow or an outflow. The two
+#: need not move together: "fish reproduction adds to the fish population", yet reproduction may fall
+#: while the population rises (Banitz et al. 2022, Fig. 2B), so a loop's polarity through such a
+#: step says less than it seems to.
 #: WHAT CAN HAPPEN, NOT WHAT DOES (profile 1.12). A step may OPEN or CLOSE a possibility (`on:
 #: possibility`, + and -): Hertz et al. (2020) make the "possibility space" -- what can enter an
 #: event at a moment, reconfigured by every event -- a core concept of a process ontology, and
@@ -454,12 +469,18 @@ def declared(fm):
         problems.append((sev, msg, where))
     if m.get("goal") is not None and str(m.get("goal")) not in GOALS:
         problems.append(("?", f"`goal: {m.get('goal')}` is not one of {', '.join(GOALS)}", {}))
+    for a in _as_list(m.get("account")):
+        if a not in ACCOUNTS:
+            problems.append(("?", f"`account: {a}` is not one of {', '.join(ACCOUNTS)}", {}))
     for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
         for sev, msg, _ in form_of(ch)[2]:
             problems.append((sev, f"chain `{cid}`: {msg}", {"chain": str(cid)}))
         if ch.get("goal") is not None and str(ch.get("goal")) not in GOALS:
             problems.append(("?", f"chain `{cid}`: `goal: {ch.get('goal')}` is not one of {', '.join(GOALS)}", {"chain": str(cid)}))
+        for a in _as_list(ch.get("account")):
+            if a not in ACCOUNTS:
+                problems.append(("?", f"chain `{cid}`: `account: {a}` is not one of {', '.join(ACCOUNTS)}", {"chain": str(cid)}))
         roles = ch.get("roles") or {}
         if not isinstance(roles, dict):
             problems.append(("!", f"chain `{cid}`: `roles:` must map state ids to roles", {"chain": str(cid)}))
@@ -1091,8 +1112,14 @@ def _chains(block):
                              # ITS GOAL (1.13), its own or the block's, and the CONTRAST its question sets:
                              # why this rather than what (Primer, pp. 94-95).
                              goal=_goal(ch) or _goal(block),
-                             contrast=None if ch.get("contrast") is None else str(ch.get("contrast")))
+                             contrast=None if ch.get("contrast") is None else str(ch.get("contrast")),
+                             # ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
+                             account=_account_of(ch) or _account_of(block), own_account=bool(_account_of(ch)))
     return out
+
+
+def _account_of(block):
+    return [a for a in _as_list((block or {}).get("account") if isinstance(block, dict) else None) if a in ACCOUNTS]
 
 
 def _goal(block):
@@ -1284,9 +1311,9 @@ def analyse(fm, doc):
             findings.append(("?", "mechanism", f"`on: character` says the step changes what kind of thing "
                              f"{s['dst']} is, not how much of it there is, and `sign: {s['sign']}` says how much",
                              {"title": s["title"], "fix": "give it `sign: which`"}))
-        elif s["on"] in ("being", "persistence", "possibility") and s["sign"] == "which":
-            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({ {'being': 'makes', 'persistence': 'maintains', 'possibility': 'opens'}[s['on']] }) "
-                             f"or `-` ({ {'being': 'unmakes', 'persistence': 'erodes', 'possibility': 'closes'}[s['on']] }), not `which`",
+        elif s["on"] in ("being", "persistence", "possibility", "chance", "stock") and s["sign"] == "which":
+            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({ {'being': 'makes', 'persistence': 'maintains', 'possibility': 'opens', 'chance': 'makes likelier', 'stock': 'adds to'}[s['on']] }) "
+                             f"or `-` ({ {'being': 'unmakes', 'persistence': 'erodes', 'possibility': 'closes', 'chance': 'makes less likely', 'stock': 'drains'}[s['on']] }), not `which`",
                              {"title": s["title"]}))
         for g in s["given_raw"]:
             if isinstance(g, dict) and g.get("state") not in states:
@@ -1548,6 +1575,17 @@ def analyse(fm, doc):
         sustaining=[l for l in loops_text if _sustains(l, text)],
         # CAUSAL REASONING (1.13, after Johansson et al. 2024).
         goal=_goal(block), contrast=None if (block or {}).get("contrast") is None else str(block.get("contrast")),
+        account=_account_of(block),
+        # A CHANGE IN CHANCE, AND A FLOW INTO A STOCK (1.14): neither says the `to` moves with the `from`.
+        chances=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "chance"}),
+        stocks=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "stock"}),
+        # A LOOP THROUGH A STOCK: its polarity counts flows, not co-movement (Banitz et al. 2022).
+        stock_loops=[l for l in loops_text if any(s["on"] == "stock" and (s["src"], s["dst"]) in set(zip(l, l[1:] + l[:1]))
+                                                  for s in text)],
+        # FOUND IN A CASE, CLAIMED IN GENERAL: a derived claim, extrapolated from the case (Martinez-Pena et
+        # al. 2023, "Analysis of causal argumentation in social-ecological systems research").
+        extrapolated=sorted({(s["src"], s["dst"]) for s in text_all if s["scope"] == "general"}
+                            & {(s["src"], s["dst"]) for s in text_all if s["scope"] == "singular"}),
         associations=sorted({(s["src"], s["dst"], s["sign"] or "", s["layer"]) for s in ok if s["assoc"]
                              and s["layer"] != "appraisal"}),
         # REICHENBACH'S THIRD POSSIBILITY: a state the text's own steps lead from into both ends of an
@@ -1561,6 +1599,17 @@ def analyse(fm, doc):
         one_case=sorted({(s["src"], s["dst"], s["title"]) for s in text_all if s["scope"] == "general"
                          and (s["basis"] == "example" or s["design"] in ("case study", "anecdote"))}),
     )
+    # THE ACCOUNT THE TEXT REASONS WITH (1.14), held against what the map shows it doing.
+    # A chain that declares its own account is held to its own steps.
+    for who, acc, mine, where in [("", profile["account"], text_all, {})] + [
+            (f"chain `{cid}`: ", ch["account"], [s for s in text_all if cid in s["chain"]], {"chain": cid})
+            for cid, ch in chains.items() if ch.get("own_account")]:
+        if "manipulability" in acc and not any(s["design"] in EXPERIMENTAL for s in mine):
+            findings.append(("?", "mechanism", f"{who}`account: manipulability`, and no step's evidence is an "
+                             "experiment, a quasi-experiment or a natural experiment (`design:`)", where))
+        if "intra-action" in acc and not const_ok:
+            findings.append(("?", "mechanism", f"{who}`account: intra-action`, and nothing is said to constitute "
+                             "anything (`constitutes:`): relations that make what they relate are constitutive", where))
     if profile["goal"] == "intervene" and not W["interventions"]:
         findings.append(("?", "mechanism", "`goal: intervene`, and no state has `role: intervention`: what does the "
                          "text say to do?", {}))
@@ -1713,6 +1762,7 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cp["form"] = dict(form=chains[cp["id"]].get("form", "chain"), settles=chains[cp["id"]].get("settles"))
         cp["goal"] = chains[cp["id"]].get("goal")
         cp["contrast"] = chains[cp["id"]].get("contrast")
+        cp["account"] = chains[cp["id"]].get("account") or []
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -1775,6 +1825,9 @@ def census(profile):
         lines.append(f"      question: {p['question']}")
     if p.get("contrast"):
         lines.append(f"              rather than: {p['contrast']}")
+    if p.get("account"):
+        lines.append("      account " + ", ".join(p["account"]) + " -- how the text reasons about causes; what an arrow means "
+                     "differs with each")
     if p.get("goal"):
         lines.append(f"      goal    {p['goal']}: " + {"explain": "why and how something happened",
                      "intervene": "what to do to bring an effect about", "predict": "what will happen",
@@ -1925,6 +1978,12 @@ def census(profile):
                  "transforms": f"changes what kind of thing {b} is"}.get(what, "")
         tag = {"maintains": "keeps", "transforms": "changes"}.get(what, what)
         lines.append(f"      {tag[:7]:<7} {a} -> {b}: {gloss or what} -- not more or less of it")
+    for a, b, sg in p.get("chances", []):
+        lines.append(f"      chance  {a} -> {b}: makes {b} " + {"+": "more likely", "-": "less likely"}.get(sg, "more or less likely")
+                     + " -- a change in its chance, not in whether it happens")
+    for a, b, sg in p.get("stocks", []):
+        lines.append(f"      {'outflow' if sg == '-' else 'inflow ':<7} {a} -> {b}: " + ("drains" if sg == "-" else "adds to")
+                     + f" {b}, a stock -- {b} need not move with {a}")
     for a, b, ext, whole, under, layer, title in p.get("constitution", []):
         lines.append(f"      constit {a} {'partly ' if ext == 'partial' else ''}constitutes {b}"
                      + (f", {'no more than their sum' if whole == 'aggregate' else 'through its organisation' if whole == 'organised' else 'and is nothing but them' if whole == 'reducible' else 'each making the other' if whole == 'mutual' else whole}" if whole else "")
@@ -1955,6 +2014,12 @@ def census(profile):
         lines.append(f"              common cause drawn for {a} ~ {b}: {', '.join(zs)} -- the association may be its work")
     if p.get("scopes"):
         lines.append("      scope   " + ", ".join(f"{n} {k}" for k, n in p["scopes"]) + " (a particular case, or a general relation)")
+    for l in p.get("stock_loops", []):
+        lines.append("      stock   " + " -> ".join(l + l[:1]) + ": runs through a flow into a stock -- its polarity counts "
+                     "flows, and the states need not move together")
+    for a, b in p.get("extrapolated", []):
+        lines.append(f"      extrap  {a} -> {b} is found in a particular case and also claimed in general: a derived claim, "
+                     f"which needs more than the case")
     for a, b, title in p.get("one_case", []):
         lines.append(f"      ? one   {a} -> {b} is general, and backed by one case ({title}): a general claim needs more than the case")
     for st, of, how in p.get("measures", []):
@@ -1998,6 +2063,7 @@ def census(profile):
                      f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
                      + (" -- a cycle" if (ch.get("form") or {}).get("form") == "cycle" else "")
                      + (f" -- to {ch['goal']}" if ch.get("goal") else "")
+                     + (f" -- by {', '.join(ch['account'])}" if ch.get("account") else "")
                      + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
         if ch.get("question"):
             lines.append(f"              question: {ch['question']}"

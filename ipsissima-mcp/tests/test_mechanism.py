@@ -856,6 +856,31 @@ check("`goal: intervene` with nothing to do is queried",
       any("`goal: intervene`" in m for m in am(REA.replace("goal: explain", "goal: intervene"))), True)
 check("a goal not in the list is queried", any("`goal: guess`" in m for m in am(REA.replace("goal: explain", "goal: guess"))), True)
 
+print("\nprofile 1.14: stocks, chances and accounts (Banitz et al. 2022; Hertz et al. 2024; Martinez Pena et al. 2023)")
+STO = (FIXTURE / "stocks.argdown").read_text(encoding="utf-8")
+sa = run(STO, name="stocks.argdown")["shape"]["chain"]
+sm = lambda text: [f["message"] for f in by(run(text, name="stocks.argdown"), "mechanism")]
+# Mutations: drop `chance`/`stock` from ONS -> the first two fail (and a `!` appears); drop the
+# stock_loops field -> the third; drop the singular half of `extrapolated` -> the fourth.
+check("a step on a chance is its own kind of step", sa["chances"], [["population", "collapse", "-"]])
+check("a flow into or out of a stock is its own kind of step", sa["stocks"], [["births", "population", "+"], ["catch", "population", "-"]])
+check("  and a loop through a flow into a stock is named", sa["stock_loops"], [["births", "population"]])
+check("a step found in one case and also claimed in general is an extrapolation", sa["extrapolated"], [["quota", "catch"]])
+check("  and one claimed only in general is not", run(STO.replace("scope: singular", "scope: general"), name="stocks.argdown")["shape"]["chain"]["extrapolated"], [])
+check("the account is in the profile, the block's and a chain's own", (sa["account"], [c["account"] for c in sa["chains"]]),
+      (["regularity", "intra-action"], [["manipulability"]]))
+check("`account: intra-action` with nothing constituted is queried", any("`account: intra-action`" in m for m in sm(STO)), True)
+check("  and not once something is said to constitute something",
+      any("`account: intra-action`" in m for m in sm(STO.replace(
+          '{causes: {from: population, to: births, sign: "+", basis: asserted}}',
+          '{causes: {from: population, to: births, sign: "+", basis: asserted}, constitutes: {from: births, to: population, basis: account}}'))), False)
+check("a chain's own `account: manipulability` with no experiment among its steps is queried",
+      any("chain `policy`: `account: manipulability`" in m for m in sm(STO)), True)
+check("  and not once one of its steps rests on a natural experiment",
+      any("`account: manipulability`" in m for m in sm(STO.replace("basis: example, scope: singular", "basis: study, design: natural experiment, scope: singular"))), False)
+check("an account not in the list is queried", any("`account: magic`" in m for m in sm(STO.replace("[regularity, intra-action]", "[regularity, magic]"))), True)
+check("`on: stock` with `which` is queried", any("adds to" in m and "not `which`" in m for m in sm(STO.replace('sign: "-", on: stock', 'sign: which, on: stock'))), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

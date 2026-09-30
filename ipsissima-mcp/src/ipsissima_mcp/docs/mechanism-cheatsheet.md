@@ -345,6 +345,9 @@ Keep an association apart from a cause (`association: true`), and a particular c
 general relation (`scope:`). "Association" is "often mistakenly interpreted as a term for a causal
 relation" (Johansson et al. 2024, p. 71), and a general causal claim cannot be read off one case.
 
+A flow into a stock is `on: stock` ("adds to", "drains"), not a plain raise. A change in chance is
+`on: chance`. `account:` names how the text reasons about causes, where that is plain.
+
 A process-relational text may hold that a whole and its parts make each other (`whole: mutual`), or
 that a relation belongs to several actors at once (`actor: [a, b]`) (Hertz et al. 2020, 2025).
 

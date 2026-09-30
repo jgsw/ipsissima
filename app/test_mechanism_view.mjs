@@ -267,6 +267,28 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   check(assoc.length === 1 && assoc[0].kind === "association" && !assoc[0].head && /^associated/.test(assoc[0].chip.label),
         "an association is drawn as a line with no head, labelled associated", JSON.stringify(assoc.map(e => [e.kind, e.head, e.chip.label])));
 }
+// AND ON STOCKS, CHANCES AND ACCOUNTS (profile 1.14): a stock with an inflow and an outflow, a loop
+// through the inflow, a step on a chance, an account on the block and a chain, an extrapolation.
+// Mutations: drop stock_loops from the page -> it differs; give "stock" no word -> the chip says
+// "raises"/"lowers".
+{
+  const STOF = path.join(FIXTURE, "stocks.argdown");
+  const pyT = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           STOF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MT = MV.model(graphOf(STOF));
+  const differ = Object.keys(pyT).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MT.profile.gaps.map(g => g.message) : MT.profile[k], pyT[k]));
+  check(differ.length === 0 && pyT.stocks.length === 2 && pyT.chances.length === 1 && pyT.stock_loops.length === 1 &&
+        pyT.extrapolated.length === 1 && same(pyT.account, ["regularity", "intra-action"]),
+        "the page and the checker agree on stocks, chances, stock loops, accounts and extrapolations",
+        differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
+  const LT = MV.layout(MT);
+  const word = (a, b) => LT.edges.filter(e => e.from === a && e.to === b).map(e => e.chip.label.replace(/ ↻$/, ""));
+  check(same(word("births", "population"), ["adds to"]) && same(word("catch", "population"), ["drains"]) &&
+        same(word("population", "collapse"), ["makes less likely"]),
+        "a flow says it adds to or drains its stock, and a chance step says likelier or less likely",
+        JSON.stringify(LT.edges.map(e => [e.from, e.to, e.chip.label])));
+}
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
 // `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"

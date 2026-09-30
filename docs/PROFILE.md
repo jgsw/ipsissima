@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.13 — 30 September 2026.** The machine-readable registry of everything below is
+**Version 1.14 — 30 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -208,6 +208,7 @@ mechanism:
 | `settles` | boolean | On a cycle: whether the text says it **comes to rest** (*added in 1.11*). |
 | `goal` | `explain` \| `intervene` \| `predict` \| `attribute` | What the chain is **for**: to explain why and how something happened, to find what to do, to predict, or to attribute responsibility. Also on each chain (*added in 1.13*). |
 | `contrast` | string | The **foil** the question sets: why this, *rather than* what. Also on each chain (*added in 1.13*). |
+| `account` | `regularity` \| `manipulability` \| `mechanism` \| `counterfactual` \| `intra-action`, or a list | The **account of causation** the text reasons with; an arrow means something different under each. The census holds it against the map: `manipulability` with no experimental `design:` among the steps is queried, and so is `intra-action` with nothing said to constitute anything. Also on each chain, held to that chain's own steps (*added in 1.14*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
@@ -228,7 +229,7 @@ substantially reduces adoption".
 | `basis` | `study` \| `statistics` \| `model` \| `example` \| `testimony` \| `asserted` | What the **text** offers for the step. The first three count as tested; `example` and `testimony`, and an asserted step the map argues for, as argued. |
 | `lag` | string | Timing the text states. |
 | `period` | string | **When** the step holds, in the text's words anchored to an event: "during culling", "after the order ends" (*added in 1.8*). |
-| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). |
+| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` \| `possibility` \| `chance` \| `stock` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). Since 1.14: whether it makes its `to` **more** or **less likely** (`chance`, `+` or `-`), or **adds to** or **drains** it, a stock (`stock`, `+` or `-`). |
 | `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
 | `how` | `{actor, situation, habit, response}` | Gross's decomposition of a step, only where the text gives it. |
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
@@ -620,6 +621,36 @@ say:
 - **Cycles and time.** In a diagram of kinds with feedback "there can be no time line" (p. 102). The
   chart no longer calls a declared cycle's left-to-right order a sequence.
 
+**Stocks, chances and accounts (1.14).** Three papers the Primer draws on added four things.
+
+- **A flow into a stock.** Banitz et al. (2022), "Visualization of causation in social-ecological
+  systems" (*Ecology and Society* 27(1):31), note that "+" in a loop diagram can
+  mean two things: a proportional change ("moves with") or an additive one ("adds to"). Fish
+  reproduction adds to the fish population, yet reproduction may fall while the population still
+  rises (Fig. 2B). `on: stock` on a step says
+  its `from` is a flow into (`+`) or out of (`-`) its `to`. The chip reads "adds to" or "drains".
+  The census names any loop that runs through such a step, because that loop's polarity counts
+  flows and its states need not move together.
+- **A change in chance.** An arrow cannot say "sometimes", "often" or "always" (Banitz et al.).
+  General causation is probabilistic (Primer, p. 49). `on: chance` says the step makes its `to`
+  more (`+`) or less (`-`) likely. The chip reads "makes likelier" or "makes less likely".
+- **The account of causation.** Hertz et al. (2024), "Eliciting the plurality of causal reasoning in
+  social-ecological systems research" (*Ecology and Society* 29(1):14, Table 1), name accounts
+  research works with: regularity, manipulability, mechanism, and intra-action, the entanglement of
+  causes and effects (after Barad). The Primer adds counterfactual dependence (ch. 4). `account:` on the block or a chain says which. The census holds it against the
+  map.
+- **An extrapolation.** Martínez Peña et al. (2023), "Analysis of causal argumentation in
+  social-ecological systems research", separate a paper's main claims from the claims derived from
+  them. One derived claim is an extrapolation from a case. The census lists any step the map holds
+  both for a particular case (`scope: singular`) and in general: the general claim needs more than
+  the case.
+
+**A missing arrow** means the text does not say. It does not mean there is no effect. This is a
+deliberate difference from a causal diagram of a system, in which "no arrow" says there is no
+direct causal relationship (Banitz et al. 2022, Fig. 2A). The chart maps what a text says, so its
+silence is the text's. A finding of no effect is a `"0"` step, drawn as its own line. The Legend
+says so.
+
 ## 6. The source file
 
 The text a map reads is a Markdown file. Its YAML front matter may carry:
@@ -720,8 +751,9 @@ rule: name your gaps).
   to one regime. A threshold's value and scale, hysteresis (reversing the cause does not reverse
   the effect), and a balancing loop around whichever state holds (Lenton's circulation) are said in
   words, in `threshold:` or the note.
-- **Possibility, not probability.** `hedged: true` says the text puts a step as a possibility;
-  there is no field for a probabilistic claim ("tends to", "raises the chance of").
+- **Possibility and probability.** `hedged: true` says the text puts a step as a possibility. Since
+  1.14, `on: chance` says a step raises or lowers the chance of its effect. A probability's size, and
+  the shape of a relation (a curve, saturation), are still said only in words, in `size:` or the note.
 - **A state with no owner** (since 1.11) is placed by its `levels:`. A structural state the text does
   attribute to something ("the social field") still takes that as its actor.
 - **A step is a property of the claim that states it.** An objection or a piece of evidence can
@@ -732,6 +764,14 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.14** (30 September 2026) added, after Banitz et al. (2022), Hertz et al. (2024) and Martínez
+Peña et al. (2023):
+- `on: chance` and `on: stock` on a step;
+- `account` on the block and on a chain.
+
+The census also names loops through a stock and extrapolations from a case, and holds the
+account against the map. Every 1.13 file conforms unchanged.
 
 **1.13** (30 September 2026) added, after Johansson et al. (2024):
 - `association` and `scope` on a step;
