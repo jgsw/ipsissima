@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.12 — 30 September 2026.** The machine-readable registry of everything below is
+**Version 1.13 — 30 September 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -206,6 +206,8 @@ mechanism:
 | `within` | map of level to level | **Each level's parent**, where the levels nest: a tree, so siblings sit side by side within their parent (*added in 1.10*). |
 | `form` | `chain` \| `cycle` | **A cycle** of reproduction and transformation, not a chain from causes to ends: it is not asked where it starts or what it is for. Also on each chain (*added in 1.11*). |
 | `settles` | boolean | On a cycle: whether the text says it **comes to rest** (*added in 1.11*). |
+| `goal` | `explain` \| `intervene` \| `predict` \| `attribute` | What the chain is **for**: to explain why and how something happened, to find what to do, to predict, or to attribute responsibility. Also on each chain (*added in 1.13*). |
+| `contrast` | string | The **foil** the question sets: why this, *rather than* what. Also on each chain (*added in 1.13*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
@@ -244,7 +246,7 @@ substantially reduces adoption".
 | `modifies` | `{by, effect, period}`, or a list of them | A state that **moderates** the step: `effect` is `strengthens`, `weakens`, `reverses`, or `"0"` where the text finds it does **not** moderate it (*added in 1.9*). |
 | `necessary` | boolean | The step's `to` holds **only if** its `from` does (*added in 1.9*). |
 | `sufficient` | boolean | `true`: the cause, with any `jointly` co-causes, brings the effect about **on its own**. `false`: the text says it is **not enough** on its own (*added in 1.9*). |
-| `design` | string | The **design** of the evidence, in the text's words; `experiment`, `replication`, `quasi-experiment`, `observational`, `case study`, `illustration`, `anecdote`, `review` and `simulation` are read. An `illustration` is a hypothetical case (*added in 1.9*). |
+| `design` | string | The **design** of the evidence, in the text's words; `experiment`, `replication`, `quasi-experiment`, `natural experiment`, `observational`, `case study`, `illustration`, `anecdote`, `review` and `simulation` are read. An `illustration` is a hypothetical case (*added in 1.9*). |
 | `attribution` | `intentional` \| `mechanical` \| `inadvertent` \| `accidental` \| `complex`, or `{type, by}` | The **type of causing** the step attributes, and `by` **whose** action or intention it is, an actor (*added in 1.9*). |
 | `measured_by` | state id, or list of them | The **measure** the step's evidence is read from, a state with `measures` (*added in 1.9*). |
 | `stance` | `rejected` \| `unjudged` | On a `#reported` or `#contested` step: whether the text sets the view out to **reject** it or leaves it **unjudged** (*added in 1.9*). |
@@ -586,6 +588,38 @@ They confirmed that a thing is a sequence of events "upheld by" recurrent proces
   maintains the next. Examples are practices "entangled in that they entail each other and thereby
   keep a given cut in place" (2025, Box 1), and Wimmer's stabilising feedbacks.
 
+**Causal reasoning (1.13).** Johansson, Banitz, Grimm, Hertz, Lindkvist, Martínez Peña,
+Radosavljevic, Ylikoski and Schlüter, *A Primer to Causal Reasoning About a Complex World* (2024),
+confirmed the line 1.11 drew between cause and constitution: "confusing part-whole relations with
+causal relations can lead to confused causal analysis" (p. 97). It added four things a map needs to
+say:
+
+- **An association is not a cause.** "Association" is "often mistakenly interpreted as a term for a
+  causal relation" (p. 71). A correlation in a population has three possible sources (Reichenbach):
+  X causes Y, Y causes X, or they have a common cause.
+  - `association: true` on a step says the text reports that the two go together and does not say one
+    brings the other about. It is drawn as a brown line with no head, and never walked.
+  - The census names any **common cause** the text's own steps draw into both ends.
+  - A causal step whose own words say "associated", "correlated" or "linked" is queried.
+- **A particular case, or a general relation.** Causation is "primarily a relation between individual
+  events", and secondarily between kinds and variables (p. 53). They need different evidence. `scope:
+  singular | general` on a step says which. The census lists a general step backed only by an
+  `example`, a `case study` or an `anecdote`.
+- **What the chain is for.** A study's goal may be to predict, intervene, explain or attribute
+  responsibility (p. 112), and it shapes which causes are picked out. `goal:` on the block or a chain
+  says which. The census queries `intervene` with nothing to do, and `attribute` with no
+  `attribution:`.
+- **The contrast.** "The contrast helps to pick up a causal difference-maker" (p. 95): why this rather
+  than what. `contrast:` on the block or a chain gives the foil.
+
+`design:` reads `natural experiment`. Two more points need no key:
+- **Functional explanation.** A text that explains something by what it does ("X persists because
+  it does Y") gives a causal history in disguise (pp. 97–98). Map it as a loop: X brings Y about,
+  and Y maintains X (`on: persistence`). If the text names no mechanism for the second step, say so
+  in the note: a mechanism named is not a mechanism described (p. 100).
+- **Cycles and time.** In a diagram of kinds with feedback "there can be no time line" (p. 102). The
+  chart no longer calls a declared cycle's left-to-right order a sequence.
+
 ## 6. The source file
 
 The text a map reads is a Markdown file. Its YAML front matter may carry:
@@ -698,6 +732,14 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.13** (30 September 2026) added, after Johansson et al. (2024):
+- `association` and `scope` on a step;
+- `goal` and `contrast` on the block and on a chain;
+- `natural experiment` among the designs.
+
+The census also names common causes of reported associations, and queries a general step from one
+case and a causal step in the words of an association. Every 1.12 file conforms unchanged.
 
 **1.12** (30 September 2026) added, after Hertz et al. (2020, 2025):
 - `on: possibility` on a step;

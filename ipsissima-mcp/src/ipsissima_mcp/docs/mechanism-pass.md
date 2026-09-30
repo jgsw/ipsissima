@@ -138,6 +138,9 @@ mechanism:
   than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
   `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
   whether it comes to rest.
+- **What the chain is for, and against what** (*1.13*): `goal:` is `explain`, `intervene`, `predict`
+  or `attribute` (responsibility), where the text makes it plain. `contrast:` gives the foil its
+  question sets ("why here, rather than there").
 - **Possibility** (*1.12*):
   - a step that opens up or closes off what *can* happen is `on: possibility` (`+` or `-`);
   - a state the text sets out only as a possibility (an option, a path not yet taken) is
@@ -159,6 +162,16 @@ it is `on: being` (`+` makes, `-` unmakes). One that keeps its effect going or w
 `on: persistence` (`+` maintains or reproduces, `-` erodes). One that changes what kind of thing its
 effect is, is `on: character` with `sign: which`. Use these where the text's verb is *produce,
 create, maintain, sustain, reproduce, erode, transform*: "raises" would turn the verb into a noun.
+
+**An association is not a step** (*1.13*). Where the text reports only that two things go together
+("associated with", "correlated with", "linked to"), mark `association: true`. The checker queries a
+causal step in those words. Mark the step as causal only if the text says one brings the other about.
+Say whether a step is about a particular case or a general relation (`scope: singular | general`)
+where the difference matters: a general claim needs more than one case.
+
+**A functional explanation is a loop** (*1.13*). "X persists because it does Y" means X brings Y
+about and Y maintains X (`on: persistence`). If the text names the second step's mechanism without
+describing it, say so in the note.
 
 **Constitution is not a step** (*1.11*). Where the text says something *constitutes*, *partly
 forms*, *makes up* or *defines* something else, mark it with `constitutes:`, never with `causes:`:

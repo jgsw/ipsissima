@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.12",
+  "version": "1.13",
   "date": "2026-09-28",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -77,9 +77,11 @@
     "within": {"type": "map of level to level", "summary": "Each level's parent, where the levels nest: a tree, siblings side by side within their parent (since 1.10)."},
     "form": {"type": "chain | cycle", "default": "chain", "summary": "A cycle of reproduction and transformation: not asked where it starts or what it is for, and whatever its loops pass through counts as reached. Also on each chain (since 1.11)."},
     "settles": {"type": "boolean", "summary": "On a cycle: whether the text says it comes to rest (since 1.11)."},
+    "goal": {"type": "explain | intervene | predict | attribute", "summary": "What the chain is for: to explain why and how, to find what to do, to predict, or to attribute responsibility. Also on each chain (since 1.13)."},
+    "contrast": {"type": "string", "summary": "The foil the question sets: why this, rather than what. Also on each chain (since 1.13)."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
     "kinds": {"type": "map of id to kind", "keys": {"label": "string", "general": "a state id of this kind: the general claim, of which the kind's other states are cases (since 1.7)"}, "summary": "Kinds of state that recur across cases; states of one kind are never walked as one (since 1.6)."},
-    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
+    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)", "goal": "explain | intervene | predict | attribute (since 1.13)", "contrast": "string (since 1.13)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
     "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id, or (since 1.12) a list of them: a relation or a doing of several actors together; may be left out where `levels` places a process with no owner (since 1.11)", "status": "actual | possible | open: whether the state is actual, a possibility the text sets out, or what the text says cannot be specified in advance (since 1.12)", "aspect": "quantity | activity | development | event | condition: what kind of occurrence the state is, from the text's own grammar (since 1.11)", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)", "kind": "a kind id: the declared kind this state is a case of (since 1.6)", "measures": "a state id: the state this one is a measure, indicator or estimate of -- a reading of it, never walked as its cause (since 1.9)", "method": "string: how that measure is taken, in the text's words (since 1.9)"}}
   },
 
@@ -108,10 +110,12 @@
     "modifies": {"type": "{by, effect, period}, or a list of them", "values": ["strengthens", "weakens", "reverses", "0"], "summary": "A state that moderates the step: `effect` strengthens, weakens or reverses it, or -- \"0\" -- the text finds it does not moderate it. The moderator is linked by the step, never walked as a cause (since 1.9)."},
     "necessary": {"type": "boolean", "summary": "The step's `to` holds only where its `from` does: \"only if\". Drawn \"needed for\", not \"raises\" (since 1.9)."},
     "sufficient": {"type": "boolean", "summary": "`true`: the cause, with any `jointly` co-causes, brings the effect about on its own. `false`: the text says it is not enough on its own (since 1.9)."},
-    "design": {"type": "string", "values": ["experiment", "replication", "quasi-experiment", "observational", "case study", "illustration", "anecdote", "review", "simulation"], "summary": "The design of the evidence for the step, in the text's words; these values are read, others kept as written. `illustration` is a hypothetical case, shaded as asserted (since 1.9)."},
+    "design": {"type": "string", "values": ["experiment", "replication", "quasi-experiment", "natural experiment", "observational", "case study", "illustration", "anecdote", "review", "simulation"], "summary": "The design of the evidence for the step, in the text's words; these values are read, others kept as written. `illustration` is a hypothetical case, shaded as asserted (since 1.9)."},
     "attribution": {"type": "enum, or {type, by}", "values": ["intentional", "mechanical", "inadvertent", "accidental", "complex"], "summary": "The type of causing the step attributes, after Stone (1989): purposeful or not, intended or not, guided through another agent, or a web with no single locus; `by` names the actor whose action or intention it is (since 1.9)."},
     "measured_by": {"type": "state id or list of state ids", "summary": "The measure the step's evidence is read from: a state with `measures`. A step into that measure other than from what it measures is a bias that bears on the evidence, drawn as an undercut (since 1.9)."},
-    "stance": {"type": "enum", "values": ["rejected", "unjudged"], "summary": "On a #reported or #contested step: whether the text sets out the view to reject it or leaves it unjudged. A report the text endorses is a claim in its own voice, not a stance (since 1.9)."}
+    "stance": {"type": "enum", "values": ["rejected", "unjudged"], "summary": "On a #reported or #contested step: whether the text sets out the view to reject it or leaves it unjudged. A report the text endorses is a claim in its own voice, not a stance (since 1.9)."},
+    "association": {"type": "boolean", "summary": "The text reports that the two go together and does not say one brings the other about: drawn without a head, never walked; the census names any common cause drawn (since 1.13)."},
+    "scope": {"type": "enum", "values": ["singular", "general"], "summary": "Whether the step is about a particular case or a general relation between kinds or variables (since 1.13)."}
   },
 
   "constitutes": {

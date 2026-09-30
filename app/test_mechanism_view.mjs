@@ -246,6 +246,27 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   check(top("grafting").includes("possible") && top("surplus").includes("open") && !top("fishing").some(k => k === "possible" || k === "open"),
         "what is not (yet) actual is marked ◌ or … by the layout, and nothing else is", JSON.stringify({ grafting: top("grafting"), surplus: top("surplus") }));
 }
+// AND ON CAUSAL REASONING (profile 1.13, after Johansson et al. 2024): an association with a common
+// cause drawn, singular and general steps, a general step from one case, a goal and a contrast.
+// Mutations: walk associations as steps -> `routes` and the no-arrow check fail; drop common_causes
+// -> it differs; give associations a head -> the head check fails.
+{
+  const REAF = path.join(FIXTURE, "reasoning.argdown");
+  const pyA = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           REAF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MA = MV.model(graphOf(REAF));
+  const differ = Object.keys(pyA).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MA.profile.gaps.map(g => g.message) : MA.profile[k], pyA[k]));
+  check(differ.length === 0 && pyA.associations.length === 1 && same(pyA.common_causes, [["cousins", "cash", ["trust"]]]) &&
+        pyA.goal === "explain" && pyA.contrast === "in banks and stock" && pyA.one_case.length === 1,
+        "the page and the checker agree on associations, common causes, scope, goal and contrast",
+        differ.map(k => `${k}: python ${JSON.stringify(pyA[k])} js ${JSON.stringify(MA.profile[k])}`).join("\n          "));
+  check(!pyA.routes.some(r => r.start === "cousins"), "an association is never walked as a route", JSON.stringify(pyA.routes));
+  const LA = MV.layout(MA);
+  const assoc = LA.edges.filter(e => e.from === "cousins" && e.to === "cash");
+  check(assoc.length === 1 && assoc[0].kind === "association" && !assoc[0].head && /^associated/.test(assoc[0].chip.label),
+        "an association is drawn as a line with no head, labelled associated", JSON.stringify(assoc.map(e => [e.kind, e.head, e.chip.label])));
+}
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
 // `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"

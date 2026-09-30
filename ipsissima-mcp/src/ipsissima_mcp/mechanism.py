@@ -102,8 +102,22 @@ STANCES = ("rejected", "unjudged")
 #: THE TEXT'S OWN WORDS FOR ITS EVIDENCE (profile 1.9, G10), where `basis` is too coarse. These
 #: few are read; anything else is kept as written. `illustration` is a hypothetical case: it
 #: shows how a step could go, not that it does, and is never shaded as evidence.
-DESIGNS = ("experiment", "replication", "quasi-experiment", "observational", "case study",
-           "illustration", "anecdote", "review", "simulation")
+DESIGNS = ("experiment", "replication", "quasi-experiment", "natural experiment", "observational",
+           "case study", "illustration", "anecdote", "review", "simulation")
+#: CAUSAL REASONING, AFTER JOHANSSON ET AL. (2024), A Primer to Causal Reasoning About a Complex World
+#: (profile 1.13, 30 Sep 2026). What a chain is FOR: to explain why and how something happened, to
+#: find what to do to bring an effect about, to predict, or to attribute responsibility -- "what
+#: cause was decisive in bringing about an effect?" (p. 112).
+GOALS = ("explain", "intervene", "predict", "attribute")
+#: WHAT A STEP IS ABOUT: a particular case ("the assassination caused the war") or a general
+#: relation between kinds or variables ("exercise increases fitness"). They need different evidence:
+#: a general claim cannot be read off one case without background knowledge (pp. 44-47).
+SCOPES = ("singular", "general")
+#: WORDS THAT REPORT AN ASSOCIATION, NOT A CAUSE. "Association" is "often mistakenly interpreted as a
+#: term for a causal relation" (p. 71). A step in these words is queried.
+# Lower case only: "the Association of Ambulance Chief Executives" is a name, not a finding (the
+# health-system map, 30 Sep 2026).
+ASSOCIATED = re.compile(r"\b(associat(ed|ion|ions)|correlat(ed|es|ion|ions)|linked (to|with)|co-?occur\w*|go(es)? together)\b")
 
 #: WORDS THAT DENY SUFFICIENCY, NOT EFFECT. "Will not itself destroy", "do not quietly vanish",
 #: "perhaps not exorcized": Merton limits a remedy's effect, and three nulls read him as finding
@@ -438,10 +452,14 @@ def declared(fm):
         problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
     for sev, msg, where in form_of(m)[2]:
         problems.append((sev, msg, where))
+    if m.get("goal") is not None and str(m.get("goal")) not in GOALS:
+        problems.append(("?", f"`goal: {m.get('goal')}` is not one of {', '.join(GOALS)}", {}))
     for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
         for sev, msg, _ in form_of(ch)[2]:
             problems.append((sev, f"chain `{cid}`: {msg}", {"chain": str(cid)}))
+        if ch.get("goal") is not None and str(ch.get("goal")) not in GOALS:
+            problems.append(("?", f"chain `{cid}`: `goal: {ch.get('goal')}` is not one of {', '.join(GOALS)}", {"chain": str(cid)}))
         roles = ch.get("roles") or {}
         if not isinstance(roles, dict):
             problems.append(("!", f"chain `{cid}`: `roles:` must map state ids to roles", {"chain": str(cid)}))
@@ -520,6 +538,11 @@ def steps(doc, appraisal):
                     # SELECTION: a link that holds because of WHO ends up on each side -- the
                     # screening effect -- not because one state brings the other about.
                     selects=bool(c.get("selects")),
+                    # AN ASSOCIATION (profile 1.13): the text reports that the two go together and does
+                    # not say one brings the other about -- reported, drawn without a head, never walked.
+                    assoc=bool(c.get("association")),
+                    # SCOPE (1.13): a particular case, or a general relation.
+                    scope="" if c.get("scope") is None else str(c.get("scope")),
                     hedged=bool(c.get("hedged")),
                     basis=basis, tier=tier, lag=c.get("lag"),
                     given=[_cond(g) for g in given], given_raw=given,
@@ -1064,8 +1087,17 @@ def _chains(block):
         out[str(cid)] = dict(label=None if ch.get("label") is None else str(ch.get("label")),
                              question=None if ch.get("question") is None else str(ch.get("question")),
                              roles={str(k): v for k, v in roles.items()},
-                             form=form, settles=settles)
+                             form=form, settles=settles,
+                             # ITS GOAL (1.13), its own or the block's, and the CONTRAST its question sets:
+                             # why this rather than what (Primer, pp. 94-95).
+                             goal=_goal(ch) or _goal(block),
+                             contrast=None if ch.get("contrast") is None else str(ch.get("contrast")))
     return out
+
+
+def _goal(block):
+    g = (block or {}).get("goal") if isinstance(block, dict) else None
+    return str(g) if g is not None and str(g) in GOALS else None
 
 
 def analyse(fm, doc):
@@ -1307,6 +1339,20 @@ def analyse(fm, doc):
             findings.append(("?", "mechanism",
                              "a step cannot be both a null finding and a selection link",
                              {"title": s["title"]}))
+        if s["assoc"] and (s["selects"] or s["null"]):
+            findings.append(("?", "mechanism", "an association is neither a selection link nor a finding of no "
+                             "effect: keep one", {"title": s["title"]}))
+        if s["scope"] and s["scope"] not in SCOPES:
+            findings.append(("?", "mechanism", f"`scope: {s['scope']}` is not `singular` or `general`",
+                             {"title": s["title"]}))
+        # "ASSOCIATED WITH" IS NOT "CAUSES" (1.13). A step whose own words report an association, and
+        # which is not marked as one, may say more than the text does.
+        m_ = ASSOCIATED.search(s["text"] or "")
+        if m_ and not s["assoc"] and not s["null"] and not s["selects"]:
+            findings.append(("?", "mechanism", f"{s['src']} -> {s['dst']} is a causal step, in words that report an "
+                             f"association (\"{m_.group(0)}\")", {"title": s["title"],
+                             "fix": "if the text reports only that the two go together, mark `association: true`; "
+                                    "keep the step if the text says one brings the other about"}))
         if isinstance(s["how"], dict):
             extra = set(s["how"]) - {"actor", "situation", "habit", "response"}
             if extra:
@@ -1322,7 +1368,7 @@ def analyse(fm, doc):
     ok = [s for s in all_steps if s["src"] in states and s["dst"] in states]
     # ONLY CAUSAL STEPS CARRY THE CHAIN. A null finding says nothing is carried; a selection link
     # says the association is not an effect. Both are reported, neither is walked.
-    causal = [s for s in ok if not s["null"] and not s["selects"]]
+    causal = [s for s in ok if not s["null"] and not s["selects"] and not s["assoc"]]
     text_all = [s for s in ok if s["layer"] == "text"]
     text = [s for s in causal if s["layer"] == "text"]
     text_edges = {(s["src"], s["dst"]) for s in text}
@@ -1472,7 +1518,7 @@ def analyse(fm, doc):
         rests_on=[[a, b, sg, mb, list(bias)] for a, b, sg, mb, bias in sorted({
             (s["src"], s["dst"], s["sign"] or "", mb,
              # a step from the measured state into its measure is the measure working, not a bias
-             tuple(sorted({r["src"] for r in ok if r["dst"] == mb and not r["null"] and not r["selects"]
+             tuple(sorted({r["src"] for r in ok if r["dst"] == mb and not r["null"] and not r["selects"] and not r["assoc"]
                            and r["src"] != (states.get(mb) or {}).get("measures")})))
             for s in text_all for mb in s["measured_by"] if mb in states})],
         # PROCESS, FORMATION AND CONSTITUTION (profile 1.11).
@@ -1500,7 +1546,27 @@ def analyse(fm, doc):
         # Wimmer's "stabilizing" feedbacks, the entanglements that "keep a given cut in place" (Hertz et
         # al. 2025), Bickhard's recursive self-maintenance.
         sustaining=[l for l in loops_text if _sustains(l, text)],
+        # CAUSAL REASONING (1.13, after Johansson et al. 2024).
+        goal=_goal(block), contrast=None if (block or {}).get("contrast") is None else str(block.get("contrast")),
+        associations=sorted({(s["src"], s["dst"], s["sign"] or "", s["layer"]) for s in ok if s["assoc"]
+                             and s["layer"] != "appraisal"}),
+        # REICHENBACH'S THIRD POSSIBILITY: a state the text's own steps lead from into both ends of an
+        # association is a common cause, drawn -- the association may be its work (Primer, pp. 82-83).
+        common_causes=sorted([a, b, sorted({z for z in ids if (z, a) in text_edges and (z, b) in text_edges})]
+                             for a, b in {(s["src"], s["dst"]) for s in ok if s["assoc"] and s["layer"] != "appraisal"}
+                             if any((z, a) in text_edges and (z, b) in text_edges for z in ids)),
+        scopes=sorted([k, n] for k, n in _count(s["scope"] for s in text_all if s["scope"] in SCOPES).items()),
+        # A GENERAL CLAIM FROM ONE CASE: "causal relations cannot be inferred only from singular case
+        # studies" without background knowledge (Primer, p. 46).
+        one_case=sorted({(s["src"], s["dst"], s["title"]) for s in text_all if s["scope"] == "general"
+                         and (s["basis"] == "example" or s["design"] in ("case study", "anecdote"))}),
     )
+    if profile["goal"] == "intervene" and not W["interventions"]:
+        findings.append(("?", "mechanism", "`goal: intervene`, and no state has `role: intervention`: what does the "
+                         "text say to do?", {}))
+    if profile["goal"] == "attribute" and not any(s["attribution"] for s in ok):
+        findings.append(("?", "mechanism", "`goal: attribute`, and no step says what kind of causing it attributes "
+                         "(`attribution:`)", {}))
     for cp in chain_profiles:
         if not cp["steps"]:
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
@@ -1540,7 +1606,7 @@ def _disputed(ok, edges):
     against = {(a, b) for a, b, kind in edges if kind in ("attack", "contradictory")}
     by = {}
     for s in ok:
-        if not s["selects"]:
+        if not s["selects"] and not s.get("assoc"):
             by.setdefault((s["src"], s["dst"]), set()).add(s["title"])
     out = set()
     for (a, b), titles in by.items():
@@ -1560,7 +1626,7 @@ def _accounts(ids, ok):
     together; nor did it see that the radical story opens the conservative story's cause
     (advertising -> choice). An account is a claim's step into the state; what opens it is another
     claim's step into that account's cause (wave 4, 28 Sep 2026)."""
-    steps_ = [s for s in ok if not s["null"] and not s["selects"] and s["layer"] != "appraisal"]
+    steps_ = [s for s in ok if not s["null"] and not s["selects"] and not s.get("assoc") and s["layer"] != "appraisal"]
     out = []
     for i in ids:
         into = [s for s in steps_ if s["dst"] == i]
@@ -1645,6 +1711,8 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
                                         if tuple(case) in mine and tuple(gen) in edges_of[o["id"]]})] if n]
         # ITS FORM (1.11): a chain or a cycle, and whether the text says the cycle comes to rest.
         cp["form"] = dict(form=chains[cp["id"]].get("form", "chain"), settles=chains[cp["id"]].get("settles"))
+        cp["goal"] = chains[cp["id"]].get("goal")
+        cp["contrast"] = chains[cp["id"]].get("contrast")
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -1658,7 +1726,7 @@ def _strata(text_all):
     holds (gap tests, 27 Sep 2026). Only a pair with two or more records and a condition on one."""
     by = {}
     for s in text_all:
-        if s["selects"]:
+        if s["selects"] or s.get("assoc"):
             continue
         by.setdefault((s["src"], s["dst"]), set()).add((s["sign"] or "", tuple(s["given"]), s["period"], s["size"]))
     # A PERIOD IS A CONDITION OF TIME (G7): the badger cull's effect during culling and its null
@@ -1705,6 +1773,12 @@ def census(profile):
              f"claim(s); {p['states']} state(s) declared"]
     if p.get("question"):
         lines.append(f"      question: {p['question']}")
+    if p.get("contrast"):
+        lines.append(f"              rather than: {p['contrast']}")
+    if p.get("goal"):
+        lines.append(f"      goal    {p['goal']}: " + {"explain": "why and how something happened",
+                     "intervene": "what to do to bring an effect about", "predict": "what will happen",
+                     "attribute": "what cause was decisive, and whose"}[p["goal"]])
     lines.append(f"      height  {tall} of {len(p['levels'])} level(s)"
                  + (f": {', '.join(p['levels_spanned'])}" if tall else "")
                  + ("  (tall: expect to need several kinds of evidence)" if tall >= 3 else ""))
@@ -1874,6 +1948,15 @@ def census(profile):
     for a, b, sl, cl in p.get("readings", []):
         voice = {"text": "the text's own", "rival": "a view the text reports"}
         lines.append(f"      reading {a} -> {b}: causal in {voice.get(sl, sl)}, constitutive in {voice.get(cl, cl)}")
+    for a, b, sg, layer in p.get("associations", []):
+        lines.append(f"      assoc   {a} ~ {b}{' (' + sg + ')' if sg else ''}: the text reports they go together, not that one "
+                     f"brings the other about{' (a view it reports)' if layer == 'rival' else ''} -- never walked")
+    for a, b, zs in p.get("common_causes", []):
+        lines.append(f"              common cause drawn for {a} ~ {b}: {', '.join(zs)} -- the association may be its work")
+    if p.get("scopes"):
+        lines.append("      scope   " + ", ".join(f"{n} {k}" for k, n in p["scopes"]) + " (a particular case, or a general relation)")
+    for a, b, title in p.get("one_case", []):
+        lines.append(f"      ? one   {a} -> {b} is general, and backed by one case ({title}): a general claim needs more than the case")
     for st, of, how in p.get("measures", []):
         lines.append(f"      measure {st} measures {of}" + (f" ({how})" if how else "")
                      + " -- a reading of it, not a cause: steps into it are about the measurement")
@@ -1914,9 +1997,11 @@ def census(profile):
                      f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
                      f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
                      + (" -- a cycle" if (ch.get("form") or {}).get("form") == "cycle" else "")
+                     + (f" -- to {ch['goal']}" if ch.get("goal") else "")
                      + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
         if ch.get("question"):
-            lines.append(f"              question: {ch['question']}")
+            lines.append(f"              question: {ch['question']}"
+                         + (f" (rather than: {ch['contrast']})" if ch.get("contrast") else ""))
         for st, others in ch["shared"]:
             here = "/".join(ch["roles"].get(st, [])) or "no role"
             there = "; ".join(f"{o}: " + ("/".join(by_id[o]["roles"].get(st, [])) or "no role")

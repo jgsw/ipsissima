@@ -78,6 +78,10 @@ var BASES = ["study", "statistics", "model", "example", "testimony", "asserted"]
 // PROCESS, FORMATION AND CONSTITUTION (profile 1.11) -- mechanism.py's ASPECTS, FORMATION and FORMS.
 var ASPECTS = ["quantity", "activity", "development", "event", "condition"];
 var FORMATION = ["being", "persistence", "character", "possibility"];
+// CAUSAL REASONING (profile 1.13) -- mechanism.py's GOALS and SCOPES.
+var GOALS = ["explain", "intervene", "predict", "attribute"];
+var SCOPES = ["singular", "general"];
+function goalOf(b) { var g = obj(b).goal; return g != null && GOALS.indexOf(String(g)) >= 0 ? String(g) : null; }
 /** The form a block or a chain declares -- mechanism.py's form_of, less its problems. */
 function formOf(b) {
   b = obj(b);
@@ -199,6 +203,8 @@ function model(graph) {
         sign: sign, basis: raw.basis || null, tier: tier, fidelity: FIDELITY.indexOf(c.fidelity) >= 0 ? c.fidelity : "compression",
         // A NULL FINDING (sign 0) and a SELECTION LINK are reported, never walked: see mechanism.py.
         isNull: sign === "0", selects: !!raw.selects, hedged: !!raw.hedged,
+        // AN ASSOCIATION and a SCOPE (profile 1.13) -- see mechanism.py.
+        assoc: !!raw.association, scope: raw.scope == null ? "" : String(raw.scope),
         lag: raw.lag == null ? "" : String(raw.lag), given: given.map(condText),
         how: raw.how && typeof raw.how === "object" ? raw.how : null,
         reflexive: !!raw.reflexive, supports: supports,
@@ -249,13 +255,14 @@ function model(graph) {
   });
   var ordering = levelOrder(block, levels);
   var form = formOf(block);
+  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast) };
   return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
-           form: form, constitutions: consts,
+           form: form, constitutions: consts, reasoning: reasoning,
            profile: profile(levels, actors, states, ids, ok,
                             m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering,
-                            form, consts) };
+                            form, consts, reasoning) };
 }
 
 function reach(start, edges) {
@@ -463,7 +470,9 @@ function chainsOf(block) {
     var f = formOf(c.form != null ? c : block);
     out.push({ id: String(id), label: c.label == null ? null : String(c.label),
                question: c.question == null ? null : String(c.question), roles: obj(c.roles),
-               form: f.form, settles: f.settles });
+               form: f.form, settles: f.settles,
+               // ITS GOAL (1.13), its own or the block's, and its CONTRAST -- as the checker has it.
+               goal: goalOf(c) || goalOf(block), contrast: c.contrast == null ? null : String(c.contrast) });
   });
   return out;
 }
@@ -696,6 +705,8 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     // ITS FORM (1.11) -- as the checker has it.
     var ch = chains.filter(function (c) { return c.id === cp.id; })[0] || {};
     cp.form = { form: ch.form || "chain", settles: ch.settles == null ? null : ch.settles };
+    cp.goal = ch.goal == null ? null : ch.goal;
+    cp.contrast = ch.contrast == null ? null : ch.contrast;
   });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
@@ -717,7 +728,7 @@ function isAppraisalNode(n) { return (n.tags || []).indexOf("appraisal") >= 0; }
  *  mechanism.py's _disputed. */
 function disputedOf(steps, against) {
   var by = {}, out = [];
-  steps.forEach(function (s) { if (s.selects || !s.claim) return;
+  steps.forEach(function (s) { if (s.selects || s.assoc || !s.claim) return;
     var k = s.from + "\u0000" + s.to, l = by[k] = by[k] || { from: s.from, to: s.to, titles: [] };
     if (l.titles.indexOf(s.claim.title) < 0) l.titles.push(s.claim.title); });
   Object.keys(by).forEach(function (k) { var l = by[k];
@@ -726,14 +737,14 @@ function disputedOf(steps, against) {
   return uniqSorted(out);
 }
 
-function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against, ordering, form, consts) {
-  form = form || { form: "chain", settles: null }; consts = consts || [];
+function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against, ordering, form, consts, reasoning) {
+  form = form || { form: "chain", settles: null }; consts = consts || []; reasoning = reasoning || { goal: null, contrast: null };
   // What each state constitutes, in the text's own voice (1.11) -- as the checker has it.
   var constituted = {};
   consts.forEach(function (c) { if (c.layer !== "text") return;
     var w = c.toActor ? "actor:" + c.to : c.to, l = constituted[c.from] = constituted[c.from] || [];
     if (l.indexOf(w) < 0) l.push(w); });
-  var causal = steps.filter(function (s) { return !s.isNull && !s.selects; });
+  var causal = steps.filter(function (s) { return !s.isNull && !s.selects && !s.assoc; });
   var textAll = steps.filter(function (s) { return s.layer === "text"; });
   var text = causal.filter(function (s) { return s.layer === "text"; });
   // A CO-CAUSE IS A CAUSE, as the checker has it: routes, loops and dead ends run through it.
@@ -891,7 +902,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     rests_on: uniqSorted([].concat.apply([], textAll.map(function (s) {
       return (s.measuredBy || []).filter(function (mb) { return has(states, mb); }).map(function (mb) {
         var bias = {};
-        steps.forEach(function (r) { if (r.to === mb && !r.isNull && !r.selects && r.from !== obj(states[mb]).measures) bias[r.from] = true; });
+        steps.forEach(function (r) { if (r.to === mb && !r.isNull && !r.selects && !r.assoc && r.from !== obj(states[mb]).measures) bias[r.from] = true; });
         return [s.from, s.to, s.sign, mb, Object.keys(bias).sort()]; }); }))),
     // PROCESS, FORMATION AND CONSTITUTION (profile 1.11) -- mechanism.py's, field for field.
     form: { form: form.form, settles: form.settles },
@@ -913,7 +924,22 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     mutual: uniqSorted(consts.filter(function (c) { return c.layer === "text" && !c.toActor && consts.some(function (d) {
                          return d.layer === "text" && !d.toActor && d.from === c.to && d.to === c.from; }); })
                              .map(function (c) { return [c.from, c.to].sort(); })),
-    sustaining: loopsText.filter(function (l) { return sustains(l, text); })
+    sustaining: loopsText.filter(function (l) { return sustains(l, text); }),
+    // CAUSAL REASONING (1.13) -- mechanism.py's, field for field.
+    goal: reasoning.goal, contrast: reasoning.contrast,
+    associations: uniqSorted(steps.filter(function (s) { return s.assoc && s.layer !== "appraisal"; })
+                                  .map(function (s) { return [s.from, s.to, s.sign, s.layer]; })),
+    common_causes: (function () {
+      var have = {}; edges.forEach(function (e) { have[e[0] + "\u0000" + e[1]] = true; });
+      var pairs = uniqSorted(steps.filter(function (s) { return s.assoc && s.layer !== "appraisal"; }).map(function (s) { return [s.from, s.to]; }));
+      return pairs.map(function (pr) {
+        return [pr[0], pr[1], ids.filter(function (z) { return have[z + "\u0000" + pr[0]] && have[z + "\u0000" + pr[1]]; }).sort()]; })
+        .filter(function (r) { return r[2].length; }).sort(cmpDeep);
+    })(),
+    scopes: counted(textAll.map(function (s) { return SCOPES.indexOf(s.scope) >= 0 ? s.scope : ""; })),
+    one_case: uniqSorted(textAll.filter(function (s) { return s.scope === "general" &&
+        (s.basis === "example" || s.design === "case study" || s.design === "anecdote"); })
+      .map(function (s) { return [s.from, s.to, s.claim.title]; }))
   };
 }
 /** Whether every hop of a loop is a step that makes or maintains its next -- mechanism.py's _sustains. */
@@ -948,7 +974,7 @@ function counted(xs) {
 
 /** Rival accounts of one outcome, side by side -- mechanism.py's _accounts. */
 function accountsOf(ids, steps) {
-  var pool = steps.filter(function (s) { return !s.isNull && !s.selects && s.layer !== "appraisal"; });
+  var pool = steps.filter(function (s) { return !s.isNull && !s.selects && !s.assoc && s.layer !== "appraisal"; });
   var out = [];
   ids.forEach(function (i) {
     var seen = {}, accs = [];
@@ -983,7 +1009,7 @@ function sideRows(steps, key) {
 function strataOf(textAll) {
   var by = {}, order = [];
   textAll.forEach(function (s) {
-    if (s.selects) return;
+    if (s.selects || s.assoc) return;
     var k = s.from + "\u0000" + s.to;
     if (!by[k]) { by[k] = { from: s.from, to: s.to, recs: {} }; order.push(k); }
     by[k].recs[s.sign + "\u0000" + s.given.join("\u0001") + "\u0000" + s.period + "\u0000" + s.size] = [s.sign, s.given.slice(), s.period, s.size];
@@ -1261,7 +1287,7 @@ function layoutOnce(M, opts) {
     // the planted defences and Marti and Gond's devices and backers (James's verdicts, 29 Sep 2026).
     (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), s.measuredBy || []).forEach(function (j) {
       if (has(M.states, j) && j !== s.to) ordering.push({ id: s.id + " & " + j, from: j, to: s.to, layer: s.layer,
-                                                          isNull: s.isNull, selects: s.selects });
+                                                          isNull: s.isNull, selects: s.selects, assoc: s.assoc });
     });
   });
   // WHAT MAKES SOMETHING UP IS DRAWN, AND BEFORE ITS WHOLE (profile 1.11): a state whose only tie is
@@ -1320,7 +1346,7 @@ function layoutOnce(M, opts) {
     var k = s.from + "\u0000" + s.to;
     if (!used[s.from] || !used[s.to] || s.from === s.to) return;
     if (!seenPair[k]) { seenPair[k] = true; pairs.push([s.from, s.to]); }
-    if (s.layer === "text" && !s.isNull && !s.selects && !s.constitution) textPairs.push([s.from, s.to]);
+    if (s.layer === "text" && !s.isNull && !s.selects && !s.assoc && !s.constitution) textPairs.push([s.from, s.to]);
   });
   var comps = systems(ids, textPairs), unitOf = {}, span = {}, local = {};
   ids.forEach(function (v) { unitOf[v] = v; span[v] = 1; local[v] = 0; });
@@ -1553,7 +1579,7 @@ function layoutOnce(M, opts) {
   // One drawn edge per (from, to, layer, kind): a null finding and a selection link are never
   // folded into the causal arrow beside them, or the drawing would say the opposite of the text.
   var groups = {}, order = []; var baseOf = {};
-  var kindOf = function (s) { return s.isNull ? "null" : s.selects ? "selection" : "step"; };
+  var kindOf = function (s) { return s.isNull ? "null" : s.selects ? "selection" : s.assoc ? "association" : "step"; };
   // AND BY SIGN. One arrow labelled "mixed" hid the FAST trial's story: the authors hold that
   // exercise lowers falls, and report an earlier trial where it raised them (26 Sep 2026). Two
   // findings with opposite signs are two arrows, as the checker already counts them. A route
@@ -1797,18 +1823,18 @@ function layoutOnce(M, opts) {
     // A merged arrow is a null or a selection only if everything in it is; otherwise it is a step.
     var kinds = {}; ss.forEach(function (x) { kinds[kindOf(x)] = true; });
     var kind = Object.keys(kinds).length === 1 ? kindOf(s0) : "step";
-    var wordOf = function (x) { return x.isNull ? "no effect" : x.selects ? "selection effect" : signWord(x.sign ? [x.sign] : []); };
+    var wordOf = function (x) { return x.isNull ? "no effect" : x.selects ? "selection effect" : x.assoc ? "associated" : signWord(x.sign ? [x.sign] : []); };
     var tally = {}; ss.forEach(function (x) { tally[wordOf(x)] = (tally[wordOf(x)] || 0) + 1; });
     var breakdown = Object.keys(tally).map(function (w) { return { word: w, count: tally[w] }; })
       .sort(function (p, q) { return q.count - p.count || (p.word < q.word ? -1 : p.word > q.word ? 1 : 0); });
-    var off = s0.layer === "rival" ? 10 : s0.layer === "appraisal" ? -10 : kind === "null" ? 20 : kind === "selection" ? -20 : 0;
+    var off = s0.layer === "rival" ? 10 : s0.layer === "appraisal" ? -10 : kind === "null" ? 20 : kind === "selection" || kind === "association" ? -20 : 0;
     // THREE CHANNELS, ONE MEANING EACH (F5). Weight: the best the text offers for the step.
     // Pattern: the closest any of its claims stands to the words. Colour: whose step, and what kind.
     var tier = ss.map(function (s) { return s.tier; })
                  .sort(function (p, q) { return TIERS.indexOf(p) - TIERS.indexOf(q); })[0];
     var fidelity = ss.map(function (s) { return s.fidelity; })
                      .sort(function (p, q) { return FIDELITY.indexOf(p) - FIDELITY.indexOf(q); })[0];
-    var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : "text";   // kind is "step" when mixed
+    var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : kind === "association" ? "association" : "text";   // kind is "step" when mixed
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P, segs = null;
@@ -1882,7 +1908,8 @@ function layoutOnce(M, opts) {
     d = segs ? segsPath(segs) : "M" + P[0][0] + "," + P[0][1] + " C" + P[1][0] + "," + P[1][1] + " " + P[2][0] + "," + P[2][1] + " " + P[3][0] + "," + P[3][1];
     // A null finding has no head, so no stub: its line runs all the way in.
     // It runs on along its own last direction, whichever side of the box it comes in by.
-    if (kind === "null") {
+    // AN ASSOCIATION (1.13) has no head either: it relates the two, it runs from neither.
+    if (kind === "null" || kind === "association") {
       var nd = [P[3][0] - P[2][0], P[3][1] - P[2][1]], nl = Math.hypot(nd[0], nd[1]) || 1;
       d += " L" + (P[3][0] + nd[0] / nl * STUB) + "," + (P[3][1] + nd[1] / nl * STUB); stub = null;
     }
@@ -1919,7 +1946,9 @@ function layoutOnce(M, opts) {
                 // a contradiction, not a time course.
                 (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "")
               // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
-              : kind === "selection" ? "selection effect" :
+              : kind === "selection" ? "selection effect"
+              // "ASSOCIATED" (1.13): the text reports they go together, and no more.
+              : kind === "association" ? "associated" + (ss.length > 1 ? " ×" + ss.length : "") :
                 // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
                 (signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
                 // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
@@ -2080,7 +2109,7 @@ function layoutOnce(M, opts) {
     e.stems.forEach(function (sm) { (sm.pts || []).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); }); });
   });
   // WHAT THE LEVELS ARE, in words, on the drawing's top line after "in sequence, left to right".
-  var caption = M.levels.length > 1 ? { text: orderingWords(M.ordering), x: GUT + 200, y: 22 } : null;
+  var caption = M.levels.length > 1 ? { text: orderingWords(M.ordering), x: GUT + (M.form && M.form.form === "cycle" ? 290 : 200), y: 22 } : null;
   if (caption) caption.w = caption.text.length * 6.4;
   var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16, caption ? caption.x + caption.w + 16 : 0) + nestPad;
   var height = Math.max(y + 70, extY + 16);
@@ -2122,7 +2151,7 @@ function foldSteps(M, folded, nodes) {
   Object.keys(folded).forEach(function (v) { if (folded[v] && nodes[v]) fold[v] = true; });
   var cur = [];
   M.steps.forEach(function (s) {
-    if ((s.isNull || s.selects) && (fold[s.from] || fold[s.to])) { hidden.findings++; return; }
+    if ((s.isNull || s.selects || s.assoc) && (fold[s.from] || fold[s.to])) { hidden.findings++; return; }
     cur.push(s);
   });
   // Folded in the order the chain lays them out, so the same folds make the same routes.
@@ -2144,7 +2173,7 @@ function foldSteps(M, folded, nodes) {
         rest.push({
           id: i.id + " > " + o.id, from: i.from, to: o.to, layer: i.layer, parts: parts,
           via: (i.via || []).concat([v], o.via || []),
-          sign: mulSign(i.sign, o.sign), isNull: false, selects: false,
+          sign: mulSign(i.sign, o.sign), isNull: false, selects: false, assoc: false,
           tier: TIERS[Math.max(TIERS.indexOf(i.tier), TIERS.indexOf(o.tier))],
           fidelity: FIDELITY[Math.max(FIDELITY.indexOf(i.fidelity), FIDELITY.indexOf(o.fidelity))],
           hedged: i.hedged || o.hedged, given: i.given.concat(o.given),
@@ -2172,7 +2201,7 @@ function foldable(M, voice) {
   // since steps of different voices are never joined into a route.
   var into = {}, from = {}, out = [];
   M.steps.forEach(function (s) {
-    if (s.isNull || s.selects) return;
+    if (s.isNull || s.selects || s.assoc) return;
     into[s.to + "\u0000" + s.layer] = true; from[s.from + "\u0000" + s.layer] = true;
   });
   M.ids.forEach(function (v) {
@@ -2619,12 +2648,12 @@ function injectStyle() {
     // the appraisal in the violet the Reasons map gives it; selection, a different relation, teal.
     // The light-and-shadow bar is shades of the one navy, as its lines are weights of it.
     "  --mv-cond-bg:#dfe7f3;--mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
-    "  --mv-selection:#2f8f83;",
+    "  --mv-selection:#2f8f83;--mv-association:#8a6d3b;",
     "  --mv-evidence:#203a6a;--mv-argued:#5a78a8;--mv-asserted:#a7b6cf;--mv-imputed:#dde2ea;",
     "  --mv-lane-a:rgba(0,0,0,.035);--mv-lane-b:rgba(0,0,0,.015);--mv-sel:#e0a800}",
     "@media (prefers-color-scheme:dark){.amech{",
     "  --mv-cond-bg:#23324a;--mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
-    "  --mv-selection:#5fc2b5;",
+    "  --mv-selection:#5fc2b5;--mv-association:#d2b27a;",
     "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
     ".amech[hidden]{display:none}",
@@ -2727,7 +2756,7 @@ function injectStyle() {
   document.head.appendChild(s);
 }
 
-var INKS = ["text", "rival", "appraisal", "selection"];
+var INKS = ["text", "rival", "appraisal", "selection", "association"];
 /** How an arrow is drawn: weight from what the text offers, pattern from how close its claims
  *  stand to the words, colour from whose step it is. A null finding is drawn thin whatever backs
  *  it -- its chip and its bar say what it is. */
@@ -2783,9 +2812,9 @@ function collapseModel(M) {
     .filter(function (c) { return c.toActor || c.from !== c.to; });
   return { levels: M.levels, ordering: M.ordering, actors: M.actors, states: states, ids: ids, steps: steps,
            dropped: M.dropped, appraisalClaims: M.appraisalClaims, question: M.question,
-           form: M.form, constitutions: consts,
+           form: M.form, constitutions: consts, reasoning: M.reasoning,
            profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims, undefined, undefined, undefined, M.ordering,
-                            M.form, consts),
+                            M.form, consts, M.reasoning),
            chains: [], chain: M.chain, kinds: M.kinds,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
@@ -2799,7 +2828,7 @@ function collapseModel(M) {
 function chainModel(M, id) {
   var c = (M.chains || []).filter(function (x) { return x.id === id; })[0];
   if (!c) return M;
-  var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && s.chain.indexOf(id) >= 0; });
+  var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && !s.assoc && s.chain.indexOf(id) >= 0; });
   var inIds = {};
   chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
   M.steps.forEach(function (s) { if (s.chain.indexOf(id) >= 0) {
@@ -2820,14 +2849,15 @@ function chainModel(M, id) {
   ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cform = { form: c.form || "chain", settles: c.settles == null ? null : c.settles };
+  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
   return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
            question: c.question || M.question, chains: [], kinds: M.kinds,
            chain: { id: c.id, label: c.label || c.id, shared: shared },
-           form: cform, constitutions: consts,
+           form: cform, constitutions: consts, reasoning: creason,
            profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
-                            cform, consts) };
+                            cform, consts, creason) };
 }
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
@@ -3069,7 +3099,10 @@ function create(container, graph, opts) {
     svg.setAttribute("viewBox", "0 0 " + G.width + " " + G.height);
     sizeSvg();
   }
-  el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent = "in sequence, left to right →";
+  // A CYCLE IS NOT A SEQUENCE (1.13): in a diagram of kinds and variables with feedback, "there can be
+  // no time line" (Johansson et al. 2024, p. 102), and a cycle has no first state to read from.
+  el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent =
+    M.form && M.form.form === "cycle" ? "a cycle: its order on the page is not time" : "in sequence, left to right →";
   var gCap = el("g", {}, svg);
 
   var drawnEdges = [], drawnNodes = {};
@@ -3338,13 +3371,15 @@ function create(container, graph, opts) {
         .map(function (k) { var v = k === "actor" ? (obj(M.actors[s.how[k]]).label || s.how[k]) : s.how[k];
           return '<div><span class="k">' + k + '</span> ' + esc(v) + '</div>'; }).join("") + '</div>';
     }
-    var meta = ['<span class="amech-pill">' + esc(s.isNull ? "no effect" : s.selects ? "selection effect" : signWord(s.sign ? [s.sign] : [])) + '</span>',
+    var meta = ['<span class="amech-pill">' + esc(s.isNull ? "no effect" : s.selects ? "selection effect" : s.assoc ? "associated" : signWord(s.sign ? [s.sign] : [])) + '</span>',
                 '<span class="amech-pill">' + esc(c.fidelity || "compression") + '</span>',
                 '<span class="amech-pill">' + esc(s.basis || (s.tier === "imputed" ? "imputed" : "asserted")) + '</span>']
       .join("") + (c.pinpoint ? esc(c.pinpoint) : "") + (s.lag ? " · lag: " + esc(s.lag) : "") +
       (s.given.length ? " · given: " + s.given.map(esc).join("; ") : "") +
       (s.isNull ? " · <b>the text finds no effect</b>" : "") +
       (s.selects ? " · <b>a selection link, not an effect</b>" : "") +
+      (s.assoc ? " · <b>an association</b>: the text reports they go together, not that one brings the other about" : "") +
+      (s.scope === "singular" ? " · about <b>a particular case</b>" : s.scope === "general" ? " · <b>a general</b> causal claim" : "") +
       (s.hedged ? " · hedged: the text says it may" : "") +
       ((s.jointly || []).length ? " · <b>only together with</b> " + s.jointly.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") : "") +
       ((s.unless || []).length ? " · <b>unless</b> " + s.unless.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" or ") + " holds: it blocks the step" : "") +
@@ -3409,7 +3444,8 @@ function create(container, graph, opts) {
     FIDELITY.forEach(function (f) { if (fid[f]) out += row(line("var(--mv-text)", 2, FIDELITY_DASH[f]), f); });
     out += '<div class="g">Colour: whose step, and what kind</div>';
     [["text", "the text’s own"], ["rival", "a rival view the text reports"], ["appraisal", "the reconstructor’s appraisal"],
-     ["selection", "selection effect: who ends up on each side, not an effect"]].forEach(function (r) {
+     ["selection", "selection effect: who ends up on each side, not an effect"],
+     ["association", "associated: the text reports they go together, not that one brings the other about"]].forEach(function (r) {
       if (ink[r[0]]) out += row(line("var(--mv-" + r[0] + ")", 2, ""), r[1]);
     });
     if (isNull) out += row(line("var(--mv-text)", 1.4, "", true), "no effect found: nothing passes");
@@ -3510,6 +3546,11 @@ function create(container, graph, opts) {
       (P.levels.length > 1 ? '<div class="amech-row"><span class="k">levels are</span><span>' + esc(orderingWords(P.ordering).replace(/^levels: /, "")) +
         (P.ordering && P.ordering.within && P.ordering.within.length ? '; ' + esc(P.ordering.within.map(function (q) { return q[0] + " within " + q[1]; }).join(", ")) : '') + '</span></div>' : '') +
       // A CYCLE, AND WHETHER IT COMES TO REST (1.11); and whether the chain is told in nouns or verbs.
+      // ITS GOAL AND ITS CONTRAST (1.13).
+      (P.goal ? '<div class="amech-row"><span class="k">goal</span><span>' + esc(({ explain: "to explain why and how something happened",
+        intervene: "to find what to do to bring an effect about", predict: "to predict what will happen",
+        attribute: "to attribute responsibility: what cause was decisive, and whose" })[P.goal]) + '</span></div>' : '') +
+      (P.contrast ? '<div class="amech-row"><span class="k">rather than</span><span>' + esc(P.contrast) + '</span></div>' : '') +
       (P.form && P.form.form === "cycle" ? '<div class="amech-row"><span class="k">form</span><span>a cycle, not asked where it starts or ends; ' +
         (P.form.settles === true ? 'the text says it comes to rest' : P.form.settles === false ? 'the text says it does not come to rest' : 'the text does not say whether it comes to rest') + '</span></div>' : '') +
       ((P.aspects || []).length ? '<div class="amech-row"><span class="k">told in</span><span>' + esc(P.aspects.map(function (a) { return a[1] + " " + a[0]; }).join(", ")) + '</span></div>' : '') +
@@ -3558,6 +3599,8 @@ function create(container, graph, opts) {
         "Slate grey: a step in someone else's account, which the text sets out. It is never walked as the text's own chain.");
     add(function (e) { return e.kind === "null"; }, "No effect",
         "A line ending in a bar, with no arrowhead: the text finds <b>no effect</b>. Nothing passes. Where a view the text reports says otherwise, the two lines sit side by side: a dispute, not a contradiction in the map.");
+    add(function (e) { return e.kind === "association"; }, "An association",
+        "A line with no head, in brown: the text reports that the two go together, and does not say one brings the other about. Where a state the text says causes both is drawn, the association may be its work.");
     add(function (e) { return e.kind === "selection"; }, "A selection effect",
         "A teal line: the two go together because of who ends up on each side, not because one brings the other about.");
     add(function (e) { return !!e.junction; }, "Only together",
@@ -3606,7 +3649,7 @@ function create(container, graph, opts) {
       side.innerHTML = '<h3>' + esc(obj(M.states[e.from]).label || e.from) + ' → ' + esc(obj(M.states[e.to]).label || e.to) + '</h3>' +
         (e.mixed ? e.breakdown.map(function (b) {
             return '<h3>' + esc(b.word) + ' (' + b.count + ')</h3>' + e.steps.filter(function (x) {
-              return (x.isNull ? "no effect" : x.selects ? "selection effect" : signWord(x.sign ? [x.sign] : [])) === b.word;
+              return (x.isNull ? "no effect" : x.selects ? "selection effect" : x.assoc ? "associated" : signWord(x.sign ? [x.sign] : [])) === b.word;
             }).map(stepHTML).join("");
           }).join("") : e.steps.map(stepHTML).join("")) +
         // OFF MEANS OFF IN THE PANEL TOO: the appraisal's view of a text step is named only while

@@ -1,0 +1,38 @@
+// A planted chain for CAUSAL REASONING (profile 1.13, after Johansson et al. 2024, A Primer to
+// Causal Reasoning About a Complex World): an association the text reports without claiming a
+// cause, with a common cause drawn (Reichenbach); steps about a particular case and in general,
+// one general step backed by a single case; a goal and a contrast; and a natural experiment.
+===
+title: "Reasoning -- a planted chain of trust, marriage and wealth"
+mechanism:
+    question: "Why do provinces with more cousin marriage hold more of their wealth in cash?"
+    contrast: "in banks and stock"
+    goal: explain
+    levels: [region, people]
+    ordering: composition
+    within: {people: region}
+    actors:
+        province: {label: "Italian provinces", level: region}
+        families: {label: "Families", level: people}
+    states:
+        trust:    {label: "People trust strangers little", actor: province, role: condition}
+        cousins:  {label: "Families marry cousins", actor: families, role: outcome}
+        cash:     {label: "Families keep their wealth in cash", actor: families, role: outcome}
+        letter:   {label: "A letter tells the fined to buy insurance", actor: families, role: condition}
+        insured:  {label: "Families buy health insurance", actor: families}
+===
+
+[Low trust keeps marriage in the family]: Where people trust strangers little, they marry within the family.
+    {causes: {from: trust, to: cousins, sign: "+", basis: asserted, scope: general}}
+
+[Low trust keeps wealth in cash]: Where people trust strangers little, they keep their wealth in cash.
+    {causes: {from: trust, to: cash, sign: "+", basis: asserted, scope: general}}
+
+[Cousins and cash go together]: Cousin marriage is associated with holding wealth in cash across the provinces.
+    {causes: {from: cousins, to: cash, sign: "+", basis: statistics, association: true}}
+
+[The letter led to insurance]: The letter the budget shortfall left unsent showed that sending it led people to buy insurance.
+    {causes: {from: letter, to: insured, sign: "+", basis: study, design: natural experiment, scope: singular}}
+
+[One village shows the rule]: One village shows that letters always bring insurance.
+    {causes: {from: letter, to: insured, sign: "+", basis: example, scope: general}}

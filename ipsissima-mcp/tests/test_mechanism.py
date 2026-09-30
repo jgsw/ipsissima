@@ -836,6 +836,26 @@ check("a status not in the list is queried", any("status: maybe" in m for m in r
 check("`on: possibility` with `which` is queried",
       any("opens" in m and "not `which`" in m for m in rm(REL.replace('sign: "-", on: possibility', 'sign: which, on: possibility'))), True)
 
+print("\nprofile 1.13: causal reasoning (Johansson et al. 2024, A Primer to Causal Reasoning About a Complex World)")
+REA = (FIXTURE / "reasoning.argdown").read_text(encoding="utf-8")
+ra = run(REA, name="reasoning.argdown")["shape"]["chain"]
+# Mutations: walk associations -> the route check fails; drop common_causes -> the second.
+check("an association is reported and never walked", (ra["associations"], [r for r in ra["routes"] if r["start"] == "cousins"]),
+      ([["cousins", "cash", "+", "text"]], []))
+check("  and a common cause the text draws is named (Reichenbach)", ra["common_causes"], [["cousins", "cash", ["trust"]]])
+check("steps say whether they are singular or general", ra["scopes"], [["general", 3], ["singular", 1]])
+check("a general step backed by one case is listed", ra["one_case"], [["letter", "insured", "One village shows the rule"]])
+check("the goal and the contrast are in the profile", (ra["goal"], ra["contrast"]), ("explain", "in banks and stock"))
+am = lambda text: [f["message"] for f in by(run(text, name="reasoning.argdown"), "mechanism")]
+check("a causal step in the words of an association is queried",
+      any("in words that report an association" in m for m in am(REA.replace(", association: true", ""))), True)
+check("  but not a name: the Association of Ambulance Chief Executives reports no association",
+      any("in words that report an association" in m for m in am(REA.replace(
+          "One village shows that letters always bring insurance.", "The Association of Village Councils shows that letters always bring insurance."))), False)
+check("`goal: intervene` with nothing to do is queried",
+      any("`goal: intervene`" in m for m in am(REA.replace("goal: explain", "goal: intervene"))), True)
+check("a goal not in the list is queried", any("`goal: guess`" in m for m in am(REA.replace("goal: explain", "goal: guess"))), True)
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

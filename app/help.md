@@ -663,6 +663,10 @@ A box with **round ends** is an ongoing doing, an activity or a development, and
 the map declares its chain a **cycle**, the panel says so, and whether the text says the cycle comes
 to rest; the chart does not ask where a cycle starts or ends.
 
+**Associated.** A brown line with no head says the text reports that two things go together, and
+does not say one brings the other about. It is never followed as a route. The census names any
+state the text says causes both, which may be where the association comes from.
+
 **What makes something up.** A box marked **⊂** makes up something else, and a box marked **⊃** is
 made up of other boxes. This is what a thing is made of, not a cause of it, so it is never drawn as an
 arrow and never followed as part of a route. The box's panel lists each relation with its claim: how

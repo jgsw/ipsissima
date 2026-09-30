@@ -341,6 +341,10 @@ Where the text is about what could happen rather than what does, say so:
 - `status: possible` for a possibility the text sets out;
 - `status: open` for what it says cannot be specified in advance.
 
+Keep an association apart from a cause (`association: true`), and a particular case apart from a
+general relation (`scope:`). "Association" is "often mistakenly interpreted as a term for a causal
+relation" (Johansson et al. 2024, p. 71), and a general causal claim cannot be read off one case.
+
 A process-relational text may hold that a whole and its parts make each other (`whole: mutual`), or
 that a relation belongs to several actors at once (`actor: [a, b]`) (Hertz et al. 2020, 2025).
 
