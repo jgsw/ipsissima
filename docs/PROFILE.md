@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.15 — 1 October 2026.** The machine-readable registry of everything below is
+**Version 1.16 — 1 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -663,13 +663,13 @@ force (`parallel-pass.md`), reversibly: one setting brings the series method bac
   mechanism into the argument. The schemes are listed in the registry under `bridges`, each with
   its move and its critical questions:
   - From cause to effect; From effect to cause; From correlation to cause;
-  - From cases to a general mechanism;
+  - From cases to a general mechanism; From there to here;
   - From a mechanism to what to do; From consequences; From a mechanism to a possibility;
   - From a mechanism against a theory; From a mechanism to a classification;
-  - Genealogical debunking.
+  - Genealogical debunking; Vindicatory genealogy; From a genealogy to contingency.
 
   They are Walton, Reed and Macagno's causal and practical schemes (*Argumentation Schemes*, 2008),
-  with four the trial needed. No name contains a comma, because Argdown splits a rule list on
+  with four the trial needed, and since 1.16 three more (below). No name contains a comma, because Argdown splits a rule list on
   commas.
 - **A bridge is never checked for validity.** It is a defeasible causal move, not a deductive rule,
   so the checker does not ask for its formalization. Instead it queries a bridge none of whose
@@ -793,6 +793,22 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.16** (1 October 2026) added three bridge schemes, after the parallel-pass trial on four texts
+(Wilson 2026, Rogers et al. 2023, Merton 1948), in which these moves recurred with no scheme to
+name them:
+- **From there to here**: a conclusion established in one setting (a study population, a case, a
+  thought experiment, another country) carried to another because the mechanism is shared. Its
+  questions are Cartwright's and Shan and Williamson's: is the mechanism of action present here,
+  are its support factors, is there a counteracting mechanism here that was absent there.
+- **Vindicatory genealogy** and **From a genealogy to contingency**: with Genealogical debunking,
+  the three directions Queloz (2021, ch. 9) gives a pragmatic genealogy. A genealogy is vindicatory
+  first; the registry had only the subverting direction.
+
+Genealogical debunking keeps its name, so every 1.15 file conforms unchanged; its short label
+reads "debunking genealogy". The checker also now reports a key a step or a constitutive relation
+cannot carry (it was silently never read), and names the escape when a citation inside a quotation
+breaks the parse.
 
 **1.15** (1 October 2026) added, after the parallel-pass trial:
 - `method` in the reading policy;

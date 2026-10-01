@@ -146,6 +146,38 @@ def _bridge_schemes():
 BRIDGES = _bridge_schemes()
 
 
+def _relation_keys():
+    """{"causes": keys, "constitutes": keys}: the keys a step and a constitutive relation may
+    carry, from the registry -- so a key added to the profile is known here at once."""
+    try:
+        import json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
+                  encoding="utf-8") as fh:
+            p = json.load(fh)
+        return {k: frozenset(x for x in p[k] if x != "summary") for k in ("causes", "constitutes")}
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+#: UNKNOWN KEYS WERE SILENT (1 Oct 2026). A `note:` written inside a step, or a misspelt
+#: `sgn:`, passed every check and was simply never read. The keys are the profile's own.
+RELATION_KEYS = _relation_keys()
+
+
+def _unknown_keys(c, kind):
+    """(key, nearest known key or None) for each key of relation `c` the profile does not know."""
+    import difflib
+    known = RELATION_KEYS.get(kind)
+    if not known or not isinstance(c, dict):
+        return []
+    out = []
+    for k in c:
+        if str(k) not in known:
+            near = difflib.get_close_matches(str(k), sorted(known), n=1, cutoff=0.6)
+            out.append((str(k), near[0] if near else None))
+    return out
+
+
 def bridge_scheme(rule_names):
     """The bridge scheme an inference line names, or None. A line naming anything else as well
     is not a bridge: a compound of a scheme and a deductive rule is the validity check's."""
@@ -612,6 +644,7 @@ def steps(doc, appraisal):
                 mods = c.get("modifies")
                 mods = [m for m in (mods if isinstance(mods, list) else [mods] if mods else [])]
                 out.append(dict(
+                    unknown=_unknown_keys(c, "causes"),
                     title=title, kind=kind, tags=sorted(tags),
                     text=" ".join(m.get("text") or "" for m in (node.get("members") or [])),
                     layer=layer,
@@ -1251,6 +1284,10 @@ def analyse(fm, doc):
                          f"the front matter declares no `mechanism:` block", {}))
     for c in all_const:
         where = {"title": c["title"]}
+        for k, near in _unknown_keys(c["raw"], "constitutes"):
+            findings.append(("!", "mechanism", f"`{k}` is not a key a constitutive relation can "
+                             f"carry, so it is never read" + (f" -- did you mean `{near}`?" if near else ""),
+                             where))
         if c["src"] is None:
             findings.append(("!", "mechanism", "a constitutive relation has no `from:`", where))
         elif c["src"] not in states:
@@ -1416,7 +1453,21 @@ def analyse(fm, doc):
         if s["basis"] is not None and s["basis"] not in BASES:
             findings.append(("?", "mechanism",
                              f"basis `{s['basis']}` is not one of {', '.join(BASES)}; the step is "
-                             f"shaded as asserted",
+                             f"shaded as asserted" + (
+                                 # `argued` IS THE CENSUS'S WORD (trial, 1 Oct 2026, twice): a step
+                                 # counts as argued when its claim has supports, which the census
+                                 # works out; the map says only what the text offers.
+                                 ". `argued` is the census's tier for a step whose claim has "
+                                 "support in the map, worked out from the map: write what the text "
+                                 "offers (`asserted` if it offers nothing more)"
+                                 if s["basis"] == "argued" else ""),
+                             {"title": s["title"]}))
+        for k, near in s.get("unknown") or []:
+            findings.append(("!", "mechanism",
+                             f"`{k}` is not a key a step can carry, so it is never read"
+                             + (f" -- did you mean `{near}`?" if near else
+                                (" -- a note goes on the claim, beside `fidelity:`, not inside "
+                                 "`causes:`" if k == "note" else "")),
                              {"title": s["title"]}))
         if s["sign"] not in (None,) + SIGNS:
             findings.append(("?", "mechanism",

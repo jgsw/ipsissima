@@ -129,6 +129,18 @@ var BRIDGES = [
     ]
    },
    {
+    "name": "From there to here",
+    "short": "there → here",
+    "move": "A conclusion established in one setting -- a study population, a case, a thought experiment, a model, another country -- is carried to another, because the mechanism that produced it is shared.",
+    "questions": [
+     "Is the mechanism of action present here?",
+     "Are its support factors (its `jointly` and `given` conditions) said to hold here?",
+     "Is there a counteracting mechanism here that was absent there?",
+     "For a stipulated case: what did it stipulate that the world does not have?",
+     "For a normative conclusion: does the consideration keep its weight and polarity here?"
+    ]
+   },
+   {
     "name": "From a mechanism to what to do",
     "short": "means → end",
     "move": "A route runs from an action to a valued outcome, so the action should be taken.",
@@ -176,11 +188,32 @@ var BRIDGES = [
    },
    {
     "name": "Genealogical debunking",
-    "short": "genealogy",
+    "short": "debunking genealogy",
     "move": "A view is produced by a cause that does not track its truth, so its claim to authority fails.",
     "questions": [
      "Is the producing cause one that could not track the truth?",
      "Does the critique apply to the critic's own view?"
+    ]
+   },
+   {
+    "name": "Vindicatory genealogy",
+    "short": "vindicating genealogy",
+    "move": "A practice or view came about because it meets needs we have, so it merits our confidence.",
+    "questions": [
+     "Does the process that formed it give reasons to prefer it over its rivals, including giving it up?",
+     "Whose needs are these, and do we share and endorse them?",
+     "Do the needs the story starts from still hold for us?",
+     "Is the story's order historical, or the order in which complications are added?"
+    ]
+   },
+   {
+    "name": "From a genealogy to contingency",
+    "short": "contingent genealogy",
+    "move": "A practice or view came about by a process that gives no reason to prefer it over its rivals, so it is rationally contingent: it could as well have been otherwise.",
+    "questions": [
+     "Does the formation process really give no reason to prefer it?",
+     "Is contingency being taken as a reason against it, which it is not?",
+     "Would a rival have met the same needs as well?"
     ]
    }
   ];

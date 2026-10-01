@@ -1409,7 +1409,7 @@ def fidelity_report(cli, path):
         spans = sum(1 for _, m in prov.iter_members(doc)
                     for field in ((m.get("text") or ""),
                                   ((m.get("data") or {}).get("source") or ""))
-                    for _mo in prov.QUOTED.finditer(field))
+                    for _mo in prov.quotations(field))
         if spans >= 5:
             print(f"      {spans} quoted spans, and no node is a `quotation`: no claim's own")
             print("      text is wholly the author's words, so the map draws no solid border")
@@ -2319,10 +2319,22 @@ def _report(cli, path, a):
     if r.returncode != 0:
         # THE PARSER'S OWN WORDS, not a summary of them. It names the line, and a caller about
         # to edit the file needs that far more than it needs our gloss on it.
+        _msg = r.stderr or r.stdout
+        # A CITATION INSIDE A QUOTATION (the trial, 1 Oct 2026, twice: "studies [38]", "performance
+        # [56]"). The parser reads `[38]` as a claim reference and fails with "found --> '[38]'",
+        # which names the token but not the cause. The escape keeps the quotation verifiable.
+        _cite = re.search(r"At (\d+):\d+\s*\n[^\n]*found --> '(\[[0-9][0-9,\s\u2013\-]*\])' <--", _msg)
         finding("parse", "!", "the file does not parse",
-                detail=parser_message(r.stderr or r.stdout))
+                detail=parser_message(_msg),
+                **({"line": int(_cite.group(1)),
+                    "fix": (f"`{_cite.group(2)}` is a citation inside a quoted span, and Argdown reads "
+                            f"brackets as a claim reference: escape them, "
+                            f"`\\{_cite.group(2)[:-1]}\\]`, which the quotation check still matches "
+                            f"against the source")} if _cite else {}))
         print("\nFAILED TO PARSE\n")
         print(r.stderr or r.stdout)
+        if _cite:
+            print(f"   line {_cite.group(1)}: {FINDINGS[-1]['fix']}")
         SHAPE["parsed"] = False
         return 1
     dot = r.stdout

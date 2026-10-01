@@ -94,15 +94,22 @@ scheme's name has one.
 | From effect to cause | the mechanism best explains what was observed | which rival accounts the text sets out; how thorough the account is |
 | From correlation to cause | two things go together, so one brings the other about | a common cause; the other direction; mediation and range; the measure itself |
 | From cases to a general mechanism | the steps hold in these cases, so the general step holds | are the cases kinds of the general step; how many; is a general claim drawn from one case |
+| From there to here | a conclusion established in one setting (a study population, a case, a thought experiment, another country) holds in another, because the mechanism is shared | is the mechanism of action present here; are its support factors (`jointly`, `given`) said to hold here; is there a counteracting mechanism here that was absent there; what did a stipulated case stipulate that the world lacks; does a consideration keep its weight and polarity here |
 | From a mechanism to what to do | a route runs from an action to a valued outcome, so the action should be taken | other goals; other routes to the goal; can it be done; other consequences |
 | From consequences | a route runs to a good or bad outcome, so the policy, rule or view is good or bad | does the route exist; other consequences; the criterion of good or bad |
 | From a mechanism to a possibility | the mechanism has a lever, so things can be otherwise | does anything block the lever; is the outcome only possible |
 | From a mechanism against a theory | a mechanism the theory denies or ignores holds, so the theory fails | does it hold where the theory claims to |
 | From a mechanism to a classification | what the mechanism does makes the case one of a kind | does it establish each condition |
 | Genealogical debunking | a view is produced by a cause that does not track its truth | could that cause track the truth; does the critique reach the critic |
+| Vindicatory genealogy | a practice or view came about because it meets needs we have, so it merits confidence | does its formation give reasons to prefer it over rivals, including giving it up; whose needs, and do we share and endorse them; do the needs still hold for us; is the story's order historical or the order complications are added |
+| From a genealogy to contingency | a practice or view came about by a process that gives no reason to prefer it, so it could as well have been otherwise | does the formation really give no reason; is contingency being taken as a reason against it; would a rival have met the same needs |
 
 These are Walton, Reed and Macagno's causal and practical schemes (*Argumentation Schemes*, 2008),
-with the four the trial needed. A move that fits none is named in words in the argument's `note:`,
+with the four the first trial needed and three the second added (profile 1.16). A genealogy has
+three directions (Queloz 2021, ch. 9): it vindicates, it shows contingency, or it debunks; it is
+vindicatory first, so do not reach for debunking by default. "From there to here" is the move a
+text makes whenever it carries a finding across settings -- from a trial to a population, a
+bank to race relations, history to ethics, Mexico to the UK. A move that fits none is named in words in the argument's `note:`,
 and the plain `-----` is kept.
 
 The questions are not yours to answer. They tell you where to look in the text. Often the census
@@ -136,6 +143,19 @@ answers one already: an `unless` on the route, a rival chain, a one-case query.
    as its premises can make an argument look less sound: "a few cases is not a huge number from which
    to infer the general principle. But it at least has the virtue of making this weakness
    perspicuous" (the author, on James). Do not leave cases out to make the inference look stronger.
+
+## Slips the checker catches (the trial, 1 October 2026)
+
+- **`basis` says what the text offers**: study, statistics, model, example, testimony or
+  asserted. `argued` is the census's word for a step whose claim has support in the map; never
+  write it.
+- **A note goes on the claim**, beside `fidelity:`, never inside `causes:`. A key a step cannot
+  carry is a fault: it would never be read.
+- **A citation inside a quotation** (`studies [38]`) is read by Argdown as a claim reference and
+  breaks the parse. Escape it, `\[38\]`; the quotation still verifies.
+- **The planner's causal census counts causal vocabulary**, and essays carry causation in
+  narrative and metaphor: it read Merton at 2 causal sentences per 1,000 words. Judge from the
+  reading, not the count.
 
 ## What the census reports
 

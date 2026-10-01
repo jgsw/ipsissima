@@ -306,5 +306,36 @@ check("  it says what the map will show", "shows `i∨`" in (sc[0]["message"] if
 check("  and names the escape", "`\\.v.`" in (sc[0].get("fix", "") if sc else ""), True)
 
 
+print("\na citation inside a quotation breaks the parse")
+# Rogers et al. 2023, 1 Oct 2026: "studies [38]" failed with "found --> '[38]'", naming the token
+# but not the cause. The finding now names the escape, and the escape verifies.
+with tempfile.TemporaryDirectory() as td:
+    os.makedirs(os.path.join(td, "source"))
+    open(os.path.join(td, "source", "s.md"), "w").write("Rain makes the grass grow [38], it is said.\n")
+    head = '===\ntitle: t\ndefaults:\n    chapter: "source/s.md"\n===\n\n'
+    out = {}
+    for name, q in (("bare", "[38]"), ("escaped", "\\[38\\]")):
+        f = os.path.join(td, name + ".argdown")
+        open(f, "w").write(head + f'[A]: "Rain makes the grass grow {q}, it is said." {{fidelity: "quotation"}}\n')
+        r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), f, "--source-root", td,
+                            "--format", "json", "--no-fix"], capture_output=True, text=True)
+        out[name] = json.loads(r.stdout)
+pf = [x for x in out["bare"]["findings"] if x["check"] == "parse"]
+check("  the parse fault names the citation and its escape",
+      bool(pf) and "`\\[38\\]`" in (pf[0].get("fix") or ""), True)
+check("  and the escaped quotation parses and verifies",
+      (out["escaped"]["shape"].get("parsed"), out["escaped"]["shape"].get("quotations", {}).get("exact")), (True, 1))
+
+
+print("\na short scare-quote before a quotation")
+# Merton, 1 Oct 2026: 'a commoner's "too much" success ...: "The moral virtues remain ..."'. A
+# pattern that required ten characters skipped "too much" (8) and paired its closing mark with
+# the next span's opening one, so the reconstructor's own words were checked as a quotation.
+_blob = 'a commoner\'s "too much" success becomes a scandal: "The moral virtues remain virtues only so long"'
+check("  the quotation is the span checked, not the words between",
+      [m.group(1) for m in prov.quotations(_blob)], ["The moral virtues remain virtues only so long"])
+check("  a short span alone is no quotation", prov.quotations('the "too much" success'), [])
+
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

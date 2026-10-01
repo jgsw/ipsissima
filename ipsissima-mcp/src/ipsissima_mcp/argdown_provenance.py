@@ -31,8 +31,17 @@ import re
 # Shorter runs are usually a scare-quoted term rather than a citation.
 MIN_QUOTE = 10
 
-QUOTED = re.compile(r'[“”"«]([^“”"»]{%d,})[“”"»]'
-                    % MIN_QUOTE)
+# PAIRED IN ORDER, FILTERED AFTER. The pattern matches every pair of marks, however short, and
+# `quotations` drops the short ones. Requiring the length in the pattern itself skipped a short
+# scare-quote ("too much", 8 characters) and then paired ITS closing mark with the next span's
+# opening one, checking the reconstructor's own words between them as a quotation (Merton,
+# 1 Oct 2026: "absent", 65% resemblance).
+QUOTED = re.compile(r'[“”"«]([^“”"»]*)[“”"»]')
+
+
+def quotations(blob):
+    """The quoted spans of `blob` long enough to be quotations, as match objects."""
+    return [mo for mo in QUOTED.finditer(blob or "") if len(mo.group(1)) >= MIN_QUOTE]
 
 _SUBS = {
     # SINGLE AND DOUBLE FOLD TOGETHER. Pandoc backslash-escapes the source's double quotes and
@@ -1262,7 +1271,7 @@ def check_quotations(doc, source_root):
             blob = m.get("text") if field == "text" else data.get("source")
             if not blob:
                 continue
-            for mo in QUOTED.finditer(blob):
+            for mo in quotations(blob):
                 quote = mo.group(1)
                 if not chapter:
                     results.append(dict(title=title, field=field, quote=quote,

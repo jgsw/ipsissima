@@ -302,7 +302,9 @@ function locateParagraph(claimText, lines, lo, hi) {
  */
 
 var MIN_QUOTE = 10;
-var QUOTED = /[“”"«]([^“”"»]{10,})[“”"»]/g;
+// Paired in order, filtered after: a length in the pattern skipped a short scare-quote and
+// paired its closing mark with the next span's opening one (Merton, 1 Oct 2026).
+var QUOTED = /[“”"«]([^“”"»]*)[“”"»]/g;
 var SUBS = { "‘": "'", "’": "'", "“": '"', "”": '"', "«": '"',
              "»": '"', "–": "-", "—": "-", "…": "...", " ": " " };
 var INVISIBLE = "*_`\\\u00ad";   // the soft hyphen as argdown_provenance.py has it
@@ -439,7 +441,7 @@ function locateQuotation(node, chapterText, lines) {
     QUOTED.lastIndex = 0;
     var mo;
     while ((mo = QUOTED.exec(String(blobs[b]))) !== null)
-      found = found.concat(findQuoteAll(mo[1], chapterText));
+      if (mo[1].length >= MIN_QUOTE) found = found.concat(findQuoteAll(mo[1], chapterText));
   }
   return chooseOccurrence(found, lines || String(chapterText).split("\n"), node.pinpoint);
 }
@@ -751,7 +753,7 @@ function colInLine(lines, line, note, texts) {
     if (!texts[i]) continue;
     var blob = String(texts[i]), mo;
     QUOTED.lastIndex = 0;
-    while ((mo = QUOTED.exec(blob)) !== null) tryText(mo[1]);
+    while ((mo = QUOTED.exec(blob)) !== null) if (mo[1].length >= MIN_QUOTE) tryText(mo[1]);
     tryText(blob.replace(/(^|\s)#[A-Za-z][\w-]*/g, "$1 "));
   }
   return best;

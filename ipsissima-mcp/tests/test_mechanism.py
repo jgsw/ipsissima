@@ -915,6 +915,28 @@ check("a scheme name with a comma is two rule names, so not a bridge",
 import argdown_provenance as _prov  # noqa: E402
 check("the reading policy knows the two methods", _prov.POLICY_VALUES["method"], ("series", "parallel"))
 
+print("\nprofile 1.16: transfer, and genealogy in three directions (the parallel-pass trial, 1 Oct 2026)")
+# Mutation: drop a scheme from profile.json's bridges -> its line here fails.
+for _name in ("From there to here", "Vindicatory genealogy", "From a genealogy to contingency"):
+    _r = run(BRI.replace("-- From consequences {uses: [1, 2]} --", f"-- {_name} {{uses: [1, 2]}} --"),
+             name="bridges.argdown")
+    check(f"`{_name}` is a bridge, listed with its premises", ["The curfew's consequences", 1, _name, 2, 1]
+          in _r["shape"]["chain"]["bridges"], True)
+
+print("\na key the profile does not know is never read, and says so (the trial, 1 Oct 2026)")
+# Mutation: return [] from mechanism._unknown_keys -> the first two fail.
+uk = run(BRI.replace('{from: curfew, to: crime, sign: "-", basis: asserted}',
+                     '{from: curfew, to: crime, sgn: "-", basis: argued, note: "x"}'), name="bridges.argdown")
+ukm = [f for f in by(uk, "mechanism") if "is not a key" in f["message"]]
+check("a misspelt step key is a fault, with the key it nearly is",
+      any("`sgn`" in f["message"] and "did you mean `sign`" in f["message"] and f["severity"] == "!"
+          for f in ukm), True)
+check("  and a note written inside a step is sent to the claim", any("`note`" in f["message"]
+      and "goes on the claim" in f["message"] for f in ukm), True)
+check("`basis: argued` says it is the census's word, not the map's",
+      any("census's tier" in f["message"] for f in by(uk, "mechanism")), True)
+check("the bridges fixture itself has no unknown key", [f for f in by(br, "mechanism") if "is not a key" in f["message"]], [])
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402
