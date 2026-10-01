@@ -303,6 +303,33 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         "the page and the checker agree on bridges and on where the argument takes the chain on",
         differ.map(k => `${k}: python ${JSON.stringify(pyB[k])} js ${JSON.stringify(MB.profile[k])}`).join("\n          "));
 }
+// AND ON 1.17: a "From there to here" bridge whose premises hold in two settings, a chain told in
+// order of explanation, and the questions. Mutations: drop the regime grouping in the page's
+// transfers -> `transfers` differs; drop the chain's order -> `chains` differs.
+{
+  const TRF = path.join(FIXTURE, "transfer.argdown");
+  const pyT = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           TRF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const GT = graphOf(TRF), MT = MV.model(GT);
+  const differ = Object.keys(pyT).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MT.profile.gaps.map(g => g.message) : MT.profile[k], pyT[k]));
+  check(differ.length === 0 && pyT.transfers.length === 1 && pyT.transfers[0][3].length === 3,
+        "the page and the checker agree on a transfer between two settings, and on a chain's order",
+        differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
+  check(MT.profile.chains.filter(c => c.id === "story")[0].order === "explanation",
+        "  a chain told in order of explanation says so");
+  const Q = GT.questions || [];
+  check(Q.length === 2 && Q[0].moves.map(m => m.move).join() === "answers,reframes" &&
+        same(Q[0].moves[1].into, ["whose"]),
+        "the page reads the questions and the moves on them", JSON.stringify(Q));
+  // A MAP THAT RECORDS ITS MECHANISM AS NOT MAPPED says so in the Mechanism view, with the reason.
+  const NONE = fs.readFileSync(TRF, "utf8").replace(/mechanism:\n[\s\S]*?\n===/,
+    'mechanism:\n    depth: none\n    depth_reason: "argued from definitions"\n===');
+  const box = { innerHTML: "", textContent: "", classList: { add() {} } };
+  try { MV.create(box, graphOf.fromText(NONE), {}); } catch (e) { box.textContent = "threw: " + e.message; }
+  check(/considered, and not mapped: argued from definitions/.test(box.textContent),
+        "a mechanism considered and not mapped is said so, with its reason", box.textContent);
+}
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->
 // `accounts` differs; drop the moderator stems -> the ring check fails; drop the "needed for"

@@ -923,6 +923,60 @@ for _name in ("From there to here", "Vindicatory genealogy", "From a genealogy t
     check(f"`{_name}` is a bridge, listed with its premises", ["The curfew's consequences", 1, _name, 2, 1]
           in _r["shape"]["chain"]["bridges"], True)
 
+print("\nprofile 1.17: depth, order, there and here, and the questions (James, 1 Oct 2026)")
+TRF = (FIXTURE / "transfer.argdown").read_text(encoding="utf-8")
+tr = run(TRF, name="transfer.argdown")
+tc = tr["shape"]["chain"]
+# Mutation: group by nothing in mechanism.py's transfers -> the first fails.
+check("a From there to here bridge lists each setting's steps that have no counterpart in the other",
+      tc["transfers"], [["The case carried over", 1, ["case", "world"],
+                         [["case", "fails", "death", "+"], ["world", "cover", "exposure", "-"],
+                          ["world", "exposure", "death", "+"]]]])
+check("a chain told in order of explanation says so, and one that says nothing runs in time",
+      {c["id"]: c["order"] for c in tc["chains"]}, {"policy": "time", "story": "explanation"})
+_bad = run(TRF.replace("order: explanation", "order: backwards"), name="transfer.argdown")
+check("  an order that is neither is a fault", any("`order: backwards`" in f["message"] and f["severity"] == "!"
+      for f in by(_bad, "mechanism")), True)
+qs = tr["shape"]["questions"]
+check("the questions are listed with the moves on them",
+      [(q["id"], [m["move"] for m in q["moves"]]) for q in qs], [("which", ["answers", "reframes"]), ("whose", [])])
+check("  a question nothing moves on is not queried when another is reframed into it",
+      [f for f in by(tr, "questions") if "whose" in f["message"]], [])
+_qb = run(TRF.replace("{id: which, move: reframes, into: [whose]}", "{id: whither, move: reframes}")
+             .replace("{id: which, move: answers}", "{id: which, move: shrugs}"), name="transfer.argdown")
+_qm = [f["message"] for f in by(_qb, "questions")]
+check("  an undeclared question and a move not in the vocabulary are faults",
+      (any("`question: {id: whither}`" in m for m in _qm), any("`move: shrugs`" in m for m in _qm)), (True, True))
+check("  and a declared question nothing touches is queried", any("`whose` is declared and no claim moves on it" in m
+      for m in _qm), True)
+# DEPTH. Mutation: drop the sketch test in analyse -> the sketch's open states are queried as gaps.
+_pol = "reconstruction:\n    method: parallel\n"
+_none = run(TRF.replace("===\ntitle:", "===\n" + _pol + "title:", 1)
+               .replace('mechanism:\n    question: "Does the case\'s verdict carry to a real vaccination policy?"',
+                        'mechanism:\n    depth: none\n    depth_reason: "argued from a case"\n    question: "q"'),
+            name="transfer.argdown")
+check("`depth: none` is recorded with its reason, and steps marked under it are queried",
+      (_none["shape"]["chain"], any("`depth: none` says the mechanism is not mapped" in f["message"]
+                                     for f in by(_none, "mechanism"))),
+      ({"depth": "none", "depth_reason": "argued from a case"}, True))
+_noblock = run('===\ntitle: "t"\n' + _pol + '===\n\n[A]: A claim.\n', name="plain.argdown")
+check("a parallel map that records no mechanism is queried", any("`method: parallel`" in f["message"]
+      for f in by(_noblock, "mechanism")), True)
+_series = run('===\ntitle: "t"\nreconstruction:\n    method: series\n===\n\n[A]: A claim.\n', name="plain.argdown")
+check("  and a series map is not", by(_series, "mechanism"), [])
+_open = TRF.replace('        duty:    {label: "A duty of rescue", actor: kids, role: outcome}',
+                    '        duty:    {label: "A duty of rescue", actor: kids, role: outcome}\n'
+                    '        school:  {label: "Schools close", actor: health, role: condition}')
+_full = run(_open, name="transfer.argdown")
+_sk = run(_open.replace('    levels: [population, people]',
+                        '    depth: sketch\n    depth_reason: "the argument uses one chain"\n    levels: [population, people]'),
+          name="transfer.argdown")
+check("a state with no step is a gap in a full map",
+      any("`school`" in f["message"] for f in by(_full, "mechanism-gap")), True)
+check("  and a sketch is reported as one, and leaves it open, unqueried",
+      (_sk["shape"]["chain"]["depth"], [f for f in by(_sk, "mechanism-gap") if "`school`" in f["message"]]),
+      ("sketch", []))
+
 print("\na key the profile does not know is never read, and says so (the trial, 1 Oct 2026)")
 # Mutation: return [] from mechanism._unknown_keys -> the first two fail.
 uk = run(BRI.replace('{from: curfew, to: crime, sign: "-", basis: asserted}',

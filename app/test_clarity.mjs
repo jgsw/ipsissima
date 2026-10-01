@@ -434,6 +434,63 @@ if (chromium) {
       await page.context().close();
     }
     {
+      // A LINK TO A FOLDED CLAIM, on a map still as it opened (profile 1.17's questions panel,
+      // and the Argdown pane's links, take the same road). The opening had come down a rung to be
+      // readable; unfolding for the claim re-rendered, the framing chose that rung again, and the
+      // claim went back under its fold -- nothing lit, and nothing moved.
+      const src = fs.readFileSync(sample(BATES, "bates-2012-price-is-wrong.argdown"), "utf8")
+        .replace(/^title: (.*)$/m, '$&\nquestions:\n    time: {text: "Does deliberation matter?"}')
+        .replace(/(\[Stockpilers stop taking more bottles\]: [^\n]*\n    \{)/,
+                 '$1question: {id: time, move: answers}, ')
+        // and one the argument map does not draw (it only feeds the mechanism): named, not linked
+        .replace(/(\[Deliberation may matter only under time pressure\]: [^\n]*\n    \{)/,
+                 '$1question: {id: time, move: answers}, ');
+      const qfile = path.join(tmp, "bates-questions.argdown");
+      fs.writeFileSync(qfile, src);
+      const sid = toGraph(argdown.run({ input: src, ...RUN })).nodes
+        .find(n => n.label === "Stockpilers stop taking more bottles").id;
+      const page = await open(build(path.join(tmp, "bates-q.html"),
+                                    [qfile, "--source-root", path.join(REPO, "samples", BATES)]));
+      const before = await page.evaluate(() =>
+        document.querySelectorAll("#map .alm-n").length);
+      await page.click("#qchip");
+      await page.waitForTimeout(300);
+      const link = page.locator("#absbody button", { hasText: "Stockpilers stop taking more bottles" });
+      check(await link.count() === 1, "the questions pill lists the question and the claim that answers it");
+      // Mutation: link every move -> a button that goes nowhere.
+      check(await page.locator("#absbody button", { hasText: "Deliberation may matter" }).count() === 0 &&
+            /Deliberation may matter only under time pressure\] \(not on the map\)/.test(
+              await page.locator("#absbody").textContent()),
+            "a claim the argument map does not draw is named, not linked");
+      const wasDrawn = await page.evaluate(id => !!document.querySelector(
+        `#map .alm-n[data-id="${CSS.escape(id)}"]`), sid);
+      await link.click();
+      await page.waitForTimeout(1500);
+      const r = await page.evaluate(id => {
+        const m = document.getElementById("map").getBoundingClientRect();
+        const e = document.querySelector(`#map .alm-n[data-id="${CSS.escape(id)}"]`);
+        if (!e) return { drawn: false };
+        const b = e.getBoundingClientRect();
+        const vp = [...document.querySelectorAll("#map *")].find(x => /scale\(/.test(x.style.transform || ""));
+        return { drawn: true, panel: !document.getElementById("abspanel").hidden,
+                 inMap: b.left >= m.left && b.right <= m.right && b.top >= m.top && b.bottom <= m.bottom,
+                 zoom: vp ? +vp.style.transform.replace(/.*scale\(([^)]*)\).*/, "$1") : 0 };
+      }, sid);
+      check(!wasDrawn && before > 0, "the claim starts out folded away", String(wasDrawn));
+      check(r.drawn && r.inMap && !r.panel,
+            "following it from the questions panel unfolds it onto the screen and closes the panel",
+            JSON.stringify(r));
+      // Mutation: drop `userMoved = true` from reveal -> the unfolded map is refitted to the floor.
+      check(r.zoom >= 0.65, "at a zoom its words can be read, not the whole map refitted", String(r.zoom));
+      // Mutation: drop readerActed() from reveal -> opening a pane re-draws the map, the framing
+      // takes the rung again, and the claim goes back under its fold.
+      await page.click('#panes [data-p="text"]');
+      await page.waitForTimeout(1200);
+      check(await page.evaluate(id => !!document.querySelector(`#map .alm-n[data-id="${CSS.escape(id)}"]`), sid),
+            "and it stays unfolded when a pane opens beside the map");
+      await page.context().close();
+    }
+    {
       // A FIRST-TIME READER, on the page anyone can open: the key offers itself 700ms after the
       // map, over its right side. The map must be framed for it from the start, not re-laid
       // underneath when it arrives.

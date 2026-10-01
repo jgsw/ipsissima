@@ -331,41 +331,50 @@ def describe(paths, recursive=True):
             why="chapters of one work belong in one map; separate articles belong in separate "
                 "maps. Nothing in the files themselves settles which this is."))
 
-    # ---- the mechanism pass, offered ---------------------------------------- #
-    # DECIDED 26 SEP 2026: the pass runs only on request, on a finished and verified map. A text
+    # ---- the mechanism: always considered (parallel), or offered (series) ---- #
+    # SERIES, DECIDED 26 SEP 2026: the pass runs only on request, on a finished and verified map. A text
     # that says, sentence after sentence, what brings what about is the one where a reader is
     # likely to want it and unlikely to know it exists -- so the plan SAYS it exists. An offer,
     # not a question: nothing waits on the answer, and the map is made the same way either way.
     offers = []
+    mech_plan = None
     causal = [r for r in sources if (r["causal"] or {}).get("looks_causal")]
-    if causal:
+    from ipsissima_mcp import mechanism
+    if mechanism.mechanism_method() == "parallel" and sources:
+        # ALWAYS CONSIDERED (1.17, James, 1 Oct 2026). The count of causal vocabulary missed all
+        # three essays of the parallel-pass trial -- Merton read 2 causal sentences per thousand
+        # words and is a mechanism from start to finish -- because essays carry causation in
+        # narrative and metaphor. So under the parallel method the mechanism is part of every
+        # reconstruction, its cost kept down by the skeleton: map it only as far as the argument
+        # needs it, and say how far (`depth`). The count stays, as a hint.
+        rates = {r["name"]: (r["causal"] or {}).get("per_1000_words") for r in sources}
+        mech_plan = dict(
+            method="parallel", considered="always",
+            causal_hint=rates,
+            message=("The mechanism will be read together with the argument (the parallel method): "
+                     "what the text says brings what about, and where that does work in the "
+                     "argument. It is mapped only as far as the argument relies on it -- in full, "
+                     "as a sketch, or recorded as not mapped, with the reason. Say if you want the "
+                     "argument alone."),
+            how=("read argdown_method `mechanism` with the reconstruction documents; sketch the "
+                 "mechanism's skeleton beside the argument's; then set `mechanism: depth:` -- `full`, "
+                 "`sketch`, or `none` with a `depth_reason:` -- by what the argument relies on, not by "
+                 "the causal count, which misses causation told in narrative and metaphor. If the user "
+                 "wants the argument alone, `depth: none` with that as the reason"))
+    elif causal:
         names = [r["name"] for r in causal]
         lead = (f"{', '.join(names)} {'sets' if len(names) == 1 else 'set'} out what brings what "
                 f"about -- causal language in {max(r['causal']['per_1000_words'] for r in causal):g} "
                 f"sentences per thousand words, where an argumentative paper runs under 7. ")
-        from ipsissima_mcp import mechanism
-        # THE OFFER FOLLOWS THE METHOD IN FORCE (1.15). In parallel the question has to be asked
-        # BEFORE the map is made, because the argument and the mechanism are read together.
-        if mechanism.mechanism_method() == "parallel":
-            offers.append(dict(
-                id="mechanism", sources=names, method="parallel",
-                message=lead + ("Ipsissima can reconstruct the causal chain the text asserts "
-                                "together with the argument -- actors, steps, what each step rests "
-                                "on, where the chain stops -- and show where the mechanism does work "
-                                "in the argument, through named bridges. It is decided before the "
-                                "map is made, because the two are read together."),
-                how="ask before reconstructing; only if the user says yes: argdown_method with "
-                    "`mechanism`, and reconstruct the argument and the mechanism together"))
-        else:
-            offers.append(dict(
-                id="mechanism", sources=names, method="series",
-                message=lead + ("Once the map checks ok and verified, Ipsissima can also mark the "
-                                "causal chain the text asserts -- actors, steps, what each step "
-                                "rests on, and where the chain stops -- and draw it in the "
-                                "Mechanism view. It is a separate pass that re-reads the source, "
-                                "and it changes nothing in the argument."),
-                how="only if the user says yes: argdown_method with `mechanism`, after the map "
-                    "checks ok and verified"))
+        offers.append(dict(
+            id="mechanism", sources=names, method="series",
+            message=lead + ("Once the map checks ok and verified, Ipsissima can also mark the "
+                            "causal chain the text asserts -- actors, steps, what each step "
+                            "rests on, and where the chain stops -- and draw it in the "
+                            "Mechanism view. It is a separate pass that re-reads the source, "
+                            "and it changes nothing in the argument."),
+            how="only if the user says yes: argdown_method with `mechanism`, after the map "
+                "checks ok and verified"))
 
     total = sum(r["words"] for r in sources)
     return dict(
@@ -373,5 +382,6 @@ def describe(paths, recursive=True):
         count=len(sources), total_words=total,
         unreadable=unreadable, skipped=skipped,
         questions=questions, advice=advice, offers=offers,
+        **({"mechanism": mech_plan} if mech_plan else {}),
         hierarchy_note="Markdown is gold, pandoc-readable is silver, PDF is bronze. Where you "
                        "have a document in more than one format, give Ipsissima the best one.")

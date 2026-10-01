@@ -414,10 +414,34 @@ function model(graph) {
     var sch = bridgeScheme(f.rules);
     return sch ? [f.argument, f.step, sch.name, f.inputs.length, f.inputs.filter(function (t) { return stepTitles[t]; }).length] : null;
   }).filter(Boolean));
+  // THERE AND HERE (1.17): mechanism.py's transfers, field for field -- a "From there to here"
+  // bridge's premise steps by the setting each holds in, and those with no counterpart elsewhere.
+  prof.transfers = (m.inferences || []).map(function (f) {
+    var sch = bridgeScheme(f.rules);
+    if (!sch || sch.name !== "From there to here") return null;
+    var inSet = {}; f.inputs.forEach(function (t) { inSet[t] = true; });
+    var by = {};
+    steps.forEach(function (st) {
+      if (!inSet[st.claim.title] || !has(states, st.from) || !has(states, st.to)) return;
+      (by[st.regime] = by[st.regime] || {})[JSON.stringify([String(st.from), String(st.to), st.sign || ""])] = true;
+    });
+    var regimes = Object.keys(by).sort(), unmatched = [];
+    if (regimes.length >= 2) regimes.forEach(function (r) {
+      Object.keys(by[r]).forEach(function (k) {
+        var elsewhere = regimes.some(function (o) { return o !== r && by[o][k]; });
+        if (!elsewhere) unmatched.push([r].concat(JSON.parse(k)));
+      });
+    });
+    return [f.argument, f.step, regimes, unmatched.sort(cmpDeep)];
+  }).filter(Boolean).sort(cmpDeep);
+  // HOW FAR THE MECHANISM IS MAPPED (1.17): mechanism.py's depth and depth_reason.
+  prof.depth = block.depth == null ? "full" : String(block.depth);
+  prof.depth_reason = block.depth_reason == null ? null : String(block.depth_reason);
   return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            form: form, constitutions: consts, reasoning: reasoning,
+           order: block.order == null ? "time" : String(block.order),
            profile: prof };
 }
 
@@ -630,7 +654,9 @@ function chainsOf(block) {
                // ITS GOAL (1.13), its own or the block's, and its CONTRAST -- as the checker has it.
                goal: goalOf(c) || goalOf(block), contrast: c.contrast == null ? null : String(c.contrast),
                // ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
-               account: accountOf(c).length ? accountOf(c) : accountOf(block) });
+               account: accountOf(c).length ? accountOf(c) : accountOf(block),
+               // ITS ORDER (1.17), its own or the block's: time, or the order of explanation.
+               order: c.order != null ? String(c.order) : block.order != null ? String(block.order) : "time" });
   });
   return out;
 }
@@ -866,6 +892,7 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     cp.goal = ch.goal == null ? null : ch.goal;
     cp.contrast = ch.contrast == null ? null : ch.contrast;
     cp.account = ch.account || [];
+    cp.order = ch.order || "time";
   });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
@@ -3028,7 +3055,7 @@ function chainModel(M, id) {
            dropped: 0, appraisalClaims: Object.keys(appr).length,
            question: c.question || M.question, chains: [], kinds: M.kinds,
            chain: { id: c.id, label: c.label || c.id, shared: shared },
-           form: cform, constitutions: consts, reasoning: creason,
+           form: cform, constitutions: consts, reasoning: creason, order: c.order || "time",
            profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
                             cform, consts, creason) };
 }
@@ -3037,6 +3064,14 @@ function chainModel(M, id) {
  *  a claim -- the host takes it to the claim's passage. Returns a small controller. */
 function create(container, graph, opts) {
   opts = opts || {};
+  // CONSIDERED, NOT MAPPED (1.17): under the parallel method every text's mechanism is considered,
+  // and a map may record that it was not mapped, and why. That record is what this view shows.
+  var DEPTH = obj(graph && graph.mechanism && graph.mechanism.block);
+  if (DEPTH.depth === "none") {
+    container.textContent = "The mechanism was considered, and not mapped" +
+      (DEPTH.depth_reason ? ": " + String(DEPTH.depth_reason) : ".");
+    return null;
+  }
   injectStyle();
   var FULL = model(graph);
   container.innerHTML = "";
@@ -3275,7 +3310,11 @@ function create(container, graph, opts) {
   // A CYCLE IS NOT A SEQUENCE (1.13): in a diagram of kinds and variables with feedback, "there can be
   // no time line" (Johansson et al. 2024, p. 102), and a cycle has no first state to read from.
   el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent =
-    M.form && M.form.form === "cycle" ? "a cycle: its order on the page is not time" : "in sequence, left to right →";
+    M.form && M.form.form === "cycle" ? "a cycle: its order on the page is not time" :
+    // AN ORDER OF EXPLANATION IS NOT TIME (1.17): a genealogy's stages come in the order
+    // complications are added, and left to right reads as history unless the chart says otherwise.
+    M.order === "explanation" ? "in order of explanation, not of time: each stage adds a complication →" :
+    "in sequence, left to right →";
   var gCap = el("g", {}, svg);
 
   var drawnEdges = [], drawnNodes = {};
@@ -3738,6 +3777,12 @@ function create(container, graph, opts) {
         counterfactual: "what would have happened otherwise", "intra-action": "relations that make what they relate" })[a]; }).join("; ")) + '</span></div>' : '') +
       ((P.stock_loops || []).length ? '<div class="amech-row"><span class="k">stock loops</span><span>' + P.stock_loops.length +
         ' loop' + (P.stock_loops.length === 1 ? '' : 's') + ' through a flow into a stock: the sign counts flows, and the states need not move together</span></div>' : '') +
+      // HOW FAR IT IS MAPPED, and AN ORDER OF EXPLANATION (1.17).
+      (P.depth === "sketch" ? '<div class="amech-row"><span class="k">mapped</span><span>a sketch: steps marked only where the argument relies on them' +
+        (P.depth_reason ? ' -- ' + esc(P.depth_reason) : '') + '</span></div>' : '') +
+      ((P.chains || []).some(function (c) { return c.order === "explanation"; }) ? '<div class="amech-row"><span class="k">order</span><span>' +
+        esc((P.chains || []).filter(function (c) { return c.order === "explanation"; }).map(function (c) { return c.id; }).join(", ")) +
+        ': told in order of explanation, each stage adding a complication -- not in order of time</span></div>' : '') +
       (P.form && P.form.form === "cycle" ? '<div class="amech-row"><span class="k">form</span><span>a cycle, not asked where it starts or ends; ' +
         (P.form.settles === true ? 'the text says it comes to rest' : P.form.settles === false ? 'the text says it does not come to rest' : 'the text does not say whether it comes to rest') + '</span></div>' : '') +
       ((P.aspects || []).length ? '<div class="amech-row"><span class="k">told in</span><span>' + esc(P.aspects.map(function (a) { return a[1] + " " + a[0]; }).join(", ")) + '</span></div>' : '') +

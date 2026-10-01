@@ -1,0 +1,49 @@
+// A planted map for profile 1.17: a conclusion carried FROM THERE TO HERE -- from a stipulated
+// vaccine case to the world -- whose premises hold in two settings (`regime:`). The case has the
+// vaccine-failure step the world shares, but not the world's herd-immunity loop: the census lists
+// the loop as a step of one setting with no counterpart in the other. A second chain runs in the
+// ORDER OF EXPLANATION (a genealogy's stages), and the text works on two QUESTIONS, one of them
+// dissolved into the other.
+===
+title: "Transfer -- a planted case carried to the world"
+questions:
+    which: {text: "Which vaccine should we produce?"}
+    whose: {text: "Whose claims does a risk policy answer to?", pinpoint: "p. 1"}
+mechanism:
+    question: "Does the case's verdict carry to a real vaccination policy?"
+    levels: [population, people]
+    chains:
+        policy: {label: "Vaccination", question: "What does a vaccine do, there and here?"}
+        story:  {label: "How a duty of rescue arose", question: "Why do we owe rescue?", order: explanation}
+    actors:
+        health: {label: "Health authority", level: population}
+        kids:   {label: "Children", level: people}
+    states:
+        vaccine: {label: "Vaccine 3 is given", actor: health, role: intervention}
+        fails:   {label: "The vaccine fails for some children", actor: kids}
+        death:   {label: "Children die of the virus", actor: kids, role: outcome}
+        cover:   {label: "Vaccination coverage", actor: health}
+        exposure: {label: "Exposure to the virus", actor: kids}
+        need:    {label: "A need for mutual aid", actor: kids, role: condition}
+        duty:    {label: "A duty of rescue", actor: kids, role: outcome}
+===
+
+[Verdict here]: Vaccine 3 should not be chosen for a real policy.
+    {question: {id: which, move: answers}}
+
+<The case carried over>
+
+(1) [In the case, failure is death]: In the case, the children it fails are certain to die.
+    {causes: [{from: vaccine, to: fails, sign: "+", basis: asserted, regime: case, chain: policy}, {from: fails, to: death, sign: "+", basis: asserted, regime: case, chain: policy}]}
+(2) [In the world, failure raises the risk of death]: In the world, a child the vaccine fails is at risk, as coverage falls.
+    {causes: [{from: vaccine, to: fails, sign: "+", basis: asserted, regime: world, chain: policy}, {from: cover, to: exposure, sign: "-", basis: asserted, regime: world, chain: policy}, {from: exposure, to: death, sign: "+", basis: asserted, regime: world, chain: policy}]}
+-- From there to here {uses: [1, 2]} --
+(3) [Verdict here]
+
+[The question is the wrong one]: Which vaccine to produce is not the question; whose claims a policy answers to is.
+    {question: {id: which, move: reframes, into: [whose]}}
+    +> [Verdict here]
+
+[Rescue answers a need]: Mutual aid in need made rescue a duty.
+    {causes: {from: need, to: duty, sign: "+", basis: asserted, chain: story}}
+    +> [Verdict here]

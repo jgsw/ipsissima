@@ -117,14 +117,33 @@ def test_sources(d):
     check("one source: nothing to advise", plan["advice"], [])
     check("markdown is gold", plan["sources"][0]["metal"], "gold")
 
-    # THE MECHANISM PASS IS OFFERED FOR A TEXT THAT SETS OUT WHAT BRINGS WHAT ABOUT, and only there.
-    # Mutation: CAUSAL_PER_KW = 0 -> the essay is offered it; drop the offers block -> the brief is not.
+    # UNDER THE PARALLEL METHOD THE MECHANISM IS ALWAYS CONSIDERED (1.17): every plan says so, the
+    # causal count is a hint, and nothing is offered or asked. Mutation: gate mech_plan on `causal`
+    # -> the essay's plan has no mechanism.
     plan = sources.describe([str(d / "brief")])
-    check("a causal brief draws the mechanism offer", [o["id"] for o in plan["offers"]], ["mechanism"])
-    check("naming the source", plan["offers"][0]["sources"], ["brief.md"])
+    check("a causal brief: the mechanism is considered, not offered",
+          (plan.get("mechanism", {}).get("considered"), plan["offers"]), ("always", []))
     check("eleven causal sentences, the references not counted",
           plan["sources"][0]["causal"]["causal_sentences"], 11)
-    check("an offer is not a question", plan["questions"], [])
+    check("  and the count travels as a hint", plan["mechanism"]["causal_hint"].get("brief.md") is not None, True)
+    check("nothing is asked", plan["questions"], [])
+    check("an essay with almost no causal words is considered too",
+          sources.describe([str(d / "essay")]).get("mechanism", {}).get("considered"), "always")
+    # SERIES (reversible): the old offer, for a causal text only. Mutation: drop the series branch
+    # -> the brief is offered nothing.
+    _was = os.environ.get("IPSISSIMA_MECHANISM_METHOD")
+    os.environ["IPSISSIMA_MECHANISM_METHOD"] = "series"
+    try:
+        plan = sources.describe([str(d / "brief")])
+        check("set to series, a causal brief draws the mechanism offer", [o["id"] for o in plan["offers"]], ["mechanism"])
+        check("naming the source", plan["offers"][0]["sources"], ["brief.md"])
+        check("  and no standing mechanism", "mechanism" in plan, False)
+        check("  an essay that says `because` twice draws none", sources.describe([str(d / "essay")])["offers"], [])
+    finally:
+        if _was is None:
+            os.environ.pop("IPSISSIMA_MECHANISM_METHOD", None)
+        else:
+            os.environ["IPSISSIMA_MECHANISM_METHOD"] = _was
     # TWO FILES, ONE TEXT (Yellowstone, 27 Sep 2026): a record carrying another work's PDF.
     # Mutation: drop the same-text block -> no such question.
     (d / "twins").mkdir()
@@ -135,9 +154,7 @@ def test_sources(d):
           [q["id"].split(":")[0] for q in plan["questions"] if q["id"].startswith("same-text")], ["same-text"])
     check("  but one brief alone is not", [q for q in sources.describe([str(d / "brief")])["questions"]
                                            if q["id"].startswith("same-text")], [])
-    plan = sources.describe([str(d / "essay")])
-    check("an essay that says `because` twice draws none", plan["offers"], [])
-    check("nor does a text with no sentences", sources.describe([str(d / "one")])["offers"], [])
+    check("under parallel nothing is offered", sources.describe([str(d / "one")])["offers"], [])
 
     # A path that is not there is reported rather than treated as an empty folder.
     plan = sources.describe([str(d / "nope")])
@@ -331,16 +348,17 @@ def test_server(d):
                            for f in out.get("findings", [])),
                        "a fault with no location cannot be acted on")
 
-        # THE OFFER REACHES THE CLIENT, and `next` says to mention it and not to run it.
-        # Extraction alone is a complete request, so it offers nothing.
+        # THE MECHANISM REACHES THE CLIENT AS PART OF THE METHOD (1.17): parallel by default, and
+        # `next` says to read it with the reconstruction documents and record its depth.
+        # Extraction alone is a complete request, so it has none. Mutation: default to series -> fails.
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")]}))
-        check("the plan carries the mechanism offer", [o["id"] for o in out.get("offers", [])],
-              ["mechanism"])
-        # THE METHOD IN FORCE (1.15): parallel by default, so the offer is put BEFORE the map is
-        # made and `mechanism` serves the parallel method. Mutation: default to series -> fails.
-        check_true("and `next` says to ask before reconstructing, the method being parallel",
-                   "BEFORE reconstructing" in out.get("next", ""), out.get("next"))
-        check("the offer says which method", [o.get("method") for o in out.get("offers", [])], ["parallel"])
+        check("the plan carries the mechanism, always considered, and no offer",
+              (out.get("mechanism", {}).get("considered"), out.get("offers")), ("always", []))
+        check_true("and `next` says to read it with the argument and record its depth",
+                   "read with the argument" in out.get("next", "") and "depth" in out.get("next", ""), out.get("next"))
+        m = result(await s.call_tool("argdown_method", {"document": "extraction-prompt"}))
+        check_true("the extraction prompt's reply points to `mechanism`", '"mechanism" too' in m.get("next", ""),
+                   m.get("next"))
         m = result(await s.call_tool("argdown_method", {"document": "mechanism"}))
         check("`mechanism` serves the parallel method by default",
               (m.get("method_in_force"), "Argument and mechanism, reconstructed together" in m.get("text", "")),
@@ -351,6 +369,7 @@ def test_server(d):
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")],
                                                         "intent": "extract"}))
         check("an extraction-only plan offers nothing", out.get("offers"), [])
+        check("  and carries no mechanism", "mechanism" in out, False)
         check("and its `next` says nothing of it", "mechanism" in out.get("next", ""), False)
 
         # A file that does not exist is an answer, not a crash.

@@ -517,7 +517,8 @@ PROFILE_VERSION = _profile_version()
 #: reads it); `reviewed` is drawn in the app; `uses`, `formalization` and `formalized` ride on
 #: premise-conclusion lines;
 #: `isGroup` on headings.
-EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes")
+EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes",
+                   "question")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
@@ -2095,6 +2096,103 @@ def exposition_report(prov, doc, source_root, quotes, contentions):
         print("      for a full exposition pass only (optional): " + "; and ".join(parts))
 
 
+#: WHAT A CLAIM DOES TO A QUESTION (profile 1.17). Two of these are what the parallel-pass trial
+#: could draw only as support or attack: Wilson 2026 DISSOLVES "humanities or sciences?" into "which
+#: method for which problem?", and recasts the realist dispute as a meta-problem (a REFRAMING).
+QUESTION_MOVES = ("answers", "reframes", "splits", "dissolves")
+
+
+def questions_report(cli, path):
+    """The questions the map says the text works on (front matter `questions:`), and the claims'
+    moves on them (`question:`): checked, and listed in the census. Silent for a map with neither."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as prov
+        import mechanism as mech
+        import yaml
+    except ImportError:
+        return
+    raw = prov.frontmatter_block(path)
+    try:
+        fm = yaml.safe_load(raw) if raw else {}
+    except yaml.YAMLError:
+        return                      # the mechanism report names a front matter that is not YAML
+    decl = (fm or {}).get("questions") if isinstance(fm, dict) else None
+    doc = export_json(cli, path) or {}
+    moves = []
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            q = mech._data(node).get("question")
+            for mv in (q if isinstance(q, list) else [q] if q is not None else []):
+                moves.append((title, kind, mv))
+    if decl is None and not moves:
+        return
+    if decl is not None and not isinstance(decl, dict):
+        finding("questions", "!", "`questions:` must map ids to questions, each with its `text`",
+                fix='questions:\n    q1: {text: "Does philosophy belong with the humanities or the sciences?", pinpoint: "p. 513"}')
+        return
+    decl = decl or {}
+    texts = {str(k): (v.get("text") if isinstance(v, dict) else v) for k, v in decl.items()}
+    for qid, v in decl.items():
+        if isinstance(v, dict):
+            for k in v:
+                if k not in ("text", "pinpoint"):
+                    finding("questions", "!", f"question `{qid}`: `{k}` is not a key a question can carry "
+                            "(`text`, `pinpoint`)", fix="drop it, or put it in a `//` comment")
+        if not texts[str(qid)]:
+            finding("questions", "!", f"question `{qid}` has no `text`", fix="give the question in words")
+    done = {}
+    for title, kind, mv in moves:
+        where = {"title": title}
+        if not isinstance(mv, dict):
+            finding("questions", "!", "`question:` must be `{id, move}`, or a list of them",
+                    fix="question: {id: q1, move: dissolves, into: [q2]}", **where)
+            continue
+        for k in mv:
+            if k not in ("id", "move", "into"):
+                finding("questions", "!", f"`{k}` is not a key a question move can carry (`id`, `move`, "
+                        "`into`)", **where)
+        qid, move = str(mv.get("id")), str(mv.get("move") or "answers")
+        into = mv.get("into")
+        into = [] if into is None else [str(x) for x in (into if isinstance(into, list) else [into])]
+        if qid not in texts:
+            finding("questions", "!", f"`question: {{id: {qid}}}` is not declared under `questions:`",
+                    fix="declare it in the front matter, with its text", **where)
+            continue
+        if move not in QUESTION_MOVES:
+            finding("questions", "!", f"`move: {move}` is not one of {', '.join(QUESTION_MOVES)}", **where)
+            continue
+        for x in into:
+            if x not in texts:
+                finding("questions", "!", f"`into: {x}` is not declared under `questions:`", **where)
+        if move in ("reframes", "splits") and not into:
+            finding("questions", "?", f"`move: {move}` and no `into:` says what takes the question's place",
+                    fix="name the question(s) it becomes", **where)
+        if move == "splits" and len(into) == 1:
+            finding("questions", "?", "`move: splits` into one question is a reframing", **where)
+        if move == "answers" and into:
+            finding("questions", "?", "`move: answers` with an `into:` -- an answer leaves the question "
+                    "standing; did it reframe it?", **where)
+        done.setdefault(qid, []).append((move, title, kind, into))
+    SHAPE["questions"] = [dict(id=str(k), text=texts[str(k)],
+                               moves=[dict(move=m, title=t, into=i) for m, t, _k, i in done.get(str(k), [])])
+                          for k in decl]
+    print(f"\n   QUESTIONS ({len(decl)}): what the text works on, and what its claims do to each")
+    verb = {"answers": "answered by", "reframes": "reframed by", "splits": "split by", "dissolves": "dissolved by"}
+    into_of = {x for _t, _k, mv in moves if isinstance(mv, dict) for x in
+               ([] if mv.get("into") is None else mv.get("into") if isinstance(mv.get("into"), list) else [mv.get("into")])}
+    for qid in decl:
+        qid = str(qid)
+        print(f"      {qid}  {str(texts[qid])[:90]}")
+        for move, title, kind, into in done.get(qid, []):
+            name = f"<{title}>" if kind == "arguments" else f"[{title}]"
+            print(f"            {verb[move]} {name[:60]}" + (f", into {', '.join(into)}" if into else ""))
+        if not done.get(qid) and qid not in into_of:
+            finding("questions", "?", f"question `{qid}` is declared and no claim moves on it",
+                    fix="mark the claim that answers, reframes, splits or dissolves it -- or drop it")
+            print("            ? nothing in the map moves on it")
+
+
 def mechanism_report(cli, path, source_root=None):
     """The chain the text asserts: declarations checked, gaps and loops found, light and shadow.
 
@@ -2119,7 +2217,31 @@ def mechanism_report(cli, path, source_root=None):
         finding("mechanism", "!", why, fix="write the front matter as valid YAML")
     if block is not None:
         fm_here["mechanism"] = block
+    # EVERY TEXT'S MECHANISM IS CONSIDERED under the parallel method (1.17): a map says how far it
+    # mapped it, `none` included. A parallel map that says nothing has not recorded the decision.
+    _pol = prov.reconstruction_policy(path)[0] or {}
+    _depth, _why = mech.depth_of(block)
+    if block is None and _pol.get("method") == "parallel":
+        finding("mechanism", "?",
+                "the reading policy says `method: parallel`, under which every text's mechanism is "
+                "considered, and the front matter records no `mechanism:` block",
+                fix="if the mechanism was considered and not mapped, say so: `mechanism: {depth: none, "
+                    "depth_reason: \"...\"}`; otherwise map it, in full or as a sketch")
+        print("\n   MECHANISM -- considered? the map does not say (`method: parallel`, no `mechanism:` block)")
     found, profile = mech.analyse(fm_here, doc)
+    if block is not None and _depth == "none":
+        # CONSIDERED AND NOT MAPPED: the decision, and its reason, are the whole of the record.
+        n = len([x for x in mech.steps(doc, prov.appraisal_titles(doc)) if x["layer"] == "text"])
+        for sev, check, message, where in found:
+            if check not in ("mechanism-gap",) and not message.startswith(("no state has", "chain `")):
+                finding(check, sev, message, **{k: v for k, v in where.items() if v is not None})
+        if n:
+            finding("mechanism", "?", f"`depth: none` says the mechanism is not mapped, and {n} step(s) "
+                    f"are marked", fix="say `depth: sketch` or `full`, or take the steps out")
+        SHAPE["chain"] = {"depth": "none", "depth_reason": _why}
+        print(f"\n   MECHANISM -- considered, not mapped" + (f": {_why}" if _why else
+              " (no `depth_reason:` says why)"))
+        return
     for sev, check, message, where in found:
         finding(check, sev, message, **{k: v for k, v in where.items() if v is not None})
     faults = [f for f in found if f[1] != "mechanism-gap"]
@@ -2136,7 +2258,9 @@ def mechanism_report(cli, path, source_root=None):
         cov = mech.coverage(doc, source_root, steps_all)
         if cov:
             profile["coverage"] = cov
-            if cov["uncovered_count"]:
+            # A SKETCH MARKS ONLY WHAT THE ARGUMENT NEEDS (1.17): its uncovered sentences are listed
+            # in the census, never queried.
+            if cov["uncovered_count"] and _depth != "sketch":
                 finding("mechanism-coverage", "?",
                         f"{cov['uncovered_count']} of {cov['causal_sentences']} sentences in the "
                         f"text use causal language and no step quotes them"
@@ -2606,6 +2730,9 @@ def _report(cli, path, a):
     # there is a chain.
     mechanism_report(cli, path, os.path.abspath(os.path.expanduser(a.source_root))
                      if a.source_root else None)
+
+    # ---- 5d3. the questions the text works on (profile 1.17) -------------- #
+    questions_report(cli, path)
 
     # ---- 5e. the shape of the premise-conclusion structures --------------- #
     # After fidelity, because these are questions about the ARGUMENT rather than about whose

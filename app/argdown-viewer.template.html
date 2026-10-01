@@ -225,6 +225,8 @@ main.swapped{flex-direction:row-reverse}
 #orient .decl{background:var(--panel);font-size:11px;line-height:1.3;padding:.15rem .55rem;
   border-radius:999px;color:var(--fg-dim)}
 #orient .decl:hover{color:var(--fg)}
+#absbody ul.qmoves{margin:.1rem 0 .55rem 1.1rem;padding:0;font-size:12.5px}
+#absbody .qlink{font:inherit;color:var(--accent,inherit);text-decoration:underline;padding:0;cursor:pointer}
 /* The Mechanism arrangement opens with its question in a bar across the top-left corner -- the
    corner the Abstract fold floats in, which covered the question's first words (26 Sep 2026).
    While the fold is offered, the bar starts clear of it. */
@@ -1183,6 +1185,10 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
       <!-- ONE READING AMONG READINGS: the map's own declared cruxes, counted (Formation T4). -->
       <button class="plain decl" id="cruxchip" type="button" hidden
               data-help="What a map says about itself"></button>
+      <!-- THE QUESTIONS THE TEXT WORKS ON (profile 1.17): front matter `questions:`, and what the
+           claims do to them -- answer, reframe, split or dissolve. A reframing is a move on a
+           question, not a reason, so it is listed here rather than drawn as support. -->
+      <button class="plain decl" id="qchip" type="button" hidden></button>
     </div>
     <div id="abspanel" role="note" hidden>
       <div id="abshead">
@@ -1784,6 +1790,15 @@ function render(name, source, graph){
     cx.textContent = "one reading · " + cc + (cc === 1 ? " crux" : " cruxes");
     cx.title = cc + (cc === 1 ? " point" : " points") + " where the text leaves the reading " +
       "open and the reconstructor chose among live alternatives (#crux). Click for more.";
+  }
+  // The questions the text works on, and what its claims do to them (profile 1.17).
+  QUESTIONS = (graph && graph.questions) || null;
+  var qc = $("qchip");
+  qc.hidden = !(QUESTIONS && QUESTIONS.length);
+  if (!qc.hidden) {
+    qc.textContent = QUESTIONS.length + (QUESTIONS.length === 1 ? " question" : " questions");
+    qc.title = "The questions the text works on, as the reconstructor named them, and what its " +
+      "claims do to each: answer, reframe, split or dissolve it. Click to list them.";
   }
   syncOrient();
   showArgdown(SOURCE);
@@ -5446,7 +5461,7 @@ function manuscriptAbstract(){
  *  stage, so the Mechanism chart's question starts clear of it -- a fixed 118px cleared the
  *  Abstract button alone and nothing wider. */
 function syncOrient(){
-  var any = ["absbtn", "gentext", "mapprov", "cruxchip"].some(function(id){ return !$(id).hidden; });
+  var any = ["absbtn", "gentext", "mapprov", "cruxchip", "qchip"].some(function(id){ return !$(id).hidden; });
   $("abs").hidden = !any;
   $("stage").style.setProperty("--orient-w", any ? $("orient").offsetWidth + "px" : "0px");
 }
@@ -5493,6 +5508,7 @@ function openHelpTopic(title){
  *  fresh file all mean the same thing by it and must not drift apart. */
 function setAbstract(open){
   if (!ABSTRACT) open = false;
+  if (open && PANEL_KIND !== "abstract") fillAbstract();
   $("abspanel").hidden = !open;
   $("absbtn").classList.toggle("on", !!open);
   $("absbtn").setAttribute("aria-expanded", open ? "true" : "false");
@@ -5504,6 +5520,71 @@ function syncAbstract(){
   ABSTRACT = manuscriptAbstract();
   $("absbtn").hidden = !ABSTRACT;
   syncOrient();
+  fillAbstract();
+  setAbstract(false);          // a file opens on its map, never on a panel over it
+}
+/** The panel shows one thing at a time: the abstract, or (1.17) the questions. */
+var PANEL_KIND = "abstract", QUESTIONS = null;
+var QUESTION_MOVES = { answers: "answered by", reframes: "reframed by", splits: "split by",
+                       dissolves: "dissolved by" };
+/** List the questions in the abstract's panel, each with the claims that move on it; a claim's
+ *  name takes the reader to it on the map, as a claim link in the Argdown pane does. */
+function showQuestions(){
+  if (!(QUESTIONS && QUESTIONS.length)) return;
+  PANEL_KIND = "questions";
+  var body = $("absbody"), byId = {};
+  body.textContent = "";
+  QUESTIONS.forEach(function(q){ byId[q.id] = q; });
+  QUESTIONS.forEach(function(q){
+    var p = document.createElement("p");
+    var b = document.createElement("strong");
+    b.textContent = q.text || q.id;
+    p.appendChild(b);
+    if (q.pinpoint) p.appendChild(document.createTextNode(" (" + q.pinpoint + ")"));
+    body.appendChild(p);
+    var ul = document.createElement("ul");
+    ul.className = "qmoves";
+    if (!q.moves.length) {
+      var li0 = document.createElement("li");
+      li0.textContent = "nothing in the map moves on it";
+      ul.appendChild(li0);
+    }
+    q.moves.forEach(function(mv){
+      var li = document.createElement("li");
+      li.appendChild(document.createTextNode((QUESTION_MOVES[mv.move] || mv.move) + " "));
+      var name = (mv.kind === "argument" ? "<" + mv.title + ">" : "[" + mv.title + "]");
+      var node = mv.id == null ? null : ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).filter(
+        function(x){ return x.id === mv.id; })[0];
+      // A STATEMENT THE ARGUMENT MAP DOES NOT DRAW -- one that only feeds the mechanism, with no
+      // relation to anything -- is named, not linked: a link that goes nowhere reads as broken.
+      var a = document.createElement(node ? "button" : "span");
+      a.textContent = name;
+      if (!node) a.title = "not drawn on the argument map";
+      else a.className = "plain qlink";
+      // The panel sits over the map's top-left, where a revealed claim is often centred: it goes,
+      // so the reader sees what they asked for.
+      // The click stops here: the panel sits on the map's stage, where a click reaching the map
+      // clears what is lit.
+      if (node) a.onclick = function(ev){
+        ev.stopPropagation();
+        $("abspanel").hidden = true; followClaim(node);
+      };
+      li.appendChild(a);
+      if (!node) li.appendChild(document.createTextNode(" (not on the map)"));
+      if (mv.into.length)
+        li.appendChild(document.createTextNode(", into " + mv.into.map(function(id){
+          return byId[id] ? "\u201c" + (byId[id].text || id) + "\u201d" : id; }).join(" and ")));
+      ul.appendChild(li);
+    });
+    body.appendChild(ul);
+  });
+  $("abswhere").textContent = "the questions the text works on, as the reconstructor named them";
+  $("abspanel").hidden = false;
+  $("absbtn").classList.remove("on");
+  $("absbtn").setAttribute("aria-expanded", "false");
+}
+function fillAbstract(){
+  PANEL_KIND = "abstract";
   var body = $("absbody");
   body.textContent = "";
   if (ABSTRACT) {
@@ -5521,11 +5602,16 @@ function syncAbstract(){
       (ABSTRACT.credit ? " · " + ABSTRACT.credit : "") +
       (MS.chapters.length > 1 ? " · " + ABSTRACT.chapter.replace(/^.*\//, "") : "");
   }
-  setAbstract(false);          // a file opens on its map, never on a panel over it
 }
 
-$("absbtn").onclick = function(){ setAbstract($("abspanel").hidden); };
-$("absclose").onclick = function(){ setAbstract(false); };
+$("absbtn").onclick = function(){
+  setAbstract($("abspanel").hidden || PANEL_KIND !== "abstract");
+};
+$("absclose").onclick = function(){ setAbstract(false); $("abspanel").hidden = true; };
+$("qchip").onclick = function(){
+  if (!$("abspanel").hidden && PANEL_KIND === "questions") { $("abspanel").hidden = true; return; }
+  showQuestions();
+};
 $("explclose").onclick = explHide;
 $("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
 $("xmcompact").onclick = function(){ EXPL_MODE = "compact"; explDraw(); };

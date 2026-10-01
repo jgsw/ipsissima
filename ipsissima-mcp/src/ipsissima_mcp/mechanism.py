@@ -110,6 +110,35 @@ DESIGNS = ("experiment", "replication", "quasi-experiment", "natural experiment"
 #: cause was decisive in bringing about an effect?" (p. 112).
 GOALS = ("explain", "intervene", "predict", "attribute")
 
+#: HOW FAR THE MECHANISM IS MAPPED (profile 1.17). Under the parallel method every text's mechanism
+#: is considered (James, 1 Oct 2026: arguments that need no understanding of mechanisms are "the
+#: exception rather than the default"), but not every text repays a full pass. `full` marks the
+#: chain as the text asserts it; `sketch` names the question, actors and chains and marks steps
+#: only where the argument relies on them, so a state with no step is no gap; `none` records that
+#: the mechanism was considered and not mapped. The last two say why, in `depth_reason`.
+DEPTHS = ("full", "sketch", "none")
+
+#: THE ORDER A CHAIN'S STEPS ARE TOLD IN (profile 1.17). A pragmatic genealogy is a dynamic model whose
+#: stages come in the order complications are added -- "later primarily means less idealized"
+#: (Queloz 2021, p. 16) -- not the order of history; the chart lays every chain out left to right,
+#: and every reader takes that as time. Mistaking one for the other is the first genetic fallacy
+#: Cohen and Nagel named. `time` is the default.
+CHAIN_ORDERS = ("time", "explanation")
+
+
+def _order(block):
+    """A block's or a chain's declared `order`, or None."""
+    o = block.get("order") if isinstance(block, dict) else None
+    return None if o is None else str(o)
+
+
+def depth_of(block):
+    """(depth, reason) of a mechanism block: `full` unless it says otherwise."""
+    if not isinstance(block, dict) or block.get("depth") is None:
+        return "full", None
+    r = block.get("depth_reason")
+    return str(block.get("depth")), (None if r is None else str(r))
+
 #: THE METHOD IN FORCE FOR A TEXT'S MECHANISM (1.15). `parallel`: the argument and the mechanism
 #: are read together, and the mechanism enters the argument through bridges (parallel-pass.md;
 #: adopted 1 Oct 2026 on the author's word, after the trial of 30 Sep in which he judged the
@@ -565,6 +594,18 @@ def declared(fm):
         problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
     for sev, msg, where in form_of(m)[2]:
         problems.append((sev, msg, where))
+    if _order(m) is not None and _order(m) not in CHAIN_ORDERS:
+        problems.append(("!", f"`order: {_order(m)}` is not one of {', '.join(CHAIN_ORDERS)}", {}))
+    for _cid, _ch in ((m.get("chains") or {}).items() if isinstance(m.get("chains"), dict) else ()):
+        if _order(_ch) is not None and _order(_ch) not in CHAIN_ORDERS:
+            problems.append(("!", f"chain `{_cid}`: `order: {_order(_ch)}` is not one of {', '.join(CHAIN_ORDERS)}",
+                             {"chain": str(_cid)}))
+    _d, _why = depth_of(m)
+    if _d not in DEPTHS:
+        problems.append(("!", f"`depth: {_d}` is not one of {', '.join(DEPTHS)}", {}))
+    elif _d != "full" and not _why:
+        problems.append(("?", f"`depth: {_d}` says the mechanism is not mapped in full, and no "
+                              f"`depth_reason:` says why", {"fix": "add a one-line `depth_reason:`"}))
     if m.get("goal") is not None and str(m.get("goal")) not in GOALS:
         problems.append(("?", f"`goal: {m.get('goal')}` is not one of {', '.join(GOALS)}", {}))
     for a in _as_list(m.get("account")):
@@ -1213,7 +1254,9 @@ def _chains(block):
                              goal=_goal(ch) or _goal(block),
                              contrast=None if ch.get("contrast") is None else str(ch.get("contrast")),
                              # ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
-                             account=_account_of(ch) or _account_of(block), own_account=bool(_account_of(ch)))
+                             account=_account_of(ch) or _account_of(block), own_account=bool(_account_of(ch)),
+                             # ITS ORDER (1.17), its own or the block's.
+                             order=_order(ch) or _order(block) or "time")
     return out
 
 
@@ -1565,8 +1608,11 @@ def analyse(fm, doc):
     gap_states = {g["state"] for g in gaps}
     taken_up = sorted({(s["dst"], s["title"]) for s in text_all if s["dst"] in gap_states and s["title"] in reasons})
     handed = {st for st, _ in taken_up}
+    # A SKETCH HAS GAPS BY DESIGN (1.17): its states are named and its steps marked only where the
+    # argument relies on them, so a state with no step is the sketch's choice, not the text's.
+    sketch = depth_of(block)[0] == "sketch"
     for g in gaps:
-        if g["state"] in handed:
+        if g["state"] in handed or sketch:
             continue
         findings.append(("?", "mechanism-gap", g["message"],
                          {"state": g["state"],
@@ -1745,7 +1791,7 @@ def analyse(fm, doc):
         findings.append(("?", "mechanism", "`goal: attribute`, and no step says what kind of causing it attributes "
                          "(`attribution:`)", {}))
     for cp in chain_profiles:
-        if not cp["steps"]:
+        if not cp["steps"] and depth_of(block)[0] != "sketch":
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
                              f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
     # BRIDGES (1.15): a named causal scheme with no step among its premises bridges nothing.
@@ -1756,8 +1802,30 @@ def analyse(fm, doc):
                              f"premises states a step: a bridge carries the mechanism into the argument", {"title": arg}))
     profile_bridges = sorted([arg, step, scheme, len(inputs), len(with_steps)] for arg, step, scheme, inputs, with_steps
                              in bridges_of(doc, step_titles))
+    # THERE AND HERE (1.17): a "From there to here" bridge carries a conclusion from one setting to
+    # another because the mechanism is shared. Its first question -- is the mechanism of action present
+    # here? -- the census can ask of the map: the premises' steps, grouped by the setting each holds in
+    # (`regime:`), and those with no counterpart in another setting. Frick's vaccine case and the world
+    # it is meant to bear on: the herd-immunity loop is a step of one and not the other.
+    transfers = []
+    for arg, step, scheme, inputs, _w in bridges_of(doc, step_titles):
+        if scheme != "From there to here":
+            continue
+        by = {}
+        for st in all_steps:
+            if st["title"] in inputs and st["src"] in states and st["dst"] in states:
+                by.setdefault(st["regime"], set()).add((str(st["src"]), str(st["dst"]), st["sign"] or ""))
+        regimes = sorted(by)
+        unmatched = []
+        if len(regimes) >= 2:
+            for r in regimes:
+                others = set().union(*(by[o] for o in regimes if o != r))
+                unmatched += [[r, a, b, sg] for a, b, sg in sorted(by[r]) if (a, b, sg) not in others]
+        transfers.append([arg, step, regimes, sorted(unmatched)])
     if profile is not None:
-        profile = {**profile, "bridges": profile_bridges}
+        _d, _why = depth_of(block)
+        profile = {**profile, "bridges": profile_bridges, "depth": _d, "depth_reason": _why,
+                   "transfers": sorted(transfers)}
     return findings, profile
 
 
@@ -1901,6 +1969,7 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cp["goal"] = chains[cp["id"]].get("goal")
         cp["contrast"] = chains[cp["id"]].get("contrast")
         cp["account"] = chains[cp["id"]].get("account") or []
+        cp["order"] = chains[cp["id"]].get("order", "time")
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -1959,6 +2028,10 @@ def census(profile):
     tall = len(p["levels_spanned"])
     lines = [f"   CHAIN -- {p['steps']} distinct step(s) the text asserts, by {p['claims']} "
              f"claim(s); {p['states']} state(s) declared"]
+    if p.get("depth") == "sketch":
+        lines.append("      depth   a SKETCH: the question, actors and chains, with steps marked only where "
+                     "the argument relies on them; a state with no step is not queried"
+                     + (f" -- {p['depth_reason']}" if p.get("depth_reason") else ""))
     if p.get("question"):
         lines.append(f"      question: {p['question']}")
     if p.get("contrast"):
@@ -2200,6 +2273,7 @@ def census(profile):
                      f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
                      f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
                      + (" -- a cycle" if (ch.get("form") or {}).get("form") == "cycle" else "")
+                     + (" -- in order of explanation, not of time" if ch.get("order") == "explanation" else "")
                      + (f" -- to {ch['goal']}" if ch.get("goal") else "")
                      + (f" -- by {', '.join(ch['account'])}" if ch.get("account") else "")
                      + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
@@ -2269,10 +2343,23 @@ def census(profile):
         if st in handed:
             lines.append(f"      handed  `{st}`: the chain stops here, and the argument takes it on -- "
                          + "; ".join(f"[{t}] is a reason there" for t in handed[st]))
+        elif p.get("depth") == "sketch":
+            lines.append(f"      open    {g} -- left open by the sketch")
         else:
             lines.append(f"      ? gap   {g}")
     for arg, step, scheme, n_in, n_steps in p.get("bridges", []):
         lines.append(f"      bridge  <{arg}> step {step}: {scheme}, {n_steps} of {n_in} premise(s) stating a step")
+    for arg, step, regimes, unmatched in p.get("transfers", []):
+        name = lambda r: f"`{r}`" if r else "(no regime)"
+        if len(regimes) < 2:
+            lines.append(f"      transfer <{arg}> step {step}: its premises' steps name "
+                         f"{'no setting' if not regimes or regimes == [''] else 'one setting, ' + name(regimes[0])}"
+                         " -- give each step its `regime:` to compare there with here")
+            continue
+        lines.append(f"      transfer <{arg}> step {step}: settings {' and '.join(name(r) for r in regimes)}"
+                     + ("; every step has a counterpart in the other" if not unmatched else ""))
+        for r, a, b, sg in unmatched:
+            lines.append(f"               only in {name(r)}: {a} -> {b}" + (f" ({sg})" if sg else ""))
     cov = p.get("coverage")
     if cov:
         lines.append(f"      cover   {cov['covered']} of {cov['causal_sentences']} sentences in the "

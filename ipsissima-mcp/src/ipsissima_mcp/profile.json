@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.16",
+  "version": "1.17",
   "date": "2026-10-01",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -14,6 +14,7 @@
     "reconstruction": {"type": "map", "summary": "The reading policy.", "keys": "reading_policy"},
     "defaults": {"type": "map", "summary": "Claim metadata declared once for every claim that does not set its own (usually `chapter`); `reviewed` here records a person's pass over the whole map."},
     "contentions": {"type": "list of titles", "summary": "The text's stated theses, added to the computed apex. Only the author's own."},
+    "questions": {"type": "map of id to {text, pinpoint}", "summary": "The questions the text works on, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (since 1.17)."},
     "text-provenance": {"type": "string", "values": ["generated"], "summary": "Declares that the manuscript itself was machine-generated; shown beside the title."},
     "author": {"type": "string", "summary": "Who drew a survey map (a map with no source text)."},
     "date": {"type": "string", "summary": "When a survey map was drawn."},
@@ -43,6 +44,7 @@
     "note": {"type": "string", "summary": "What the notation cannot carry: the limitation, the reading followed, the road not taken."},
     "reviewed": {"type": "string", "summary": "The date a person reviewed the claim. Never set by a model."},
     "causes": {"type": "map or list of maps", "summary": "The causal step(s) the claim states.", "keys": "causes"},
+    "question": {"type": "{id, move, into} or a list of them", "values": ["answers", "reframes", "splits", "dissolves"], "summary": "What the claim does to a declared question: answers it; reframes it, or splits it, `into` the question(s) that take its place; or dissolves it, showing it has no answer to give. A reframing is a move on a question, not a reason (since 1.17)."},
     "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"}
   },
 
@@ -102,7 +104,10 @@
     "account": {"type": "regularity | manipulability | mechanism | counterfactual | intra-action, or a list of them", "summary": "The account of causation the text reasons with: what an arrow means differs with each. Held against the map: manipulability wants an experimental design, intra-action a constitutive relation. Also on each chain (since 1.14)."},
     "actors": {"type": "map of id to actor", "keys": {"label": "string", "level": "one of `levels`"}},
     "kinds": {"type": "map of id to kind", "keys": {"label": "string", "general": "a state id of this kind: the general claim, of which the kind's other states are cases (since 1.7)"}, "summary": "Kinds of state that recur across cases; states of one kind are never walked as one (since 1.6)."},
-    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)", "goal": "explain | intervene | predict | attribute (since 1.13)", "contrast": "string (since 1.13)", "account": "regularity | manipulability | mechanism | counterfactual | intra-action, or a list (since 1.14)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
+    "depth": {"type": "full | sketch | none", "summary": "How far the mechanism is mapped: in full; as a sketch, the question, actors and chains with steps only where the argument relies on them; or considered and not mapped. Under the parallel method every map records it (since 1.17)."},
+    "depth_reason": {"type": "string", "summary": "Why a mechanism is a sketch or not mapped, in a line (since 1.17)."},
+    "order": {"type": "time | explanation", "summary": "Whether the chains run in the order of time (the default) or in the order of explanation, as a genealogy's stages do; also on each chain (since 1.17)."},
+    "chains": {"type": "map of id to chain", "keys": {"label": "string", "question": "string", "roles": "map of state id to a role or list of roles: the role the state plays in this chain", "form": "chain | cycle: this chain's own form (since 1.11)", "settles": "boolean (since 1.11)", "goal": "explain | intervene | predict | attribute (since 1.13)", "contrast": "string (since 1.13)", "account": "regularity | manipulability | mechanism | counterfactual | intra-action, or a list (since 1.14)", "order": "time | explanation: whether the chain's steps run in the order of time, or (a genealogy's stages) in the order complications are added (since 1.17)"}, "summary": "Several chains the text sets out, each answering its own question (since 1.5)."},
     "states": {"type": "map of id to state", "keys": {"label": "string", "actor": "an actor id, or (since 1.12) a list of them: a relation or a doing of several actors together; may be left out where `levels` places a process with no owner (since 1.11)", "status": "actual | possible | open: whether the state is actual, a possibility the text sets out, or what the text says cannot be specified in advance (since 1.12)", "aspect": "quantity | activity | development | event | condition: what kind of occurrence the state is, from the text's own grammar (since 1.11)", "role": "intervention | condition | outcome, or a list of them (condition and lists since 1.1)", "measured": "string", "appraisal": "boolean", "note": "string", "part_of": "a state id: the whole this state is a part, facet or instance of (since 1.2)", "levels": "a list of levels: the levels a state holds at, when more than its actor's; drawn across them (since 1.4)", "kind": "a kind id: the declared kind this state is a case of (since 1.6)", "measures": "a state id: the state this one is a measure, indicator or estimate of -- a reading of it, never walked as its cause (since 1.9)", "method": "string: how that measure is taken, in the text's words (since 1.9)"}}
   },
 

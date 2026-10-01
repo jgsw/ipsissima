@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.16 — 1 October 2026.** The machine-readable registry of everything below is
+**Version 1.17 — 1 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -83,6 +83,7 @@ defaults:
 | `reconstruction` | map | The **reading policy** (below). |
 | `defaults` | map | Claim metadata stated once, inherited by every claim that does not set the key itself — usually `chapter`. A claim's own value always wins. `defaults.reviewed` records a person's pass over the whole map. |
 | `contentions` | list of claim titles | The text's **stated theses**, added to the apex the map computes. Only the author's own; never a persona's. Rarely needed. |
+| `questions` | map of id to `{text, pinpoint}` | The **questions the text works on**, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (`question:` on a claim). A reframing is a move on a question, not a reason, and the notation drew it only as support or attack before this (*added in 1.17*). |
 | `text-provenance` | `generated` | The *manuscript itself* was machine-generated (a report written for the purpose). Shown beside the title. Other values are carried verbatim. |
 | `author`, `date` | string | For a **survey map** — a map of a pattern of public argument with no source text: who drew it and when. |
 | `mechanism` | map | The causal chain the text asserts: §5. |
@@ -121,6 +122,7 @@ On any claim or argument, in its `{data}` block:
 | `note` | string | What the notation cannot carry. |
 | `reviewed` | date | A person's review of this claim. Never written by a model. |
 | `causes` | map, or list of maps | The causal step or steps the claim states: §5. |
+| `question` | `{id, move, into}`, or a list | What the claim does to a declared question. `move` is `answers`, `reframes`, `splits` or `dissolves`; `into` names the question(s) that take its place, and a reframing or a split needs one. The census lists each question with the moves on it, and the page lists them from a pill in the orientation strip (*added in 1.17*). |
 
 ### The fidelity ladder
 
@@ -210,6 +212,9 @@ mechanism:
 | `goal` | `explain` \| `intervene` \| `predict` \| `attribute` | What the chain is **for**: to explain why and how something happened, to find what to do, to predict, or to attribute responsibility. Also on each chain (*added in 1.13*). |
 | `contrast` | string | The **foil** the question sets: why this, *rather than* what. Also on each chain (*added in 1.13*). |
 | `account` | `regularity` \| `manipulability` \| `mechanism` \| `counterfactual` \| `intra-action`, or a list | The **account of causation** the text reasons with; an arrow means something different under each. The census holds it against the map: `manipulability` with no experimental `design:` among the steps is queried, and so is `intra-action` with nothing said to constitute anything. Also on each chain, held to that chain's own steps (*added in 1.14*). |
+| `order` | `time` \| `explanation` | Whether the chains run in the order of **time** (the default) or in the order of **explanation**, as a pragmatic genealogy's stages do: each adds a complication, and later means less idealised, not later in history (Queloz 2021, p. 16). The chart says which, so left to right is not read as history. Also on each chain (*added in 1.17*). |
+| `depth` | `full` \| `sketch` \| `none` | **How far the mechanism is mapped.** Under the parallel method every text's mechanism is considered: in `full`; as a `sketch` -- the question, actors and chains, with steps only where the argument relies on them, so a state with no step is left open rather than queried; or `none`, considered and not mapped. A parallel map with no `mechanism:` block is queried (*added in 1.17*). |
+| `depth_reason` | string | Why a mechanism is a sketch or not mapped, in a line; the Mechanism view shows it (*added in 1.17*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
 | `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
@@ -793,6 +798,20 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.17** (1 October 2026) added, after the parallel-pass trial and James's rulings the same day:
+- **the mechanism always considered** under the parallel method: `depth` (`full`, `sketch`, `none`)
+  and `depth_reason` on the `mechanism:` block. The planner no longer gates the mechanism on its
+  count of causal words, which read all three essays of the trial as non-causal; the count is a
+  hint. The series method is unchanged.
+- **the question layer**: `questions:` in the front matter and `question:` on a claim, so that
+  answering, reframing, splitting and dissolving a question are drawn as moves on it;
+- `order` (`time`, `explanation`) on the block and on each chain;
+- the census's **transfer** line: for a "From there to here" bridge, the steps in each setting the
+  premises name, and those with no counterpart in the other.
+
+Every 1.16 file conforms unchanged, except that a map declaring `method: parallel` and no
+`mechanism:` block is now queried.
 
 **1.16** (1 October 2026) added three bridge schemes, after the parallel-pass trial on four texts
 (Wilson 2026, Rogers et al. 2023, Merton 1948), in which these moves recurred with no scheme to

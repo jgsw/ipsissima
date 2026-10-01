@@ -363,6 +363,46 @@ export function withComment(text, label, value){
  *  tags (the layer is decided by #appraisal and #reported), its fidelity and warrant, its words,
  *  its steps (`causes:`, one map or a list), and the id of its node on the map where it has one
  *  -- the click-through from an arrow to the claim, and from the claim to its passage. */
+/** THE QUESTIONS A TEXT WORKS ON (profile 1.17), and what its claims do to them.
+ *
+ *  A REFRAMING IS NOT A REASON (the parallel-pass trial, lesson 2): Wilson 2026 dissolves "does
+ *  philosophy belong with the humanities or the sciences?" into "which method suits which
+ *  problem?", and support and attack could draw that only as propositions arguing with each other.
+ *  The front matter's `questions:` names the questions; a claim's `question:` says what it does to
+ *  one -- answers, reframes, splits or dissolves it, `into` the questions that take its place.
+ *  Null when the file declares none. The checker is the judge of well-formedness; this reads.
+ */
+export function questionsOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const decl = (fm.questions && typeof fm.questions === "object" && !Array.isArray(fm.questions))
+    ? fm.questions : null;
+  if (!decl) return null;
+  const qs = Object.keys(decl).map(id => {
+    const q = decl[id];
+    const o = (q && typeof q === "object") ? q : { text: q };
+    return { id, text: o.text == null ? "" : String(o.text),
+             pinpoint: o.pinpoint == null ? null : String(o.pinpoint), moves: [] };
+  });
+  const byId = new Map(qs.map(q => [q.id, q]));
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.question == null) continue;
+      for (const mv of (Array.isArray(data.question) ? data.question : [data.question])) {
+        if (!mv || typeof mv !== "object") continue;
+        const q = byId.get(String(mv.id));
+        if (!q) continue;
+        const into = mv.into == null ? [] : (Array.isArray(mv.into) ? mv.into : [mv.into]).map(String);
+        q.moves.push({ title, id: titleToId.get(title) == null ? null : titleToId.get(title),
+                       kind: kind === "arguments" ? "argument" : "claim",
+                       move: String(mv.move || "answers"), into });
+      }
+    }
+  }
+  return qs;
+}
+
 export function mechanismOf(res, titleToId) {
   const fm = res.frontMatter || {};
   const block = (fm.mechanism && typeof fm.mechanism === "object") ? fm.mechanism : null;
@@ -1017,6 +1057,7 @@ export function toGraph(res) {
            // `causes:` step, so a chain read off the drawn nodes silently lost it (found on the
            // notation spike). Null for the great majority of maps, which declare no chain.
            mechanism: mechanismOf(res, titleToId),
+           questions: questionsOf(res, titleToId),
            // THE MAP'S OWN NAME, from its front matter, for the page's title bar. The header
            // showed the file name and nothing anywhere showed the title the reconstructor wrote
            // (clarity audit, 27 Sep 2026; ruled D2). Null when the file declares none.

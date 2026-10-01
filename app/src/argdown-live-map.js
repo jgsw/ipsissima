@@ -6469,6 +6469,14 @@ function createLiveMap(container, graph, options) {
     // lit block and no way to see what was actually found.
     const drawnNow = () => new Set(lastVis.nodes.map(n => n.id));
     if ([...want].every(id => drawnNow().has(id))) return false;
+    // ASKING FOR A CLAIM IS AN ACT. Without this, a map still as it opened let the framing
+    // choose its rung again (`lowerRungToRead`), and it came straight back down to the rung
+    // that had been hiding the claim -- a link to a folded claim lit nothing and moved nowhere.
+    // And the camera is the reader's too: an untouched map re-fits on every render, so unfolding
+    // all of it zoomed out to the floor before `centreOn` could bring the claim to the middle at
+    // the zoom the reader was reading at.
+    readerActed();
+    userMoved = true;
     const ix = index(graph);
     state.depth = null;
     for (const id of want) {

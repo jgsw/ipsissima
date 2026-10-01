@@ -6,8 +6,10 @@ good?"), in which he judged the parallel maps better than the series ones. It is
 setting: `IPSISSIMA_MECHANISM_METHOD=series`, or the extension's "Mechanism method" option, serves
 the series method (`mechanism-series`) instead, unchanged.
 
-It runs only when the user has asked for the mechanism, or said yes to `argdown_plan`'s offer, and
-that question is put BEFORE the map is made, because the two are read together.
+Since profile 1.17 it is part of EVERY reconstruction: the mechanism is read with the argument,
+and mapped as far as the argument relies on it (*How far to map it*, below). James: arguments that
+need no understanding of mechanisms are "the exception rather than the default". If the user wants
+the argument alone, record `depth: none` with that as the reason.
 
 Read these with it:
 - the four reconstruction documents (`extraction-prompt` first);
@@ -60,6 +62,22 @@ claim. Interpretive load stayed at zero: everything added was the author's words
    it does not, that is a finding, never a gap to close.
 5. **Write `method: parallel`** in the reading policy (`reconstruction:`), then `argdown_check` with
    `source_root` until ok and verified.
+
+## How far to map it
+
+The skeletons (step 2) are the cheap first look. Before filling the mechanism, decide its `depth` in
+the `mechanism:` block, by what the argument relies on -- never by how often the text uses causal
+words (the planner's count read Merton at 2 causal sentences per thousand words, and Merton is a
+mechanism throughout):
+
+| `depth` | when | what is marked |
+|---|---|---|
+| `full` (the default) | the text's case rests on what brings what about, or the mechanism is itself a subject | the chain as the text asserts it, as in this document |
+| `sketch` | the mechanism does work in the argument at a few points, and mapping the rest would cost more than it shows | the question, actors and chains; steps only where the argument relies on them, with their bridges. A state with no step is left open, not queried as a gap |
+| `none` | the text argues from definitions, texts or principles, and says nothing of what brings what about; or the user wants the argument alone | nothing but the block: `mechanism: {depth: none, depth_reason: "..."}` |
+
+`sketch` and `none` say why in `depth_reason:`, one line. A parallel map with no `mechanism:` block
+is queried: the decision has not been recorded.
 
 ## How a mechanism enters the argument
 
