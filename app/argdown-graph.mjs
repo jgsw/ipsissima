@@ -405,7 +405,58 @@ export function mechanismOf(res, titleToId) {
       if (tags.has("appraisal")) appraisal++;
     }
   }
-  return (block || claims.length) ? { block, claims, appraisal } : null;
+  // REASONS AND INFERENCES (profile 1.15), read off the parser's own records as the checker
+  // reads them: `reasons` mirrors argdown_provenance.title_edges on the map without its appraisal
+  // (every claim that is a premise, a carried conclusion, or the source of a relation), and
+  // `inferences` every step with the rule names its line gives and the lines it draws on, as
+  // mechanism.bridges_of reads them. The Mechanism view uses the first to say where the chain
+  // stops and the argument takes it on, the second to find the bridges.
+  const gone = new Set();
+  for (const kind of ["statements", "arguments"]) {
+    for (const [t, rec] of Object.entries(res[kind] || {})) {
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const x of (m.tags || [])) tags.add(x);
+      if (tags.has("appraisal")) gone.add(t);
+    }
+  }
+  const mainOf = {};
+  for (const [name, arg] of Object.entries(res.arguments || {}))
+    for (const s of (arg && arg.pcs) || []) if (s.role === "main-conclusion" && s.title) mainOf[name] = s.title;
+  const reasons = new Set();
+  const endOf = e => !e ? null : e.type === "argument" ? (mainOf[e.title] || e.title) : e.title;
+  for (const r of res.relations || []) {
+    if (!r || !r.from || !r.to || gone.has(r.from.title) || gone.has(r.to.title)) continue;
+    const a = endOf(r.from), b = endOf(r.to);
+    if (a && b && a !== b) reasons.add(a);
+  }
+  const inferences = [];
+  for (const [name, arg] of Object.entries(res.arguments || {})) {
+    const pcs = (arg && arg.pcs) || [];
+    // title_edges: everything since the last conclusion, and the conclusion carried, support the next.
+    if (!gone.has(name)) {
+      let pending = [], carried = null;
+      for (const s of pcs) {
+        if (!s.title) continue;
+        if (String(s.role || "").indexOf("conclusion") >= 0) {
+          for (const p of (carried ? [carried] : []).concat(pending)) if (p !== s.title) reasons.add(p);
+          carried = s.title; pending = [];
+        } else pending.push(s.title);
+      }
+    }
+    // bridges_of: the declared `uses`, else the run since the last conclusion and the one before.
+    let run = [], prev = null, step = 1;
+    pcs.forEach((s, i) => {
+      const n = i + 1;
+      if (s.role === "premise") { run.push(n); return; }
+      const inf = s.inference || {};
+      const declared = inf.data && Array.isArray(inf.data.uses) ? inf.data.uses.map(Number) : null;
+      const inputs = declared || run.concat(prev ? [prev] : []);
+      inferences.push({ argument: name, step, rules: (inf.inferenceRules || []).map(String),
+                        inputs: inputs.filter(k => k >= 1 && k <= pcs.length).map(k => pcs[k - 1].title).filter(Boolean) });
+      prev = n; run = []; step++;
+    });
+  }
+  return (block || claims.length) ? { block, claims, appraisal, reasons: [...reasons], inferences } : null;
 }
 
 export function toGraph(res) {

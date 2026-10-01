@@ -284,10 +284,24 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
   const LT = MV.layout(MT);
   const word = (a, b) => LT.edges.filter(e => e.from === a && e.to === b).map(e => e.chip.label.replace(/ ↻$/, ""));
-  check(same(word("births", "population"), ["adds to"]) && same(word("catch", "population"), ["drains"]) &&
+  check(same(word("births", "population"), ["flows into"]) && same(word("catch", "population"), ["flows out of"]) &&
         same(word("population", "collapse"), ["makes less likely"]),
-        "a flow says it adds to or drains its stock, and a chance step says likelier or less likely",
+        "a flow says it flows into or out of its stock, and a chance step says likelier or less likely",
         JSON.stringify(LT.edges.map(e => [e.from, e.to, e.chip.label])));
+}
+// AND ON BRIDGES (profile 1.15): a step that is a premise of a named causal scheme takes the
+// chain on into the argument; a bridge with no step premise. Mutations: drop the PCS walk from
+// graph.mechanism.reasons -> `taken_up` differs; drop bridgeScheme's single-name rule -> `bridges`.
+{
+  const BRF = path.join(FIXTURE, "bridges.argdown");
+  const pyB = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
+                                           BRF, "--format", "json"], { encoding: "utf8" })).shape.chain;
+  const MB = MV.model(graphOf(BRF));
+  const differ = Object.keys(pyB).filter(k => k !== "question" &&
+    !same(k === "gaps" ? MB.profile.gaps.map(g => g.message) : MB.profile[k], pyB[k]));
+  check(differ.length === 0 && pyB.taken_up.length === 1 && pyB.bridges.length === 3,
+        "the page and the checker agree on bridges and on where the argument takes the chain on",
+        differ.map(k => `${k}: python ${JSON.stringify(pyB[k])} js ${JSON.stringify(MB.profile[k])}`).join("\n          "));
 }
 // AND ON WAVE 4's CONSTRUCTS (profile 1.9): a moderator, necessity and sufficiency, a design, a
 // measure, attributions, stances and rival accounts of one outcome. Mutations: drop accountsOf ->

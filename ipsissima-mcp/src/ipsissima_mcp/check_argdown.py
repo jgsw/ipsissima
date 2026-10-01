@@ -914,6 +914,7 @@ def validity_checks(doc):
     from validity import check_step
 
     from validity import matches_rule, stamp_of_claim as stamp
+    from mechanism import bridge_scheme
 
     out = {"invalid": [], "unformalized": [], "idle": [], "inconsistent": [], "undecided": [],
            # A formalization whose claim has been edited since. NOT the same as an unstamped one,
@@ -937,6 +938,12 @@ def validity_checks(doc):
             declared = (inf.get("data") or {}).get("uses")
             positional = list(run) + ([prev] if not first and prev else [])
             inputs = ([int(u) for u in declared] if isinstance(declared, list) else positional)
+            # A BRIDGE IS NOT A DEDUCTIVE RULE (profile 1.15). "From consequences" names a
+            # defeasible causal move from the mechanism into the argument; asking for its
+            # formalization would report every bridge as a rule named with nothing to check it
+            # against. The mechanism module holds bridges to their own test instead.
+            if rules and bridge_scheme(rules):
+                rules = []
             if rules:
                 named = ", ".join(rules)
                 forms = {i: _formalization(doc, pcs[i - 1])
@@ -1482,7 +1489,7 @@ def fidelity_report(cli, path):
     # for its own author's argument.
     if policy:
         shown = " \u00b7 ".join(f"{k} {policy[k]}" for k in
-                                ("aim", "unit", "mode", "strength") if policy.get(k))
+                                ("aim", "unit", "mode", "strength", "method") if policy.get(k))
         print(f"\n   READING POLICY: {shown or '(empty block)'}")
         for k, v in unknown:
             opts = prov.POLICY_VALUES.get(k)

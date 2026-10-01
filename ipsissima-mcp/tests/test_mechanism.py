@@ -879,7 +879,41 @@ check("a chain's own `account: manipulability` with no experiment among its step
 check("  and not once one of its steps rests on a natural experiment",
       any("`account: manipulability`" in m for m in sm(STO.replace("basis: example, scope: singular", "basis: study, design: natural experiment, scope: singular"))), False)
 check("an account not in the list is queried", any("`account: magic`" in m for m in sm(STO.replace("[regularity, intra-action]", "[regularity, magic]"))), True)
-check("`on: stock` with `which` is queried", any("adds to" in m and "not `which`" in m for m in sm(STO.replace('sign: "-", on: stock', 'sign: which, on: stock'))), True)
+check("`on: stock` with `which` is queried", any("flows into" in m and "not `which`" in m for m in sm(STO.replace('sign: "-", on: stock', 'sign: which, on: stock'))), True)
+
+print("\nprofile 1.15: bridges, and where the argument takes the chain on (the parallel-pass trial, 30 Sep 2026)")
+BRI = (FIXTURE / "bridges.argdown").read_text(encoding="utf-8")
+br = run(BRI, name="bridges.argdown")
+bc = br["shape"]["chain"]
+bm = [f["message"] for f in by(br, "mechanism")]
+bg = [f["message"] for f in by(br, "mechanism-gap")]
+# Mutations: drop the taken_up test -> the first two fail; drop the bridge query -> the fourth.
+check("a state the chain stops at, whose step is a premise in the argument, is taken on by it",
+      bc["taken_up"], [["trust", "Resentment wears trust away"]])
+check("  and is not queried as a gap, while a state nothing argues from still is",
+      (any("`trust`" in m for m in bg), any("`graffiti`" in m for m in bg)), (False, True))
+check("the bridges are listed with how many premises state a step", bc["bridges"],
+      [["Nothing causal here", 1, "From a mechanism to what to do", 1, 0],
+       ["The curfew costs trust", 1, "From cause to effect", 2, 2],
+       ["The curfew's consequences", 1, "From consequences", 2, 1]])
+check("a bridge none of whose premises states a step is queried",
+      any("<Nothing causal here>" in m and "none of its premises states a step" in m for m in bm), True)
+# Mutation: drop the bridge exemption in check_argdown's validity walk -> fails.
+_txt = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(FIXTURE / "bridges.argdown")],
+                      capture_output=True, text=True).stdout
+check("  and a bridge is never asked for a formalization, as a deductive rule would be",
+      "A RULE NAMED, AND NOTHING TO CHECK IT AGAINST" in _txt, False)
+_mp = os.path.join(tempfile.mkdtemp(prefix="mechanism-test-"), "bridges.argdown")
+open(_mp, "w", encoding="utf-8").write(BRI.replace("-- From cause to effect {uses: [1, 2]} --",
+                                                   "-- Modus ponens {uses: [1, 2]} --"))
+check("  but a deductive rule named in its place still is",
+      "A RULE NAMED, AND NOTHING TO CHECK IT AGAINST" in subprocess.run(
+          [sys.executable, str(PKG / "check_argdown.py"), _mp], capture_output=True, text=True).stdout, True)
+check("a scheme name with a comma is two rule names, so not a bridge",
+      run(BRI.replace("-- From consequences {uses: [1, 2]} --", "-- From consequences, Modus ponens {uses: [1, 2]} --"),
+          name="bridges.argdown")["shape"]["chain"]["bridges"][-1][2] != "From consequences", True)
+import argdown_provenance as _prov  # noqa: E402
+check("the reading policy knows the two methods", _prov.POLICY_VALUES["method"], ("series", "parallel"))
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

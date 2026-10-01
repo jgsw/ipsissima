@@ -336,8 +336,18 @@ def test_server(d):
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")]}))
         check("the plan carries the mechanism offer", [o["id"] for o in out.get("offers", [])],
               ["mechanism"])
-        check_true("and `next` says to mention it without running it",
-                   "without running it" in out.get("next", ""), out.get("next"))
+        # THE METHOD IN FORCE (1.15): parallel by default, so the offer is put BEFORE the map is
+        # made and `mechanism` serves the parallel method. Mutation: default to series -> fails.
+        check_true("and `next` says to ask before reconstructing, the method being parallel",
+                   "BEFORE reconstructing" in out.get("next", ""), out.get("next"))
+        check("the offer says which method", [o.get("method") for o in out.get("offers", [])], ["parallel"])
+        m = result(await s.call_tool("argdown_method", {"document": "mechanism"}))
+        check("`mechanism` serves the parallel method by default",
+              (m.get("method_in_force"), "Argument and mechanism, reconstructed together" in m.get("text", "")),
+              ("parallel", True))
+        m = result(await s.call_tool("argdown_method", {"document": "mechanism-series"}))
+        check_true("and the series method is still served by name",
+                   m.get("text", "").startswith("# The mechanism pass"), m.get("text", "")[:80])
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")],
                                                         "intent": "extract"}))
         check("an extraction-only plan offers nothing", out.get("offers"), [])
@@ -348,6 +358,18 @@ def test_server(d):
         check("a missing file is reported", out.get("ok"), False)
 
     asyncio.run(_session(body))
+
+    # REVERSIBLE BY ONE SETTING (the author's condition, 1 Oct 2026): with the method set to
+    # series, every offer, instruction and document is as it was before the parallel method.
+    async def series(s):
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "brief")]}))
+        check_true("set to series, `next` says to mention the pass without running it",
+                   "without running it" in out.get("next", ""), out.get("next"))
+        check("and the offer says series", [o.get("method") for o in out.get("offers", [])], ["series"])
+        m = result(await s.call_tool("argdown_method", {"document": "mechanism"}))
+        check("and `mechanism` serves the series pass",
+              (m.get("method_in_force"), m.get("text", "").startswith("# The mechanism pass")), ("series", True))
+    asyncio.run(_session(series, env={"IPSISSIMA_MECHANISM_METHOD": "series"}))
 
 
 def main():

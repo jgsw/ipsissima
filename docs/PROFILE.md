@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.14 — 30 September 2026.** The machine-readable registry of everything below is
+**Version 1.15 — 1 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -97,6 +97,7 @@ defaults:
 | `unit` | `meaning` \| `commitment` | Whether charity settles which sense of the words, or which view is held. |
 | `mode` | `coherence` \| `truth` \| `soundness` \| `agreement` \| `interest` | What charity, where it is extended, maximises. |
 | `strength` | `minimal` \| `ordinary` \| `strong` | How much better than their words the author is assumed to be. |
+| `method` | `series` \| `parallel` | How the map's mechanism was reconstructed: after the argument, by a pass that changes nothing in it (`series`), or with it, the mechanism entering the argument through bridges (`parallel`) (*added in 1.15*). Recorded so that maps made each way can be told apart and compared. |
 
 `aim` places the map on Betz and Brun's trade-off between systematic correctness and exegetical
 adequacy; `unit`, `mode` and `strength` are Tom Stern's three dimensions along which "the
@@ -229,7 +230,7 @@ substantially reduces adoption".
 | `basis` | `study` \| `statistics` \| `model` \| `example` \| `testimony` \| `asserted` | What the **text** offers for the step. The first three count as tested; `example` and `testimony`, and an asserted step the map argues for, as argued. |
 | `lag` | string | Timing the text states. |
 | `period` | string | **When** the step holds, in the text's words anchored to an event: "during culling", "after the order ends" (*added in 1.8*). |
-| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` \| `possibility` \| `chance` \| `stock` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). Since 1.14: whether it makes its `to` **more** or **less likely** (`chance`, `+` or `-`), or **adds to** or **drains** it, a stock (`stock`, `+` or `-`). |
+| `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` \| `possibility` \| `chance` \| `stock` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). Since 1.14: whether it makes its `to` **more** or **less likely** (`chance`, `+` or `-`), or **flows into** or **out of** it, a stock (`stock`, `+` or `-`). |
 | `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
 | `how` | `{actor, situation, habit, response}` | Gross's decomposition of a step, only where the text gives it. |
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
@@ -628,7 +629,7 @@ say:
   mean two things: a proportional change ("moves with") or an additive one ("adds to"). Fish
   reproduction adds to the fish population, yet reproduction may fall while the population still
   rises (Fig. 2B). `on: stock` on a step says
-  its `from` is a flow into (`+`) or out of (`-`) its `to`. The chip reads "adds to" or "drains".
+  its `from` is a flow into (`+`) or out of (`-`) its `to`. The chip reads "flows into" or "flows out of", in the inflow and outflow terms of Donella Meadows's *Thinking in Systems* ("drains", the first wording, suited a reservoir better than a waiting list; changed on the author's word, 30 Sep 2026).
   The census names any loop that runs through such a step, because that loop's polarity counts
   flows and its states need not move together.
 - **A change in chance.** An arrow cannot say "sometimes", "often" or "always" (Banitz et al.).
@@ -650,6 +651,34 @@ deliberate difference from a causal diagram of a system, in which "no arrow" say
 direct causal relationship (Banitz et al. 2022, Fig. 2A). The chart maps what a text says, so its
 silence is the text's. A finding of no effect is a `"0"` step, drawn as its own line. The Legend
 says so.
+
+**Bridges, and the parallel method (1.15).** A text often makes its case partly *by* setting out a
+mechanism. A trial on two texts (James, *The Will to Believe*; Wilson, "What makes a health system
+good?") reconstructed each both ways: the argument first and then the mechanism, or both together.
+The author judged the parallel maps better. Since 1 October 2026 the parallel method is the one in
+force (`parallel-pass.md`), reversibly: one setting brings the series method back whole.
+
+- **A bridge** is an argument whose inference line names a causal scheme, in Argdown's own rule
+  slot: `-- From consequences {uses: [1, 2]} --`. Its premises state steps, and it carries the
+  mechanism into the argument. The schemes are listed in the registry under `bridges`, each with
+  its move and its critical questions:
+  - From cause to effect; From effect to cause; From correlation to cause;
+  - From cases to a general mechanism;
+  - From a mechanism to what to do; From consequences; From a mechanism to a possibility;
+  - From a mechanism against a theory; From a mechanism to a classification;
+  - Genealogical debunking.
+
+  They are Walton, Reed and Macagno's causal and practical schemes (*Argumentation Schemes*, 2008),
+  with four the trial needed. No name contains a comma, because Argdown splits a rule list on
+  commas.
+- **A bridge is never checked for validity.** It is a defeasible causal move, not a deductive rule,
+  so the checker does not ask for its formalization. Instead it queries a bridge none of whose
+  premises states a step. The Reasons view draws the scheme's short name in italics, with its move
+  and questions on hover; before 1.15 it drew the initials of the name, as for an unknown rule.
+- **Where the chain stops and the argument takes it on.** A state the chain leads nowhere from is a
+  gap, unless a claim stating the step into it is itself a reason in the argument: a premise, a
+  carried conclusion, or the source of a relation. Then the census reports it as `handed`, not as a
+  gap.
 
 ## 6. The source file
 
@@ -764,6 +793,15 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.15** (1 October 2026) added, after the parallel-pass trial:
+- `method` in the reading policy;
+- the registry's `bridges`: causal schemes an inference line may name.
+
+The census also lists bridges, queries a bridge with no step among its premises, and reports where
+the argument takes the chain on (`taken_up`). A bridge is exempt from the validity check. The
+stock chip reads "flows into" and "flows out of" (Meadows), not "adds to" and "drains". Every 1.14
+file conforms unchanged.
 
 **1.14** (30 September 2026) added, after Banitz et al. (2022), Hertz et al. (2024) and Martínez
 Peña et al. (2023):

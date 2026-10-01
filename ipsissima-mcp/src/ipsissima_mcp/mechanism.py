@@ -109,6 +109,72 @@ DESIGNS = ("experiment", "replication", "quasi-experiment", "natural experiment"
 #: find what to do to bring an effect about, to predict, or to attribute responsibility -- "what
 #: cause was decisive in bringing about an effect?" (p. 112).
 GOALS = ("explain", "intervene", "predict", "attribute")
+
+#: THE METHOD IN FORCE FOR A TEXT'S MECHANISM (1.15). `parallel`: the argument and the mechanism
+#: are read together, and the mechanism enters the argument through bridges (parallel-pass.md;
+#: adopted 1 Oct 2026 on the author's word, after the trial of 30 Sep in which he judged the
+#: parallel maps better). `series`: the argument first, finished and checked, then the mechanism
+#: pass, which changes nothing in it (mechanism-pass.md; ruled 26 Sep 2026). REVERSIBLE BY ONE
+#: SETTING, as the author asked: IPSISSIMA_MECHANISM_METHOD=series (the extension's "Mechanism
+#: method" option sets it) puts every document, offer and instruction back as it was.
+MECHANISM_METHODS = ("parallel", "series")
+DEFAULT_MECHANISM_METHOD = "parallel"
+
+
+def mechanism_method():
+    """The method in force: the environment's choice if it names one, else the default."""
+    v = os.environ.get("IPSISSIMA_MECHANISM_METHOD", "").strip().lower()
+    return v if v in MECHANISM_METHODS else DEFAULT_MECHANISM_METHOD
+
+
+def _bridge_schemes():
+    """The causal schemes an inference line may name (profile 1.15), from the registry that ships
+    beside this module -- read, not restated, so the two cannot disagree."""
+    try:
+        import json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
+                  encoding="utf-8") as fh:
+            return {d["name"].lower(): d for d in json.load(fh)["bridges"]["schemes"]}
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+#: BRIDGES FROM THE MECHANISM INTO THE ARGUMENT (profile 1.15, after the parallel-pass trial of
+#: 30 Sep 2026). An inference line naming one of these says a step-bearing claim is a premise of
+#: a causal move -- "From consequences", "Genealogical debunking" -- not that a deductive rule
+#: holds. Never checked for validity; held to having a step among its premises.
+BRIDGES = _bridge_schemes()
+
+
+def bridge_scheme(rule_names):
+    """The bridge scheme an inference line names, or None. A line naming anything else as well
+    is not a bridge: a compound of a scheme and a deductive rule is the validity check's."""
+    names = [str(r).strip().lower() for r in (rule_names or []) if str(r).strip()]
+    return BRIDGES[names[0]] if len(names) == 1 and names[0] in BRIDGES else None
+
+
+def bridges_of(doc, step_titles):
+    """Every bridge in the file: (argument, step number, scheme name, input titles, inputs that
+    state a step). Inputs are the declared `uses` where given, else the run since the last
+    conclusion plus the conclusion carried from the step before, as the validity check reads them."""
+    out = []
+    for title, arg in (doc.get("arguments") or {}).items():
+        pcs = arg.get("pcs") or []
+        run, prev, step = [], None, 1
+        for n, entry in enumerate(pcs, start=1):
+            if entry.get("role") == "premise":
+                run.append(n)
+                continue
+            inf = entry.get("inference") or {}
+            scheme = bridge_scheme(inf.get("inferenceRules"))
+            if scheme:
+                declared = (inf.get("data") or {}).get("uses")
+                inputs = [int(u) for u in declared] if isinstance(declared, list) else run + ([prev] if prev else [])
+                titles = [pcs[i - 1].get("title") for i in inputs if 1 <= i <= len(pcs)]
+                titles = [t for t in titles if t]
+                out.append((title, step, scheme["name"], titles, [t for t in titles if t in step_titles]))
+            prev, run, step = n, [], step + 1
+    return out
 #: HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14): the account of causation it works with -- regular
 #: succession, manipulation, a mechanism, counterfactual difference, or intra-action, where relations
 #: constitute what they relate (Hertz et al. 2024, "Eliciting the plurality of causal reasoning", Table 1;
@@ -156,7 +222,7 @@ ONS = ("level", "trend", "being", "persistence", "character", "possibility", "ch
 #: "makes more likely". General causation is probabilistic, p(B|A) > p(B) (Johansson et al. 2024,
 #: p. 49), and an arrow alone cannot say "sometimes, often, or always" (Banitz et al. 2022, "Visualization
 #: of causation in social-ecological systems").
-#: `stock`: the step ADDS TO (+) or DRAINS (-) its `to`, a stock -- an inflow or an outflow. The two
+#: `stock`: the step FLOWS INTO (+) or FLOWS OUT OF (-) its `to`, a stock -- an inflow or an outflow (Meadows). The two
 #: need not move together: "fish reproduction adds to the fish population", yet reproduction may fall
 #: while the population rises (Banitz et al. 2022, Fig. 2B), so a loop's polarity through such a
 #: step says less than it seems to.
@@ -1312,8 +1378,8 @@ def analyse(fm, doc):
                              f"{s['dst']} is, not how much of it there is, and `sign: {s['sign']}` says how much",
                              {"title": s["title"], "fix": "give it `sign: which`"}))
         elif s["on"] in ("being", "persistence", "possibility", "chance", "stock") and s["sign"] == "which":
-            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({ {'being': 'makes', 'persistence': 'maintains', 'possibility': 'opens', 'chance': 'makes likelier', 'stock': 'adds to'}[s['on']] }) "
-                             f"or `-` ({ {'being': 'unmakes', 'persistence': 'erodes', 'possibility': 'closes', 'chance': 'makes less likely', 'stock': 'drains'}[s['on']] }), not `which`",
+            findings.append(("?", "mechanism", f"`on: {s['on']}` takes `+` ({ {'being': 'makes', 'persistence': 'maintains', 'possibility': 'opens', 'chance': 'makes likelier', 'stock': 'flows into'}[s['on']] }) "
+                             f"or `-` ({ {'being': 'unmakes', 'persistence': 'erodes', 'possibility': 'closes', 'chance': 'makes less likely', 'stock': 'flows out of'}[s['on']] }), not `which`",
                              {"title": s["title"]}))
         for g in s["given_raw"]:
             if isinstance(g, dict) and g.get("state") not in states:
@@ -1439,7 +1505,18 @@ def analyse(fm, doc):
     W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends,
               cycle=form == "cycle", constituted=constituted)
     entries, gaps, used = W["entries"], W["gaps"], W["used"]
+    # WHERE THE CHAIN STOPS AND THE ARGUMENT TAKES IT ON (1.15). A state the chain leads nowhere
+    # from is a gap in the mechanism -- unless a claim stating the step into it is itself a reason
+    # in the argument: a premise, a carried conclusion, or the source of a relation. Then the text
+    # does go on, by argument rather than by cause (the parallel-pass trial: Wilson's inquisition,
+    # breakdown and centralisation were all of this kind). Reported apart, never as a gap to close.
+    reasons = {a for a, b, k in prov.title_edges(prov.without_appraisal(doc))}
+    gap_states = {g["state"] for g in gaps}
+    taken_up = sorted({(s["dst"], s["title"]) for s in text_all if s["dst"] in gap_states and s["title"] in reasons})
+    handed = {st for st, _ in taken_up}
     for g in gaps:
+        if g["state"] in handed:
+            continue
         findings.append(("?", "mechanism-gap", g["message"],
                          {"state": g["state"],
                           "fix": "a gap in the TEXT is a finding, not a fault: leave it. Close it "
@@ -1518,7 +1595,7 @@ def analyse(fm, doc):
                         if len(levels_of(states[i], actors, levels)) > 1),
         loops_with_appraisal=[dict(states=l, reflexive=reflexive(l, pool_all),
                                    polarity=_polarity(l, sign_pool)) for l in loops_all],
-        tiers=tiers, gaps=[g["message"] for g in gaps],
+        tiers=tiers, gaps=[g["message"] for g in gaps], taken_up=[list(t) for t in taken_up],
         rival_steps=sum(1 for s in ok if s["layer"] == "rival"),
         null_steps=_nulls(text_all, ok, text_edges, ids),
         selection_steps=sorted({(s["src"], s["dst"]) for s in text_all if s["selects"]}),
@@ -1620,6 +1697,16 @@ def analyse(fm, doc):
         if not cp["steps"]:
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
                              f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
+    # BRIDGES (1.15): a named causal scheme with no step among its premises bridges nothing.
+    step_titles = {s["title"] for s in all_steps} | {c["title"] for c in constitutions(doc, appraisal)}
+    for arg, step, scheme, inputs, with_steps in bridges_of(doc, step_titles):
+        if not with_steps:
+            findings.append(("?", "mechanism", f"<{arg}> step {step} names the bridge `{scheme}`, and none of its "
+                             f"premises states a step: a bridge carries the mechanism into the argument", {"title": arg}))
+    profile_bridges = sorted([arg, step, scheme, len(inputs), len(with_steps)] for arg, step, scheme, inputs, with_steps
+                             in bridges_of(doc, step_titles))
+    if profile is not None:
+        profile = {**profile, "bridges": profile_bridges}
     return findings, profile
 
 
@@ -1982,7 +2069,7 @@ def census(profile):
         lines.append(f"      chance  {a} -> {b}: makes {b} " + {"+": "more likely", "-": "less likely"}.get(sg, "more or less likely")
                      + " -- a change in its chance, not in whether it happens")
     for a, b, sg in p.get("stocks", []):
-        lines.append(f"      {'outflow' if sg == '-' else 'inflow ':<7} {a} -> {b}: " + ("drains" if sg == "-" else "adds to")
+        lines.append(f"      {'outflow' if sg == '-' else 'inflow ':<7} {a} -> {b}: " + ("flows out of" if sg == "-" else "flows into")
                      + f" {b}, a stock -- {b} need not move with {a}")
     for a, b, ext, whole, under, layer, title in p.get("constitution", []):
         lines.append(f"      constit {a} {'partly ' if ext == 'partial' else ''}constitutes {b}"
@@ -2123,8 +2210,18 @@ def census(profile):
         lines.append(f"      select  {a} -> {b}: a selection link, not an effect -- not walked")
     if p.get("hedged"):
         lines.append(f"      hedged  {p['hedged']} step(s) the text puts as a possibility (\"may\")")
+    handed = {}
+    for st, title in p.get("taken_up", []):
+        handed.setdefault(st, []).append(title)
     for g in p["gaps"]:
-        lines.append(f"      ? gap   {g}")
+        st = g.split("`")[1] if g.count("`") >= 2 else None
+        if st in handed:
+            lines.append(f"      handed  `{st}`: the chain stops here, and the argument takes it on -- "
+                         + "; ".join(f"[{t}] is a reason there" for t in handed[st]))
+        else:
+            lines.append(f"      ? gap   {g}")
+    for arg, step, scheme, n_in, n_steps in p.get("bridges", []):
+        lines.append(f"      bridge  <{arg}> step {step}: {scheme}, {n_steps} of {n_in} premise(s) stating a step")
     cov = p.get("coverage")
     if cov:
         lines.append(f"      cover   {cov['covered']} of {cov['causal_sentences']} sentences in the "

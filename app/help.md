@@ -667,12 +667,20 @@ to rest; the chart does not ask where a cycle starts or ends.
 does not say one brings the other about. It is never followed as a route. The census names any
 state the text says causes both, which may be where the association comes from.
 
-**Adds to, drains, likelier.** "Adds to" and "drains" mark a flow into or out of a stock. The stock
+**Flows into, flows out of, likelier.** "Flows into" and "flows out of" mark an inflow to or an outflow from a stock, in Donella Meadows's terms (*Thinking in Systems*). The stock
 need not move with the flow: fewer births can still leave a larger population. "Makes likelier"
 says a step changes the chance of its effect, not whether it happens.
 
 **No arrow.** Where two states have no arrow between them, the text does not say. That is not a
 finding of no effect. A "no effect" line says the text finds none.
+
+**Bridges.** In the Reasons map, an argument whose step names a causal scheme draws the scheme's
+short name in italics on its inference bar: "consequences", "means → end", "cases → general",
+"cause → effect". Such a step, a bridge, carries the mechanism into the argument: its premises are
+steps the text states. Hover the name to see what move it makes and what to ask of it. A bridge is
+never checked for validity, as a deductive rule is. In the Mechanism view, **Taken on by the
+argument** lists the states where the chain stops but a claim stating the step into them is a reason
+in the argument. The text goes on there, by argument rather than by cause.
 
 **What makes something up.** A box marked **⊂** makes up something else, and a box marked **⊃** is
 made up of other boxes. This is what a thing is made of, not a cause of it, so it is never drawn as an

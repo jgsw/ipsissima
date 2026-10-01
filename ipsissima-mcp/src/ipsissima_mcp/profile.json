@@ -1,7 +1,7 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.14",
-  "date": "2026-09-28",
+  "version": "1.15",
+  "date": "2026-10-01",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
   "licence": "CC-BY-4.0",
@@ -26,6 +26,7 @@
     "aim": {"type": "enum", "values": ["fit", "appropriation"], "summary": "fit: what the text says; appropriation: the best philosophy in it."},
     "unit": {"type": "enum", "values": ["meaning", "commitment"], "summary": "Which sense of the words, or which view is held."},
     "mode": {"type": "enum", "values": ["coherence", "truth", "soundness", "agreement", "interest"]},
+    "method": {"type": "enum", "values": ["series", "parallel"], "summary": "How the map's mechanism was reconstructed: series (argument first, then the mechanism pass) or parallel (argument and mechanism read together, the mechanism entering the argument through bridges). Since 1.15."},
     "strength": {"type": "enum", "values": ["minimal", "ordinary", "strong"], "summary": "How much better than their words the author is assumed to be."}
   },
 
@@ -70,6 +71,22 @@
     "appraisal": "the reconstructor's own reading of the text against the world"
   },
 
+  "bridges": {
+    "summary": "Causal schemes an inference line may name (`-- From consequences {uses: [1, 2]} --`) where a step-bearing claim serves as a premise: a BRIDGE from the mechanism into the argument. A scheme names a defeasible causal move, not a deductive rule, and is never checked for validity. Since 1.15; after Walton, Reed and Macagno, Argumentation Schemes (2008).",
+    "schemes": [
+      {"name": "From cause to effect", "short": "cause \u2192 effect", "move": "The steps bring the effect about, so it will or does occur.", "questions": ["How strong is each step, and what backs it?", "Does anything stated block or counteract the effect (unless, despite, a rival route, a regime)?"]},
+      {"name": "From effect to cause", "short": "effect \u2192 cause", "move": "The mechanism best explains what was observed.", "questions": ["Which rival accounts does the text set out?", "How thorough is the account: where does the chain stop?"]},
+      {"name": "From correlation to cause", "short": "correlation \u2192 cause", "move": "Two things go together, so one brings the other about.", "questions": ["Is there a common cause?", "Could it run the other way?", "Is it mediated, and over what range does it hold?", "Is the measure itself the source of the change?"]},
+      {"name": "From cases to a general mechanism", "short": "cases \u2192 general", "move": "The steps hold in these cases, so the general step holds.", "questions": ["Are the cases kinds of the general step?", "How many cases, and how different?", "Is a general claim drawn from one case?"]},
+      {"name": "From a mechanism to what to do", "short": "means \u2192 end", "move": "A route runs from an action to a valued outcome, so the action should be taken.", "questions": ["What other goals does the action bear on?", "What other routes reach the goal?", "Can the action be taken: does anything block it?", "What other consequences does it have?"]},
+      {"name": "From consequences", "short": "consequences", "move": "A route runs to a good or bad outcome, so the policy, rule or view is good or bad.", "questions": ["Does the route exist in the text?", "What other consequences does the text give?", "What criterion of good or bad does the step rely on?"]},
+      {"name": "From a mechanism to a possibility", "short": "lever", "move": "The mechanism has a lever, so things can be otherwise.", "questions": ["Does anything block the lever?", "Is the outcome only possible, or open?"]},
+      {"name": "From a mechanism against a theory", "short": "against a theory", "move": "A mechanism the theory denies or ignores holds, so the theory fails.", "questions": ["Does the mechanism hold where the theory claims to hold (scope, regime, conditions)?"]},
+      {"name": "From a mechanism to a classification", "short": "classification", "move": "What the mechanism does makes the case one of a kind (forced, momentous, brittle).", "questions": ["Does the mechanism establish each condition the kind requires?"]},
+      {"name": "Genealogical debunking", "short": "genealogy", "move": "A view is produced by a cause that does not track its truth, so its claim to authority fails.", "questions": ["Is the producing cause one that could not track the truth?", "Does the critique apply to the critic's own view?"]}
+    ]
+  },
+
   "mechanism": {
     "question": {"type": "string"},
     "levels": {"type": "list of strings", "default": ["macro", "meso", "micro"], "summary": "Levels of social complexity, top first."},
@@ -93,7 +110,7 @@
     "basis": {"type": "enum", "values": ["study", "statistics", "model", "example", "testimony", "asserted"], "summary": "What the text offers for the step."},
     "lag": {"type": "string"},
     "period": {"type": "string", "summary": "When the step holds, in the text's words anchored to an event: during culling, after it ended (since 1.8)."},
-    "on": {"type": "level | trend | being | persistence | character | possibility | chance | stock", "summary": "Whether the step moves the level of its `to` (the default) or its trend: slows a rise, speeds a fall (since 1.8); or (since 1.11) makes or unmakes it (being, + or -), maintains or erodes it (persistence, + or -), or changes what kind of thing it is (character, with sign: which); or (since 1.12) opens or closes the possibility of it (possibility, + or -); or (since 1.14) makes it more or less likely (chance, + or -), or adds to or drains it, a stock (stock, + or -): an inflow or an outflow, which the stock need not move with."},
+    "on": {"type": "level | trend | being | persistence | character | possibility | chance | stock", "summary": "Whether the step moves the level of its `to` (the default) or its trend: slows a rise, speeds a fall (since 1.8); or (since 1.11) makes or unmakes it (being, + or -), maintains or erodes it (persistence, + or -), or changes what kind of thing it is (character, with sign: which); or (since 1.12) opens or closes the possibility of it (possibility, + or -); or (since 1.14) makes it more or less likely (chance, + or -), or flows into or out of it, a stock (stock, + or -): an inflow or an outflow, which the stock need not move with."},
     "given": {"type": "list of strings or {state, value}", "summary": "Conditions the text states, in its words, or (since 1.8) a declared state and the value it has."},
     "how": {"type": "map", "keys": {"actor": "an actor id", "situation": "string", "habit": "string", "response": "string"}},
     "reflexive": {"type": "boolean"},

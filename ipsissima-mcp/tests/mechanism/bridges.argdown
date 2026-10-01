@@ -1,0 +1,49 @@
+// A planted map for BRIDGES (profile 1.15, after the parallel-pass trial of 30 Sep 2026): a step
+// that is a premise of a named causal scheme, so the state the chain stops at is taken on by the
+// argument rather than left as a gap; a second bridge whose premises state no step, which bridges
+// nothing; and a state the chain stops at that nothing argues from -- a gap still.
+===
+title: "Bridges -- a planted mechanism in an argument"
+mechanism:
+    question: "What does a curfew do to the town?"
+    levels: [town, people]
+    actors:
+        council: {label: "The council", level: town}
+        youth:   {label: "Young people", level: people}
+    states:
+        curfew:  {label: "The council imposes a curfew", actor: council, role: intervention}
+        crime:   {label: "Night-time crime", actor: youth, role: outcome}
+        resent:  {label: "Young people resent the council", actor: youth}
+        trust:   {label: "Trust in the council", actor: youth}
+        graffiti: {label: "Graffiti on the council offices", actor: youth}
+===
+
+[Keep the curfew]: The council should keep the curfew.
+
+<The curfew's consequences>
+
+(1) [The curfew cuts crime]: The curfew cuts night-time crime.
+    {causes: {from: curfew, to: crime, sign: "-", basis: asserted}}
+(2) [Less crime is good]: Less night-time crime is good for the town.
+-- From consequences {uses: [1, 2]} --
+(3) [Keep the curfew]
+
+<Nothing causal here>
+
+(1) [The council voted for it]: The council voted for the curfew.
+-- From a mechanism to what to do {uses: [1]} --
+(2) [The vote binds]: The vote binds the council.
+    +> [Keep the curfew]
+
+<The curfew costs trust>
+
+(1) [The curfew breeds resentment]: The curfew breeds resentment.
+    {causes: {from: curfew, to: resent, sign: "+", basis: asserted}}
+(2) [Resentment wears trust away]: Resentment wears trust in the council away.
+    {causes: {from: resent, to: trust, sign: "-", basis: asserted}}
+-- From cause to effect {uses: [1, 2]} --
+(3) [The curfew costs the council trust]: The curfew costs the council the young people's trust.
+    -> [Keep the curfew]
+
+[Resentment shows on the walls]: Resentment shows as graffiti on the council offices.
+    {causes: {from: resent, to: graffiti, sign: "+", basis: asserted}}

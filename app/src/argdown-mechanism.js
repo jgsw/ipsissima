@@ -84,6 +84,113 @@ var SCOPES = ["singular", "general"];
 // HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14) -- mechanism.py's ACCOUNTS.
 var ACCOUNTS = ["regularity", "manipulability", "mechanism", "counterfactual", "intra-action"];
 function accountOf(b) { return asList(obj(b).account).filter(function (a) { return ACCOUNTS.indexOf(a) >= 0; }); }
+// BRIDGES FROM THE MECHANISM INTO THE ARGUMENT (profile 1.15) -- profile.json's "bridges", held
+// equal to it by test_profile.py. An inference line naming one of these is a causal move from
+// step-bearing premises, not a deductive rule; the Reasons view draws its short name and asks
+// its questions, and the census lists it.
+var BRIDGES = [
+   {
+    "name": "From cause to effect",
+    "short": "cause → effect",
+    "move": "The steps bring the effect about, so it will or does occur.",
+    "questions": [
+     "How strong is each step, and what backs it?",
+     "Does anything stated block or counteract the effect (unless, despite, a rival route, a regime)?"
+    ]
+   },
+   {
+    "name": "From effect to cause",
+    "short": "effect → cause",
+    "move": "The mechanism best explains what was observed.",
+    "questions": [
+     "Which rival accounts does the text set out?",
+     "How thorough is the account: where does the chain stop?"
+    ]
+   },
+   {
+    "name": "From correlation to cause",
+    "short": "correlation → cause",
+    "move": "Two things go together, so one brings the other about.",
+    "questions": [
+     "Is there a common cause?",
+     "Could it run the other way?",
+     "Is it mediated, and over what range does it hold?",
+     "Is the measure itself the source of the change?"
+    ]
+   },
+   {
+    "name": "From cases to a general mechanism",
+    "short": "cases → general",
+    "move": "The steps hold in these cases, so the general step holds.",
+    "questions": [
+     "Are the cases kinds of the general step?",
+     "How many cases, and how different?",
+     "Is a general claim drawn from one case?"
+    ]
+   },
+   {
+    "name": "From a mechanism to what to do",
+    "short": "means → end",
+    "move": "A route runs from an action to a valued outcome, so the action should be taken.",
+    "questions": [
+     "What other goals does the action bear on?",
+     "What other routes reach the goal?",
+     "Can the action be taken: does anything block it?",
+     "What other consequences does it have?"
+    ]
+   },
+   {
+    "name": "From consequences",
+    "short": "consequences",
+    "move": "A route runs to a good or bad outcome, so the policy, rule or view is good or bad.",
+    "questions": [
+     "Does the route exist in the text?",
+     "What other consequences does the text give?",
+     "What criterion of good or bad does the step rely on?"
+    ]
+   },
+   {
+    "name": "From a mechanism to a possibility",
+    "short": "lever",
+    "move": "The mechanism has a lever, so things can be otherwise.",
+    "questions": [
+     "Does anything block the lever?",
+     "Is the outcome only possible, or open?"
+    ]
+   },
+   {
+    "name": "From a mechanism against a theory",
+    "short": "against a theory",
+    "move": "A mechanism the theory denies or ignores holds, so the theory fails.",
+    "questions": [
+     "Does the mechanism hold where the theory claims to hold (scope, regime, conditions)?"
+    ]
+   },
+   {
+    "name": "From a mechanism to a classification",
+    "short": "classification",
+    "move": "What the mechanism does makes the case one of a kind (forced, momentous, brittle).",
+    "questions": [
+     "Does the mechanism establish each condition the kind requires?"
+    ]
+   },
+   {
+    "name": "Genealogical debunking",
+    "short": "genealogy",
+    "move": "A view is produced by a cause that does not track its truth, so its claim to authority fails.",
+    "questions": [
+     "Is the producing cause one that could not track the truth?",
+     "Does the critique apply to the critic's own view?"
+    ]
+   }
+  ];
+var BRIDGE_BY_NAME = {};
+BRIDGES.forEach(function (b) { BRIDGE_BY_NAME[b.name.toLowerCase()] = b; });
+/** The scheme a line's rule names, or null: exactly one name, and a registered one. */
+function bridgeScheme(rules) {
+  var names = (rules || []).map(function (r) { return String(r).trim().toLowerCase(); }).filter(Boolean);
+  return names.length === 1 && BRIDGE_BY_NAME[names[0]] ? BRIDGE_BY_NAME[names[0]] : null;
+}
 function goalOf(b) { var g = obj(b).goal; return g != null && GOALS.indexOf(String(g)) >= 0 ? String(g) : null; }
 /** The form a block or a chain declares -- mechanism.py's form_of, less its problems. */
 function formOf(b) {
@@ -259,13 +366,26 @@ function model(graph) {
   var ordering = levelOrder(block, levels);
   var form = formOf(block);
   var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast), account: accountOf(block) };
+  var prof = profile(levels, actors, states, ids, ok,
+                     m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering,
+                     form, consts, reasoning);
+  // WHERE THE CHAIN STOPS AND THE ARGUMENT TAKES IT ON, and THE BRIDGES (1.15) -- mechanism.py's
+  // taken_up and bridges, field for field, from the parser's own records (graph.mechanism).
+  var reasonSet = {}; (m.reasons || []).forEach(function (t) { reasonSet[t] = true; });
+  var gapStates = {}; (prof.gaps || []).forEach(function (g) { var p = String(g && g.message != null ? g.message : g).split("`"); if (p.length >= 3) gapStates[p[1]] = true; });
+  prof.taken_up = uniqSorted(ok.filter(function (s) { return s.layer === "text" && gapStates[s.to] && reasonSet[s.claim.title]; })
+                               .map(function (s) { return [s.to, s.claim.title]; }));
+  var stepTitles = {};
+  (m.claims || []).forEach(function (c) { stepTitles[c.title] = true; });
+  prof.bridges = uniqSorted((m.inferences || []).map(function (f) {
+    var sch = bridgeScheme(f.rules);
+    return sch ? [f.argument, f.step, sch.name, f.inputs.length, f.inputs.filter(function (t) { return stepTitles[t]; }).length] : null;
+  }).filter(Boolean));
   return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            form: form, constitutions: consts, reasoning: reasoning,
-           profile: profile(levels, actors, states, ids, ok,
-                            m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering,
-                            form, consts, reasoning) };
+           profile: prof };
 }
 
 function reach(start, edges) {
@@ -1232,7 +1352,7 @@ function formationWord(on, sign) {
   if (on === "persistence") return sign === "+" ? "maintains" : sign === "-" ? "erodes" : null;
   // A CHANCE AND A STOCK (1.14): neither says its effect moves with its cause.
   if (on === "chance") return sign === "+" ? "makes likelier" : sign === "-" ? "makes less likely" : null;
-  if (on === "stock") return sign === "+" ? "adds to" : sign === "-" ? "drains" : null;
+  if (on === "stock") return sign === "+" ? "flows into" : sign === "-" ? "flows out of" : null;
   return null;
 }
 function signWord(signs) {
@@ -3415,7 +3535,7 @@ function create(container, graph, opts) {
       (s.on === "character" ? " · <b>transforms</b>: it changes what kind of thing its effect is" : "") +
       (s.on === "possibility" ? " · <b>" + (s.sign === "-" ? "closes off" : "opens up") + "</b>: it changes what can happen, not what does" : "") +
       (s.on === "chance" ? " · <b>" + (s.sign === "-" ? "makes less likely" : "makes likelier") + "</b>: it changes the chance of its effect, not whether it happens" : "") +
-      (s.on === "stock" ? " · <b>" + (s.sign === "-" ? "drains" : "adds to") + "</b>: a flow " + (s.sign === "-" ? "out of" : "into") + " a stock; the stock need not move with it" : "") +
+      (s.on === "stock" ? " · <b>" + (s.sign === "-" ? "flows out of" : "flows into") + "</b>: " + (s.sign === "-" ? "an outflow from" : "an inflow to") + " a stock; the stock need not move with it" : "") +
       ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
       ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
         ": this link and that route are one, counted once" : "") +
@@ -3541,6 +3661,10 @@ function create(container, graph, opts) {
           esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.polarity ? ' <i>(' + l.polarity + ')</i>' : '') +
           (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
                                        : "none closed in the text";
+    // WHERE THE ARGUMENT TAKES THE CHAIN ON (1.15): the whole map's, since a chain's own model
+    // does not recompute it. Such a state is listed apart from the gaps, and is not one.
+    var HANDED = {};
+    ((FULL && FULL.profile && FULL.profile.taken_up) || P.taken_up || []).forEach(function (x) { (HANDED[x[0]] = HANDED[x[0]] || []).push(x[1]); });
     var gapText = function (g) {
       var s = g.state ? "“" + label(g.state) + "”" : "";
       // EVERY KIND THE MODEL EMITS, each a whole sentence. Three kinds fell through to the
@@ -3551,6 +3675,8 @@ function create(container, graph, opts) {
            : g.kind === "unreached-outcome" ? s + " is not reached by the text’s links from where its chain starts."
            : g.kind === "no-intervention" ? "No state is marked as an intervention or a condition, so the chain has no stated start."
            : g.kind === "no-outcome" ? "No state is marked as an outcome, so nothing says what the chain is for."
+           : g.state && HANDED[g.state] ? s + " is where the chain stops and the argument takes it on: " +
+               HANDED[g.state].map(function (t) { return "[" + t + "]"; }).join(", ") + " is a reason there."
            : g.state ? s + " leads nowhere in the text: the chain stops there."
            : String(g.message || "");
     };
@@ -3600,7 +3726,10 @@ function create(container, graph, opts) {
       TIERS.map(function (t) { return '<span style="width:' + (100 * T[t] / tot) + '%;background:var(--mv-' + t + ')"></span>'; }).join("") +
       '</div><div class="amech-q">' + T.evidence + ' backed by a study or statistics · ' + T.argued + ' argued · ' +
       T.asserted + ' asserted only · ' + T.imputed + ' imputed</div>' +
-      (P.gaps.length ? '<h3>Gaps</h3><ul class="amech-gaps">' + P.gaps.map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
+      (P.gaps.some(function (g) { return !(g.state && HANDED[g.state]); }) ? '<h3>Gaps</h3><ul class="amech-gaps">' +
+        P.gaps.filter(function (g) { return !(g.state && HANDED[g.state]); }).map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
+      (P.gaps.some(function (g) { return g.state && HANDED[g.state]; }) ? '<h3>Taken on by the argument</h3><ul class="amech-handed">' +
+        P.gaps.filter(function (g) { return g.state && HANDED[g.state]; }).map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
       // "LEGEND", because "Key" names the floating card the other arrangements share, and Help ▸
       // Show the Key opens that card, not this (clarity audit, 27 Sep 2026).
       '<h3>Legend</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
@@ -3999,7 +4128,7 @@ function create(container, graph, opts) {
 }
 
 var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
-            FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH };
+            FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH, BRIDGES: BRIDGES, bridgeScheme: bridgeScheme };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;
 })(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));

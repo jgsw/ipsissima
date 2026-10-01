@@ -101,6 +101,15 @@ if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
 # Mutation: stop the page showing a state's note -> fails: a key the profile defines must reach a reader.
 check("every state key the profile defines is read by the page", state_keys <= js_state, f"unread: {sorted(state_keys - js_state)}")
 
+# THE BRIDGE SCHEMES (1.15) are written into the page's script, which cannot read the registry.
+# Mutation: rename a scheme in argdown-mechanism.js, or drop its question -> fails.
+js_bridges = json.loads(re.search(r"var BRIDGES = (\[.*?\n\s*\]);", MECH_JS, re.S).group(1))
+check("the page's bridge schemes are the registry's, word for word", js_bridges == P["bridges"]["schemes"],
+      f"{len(js_bridges)} vs {len(P['bridges']['schemes'])}")
+check("and the checker reads the same schemes", sorted(mechanism.BRIDGES) == sorted(b["name"].lower() for b in P["bridges"]["schemes"]))
+check("no scheme name holds a comma: Argdown splits a rule list on commas",
+      not any("," in b["name"] for b in P["bridges"]["schemes"]))
+
 print("\nthe registry against the method")
 conv_tags = set(re.findall(r"^\| `#(\w+)`", CONVENTIONS, re.M))
 check("the tags are the conventions' tags", conv_tags == set(P["tags"]),

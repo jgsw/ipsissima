@@ -1,5 +1,13 @@
 # The mechanism pass — marking the chain a text asserts
 
+> **THE SERIES METHOD.** Since 1 October 2026 the method in force is the parallel one
+> (`parallel-pass.md`, served as `mechanism`): the argument and the mechanism are read together, and
+> the mechanism enters the argument through bridges. This document is still served, as
+> `mechanism-series`, for two reasons. **Its §§2–7, the notation for states and steps, are what the
+> parallel method uses unchanged.** And the series method comes back whole if
+> `IPSISSIMA_MECHANISM_METHOD=series` is set. Under the parallel method, §1, "What it may and may not
+> change", and §4's separate section do not apply.
+
 A SEPARATE PASS, AND ONLY ON REQUEST. It runs when a reader has asked for the mechanism of a text —
 "map its mechanism too", or yes to `argdown_plan`'s offer — and never as part of an ordinary
 reconstruction. It takes a map that is already finished (`argdown_check` reports `ok` and
@@ -175,7 +183,7 @@ Say whether a step is about a particular case or a general relation (`scope: sin
 where the difference matters: a general claim needs more than one case.
 
 **Stocks and chances** (*1.14*). Where the `from` is a flow into or out of the `to`, mark
-`on: stock`: births *add to* a population (`+`), a catch *drains* it (`-`). The stock need not move
+`on: stock`: births *flow into* a population (`+`), a catch *flows out of* it (`-`), an inflow and an outflow in Meadows's terms. The stock need not move
 with the flow, so a loop through it says less than its sign suggests, and the census names such
 loops. Where the text says the step raises or lowers the *chance* of its effect ("raises the risk
 of", "makes more likely", "tends to"), mark `on: chance`.

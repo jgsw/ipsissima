@@ -3492,6 +3492,22 @@ const RULE_SHORT = {
   "contraposition": "Contrap", "simplification": "Simp", "conjunction": "Conj",
   "addition": "Add", "biconditional elimination": "BE", "reductio ad absurdum": "RAA"
 };
+/* A BRIDGE IS NOT A RULE (profile 1.15). "From consequences" on an inference line says a step-bearing
+ * claim is a premise of a causal move from the mechanism into the argument. Drawn as a rule it was
+ * reduced to its initials ("FAMTWTD") and its tooltip said "Not checked: no formalization" -- the
+ * frame for a claimed deduction, which a bridge never is (parallel-pass trial, 30 Sep 2026). So a
+ * bridge gets its short name, in italics, and a tooltip that says what move it makes and what its
+ * questions are. The schemes are the Mechanism view's (profile.json's), read off the page's own
+ * ArgdownMechanism; without it, as in a test that loads this file alone, it falls back to a rule. */
+function bridgeOf(name) {
+  const M = (typeof globalThis !== "undefined" && /** @type {any} */ (globalThis).ArgdownMechanism) || null;
+  return M && typeof M.bridgeScheme === "function" && name ? M.bridgeScheme(String(name).split(",")) : null;
+}
+function bridgeTip(b) {
+  return b.name + ": a causal bridge from the mechanism into the argument.\n\n" + b.move +
+         "\n\nWhat to ask of it:\n" + b.questions.map(q => "• " + q).join("\n") +
+         "\n\nA defeasible causal move, not a deductive rule, so it is never checked for validity.";
+}
 function shortRule(name) {
   return String(name).split(",").map(part => {
     const t = part.trim();
@@ -4205,12 +4221,13 @@ function createLiveMap(container, graph, options) {
           const by = py + PCS_BAR_H / 2;
           let barEnd = x1;
           if (r.rule) {
-            const v = r.verdict && r.verdict.state;
+            const bridge = bridgeOf(r.rule);
+            const v = bridge ? "bridge" : r.verdict && r.verdict.state;
             // ROOM FOR THE BADGE FIRST. The name is right-anchored at the box edge, so an
             // invalid step has to give the badge its 15px before the label is fitted -- fitting
             // first and shifting after would truncate a name that had room all along.
             const pad = v === "invalid" ? 15 : 0;
-            const shortName = shortRule(r.rule);
+            const shortName = bridge ? bridge.short : shortRule(r.rule);
             const label = fitLabel(shortName, (x1 - x0) * 0.62 - pad, 8.5, "400");
             const rt = el("text", { class: "alm-pcs-rule" + (v ? " alm-v-" + v : ""),
                                     x: x1 - pad, y: by + 3,
@@ -4219,7 +4236,7 @@ function createLiveMap(container, graph, options) {
             // The expansion, and the verdict in words. Both are things the abbreviation does
             // NOT show, which is the only reason a tooltip earns its place.
             const rtip = el("title");
-            rtip.textContent = r.rule
+            rtip.textContent = bridge ? bridgeTip(bridge) : r.rule
               // Both verdicts name the formalizations, matching the ! badge: no string on the
               // map states a verdict without attributing it to what was actually examined —
               // the formulas, never the author's argument (docs/values/INVENTORY.md, A11).
@@ -5157,10 +5174,11 @@ function createLiveMap(container, graph, options) {
         const anchorEnd = (Math.sign(far.x - j.x) || 1) < 0;
         rt.setAttribute("text-anchor", anchorEnd ? "end" : "start");
         rt.setAttribute("fill", rel.color);
-        rt.textContent = shortRule(info.rule);
+        const bridge = bridgeOf(info.rule);
+        rt.textContent = bridge ? bridge.short : shortRule(info.rule);
         let rtip = rt.querySelector("title");
         if (!rtip) { rtip = el("title"); rt.appendChild(rtip); }
-        rtip.textContent = info.rule;
+        rtip.textContent = bridge ? bridgeTip(bridge) : info.rule;
 
         /* WHAT THE NAME'S CLAIM CAME TO -- and only one of the four states is loud.
          *
@@ -5228,7 +5246,7 @@ function createLiveMap(container, graph, options) {
       } else if (rt) rt.remove();
       // The state rides on the holder so one CSS rule can style the name, and so a map can be
       // asked how many of its named steps hold up without re-deciding any of them.
-      holder.setAttribute("class", "alm-join" + (info.validity ? " alm-v-" + info.validity : "")
+      holder.setAttribute("class", "alm-join" + (bridgeOf(info.rule) ? " alm-v-bridge" : info.validity ? " alm-v-" + info.validity : "")
                           + (holder.classList.contains("alm-v-open") ? " alm-v-open" : ""));
       /* THE LINE NUMBER AT EACH FOOT. The box lists the structure as numbered rows and the
        * members arrive as anonymous lines; this is the pairing, written where the pairing
@@ -6915,6 +6933,8 @@ function injectStyle() {
    common one at first. Hollow rather than absent: it is a claim, it is simply unexamined. */
 .alm-v-unformalized .alm-join-rule{opacity:.5;text-decoration:underline;
   text-decoration-style:dotted;text-underline-offset:2px}
+/* A BRIDGE (1.15): a causal scheme, named in full words, never a verdict -- italic and plain. */
+.alm-pcs-rule.alm-v-bridge,.alm-v-bridge .alm-join-rule{font-style:italic;opacity:.9;text-decoration:none}
 .alm-v-stale .alm-join-rule{opacity:.85;text-decoration:underline;
   text-decoration-style:wavy;text-decoration-thickness:.5px;text-underline-offset:2px}
 .alm-explode{cursor:pointer}

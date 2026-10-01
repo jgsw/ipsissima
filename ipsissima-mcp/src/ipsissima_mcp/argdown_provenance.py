@@ -483,6 +483,10 @@ POLICY_VALUES = {
     "unit":     ("meaning", "commitment"),
     "mode":     ("coherence", "truth", "soundness", "agreement", "interest"),
     "strength": ("minimal", "ordinary", "strong"),
+    # HOW THE MECHANISM WAS RECONSTRUCTED (profile 1.15): after the argument (series), or with
+    # it, the mechanism entering the argument through bridges (parallel). Recorded so maps made
+    # the two ways can be told apart and compared.
+    "method":   ("series", "parallel"),
 }
 
 

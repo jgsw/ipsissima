@@ -340,18 +340,32 @@ def describe(paths, recursive=True):
     causal = [r for r in sources if (r["causal"] or {}).get("looks_causal")]
     if causal:
         names = [r["name"] for r in causal]
-        offers.append(dict(
-            id="mechanism", sources=names,
-            message=(f"{', '.join(names)} {'sets' if len(names) == 1 else 'set'} out what brings "
-                     f"what about -- causal language in "
-                     f"{max(r['causal']['per_1000_words'] for r in causal):g} sentences per "
-                     f"thousand words, where an argumentative paper runs under 7. Once the map "
-                     f"checks ok and verified, Ipsissima can also mark the causal chain the text "
-                     f"asserts -- actors, steps, what each step rests on, and where the chain "
-                     f"stops -- and draw it in the Mechanism view. It is a separate pass that "
-                     f"re-reads the source, and it changes nothing in the argument."),
-            how="only if the user says yes: argdown_method with `mechanism`, after the map "
-                "checks ok and verified"))
+        lead = (f"{', '.join(names)} {'sets' if len(names) == 1 else 'set'} out what brings what "
+                f"about -- causal language in {max(r['causal']['per_1000_words'] for r in causal):g} "
+                f"sentences per thousand words, where an argumentative paper runs under 7. ")
+        from ipsissima_mcp import mechanism
+        # THE OFFER FOLLOWS THE METHOD IN FORCE (1.15). In parallel the question has to be asked
+        # BEFORE the map is made, because the argument and the mechanism are read together.
+        if mechanism.mechanism_method() == "parallel":
+            offers.append(dict(
+                id="mechanism", sources=names, method="parallel",
+                message=lead + ("Ipsissima can reconstruct the causal chain the text asserts "
+                                "together with the argument -- actors, steps, what each step rests "
+                                "on, where the chain stops -- and show where the mechanism does work "
+                                "in the argument, through named bridges. It is decided before the "
+                                "map is made, because the two are read together."),
+                how="ask before reconstructing; only if the user says yes: argdown_method with "
+                    "`mechanism`, and reconstruct the argument and the mechanism together"))
+        else:
+            offers.append(dict(
+                id="mechanism", sources=names, method="series",
+                message=lead + ("Once the map checks ok and verified, Ipsissima can also mark the "
+                                "causal chain the text asserts -- actors, steps, what each step "
+                                "rests on, and where the chain stops -- and draw it in the "
+                                "Mechanism view. It is a separate pass that re-reads the source, "
+                                "and it changes nothing in the argument."),
+                how="only if the user says yes: argdown_method with `mechanism`, after the map "
+                    "checks ok and verified"))
 
     total = sum(r["words"] for r in sources)
     return dict(

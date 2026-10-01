@@ -92,6 +92,12 @@ you have *changed* the file.
 
 ## The order of work
 
+**If the user has asked for the text's mechanism** (or said yes to `argdown_plan`'s offer), read
+`argdown_method("mechanism")` before writing any node. Under the method in force (parallel, by
+default), the argument and the causal chain are reconstructed together, and that document says how
+the chain enters the argument. If the user has not asked, none of it applies: reconstruct the
+argument alone.
+
 ### 1. Find the conclusion, then the form
 
 The conclusion first — the claim the author wants you to accept by the end, not the topic and not

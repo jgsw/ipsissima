@@ -1,0 +1,153 @@
+# Argument and mechanism, reconstructed together
+
+THE METHOD IN FORCE FOR A TEXT'S MECHANISM, since 1 October 2026. Adopted on the author's word
+after a trial on two texts (James, *The Will to Believe*; Wilson, "What makes a health system
+good?"), in which he judged the parallel maps better than the series ones. It is reversible by one
+setting: `IPSISSIMA_MECHANISM_METHOD=series`, or the extension's "Mechanism method" option, serves
+the series method (`mechanism-series`) instead, unchanged.
+
+It runs only when the user has asked for the mechanism, or said yes to `argdown_plan`'s offer, and
+that question is put BEFORE the map is made, because the two are read together.
+
+Read these with it:
+- the four reconstruction documents (`extraction-prompt` first);
+- `mechanism-method`, on how to read a causal claim;
+- `mechanism-series`, whose §§2–7 are the notation for states and steps, which this method uses
+  unchanged.
+
+This document says what is different.
+
+## Why together
+
+A text often makes its case partly *by* setting out a mechanism. Done in series, the argument is
+reconstructed first, and the mechanism pass may not touch it. Three things are then lost:
+
+- **The mechanism's argumentative work.** Across eighteen maps, the largest link between the two
+  views was a claim stating a step that supports a claim stating none: a mechanism used as a reason
+  for a conclusion that is not itself causal. The series rule left those links unmarked, or left the
+  step outside the argument altogether.
+- **The steps an inference relies on.** The series pass could find them and mark them as
+  imputations, but had to leave them in its own section, never as the premises they are.
+- **The reasons a text gives by naming consequences.** "One feels less tempted than ever to lend the
+  doctrine a respectful ear", after the Inquisition; "then only shall we bring about the intellectual
+  republic". These were read as notes, or as the mechanism's alone.
+
+In the trial the parallel reading also found causal passages the series pass had missed. Two of
+them were halves of arguments. One concession in the series argument was attached to the wrong
+claim. Interpretive load stayed at zero: everything added was the author's words.
+
+## The order of work
+
+1. **Triage.** Read the source whole. For each section, note whether it justifies, explains, or
+   both, and where the text's case rests on what brings what about. This is where the bridges will
+   be.
+2. **Two skeletons, together.** Before any claim, write down both:
+   - the contention or contentions and the top-level form (as the extraction prompt says);
+   - the mechanism's `question`, `goal` and `contrast`, its levels, actors, outcome states and
+     chains.
+
+   Let each decide things in the other:
+   - the contention usually supplies the mechanism's question, contrast and intervention ("What does
+     deciding by passion, rather than waiting for evidence, bring about?");
+   - an outcome state is often a contention's subject;
+   - a chain is often a premise.
+3. **Fill both.** The argument by the extraction prompt's method; the steps by the mechanism
+   notation (`mechanism-series` §§2–7). The series pass's ban on wiring is replaced by the bridge rule
+   below.
+4. **The bridge pass.** For each bridge, check its precondition and ask its questions of the map.
+   Where a step the argument relies on is missing, add it as a premise, `fidelity: "imputation"`,
+   `warrant: "enthymeme"`. Where the text answers a question itself, the answer is in the map. Where
+   it does not, that is a finding, never a gap to close.
+5. **Write `method: parallel`** in the reading policy (`reconstruction:`), then `argdown_check` with
+   `source_root` until ok and verified.
+
+## How a mechanism enters the argument
+
+A claim that states a step enters the argument in one of two ways, and no other.
+
+- **As the support of a claim it bears on**, where the text uses it as a reason for that claim:
+  `[Value for money leaves no room to flex]` under `[Cost-effective is brittle]`.
+- **As a premise of a BRIDGE**: an argument whose inference line names the causal scheme it uses.
+  The name goes in Argdown's own rule slot, so the file stays plain Argdown:
+
+  ```argdown
+  <Faith can create its own facts>
+
+  (1) [Personal relations depend on precursive faith]
+  (2) [Faith creates its own verification]
+  (3) [Social organisms rest on mutual trust]
+  -- From cases to a general mechanism {uses: [1, 2, 3]} --
+  (4) [Some facts need a preliminary faith]
+  (5) [The veto withholds the faith that would make the fact]
+  -- From consequences {uses: [4, 5]} --
+  (6) [Where faith helps create the fact, forbidding it is insane]
+  ```
+
+A bridge is a defeasible causal move, not a deductive rule. The checker never asks it for a
+formalization, and the Reasons view draws its short name in italics, with its questions on hover.
+Write a scheme's name exactly. A name with a comma in it is two rule names to Argdown, so no
+scheme's name has one.
+
+| scheme | the move | what to ask of it |
+|---|---|---|
+| From cause to effect | the steps bring the effect about, so it will or does occur | how strong is each step; does anything stated block it (`unless`, `despite`, a rival route, a regime) |
+| From effect to cause | the mechanism best explains what was observed | which rival accounts the text sets out; how thorough the account is |
+| From correlation to cause | two things go together, so one brings the other about | a common cause; the other direction; mediation and range; the measure itself |
+| From cases to a general mechanism | the steps hold in these cases, so the general step holds | are the cases kinds of the general step; how many; is a general claim drawn from one case |
+| From a mechanism to what to do | a route runs from an action to a valued outcome, so the action should be taken | other goals; other routes to the goal; can it be done; other consequences |
+| From consequences | a route runs to a good or bad outcome, so the policy, rule or view is good or bad | does the route exist; other consequences; the criterion of good or bad |
+| From a mechanism to a possibility | the mechanism has a lever, so things can be otherwise | does anything block the lever; is the outcome only possible |
+| From a mechanism against a theory | a mechanism the theory denies or ignores holds, so the theory fails | does it hold where the theory claims to |
+| From a mechanism to a classification | what the mechanism does makes the case one of a kind | does it establish each condition |
+| Genealogical debunking | a view is produced by a cause that does not track its truth | could that cause track the truth; does the critique reach the critic |
+
+These are Walton, Reed and Macagno's causal and practical schemes (*Argumentation Schemes*, 2008),
+with the four the trial needed. A move that fits none is named in words in the argument's `note:`,
+and the plain `-----` is kept.
+
+The questions are not yours to answer. They tell you where to look in the text. Often the census
+answers one already: an `unless` on the route, a rival chain, a one-case query.
+
+## Six things the trial taught
+
+1. **An explanation is not a reason.** "A `because` drawn as support" is still the commonest error,
+   and the parallel method invites it. Wire a step only where the text uses it to make the reader
+   accept something. A sentence that explains how a thing came about, and argues nothing, stays a
+   step with no relation. In the trial, three such steps in each text were left unwired, rightly.
+2. **A reframing is not a reason either.** Some passages offer "a new and fruitful way of viewing
+   things" rather than a case: "more about making sense of what we're probably already doing, than
+   forcing the reader to agree" (the author, on his own values section). Where the notation can only
+   draw such a passage as support, say so in the `note:`, or leave it unwired.
+3. **Mark each step at the text's grain, not the argument's.** Read for its use in an argument, "the
+   values at the heart of the practice may make limited care distressing" was first marked
+   norms → distress. That composed with "sidelining the norms erodes them" into a route saying that
+   sidelining the norms *lowers* distress: the opposite of the text. The cause was the limited care,
+   with the norms as the condition. After adding a step, read the CHAIN census for the routes it
+   creates, and question any that runs against a step the text states.
+4. **Put a step in the chain whose question it answers.** A step wired in for one argument may
+   belong to a different question. Surgical volume and centralisation were filed under leanness and
+   brittleness, which invited reading them as about brittleness, which the text never says. Give
+   such a step the chain it answers, or a chain of its own.
+5. **No mechanism appendix.** Define each step-bearing claim in the section where the text, and the
+   argument, use it. A separate "mechanism as the text states it" section pulled claims away from
+   their use and sent edges across the map. Only a step the argument never uses may stand on its own,
+   still in its section.
+6. **Showing the cases is a virtue, even when it shows weakness.** Drawing a generalisation's cases
+   as its premises can make an argument look less sound: "a few cases is not a huge number from which
+   to infer the general principle. But it at least has the virtue of making this weakness
+   perspicuous" (the author, on James). Do not leave cases out to make the inference look stronger.
+
+## What the census reports
+
+- **bridge**: each bridge, its scheme, and how many of its premises state a step. A bridge none of
+  whose premises states a step is queried, because it bridges nothing.
+- **handed**: a state the chain stops at, whose step is a reason in the argument. The text goes on,
+  by argument rather than by cause. Unlike a gap, it is not queried.
+- **? gap**: a state the chain stops at and nothing argues from. As before, a finding about the text,
+  never something to close.
+
+## Going back
+
+Everything the series method did is still there. `mechanism-series` serves it, and
+`IPSISSIMA_MECHANISM_METHOD=series` makes it the method in force again. A map records how it was
+made (`method: series | parallel`), so maps made each way can be compared and the switch judged.

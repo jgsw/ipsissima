@@ -173,8 +173,9 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "are the things that cannot be inferred from the files: whether several sources are one "
         "work or several, and which of two drafts is the current one. `advice` reports a source "
         "available in a better format than the one offered. `offers` are things to MENTION to "
-        "the user, not to do: the mechanism pass, for a text that sets out what brings what about, "
-        "runs only if the user says yes."),
+        "the user, not to do: the mechanism, for a text that sets out what brings what about, is "
+        "reconstructed only if the user says yes -- and the offer says whether it is decided before "
+        "the map is made (the parallel method, in force by default) or after it (the series one)."),
 )
 def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
@@ -230,9 +231,16 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
     plan["next"] = ("ask the user the questions above, then call extract_text with `grouping` set"
                     if plan["questions"] else "call extract_text")
     if plan["offers"]:
-        plan["next"] += ("; and tell the user of the mechanism pass in `offers` -- in a sentence, "
-                         "without running it. If they want it, run it after the map checks ok "
-                         "and verified")
+        from ipsissima_mcp import mechanism
+        if mechanism.mechanism_method() == "parallel":
+            plan["next"] += ("; and tell the user of the mechanism in `offers` -- in a sentence -- "
+                             "BEFORE reconstructing: under the parallel method the argument and the "
+                             "mechanism are read together, so the answer decides how the map is made. "
+                             "If they want it, read argdown_method `mechanism` before writing any node")
+        else:
+            plan["next"] += ("; and tell the user of the mechanism pass in `offers` -- in a sentence, "
+                             "without running it. If they want it, run it after the map checks ok "
+                             "and verified")
     return plan
 
 
@@ -494,12 +502,20 @@ METHOD_DOCS = {
     "conventions": ("ipsissima-conventions.md",
                     "what Ipsissima records on a claim: provenance, fidelity, warrants, "
                     "tags, front matter"),
-    # A SEPARATE PASS, served only when asked for by name (ruled 26 Sep 2026): the mechanism a
-    # text asserts, marked on a finished map. Not named in the replies to the other four, so a
-    # reconstruction in progress is never pointed at it unasked.
-    "mechanism": ("mechanism-pass.md",
-                  "the mechanism pass: mark the causal chain a text asserts on a FINISHED map -- "
-                  "only when the user has asked for the mechanism"),
+    # THE MECHANISM, served only when asked for by name: never named in the replies to the other
+    # four, so a reconstruction is never pointed at it unasked. `mechanism` is the METHOD IN FORCE
+    # (1.15): parallel-pass.md by default, mechanism-pass.md when IPSISSIMA_MECHANISM_METHOD=series
+    # -- resolved when served, see argdown_method. Both are always reachable by their own names.
+    "mechanism": ("parallel-pass.md",
+                  "the mechanism, by the method in force: under `parallel` (the default) the argument "
+                  "and the causal chain reconstructed together; under `series` the chain marked on a "
+                  "FINISHED map -- only when the user has asked for the mechanism"),
+    "mechanism-parallel": ("parallel-pass.md",
+                           "the parallel method: argument and mechanism read together, the mechanism "
+                           "entering the argument through bridges -- only when the user has asked"),
+    "mechanism-series": ("mechanism-pass.md",
+                         "the series method, and the notation for steps both methods use: the chain "
+                         "marked on a finished map -- only when the user has asked for the mechanism"),
     # HOW TO READ A MECHANISM, as the argument sheet says how to read an argument (28 Sep 2026):
     # served with the pass, on request only.
     "mechanism-method": ("mechanism-cheatsheet.md",
@@ -507,7 +523,7 @@ METHOD_DOCS = {
                          "necessity, moderators, time and size, rival accounts -- with the pass, "
                          "only when the user has asked for the mechanism"),
 }
-_ON_REQUEST = {"mechanism", "mechanism-method"}
+_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series"}
 
 
 @server.tool(
@@ -523,30 +539,44 @@ _ON_REQUEST = {"mechanism", "mechanism-method"}
         "language -- do not write Argdown from memory), \"method\" (how to reconstruct), "
         "\"conventions\" (what goes on a claim). The `conventions` digest in extract_text's "
         "reply is the compressed form of these documents; this tool serves what it "
-        "compresses. A fifth, \"mechanism\", is a separate pass that marks the causal chain a "
-        "text asserts on a finished, checked map: serve it ONLY when the user has asked for the "
-        "mechanism of a text, never as part of an ordinary reconstruction. With it, "
-        "\"mechanism-method\" says how to read a text's causal claims before marking them."),
+        "compresses. A fifth, \"mechanism\", reconstructs the causal chain a text asserts, by the "
+        "method in force -- by default together with the argument, the mechanism entering it "
+        "through bridges: serve it ONLY when the user has asked for the mechanism of a text, never "
+        "as part of an ordinary reconstruction. With it, \"mechanism-method\" says how to read a "
+        "text's causal claims, and \"mechanism-series\" gives the notation for steps."),
 )
 def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     """
     Args:
         document: which document — "extraction-prompt", "syntax", "method" or "conventions";
-            or "mechanism", the separate pass, and "mechanism-method", how to read for it, only
-            when the user has asked for it.
+            or, only when the user has asked for the mechanism: "mechanism" (the method in force,
+            parallel by default), "mechanism-method" (how to read causal claims),
+            "mechanism-parallel" or "mechanism-series" (either method by name).
     """
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
                     documents={k: v[1] for k, v in METHOD_DOCS.items()})
     fname, _ = METHOD_DOCS[document]
     if document in _ON_REQUEST:
-        return dict(ok=True, document=document, text=_doc(fname),
-                    next=(("read \"mechanism-method\" too, on how to read the text's causal "
-                           "claims; " if document == "mechanism" else
-                           "then \"mechanism\" says what to mark and in what notation; ") +
-                          "the map must already check ok and verified; mark the chain, then run "
-                          "argdown_check with source_root until ok and verified, and read the "
-                          "CHAIN section of the census"))
+        from ipsissima_mcp import mechanism
+        method = mechanism.mechanism_method()
+        if document == "mechanism":
+            fname = "parallel-pass.md" if method == "parallel" else "mechanism-pass.md"
+        parallel = fname == "parallel-pass.md"
+        if parallel:
+            nxt = ("read \"mechanism-method\" (how to read causal claims) and \"mechanism-series\" "
+                   "(its sections 2-7 are the notation for steps) too, and the four reconstruction "
+                   "documents; then reconstruct the argument and the mechanism together, write "
+                   "`method: parallel` in the reading policy, and run argdown_check with source_root "
+                   "until ok and verified, reading the CHAIN section of the census")
+        elif document == "mechanism-method":
+            nxt = ("then \"mechanism\" says what to mark and in what notation; run argdown_check "
+                   "with source_root until ok and verified, and read the CHAIN section of the census")
+        else:
+            nxt = ("read \"mechanism-method\" too, on how to read the text's causal claims; the map "
+                   "must already check ok and verified; mark the chain, then run argdown_check with "
+                   "source_root until ok and verified, and read the CHAIN section of the census")
+        return dict(ok=True, document=document, method_in_force=method, text=_doc(fname), next=nxt)
     others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document and k not in _ON_REQUEST)
     return dict(ok=True, document=document, text=_doc(fname),
                 next=(f"read it before writing any node; {others} are served here too, and "
