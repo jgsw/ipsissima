@@ -1174,5 +1174,130 @@ check("the p.2 marker comes before the words printed on p.2",
 check("  and after the words printed on p.1", body.index("into the next sheet where") <
       body.index("p.2 begins here"), True)
 
+
+print("\nthe Sewell fixes (AJS 1992 through JSTOR, 2 Oct 2026)")
+from pdf_to_source import (is_cover_sheet, opens_note, title_heading_map,          # noqa: E402
+                           HEADING_RUNS_ON, dash_words, dehyphenate, LICENCE, IMPRINT_SHAPE)
+
+def nrow(x0, y0, text, small=False, printed=1):
+    return (printed, x0, y0, H, text, 0, small)
+
+
+COVER = ("A Theory of Structure: Duality, Agency, and Transformation\nAuthor(s): A. Author\n"
+         "Source: An Imagined Journal, Vol. 98, No. 1 (Jul., 1992), pp. 1-29\n"
+         "Published by: An Imagined Press\nStable URL: https://www.jstor.org/stable/0000000\n"
+         "Accessed: 05-09-2021 09:10 UTC\nJSTOR is a not-for-profit service that helps scholars ...\n"
+         "Your use of the JSTOR archive indicates your acceptance of the Terms & Conditions of Use")
+# Mutation: drop the cover test from convert -> "Published by:" opens the front-matter cut again.
+check("a repository cover sheet is recognised", is_cover_sheet(COVER), True)
+check("  but not an article page carrying only the download footer",
+      is_cover_sheet("Body prose of the article. " * 40 + "This content downloaded from 1.2.3.4 on Sun"),
+      False)
+
+# A superscript 1 read as an apostrophe keys the first note, as an asterisk does.
+# Mutation: take the apostrophe out of STAR_NOTE -> the acknowledgements stay in the sentence.
+check("a first note keyed by a misread superscript 1 opens the note zone",
+      opens_note(nrow(54, 600, "' This article has benefited from many readers.", small=True), 60, 0.70, 54),
+      True)
+check("  but a body line opening with an apostrophe does not",
+      opens_note(nrow(54, 300, "' This sentence is body prose.", small=False), 60, 0.70, 54), False)
+
+# A small quotation ending just above the notes is not a note carried over.
+# Mutation: drop indented_past from the walk -> the quotation's last lines go into note 8.
+quoted = [nrow(54, 300, "As Bourdieu puts it, in his characteristically ornate style,"),
+          nrow(77, 415, "The mental structures which construct the world of objects", small=True),
+          nrow(77, 435, "structures. The mind born of the world of objects does not", small=True),
+          nrow(77, 445, "tivity confronting an objectivity: the objective universe is", small=True),
+          nrow(54, 479, "8 Some of Bourdieu's more recent work deals with change.", small=True),
+          nrow(54, 490, "study of the French professoriat in the events of 1968.", small=True)]
+fq, nq = split_footnotes(quoted, 77, margin=54)
+check("a display quotation set as small as the notes stays in the flow",
+      ([t[:12] for _p, _x, t in fq], [t[:12] for _p, _x, t in nq]),
+      (["As Bourdieu ", "The mental s", "structures. ", "tivity confr"], ["8 Some of Bo", "study of the"]))
+carried = [nrow(54, 420, "and the runover of a note from the page before.", small=True)] + quoted[4:]
+check("  while a note carried over at the notes' own edge is still lifted",
+      len(split_footnotes([nrow(54, 300, "Body.")] + carried, 77, margin=54)[1]), 3)
+
+# The paragraph that resumes after a quotation opens at the paragraph indent, off the margin too.
+# Mutation: drop the shared-edge test -> "In many respects" joins the blockquote.
+RESUME = [(15, 56, "Margin prose to anchor the page's margin here."),
+          (15, 56, "More margin prose, so the margin wins the count."),
+          (15, 79, "jects which are the product of objectifying operations"),
+          (15, 79, "to the very structures which the mind applies to it."),
+          (15, 79, "reflecting metaphors. [Bourdieu 1977, p. 91]"),
+          (15, 66, "In many respects, Bourdieu's theory of practice is"),
+          (15, 56, "with the conception of the duality of structure for"),
+          (15, 56, "this paper. Bourdieu recognizes the mutual reproduction")]
+check("a quotation's run ends where its left edge does", mark_displayed_quotes(RESUME), {2, 3, 4})
+
+# A capitals heading under the running head is a heading, not a second head.
+# Mutation: drop the topmost test -> "VARIETIES OF STRUCTURES" is dropped as a running head.
+caps_page = ([dict(text="American Journal of Sociology", y0=52, x0=58, x1=180, width=122, size=8.0),
+              dict(text="VARIETIES OF STRUCTURES", y0=76, x0=57, x1=180, width=123, size=9.0),
+              dict(text="The concept of structure I elaborate in this article is", y0=89, x0=57,
+                   x1=335, width=278, size=8.0)], 666.0)
+aj_page = ([dict(text="American Journal of Sociology", y0=52, x0=58, x1=180, width=122, size=8.0),
+            dict(text="Body prose of an ordinary page of the article.", y0=76, x0=57, x1=335,
+                 width=278, size=8.0)], 666.0)
+is_f, _h, _f = detect_furniture([head_sheet(), caps_page, aj_page, aj_page])
+check("a capitals heading under the page's running head is not furniture",
+      (is_f("VARIETIES OF STRUCTURES", 76, 666.0), is_f("American Journal of Sociology", 52, 666.0)),
+      (None, "running head"))
+
+# Title-case subheadings, set at body size and flush, with space above.
+# Mutation: return {} from title_heading_map -> they run into the paragraph below.
+def trow(page, y, text, small=False):
+    return (page, 56, y, 666.0, text, 0, small)
+SUBS = [trow(5, 240, "of the social sciences that historians do in"),
+        trow(5, 252, "practice, and historical anthropologists as well."),
+        trow(5, 288, "What Is Structure?"),
+        trow(5, 300, "But in spite of its promise, the theory suffers"),
+        trow(5, 312, "from serious gaps that have persisted through the"),
+        trow(5, 324, "theory's restatements and its many applications."),
+        trow(5, 336, "Short last line of a paragraph"),
+        trow(5, 348, "Then the next paragraph opens here and ends."),
+        trow(6, 76, "Agency", small=True),
+        trow(6, 88, "Such enactments of structures imply a concept")]
+found = title_heading_map(SUBS, [8.0] * 9 + [8.0], 8.0)
+check("a short title-case line with space above it is a subheading", sorted(found),
+      ["Agency", "What Is Structure?"])
+
+# One heading on two lines; and the dash a scan sets as a hyphen.
+check("a heading line ending on a connective runs on",
+      [bool(HEADING_RUNS_ON.search(t)) for t in ("THE DUALITY OF STRUCTURE: A CRITIQUE AND",
+                                                 "THE TRANSFORMATION OF DUAL STRUCTURES: OUT OF",
+                                                 "VARIETIES OF STRUCTURES")], [True, True, False])
+DOC = ('a synonym "pattern"-but all such; the soul and the body; one can see; the agency of '
+       'actors; con- cepts that are broken; a body and a soul- can be used')
+w = dash_words(DOC)
+named = []
+out = dehyphenate(DOC, False, set(), w, named)
+# Mutation: drop the dash flag -> nothing is named; the joins themselves never change.
+check("a line-end join that may have been a dash is named, not decided",
+      (named, "soulcan" in out, "concepts" in out), (["soul-can"], True, True))
+check("  only in a document that sets its dashes as hyphens",
+      dash_words(DOC.replace('"pattern"-but', "pattern \u2014 but")), None)
+# A word is never broken before a digit; an identifier or a page range is.
+check("a break before a digit keeps its hyphen",
+      dehyphenate("grant BNS- 870064 and pp. 118- 22, a con- cept", False), "grant BNS-870064 and pp. 118-22, a concept")
+
+# The imprint: a price code and the volume line are the journal's; a note's last line is not.
+check("an older imprint's price code and volume line are licence furniture",
+      [bool(LICENCE.search(t)) for t in ("0002-9602/93/9801-0001$01.50",
+                                         "AJS Volume 98 Number 1 (July 1992): 1-29",
+                                         "870064, and by a fellowship from the Foundation.")],
+      [True, True, False])
+first_page = ([dict(text="' This article has benefited from many readers, and support from grant BNS-", y0=560, x0=54, x1=340, width=286, size=7.0),
+               dict(text="870064, and by a fellowship from the Foundation.", y0=569, x0=54, x1=250, width=196, size=7.0),
+               dict(text="\u00a9 1992 by An Imagined Press. All rights reserved.", y0=578, x0=54, x1=250, width=196, size=7.0)], 666.0)
+is_f2, _h2, _f2 = detect_furniture([first_page, head_sheet(), head_sheet()])
+# Mutation: drop IMPRINT_SHAPE from the adjacency rule -> the note's last line is dropped.
+check("a note's last line above the copyright line is not taken for the imprint",
+      is_f2("870064, and by a fellowship from the Foundation.", 569, 666.0), None)
+check("  and only a citation-shaped line above a licence is its imprint",
+      [bool(IMPRINT_SHAPE.search(t)) for t in ("Ethics 130 ( July 2020): 514-529",
+                                               "870064, and by a fellowship from the Foundation.")],
+      [True, False])
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

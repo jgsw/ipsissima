@@ -431,7 +431,19 @@ def detect_bands(lines):
 
 
 #: The journal's own imprint: a copyright assertion, or the ISSN/price code that follows it.
-LICENCE = re.compile(r"All rights reserved|\u00a9\s*\d{4}\s+by\s|\b\d{4}-\d{4}/\d{4}/")
+LICENCE = re.compile(r"All rights reserved|\u00a9\s*\d{4}\s+by\s|\b\d{4}-\d{4}/\d{4}/"
+                     # THE PRICE CODE in an older imprint: ISSN, year, volume and page, then the
+                     # price -- "0002-9602/93/9801-0001$01.50" (AJS 1992)
+                     r"|\b\d{4}-\d{3}[\dX]/\d{2,4}/\S*\$\d"
+                     # and the imprint line itself, which is the whole of its line
+                     r"|^\S.{0,40}\bVol(?:ume|\.)\s*\d+\b.{0,30}\(\s*[A-Za-z]*\.?\s*\d{4}\s*\)\s*:\s*\d+(?:\s*[-\u2013]\s*\d+)?\s*$")
+
+#: What an IMPRINT line looks like: a year in parentheses -- "Ethics 130 ( July 2020): 514-529" --
+#: or a page range closing the line. The line above a licence line is taken for the imprint only
+#: when it has this shape: on Sewell's first page the line above the copyright was the LAST LINE OF
+#: FOOTNOTE 1, "870064, and by a fellowship from the John Simon Guggenheim Memorial Foundation.",
+#: and it was dropped as the journal speaking (AJS 1992; 2 Oct 2026).
+IMPRINT_SHAPE = re.compile(r"\(\s*[A-Za-z]*\.?\s*\d{4}\s*\)|\b\d+\s*[-\u2013]\s*\d+\s*$")
 
 #: The unmistakable OPENERS of an open-access copyright block, each measured on a real first
 #: page (CUP 2025-26 house style). One line of these anchors the latch in `convert`'s filter
@@ -522,6 +534,7 @@ def detect_furniture(pages, extra=()):
         # The TOP BAND by y, not the first few entries of the list: once a two-column page has
         # been put into reading order, the head sitting over the right column is no longer near
         # the front of it, and a slice-based rule stops seeing it.
+        topmost = min(x["y0"] for x in lines)
         for l in (x for x in lines if x["y0"] <= height * 0.12):
             # Two signals, because neither alone is enough. A head that REPEATS is a head --
             # "U. Tooming and R. Jakapi" on all nine pages, mixed case, which the capitals test
@@ -542,7 +555,13 @@ def detect_furniture(pages, extra=()):
             # geometry to see it is already here.
             beside = any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
                          and o["x0"] > l["x0"] for o in lines)
-            if len(l["text"]) <= 60 and (not letters or letters.isupper()) and not beside:
+            # A HEAD SET ONCE IS THE PAGE'S FIRST LINE. A section heading in capitals that opens a
+            # page sits UNDER that page's running head, in the same top band: Sewell's "VARIETIES OF
+            # STRUCTURES" and "CONCLUSION", each below "American Journal of Sociology" or "The
+            # Theory of Structure", were dropped as heads (AJS 1992, pp. 22 and 27; 2 Oct 2026). A
+            # head that repeats is still caught below, wherever it sits.
+            first = l["y0"] <= topmost + 0.6 * (l.get("size") or 10)
+            if len(l["text"]) <= 60 and (not letters or letters.isupper()) and not beside and first:
                 tops.add(l["text"])
         for l in lines:
             if l["y0"] > height * 0.86:
@@ -580,7 +599,8 @@ def detect_furniture(pages, extra=()):
     for _lines, _h in pages:
         ordered = sorted(_lines, key=lambda x: x["y0"])
         for k, l in enumerate(ordered):
-            if k and LICENCE.search(l["text"]) and l["y0"] - ordered[k - 1]["y0"] < _h * 0.05:
+            if (k and LICENCE.search(l["text"]) and l["y0"] - ordered[k - 1]["y0"] < _h * 0.05
+                    and IMPRINT_SHAPE.search(ordered[k - 1]["text"])):
                 imprint.add(ordered[k - 1]["text"])
 
     def is_furniture(text, y0, height, alone=True):
@@ -673,7 +693,10 @@ NOTE_OPENING_DOTTED = re.compile(r"^(?:\[\^([1-9]\d?)\]|([1-9]\d?))[.)]\s+(.*)$"
 #: keyed to the TITLE and so lands in the middle of the article's first sentences: on the Horton
 #: it cut "contrast with fully aggregative moral views, and ... with nonaggregative moral views"
 #: in half with 40 words of thanks to an audience at Cardiff.
-STAR_NOTE = re.compile(r"^[*\u2020\u2021]\s+[A-Z\"'(]")
+#: A SUPERSCRIPT 1 THE TEXT LAYER READ AS AN APOSTROPHE is the same note. JSTOR's 1992 AJS scan gives
+#: Sewell's acknowledgements as "' This article has benefited ...", and it was left inside the first
+#: paragraph's last sentence, which runs over the page. Only before a capital, as for the symbols.
+STAR_NOTE = re.compile(r"^[*\u2020\u2021'\u2018\u2019`]\s+[A-Z\"'(]")
 
 
 def note_opening(text, dotted=False):
@@ -1098,6 +1121,69 @@ def caps_heading_map(rows, margin, body_size, sizes, declared):
     return {t: title_case(t) for t in keep}
 
 
+#: An article's BYLINE on a line of its own: "By EDMUND L. GETTIER", "By Peter Achinstein".
+BYLINE = re.compile(r"^By\s+[A-Z][\w.'\-]*(?:\s+[A-Z][\w.'\-]*){0,4}$")
+
+#: A heading line that runs on to the next: it ends on a connective, or on a colon or comma.
+HEADING_RUNS_ON = re.compile(r"(?:\b(?:and|or|of|the|a|an|to|in|on|for|with|from|at|by|as|out)|[:,])$", re.I)
+
+_MINOR = {"a", "an", "and", "as", "at", "but", "by", "for", "from", "in", "into", "of", "on", "or",
+          "the", "to", "vs", "with", "out"}
+
+
+def title_heading_map(rows, sizes, body_size, taken=()):
+    """{printed text: text} for the SUBHEADINGS a paper sets as a short line in title case.
+
+    THEY WERE RUN INTO THE PARAGRAPH BELOW THEM. AJS in 1992 set its subheadings in italic at body
+    size, flush at the margin, and the first paragraph under each is flush too: nothing a band or
+    a size can see. Sewell's eight -- "What Is Structure?", "Structures as Rules", "Agency" --
+    came out as "... do in practice. What Is Structure? But in spite of its promise ..." (AJS
+    1992; 2 Oct 2026). What the page does show is the shape of a heading:
+
+      * a short line, at body size, in title case, not ending in a full stop or a comma;
+      * the paragraph before it has ended (or the line opens its page) and the line after it opens
+        with a capital;
+      * there is more space above it than between the lines of a paragraph -- or it opens a page,
+        where the running head above it has already been taken away.
+
+    All of these together, because each alone is common in prose: a short last line of a
+    paragraph, a capitalised name on a line of its own."""
+    from statistics import median
+    gaps = {}
+    for a, b in zip(rows, rows[1:]):
+        if a[0] == b[0] and not a[6] and not b[6] and b[2] > a[2]:
+            gaps.setdefault(a[0], []).append(b[2] - a[2])
+    leading = {p: median(g) for p, g in gaps.items() if g}
+    found = {}
+    for i, (page, _x0, y0, height, text, _c, small) in enumerate(rows):
+        t = (text or "").strip()
+        if t in taken or not t or len(t) > 50 or i == 0 or i + 1 >= len(rows):
+            continue
+        # A SCAN'S SIZES WANDER: the OCR measured Sewell's "Agency" at 7pt in an 8pt body. At the top
+        # of a page, where no note can stand, a line a point small is still let through.
+        at_top = rows[i - 1][0] != page and y0 < height * 0.2
+        if (small and not at_top) or (i < len(sizes) and body_size
+                                      and abs(sizes[i] - body_size) > (1.1 if at_top else 0.6)):
+            continue
+        # A byline is not a heading: "By EDMUND L. GETTIER" under Analysis's title.
+        if re.search(r"[.,;:]$", t) or not t[:1].isupper() or NUMBERED.match(t) or re.match(r"By\s", t):
+            continue
+        words = re.findall(r"[A-Za-z][A-Za-z'\-]*", t)
+        if not words or len(words) > 8:
+            continue
+        if any(w[:1].islower() and w.lower() not in _MINOR for w in words):
+            continue
+        prev, nxt = rows[i - 1], rows[i + 1]
+        if not re.search(r"[.?!\"')\]\d]$", (prev[4] or "").strip()) or not (nxt[4] or "").strip()[:1].isupper():
+            continue
+        lead = leading.get(page)
+        opens_page = prev[0] != page
+        spaced = lead and prev[0] == page and y0 - prev[2] > 1.5 * lead
+        if opens_page or spaced:
+            found[t] = t
+    return found
+
+
 def find_boundaries(rows, margin, body_size, sizes):
     """(first, last) row indices of the ARTICLE, front and back matter excluded.
 
@@ -1150,7 +1236,12 @@ def find_boundaries(rows, margin, body_size, sizes):
     seen_front = False
     for i, (printed, x0, y0, height, text, _col, small) in enumerate(rows[:160]):
         t = text.strip()
-        if FRONT_MATTER.match(t):
+        # A LABEL IS CAPITALISED. "Received", "Accepted", "Keywords" head their lines; a line of
+        # prose that merely begins with the word does not -- Olick's "accepted Durkheim's critique
+        # of philosophy" opened a front-matter cut on p. 335 that ran to the next heading and took
+        # two pages with it (Sociological Theory 1999, found 2 Oct 2026). The JSTOR cover's
+        # "Published by:" had hidden it by firing first; `is_cover_sheet` now skips the cover.
+        if FRONT_MATTER.match(t) and re.sub(r"^\W+", "", t)[:1].isupper():
             seen_front = True
             continue
         if not seen_front:
@@ -1218,6 +1309,19 @@ def mark_displayed_quotes(flow):
             x0, t = flow[i][1], flow[i][2]
             off = margin + 6 <= x0 <= margin + 60
             if off and t.strip() and not NUMBERED.match(t) and not PARA_NUMBER.match(t.strip()):
+                # A QUOTATION'S LINES SHARE ONE EDGE. The paragraph that resumes after it opens at
+                # the paragraph indent, which is also off the margin -- Sewell's "In many
+                # respects" at x0 66 under a quotation at 79 (AJS 1992, p. 15) -- and joined to
+                # the run it went into the blockquote, Sewell's words inside Bourdieu's.
+                # ONLY A NEW SENTENCE AT A NEW EDGE ENDS IT. A quotation's own hanging indent or
+                # first-line indent moves the edge mid-sentence -- Williams's "(i) An internal
+                # reason statement is falsified by / the absence of ...", Simon's abstract -- and
+                # its continuation starts in lower case. A bullet or a list mark on a row of its
+                # own is not an edge either: Miller's "•" stands to the left of its item.
+                if (run and abs(x0 - flow[run[0]][1]) > 4 and t.lstrip()[:1].isupper()
+                        and any(len(flow[j][2].strip()) > 3 for j in run)):
+                    close(run)
+                    run = []
                 run.append(i)
             else:
                 close(run)
@@ -1399,6 +1503,11 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             # sit at the margin like a continuation line, so the indent rule swallows them into
             # the paragraph above and there is nothing left to promote.
             kind = "own-heading"
+        elif BYLINE.match(text.strip()):
+            # A BYLINE STANDS ALONE. Kept in the body once the cover is skipped, "By EDMUND L.
+            # GETTIER" ran into the article's first sentence (Analysis 1963, through JSTOR).
+            # Set as a display, so the paragraph after it starts a block of its own.
+            kind = "display"
         elif PARA_NUMBER.match(text.strip()):
             # BEFORE THE BANDS, because a lone number matches none of them: it sits left of the
             # paragraph indent, so it fell through to "merge into the previous block" and was
@@ -1480,7 +1589,28 @@ def keep_hyphen(text):
     return out
 
 
-def dehyphenate(text, soft, keep=None):
+def dash_words(text):
+    """The words of a document that SETS ITS DASHES AS HYPHENS, for flagging a line-end join that
+    may have been a dash; None where the document is not one of those.
+
+    AN OCR TEXT LAYER RENDERS AN EM DASH AS "-", and gives it the same glyph box as a hyphen
+    (0.44 of the font size, dash or hyphen, across all 192 line ends of Sewell's AJS 1992 scan). At
+    a line end the two are then indistinguishable, and the join welded six of Sewell's dashes into
+    words that are not words: "a soul-can be used" became "soulcan" (2 Oct 2026). Nothing in the
+    text layer decides it -- the document's own vocabulary caught one dash and split one word --
+    so the joins are made as before and the doubtful ones are NAMED, for a reader to check
+    against the page. Only a document with no real dash anywhere, and a hyphen touching a
+    quotation mark somewhere (`"pattern"-but`), which a compound never does, is read this way.
+
+    The vocabulary is gathered with every line-end break taken out first, so a broken word's
+    fragments ("undertheo-", "rized") never count as words of it."""
+    if "\u2014" in text or "\u2013" in text or not re.search(r'\w["\u201d]-\w|\w-["\u201c]\w', text):
+        return None
+    mid = re.sub(r"\w+-\s+\w+", " ", text)
+    return {w.lower() for w in re.findall(r"[A-Za-z]+", mid)}
+
+
+def dehyphenate(text, soft, keep=None, words=None, dashes=None):
     """Rejoin words broken across a printed line -- without destroying real compound hyphens.
 
     WHICH HYPHEN IS THE TYPESETTER'S? In a modern PDF, the two are different characters: a break
@@ -1497,8 +1627,13 @@ def dehyphenate(text, soft, keep=None):
     if soft:
         text = re.sub(r"\u00ad\s*", "", text)
         return text
-    if not keep:
-        return re.sub(r"(\w)-\s+(\w)", r"\1\2", text)
+    # NEVER BEFORE A DIGIT. A word is not hyphenated before a number; an identifier or a page range
+    # is: "grant BNS-870064" and "pp. 118-22" broken at a line end were welded to "BNS870064" and
+    # "11822" (Sewell, AJS 1992).
+    text = re.sub(r"(\w)-\s+(?=\d)", r"\1-", text)
+    if not keep and words is None:
+        return re.sub(r"(\w)-\s+([^\W\d_])", r"\1\2", text)
+    keep = keep or set()
 
     # WITH THE DOCUMENT'S OWN EVIDENCE in hand, decide each break rather than joining all of them.
     def join(m):
@@ -1507,12 +1642,19 @@ def dehyphenate(text, soft, keep=None):
         head = re.match(r"(\w+)", right)
         if tail and head and (tail.group(1).lower(), head.group(1).lower()) in keep:
             return left + "-" + right          # this document writes it hyphenated
+        # PERHAPS A DASH, in a document that sets dashes as hyphens: what follows the break is a
+        # word the document uses on its own, and the two joined are a word it never uses. Joined
+        # all the same -- the text layer cannot settle it -- and named. See `dash_words`.
+        if (words is not None and dashes is not None and tail and head and len(head.group(1)) >= 3
+                and head.group(1)[:1].islower() and head.group(1).lower() in words
+                and (tail.group(1) + head.group(1)).lower() not in words):
+            dashes.append(f"{tail.group(1)}-{head.group(1)}")
         return left + right
 
-    return re.sub(r"(\w+)-\s+(\w+)", join, text)
+    return re.sub(r"(\w+)-\s+([^\W\d_]\w*)", join, text)
 
 
-def finish(blocks, repairs, applied, soft=False, keep=None):
+def finish(blocks, repairs, applied, soft=False, keep=None, dashes=None):
     """De-hyphenate, collapse whitespace, then repair.
 
     Repairs run LAST and on the assembled block, because a repair can straddle a printed line
@@ -1521,12 +1663,17 @@ def finish(blocks, repairs, applied, soft=False, keep=None):
     """
     # The document's own hyphenated compounds, gathered across ALL blocks before any of them is
     # repaired -- the evidence for one block usually sits in another.
+    words = None
     if keep is None and not soft:
         keep = set()
         for b in blocks:
             keep |= keep_hyphen(b["text"])
+        words = dash_words(" ".join(b["text"] for b in blocks))
     for b in blocks:
-        b["text"] = re.sub(r"\s+", " ", dehyphenate(b["text"], soft, keep)).strip()
+        found = [] if dashes is not None else None
+        b["text"] = re.sub(r"\s+", " ", dehyphenate(b["text"], soft, keep, words, found)).strip()
+        if found:
+            dashes += [(min(b["pages"]), f) for f in found]
         for page, wrong, right, _why in repairs:
             if page in b["pages"] and wrong in b["text"] + " ":
                 b["text"] = (b["text"] + " ").replace(wrong, right).strip()
@@ -1578,6 +1725,12 @@ def opens_note(row, display_edge, low, margin):
                 and re.match(r"^[A-Z\"'(]", op[1])
                 and (small or not display_edge
                      or x0 > note_floor(display_edge, margin, op[0])))
+
+
+def indented_past(row, edge, by=15.0):
+    """Does this row start well to the right of a note's left edge -- a display line, not a note's
+    continuation? 15pt leaves room for a hanging note style, whose text sits a number's width in."""
+    return row[1] > edge + by
 
 
 def is_runover(row):
@@ -1667,10 +1820,30 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
             cut = k if k < len(idxs) else None
         else:
             number = (note_opening(body[idxs[cut]][4], dotted=True) or ("",))[0]
+            edge = body[idxs[cut]][1]
+            zone_y = sorted(body[i][2] for i in idxs[cut:])
+            steps = sorted(b - a for a, b in zip(zone_y, zone_y[1:]) if b - a > 3)
+            lead = max(9.0, steps[len(steps) // 2] if steps else 0)
+
+            def displayed(k):
+                """Row k is a display line standing apart from the notes below it: indented well
+                past the note's edge AND more than two and a half note lines above the nearest
+                line below it. A scan's word fragments each sit at their own x, so the indent alone
+                misfires: Dewey's notes run on at their ordinary spacing, in fragments on shared
+                baselines (fixtures/ingest/dewey-1896, sheets 3 and 9). Measured by height, not
+                reading order, for the same reason."""
+                y = body[idxs[k]][2]
+                below = [body[i][2] - y for i in idxs[k + 1:] if body[i][2] > y]
+                return indented_past(body[idxs[k]], edge) and bool(below) and min(below) > 2.5 * lead
             # Walk back off the first numbered note through whatever apparatus-sized lines sit
             # directly above it. A body-sized line stops the scan, which is what keeps a small
             # display quotation lower down the page from being swallowed with the notes.
-            while cut > 0 and is_runover(body[idxs[cut - 1]]):
+            # SO DOES A DISPLAY LINE STANDING APART. A display quotation set as small as the notes,
+            # ending above them, is not a note carried over: Sewell's Bourdieu quotation stood at x0
+            # 77 over note 8 at 54, 34pt above it, and its last two lines were lifted into note 8
+            # (AJS 1992, p. 14; 2 Oct 2026). A carried-over note runs at the notes' own edge and
+            # spacing. See `displayed`.
+            while cut > 0 and is_runover(body[idxs[cut - 1]]) and not displayed(cut - 1):
                 cut -= 1
             # THE NOTE BEFORE THE FIRST ONE FOUND. A line directly above the zone that opens with
             # the NEXT NUMBER DOWN is that note, though it sits a little high and at near-body
@@ -1685,7 +1858,7 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
                         and body[idxs[cut - 1]][2] > body[idxs[cut - 1]][3] * 0.50):
                     break
                 cut, number = cut - 1, above[0]
-                while cut > 0 and is_runover(body[idxs[cut - 1]]):
+                while cut > 0 and is_runover(body[idxs[cut - 1]]) and not displayed(cut - 1):
                     cut -= 1
         if cut is not None:
             for i in idxs[cut:]:
@@ -1696,9 +1869,31 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
     return flow, notes
 
 
+#: A repository's COVER SHEET: a page of its own before the article, naming the item and the terms
+#: it is downloaded under. JSTOR's carries all of these; one is not enough, since the per-page footer
+#: ("This content downloaded from ...") repeats on every sheet of the article as well.
+COVER_MARKS = re.compile(r"Stable URL:|Your use of the JSTOR archive|JSTOR is a not-for-profit service|"
+                         r"Accessed:\s*\d|Published by:", re.I)
+
+
+def is_cover_sheet(text):
+    """Is this sheet a repository's cover page rather than the article's first?
+
+    THE AUTOMATIC ROUTE NEVER SKIPPED IT. `first_sheet: 1` was a hand-set config value, so a JSTOR
+    PDF taken from Zotero kept its cover -- and the cover's "Published by:" matched the front-matter
+    vocabulary. The detector then went looking for the article's first paragraph AFTER it and cut
+    Sewell's abstract and opening paragraph away as front matter (2 Oct 2026). Three of the marks,
+    on a short sheet: a cover is a few hundred words at most."""
+    marks = {m.group(0).lower()[:8] for m in COVER_MARKS.finditer(text or "")}
+    return len(marks) >= 3 and len((text or "").split()) < 400
+
+
 def convert(cfg):
     cfg.raw = cfg.raw or cfg.out.parent / ".raw-extraction.txt"
     doc = pymupdf.open(cfg.pdf)
+    cover = cfg.first_sheet == 0 and doc.page_count > 2 and is_cover_sheet(doc[0].get_text())
+    if cover:
+        cfg.first_sheet = 1
     cfg.out.parent.mkdir(parents=True, exist_ok=True)
     cfg.raw.write_text("\n\n".join(f"===== sheet {i} =====\n" + doc[i].get_text()
                                    for i in range(doc.page_count)), encoding="utf-8")
@@ -1741,6 +1936,8 @@ def convert(cfg):
     first_page = declared if offset is None else offset
     page_numbers_from = "the config" if offset is None else "the pages themselves"
     applied, suspicious, dropped, body = Counter(), [], Counter(), []
+    if cover:
+        dropped["repository cover sheet"] = 1
     body_sizes = []                     # the size of each row, parallel to `body`
     # THE BODY SIZE, MEASURED OVER THE WHOLE ARTICLE AND NOT PER PAGE. Size is the only signal a
     # paper like the Horton carries for its footnotes: they sit at x0 96, LEFT of the display
@@ -1897,6 +2094,10 @@ def convert(cfg):
     # them was emitted with a `#`.
     headings_now = dict(cfg.own_headings or {})
     headings_now.update(auto_caps)
+    sub_heads = {}
+    if not cfg.own_headings:
+        sub_heads = title_heading_map(body, body_sizes, doc_size, set(headings_now))
+        headings_now.update(sub_heads)
     # Displayed quotations, marked per page BEFORE assembly (G6's structure half): a run of
     # lines all off the page's own margin is somebody being quoted, and it becomes a
     # `> ` block rather than dissolving into the paragraph around it.
@@ -1907,11 +2108,12 @@ def convert(cfg):
     blocks = finish(to_blocks(flow, bands, headings_now, cfg.end_marker,
                               number_headings=cfg.number_headings, caps_headings=auto_caps,
                               margins=page_margins, step=par_step),
-                    cfg.repairs, applied, soft)
+                    cfg.repairs, applied, soft, dashes=(dashes := []))
     note_blocks = finish(to_blocks(notes, bands, {}, None, notes=True),
                          cfg.repairs, applied, soft)
 
     out, used, seen = [], [], set()
+    prev_caps = None
     for b in blocks:
         if b["kind"] == "quote":
             for pg, part in split_at_pages(b):
@@ -1933,9 +2135,25 @@ def convert(cfg):
             used.append(mo.group(0))
             continue
         if b["text"] in headings_now:
-            out.append(f"# {headings_now[b['text']]}")
-            used.append(headings_now[b["text"]])
+            head = headings_now[b["text"]]
+            # THE PAGE'S MARKER BEFORE ITS HEADING. A heading that opens a page was printed above
+            # that page's marker, so the Manuscript pane showed Sewell's "Agency" on p. 19.
+            if b["page"] not in seen:
+                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
+                seen.add(b["page"])
+            # ONE HEADING SET ON TWO LINES is one heading: "THE DUALITY OF STRUCTURE: A CRITIQUE
+            # AND" / "REFORMULATION OF GIDDENS'S THEORY" printed as two (Sewell, AJS 1992, p. 4).
+            if (b["text"] in auto_caps and out and prev_caps is not None
+                    and HEADING_RUNS_ON.search(prev_caps)):
+                out[-1] = out[-1] + " " + head
+                used[-1] = used[-1] + " " + head
+                prev_caps = b["text"]
+                continue
+            out.append(("## " if b["text"] in sub_heads else "# ") + head)
+            used.append(head)
+            prev_caps = b["text"] if b["text"] in auto_caps else None
             continue
+        prev_caps = None
         for frag, head in cfg.headings:
             if head not in used and frag in b["text"]:
                 out.append(f"# {head}")
@@ -1994,7 +2212,7 @@ def convert(cfg):
         back_matter_kept=len(back_rows), back_headings=back_headings,
         notes=len(note_blocks), marks=len(FOOTNOTE_MARKS), columns=2 if split else 1,
         column_split=round(split, 1) if split else None, bands=bands,
-        headings_placed=used,
+        headings_placed=used, possible_dashes=dashes,
         headings_missing=[h for _f, h in cfg.headings if h not in used]
                          + [h for h in cfg.own_headings.values() if h not in used],
         furniture=dict(dropped), running_heads=heads, footers=footers,

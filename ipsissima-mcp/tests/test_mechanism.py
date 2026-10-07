@@ -845,6 +845,11 @@ check("an association is reported and never walked", (ra["associations"], [r for
 check("  and a common cause the text draws is named (Reichenbach)", ra["common_causes"], [["cousins", "cash", ["trust"]]])
 check("steps say whether they are singular or general", ra["scopes"], [["general", 3], ["singular", 1]])
 check("a general step backed by one case is listed", ra["one_case"], [["letter", "insured", "One village shows the rule"]])
+# Mutation: drop _cases_of from one_case -> a general step with two cases shown is still listed.
+TWO_VILLAGES = REA.replace("[One village shows the rule]", "[A second village]: In a second village the letter led to insurance as well.\n"
+                           "    {causes: {from: letter, to: insured, sign: \"+\", basis: example, scope: singular}}\n\n[One village shows the rule]")
+check("  but not once the map shows a second case of it",
+      run(TWO_VILLAGES, name="reasoning.argdown")["shape"]["chain"]["one_case"], [])
 check("the goal and the contrast are in the profile", (ra["goal"], ra["contrast"]), ("explain", "in banks and stock"))
 am = lambda text: [f["message"] for f in by(run(text, name="reasoning.argdown"), "mechanism")]
 check("a causal step in the words of an association is queried",

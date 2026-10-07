@@ -540,6 +540,11 @@ def from_pdf_structured(path, extras=None):
     if rep["heading_gaps"]:
         notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
                      f"there before trusting the sections")
+    if rep.get("possible_dashes"):
+        notes.append(f"! {len(rep['possible_dashes'])} line-end join(s) may have been dashes -- this scan "
+                     f"sets its dashes as hyphens, so the text cannot tell: "
+                     + ", ".join(f"{w} (p. {p})" for p, w in rep["possible_dashes"])
+                     + "; check each against the page (page_images) and repair_source the dashes")
     if rep["suspicious"]:
         notes.append(f"! {len(rep['suspicious'])} line(s) look stretched -- possible dropped "
                      f"words; the converter's report names them")

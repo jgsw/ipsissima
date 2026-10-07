@@ -262,6 +262,14 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         "the page and the checker agree on associations, common causes, scope, goal and contrast",
         differ.map(k => `${k}: python ${JSON.stringify(pyA[k])} js ${JSON.stringify(MA.profile[k])}`).join("\n          "));
   check(!pyA.routes.some(r => r.start === "cousins"), "an association is never walked as a route", JSON.stringify(pyA.routes));
+  // A GENERAL STEP FROM SEVERAL CASES is not "backed by one case" (Sewell 1992's From-cases bridges).
+  // Mutation: drop casesOf from the one_case filter -> the query stays with two villages shown.
+  const twoVillages = MV.model(graphOf.fromText(fs.readFileSync(REAF, "utf8").replace(
+    "[One village shows the rule]",
+    "[A second village]: In a second village the letter led to insurance as well.\n    {causes: {from: letter, to: insured, sign: \"+\", basis: example, scope: singular}}\n\n[One village shows the rule]")));
+  check(MA.profile.one_case.length === 1 && twoVillages.profile.one_case.length === 0,
+        "a general step is queried as resting on one case only while the map shows at most one",
+        JSON.stringify(twoVillages.profile.one_case));
   const LA = MV.layout(MA);
   const assoc = LA.edges.filter(e => e.from === "cousins" && e.to === "cash");
   check(assoc.length === 1 && assoc[0].kind === "association" && !assoc[0].head && /^associated/.test(assoc[0].chip.label),

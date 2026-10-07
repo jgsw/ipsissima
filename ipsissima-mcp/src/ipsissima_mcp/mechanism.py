@@ -1234,6 +1234,13 @@ def _akin_steps(edges, kind_of, general=None, chains_of=None):
     return akin, sorted(instances)
 
 
+def _cases_of(edge, steps, instances):
+    """How many cases of a general step the map shows: the singular steps on the same pair of
+    states, one per claim, and the steps that are cases of it by kind (profile 1.7's instances)."""
+    same = {s["title"] for s in steps if s["scope"] == "singular" and (s["src"], s["dst"]) == edge}
+    return len(same) + len({tuple(case) for gen, case in instances if tuple(gen) == edge})
+
+
 def _chains(block):
     """The chains a mechanism block declares (profile 1.5), in declared order: {id: {label,
     question, roles}}, with anything malformed read as absent (declared() names it)."""
@@ -1770,8 +1777,12 @@ def analyse(fm, doc):
         scopes=sorted([k, n] for k, n in _count(s["scope"] for s in text_all if s["scope"] in SCOPES).items()),
         # A GENERAL CLAIM FROM ONE CASE: "causal relations cannot be inferred only from singular case
         # studies" without background knowledge (Primer, p. 46).
+        # ...BUT ONLY WHERE THE MAP SHOWS ONE CASE AT MOST. A general step drawn by a "From cases"
+        # bridge from the soldiers', the priest's and the king's cases (Sewell 1992, p. 11) is backed
+        # by three, each a step of its own: a singular step on the same pair, or a case of it by kind.
         one_case=sorted({(s["src"], s["dst"], s["title"]) for s in text_all if s["scope"] == "general"
-                         and (s["basis"] == "example" or s["design"] in ("case study", "anecdote"))}),
+                         and (s["basis"] == "example" or s["design"] in ("case study", "anecdote"))
+                         and _cases_of((s["src"], s["dst"]), text_all, instances) <= 1}),
     )
     # THE ACCOUNT THE TEXT REASONS WITH (1.14), held against what the map shows it doing.
     # A chain that declares its own account is held to its own steps.

@@ -1134,10 +1134,21 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
         .filter(function (r) { return r[2].length; }).sort(cmpDeep);
     })(),
     scopes: counted(textAll.map(function (s) { return SCOPES.indexOf(s.scope) >= 0 ? s.scope : ""; })),
+    // ...but only where the map shows one case at most -- mechanism.py's _cases_of.
     one_case: uniqSorted(textAll.filter(function (s) { return s.scope === "general" &&
-        (s.basis === "example" || s.design === "case study" || s.design === "anecdote"); })
+        (s.basis === "example" || s.design === "case study" || s.design === "anecdote") &&
+        casesOf([s.from, s.to], textAll, AK.instances) <= 1; })
       .map(function (s) { return [s.from, s.to, s.claim.title]; }))
   };
+}
+/** How many cases of a general step the map shows -- mechanism.py's _cases_of: the singular steps on
+ *  the same pair, and the steps that are cases of it by kind. */
+function casesOf(edge, steps, instances) {
+  var seen = {};
+  steps.forEach(function (s) { if (s.scope === "singular" && s.from === edge[0] && s.to === edge[1]) seen["claim\u0000" + s.claim.title] = true; });
+  (instances || []).forEach(function (pr) {
+    if (pr[0][0] === edge[0] && pr[0][1] === edge[1]) seen[pr[1].join("\u0000")] = true; });
+  return Object.keys(seen).length;
 }
 /** Whether every hop of a loop is a step that makes or maintains its next -- mechanism.py's _sustains. */
 function sustains(loop, steps) {
