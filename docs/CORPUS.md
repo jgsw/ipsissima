@@ -114,3 +114,41 @@ and to make the failure legible rather than silent.
 
 Also wanted: a `.odt` and a `.tex` of anything at all, a scanned PDF with no text layer, and a
 document with tracked changes.
+
+---
+
+## Extraction regression
+
+**A converter rule is a guess about typography, and every guess that mends one paper can break
+another.** In October 2026 the fixes for Sewell (AJS 1992) and Wilson (MHCP 2023) were each right
+for their paper, and the first versions of six of them damaged others: Robeyns lost numbered
+headings, Ó Gráda's tables became headings, Williams's quotations split. All six were caught the
+same way, by converting every PDF with the old converter and the new and reading the differences.
+`ipsissima-mcp/eval/extraction_regression.py` is that procedure.
+
+```bash
+python3 ipsissima-mcp/eval/extraction_regression.py              # working tree vs HEAD
+python3 ipsissima-mcp/eval/extraction_regression.py --show 6     # with changes in context
+python3 ipsissima-mcp/eval/extraction_regression.py --base <commit>
+```
+
+It reads all three sets it can find:
+- the public `fixtures/ingest/`;
+- the private corpus, through `IPSISSIMA_PRIVATE_CORPUS`;
+- a list of further PDFs, through `--list` or `IPSISSIMA_EXTRACTION_LIST`.
+
+The list names copyrighted papers, so it lives outside the repository. For each document it reports:
+- the words changed, with page markers taken out first, because a marker moving is not a change of text;
+- the headings gained and lost;
+- the notes and the abstract;
+- any fall-back to the plain route.
+
+**It reports; it does not judge.** Most of what a good fix changes is other papers getting
+better, so a person reads the differences. Run it before committing any change to
+`pdf_to_source.py` or `ingest.py`, and say in the commit what it showed.
+
+**Approved outputs make it a test.** `--save-golden DIR` keeps today's outputs as approved, and
+`--golden DIR` compares against them and fails on any difference, which must then be approved
+again. The approved outputs carry whole articles, so for anything but the public fixtures they
+belong in the non-GitHub folder.
+

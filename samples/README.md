@@ -45,6 +45,7 @@ openly licensed instead.
 | **James**, "The Will to Believe" (1896) | 69 nodes, 31 pages | public domain |
 | **Swift**, *A Modest Proposal* (1729) | 53 nodes, one pamphlet | public domain |
 | **Bates, Glennerster, Gumede & Duflo**, "The Price is Wrong" (2012) | 97 nodes, 8 pages, and a mechanism | CC BY 3.0 |
+| **Wilson**, "What makes a health system good?" (2023) | 139 nodes, 15 pages, and a mechanism read with the argument | CC BY 4.0, by the author of Ipsissima |
 
 **The middle column counts nodes, not claims, and the difference is not cosmetic.** A node is a
 claim *or* an argument, and an argument with a premise-conclusion structure is a node in its own
@@ -99,7 +100,7 @@ structure, the PDF for the page numbers, because each has exactly what the other
 also the only sample whose argument is a *critical notice*, so its map has two apexes: the view
 being examined, and the critic's own conclusion.
 
-**Wilson** is the long one: three contentions rather than a single thesis, themes that recur and
+**Wilson (2026)** is the long one: three contentions rather than a single thesis, themes that recur and
 modulate. It is what the layout and folding behaviour is hardest on, and what the exposition
 sparkline has most to say about.
 
@@ -111,6 +112,12 @@ it answers, and its one screening effect is drawn as selection, not as an effect
 also the one sample whose text comes from a two-column reprint with boxes, a table and charts, so
 its `make_source.py` shows the repairs such a layout needs, with a check that none of them changes a
 word.
+
+**Wilson (2023)** is the sample whose argument runs on its mechanism, and the one made by the
+**parallel method**: argument and mechanism read together, the causal steps entering the argument
+as reasons or through *bridges* that name the scheme they use. Its text is the converter's own
+output, unrepaired -- the paper was the test case for headings set in a larger face, a full-width
+abstract and tab-set lists.
 
 Every one of these is run by the test suite. `app/test_fold_invariants.mjs` walks this folder
 rather than naming files, so **adding a sample strengthens the suite by itself** — which is the

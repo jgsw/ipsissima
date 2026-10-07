@@ -1,0 +1,480 @@
+===
+title: "Wilson 2023 -- What makes a health system good? From cost-effectiveness analysis to ethical improvement in health systems"
+author: James Wilson
+reconstruction:
+    generated: true
+    aim: fit
+    unit: meaning
+    mode: coherence
+    strength: ordinary
+    method: parallel
+defaults:
+    chapter: "source/wilson-2023-what-makes-a-health-system-good.md"
+mechanism:
+    question: "What does improving a health system element by element, centred on cost-effectiveness, do to the system as a whole -- and how else are its means and values improved?"
+    contrast: "improvement centred on the cost-effectiveness of each element"
+    levels: [system, services, people]
+    ordering: mixed          # the reconstructor's reading (profile 1.11 pass): "interlinked subsystems, some of which are arranged hierarchically, and others that interact without formally specified chains of authority" (p. 359)
+    chains:
+        congestion:  {label: "Demand beyond capacity: congestion and implicit rationing", question: "What follows when the system lets in more demand than it can serve, under a partial use of cost-effectiveness analysis?", goal: attribute}
+        cascade:     {label: "From social care to ambulance response: one trajectory", question: "How does a lack of social care resources ramify into worse ambulance response times?"}
+        scarcity:    {label: "Scarcity cascades, in general", question: "How can scarcity in one narrow domain worsen scarcity elsewhere?"}
+        lean:        {label: "Leanness and brittleness", question: "Why is a system made maximally cost-effective brittle?"}
+        proximity:   {label: "Proximity and surgical outcomes", question: "Why is the value of proximity in tension with minimising surgical complications?"}
+        cataract:    {label: "Waiting for a progressive condition: cataract surgery", question: "Why do cataract waiting lists feed themselves, and what does waiting do to patients and to cost-effectiveness?"}
+        dynamic:     {label: "Effects and rankings that do not hold still", question: "Why do the effects and rankings cost-effectiveness analysis relies on shift with the system?"}
+        improvement: {label: "Means and values, each improving the other", question: "How are a health system's means and values improved, each through the other?", form: cycle, settles: false}
+        staff:       {label: "The human elements of the system", question: "What do workload and institutional pressure do to clinicians, and to care?"}
+    kinds:
+        localscarce: {label: "Scarcity in one part of the system", general: localscarcity}
+        spread:      {label: "Scarcity spreading elsewhere in the system", general: cascade}
+        waits:       {label: "Waiting times growing", general: waiting}
+    actors:
+        nhs:          {label: "The health system as a whole: the English NHS", level: system}
+        policymakers: {label: "Policymakers", level: system}
+        public:       {label: "Citizens, deliberating together", level: system}
+        socialcare:   {label: "Social care services", level: services}
+        hospitals:    {label: "Hospitals: wards, beds and services", level: services}
+        ae:           {label: "Accident and Emergency departments", level: services}
+        ambulances:   {label: "The ambulance service", level: services}
+        callhandlers: {label: "Emergency call handlers", level: services}
+        cataract:     {label: "Cataract surgery services", level: services}
+        patients:     {label: "Patients", level: people}
+        clinicians:   {label: "Clinicians and other healthcare staff", level: people}
+        office:       {label: "An office and its photocopier", level: services}
+    states:
+        # demand beyond capacity (pp. 354, 357-358, 363)
+        partialcea:   {label: "The NHS uses cost-effectiveness analysis partially: new interventions admitted at a threshold, few stopped", actor: nhs, role: condition, aspect: condition}
+        gap:          {label: "Policymakers let more demand into the system than it can serve", actor: policymakers, role: condition, aspect: activity,
+                       note: "the text's 'systemic gap ... between the demands that individuals can make under the system, and the system's ability to meet these demands' (p. 358), read as the letting-in that opens it"}
+        congestion:   {label: "Services congest: waits grow ever longer, for surgery and for moving patients out of ambulances", actor: nhs, aspect: activity,
+                       note: "the text's 'system congestion' and 'implicit rationing' read as one state: queuing and congestion are its forms (p. 357)"}
+        unmet:        {label: "Unmet healthcare needs increase", actor: patients, aspect: quantity}
+        private:      {label: "Patients who can afford it pay for private treatment", actor: patients, aspect: activity}
+        harm:         {label: "Patients come to harm, on a large scale", actor: patients, role: outcome}
+        qalyloss:     {label: "New interventions lose more health than they create", actor: nhs, aspect: quantity}
+        # one trajectory of cascading scarcity (p. 360)
+        socialcare:   {label: "Social care lacks the resources to care for patients safely outside hospital", actor: socialcare, role: condition, aspect: condition, kind: localscarce}
+        discharge:    {label: "Patients well enough to leave wait in hospital beds to be discharged", actor: patients, aspect: activity}
+        aeexit:       {label: "Patients wait in A&E to be moved onto wards", actor: ae, aspect: activity}
+        ambwait:      {label: "Patients wait in ambulances outside the hospital to be admitted", actor: patients, aspect: activity}
+        outofservice: {label: "Ambulances are out of service while they wait with patients in hospital car parks", actor: ambulances, aspect: condition, kind: spread}
+        response:     {label: "Ambulances take longer to respond", actor: ambulances, aspect: quantity, kind: spread,
+                       measured: "mean response times against targets: Category 1 10 min 33 s against 7 min, Category 2 51 min against 18 min, June 2022 (n. 8)"}
+        callload:     {label: "Call handlers take repeated calls about ambulances that have not arrived", actor: callhandlers, aspect: activity, role: outcome}
+        # scarcity cascades, in general (pp. 351, 359-360): processes with no owner
+        localscarcity: {label: "Scarcity in one narrow domain of the system", levels: [services], role: condition, aspect: condition, kind: localscarce}
+        bottleneck:   {label: "Bottlenecks form", levels: [services], aspect: event}
+        cascade:      {label: "Scarcity cascades: other parts of the system perform worse", levels: [services], role: outcome, aspect: activity, kind: spread}
+        # leanness (pp. 351, 353)
+        valueformoney: {label: "Policymakers focus only on value for money", actor: policymakers, role: condition, aspect: activity}
+        lean:         {label: "Policymakers make the system lean: eliminating waste and spare capacity, just in time", actor: policymakers, aspect: activity}
+        flex:         {label: "The system can flex to meet a surge in demand, such as a public health emergency", actor: nhs, role: outcome, aspect: condition}
+        # waiting for a progressive condition (pp. 358-359)
+        fcfs:         {label: "Access is first come, first served", actor: hospitals, role: condition, aspect: condition}
+        waiting:      {label: "Waiting times grow ever longer", actor: nhs, aspect: quantity, kind: waits}
+        cataractwait: {label: "Patients wait longer for cataract surgery, and the list grows", actor: cataract, aspect: quantity, kind: waits,
+                       measured: "mean wait 278 days in 2021, against an 18-week target; up 35% in 2019-20 and 36% in 2020-21 in 12 trusts (Eyewire 2021)"}
+        newdiag:      {label: "More people are diagnosed with cataracts each week", actor: patients, role: condition, aspect: activity}
+        removal:      {label: "Patients leave the list: operated on, going private, dying or emigrating", actor: cataract, role: condition, aspect: activity}
+        pandemic:     {label: "The pandemic diverts resources from non-Covid treatment", actor: nhs, role: condition, aspect: event}
+        displacement: {label: "Urgent cases displace non-urgent ones from the system's capacity", actor: hospitals, role: condition, aspect: activity}
+        worsen:       {label: "Patients' cataracts worsen while they wait", actor: patients, aspect: development}
+        casetime:     {label: "Operations become more complex, take longer and bring more complications", actor: cataract, aspect: quantity}
+        qol:          {label: "Waiting patients' quality of life", actor: patients, role: outcome, aspect: quantity}
+        accidents:    {label: "Patients lose the ability to drive, and have more accidents", actor: patients, aspect: activity}
+        cataractce:   {label: "How cost-effective the cataract service is", actor: cataract, role: outcome, aspect: quantity}
+        # effects and rankings that do not hold still (p. 356)
+        adherence:    {label: "Patients are supported to adhere to their treatment", actor: patients, role: condition, aspect: activity}
+        drugce:       {label: "A drug's effectiveness and cost-effectiveness in practice", actor: nhs, role: outcome, aspect: quantity}
+        beyond:       {label: "Patient flows exceed the parameters services were calibrated for", actor: hospitals, role: condition, aspect: condition,
+                       note: "the text's examples: 300 beds sufficing even at moments of high demand; A&E processing no more than 40 patients an hour"}
+        calibration:  {label: "Which calibration of services is most cost-effective", actor: hospitals, role: outcome, aspect: condition}
+        change:       {label: "Waiting patients' conditions change, relative to their own baseline and to one another", actor: patients, role: condition, aspect: development}
+        fairorder:    {label: "The waiting list's order stays fair", actor: hospitals, role: outcome, aspect: condition}
+        # means and values, each improving the other (pp. 361-363): a cycle
+        valuesimp:    {label: "Values-improvement: specifying and reconciling the values the system should instantiate and promote", levels: [system], aspect: activity}
+        meansimp:     {label: "Means-improvement: reconfiguring flows so the system as a whole better achieves its values, every day and at every level", levels: [system, services, people], aspect: activity}
+        tre:          {label: "Anonymisation technologies improve and Trusted Research Environments are built", actor: nhs, part_of: meansimp, aspect: activity,
+                       note: "the text's example of means-improvement that opens up new possibilities (p. 361)"}
+        reconcile:    {label: "Confidentiality and research on linked patient data can be reconciled", actor: nhs, part_of: valuesimp, aspect: condition}
+        infeasible:   {label: "The system cannot deliver what values-improvement specified, even after diligent means-improvement", actor: nhs, role: condition, aspect: condition}
+        deliberation: {label: "The public deliberates about the system's goals", actor: public, role: condition, aspect: activity}
+        norms:        {label: "Healthcare's practice norms: restoring health, relieving suffering, care, confidentiality", actor: clinicians, aspect: condition,
+                       note: "the text's 'core normative expectations' of healthcare as a social practice (p. 362), which clinicians are socialised into"}
+        sideline:     {label: "Practice norms are ignored or sidelined in the pursuit of cost-effectiveness", actor: policymakers, role: condition, aspect: activity}
+        cutoff:       {label: "Ends and values are cut off from the ongoing process", levels: [system], role: condition, aspect: condition}
+        fixation:     {label: "They become arrests, fixations", levels: [system], role: outcome, aspect: condition}
+        # the human elements (pp. 362-363)
+        overwork:     {label: "Staff work beyond a safe workload over a prolonged period", actor: clinicians, role: condition, aspect: activity}
+        injury:       {label: "Staff suffer moral injury and break down", actor: clinicians, role: outcome, aspect: event}
+        turnover:     {label: "Sick leave and staff turnover increase", actor: clinicians, role: outcome, aspect: quantity}
+        subordinate:  {label: "Institutional arrangements subordinate goods internal to medicine to external goods", actor: nhs, role: condition, aspect: condition}
+        distress:     {label: "Good doctors feel tension and moral distress", actor: clinicians, role: outcome, aspect: condition}
+        reform:       {label: "A ward gives each clinician responsibility for more patients", actor: hospitals, role: condition, aspect: event}
+        relationship: {label: "Clinicians can establish a personal relationship with patients", actor: clinicians, aspect: condition}
+        stress:       {label: "Workplace stress", actor: clinicians, aspect: quantity}
+        overtime:     {label: "Conscientious clinicians work creeping unpaid overtime", actor: clinicians, aspect: activity}
+        quality:      {label: "The quality of care on the ward", actor: hospitals, role: outcome, aspect: condition}
+        # states the argument's use of the text requires
+        mapping:      {label: "Flows, resource dependencies and inter-relations are mapped at system level", actor: policymakers, role: intervention, aspect: activity}
+        loss:         {label: "Avoidable loss of health grows as the queue lengthens", actor: patients, aspect: quantity}
+        volume:       {label: "Surgeons perform a procedure often", actor: hospitals, aspect: activity}
+        complications: {label: "Surgical complications", actor: patients, aspect: quantity}
+        centralise:   {label: "Policymakers are pushed to centralise complex surgery", actor: policymakers, aspect: activity}
+        subsystems:   {label: "Sub-elements, themselves systems, several layers deep", levels: [services], aspect: condition}
+        denied:       {label: "Patients are denied life-saving care another reasonable process would have given them", actor: patients, aspect: event}
+        challenge:    {label: "They question the ethical justifiability of the process", actor: patients, aspect: activity}
+        overuse:      {label: "A photocopier is run past its monthly work cycle", actor: office, design: illustration, aspect: activity}
+        breakdown:    {label: "The photocopier breaks down and needs an engineer", actor: office, aspect: event}
+        savings:      {label: "The reform's cost savings", actor: hospitals, aspect: quantity}
+        careelse:     {label: "Patient care improves elsewhere in the system", actor: nhs, aspect: condition}
+        limitcare:    {label: "Clinicians practise without being able to give good enough care", actor: clinicians, aspect: activity}
+        interact:     {label: "Waiting problems across the NHS interact and exacerbate each other", levels: [services], aspect: activity}
+        # what makes the system up (pp. 352, 359-360): constitution, not steps
+        flows:        {label: "Flows: processes by which inputs are transformed into outputs -- money, referral journeys, health information", levels: [system, services, people], aspect: activity}
+        elementce:    {label: "Each element's performance and cost-effectiveness, measured separately", levels: [services], aspect: quantity}
+        interactions: {label: "Elements interact, hierarchically and horizontally, through multiple feedback loops", levels: [services], aspect: activity}
+        systemce:     {label: "How effective the system as a whole is at its core functions", actor: nhs, aspect: quantity}
+===
+
+// THE PARALLEL METHOD (30 Sep 2026). Argument and mechanism read together: a claim that states
+// a step enters the argument as the support of a claim it bears on, or through a BRIDGE whose
+// inference line names the scheme. Reconstructed in the trial that made this the method in force
+// (1 Oct 2026); the author judged it the better of the two readings of this paper.
+//
+// Mechanism pass, profile 1.11 (30 Sep 2026), done in the main session. The paper describes the
+// health system in verbs -- flows, waiting, discharging, cascading -- and itself cites Arthur on
+// economics "with nouns only, rather than verbs" (p. 355), so the states keep the text's verbs.
+// Means- and values-improvement are declared a cycle that does not come to rest: "continual and
+// iterative" ([Continual and iterative], p. 363). What makes the system up is marked with
+// `constitutes:`, never as steps.
+//
+// Top-level form: conductive. Four convergent strands (flows, values beyond cost-effectiveness,
+// cost-effectiveness analysis as one tool, iterative improvement) are weighed together against
+// a reported rival, the move to comprehensive cost-effectiveness analysis, which the paper refutes.
+
+# The thesis {isGroup: true}
+
+[Holistic improvement]: "health systems should move from simple and atomistic approaches to measuring effectiveness to approaches that are holistic both in focusing on performance at the level of the health system as a whole, and also in incorporating a wider range of ethical concerns in thinking about what makes a health system good"
+    {fidelity: "quotation", pinpoint: "p. 351", note: "The paper's stated thesis, from the abstract. Its two arms, system-level performance and a wider range of ethical concerns, are carried by the flow-centric and values strands below."}
+    <+ [Flow-centric shift]
+    <+ [Values beyond cost-effectiveness]
+    <+ [CEA as one tool]
+    <+ [Iterative improvement]
+    <- [Go comprehensive]
+
+# Against cost-effectiveness-centred improvement {isGroup: true}
+
+<Four assumptions argument>: Centring improvement on cost-effectiveness is sensible only if four assumptions hold, and each is implausible in a range of real-world contexts; so cost-effectiveness analysis should be reframed as one tool among many. {fidelity: "compression", pinpoint: "pp. 360"}
+
+<Four assumptions argument>
+
+(1) [CEA sensible only if four hold]: "centring improvement attempts on improving cost-effectiveness is a sensible strategy only if measurabillty, single synoptic decision procedure, external validity, and static ranking all hold" {fidelity: "quotation", pinpoint: "p. 360", note: "'measurabillty' is the published misspelling, kept as printed."}
+(2) [Four assumptions implausible]: "each of these assumptions prove to be implausible in a range of real-world contexts" {fidelity: "quotation", pinpoint: "p. 360", note: "Scope kept: implausible in a range of real-world contexts, not in every context."}
+-----
+(3) [CEA as one tool]: Tools such as cost-effectiveness analysis should not be abandoned but reframed "as one among a plurality of tools by which health system performance can be measured and means-improved" {fidelity: "compression", pinpoint: "p. 360"}
+
+[CEA as one tool]
+    <+ [Pragmatic tool]: Conceptions of improvement that use cost-effectiveness can "adopt a view of cost-effectiveness analysis that sees it as a pragmatically useful, but imperfect tool, rather than the only ethically defensible approach to health system improvement" {fidelity: "compression", pinpoint: "p. 355"}
+        <+ [Measurability doubtful]
+        <+ [SSDP controversial]
+    <+ [Constrained and judicious]: "where cost-effectiveness analysis is used, it should be in a constrained and judicious way" {fidelity: "quotation", pinpoint: "p. 356"}
+        <+ [Not testable once and for all]: If external validity and static ranking are questionable, "it is also questionable to assume that the cost-effectiveness of particular interventions can be tested centrally once and for all" {fidelity: "compression", pinpoint: "p. 356", note: "The antecedent compresses the author's 'if it is admitted that it is questionable to assume that cost-effectiveness analyses have external validity, and ... that prioritisation rankings will often be dynamic'; the quoted consequent follows in the same sentence."}
+            <+ [EV and SR fail]
+    <+ [Not only CEA]: "it would be a mistake to think that successful means-improvement occurs only where cost-effectiveness analysis is used" {fidelity: "quotation", pinpoint: "p. 361"}
+        <+ [Sub-elements are improved in turn]
+        <+ [Uniform standards the exception]
+
+[Sub-elements are improved in turn]: "Systems, and also technologies more generally, are typically composed of sub-elements which are themselves technologies or systems, and this encapsulation can be several layers deep. Sub-elements can themselves be means-improved, and this iterates down to sub-sub-processes and beyond" {fidelity: "quotation", pinpoint: "p. 361", constitutes: {from: subsystems, to: nhs, extent: partial, whole: organised, basis: asserted}}
+
+[Four assumptions implausible]
+    <+ [Measurability doubtful]: "it is neither obvious that health and illness are cardinally measurable, nor there is any alternative specification of the aim of health policy that is cardinally measurable either" {fidelity: "quotation", pinpoint: "p. 354", note: "Measurability: that whatever makes healthcare valuable can be measured on a cardinal scale, with numerical comparisons across all states."}
+        <+ [Illnesses differ]: "influenza, depression, spina bifida, herpes, and rheumatoid arthritis are all ways of being ill, but they each affect us in very different ways" {fidelity: "quotation", pinpoint: "p. 354"}
+        <+ [Plural valid measures]: "it is much less plausible to think that there is a single and uniquely correct way of measuring health or wellbeing, than a plurality of different valid ways of so doing" {fidelity: "quotation", pinpoint: "p. 354"}
+            <+ [QALY choices contestable]: The QALY's methodology embeds value judgements, and "in each case there are reasonable alternatives to the decisions that were taken" {fidelity: "compression", pinpoint: "p. 354", note: "Hedge kept: the author says none of these decisions is shown to be indefensible, only that reasonable alternatives exist. The same is said of the DALY."}
+    <+ [SSDP controversial]: "Single synoptic decision procedure is widely agreed to be controversial." {fidelity: "quotation", pinpoint: "p. 355"}
+        <+ [Unit weighting unclear]: "it is unclear whether one unit (e.g. one QALY) should count the same regardless of the disease it arises from, how badly off the patients are who are affected, and how significant the benefit is to each individual who would receive it" {fidelity: "quotation", pinpoint: "p. 355"}
+        <+ [Other values]: "there is a range of other values that are often thought to be relevant to health systems improvement, such as inclusion, and environmental sustainability that are only indirectly connected to health achievement" {fidelity: "quotation", pinpoint: "p. 355"}
+        <+ [Daniels on disagreement]: Prominent scholars, including Norman Daniels, argue "that it is not possible to resolve a range of underlying ethical disagreements about tradeoffs in resource allocation through philosophical reasoning alone" {fidelity: "quotation", pinpoint: "p. 355", note: "The author reports this and draws only a conditional from it ('If they are correct, a turn to procedural reason is required'); the map records that scholars argue it, not that it is true."}
+    <+ [EV and SR fail]
+
+[EV and SR fail]: "neither external validity nor static ranking is correct within large-scale and interconnected health systems" {fidelity: "quotation", pinpoint: "p. 354", note: "Scope kept: within large-scale and interconnected health systems."}
+    <+ [EV usually false]: "It is a substantive, and usually false, assumption that the effects (and hence cost-effectiveness) of an intervention are atomic" {fidelity: "quotation", pinpoint: "p. 356", note: "External validity: cost-effectiveness assessed in one context transfers without significant difficulty to the policymaker's own."}
+        <+ [Adherence]: "The effectiveness (and cost-effectiveness) of a drug in practice depends on, among other things, on the level of support that patients have in adhering to treatment." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: adherence, to: drugce, sign: "+", basis: asserted, chain: dynamic}}
+        <+ [Trial gap]: "there may be a significant gap between the effects of an intervention in an experimental context, and the effects that the same intervention will have in a real-world context" {fidelity: "quotation", pinpoint: "p. 355"}
+    <+ [Rankings change]: "it is common, rather than rare, for circumstances to change in ways that require rankings delivered in prioritisation processes to be reconfigured within rounds of resource allocation, rather than only at the beginning of such a period" {fidelity: "quotation", pinpoint: "p. 356", note: "Static ranking: that prioritisation rankings will not change unexpectedly over the period governed by the allocation."}
+        <+ [Operating parameters]: "If the system needs to start operating outside of these parameters, then this may make a significant difference to what calibration of services will be overall most cost-effective." {fidelity: "quotation", pinpoint: "p. 356", note: "The parameters are assumed patient flows, e.g. 300 beds sufficing, or an A&E department processing no more than 40 patients an hour.", causes: {from: beyond, to: calibration, sign: which, basis: example, hedged: true, chain: dynamic}}
+        <+ [Fair ordering decays]: "A prioritisation ordering that was fair may not remain fair as patients’ conditions change." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: change, to: fairorder, sign: "-", on: persistence, basis: asserted, hedged: true, chain: dynamic}}
+
+<Effects shift with the system>: In the cataract service and the ambulance cascade, what an intervention achieves shifts with how long patients have waited and with what happens elsewhere in the system. {fidelity: "compression", pinpoint: "pp. 358-360", note: "The text's own use of the two cases: 'By looking at a case study on cataract waiting lists, and one on cascading harms caused by ambulance waiting times, I argue that neither external validity nor static ranking is correct' (p. 354)."}
+
+(1) [Waiting and worsening feed each other]
+(2) [Cataract service]
+(3) [Cascading scarcity]
+(4) [Discharge to ambulance cascade]
+-- From a mechanism against a theory {uses: [1, 2, 3, 4]} --
+(5) [EV and SR fail]
+
+[Waiting and worsening feed each other]: "Cases become more time-consuming to treat (and more prone to complications) as cataracts worsen, and cataracts worsen as patients wait longer for treatment." {fidelity: "quotation", pinpoint: "p. 359", causes: [{from: cataractwait, to: worsen, sign: "+", basis: asserted, chain: cataract}, {from: worsen, to: casetime, sign: "+", basis: asserted, chain: cataract}]}
+
+# The NHS and the comprehensive alternative {isGroup: true}
+
+<Partial CEA criticised>: The NHS's partial use of cost-effectiveness analysis has let demand outrun capacity, harmfully, and the failures follow from the approach; allowing such a gap is irresponsible, so the partial approach is open to ethical criticism. {fidelity: "compression", pinpoint: "pp. 357-358"}
+
+<Partial CEA criticised>
+
+(1) [Congestion]: The NHS's current partial approach to cost-effectiveness "has not been sufficient to prevent services from becoming congested and waiting times rising inexorably in ways that are harmful for patients" {fidelity: "compression", pinpoint: "p. 363", note: "The framing words are the reconstructor's; the quoted span is from the Conclusion, where the subject is 'the current partial approach to cost-effectiveness'.", causes: {from: congestion, to: harm, sign: "+", basis: asserted, chain: congestion}}
+(2) [Failures follow from approach]: "these failures are not incidental, but follow from the approach adopted" {fidelity: "quotation", pinpoint: "p. 354", causes: {from: partialcea, to: congestion, sign: "+", basis: asserted, chain: congestion}}
+(3) [Irresponsible gap]: "It is irresponsible for policymakers to allow a systemic gap to appear between the demands that individuals can make under the system, and the system’s ability to meet these demands." {fidelity: "quotation", pinpoint: "p. 358"}
+-----
+(4) [Partial CEA open to criticism]: "To the extent that partial cost-effectiveness analysis leads to such problems in practice, it can and should be ethically criticized." {fidelity: "quotation", pinpoint: "p. 358"}
+    +> [Go comprehensive]
+
+[Congestion]
+    <+ [Handover delays contributed to deaths]
+    <+ [Worst waiting lists]: "As of the beginning of 2023, the NHS was facing worse waiting lists for scheduled operations than at any point in its history" {fidelity: "quotation", pinpoint: "p. 358"}
+    +> [Flow-centric shift]
+
+[Handover delays contributed to deaths]: A report of the Association of Ambulance Chief Executives concluded "that each month over 25,000 patients were waiting for more than four times the target handover time of 15 min, and that these delays had contributed to deaths" {fidelity: "compression", pinpoint: "p. 360", note: "Footnote 7, attached to the ambulance-waiting sentence; the report is the author's evidence, and he relies on it.", causes: {from: ambwait, to: harm, sign: "+", basis: statistics, chain: cascade}}
+
+[Failures follow from approach]
+    <+ [Mixed economy]: The NHS "runs a mixed economy in which only a minority of decisions is shaped by formal measurement of cost-effectiveness" {fidelity: "compression", pinpoint: "p. 354"}
+        <+ [Satisficing not maximising]: NICE "operates a satisficing model of cost-effectiveness rather than a maximising one" {fidelity: "compression", pinpoint: "p. 357"}
+    <+ <NICE threshold argument>
+    <+ [No stopping mechanism]: "The system as a whole has no very clear mechanisms for stopping doing interventions that are not cost-effective." {fidelity: "quotation", pinpoint: "p. 358"}
+
+<NICE threshold argument>: New interventions are admitted at a threshold well above what a QALY costs within the NHS, so many approvals are expected to cost more health than they create. {fidelity: "compression", pinpoint: "pp. 357-358"}
+
+<NICE threshold argument>
+
+(1) [Threshold]: Unless special features justify paying more, "a new intervention should not usually cost more than £30,000 per QALY" {fidelity: "compression", pinpoint: "p. 357"}
+(2) [Claxton estimate]: "Claxton et al. (2015) calculated that the most likely value for the cost it takes to create one QALY within the NHS is £12,936" {fidelity: "quotation", pinpoint: "p. 357"}
+-----
+(3) [Net QALY losses]: "many of the drugs approved by NICE would be expected to lead to losses of health benefits that are larger than those they create" {fidelity: "quotation", pinpoint: "p. 358", note: "Hedged in the text: 'would be expected', and 'if the cost-effectiveness calculations are correct'. The author adds that such approvals may have other virtues, such as access to more expensive treatments with genuine benefits.", causes: {from: partialcea, to: qalyloss, sign: "+", basis: model, hedged: true, chain: congestion}}
+
+<Excess demand's consequences>: Letting in more demand than the system can serve congests it, raises unmet need and pushes those who can pay into private care, none of it intended; so allowing the gap is irresponsible. {fidelity: "compression", pinpoint: "pp. 357-358"}
+
+(1) [Excess demand congests the system]
+(2) [Other sequelae of excess demand]
+(3) [Implicit rationing is the unwanted effect of excess demand]: "In many cases, implicit rationing can occur without explicit decision or endorsement: queuing and congestion are often simply the unwanted net effect of excess demand within parts of the system." {fidelity: "quotation", pinpoint: "p. 357", causes: {from: gap, to: congestion, sign: "+", basis: asserted, attribution: {type: inadvertent, by: policymakers}, chain: congestion}}
+-- From consequences {uses: [1, 2, 3]} --
+(4) [Irresponsible gap]
+
+[Excess demand congests the system]: "A plausible working hypothesis is that allowing greater demand into the system as a whole than the system is able to service will lead to system congestion" {fidelity: "quotation", pinpoint: "p. 358", note: "Put as a working hypothesis, so hedged.", causes: {from: gap, to: congestion, sign: "+", basis: asserted, hedged: true, chain: congestion}}
+
+[Other sequelae of excess demand]: "It may also lead to other sequelae such as significant increases in unmet healthcare needs, and patients who can afford to pay for access to private treatment doing so." {fidelity: "quotation", pinpoint: "p. 358", note: "'It' is allowing greater demand into the system than it can serve.", causes: [{from: gap, to: unmet, sign: "+", basis: asserted, hedged: true, chain: congestion}, {from: gap, to: private, sign: "+", basis: asserted, hedged: true, chain: congestion}]}
+
+[Irresponsible gap]
+    <+ [Queues not need-based]: "Queuing and waiting lists are thus not an effective way of allocating care on the basis of need." {fidelity: "quotation", pinpoint: "p. 358", note: "Attached here because a gap between entitlement and capacity is managed, implicitly, by queueing."}
+        <+ [Earlier not more urgent]: "there is no reason to think that healthcare needs which present earlier will per se be more urgent, or in other ways create a stronger claim" {fidelity: "quotation", pinpoint: "p. 358"}
+
+[Go comprehensive]: "the NHS should avoid the ethical costs associated with implicit rationing by going further and deeper with explicit prioritisation, with the aim of moving to a comprehensive approach to cost-effectiveness analysis" #reported {fidelity: "quotation", pinpoint: "p. 358", note: "Set out by the author as what 'It would be possible to argue', then rejected. In a comprehensive approach every intervention is rated for cost-effectiveness and ranked by one synoptic procedure, as in Culyer's bookshelf model."}
+    <+ [CEA makes problems tractable]: "comprehensive cost-effectiveness analysis at least has the advantage that it offers a way of making otherwise very difficult problems more tractable by introducing a common measure" #conceded {fidelity: "quotation", pinpoint: "p. 360", note: "The author grants this, and uses it to explain why, absent an obviously better alternative, the approach exerts an 'inexorable pull' on policymakers."}
+    <- <Comprehensive CEA no remedy>
+    <- [Not solvable by comprehensive CEA]
+
+<Comprehensive CEA no remedy>: Going comprehensive would be a good answer only if external validity and static ranking held; neither does; so it is not a good answer. {fidelity: "compression", pinpoint: "p. 358"}
+
+<Comprehensive CEA no remedy>
+
+(1) [Comprehensive only if EV and SR]: Moving to comprehensive cost-effectiveness analysis "would be a good answer to how best to improve health systems only if it can safely be assumed that external validity and static ranking hold" {fidelity: "compression", pinpoint: "p. 358", note: "The subject is given in the preceding sentences, which propose going further and deeper with explicit prioritisation towards a comprehensive approach; 'This would be a good answer' refers back to that proposal."}
+(2) [EV and SR fail]
+-----
+(3) [Comprehensive not a good answer]: Moving to comprehensive cost-effectiveness analysis is not a good answer to how best to improve health systems. {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 358", note: "The text states the conditional and says it will show 'neither assumption is safe to make'; the negated consequent is left for the reader, and is what the passage is for."}
+
+[Not solvable by comprehensive CEA]: Cascading scarcity is "not a problem of scarcity that can be solved easily, or very satisfactorily, by a greater emphasis on cost-effectiveness analysis, or even by adopting comprehensive cost-effectiveness analysis" {fidelity: "compression", pinpoint: "p. 359"}
+    <+ [Fallacy of composition]
+    <+ [Cascading scarcity]
+
+[The simple-function view]: "the cost-effectiveness in practice of a complex system as a whole is a simple function of the cost-effectiveness of its component elements" #reported {fidelity: "quotation", pinpoint: "p. 359", note: "The assumption the text calls a fallacy of composition: the whole as no more than the sum of its elements.", constitutes: {from: elementce, to: systemce, extent: entire, whole: aggregate, basis: asserted, stance: rejected}}
+    <- [Fallacy of composition]
+    +> [Go comprehensive]
+
+# Flows and system-level mapping {isGroup: true}
+
+<Cascades call for system-level mapping>: Because the system's effectiveness depends on interactions, and waiting problems interact and exacerbate one another, improving it requires mapping its flows at system level. {fidelity: "compression", pinpoint: "pp. 359-360", note: "'the analysis ... provides strong reasons for thinking that successful means-improvement of health systems requires mapping' (p. 360)."}
+
+(1) [System effectiveness depends on interactions]
+(2) [Problems interact and exacerbate each other]: "Problems such as cataract surgery waiting times not only occur across the NHS, but interact with and exacerbate each other." {fidelity: "quotation", pinpoint: "p. 359", causes: {from: waiting, to: interact, sign: "+", basis: asserted, chain: scarcity}}
+-- From a mechanism to what to do {uses: [1, 2]} --
+(3) [System-level mapping]
+
+[System effectiveness depends on interactions]: How effective the health system as a whole is "does not just depend on the performance of" one element, "but on interactions of numerous elements, which are each linked with one another via multiple feedback loops". {fidelity: "compression", pinpoint: "pp. 359-360", constitutes: [{from: elementce, to: systemce, extent: partial, whole: organised, basis: asserted}, {from: interactions, to: systemce, extent: partial, whole: organised, basis: asserted}]}
+
+[Flow-centric shift]: "Reflecting on challenges such as waiting times and system congestion should lead us to shift from the distribution-focused paradigm presupposed in cost-effectiveness analysis and in philosophical discussions of resource allocation, to a flow-centric one." {fidelity: "quotation", pinpoint: "p. 363",}
+    <+ [Flows make up the system]
+    <+ [System-level mapping]: "successful means-improvement of health systems requires mapping of the different flows, resource dependencies and inter-relations at a system level" {fidelity: "quotation", pinpoint: "p. 360", causes: {from: mapping, to: meansimp, sign: "+", necessary: true, basis: asserted, chain: improvement}}
+        <+ [Fallacy of composition]: "We commit a fallacy of composition if we assume that the cost-effectiveness in practice of a complex system as a whole is a simple function of the cost-effectiveness of its component elements." {fidelity: "quotation", pinpoint: "p. 359"}
+            <+ [System effectiveness depends on interactions]
+            <+ [Densely interconnected]: A health system is "densely interconnected by both hierarchical and non-hierarchical interactions" {fidelity: "compression", pinpoint: "p. 359"}
+        <+ [Cascading scarcity]: "scarcity in one narrow domain can worsen scarcity elsewhere, for example by creating bottlenecks that worsen the performance of other parts of the system" {fidelity: "quotation", pinpoint: "p. 359", causes: [{from: localscarcity, to: bottleneck, sign: "+", on: being, basis: asserted, hedged: true, chain: scarcity}, {from: bottleneck, to: cascade, sign: "+", basis: asserted, chain: scarcity}]}
+            <+ [Discharge to ambulance cascade]: Lack of social care delays hospital discharges; blocked beds delay moves out of Accident and Emergency; patients then wait in ambulances, which "leads to worse response times for ambulances" {fidelity: "compression", pinpoint: "p. 360", note: "Compresses the chain on p. 360, which the author calls 'just one trajectory out of the myriad ways in which scarcities may ramify'. Footnotes 7 and 8 give the ambulance handover and response-time figures.", causes: {from: socialcare, to: response, sign: "+", via: [discharge, aeexit, ambwait, outofservice], basis: asserted, chain: cascade}}
+                <+ [Social care delays discharge]
+                <+ [Blocked beds hold up A&E]
+                <+ [A&E delays keep patients in ambulances]
+                <+ [Waiting takes ambulances out of service]
+                <+ [Slower responses, more calls]
+    <+ [Little guidance]: "mainstream philosophical approaches to the ethics of rationing and prioritisation provide little guidance for these new problems of scarcity" {fidelity: "quotation", pinpoint: "p. 351"}
+        <+ [Leaner made worse]: "the cascading failures were arguably exacerbated by earlier attempts to make health systems leaner and more efficient" {fidelity: "quotation", pinpoint: "p. 351", note: "Hedge kept: 'arguably'.", causes: {from: lean, to: cascade, sign: "+", basis: asserted, hedged: true, chain: lean}}
+            <+ [Cost-effective is brittle]: "A system that is maximally cost-effective is also typically one that is brittle." {fidelity: "quotation", pinpoint: "p. 353"}
+                <+ [Value for money leaves no room to flex]
+
+[Value for money leaves no room to flex]: "Focusing only on value for money encourages policymakers to focus on eliminating waste and spare capacity, but a health system that is designed according to just-in-time principles, and hence has little spare capacity across each element of its supply chain, is likely to find it difficult to flex to meet the demands of a public health emergency." {fidelity: "quotation", pinpoint: "p. 353", causes: [{from: valueformoney, to: lean, sign: "+", basis: asserted, chain: lean}, {from: lean, to: flex, sign: "-", basis: asserted, hedged: true, chain: lean}]}
+
+[Social care delays discharge]: "lack of available resources in social care frequently leads to delays in patients getting discharged from hospitals" {fidelity: "quotation", pinpoint: "p. 360", causes: {from: socialcare, to: discharge, sign: "+", basis: asserted, chain: cascade}}
+
+[Blocked beds hold up A&E]: "If patients who are well enough to be discharged, but cannot be discharged due to lack of social care resources, take up a significant proportion of hospital beds, then this makes it more difficult to move patients out of Accident and Emergency Departments onto wards." {fidelity: "quotation", pinpoint: "p. 360", causes: {from: discharge, to: aeexit, sign: "+", basis: asserted, chain: cascade}}
+
+[A&E delays keep patients in ambulances]: "If there are delays in patients being moved out of Accident and Emergency departments, then this also impedes the ability to bring patients into Accident and Emergency Departments. Patients need to wait in ambulances outside hospitals before they can be admitted" {fidelity: "quotation", pinpoint: "p. 360", causes: {from: aeexit, to: ambwait, sign: "+", basis: asserted, chain: cascade}}
+
+[Waiting takes ambulances out of service]: "Patients need to wait in ambulances outside hospitals before they can be admitted, which in turn takes ambulances out of service while they wait with patients in hospital car parks" {fidelity: "quotation", pinpoint: "p. 360", causes: {from: ambwait, to: outofservice, sign: "+", basis: asserted, chain: cascade}}
+
+[Slower responses, more calls]: "This leads to worse response times for ambulances, which then leads to additional load on emergency call handlers, as they respond to repeated calls about ambulances that have not arrived." {fidelity: "quotation", pinpoint: "p. 360", note: "'This' is ambulances taken out of service. Footnote 8 gives the response times against target for June 2022.", causes: [{from: outofservice, to: response, sign: "+", basis: asserted, chain: cascade}, {from: response, to: callload, sign: "+", basis: asserted, chain: cascade}]}
+
+[Flows make up the system]: "I use the idea of a flow in a broad sense, to refer to a process by which inputs are transformed into outputs within a system." {fidelity: "quotation", pinpoint: "p. 352", note: "A definition: flows are processes within the system, so they partly make it up. The paper's move to a 'flow-centric' paradigm (p. 363) rests on it.", constitutes: {from: flows, to: nhs, extent: partial, whole: organised, basis: definition}}
+
+<Cataract argument>: Where demand outstrips capacity for a progressive condition, first come, first served lets patients deteriorate while they wait; so a cataract service that makes people wait is both less cost-effective and less ethically defensible. {fidelity: "compression", pinpoint: "pp. 358-359"}
+
+<Cataract argument>
+
+(1) [FCFS inferior]: "If demand systematically outstrips ability to meet it, and those waiting become significantly worse (and more difficult to treat) while they are waiting, then first-come first-served is ethically inferior to a system of explicit prioritisation based on criteria that allows capacity to be matched to eligible need." {fidelity: "quotation", pinpoint: "p. 358"}
+(2) [FCFS lets progressive patients deteriorate first]: "Where first-come, first-served is used to manage access to treatments for progressive conditions, and demand systematically outstrips ability to meet it, then no patients will reach the front" "of the queue until their condition has already deteriorated significantly and this avoidable loss of health will grow as the queue lengthens." {fidelity: "quotation", pinpoint: "p. 358", note: "The general mechanism the conditional (1) needs. One sentence of the source, quoted in two spans because it runs across the page break between 'front' and 'of the queue'.", causes: [{from: fcfs, to: worsen, sign: "+", jointly: [gap], basis: asserted, scope: general, chain: cataract}, {from: waiting, to: loss, sign: "+", basis: asserted, scope: general, chain: cataract}]}
+    <+ [First come, first served lets waits grow]
+(3) [Cataract progressive]: "Cataract is a progressive condition. The longer it is left before an operation, the greater the complexity of the operation and the greater likelihood of complications." {fidelity: "quotation", pinpoint: "p. 359", causes: {from: cataractwait, to: casetime, sign: "+", basis: asserted, via: worsen, chain: cataract}}
+(4) [Waiting and worsening feed each other]
+(5) [A backlog outruns the capacity that held it]
+(6) [Cataract waits growing]: The mean wait for cataract surgery "was 278 days (nearly 40 weeks) in 2021", against an 18-week target {fidelity: "compression", pinpoint: "p. 359"}
+(7) [Waiting diminishes patients' lives]
+-- From cause to effect {uses: [1, 2, 3, 4, 5, 6, 7]} --
+(8) [Cataract service]: "a cataract operation service that makes people wait until their condition gets worse before they are treated will not only be less cost-effective, but less ethically defensible, than one that operates on patients earlier in their disease pathway" {fidelity: "quotation", pinpoint: "p. 359", note: "The author presents this, with the ambulance case, as showing that external validity and static ranking fail: the cost-effectiveness of the same operation shifts with how long the patient has waited.", causes: {from: cataractwait, to: cataractce, sign: "-", basis: asserted, chain: [cataract, dynamic]}}
+-- From a mechanism to what to do {uses: [5, 8]} --
+(9) [Better match needed]: "This seems to provide a strong reason to provide a better match between eligible demand, and ability to meet demand, than the NHS has recently been able to." {fidelity: "quotation", pinpoint: "p. 359", note: "The practical conclusion the cataract analysis draws; footnote 6 is attached to this sentence. Linked to [Irresponsible gap] as its positive form -- a better match is the closing of the gap -- which is the reconstructor's reading of how the two passages bear on each other."}
+    +> [Irresponsible gap]
+    <- [Resources or eligibility open]: The cataract considerations "do not by themselves determine whether what should be done is increase available resources for cataract surgery, or to tighten eligibility requirements" #conceded {fidelity: "compression", pinpoint: "p. 359", note: "Footnote 6, attached to the 'better match' sentence: it limits which remedy the practical conclusion recommends -- more resources or tighter eligibility -- not the cataract claim itself. Either could be an improvement, depending on existing commitments and opportunity costs."}
+
+[Displacement and the pandemic lengthened waits]: "These targets were struggling to be met pre-pandemic (in part because of the way in which urgent cases displace non-urgent ones in the system’s capacity), but since the pandemic, waiting times have got significantly worse." {fidelity: "quotation", pinpoint: "p. 359", note: "The 18-week target for all non-urgent operations; the survey of 12 trusts that follows gives cataract waits rising 35% and then 36%.", causes: [{from: displacement, to: cataractwait, sign: "+", basis: asserted, chain: cataract}, {from: pandemic, to: cataractwait, sign: "+", basis: statistics, chain: cataract}]}
+
+[Lists grow when removals lag additions]: "Waiting lists get longer to the extent that the rate at which people are taken off the waiting list (by receiving the operation, paying to have the operation privately, or dying, or emigrating) is slower than the rate at which patients are added to the waiting list." {fidelity: "quotation", pinpoint: "p. 359", causes: [{from: newdiag, to: cataractwait, sign: "+", on: stock, basis: asserted, chain: cataract}, {from: removal, to: cataractwait, sign: "-", on: stock, basis: asserted, chain: cataract}]}
+
+[First come, first served lets waits grow]: "Where demand systematically outstrips the ability to meet demand, and first come, first served, is used as a method of allocating resources, then waiting times will grow ever longer." {fidelity: "quotation", pinpoint: "p. 358", causes: {from: gap, to: waiting, sign: "+", jointly: fcfs, basis: asserted, chain: cataract}}
+
+[A backlog outruns the capacity that held it]: Because longer waits make each case take longer, capacity that kept the list static at short waits does not at long ones, and the list keeps growing. {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 359", source: "A level of capacity that was enough to keep waiting lists static at a waiting time of 18 weeks would not be sufficient to keep waiting lists static at a waiting time of 9 months; waiting lists would continue to get longer", note: "The text closes the loop by juxtaposition: the sentence before says cases take longer as cataracts worsen and cataracts worsen as patients wait; this one says the capacity that held a short list does not hold a long one. The link from longer cases to a growing list is the text's point, not stated as a step. The author agrees with this reading (James Wilson, 30 Sep 2026).", causes: {from: casetime, to: cataractwait, sign: "+", basis: asserted, chain: cataract}}
+
+[Waiting diminishes patients' lives]: "Patients who wait longer for cataract surgery will suffer diminished quality of life in the meantime, and may for example lose the ability to drive, and be more prone to accidents from diminished visual acuity." {fidelity: "quotation", pinpoint: "p. 359", causes: [{from: cataractwait, to: qol, sign: "-", basis: asserted, chain: cataract}, {from: cataractwait, to: accidents, sign: "+", basis: asserted, hedged: true, chain: cataract}]}
+
+# Values beyond cost-effectiveness {isGroup: true}
+
+<Humans are not photocopiers>: A machine may be run to breakdown because it is replaceable; staff may not, because overwork brings moral injury and breakdown that cannot be priced in, and neglect has instrumental costs besides. {fidelity: "compression", pinpoint: "p. 362"}
+
+(1) [The photocopier may be run past its cycle]: "Machinery is replaceable: it is perfectly reasonable for an office manager to decide to allow a photocopier to be operated in excess of its monthly work cycle, in the knowledge that this will make it more likely to break down, and to require fixing by an engineer." {fidelity: "quotation", pinpoint: "p. 362", causes: {from: overuse, to: breakdown, sign: "+", on: chance, basis: example, design: illustration, chain: staff}}
+(2) [Overwork breaks staff]
+(3) [Humans not replaceable]: "Human beings are not replaceable, and a health system cannot and should not price-in the cost of staff moral injury and breakdown." {fidelity: "quotation", pinpoint: "p. 362", note: "Contrasted with a photocopier, which may reasonably be run past its work cycle because machinery is replaceable."}
+(4) [Neglect of the human has instrumental costs]
+-- From consequences {uses: [1, 2, 3, 4]} --
+(5) [Human elements constrain efficiency]
+
+[Overwork breaks staff]: To ask human beings to "work beyond a safe workload limit over a prolonged period" is to incur "staff moral injury and breakdown", which a health system cannot and should not price in. {fidelity: "compression", pinpoint: "p. 362", note: "Joins two adjacent sentences, the second presupposing the link the first implies; contrasted with running a photocopier past its work cycle.", causes: {from: overwork, to: injury, sign: "+", basis: asserted, chain: staff}}
+
+[Neglect of the human has instrumental costs]: "Failing to consider the role played by the human will have instrumental costs if sick leave and staff turnover increase" {fidelity: "quotation", pinpoint: "p. 362", note: "Conditional in the text: hedged.", causes: {from: overwork, to: turnover, sign: "+", basis: asserted, hedged: true, chain: staff}}
+
+[Values beyond cost-effectiveness]: "We need a more complex model of fairness in resource allocation, which focuses on a range of ethical values beyond cost-effectiveness" {fidelity: "quotation", pinpoint: "p. 354"}
+    <+ [Health-system-specific]
+    <+ [Broader than health outcomes]: "our account of a high-quality health system should be broader than one that produces good health outcomes" {fidelity: "quotation", pinpoint: "p. 353"}
+        <+ [Proximity versus complications]: "This value of proximity and convenience will sometimes be in tension with the equally reasonable goal of minimising rates of surgical complications" {fidelity: "quotation", pinpoint: "p. 353"}
+            <+ [Volume lowers complications]
+    <+ [No single number]: "it is implausible to think that there could be a single cardinal number that would adequately sum up how well a health system is performing, or which could be maximised subject to constraints" {fidelity: "quotation", pinpoint: "p. 353"}
+        <+ [Cost-effective is brittle]
+    <+ [Renewed emphasis on values]: Treating cost-effectiveness analysis as an imperfect tool "places renewed emphasis on questions of values-improvement" {fidelity: "compression", pinpoint: "p. 355"}
+        <+ [Second-order fairness]: Where prioritisation by cost-effectiveness is admitted to be only one of a range of reasonable processes, "a second-order challenge of fairness can be raised" by those denied life-saving care {fidelity: "compression", pinpoint: "pp. 355-356"}
+            <+ [Denied patients question the process]
+    <+ [Practice and deliberation]: "both the practice of healthcare and deliberative democratic reasoning should be used to help values-improve health systems" {fidelity: "quotation", pinpoint: "p. 360"}
+
+[Volume lowers complications]: "surgeons who perform a given procedure twice a week will tend to have fewer complications than those who perform it twice a year, and this pushes policymakers towards greater centralisation of complex surgeries" {fidelity: "quotation", pinpoint: "p. 353", note: "Its own chain, not leanness: the text uses it for the trade-off between proximity and surgical outcomes, and says nothing of how centralising bears on brittleness (James Wilson, 30 Sep 2026).", causes: [{from: volume, to: complications, sign: "-", on: chance, basis: asserted, chain: proximity}, {from: complications, to: centralise, sign: "+", basis: asserted, chain: proximity}]}
+
+[Denied patients question the process]: "Where prioritisation processes lead to individuals being denied access to life-saving care that they would have received on a different but equally reasonable approach to resource allocation, such individuals are likely to question the ethical justifiability of the processes that have been adopted." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: denied, to: challenge, sign: "+", on: chance, basis: asserted}}
+
+[Health-system-specific]: "the best conception of improvement for a health system needs to be specific to the kind of endeavour that a healthcare system is" {fidelity: "quotation", pinpoint: "p. 352"}
+    <+ [Sui generis considerations]: "healthcare is taken by policymakers, clinicians and citizens more broadly to entail a set of sui generis ethical considerations" {fidelity: "quotation", pinpoint: "p. 353"}
+    <+ [Human elements constrain efficiency]: "when it comes to the human elements of a system, maximum speed and efficiency must be constrained by and be responsive to the needs, values and moral standing of all those who are stakeholders" {fidelity: "quotation", pinpoint: "p. 362"}
+    <+ [Practice norms not to be sidelined]
+    <- [Generic values]: Some ethical theories suggest generic answers applicable to any system, for example "that a system should seek to maximise wellbeing, or that it should seek to meet the greatest sum of strength-weighted relevant claims" #reported {fidelity: "compression", pinpoint: "p. 352"}
+
+[Practice and deliberation]
+    <+ [Norms shape values-improvement]
+    <+ [Practice norms not to be sidelined]: The normative expectations arising from healthcare as a social practice "cannot simply be ignored or sidelined in the pursuit of cost-effectiveness; doing so would be likely to have the effect of undermining some of the core values that the health system is supposed to serve" {fidelity: "compression", pinpoint: "p. 362", causes: {from: sideline, to: norms, sign: "-", on: persistence, basis: asserted, hedged: true, chain: improvement}}
+        <+ [Healthcare is a practice]: Healthcare "is commonly agreed to be a practice in MacIntyre’s sense", whose standards of excellence "centrally include the goals of restoration of health, and the relief of suffering" {fidelity: "compression", pinpoint: "p. 362", note: "Joins two sentences of the same paragraph, skipping MacIntyre's definition of a practice; the standards are said to be 'not fixed'."}
+        <+ [Moral distress]: "In so far as institutional arrangements are perceived to require doctors to subordinate the pursuit of goods internal to the practice of medicine to external goods, then good doctors will feel significant tension or moral distress." {fidelity: "quotation", pinpoint: "p. 362", causes: {from: subordinate, to: distress, sign: "+", basis: asserted, chain: staff}}
+    <+ [Take forward embedded values]: "Values-improvement in healthcare should be thought of, in the first instance, as an argument about how to take forward the values that are already embedded in healthcare as a practice" {fidelity: "quotation", pinpoint: "p. 363"}
+        <+ [Practice norms are past values-improvement]
+        <+ [Not everything at once]
+    <+ <Deliberation decides>
+
+[Practice norms are past values-improvement]: "These values, which we can think of as the residue of former attempts at values-improvement, shape the institutions and values into which clinicians are socialised" {fidelity: "quotation", pinpoint: "p. 362", causes: {from: valuesimp, to: norms, sign: "+", on: being, basis: asserted, chain: improvement}}
+
+[Norms shape values-improvement]: Healthcare's normative expectations "profoundly shape acceptable specifications of" values-improvement, "and through this acceptable models of means-improvement". {fidelity: "compression", pinpoint: "p. 362", causes: [{from: norms, to: valuesimp, sign: which, basis: asserted, chain: improvement}, {from: norms, to: meansimp, sign: which, basis: asserted, via: valuesimp, chain: improvement}]}
+
+<Deliberation decides>: Prioritisation is required by healthcare's internal goods yet in tension with its ethical core, so whether a cost-saving reform betrays or better specifies those goods is for public deliberation. {fidelity: "compression", pinpoint: "pp. 362-363"}
+
+<Deliberation decides>
+
+(1) [Prioritisation not inimical]: "Prioritisation of care is not something inimical to the goods internal to the practice of healthcare, and in some form is arguably required by such goods." {fidelity: "quotation", pinpoint: "p. 362"}
+(2) [Rationing tension]: "the fact that care must inevitably be limited comes into tension with the responsiveness to human need and suffering that forms the ethical core of healthcare" {fidelity: "quotation", pinpoint: "p. 362"}
+    <+ [Limited care distresses good clinicians]
+(3) [Ward reform strains clinicians]
+(4) [Overtime holds quality up, unsustainably]
+(5) [Pressures break staff]
+(6) [Savings may improve care elsewhere]: "To the extent that the resulting cost savings allow improvements of patient care elsewhere, and the net result is an improvement in the overall quality of the care that the health system is able to provide to patients" {fidelity: "quotation", pinpoint: "p. 363", note: "The other side of the worked ward reform.", causes: [{from: reform, to: savings, sign: "+", basis: asserted, design: illustration, chain: staff}, {from: savings, to: careelse, sign: "+", basis: asserted, hedged: true, design: illustration, chain: staff}]}
+-- From consequences {uses: [1, 2, 3, 4, 5, 6]} --
+(7) [Public deliberation decides]: Where cost savings from a reform improve care elsewhere, "it will be a matter for public deliberation whether the reforms are in conflict with goods internal to the practice of healthcare, or rather allow for a better specification of them" {fidelity: "compression", pinpoint: "p. 363", note: "Drawn from the author's worked case of a ward where each clinician is given more patients. 'There may not be universal answers to such questions, and deliberative communities may find different equilibria.'", causes: {from: deliberation, to: valuesimp, sign: which, basis: asserted, chain: improvement}}
+
+[Pressures break staff]: Rising sick leave and turnover, the loss of a personal relationship with patients, workplace stress, and the moral distress of subordinating medicine's internal goods all contribute to staff moral injury and breakdown. {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 362-363", source: "staff moral injury and breakdown", note: "The text names each of these pressures (pp. 362-363) and names moral injury and breakdown as a cost a health system cannot price in, but does not say in words that each leads to it. The author confirms that this is what he intended the reader to understand, and that the words may not communicate it (James Wilson, 30 Sep 2026).", causes: [{from: turnover, to: injury, sign: "+", basis: asserted, chain: staff}, {from: relationship, to: injury, sign: "-", basis: asserted, chain: staff}, {from: stress, to: injury, sign: "+", basis: asserted, chain: staff}, {from: distress, to: injury, sign: "+", basis: asserted, chain: staff}]}
+
+[Ward reform strains clinicians]: "These reforms also make it more difficult for clinicians to establish a personal relationship with patients, and somewhat increase workplace stress." {fidelity: "quotation", pinpoint: "p. 363", note: "The text's worked supposition: a means-improvement that raises a ward's cost-effectiveness by giving each clinician more patients.", causes: [{from: reform, to: relationship, sign: "-", basis: asserted, design: illustration, chain: staff}, {from: reform, to: stress, sign: "+", basis: asserted, design: illustration, chain: staff}]}
+
+[Overtime holds quality up, unsustainably]: "Conscientious clinicians may respond to such pressures unsustainably by attempting to maintain quality of care through creeping increases of unpaid overtime." {fidelity: "quotation", pinpoint: "p. 363", causes: [{from: stress, to: overtime, sign: "+", basis: asserted, hedged: true, design: illustration, chain: staff}, {from: overtime, to: quality, sign: "+", on: persistence, basis: asserted, hedged: true, design: illustration, chain: staff}]}
+
+[Limited care distresses good clinicians]: "values at the heart of the social practice thus may make it morally distressing for clinicians to practice in a way that does not allow them to provide good enough care to their patients." {fidelity: "quotation", pinpoint: "p. 362", note: "Marked first as norms -> distress, which composed with the sidelining step into a route saying that sidelining the norms LOWERS distress -- the opposite of the text. The cause is practising without being able to give good enough care; the norms are what make it distressing, so they are the joint condition.", causes: {from: limitcare, to: distress, sign: "+", jointly: [norms], hedged: true, basis: asserted, chain: staff}}
+
+# Improvement as continual and iterative {isGroup: true}
+
+[Iterative improvement]: "we should shift our focus to means-improvement and values-improvement as iterative and often every-day processes by which health systems are improved" {fidelity: "quotation", pinpoint: "p. 363"}
+    <+ [Entangled]
+    <+ [Everyday means-improvement]
+    <+ <Democratic open-endedness>
+
+[Entangled]: "we should think of their relationship as one that is often entangled and reciprocal, rather than discrete and hierarchical" {fidelity: "quotation", pinpoint: "p. 360", note: "'their' = means-improvement and values-improvement. Means-improvement reconfigures flows to realise a system's values; values-improvement specifies and reconciles those values. Hedge kept: 'often'."}
+    <+ [Means presupposes values]: "Means-improvement thus presupposes an account of values-improvement" {fidelity: "quotation", pinpoint: "p. 361"}
+        <+ [Values set the target]
+        <+ [Disparities call for new means]
+        <+ [Success relative to values]: "A set of changes to a health system will count a successful means-improvement only if it allows the system as a whole to move in the direction of its values" {fidelity: "quotation", pinpoint: "p. 361"}
+    <+ [Means shapes values]: "Means-improvement also shapes values-improvement, both by opening up new possibilities, and by problematising existing values." {fidelity: "quotation", pinpoint: "p. 361", causes: {from: meansimp, to: valuesimp, sign: which, basis: example, chain: improvement}}
+        <+ [Trusted Research Environments]: "improvements in anonymisation technologies, and in building Trusted Research Environments make it far easier to do necessary research and planning using linked patient level data in a way that is compatible with strong protection of patient privacy" {fidelity: "quotation", pinpoint: "p. 361", causes: {from: tre, to: reconcile, sign: "+", on: possibility, basis: example, chain: improvement}}
+        <+ [Infeasible visions prompt rethink]: "if a system is unable adequately to deliver the vision specified by a process of values-improvement, even after diligent means-improvement, then this may lead to a requirement for further values-improvement" {fidelity: "quotation", pinpoint: "p. 361", causes: {from: infeasible, to: valuesimp, sign: "+", basis: asserted, hedged: true, chain: improvement}}
+
+[Values set the target]: "values-improvement specifies the target for means-improvement at any particular time" {fidelity: "quotation", pinpoint: "p. 361", causes: {from: valuesimp, to: meansimp, sign: which, basis: asserted, chain: improvement}}
+
+[Disparities call for new means]: "if a values-improvement process leads a health system to place greater emphasis on reducing health disparities between different ethnic groups, then this may require a series of means-improvements such as to the ways in which ethnicity data is coded and recorded" {fidelity: "quotation", pinpoint: "p. 361", causes: {from: valuesimp, to: meansimp, sign: which, hedged: true, basis: example, chain: improvement}}
+
+[Everyday means-improvement]: "we should move away from thinking of means-improvement as an unusual activity that can only be undertaken by highly skilled professionals in special circumstances, towards thinking of it as an everyday activity" {fidelity: "quotation", pinpoint: "p. 361"}
+    <+ [Uniform standards the exception]: "measuring and improving all component elements in a system against the same set of values and the same standards of efficiency (as in cost-effectiveness analysis) is the exception, rather than the rule in means-improvement" {fidelity: "quotation", pinpoint: "p. 361"}
+    <- [Disrupted flows]: "there are a variety of scenarios such as the outbreak of a pandemic, or responding to a major terrorist incident or natural disaster, where habitual flows are so disrupted or overwhelmed that means-improvement may not be feasible" #conceded {fidelity: "quotation", pinpoint: "p. 361", note: "Footnote 9: means-improvement presupposes a degree of stability that day-to-day public policy can assume but some scenarios lack."}
+
+<Democratic open-endedness>: If a democracy's goals must stay open to public debate, open-ended goals are a virtue of democratically controlled institutions, and improvement of both kinds should be expected to be continual. {fidelity: "compression", pinpoint: "p. 363"}
+
+<Democratic open-endedness>
+
+(1) [Democratic goals open-ended]: "There are reasons to think that a democracy’s goals must, as a matter of principle, remain open-ended and subject to public debate unless the goals are for specific reasons excluded from reconsideration." {fidelity: "quotation", pinpoint: "p. 363", note: "Hedged in the text, and the conclusion is introduced with 'If so'. The map keeps the hedge in the premise rather than asserting it outright."}
+(2) [Health goals set democratically]: The goals of healthcare institutions are set in part through "democratic deliberation" {fidelity: "compression", pinpoint: "p. 354", note: "From the roadmap: 'the role of democratic deliberation in setting the goals for healthcare institutions'."}
+-----
+(3) [Continual and iterative]: "open-endedness of goals is a virtue rather than a vice of democratically controlled institutions, and we should expect both means-improvement and values-improvement to be continual and iterative" {fidelity: "quotation", pinpoint: "p. 363"}
+
+[Continual and iterative]
+    <+ [Imaginative failure]: "It may be a sign of imaginative failure rather than argumentative success if it comes to seem that the goals of a health system have all been fully specified and no longer need further debate." {fidelity: "quotation", pinpoint: "p. 363"}
+        <+ [Dewey on fixations]: Dewey: "All ends and values that are cut off from the ongoing process become arrests, fixations." {fidelity: "compression", pinpoint: "p. 363", causes: {from: cutoff, to: fixation, sign: which, on: character, basis: testimony, chain: improvement}}
+    <- [Not everything at once]: "not everything can or should be called into question at the same time" #conceded {fidelity: "quotation", pinpoint: "p. 363", note: "The author's own limit on open-endedness: even if all democratic ends are up for renegotiation, they are not all open at once."}
+    <- [Static internal morality]
+
+[Static internal morality]: Some scholars suggest that medicine has an internal morality which "provides an objective and static basis for the goals of medicine, rather than these being subject to debate and change" #reported {fidelity: "compression", pinpoint: "p. 362", note: "Footnote 11, citing Pellegrino (2001); on such a view 'there may be purposes that are excluded by physicians’ integrity, such as participating in state executions' (Miller and Brody 1995)."}
+    <- [Practice goals change]: MacIntyre himself holds that "practices never have a goal or goals fixed for all time" {fidelity: "compression", pinpoint: "p. 362"}
+    <- [Allocation not settled]: Even if medicine has an internal morality, "it is not plausible to think that questions of how to allocate scarce healthcare resources will be settled either by the kind of social practice healthcare is, or by the internal morality of medicine" {fidelity: "compression", pinpoint: "p. 362", note: "The author grants the exclusion of some purposes ('Even if this is correct') and denies that it reaches questions of allocation, which is where the static-basis claim would bear on this paper."}

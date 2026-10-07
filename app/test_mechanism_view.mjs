@@ -657,7 +657,11 @@ function clashes(L) {
   chips.forEach((c, i) => { if (boxes.some(b => ov(c, b)) || heads.some(h => ov(c, h)) ||
                                 chips.some((d, j) => j !== i && ov(c, d))) n++; });
   const laneOf = {}; L.lanes.forEach(l => { laneOf[l.y] = l; });
-  const underHead = Object.values(L.nodes).filter(p => !L.lanes.some(l => p.y >= l.y + 24 && p.y + p.h <= l.y + l.h)).length;
+  // A box across levels (profile 1.4) runs through lanes by design: it may not START under a lane's
+  // heading or cover one, which is what the heading is to be kept clear of (Wilson 2023's flows).
+  const underHead = Object.values(L.nodes).filter(p => p.levels
+    ? !L.lanes.some(l => p.y >= l.y + 24 && p.y < l.y + l.h) || L.lanes.some(l => l.head && ov(p, l.head))
+    : !L.lanes.some(l => p.y >= l.y + 24 && p.y + p.h <= l.y + l.h)).length;
   return { chips: n, underHead };
 }
 check(same(clashes(L), { chips: 0, underHead: 0 }), "no chip sits on a box, an arrowhead or another chip, and no box on a lane's heading",
@@ -993,9 +997,12 @@ check(same(MV.foldable(FM).sort(), ["a", "b", "c", "d"]), "the foldable states a
 // J-PAL sample's other causes and dead ends stay drawn.
 for (const [dir, , SM] of SAMPLE_LAYOUTS) {
   const SE = MV.layout(SM, { folded: Object.fromEntries(MV.foldable(SM, "text").map(v => [v, true])), ends: true });
-  const role = v => (SM.states[v] || {}).role;
-  check(SE.edges.length > 0 && SE.edges.every(e => role(e.from) === "intervention" && role(e.to) === "outcome") && SE.setAside.length > 0,
-        `${dir.slice(0, 40)}: folded to its ends, only the intervention's routes to the outcomes are drawn, the rest set aside`,
+  // A chain starts from its interventions AND its conditions (profile 1.1): Bates has only the
+  // first, Wilson 2023 both. Roles may be a list.
+  const roles = v => [].concat((SM.states[v] || {}).role || []);
+  const starts = v => roles(v).some(r => r === "intervention" || r === "condition");
+  check(SE.edges.length > 0 && SE.edges.every(e => starts(e.from) && roles(e.to).includes("outcome")) && SE.setAside.length > 0,
+        `${dir.slice(0, 40)}: folded to its ends, only the routes from where the chain starts to the outcomes are drawn, the rest set aside`,
         JSON.stringify({ edges: SE.edges.map(e => e.from + ">" + e.to), aside: SE.setAside }));
 }
 {
@@ -1049,6 +1056,38 @@ mechanism:
 
 for (const [dir, SL] of SAMPLE_LAYOUTS)
   check(same(clashes(SL), { chips: 0, underHead: 0 }), `${dir.slice(0, 40)}: nothing sits on anything`, JSON.stringify(clashes(SL)));
+// A STATE ACROSS THREE LEVELS, planted: its box runs through the middle lane, so a state of that lane
+// in its column would sit under it (Wilson 2023's flows, 7 Oct 2026). Mutation: drop the column
+// insertion in layout -> the two boxes overlap.
+{
+  const SP = MV.model(graphOf.fromText(`===
+title: "A span through a lane"
+mechanism:
+    question: "What does the tide carry?"
+    levels: [top, mid, low]
+    actors:
+        t: {label: "Top", level: top}
+        m: {label: "Middle", level: mid}
+    states:
+        cause: {label: "The cause", actor: t, role: condition}
+        tide:  {label: "A tide across every level", levels: [top, mid, low]}
+        local: {label: "Something in the middle lane", actor: m, role: outcome}
+===
+
+[Ends]: The cause moves both.
+
+[A]: The cause raises the tide. {causes: {from: cause, to: tide, sign: "+"}}
+    +> [Ends]
+
+[B]: The cause raises the middle. {causes: {from: cause, to: local, sign: "+"}}
+    +> [Ends]
+`));
+  const SPL = MV.layout(SP), a = SPL.nodes.tide, b = SPL.nodes.local;
+  const apart = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+  check(apart && a.col !== b.col, "a state across three levels takes a column of its own, over no state of the lane it runs through",
+        JSON.stringify({ tide: a, local: b }));
+}
+
 // A CHIP SITS WHERE ITS LINE RUNS ALONE (27 Sep 2026). On the J-PAL sample 31 of 42 chips had
 // another line through them; the second placement pass brings it to 22. Mutation: skip the second
 // pass -> 31, and this fails.

@@ -1104,8 +1104,10 @@ check("the soft rule joins a soft break",
       dehyphenate("estab\u00ad lished", True), "established")
 check("  and leaves a real compound alone",
       dehyphenate("well-established", True), "well-established")
+# The compound's own hyphen at a line end stays, and since 7 Oct 2026 the gap closes too: "well-
+# established" had kept the line break's space, so "most cost- effective" never verified (Wilson 2023).
 check("  including one that falls at a line end",
-      dehyphenate("well- established", True), "well- established")
+      dehyphenate("well- established", True), "well-established")
 check("the blunt rule joins a line-end ASCII break",
       dehyphenate("estab- lished", False), "established")
 check("  and that is exactly why it must not be used on a soft document",
@@ -1298,6 +1300,99 @@ check("  and only a citation-shaped line above a licence is its imprint",
       [bool(IMPRINT_SHAPE.search(t)) for t in ("Ethics 130 ( July 2020): 514-529",
                                                "870064, and by a fellowship from the Foundation.")],
       [True, False])
+
+
+print("\nthe Wilson 2023 fixes (Medicine, Health Care and Philosophy, Springer; 7 Oct 2026)")
+from pdf_to_source import size_heading_map, LIST_TAB, near_right                    # noqa: E402
+
+# Inside the abstract only a heading opens the article; a long abstract line does not.
+# Mutation: drop `not in_abstract` -> the cut lands on the abstract's third line.
+def frow(y, text, size=10.0, small=False, page=351):
+    return (page, 51, y, 790.0, text, 0, small)
+FRONT = [frow(156, "James Wilson"), frow(188, "Accepted: 31 March 2023 / Published online: 12 May 2023", small=True),
+         frow(226, "Abstract"), frow(238, "Fair allocation of scarce healthcare resources has been much studied within philosophy and bioethics, but"),
+         frow(251, "focused on a narrow range of cases. The Covid-19 pandemic provided significant new challenges, making powerfully"),
+         frow(263, "visible the extent to which health systems can be fragile, and how scarcities within crucial elements of interlinked care"),
+         frow(375, "Keywords Operations research · Cost-effectiveness analysis"), frow(421, "Introduction", size=12.0)]
+FRONT += [frow(440 + 12 * k, "Body text of the introduction that runs on at an ordinary length here.") for k in range(60)]
+first, _last = find_boundaries(FRONT, 51, 10.0, [r[4] and (12.0 if r[4] == "Introduction" else 10.0) for r in FRONT])
+check("the article starts at its first heading, past a long abstract", FRONT[first][4], "Introduction")
+
+# A page number at one end of the running head's line is not a paragraph number.
+# Mutation: drop near_right -> the far head counts as "beside" and the number is kept.
+check("a running head across the page is not beside the page number",
+      near_right(dict(x0=51, x1=63, text="352"), dict(x0=516, text="J. Wilson")), False)
+check("  while a paragraph's first line is", near_right(dict(x0=51, x1=63, text="64"), dict(x0=80, text="Article 9")), True)
+
+# Headings in a larger face: one heading over two lines, a colon allowed; noise and table cells not.
+def srow(page, y, text):
+    return (page, 306, y, 790.0, text, 0, False)
+SZ = [srow(4, 140, "under the four assumptions."), srow(4, 159, "Four assumptions of cost-effectiveness based"),
+      srow(4, 171, "improvement"), srow(4, 190, "Using cost-effectiveness analysis as the sole factor"),
+      srow(6, 290, "they are rarely discussed."), srow(6, 309, "1.1 Healthcare improvement:"),
+      srow(6, 321, "A preliminary account"), srow(6, 340, "Regardless of how a health system is financed,"),
+      srow(7, 100, "260,522 - 20.8"), srow(7, 112, "Millers, bakers"), srow(7, 124, "Shopkeepers 15,347")]
+SZS = [10, 12, 12, 10, 10, 12, 12, 10, 10, 12, 10]
+BODY = [srow(9, 60 + 12 * k, "Ordinary body text of a later page that runs on at length.") for k in range(80)]
+heads, tails = size_heading_map(SZ + BODY, SZS + [10] * 80, 10.0)
+# Mutation: return ({}, set()) -> none found; drop stands_apart -> the table cell is a heading.
+check("larger-type headings are found, each over its two lines",
+      (sorted(heads), sorted(tails)),
+      (sorted(["Four assumptions of cost-effectiveness based", "improvement", "1.1 Healthcare improvement:",
+               "A preliminary account"]), ["A preliminary account", "improvement"]))
+check("  and a lone size, or a cell after a row of figures, is not a heading size",
+      size_heading_map(SZ[:4] + SZ[8:] + BODY, SZS[:4] + SZS[8:] + [10] * 80, 10.0)[0], {})
+
+# A list item set with a tab is a list item: not a heading, and a block of its own.
+# Mutation: drop LIST_TAB from to_blocks -> item 3 joins item 2, and "3." becomes a heading.
+LB = to_blocks([(357, 51, "2.\t Order all the interventions in order of cost-effectiveness."),
+                (357, 51, "3.\t In funding interventions, start by funding the most cost-"),
+                (357, 67, "effective, and keep moving to the right of the shelf."),
+                (357, 51, "In a partial approach, the cost-effectiveness of some is investigated.")],
+               dict(margin=51, display=None, paragraph=62, hanging=None), {}, None)
+check("a tab-set list item opens a block, takes its continuation, and is not a heading",
+      [(b["kind"], b["text"][:12]) for b in LB],
+      [("display", "2.\t Order al"), ("display", "3.\t In fundi"), ("display", "In a partial")][:2] + [("body", "In a partial")])
+check("  and its hanging lines are not a quotation",
+      mark_displayed_quotes([(357, 51, "Margin prose anchoring the page."), (357, 51, "More margin prose."),
+                             (357, 51, "3.\t In funding interventions, start by funding"),
+                             (357, 67, "the most cost-effective, and keep moving to"),
+                             (357, 67, "the right of the shelf until the money runs out.")]), set())
+
+# In a document broken with soft hyphens, a line-end ASCII hyphen is the word's own.
+# Mutation: drop the soft-mode rule -> "cost- effective"; drop the suspension guard -> "memory-and".
+check("a soft-hyphen document keeps a line-end hyphen and closes the gap",
+      dehyphenate("most cost- effective; signif\u00ad icant; memory- and justice-making", True),
+      "most cost-effective; significant; memory- and justice-making")
+
+# A heading's second line counts only after a heading.
+# Mutation: drop orphan_tail -> the same words in prose become "# capability approach?".
+OT = to_blocks([(128, 77, "3.7 Which notion of wellbeing is used in the"), (128, 150, "capability approach?"),
+                (219, 85, "The answer to that question flows from the description of economics."),
+                (219, 71, "the humanities. What can these heterodox economists expect from the"),
+                (219, 71, "capability approach?")],
+               dict(margin=71, display=None, paragraph=85, hanging=None),
+               {"3.7 Which notion of wellbeing is used in the": "x", "capability approach?": "x"}, None,
+               tails=frozenset({"capability approach?"}))
+check("a heading's continuation is a heading only straight after one",
+      [b["kind"] for b in OT], ["own-heading", "own-heading", "body"])
+
+
+# The author block at the foot of the first page is the journal's, not the note it sits under.
+# Mutation: return set() from author_block -> the name and address stay inside note 1.
+from pdf_to_source import author_block                                             # noqa: E402
+AB = [(351, 52, 610, 790.0, "[^1] As Norman Daniels put it, whenever a healthcare system denies", 0, True),
+      (351, 55, 631, 790.0, "some individuals who can plausibly claim they are owed them in", 0, True),
+      (351, 51, 668, 790.0, "Ann Author", 0, True), (351, 65, 678, 790.0, "a.author@example.ac.uk", 0, True),
+      (351, 51, 698, 790.0, "[^1]", 0, True),
+      (351, 65, 698, 790.0, "Department of Philosophy, An Imagined University,", 0, True),
+      (351, 65, 708, 790.0, "Some Street, AB1 2CD London, UK", 0, True),
+      (351, 311, 675, 790.0, "principle; losers as well as winners have plausible claims", 0, True),
+      (352, 51, 60, 790.0, "I use the concept of health system improvement", 0, False)]
+check("the first page's author block is set aside, and nothing of the note with it",
+      sorted(author_block(AB)), [2, 3, 4, 5, 6])
+check("  but only where a line is an email address and nothing else",
+      author_block([r for r in AB if "@" not in r[4]]), set())
 
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

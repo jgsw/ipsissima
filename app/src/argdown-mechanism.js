@@ -1605,6 +1605,19 @@ function layoutOnce(M, opts) {
   var range = {};
   ids.forEach(function (v) { range[v] = laneRange(v); });
   var spans = function (v) { return range[v][1] > range[v][0]; };
+  // ...AND THAT IS NOW MADE TRUE, not hoped for. A state of the column with a lane strictly inside
+  // the span would sit under the box, so the spanning state takes a column of its own and those
+  // after it move one to the right: Wilson 2023's `flows` and means-improvement, each across all
+  // three levels, sat on eleven boxes of the services lane (7 Oct 2026). Taken in order of column,
+  // so each insertion is made once, and a span with no state inside it keeps its column.
+  ids.filter(spans).sort(function (p, q) { return col[p] - col[q]; }).forEach(function (v) {
+    var c = col[v];
+    var under = ids.some(function (w) {
+      return w !== v && col[w] === c && range[w][0] > range[v][0] && range[w][0] < range[v][1]; });
+    if (!under) return;
+    ids.forEach(function (u) { if (u !== v && col[u] > c) col[u] += 1; });
+    col[v] = c + 1;
+  });
   var slots = {};
   var place = function (v, li) { var k = M.levels[li] + "|" + col[v]; (slots[k] = slots[k] || []).push(v); };
   M.levels.forEach(function (lv, li) {
@@ -1934,11 +1947,14 @@ function layoutOnce(M, opts) {
   /** A forward arrow from S to E, through the columns between: level across each column, in a gap,
    *  and a curve between, each meeting the next level so the whole reads as one line. `down` is
    *  true where it leaves from a box's top or foot, and so starts vertical. */
-  var routeThrough = function (S, E, c0, c1, vertStart) {
+  var routeThrough = function (S, E, c0, c1, vertStart, under) {
     var pts = [], prev = S;
     for (var c = c0 + 1; c < c1; c++) {
       var xl = xOfCol(c) - 8, xr = xOfCol(c) + BW + 8;
       var ideal = prev[1] + (E[1] - prev[1]) * (xl - prev[0]) / Math.max(1, E[0] - prev[0]);
+      // `under`: below everything in the column, where the gap nearest the straight line is taken
+      // already -- see the stem router.
+      if (under) ideal = (colSpan[c] || []).reduce(function (m, sp) { return Math.max(m, sp[1] + 10); }, ideal);
       var yy = crossAt(c, ideal);
       pts.push([xl, yy], [xr, yy]);
       prev = [xr, yy];
@@ -2285,12 +2301,12 @@ function layoutOnce(M, opts) {
   });
   var taken = gatesAt.slice();
   // A stem heading right goes through the columns between as an arrow does.
-  var stemRouter = function (n, S, T) {
+  var stemRouter = function (n, S, T, under) {
     var cT = 0;
     for (var c = 0; c <= maxRank; c++) if (xOfCol(c) - 8 <= T[0]) cT = c;
     if (T[0] <= xOfCol(cT) + BW + 8 && T[0] >= xOfCol(cT) - 8) cT = cT; else cT = cT + 1;
     if (cT - n.col < 2) return null;
-    return routeThrough(S, T, n.col, cT, false);
+    return routeThrough(S, T, n.col, cT, false, under);
   };
   edges.forEach(function (e) { stemsOf(e, shown, taken, stemRouter, lanes); });
   var chipFails = placeChips(edges, shown, lanes);
@@ -2547,6 +2563,12 @@ function stemsOf(e, shown, taken, router, lanes) {
     if (router && sx + 40 < T[0]) {
       var rs = router(n, [sx, sy], T);
       if (rs) { if (joins) rs[rs.length - 1][2] = [T[0] - ux * 26, T[1] - uy * 26]; cands.push(rs); }
+      // AND ONE UNDER EVERYTHING BETWEEN. The gap nearest the straight line may be one the arrow
+      // itself takes: Wilson 2023's gap -> waiting runs over the top of `flows`, a box the chart's
+      // whole height, and first-come first-served's stem, joining it from below, could go over only
+      // by crossing it (M5) and through only by crossing the box (M2). Under it crosses neither.
+      var ru = router(n, [sx, sy], T, true);
+      if (ru) { if (joins) ru[ru.length - 1][2] = [T[0] - ux * 26, T[1] - uy * 26]; cands.push(ru); }
     }
     var best = cands[0], bestHits = Infinity;
     // A blocker's stem stops short of the arrow on a bar, so it must not reach it through the box
@@ -2554,16 +2576,19 @@ function stemsOf(e, shown, taken, router, lanes) {
     var obst = blocks || moderates || rests ? others.concat([e.to]) : others;
     cands.forEach(function (c) {
       var hits = 0, pts = pathPts({ segs: c }, 20);
-      // The audit's own test (M2), so what is chosen here is what passes there.
-      obst.forEach(function (v) { if (polyHitsRect(pts, shown[v], 2)) hits += 10; });
+      // The audit's own test (M2), so what is chosen here is what passes there. A HARD RULE OUTWEIGHS
+      // ANY LENGTH: at 10 a box, the way round Wilson 2023's `flows` -- a box the chart's whole
+      // height, which a stem can only pass below -- cost more in length than going through it.
+      obst.forEach(function (v) { if (polyHitsRect(pts, shown[v], 2)) hits += 1000; });
       // Among ways equally clear, the shorter (M8): a stem looped up over the whole chart where a
       // way through the column gaps was clear too (Reason's high-reliability organizations).
       for (var li = 1; li < pts.length; li++) hits += Math.hypot(pts[li][0] - pts[li - 1][0], pts[li][1] - pts[li - 1][1]) / 400;
-      // A gate's input that crosses the arrow's own line, or another input, on its way in costs as a
-      // box does (M5).
+      // A gate's input that crosses the arrow's own line, or another input, on its way in breaks M5,
+      // and costs more than a box: where no way is clear of both, a stem through a box was the old
+      // choice and stays it (the private research maps: 2 crossings at 20 a box's 10; 1 now).
       if (joins) {
-        hits += 20 * crossCount(pts.slice(0, -2), mainPts.slice(0, -2));
-        e.stems.forEach(function (o) { if (o.joins) hits += 20 * crossCount(pts.slice(0, -2), o.pts.slice(0, -2)); });
+        hits += 2000 * crossCount(pts.slice(0, -2), mainPts.slice(0, -2));
+        e.stems.forEach(function (o) { if (o.joins) hits += 2000 * crossCount(pts.slice(0, -2), o.pts.slice(0, -2)); });
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });

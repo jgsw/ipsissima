@@ -95,6 +95,21 @@ check("  and a converter's one-line comment does not separate a paragraph from i
       r[13], (10, 11))
 check("nothing before the first marker has a page", r[0], None)
 
+print("\nthe abstract, kept in the front matter, is on the first page")
+ABS = ["---", "abstract: >-", "  Fair allocation of scarce healthcare resources has been much studied within philosophy",
+       "  and bioethics, but analysis has focused on a narrow range of cases.", "---", "",
+       "<!-- p.351 begins here -->", "", "# Introduction", "",
+       "To say that a resource is scarce is to say that there is not enough of it." + PROSE, "",
+       "<!-- p.352 begins here -->", "", "A paragraph of the second page and nothing more." + PROSE, ""]
+Path(root, "a.md").write_text("\n".join(ABS), encoding="utf-8")
+ADOC = {"statements": {
+    "abs": claim('"analysis has focused on a narrow range of cases"', "p. 351", chapter="a.md"),
+    "wrong": claim('"analysis has focused on a narrow range of cases"', "p. 352", chapter="a.md"),
+}}
+am, _c, _u = prov.pinpoint_check(ADOC, root, prov.check_quotations(ADOC, root))
+# Mutation: drop the first-marker rule -> "abs" is reported as on no page.
+check("a quotation of the front-matter abstract may cite the first page", [m["title"] for m in am], ["wrong"])
+
 print("\nthe check")
 quotes = prov.check_quotations(DOC, root)
 mism, checked, unpaged = prov.pinpoint_check(DOC, root, quotes)

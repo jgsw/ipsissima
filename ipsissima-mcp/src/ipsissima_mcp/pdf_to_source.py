@@ -511,6 +511,16 @@ def page_offset(found, sheet_count):
     return offset, sorted(i for i, n in found.items() if n - i != offset)
 
 
+def near_right(l, o, gap=120.0):
+    """Is `o` close enough to the right of `l` to be the text a paragraph number stands beside?
+    A page number set at one end of the running head's line has the head far across the page --
+    "352" at x0 51 and "J. Wilson" at 516 (Wilson 2023) -- and was kept as a paragraph number,
+    glued to the first paragraph of every verso page. A margin number's paragraph starts within
+    a few ems of it."""
+    right_edge = l.get("x1", l["x0"] + 6 * len(l.get("text", "")))
+    return o["x0"] - right_edge < gap
+
+
 def detect_furniture(pages, extra=()):
     """Running heads, page numbers and the download footer -- as predicates, not a fixed list.
 
@@ -554,7 +564,7 @@ def detect_furniture(pages, extra=()):
             # line to the right of it, on the same line. That is the whole distinction, and the
             # geometry to see it is already here.
             beside = any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
-                         and o["x0"] > l["x0"] for o in lines)
+                         and o["x0"] > l["x0"] and near_right(l, o) for o in lines)
             # A HEAD SET ONCE IS THE PAGE'S FIRST LINE. A section heading in capitals that opens a
             # page sits UNDER that page's running head, in the same top band: Sewell's "VARIETIES OF
             # STRUCTURES" and "CONCLUSION", each below "American Journal of Sociology" or "The
@@ -571,7 +581,7 @@ def detect_furniture(pages, extra=()):
                 # as the footer that repeats on every page. Text beside it on the same line says
                 # it is a paragraph number, exactly as at the top.
                 if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
-                       and o["x0"] > l["x0"] for o in lines):
+                       and o["x0"] > l["x0"] and near_right(l, o) for o in lines):
                     continue
                 bottoms[re.sub(r"[\d.]+", "#", l["text"])] += 1
     repeated = {k for k, n in bottoms.items() if n >= max(2, len(pages) * 0.6)}
@@ -1184,6 +1194,120 @@ def title_heading_map(rows, sizes, body_size, taken=()):
     return found
 
 
+#: A list item the typesetter set with a TAB after its mark: "3.\t In funding interventions ...".
+LIST_TAB = re.compile(r"^(?:\(?\d{1,2}[.)]|\(?[a-z]\)|[\u2022\u25cf\u25aa\u25e6\u2013-])\t")
+
+
+def size_heading_map(rows, sizes, body_size, taken=()):
+    """({first line: text}, {continuation lines}) for headings set in LARGER TYPE than the body.
+
+    LEFT TO THE CALLER, AND THE AUTOMATIC ROUTE HAD NONE. `caps_heading_map` takes capitals only,
+    so a paper that sets its headings in a larger bold face came out with none: Wilson 2023's
+    "Introduction", "Four assumptions of cost-effectiveness based improvement" and the rest, 12pt
+    Myriad Bold over a 10pt Times body, all ran into the prose (Medicine, Health Care and
+    Philosophy 2023; 7 Oct 2026). A line is a heading line where it is set between a point and a
+    half larger than the body and less than twice it, short, and not a sentence; consecutive such
+    lines are one heading, which may wrap or be justified into fragments on one line. A size
+    counts only where at least two headings use it, so a title or a lone pull-quote does not."""
+    def cand(i):
+        page, _x, _y, _h, text, _c, small = rows[i]
+        t = (text or "").strip()
+        sz = sizes[i] if i < len(sizes) else 0
+        return (not small and body_size and body_size + 1.5 <= sz < body_size * 2 and t
+                and len(t) <= 90 and re.search(r"[A-Za-z]{2}", t) and not re.search(r"[.,;]$", t)
+                and "://" not in t and "@" not in t and t not in taken)
+    blocks, cur = [], []
+    for i in range(len(rows)):
+        if not cand(i):
+            if cur:
+                blocks.append(cur)
+            cur = []
+            continue
+        if cur:
+            j = cur[-1]
+            same = (rows[j][0] == rows[i][0] and rows[j][5] == rows[i][5]
+                    and abs(sizes[j] - sizes[i]) < 0.3 and 0 <= rows[i][2] - rows[j][2] <= 1.8 * sizes[i])
+            if not same:
+                blocks.append(cur)
+                cur = []
+        cur.append(i)
+    if cur:
+        blocks.append(cur)
+    # A HEADING STANDS BETWEEN PARAGRAPHS: what is before it has ended (or it opens a page), and
+    # what follows it opens with a capital. And a size worn by many lines is not a heading size
+    # but a scan's measuring noise: on Ó Gráda's OCR'd pages, fragments mid-sentence measured
+    # large enough to pass, and "In # speeches to" was the result (Irish Famine, 2001).
+    def stands_apart(b):
+        first, last = b[0], b[-1]
+        before = rows[first - 1] if first else None
+        after = rows[last + 1] if last + 1 < len(rows) else None
+        prior = (before[4] or "").strip() if before else ""
+        # A line of figures has not ended a paragraph: it is a table row, and the cell after it --
+        # Ó Gráda's "Millers, bakers" -- is no heading. A note number closing a sentence is fine.
+        wordy = len(re.findall(r"[A-Za-z]", prior)) >= 0.6 * max(1, len(prior.replace(" ", "")))
+        ended = (before is None or before[0] != rows[first][0]
+                 or re.search(r"[.?!:;\"'\u201d\u2019)\]*]$", prior)
+                 or (re.search(r"\d$", prior) and wordy))
+        opens = after is None or re.match(r"[A-Z0-9\"'\u201c\u2018(\[]", (after[4] or "").strip())
+        return bool(ended and opens)
+    worn = Counter(round(sz * 2) / 2 for sz, r in zip(sizes, rows) if not r[6])
+    lines = sum(worn.values()) or 1
+    blocks = [b for b in blocks if stands_apart(b)
+              and worn[round(sizes[b[0]] * 2) / 2] <= 0.06 * lines]
+    per_size = Counter(round(sizes[b[0]] * 2) / 2 for b in blocks)
+    heads, tails = {}, set()
+    for b in blocks:
+        if per_size[round(sizes[b[0]] * 2) / 2] < 2:
+            continue
+        for k, i in enumerate(b):
+            t = rows[i][4].strip()
+            heads[t] = t
+            if k:
+                tails.add(t)
+    return heads, tails
+
+
+EMAIL_LINE = re.compile(r"^\S+@\S+\.[A-Za-z]{2,}$")
+AFFILIATION = re.compile(r"\b(?:Department|Dept\.?|University|Universit\w+|Faculty|Institute|School|College|"
+                         r"Centre|Center|Street|Road|Avenue|Campus)\b|\b[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}\b|\b\d{5}\b")
+
+
+def author_block(rows):
+    """Row indices of the AUTHOR BLOCK at the foot of an article's first page: name, email,
+    department and address, set among the footnotes.
+
+    SPLICED INTO FOOTNOTE 1 IT READ AS THE NOTE'S WORDS. Springer sets the author's name, email
+    address, a note marker, department and street below the first note, in the same small type,
+    and the note zone
+    took it in: Daniels's quotation in note 1 came out broken by the author's name and address
+    (Wilson 2023; 7 Oct 2026). The block is anchored on a line that is an email address and
+    nothing else -- no sentence is one -- and runs from the short name line above it through bare
+    note markers and address lines below, on the article's first page and in small type only."""
+    if not rows:
+        return set()
+    first = rows[0][0]
+    out = set()
+    for i, (page, _x, _y, _h, text, _c, small) in enumerate(rows):
+        if page != first:
+            break
+        if not (small and EMAIL_LINE.match((text or "").strip())):
+            continue
+        out.add(i)
+        j = i - 1
+        if j >= 0 and rows[j][0] == first and rows[j][6] and re.fullmatch(r"(?:[A-Z][\w.'-]*\s?){1,5}", rows[j][4].strip()):
+            out.add(j)
+        k, extra = i + 1, 0
+        while k < len(rows) and rows[k][0] == first and rows[k][6] and extra < 4:
+            t = rows[k][4].strip()
+            if re.fullmatch(r"(?:\[\^\d+\]|\d{1,2}|[*\u2020\u2021])", t) or AFFILIATION.search(t):
+                out.add(k)
+                extra += 1
+                k += 1
+                continue
+            break
+    return out
+
+
 def find_boundaries(rows, margin, body_size, sizes):
     """(first, last) row indices of the ARTICLE, front and back matter excluded.
 
@@ -1233,9 +1357,18 @@ def find_boundaries(rows, margin, body_size, sizes):
         last = i
         break
     # ---- front matter: only where the paper announced some
-    seen_front = False
+    seen_front = in_abstract = False
     for i, (printed, x0, y0, height, text, _col, small) in enumerate(rows[:160]):
         t = text.strip()
+        # INSIDE THE ABSTRACT, ONLY A HEADING OPENS THE ARTICLE. A full-width abstract's lines are
+        # long, and the long-row fallback below took the third line of Wilson's as the article's
+        # first, keeping 33 words of the abstract and starting the body mid-sentence (Medicine,
+        # Health Care and Philosophy 2023). The abstract ends at the next label (Keywords) or a heading.
+        if ABSTRACT_HEAD.match(t) and t[:1].isupper():
+            seen_front = in_abstract = True
+            continue
+        if in_abstract and FRONT_MATTER.match(t) and re.sub(r"^\W+", "", t)[:1].isupper():
+            in_abstract = False
         # A LABEL IS CAPITALISED. "Received", "Accepted", "Keywords" head their lines; a line of
         # prose that merely begins with the word does not -- Olick's "accepted Durkheim's critique
         # of philosophy" opened a front-matter cut on p. 335 that ran to the next heading and took
@@ -1255,7 +1388,7 @@ def find_boundaries(rows, margin, body_size, sizes):
         # "1. Introduction" is neither; it is a heading all the same, and on a modern article it
         # is usually the first one.
         if (looks_like_heading(t, x0, margin, sizes[i], body_size)
-                or NUMBERED.match(t) or len(t) > 120):
+                or NUMBERED.match(t) or (len(t) > 120 and not in_abstract)):
             first = i
             break
     # A CUT THAT LEAVES (ALMOST) NOTHING IS NOT A CUT. Both ends are guesses from a vocabulary,
@@ -1301,6 +1434,11 @@ def mark_displayed_quotes(flow):
         margin = min(heavy) if heavy else xs.most_common(1)[0][0]
 
         def close(run):
+            # A LIST ITEM'S HANGING LINES ARE NOT A QUOTATION: they follow the item's own line,
+            # set with a tab, at the indent the item's text keeps (Wilson 2023, p. 357).
+            if run and run[0] > 0 and flow[run[0] - 1][0] == flow[run[0]][0] \
+                    and LIST_TAB.match(flow[run[0] - 1][2]):
+                return
             if len(run) >= 2 and any(flow[i][2][:1].islower() for i in run[1:]):
                 marked.update(run)
 
@@ -1427,7 +1565,7 @@ def split_at_pages(block):
 
 
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
-              caps_headings=None, margins=None, step=None):
+              caps_headings=None, margins=None, step=None, tails=frozenset()):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
 
     Four rules beyond the bands, each of which was a bug first:
@@ -1449,8 +1587,13 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
     """
     blocks = []
     expected = 1                      # the next footnote number the sequence is looking for
-    for row in rows:
+    for at, row in enumerate(rows):
         page, x0, text = row[0], row[1], row[2]
+        # A NUMBERED LINE SET WITH A TAB IS A LIST ITEM, not a heading: Culyer's "3.\t In funding
+        # interventions, start by funding the most cost-" became "# 3 In funding ..." (Wilson 2023,
+        # p. 357). Not "runs on in lower case": a wrapped heading does that too -- Robeyns's "2.9 The
+        # modular view of the capability account:" / "a summary".
+        runs_on = bool(LIST_TAB.match(text))
         # A fourth element flags a DISPLAYED-QUOTE line (mark_displayed_quotes); triples
         # still pass, so every older caller and test reads exactly as before.
         quote = len(row) > 3 and row[3]
@@ -1497,12 +1640,22 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         if not notes and blocks and blocks[-1].pop("awaits_text", False):
             _extend(blocks[-1], page, text)
             continue
-        if (text in own_headings or (end_marker and end_marker in text)
-                or (number_headings and NUMBERED.match(text))):
+        # A HEADING'S CONTINUATION LINE COUNTS ONLY AFTER A HEADING. The maps are keyed by text,
+        # and "capability approach?" -- the second line of Robeyns's heading 3.7 -- is also a line
+        # of prose ninety pages on, which became "# capability approach?".
+        orphan_tail = text in tails and not (blocks and blocks[-1]["kind"] == "own-heading")
+        if ((text in own_headings and not orphan_tail) or (end_marker and end_marker in text)
+                or (number_headings and NUMBERED.match(text) and not runs_on)):
             # A heading has to START a block. Recognising one after assembly is too late: these
             # sit at the margin like a continuation line, so the indent rule swallows them into
             # the paragraph above and there is nothing left to promote.
             kind = "own-heading"
+        elif not notes and LIST_TAB.match(text):
+            # A LIST ITEM SET WITH A TAB starts a block of its own, as a display does, so the next
+            # item and the paragraph after the list start their own too: Wilson's UHC-cube items
+            # ran "2. Reduce cost-sharing and fees. 3. Include more services within the plan. The
+            # UHC cube is ..." (p. 356). Its lower-case continuation still joins it.
+            kind = "display"
         elif BYLINE.match(text.strip()):
             # A BYLINE STANDS ALONE. Kept in the body once the cover is skipped, "By EDMUND L.
             # GETTIER" ran into the article's first sentence (Analysis 1963, through JSTOR).
@@ -1626,7 +1779,11 @@ def dehyphenate(text, soft, keep=None, words=None, dashes=None):
     """
     if soft:
         text = re.sub(r"\u00ad\s*", "", text)
-        return text
+        # AND THE ASCII HYPHEN AT A LINE END IS THE WORD'S OWN, so it stays and the gap closes:
+        # "most cost- effective", "distribution- focused" (Wilson 2023, which breaks its lines
+        # with soft hyphens and so sets a compound's own hyphen at a line end as it is).
+        # A SUSPENDED HYPHEN keeps its space: "memory- and justice-making" (Orjuela and Parashar 2024).
+        return re.sub(r"(\w)-[ \t\n]+(?=[^\W\d_])(?!(?:and|or|nor|to)\b)", r"\1-", text)
     # NEVER BEFORE A DIGIT. A word is not hyphenated before a number; an identifier or a page range
     # is: "grant BNS-870064" and "pp. 118-22" broken at a line end were welded to "BNS870064" and
     # "11822" (Sewell, AJS 1992).
@@ -1964,7 +2121,7 @@ def convert(cfg):
                                       )]
         beside = {id(l) for l in lines
                   if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * (l.get("size") or 10)
-                         and o["x0"] > l["x0"] for o in lines)}
+                         and o["x0"] > l["x0"] and near_right(l, o) for o in lines)}
         # THE COPYRIGHT BLOCK LATCH. An open-access first page carries a licence block --
         # `doi:… © The Author(s) … Creative Commons …`, then the journal-volume-page line --
         # printed ONCE, so the repeats detector cannot see it, and set small, so it rode
@@ -2067,6 +2224,13 @@ def convert(cfg):
             "  Name them in the paper's Config, e.g. bands={'display': 77, 'paragraph': 88},\n"
             "  after looking at which is a displayed block and which starts a paragraph.")
 
+    # THE AUTHOR BLOCK on the first page is the journal's, not the article's text: see author_block.
+    drop_author = author_block(body)
+    if drop_author:
+        dropped["author block"] += len(drop_author)
+        body = [r for i, r in enumerate(body) if i not in drop_author]
+        body_sizes = [z for i, z in enumerate(body_sizes) if i not in drop_author]
+
     # Footnotes: a numbered line low on the page, and everything under it on that page.
     if cfg.keep_footnotes_inline:
         flow, notes = [(p, x, t) for p, x, _y, _h, t, _c, _s in body], []
@@ -2094,8 +2258,10 @@ def convert(cfg):
     # them was emitted with a `#`.
     headings_now = dict(cfg.own_headings or {})
     headings_now.update(auto_caps)
-    sub_heads = {}
+    sub_heads, size_tails = {}, set()
     if not cfg.own_headings:
+        size_heads, size_tails = size_heading_map(body, body_sizes, doc_size, set(headings_now))
+        headings_now.update(size_heads)
         sub_heads = title_heading_map(body, body_sizes, doc_size, set(headings_now))
         headings_now.update(sub_heads)
     # Displayed quotations, marked per page BEFORE assembly (G6's structure half): a run of
@@ -2107,7 +2273,7 @@ def convert(cfg):
     flow = [(p, x, t, i in qmarks) for i, (p, x, t) in enumerate(flow)]
     blocks = finish(to_blocks(flow, bands, headings_now, cfg.end_marker,
                               number_headings=cfg.number_headings, caps_headings=auto_caps,
-                              margins=page_margins, step=par_step),
+                              margins=page_margins, step=par_step, tails=size_tails),
                     cfg.repairs, applied, soft, dashes=(dashes := []))
     note_blocks = finish(to_blocks(notes, bands, {}, None, notes=True),
                          cfg.repairs, applied, soft)
@@ -2131,6 +2297,9 @@ def convert(cfg):
         # `to_blocks` joined. That is known there and nowhere else, so it is recorded there.
         mo = cfg.number_headings and not b.get("numbered_para") and NUMBERED.match(b["text"])
         if mo:
+            if b["page"] not in seen:          # the page's marker before its heading, as below
+                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
+                seen.add(b["page"])
             out.append(f"# {mo.group(1)} {mo.group(2)}".rstrip())
             used.append(mo.group(0))
             continue
@@ -2143,6 +2312,11 @@ def convert(cfg):
                 seen.add(b["page"])
             # ONE HEADING SET ON TWO LINES is one heading: "THE DUALITY OF STRUCTURE: A CRITIQUE
             # AND" / "REFORMULATION OF GIDDENS'S THEORY" printed as two (Sewell, AJS 1992, p. 4).
+            # And a larger-type heading's continuation lines, which the detector has named.
+            if b["text"] in size_tails and out and out[-1].startswith("#"):
+                out[-1] = out[-1] + ("" if out[-1].endswith("-") else " ") + head
+                used[-1] = out[-1].lstrip("# ")
+                continue
             if (b["text"] in auto_caps and out and prev_caps is not None
                     and HEADING_RUNS_ON.search(prev_caps)):
                 out[-1] = out[-1] + " " + head

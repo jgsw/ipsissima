@@ -2255,6 +2255,13 @@ def pinpoint_check(doc, source_root, quote_results=None):
         if _NOTE_PIN.search(str(pin)) and (info.get("note") is not None
                                            or _under_notes_heading(lines, where)):
             continue
+        # THE ABSTRACT IS PRINTED ON THE FIRST PAGE. A converter keeps it in the front matter, above
+        # every page marker, so its words were "on no page" and a claim quoting it was queried for
+        # citing p. 351 (Wilson 2023, whose abstract is now kept whole; 7 Oct 2026).
+        first_mark = next((i for i, raw in enumerate(lines) if _PAGE_MARK.search(raw)), None)
+        if first_mark is not None and where - 1 < first_mark:
+            if int(_PAGE_MARK.search(lines[first_mark]).group(1)) in pins:
+                continue
         rng = ranges[where - 1]
         mismatches.append(dict(title=title, chapter=chapter, pinpoint=str(pin), cited=pins,
                                line=where, pages=list(rng) if rng else None))

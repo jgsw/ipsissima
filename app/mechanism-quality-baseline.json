@@ -68,5 +68,40 @@
   "chipCrossings": 72,
   "crossings": 322,
   "detours": 0
+ },
+ "bridges": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "process": {
+  "chipCrossings": 0,
+  "crossings": 1,
+  "detours": 0
+ },
+ "reasoning": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "relations": {
+  "chipCrossings": 1,
+  "crossings": 1,
+  "detours": 0
+ },
+ "stocks": {
+  "chipCrossings": 0,
+  "crossings": 2,
+  "detours": 0
+ },
+ "transfer": {
+  "chipCrossings": 8,
+  "crossings": 0,
+  "detours": 0
+ },
+ "wilson-2023-health-system-good": {
+  "chipCrossings": 545,
+  "crossings": 2805,
+  "detours": 78
  }
 }

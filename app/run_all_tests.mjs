@@ -117,6 +117,8 @@ const SUITES = [
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),
                                                 "--self-test"]],
   ["the PDF probe",              PY, [path.join(MCP, "eval", "probe_pdf.py"), "--self-test"]],
+  // The comparison only: a full run converts every PDF twice and is for a person to read.
+  ["extraction regression (self-test)", PY, [path.join(MCP, "eval", "extraction_regression.py"), "--self-test"]],
   // Last, because it is the slow one and the only one that measures how the maps LOOK.
   ["map quality vs baseline",    "node", [path.join(HERE, "map_quality.mjs")]]
 ];
