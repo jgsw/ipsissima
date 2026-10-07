@@ -12,6 +12,15 @@ The licence rule is `samples/`'s rule, for the same reason: a fixture carries a 
 document. Public domain, licensed for redistribution, or ours. What cannot be published is named
 in `fixtures/private-corpus.json` instead — see `docs/CORPUS.md`.
 
+## Approved and expected
+
+`approved/` holds each fixture's converted output as last approved, and `expected/` what each
+paper prints -- its headings, notes, abstract and sentences that must survive -- with the ledger of
+flaws accepted in it. The test suite holds the converter to both (`extraction_regression.py
+--public`); see "Extraction regression" in `docs/CORPUS.md`. A change to the converter that
+changes an approved output is approved again with
+`extraction_regression.py --public --save-golden fixtures/ingest/approved`, after reading it.
+
 ## What a fixture is for
 
 Coverage of the **failure modes**, which are format-specific and mostly known:

@@ -152,6 +152,42 @@ better, so a person reads the differences. Run it before committing any change t
 again. The approved outputs carry whole articles, so for anything but the public fixtures they
 belong in the non-GitHub folder.
 
+**Expectations make a difference a verdict.** An approved output says what the converter gave,
+not what the paper prints, so every difference from it still needed reading. An expectations file
+says what the paper prints -- its headings, the length of its abstract, how many notes it has, and
+a few sentences that must come through whole -- written once by someone who read the paper, and
+every run then says, item by item, **FIXED** or **BROKE** instead of "differs". A BROKE fails the
+run in any mode. The format and the reasons are in `ipsissima-mcp/eval/expectations.py`.
+
+**The ledger of accepted defects** sits in the same file, as `[[defect]]` entries: a flaw that is
+understood and left -- Reichling's interleaved columns, Waldron's damaged running head, Robeyns's
+footnotes set with a tab and a BEL character -- is reported as *known* instead of being reviewed
+again, and the run says when it goes away. An entry names exactly what it excuses: a missing or
+extra heading (or a list of them), a note count, an abstract length, a damaged sentence, or text
+the flaw leaves in the output (`shows`).
+
+Writing them:
+
+```bash
+python3 ipsissima-mcp/eval/extraction_regression.py --draft-expectations DIR   # a draft per paper
+python3 ipsissima-mcp/eval/expectations_edit.py FILE.toml PATCH.json APPROVED.md
+```
+
+A draft is today's output, marked `status = "draft"`: its sentences are taken only where the
+PDF's own text layer has the same letters, and never with digits, mathematics or a cut word in
+them. It is not an expectation until it has been read against the paper; `expectations_edit.py`
+applies what the reading found and measures the ledger entries against the approved output, so
+what is wrong is the comparison's and only its description is the reader's. A count that cannot
+be established from the page -- the notes of a noisy scan -- is left out rather than guessed.
+
+**The public fixtures are a test.** Their approved outputs are committed in
+`fixtures/ingest/approved/` and their expectations in `fixtures/ingest/expected/`, and the test
+suite runs `extraction_regression.py --public`. Approved outputs are exact to one version of
+PyMuPDF (recorded in `approved/index.json`); under another, their differences are printed, not
+failed, and the expectations decide. The private corpus's approved outputs and expectations live
+in the non-GitHub folder (`extraction-golden/`, `extraction-expectations/`, the latter through
+`IPSISSIMA_EXPECTATIONS`).
+
 **The maps are an answer key.** Every reconstruction quotes its source, and every quotation was
 checked against the text, so a quotation that verified with the old converter and fails with the
 new one is damage that no reading of a difference has to judge. `--maps` finds each map whose
@@ -166,6 +202,22 @@ python3 ipsissima-mcp/eval/extraction_regression.py --maps
 
 A map made before a fix may quote the damage the fix mended -- "sub- elements", "first- come" --
 and lose that quotation: the loss is the map's to repair, not the converter's.
+
+### Growing the corpus by class
+
+`ipsissima-mcp/eval/probe_library.py` probes every PDF in the Zotero library -- text layer,
+columns, lost words -- and classes each by what decides how it converts: its publisher (from the
+DOI or the page's own signature), scan or born-digital, one column or two, footnotes or endnotes,
+and whether it carries an outline. `--pick N` then takes N from every class the library holds at
+least three of, so the regression list stands for the library rather than for the papers that
+happened to be mapped:
+
+```bash
+python3 ipsissima-mcp/eval/probe_library.py --out probe.tsv
+python3 ipsissima-mcp/eval/probe_library.py --out probe.tsv --pick 2 --exclude current-list.txt
+```
+
+The probe and the picks name copyrighted papers, so both belong in the non-GitHub folder.
 
 ### Headings from the PDF's outline
 
@@ -183,6 +235,12 @@ each a bug first:
   section's place (Orjuela and Parashar 2024);
 - a heading set in a side column, level with the text, falls inside a paragraph by height, and
   the paragraph keeps its words: the heading follows it (Rogowski et al., Lancet 2025).
+- the outline and the page disagree about section numbers -- "Introduction" over a printed
+  "1 Introduction" (Elsevier), Wiley's "1 | INTRODUCTION" over three rows, "1", "|" and the
+  title -- so an entry is matched with its number first and without it only when that fails
+  (an unnumbered mention of a sub-section above it must not take it), and a number or bar set
+  as a row of its own on the heading's line joins the heading (Marchionni and Reijula 2019,
+  Arya 2021).
 
 The heading is printed as the page prints it, at the outline's depth relative to its top level.
 

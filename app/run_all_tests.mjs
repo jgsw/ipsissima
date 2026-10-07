@@ -119,6 +119,9 @@ const SUITES = [
   ["the PDF probe",              PY, [path.join(MCP, "eval", "probe_pdf.py"), "--self-test"]],
   // The comparison only: a full run converts every PDF twice and is for a person to read.
   ["extraction regression (self-test)", PY, [path.join(MCP, "eval", "extraction_regression.py"), "--self-test"]],
+  // The public fixtures against their approved outputs and their expectations: what a converter
+  // change does to the five PDFs anyone can check, judged FIXED or BROKE. See docs/CORPUS.md.
+  ["extraction regression (public fixtures)", PY, [path.join(MCP, "eval", "extraction_regression.py"), "--public"]],
   // Last, because it is the slow one and the only one that measures how the maps LOOK.
   ["map quality vs baseline",    "node", [path.join(HERE, "map_quality.mjs")]]
 ];

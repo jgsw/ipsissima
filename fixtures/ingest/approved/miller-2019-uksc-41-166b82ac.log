@@ -1,0 +1,14 @@
+== ingest -> <out>
+
+   miller-2019-uksc-41.pdf
+      -> source/miller-2019-uksc-41.md   10902 words
+      structured route (pdf_to_source): 11 heading(s), 5 displayed quotation(s) as blockquotes, 0 footnote(s) under `# Notes`
+      dropped: running head (1), page number (22)
+      headings from the PDF's own outline (11 of its 11 entries found in the text)
+      ! 2 line(s) look stretched -- possible dropped words; the converter's report names them
+      (the raw text layer held 10911 words; this keeps 10902, the difference measured furniture and front matter)
+      11 heading(s), 86 line(s) long enough to locate a claim
+      no back matter found; the prompt gets all 10902 words
+
+   one source: no project file needed, and none written
+   wrote 1 file(s) to <out>/source

@@ -6,6 +6,8 @@
     python3 ipsissima-mcp/eval/extraction_regression.py --list my-pdfs.txt --show 6
     python3 ipsissima-mcp/eval/extraction_regression.py --save-golden DIR   # approve today's output
     python3 ipsissima-mcp/eval/extraction_regression.py --golden DIR        # compare with approved
+    python3 ipsissima-mcp/eval/extraction_regression.py --public          # the suite's check
+    python3 ipsissima-mcp/eval/extraction_regression.py --draft-expectations DIR
     python3 ipsissima-mcp/eval/extraction_regression.py --self-test
 
 WHY THIS EXISTS. A converter rule is a guess about typography, and every guess that mends one
@@ -43,6 +45,19 @@ repaired by hand after converting, so neither converter matches them everywhere;
 that a change loses none of what the last one had. Maps are found in `samples/`, the private
 corpus, and the folders in IPSISSIMA_MAPS_DIRS (separated as PATH is).
 
+EXPECTATIONS MAKE A DIFFERENCE A VERDICT (see `expectations.py`). Where a paper has an expectations
+file -- its headings, abstract, notes and sentences that must survive, written once by someone who
+read it, with a ledger of the flaws accepted in it -- every run says, item by item, FIXED or BROKE
+instead of "differs", and a known flaw is reported as known instead of being read again. A BROKE
+fails the run whatever the mode. `--draft-expectations DIR` writes a draft for every paper that
+has none, from today's output, to be read against the paper before it is trusted.
+
+`--public` is the check the test suite runs: the public fixtures only, against the approved
+outputs and the expectations committed beside them. Approved outputs are exact, and exactness
+belongs to one version of PyMuPDF: where the version running is not the one that approved them,
+the differences are printed and not failed, and the expectations -- which a new version has no
+business changing -- carry the verdict alone.
+
 THE BASELINE is the converter at a git commit, unpacked with `git archive` into a cache keyed by
 the commit, and its outputs are cached there too (keyed by the PDF's path, size and mtime), so a
 second run against the same baseline converts only with the working tree.
@@ -61,23 +76,29 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import expectations                                                     # noqa: E402
+
 MCP = HERE.parent
 REPO = MCP.parent
 PKG = MCP / "src" / "ipsissima_mcp"
 CACHE = Path(os.environ.get("IPSISSIMA_REGRESSION_CACHE",
                             Path.home() / ".cache" / "ipsissima" / "extraction-regression"))
 MARKER = re.compile(r"<!--\s*(?:[^\n]*?\s)?p\.\s*-?\d+\s+begins here\s*-->")
+FIXTURES = REPO / "fixtures" / "ingest"
+PUBLIC_APPROVED = FIXTURES / "approved"
+PUBLIC_EXPECTED = FIXTURES / "expected"
 
 
 # --------------------------------------------------------------------------- the inputs
 
 def pdfs_from(args):
     paths = []
-    paths += sorted(str(p) for p in (REPO / "fixtures" / "ingest").glob("*.pdf"))
-    priv = os.environ.get("IPSISSIMA_PRIVATE_CORPUS")
+    paths += sorted(str(p) for p in FIXTURES.glob("*.pdf"))
+    priv = None if args.public else os.environ.get("IPSISSIMA_PRIVATE_CORPUS")
     if priv and Path(priv).is_dir():
         paths += sorted(str(p) for p in Path(priv).rglob("*.pdf"))
-    for lst in [args.list, os.environ.get("IPSISSIMA_EXTRACTION_LIST")]:
+    for lst in [] if args.public else [args.list, os.environ.get("IPSISSIMA_EXTRACTION_LIST")]:
         if lst and Path(lst).is_file():
             for line in Path(lst).read_text(encoding="utf-8").splitlines():
                 line = line.strip()
@@ -96,6 +117,29 @@ def pdfs_from(args):
 def key_of(pdf):
     st = os.stat(pdf)
     return hashlib.sha1(f"{pdf}|{st.st_size}|{int(st.st_mtime)}".encode()).hexdigest()[:16]
+
+
+def golden_name(pdf):
+    """An approved output's file name: the paper's, and a hash of WHERE it is -- relative to the
+    repository when it is in it, so a fresh clone finds the public fixtures' approved outputs. Not
+    the size and mtime `key_of` uses for the cache: a checkout's mtimes are the checkout's."""
+    p = Path(pdf).resolve()
+    where = str(p.relative_to(REPO)) if p.is_relative_to(REPO) else str(p)
+    slug = re.sub(r"[^a-z0-9]+", "-", p.stem.lower()).strip("-")[:48]
+    return f"{slug}-{hashlib.sha1(where.encode()).hexdigest()[:8]}"
+
+
+def expectation_dirs(args):
+    return [PUBLIC_EXPECTED] + ([] if args.public else
+                                [args.expect, os.environ.get("IPSISSIMA_EXPECTATIONS")])
+
+
+def pymupdf_version():
+    try:
+        import pymupdf
+        return pymupdf.__version__
+    except ImportError:
+        return "?"
 
 
 # --------------------------------------------------------------------------- converting
@@ -125,7 +169,9 @@ def convert(pdf, pkg_dir, out_dir):
         out_dir.mkdir(parents=True)
         r = subprocess.run([sys.executable, str(Path(pkg_dir) / "ipsissima_mcp" / "ingest.py"), pdf,
                             "--out", str(out_dir), "--no-ocr"], capture_output=True, text=True)
-        log.write_text(r.stdout + r.stderr, encoding="utf-8")
+        # The output folder is a temporary one, and named in the log it made every approved log
+        # differ from every other.
+        log.write_text((r.stdout + r.stderr).replace(str(out_dir), "<out>"), encoding="utf-8")
         md = next(out_dir.glob("source/*.md"), None)
     return (md.read_text(encoding="utf-8") if md else None,
             log.read_text(encoding="utf-8") if log.exists() else "")
@@ -316,6 +362,42 @@ def report(rows, show):
     return differ
 
 
+def judge(pdfs, old, new, specs):
+    """The expectations section of a run; returns how many items BROKE or fail unrecorded."""
+    bad, counts, held = 0, {}, 0
+    lines = []
+    for p, a, b in zip(pdfs, old, new):
+        spec = specs.get(os.path.basename(p))
+        if spec is None:
+            continue
+        held += 1
+        now = expectations.check(spec, b[0])
+        rows = expectations.verdicts(expectations.check(spec, a[0]) if old is not None else None, now)
+        counts["met"] = counts.get("met", 0) + sum(st == "ok" for st, _ in now.values())
+        loud = [r for r in rows if r[0] != "known"]
+        for r in rows:
+            counts[r[0]] = counts.get(r[0], 0) + 1
+        bad += sum(r[0] in ("BROKE", "failing") for r in rows)
+        if loud:
+            tag = " (draft)" if spec.get("status") == "draft" else ""
+            lines.append(f"  {os.path.basename(p)[:70]}{tag}")
+            shown = {}
+            for v, k, why in loud:
+                shown[v] = shown.get(v, 0) + 1
+                if shown[v] <= 8:
+                    lines.append(f"     {v:8s} {k[:90]}" + (f"  -- {why}" if why else ""))
+            for v, n in shown.items():
+                if n > 8:
+                    lines.append(f"     {v:8s} ... and {n - 8} more")
+    if not held:
+        return 0
+    print(f"\nexpectations: {held} paper(s) held to them")
+    print("\n".join(lines) if lines else "  every expectation met, or a known defect")
+    met = ", ".join(f"{n} {v}" for v, n in sorted(counts.items()))
+    print(f"  ({met or 'nothing to report'})")
+    return bad
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--base", default="HEAD", help="git commit whose converter is the baseline")
@@ -326,10 +408,17 @@ def main():
     ap.add_argument("--show", type=int, default=0, help="changes to print in context per document")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     ap.add_argument("--maps", action="store_true", help="check every traceable map's quotations against both")
+    ap.add_argument("--public", action="store_true",
+                    help="the public fixtures only, against their committed approved outputs")
+    ap.add_argument("--expect", help="a folder of expectations files (also IPSISSIMA_EXPECTATIONS)")
+    ap.add_argument("--draft-expectations", metavar="DIR",
+                    help="write a draft expectations file here for each paper that has none")
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
         return self_test()
+    if args.public and not (args.golden or args.save_golden):
+        args.golden = str(PUBLIC_APPROVED)
     work = Path(tempfile.mkdtemp(prefix="extraction-regression-"))
     if args.maps:
         try:
@@ -348,24 +437,53 @@ def main():
         # The working tree's outputs, converted afresh every run.
         with ThreadPoolExecutor(args.jobs) as ex:
             new = list(ex.map(lambda p: convert(p, PKG.parent, work / key_of(p)), pdfs))
+        specs = expectations.load(expectation_dirs(args))
+        if args.draft_expectations:
+            import datetime
+            import pymupdf
+            dest = Path(args.draft_expectations)
+            dest.mkdir(parents=True, exist_ok=True)
+            wrote = 0
+            for p, (md, _log) in zip(pdfs, new):
+                if md is None or os.path.basename(p) in specs:
+                    continue
+                text = "\n".join(pg.get_text() for pg in pymupdf.open(p))
+                out = dest / f"{golden_name(p)}.toml"
+                out.write_text(expectations.draft(p, md, text, datetime.date.today().isoformat()),
+                               encoding="utf-8")
+                specs[os.path.basename(p)] = {}
+                wrote += 1
+            print(f"drafted {wrote} expectations file(s) in {dest}: read each against its paper")
+            return 0
         if args.save_golden:
             dest = Path(args.save_golden)
             dest.mkdir(parents=True, exist_ok=True)
-            index = {}
+            index = {"pymupdf": pymupdf_version(), "outputs": {}}
             for p, (md, log) in zip(pdfs, new):
-                k = key_of(p)
+                k = golden_name(p)
                 (dest / f"{k}.md").write_text(md or "", encoding="utf-8")
                 (dest / f"{k}.log").write_text(log, encoding="utf-8")
-                index[k] = p
-            (dest / "index.json").write_text(json.dumps(index, indent=1), encoding="utf-8")
+                rp = Path(p).resolve()
+                index["outputs"][k] = str(rp.relative_to(REPO)) if rp.is_relative_to(REPO) else p
+            (dest / "index.json").write_text(json.dumps(index, indent=1, ensure_ascii=False) + "\n",
+                                             encoding="utf-8")
             print(f"approved {len(pdfs)} output(s) in {dest}")
             return 0
+        exact = True
         if args.golden:
             g = Path(args.golden)
-            old = [((g / f"{key_of(p)}.md").read_text(encoding="utf-8") if (g / f"{key_of(p)}.md").exists() else None,
-                    (g / f"{key_of(p)}.log").read_text(encoding="utf-8") if (g / f"{key_of(p)}.log").exists() else "")
+            old = [((g / f"{golden_name(p)}.md").read_text(encoding="utf-8") if (g / f"{golden_name(p)}.md").exists() else None,
+                    (g / f"{golden_name(p)}.log").read_text(encoding="utf-8") if (g / f"{golden_name(p)}.log").exists() else "")
                    for p in pdfs]
+            try:
+                approved_with = json.loads((g / "index.json").read_text(encoding="utf-8")).get("pymupdf")
+            except (OSError, ValueError, AttributeError):
+                approved_with = None
+            exact = approved_with in (None, pymupdf_version())
             print(f"against the approved outputs in {g}, {len(pdfs)} PDF(s):\n")
+            if not exact:
+                print(f"  (approved with PyMuPDF {approved_with}, running {pymupdf_version()}: differences are\n"
+                      f"   printed, not failed; the expectations decide)\n")
         else:
             sha, pkg = package_at(args.base)
             with ThreadPoolExecutor(args.jobs) as ex:
@@ -374,7 +492,8 @@ def main():
         rows = [(os.path.basename(p), compare(parts(a[0]), parts(b[0]), args.show),
                  plain_fallback(a[1]), plain_fallback(b[1])) for p, a, b in zip(pdfs, old, new)]
         differ = report(rows, args.show)
-        return 1 if (args.golden and differ) else 0
+        bad = judge(pdfs, old, new, specs)
+        return 1 if (args.golden and differ and exact) or bad else 0
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -402,6 +521,12 @@ def self_test():
     check("  and the notes and the abstract are compared", (d["notes"], d["abstract"]), ((1, 0), (4, 3)))
     check("a fallback to the plain route is seen", plain_fallback("! structured route kept only ... "
                                                                   "so the plain route is used instead"), True)
+    # Mutation: name approved outputs by key_of -> a fresh clone's mtimes lose every one.
+    fx = FIXTURES / "miller-2019-uksc-41.pdf"
+    check("an approved output is named for the paper and where it sits, not when it was touched",
+          golden_name(fx), "miller-2019-uksc-41-" + hashlib.sha1(b"fixtures/ingest/miller-2019-uksc-41.pdf").hexdigest()[:8])
+    print("\n  the expectations:")
+    fails += expectations.self_test()
     print(f"\n{fails} FAILED" if fails else "\nall passed")
     return 1 if fails else 0
 

@@ -1,0 +1,42 @@
+pdf = "etievant-2026-sccs-causal-framework.pdf"
+reviewed = "2026-10-07"
+note = "A preprint (2026), arXiv-style. Headings and depths are the outline's; one starred author note; the figure captions are typeset apart."
+headings = [
+  "# 1 Introduction",
+  "# 2 Notation",
+  "# 3 Estimand for data on exposed cases only",
+  "# 4 Bias due to violation of conditions (i) and (ii)",
+  "# 5 Plausibility of Conditions (i) and (ii)",
+  "## 5.1 Long-term effect",
+  "## 5.2 Acceleration effect",
+  "## 5.3 Risk factors",
+  "# 6 Strengthening the study with additional data",
+  "# 7 Confounders",
+  "## 7.1 Notation",
+  "## 7.2 Sufficient conditions for counterfactual estimands",
+  "## 7.3 Implications",
+  "## 7.4 Plausibility of the conditions",
+  "# 8 Simulation studies",
+  "## 8.1 First setting",
+  "## 8.2 Setting with acceleration effect",
+  "# 9 Data illustration",
+  "# 10 Discussion",
+  "# Notes",
+  "# References",
+]
+abstract = [155, 191]
+notes = 0
+survive = [
+  "Other assumptions are that the event is rare and the probability of exposure is independent of the occurrence of an event.",
+  "As an illustration, let the exposure be a Human Papillomavirus vaccine proposed through a national school vaccine program to be implemented in, say, October, and let the rare adverse event be GBS.",
+  "A naive analysis would incorrectly infer an elevated risk of autism following vaccination.",
+  "Acknowledgments: We are grateful to Micheal Fay at the Biostatistics Research Branch, National Institute of Allergy and Infectious Diseases, and to the anonymous Reviewer, for valuable feedback and suggestions.",
+]
+
+[[defect]]
+what = "the author note and both figure captions fall into # Notes as one paragraph"
+shows = "Rockville, MD, 20892, USA Figure 1:"
+
+[[defect]]
+what = "a formula's subscripts read as note references"
+shows = "[^54]+[^23] = 0.701"

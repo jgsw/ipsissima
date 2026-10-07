@@ -1417,6 +1417,22 @@ def _letters(s):
     return re.sub(r"[\W_]+", "", (s or "").lower())
 
 
+#: A section number opening a heading -- "1", "4.1.", "IV." -- with Wiley's bar after it.
+SECTION_NUMBER = re.compile(r"^\s*(?:\d{1,2}(?:\.\d{1,2})*\.?|[IVXLC]{1,6}\.)\s*(?:\|\s*)?(?=\S)")
+#: A row that is nothing but a section number or Wiley's bar, set on the heading's line.
+NUMBER_ROW = re.compile(r"^(?:\d{1,2}(?:\.\d{1,2})*\.?|\|)$")
+
+
+def _heading_letters(s):
+    """A heading's letters WITHOUT its section number. The outline and the page disagree about
+    numbers: Elsevier's outline says "Introduction" where the page prints "1 Introduction"
+    (Marchionni and Reijula 2019), Cambridge's says "Methodological Preliminaries" over a printed
+    "1. Methodological Preliminaries" (Haslanger 2018), and Wiley's says "1 | INTRODUCTION" over
+    three rows, "1", "|" and "INTRODUCTION" (Arya 2021). Compared with the number, none matched,
+    and each paper came out with its outline ignored."""
+    return _letters(SECTION_NUMBER.sub("", s or ""))
+
+
 #: A line that stops in the middle of a sentence: a lower-case letter, a comma, a hyphen.
 MID_SENTENCE = re.compile(r"[a-z,\-\u2013\u00ad]$")
 
@@ -1435,10 +1451,12 @@ def outline_heading_map(entries, rows, printed_of_sheet):
     outline -- page bookmarks and the contents of the whole issue, other articles and all -- never
     is.
 
-    KEYED BY PAGE AND TEXT, NOT TEXT ALONE. A book's running head repeats its chapter's heading
-    on every page, and its contents page repeats them all: keyed by text, each of those became a
-    heading too -- Robeyns's "2. Core Ideas and the Framework" twenty times over. Returns
-    ({(page, first row): (depth, title)}, {(page, continuation row)}, matched, considered)."""
+    KEYED BY ROW, NOT BY TEXT. A book's running head repeats its chapter's heading on every page,
+    and its contents page repeats them all: keyed by text, each of those became a heading too --
+    Robeyns's "2. Core Ideas and the Framework" twenty times over. And a heading that starts at
+    Wiley's bare "1" could not be keyed even by page and text: a "1" is not rare on a page.
+    Returns ({first row's index: (depth, title)}, {continuation rows' indices}, matched,
+    considered)."""
     by_page = {}
     for i, r in enumerate(rows):
         by_page.setdefault(r[0], []).append(i)
@@ -1450,32 +1468,45 @@ def outline_heading_map(entries, rows, printed_of_sheet):
     # heading (Orjuela and Parashar 2024).
     floor = -1
     for level, title, sheet in entries:
-        want = _letters(title)
+        want = _heading_letters(title)
         if len(want) < 3:
             continue
         page = printed_of_sheet(sheet)
         hit = None
-        for pg in (page, page + 1):
-            idxs = by_page.get(pg, [])
-            for k, i in enumerate(idxs):
-                if i <= floor:
-                    continue
-                got = _letters(rows[i][4])
-                if not got or not want.startswith(got) or len(got) < min(6, len(want)):
-                    continue
-                acc, span = got, [i]
-                for i2 in idxs[k + 1:k + 6]:
+        # WITH THE NUMBER FIRST, and without it only when that finds nothing: on Robeyns's p. 44
+        # "B1: The purpose of the capability theory" is listed above the heading "2.7.1 B1: The
+        # purpose of the capability theory", and without its number the entry took the list's.
+        for strip in (False, True):
+            want = _heading_letters(title) if strip else _letters(title)
+            for pg in (page, page + 1):
+                idxs = by_page.get(pg, [])
+                for k, i in enumerate(idxs):
+                    if i <= floor:
+                        continue
+                    got = _heading_letters(rows[i][4]) if strip else _letters(rows[i][4])
+                    if not got or not want.startswith(got) or len(got) < min(6, len(want)):
+                        continue
+                    acc, span = got, [i]
+                    for i2 in idxs[k + 1:k + 6]:
+                        if acc == want:
+                            break
+                        nxt = acc + _letters(rows[i2][4])
+                        if not want.startswith(nxt):
+                            break
+                        acc, span = nxt, span + [i2]
                     if acc == want:
+                        hit = span
                         break
-                    nxt = acc + _letters(rows[i2][4])
-                    if not want.startswith(nxt):
-                        break
-                    acc, span = nxt, span + [i2]
-                if acc == want:
-                    hit = span
+                if hit:
                     break
             if hit:
                 break
+        # THE NUMBER BELONGS TO ITS HEADING. Set as rows of their own on the heading's line --
+        # Wiley's "4.1", "|" -- they would otherwise be left behind as a paragraph of their own.
+        while (hit and hit[0] - 1 > floor and rows[hit[0] - 1][0] == rows[hit[0]][0]
+               and abs(rows[hit[0] - 1][2] - rows[hit[0]][2]) <= 2
+               and NUMBER_ROW.match((rows[hit[0] - 1][4] or "").strip())):
+            hit = [hit[0] - 1] + hit
         # A PARAGRAPH'S FIRST LINE IS NOT A HEADING, though JSTOR's generated outline lists one:
         # "V ARIOUS attempts have been made in recent years to state necessary", with "and
         # sufficient conditions ..." running on below it (Gettier 1963). A heading is followed
@@ -1485,12 +1516,12 @@ def outline_heading_map(entries, rows, printed_of_sheet):
                 and rows[hit[-1] + 1][4][:1].islower() and not (
                     hit[0] and MID_SENTENCE.search(rows[hit[0] - 1][4].rstrip()))):
             hit = None
-        if hit and (rows[hit[0]][0], rows[hit[0]][4].strip()) not in heads:
+        if hit and hit[0] not in heads:
             floor = hit[-1]
             matched += 1
             levels.append(level)
-            heads[(rows[hit[0]][0], rows[hit[0]][4].strip())] = (level, title)
-            tails.update((rows[i][0], rows[i][4].strip()) for i in hit[1:])
+            heads[hit[0]] = (level, title)
+            tails.update(hit[1:])
     if levels:
         top = min(levels)
         heads = {t: (min(3, lv - top + 1), title) for t, (lv, title) in heads.items()}
@@ -1793,7 +1824,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         # immune sys-" / "tems." was dehyphenated, no longer matched, and left "# tems." behind.
         # Before the quote test: a centred heading sits off the margin as a quotation does.
         if outline and not notes:
-            key = (page, text.strip())
+            key = at
             if key in outline_tails and blocks and blocks[-1].get("outline"):
                 _extend(blocks[-1], page, text)
                 continue
@@ -2164,7 +2195,7 @@ def licence_lines(lines, doc_size):
     return drop
 
 
-def split_footnotes(body, display_edge, low=0.70, margin=None):
+def split_footnotes(body, display_edge, low=0.70, margin=None, kept=None):
     """Separate footnotes from the flow. Returns (flow, notes).
 
     THE ZONE LATCHES PER PAGE AND COLUMN, NOT PER PAGE. In a two-column setting the reading order
@@ -2242,6 +2273,8 @@ def split_footnotes(body, display_edge, low=0.70, margin=None):
 
     flow = [(body[i][0], body[i][1], body[i][4]) for i in range(len(body)) if not lifted[i]]
     notes = [(body[i][0], body[i][1], body[i][4]) for i in range(len(body)) if lifted[i]]
+    if kept is not None:                # which of `body` the flow is, row for row
+        kept.extend(i for i in range(len(body)) if not lifted[i])
     return flow, notes
 
 
@@ -2452,10 +2485,12 @@ def convert(cfg):
         body_sizes = [z for i, z in enumerate(body_sizes) if i not in drop_author]
 
     # Footnotes: a numbered line low on the page, and everything under it on that page.
+    kept = []
     if cfg.keep_footnotes_inline:
         flow, notes = [(p, x, t) for p, x, _y, _h, t, _c, _s in body], []
+        kept = list(range(len(body)))
     else:
-        flow, notes = split_footnotes(body, bands["display"], margin=bands["margin"])
+        flow, notes = split_footnotes(body, bands["display"], margin=bands["margin"], kept=kept)
 
     # Which hyphen convention is breaking this document's lines -- see `trust_soft_hyphens`.
     soft_marks = sum(row[4].count("\u00ad") for row in body)
@@ -2486,7 +2521,10 @@ def convert(cfg):
         if o_found >= 2 and o_found >= 0.5 * o_total:
             outline_used = (o_found, o_total)
             auto_caps = {}
-            outline_heads, outline_tails = o_heads, o_tails
+            # Rows of `body` named as rows of the flow `to_blocks` reads.
+            at = {b: f for f, b in enumerate(kept)}
+            outline_heads = {at[b]: v for b, v in o_heads.items() if b in at}
+            outline_tails = {at[b] for b in o_tails if b in at}
     headings_now.update(auto_caps)
     if not cfg.own_headings and outline_used is None:
         size_heads, size_tails = size_heading_map(body, body_sizes, doc_size, set(headings_now))
@@ -2533,8 +2571,10 @@ def convert(cfg):
             if b["page"] not in seen:
                 out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
                 seen.add(b["page"])
-            out.append("#" * b["outline"] + " " + b["text"])
-            used.append(b["text"])
+            # Wiley's bar is an ornament between the number and the title, not a word of either.
+            text = re.sub(r"^(\d{1,2}(?:\.\d{1,2})*\.?)\s*\|\s*", r"\1 ", b["text"])
+            out.append("#" * b["outline"] + " " + text)
+            used.append(text)
             prev_caps = None
             continue
         mo = numbered and not b.get("numbered_para") and NUMBERED.match(b["text"])

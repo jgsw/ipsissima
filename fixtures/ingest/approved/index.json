@@ -1,0 +1,10 @@
+{
+ "pymupdf": "1.28.2",
+ "outputs": {
+  "dewey-1896-reflex-arc-25482ce9": "fixtures/ingest/dewey-1896-reflex-arc.pdf",
+  "etievant-2026-sccs-causal-framework-4944be38": "fixtures/ingest/etievant-2026-sccs-causal-framework.pdf",
+  "miller-2019-uksc-41-166b82ac": "fixtures/ingest/miller-2019-uksc-41.pdf",
+  "ramsey-1928-mathematical-theory-of-saving-a1747b05": "fixtures/ingest/ramsey-1928-mathematical-theory-of-saving.pdf",
+  "robeyns-2017-wellbeing-freedom-social-justice-85ff54db": "fixtures/ingest/robeyns-2017-wellbeing-freedom-social-justice.pdf"
+ }
+}

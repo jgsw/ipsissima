@@ -1,0 +1,24 @@
+pdf = "miller-2019-uksc-41.pdf"
+reviewed = "2026-10-07"
+note = "R (Miller) v The Prime Minister [2019] UKSC 41. Headings from the judgment's own outline, checked against the printed cross-headings; a judgment has numbered paragraphs and no notes."
+headings = [
+  "# LADY HALE AND LORD REED GIVING THE JUDGMENT OF THE COURT:",
+  "## What is prorogation?",
+  "## The run-up to this prorogation",
+  "## This prorogation",
+  "## These proceedings",
+  "## Is the question of whether the Prime Minister’s advice to the Queen was lawful justiciable in a court of law?",
+  "## By what standard is the lawfulness of the advice to be judged?",
+  "## Conclusions on justiciability",
+  "## The alternative ground of challenge",
+  "## Was the advice lawful?",
+  "## Remedy",
+]
+abstract = [0, 0]
+notes = 0
+survive = [
+  "In the House of Lords, it is moved by the Lord Speaker.",
+  "The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept.",
+  "It could only be in unusual circumstances that any further justification might be necessary.",
+  "It is one of the principal roles of the courts to interpret Acts of Parliament.",
+]

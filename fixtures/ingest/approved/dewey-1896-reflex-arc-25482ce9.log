@@ -1,0 +1,12 @@
+== ingest -> <out>
+
+   dewey-1896-reflex-arc.pdf
+      -> source/dewey-1896-reflex-arc.md   5735 words
+      structured route (pdf_to_source): 0 heading(s), 32 displayed quotation(s) as blockquotes, 3 footnote(s) under `# Notes`
+      dropped: running head (21), page number (3)
+      (the raw text layer held 5702 words; this keeps 5735, the difference measured furniture and front matter)
+      1 heading(s), 92 line(s) long enough to locate a claim
+      no back matter found; the prompt gets all 5735 words
+
+   one source: no project file needed, and none written
+   wrote 1 file(s) to <out>/source

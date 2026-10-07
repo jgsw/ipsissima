@@ -1429,7 +1429,7 @@ check("a paragraph's first line is not a heading; a heading that interrupts a se
                            orow(6, "adjusted meas-"), orow(6, "Search strategy"), orow(6, "ures of association."),
                            orow(6, "Methods"), orow(6, "reviewer (HK).")],
                           lambda sh: 5 + sh)[0],
-      {(6, "Search strategy"): (1, "Search strategy"), (6, "Methods"): (1, "Methods")})
+      {4: (1, "Search strategy"), 6: (1, "Methods")})
 oh, ot, found, total = outline_heading_map(
     [(2, "A title", 0), (3, "Introduction", 0), (3, "Four assumptions of cost-effectiveness based improvement", 2),
      (3, "Not in this text at all", 2)], OR, lambda sh: 10 + sh)
@@ -1437,12 +1437,33 @@ oh, ot, found, total = outline_heading_map(
 # Mutation: absolute levels -> the outline's 2 and 3 become "##" and "###", the title not a "#".
 check("each entry is found after the last, a wrapped heading across its lines, and depths are relative",
       (oh, sorted(ot), found, total),
-      ({(10, "A title"): (1, "A title"), (10, "Introduction"): (2, "Introduction"),
-        (12, "Four assumptions of cost-effectiveness based"): (2, "Four assumptions of cost-effectiveness based improvement")},
-       [(12, "improvement")], 3, 4))
+      ({1: (1, "A title"), 3: (2, "Introduction"),
+        5: (2, "Four assumptions of cost-effectiveness based improvement")},
+       [6], 3, 4))
 
-# Mutation: key the outline's headings by text alone -> the running head on p. 11 and the
-# contents line on p. 9 are headings too. Mutation: drop the continuation join -> "Two Immune
+# Mutation: compare letters with the section number -> neither the unnumbered outline over a
+# numbered page (Marchionni and Reijula 2019) nor Wiley's "1 | INTRODUCTION" over "1", "|",
+# "INTRODUCTION" (Arya 2021) is found. Mutation: leave the number rows out -> "1 |" is left
+# behind as a paragraph, and the heading starts at "INTRODUCTION".
+def lrow(page, y, text):
+    return (page, 51, y, 790.0, text, 0, False)
+# Mutation: strip the number on the first try -> the list's unnumbered "B1: ..." is taken.
+check("an entry is matched with its number before it is matched without",
+      outline_heading_map([(1, "2.7.1 B1: The purpose of the theory", 0)],
+                          [lrow(3, 100, "B1: The purpose of the theory"), lrow(3, 112, "B2: The selection of dimensions"),
+                           lrow(3, 300, "2.7.1 B1: The purpose of the theory"), lrow(3, 312, "Text.")],
+                          lambda sh: 3 + sh)[0], {2: (1, "2.7.1 B1: The purpose of the theory")})
+check("an outline without the printed numbers, and Wiley's 'N | TITLE', are found",
+      outline_heading_map([(1, "Introduction", 0), (1, "2 | WHY IT MATTERS", 0), (2, "2.1 | The pizza-effect", 0)],
+                          [lrow(3, 100, "1 Introduction"), lrow(3, 112, "Body text of the introduction runs on."),
+                           lrow(3, 200, "2"), lrow(3, 200, "|"), lrow(3, 200, "WHY IT MATTERS"),
+                           lrow(3, 212, "Body text again runs on."),
+                           lrow(3, 300, "2.1"), lrow(3, 300, "|"), lrow(3, 300, "The pizza-effect"), lrow(3, 312, "More text.")],
+                          lambda sh: 3 + sh)[:2],
+      ({0: (1, "Introduction"), 2: (1, "2 | WHY IT MATTERS"), 6: (2, "2.1 | The pizza-effect")}, {3, 4, 7, 8}))
+
+# Mutation: key the outline's headings by text -> the running head on p. 11 and the contents
+# line on p. 9 are headings too. Mutation: drop the continuation join -> "Two Immune
 # Systems." starts a paragraph. The mark is on the block, not its text, so a heading `finish`
 # later dehyphenates is still found (Devanesan's "immune sys-" / "tems.").
 from pdf_to_source import to_blocks                                                   # noqa: E402
@@ -1450,14 +1471,14 @@ _ob = to_blocks([(9, 51, "Introduction"), (9, 51, "A contents line runs on here.
                  (10, 51, "4.1 Interaction Between the"), (10, 51, "Two Immune Systems."), (10, 51, "Body text follows."),
                  (11, 51, "Introduction"), (11, 51, "More body text.")],
                 dict(margin=51, hanging=None, paragraph=None, display=None), {}, None,
-                outline={(10, "4.1 Interaction Between the"): (2, "4.1 Interaction Between the Two Immune Systems")},
-                outline_tails={(10, "Two Immune Systems.")})
+                outline={2: (2, "4.1 Interaction Between the Two Immune Systems")},
+                outline_tails={3})
 # Mutation: let a lower-case line run into the outline heading -> "### Search strategy ...
 # ures of association" (Rogowski et al. 2025, the Lancet's side-column headings).
 _ob2 = to_blocks([(3, 51, "Unadjusted and adjusted meas-"), (3, 51, "Search strategy"),
                   (3, 51, "ures of association were taken."), (3, 63, "Then a new paragraph.")],
                  dict(margin=51, hanging=None, paragraph=62, display=None), {}, None,
-                 outline={(3, "Search strategy"): (2, "Search strategy")})
+                 outline={1: (2, "Search strategy")})
 check("a side heading that splits a paragraph follows it, and takes none of its words",
       [(b.get("outline"), b["text"]) for b in _ob2],
       [(None, "Unadjusted and adjusted meas- ures of association were taken."),
@@ -1465,7 +1486,7 @@ check("a side heading that splits a paragraph follows it, and takes none of its 
 # Mutation: only a lower-case line goes back -> "using the ### Data analysis Office of Health".
 _ob3 = to_blocks([(3, 51, "using the"), (3, 51, "Data analysis"), (3, 70, "Office of Health Assessment.")],
                  dict(margin=51, hanging=60, paragraph=None, display=None), {}, None,
-                 outline={(3, "Data analysis"): (2, "Data analysis")})
+                 outline={1: (2, "Data analysis")})
 check("a sentence a side heading interrupts goes on past it, capital or not",
       [b["text"] for b in _ob3], ["using the Office of Health Assessment.", "Data analysis"])
 check("an outline heading is the row it was found at, with its continuation, and nothing else",

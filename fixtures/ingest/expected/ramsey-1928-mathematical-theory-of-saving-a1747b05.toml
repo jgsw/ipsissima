@@ -1,0 +1,45 @@
+pdf = "ramsey-1928-mathematical-theory-of-saving.pdf"
+reviewed = "2026-10-07"
+note = "Economic Journal 38 (1928), OCR. Three sections, numbered I, II, III on lines of their own (sheets 1, 7, 13). Four footnotes (sheets 1, 3, 5, 7)."
+headings = [
+  "# I",
+  "# II",
+  "# III",
+  "# Notes",
+]
+abstract = [0, 0]
+notes = 4
+survive = [
+  "We have now to introduce a concept of great importance in our argument.",
+  "We have now to identify K with what we called B, or bliss.",
+  "K we can take as being less than B, since a man who lives only a finite time will save less than one who lives an infinite time, and the greater K is, the greater will be the rate of saving.",
+  "If, then, we neglect men’s interest in their heirs, we see that capital has a definite supply price to be equated to its demand price.",
+]
+
+[[defect]]
+what = "section numbers set alone on a line are not headings"
+missing_heading = "# I"
+
+[[defect]]
+what = "section numbers set alone on a line are not headings"
+missing_heading = "# II"
+
+[[defect]]
+what = "section numbers set alone on a line are not headings"
+missing_heading = "# III"
+
+[[defect]]
+what = "an OCR'd formula read as a heading"
+extra_heading = "# 7 So y"
+
+[[defect]]
+what = "an OCR'd table cell read as a heading"
+extra_heading = "# 0 Spend"
+
+[[defect]]
+what = "footnotes in the OCR: one of the four is recovered"
+notes = 1
+
+[[defect]]
+what = "a formula's superscript read as a note reference"
+shows = "[^1] = w(yYo)"

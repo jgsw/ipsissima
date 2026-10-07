@@ -1,0 +1,14 @@
+== ingest -> <out>
+
+   ramsey-1928-mathematical-theory-of-saving.pdf
+      -> source/ramsey-1928-mathematical-theory-of-saving.md   6081 words
+      structured route (pdf_to_source): 2 heading(s), 6 displayed quotation(s) as blockquotes, 1 footnote(s) under `# Notes`
+      dropped: page number (9), running head (32)
+      ! heading numbering skips [1, 2, 3, 4, 5, 6] -- read the flow there before trusting the sections
+      ! 17 line(s) look stretched -- possible dropped words; the converter's report names them
+      (the raw text layer held 6124 words; this keeps 6081, the difference measured furniture and front matter)
+      3 heading(s), 103 line(s) long enough to locate a claim
+      no back matter found; the prompt gets all 6081 words
+
+   one source: no project file needed, and none written
+   wrote 1 file(s) to <out>/source

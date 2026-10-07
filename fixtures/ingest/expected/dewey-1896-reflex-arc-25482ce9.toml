@@ -1,0 +1,25 @@
+pdf = "dewey-1896-reflex-arc.pdf"
+reviewed = "2026-10-07"
+note = "Psychological Review 3 (1896), a scan. No section headings. Six footnotes, numbered afresh on each page: pp. 3, 4 (two, the second running on to p. 5), 7 and 10 (two), read from the page images."
+headings = [
+  "# Notes",
+]
+abstract = [0, 0]
+notes = 6
+survive = [
+  "Stated on the physiological side, this reality may most conveniently be termed coordination.",
+  "What happens is a certain relative prominence and subsidence as between the various organs which maintain the organic equilibrium.",
+  "The circle is a coordination, some of whose members have come into conflict with each other.",
+]
+
+[[defect]]
+what = "footnotes in the scan: two of the six are recovered"
+notes = 2
+
+[[defect]]
+what = "p. 10's note 1 is read into the text, its number as 'J'"
+shows = "J To avoid misapprehension"
+
+[[defect]]
+what = "'beware' is read as note references, p. 364"
+shows = "[^3][^6]4 ware of that false simplicity"
