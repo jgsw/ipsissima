@@ -152,3 +152,44 @@ better, so a person reads the differences. Run it before committing any change t
 again. The approved outputs carry whole articles, so for anything but the public fixtures they
 belong in the non-GitHub folder.
 
+**The maps are an answer key.** Every reconstruction quotes its source, and every quotation was
+checked against the text, so a quotation that verified with the old converter and fails with the
+new one is damage that no reading of a difference has to judge. `--maps` finds each map whose
+source names its PDF -- by the `zotero:` key in its front matter, or the "Made by ... from X.pdf"
+line -- converts that PDF with both converters, and checks the map's quotations against each. It
+looks in `samples/`, the private corpus and the folders in `IPSISSIMA_MAPS_DIRS`, and fails if
+any map lost a quotation:
+
+```bash
+python3 ipsissima-mcp/eval/extraction_regression.py --maps
+```
+
+A map made before a fix may quote the damage the fix mended -- "sub- elements", "first- come" --
+and lose that quotation: the loss is the map's to repair, not the converter's.
+
+### Headings from the PDF's outline
+
+A born-digital PDF usually carries an outline: the bookmarks naming its sections, with their
+levels. Where at least two of its entries, and at least half, are found printed in the text (on
+the entry's page or the next, letters only), the outline is the only source of headings. The
+typographic detectors -- size, capitals, numbering -- are guesses at what it states outright, and
+they are used only where it is missing or not trusted. Four things it has to be protected from,
+each a bug first:
+- JSTOR's outline is page bookmarks and the whole issue's contents, which are skipped, and it may
+  list a paragraph's first line, which is refused: it runs on in lower case (Gettier 1963);
+- a book's running heads and contents page repeat its headings, so a heading is the row the
+  outline was found at -- page and text -- never every row with the same words (Robeyns 2017);
+- entries are matched in the outline's order, so a label above the title cannot take the first
+  section's place (Orjuela and Parashar 2024);
+- a heading set in a side column, level with the text, falls inside a paragraph by height, and
+  the paragraph keeps its words: the heading follows it (Rogowski et al., Lancet 2025).
+
+The heading is printed as the page prints it, at the outline's depth relative to its top level.
+
+Where there is no outline, or it is not trusted, the typographic detectors read the FACE as well
+as the size: each line records how much of it is bold and italic (from the span flags and the
+font's name), and a line set wholly bold at the body's own size is a heading candidate, held to
+the same tests as a larger size -- at least two headings wear it, at most 6% of lines do, it
+stands between paragraphs -- and refused after a row of figures or as a table's or figure's
+title. Italic at body size is not used: abstracts, quotations and book titles wear it.
+

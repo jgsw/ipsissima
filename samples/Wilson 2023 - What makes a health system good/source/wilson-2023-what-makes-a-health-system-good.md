@@ -34,6 +34,7 @@ abstract: >-
      dropped: journal licence (15), page footer (15), running head (28), front matter (detected) (20), author block (5)
      back matter kept for the reader (Declarations, References) -- in the file, trimmed from the extraction prompt
      abstract kept (175 words) -- in the file's front matter, which the app shows on the orientation panel and a claim may quote; it is never trimmed from the extraction prompt
+     headings from the PDF's own outline (7 of its 10 entries found in the text)
      (the raw text layer held 12893 words; this keeps 12428, the difference measured furniture and front matter) -->
 
 <!-- p.351 begins here -->

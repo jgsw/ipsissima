@@ -1394,5 +1394,129 @@ check("the first page's author block is set aside, and nothing of the note with 
 check("  but only where a line is an email address and nothing else",
       author_block([r for r in AB if "@" not in r[4]]), set())
 
+
+print("\nheadings from the PDF's own outline (7 Oct 2026)")
+from pdf_to_source import outline_entries, outline_heading_map, OUTLINE_SKIP        # noqa: E402
+
+# A repository's outline is page bookmarks and the issue's contents; neither is a heading.
+# Mutation: drop OUTLINE_SKIP -> "p. [333]" and the issue contents are offered as headings.
+check("page bookmarks and an issue's contents are not headings",
+      [bool(OUTLINE_SKIP.search(t)) for t in ("121", "p. [333]", "image 4", "Issue Table of Contents",
+                                              "Front Matter [pp. i-i]", "Blocked Exchanges [pp. 4-31]",
+                                              "Introduction", "2.1 The immune system")],
+      [True, True, True, True, True, True, False, False])
+_doc = pymupdf.open()
+for _ in range(3):
+    _doc.new_page()
+_doc.set_toc([[1, "\ufeffA title", 1], [1, "p. 2", 2], [2, "\ufeffIntroduction", 2], [2, "Methods", 3]])
+check("an outline's entries keep their level, lose the byte-order mark, and know their sheet",
+      outline_entries(_doc, 0), [(1, "A title", 0), (2, "Introduction", 1), (2, "Methods", 2)])
+
+def orow(page, text):
+    return (page, 51, 0, 790.0, text, 0, False)
+OR = [orow(10, "INTRODUCTION"), orow(10, "A title"), orow(10, "Body of the first page runs on here."),
+      orow(10, "Introduction"), orow(11, "The introduction begins and runs on."),
+      orow(12, "Four assumptions of cost-effectiveness based"), orow(12, "improvement"),
+      orow(12, "Using cost-effectiveness analysis as the sole factor.")]
+# Mutation: drop the first-line test -> JSTOR's "V ARIOUS attempts ..." is a heading (Gettier);
+# drop its length floor -> the Lancet's "Methods" is lost.
+# The Lancet's side heading, interrupting "meas-" / "ures", is still found.
+check("a paragraph's first line is not a heading; a heading that interrupts a sentence is",
+      outline_heading_map([(1, "Various attempts have been made in recent years to state", 0),
+                           (2, "Search strategy", 1), (2, "Methods", 1)],
+                          [orow(5, "By A. AUTHOR"), orow(5, "Various attempts have been made in recent years to state"),
+                           orow(5, "and sufficient conditions follow."),
+                           orow(6, "adjusted meas-"), orow(6, "Search strategy"), orow(6, "ures of association."),
+                           orow(6, "Methods"), orow(6, "reviewer (HK).")],
+                          lambda sh: 5 + sh)[0],
+      {(6, "Search strategy"): (1, "Search strategy"), (6, "Methods"): (1, "Methods")})
+oh, ot, found, total = outline_heading_map(
+    [(2, "A title", 0), (3, "Introduction", 0), (3, "Four assumptions of cost-effectiveness based improvement", 2),
+     (3, "Not in this text at all", 2)], OR, lambda sh: 10 + sh)
+# Mutation: drop the order floor -> "Introduction" matches the label above the title.
+# Mutation: absolute levels -> the outline's 2 and 3 become "##" and "###", the title not a "#".
+check("each entry is found after the last, a wrapped heading across its lines, and depths are relative",
+      (oh, sorted(ot), found, total),
+      ({(10, "A title"): (1, "A title"), (10, "Introduction"): (2, "Introduction"),
+        (12, "Four assumptions of cost-effectiveness based"): (2, "Four assumptions of cost-effectiveness based improvement")},
+       [(12, "improvement")], 3, 4))
+
+# Mutation: key the outline's headings by text alone -> the running head on p. 11 and the
+# contents line on p. 9 are headings too. Mutation: drop the continuation join -> "Two Immune
+# Systems." starts a paragraph. The mark is on the block, not its text, so a heading `finish`
+# later dehyphenates is still found (Devanesan's "immune sys-" / "tems.").
+from pdf_to_source import to_blocks                                                   # noqa: E402
+_ob = to_blocks([(9, 51, "Introduction"), (9, 51, "A contents line runs on here."),
+                 (10, 51, "4.1 Interaction Between the"), (10, 51, "Two Immune Systems."), (10, 51, "Body text follows."),
+                 (11, 51, "Introduction"), (11, 51, "More body text.")],
+                dict(margin=51, hanging=None, paragraph=None, display=None), {}, None,
+                outline={(10, "4.1 Interaction Between the"): (2, "4.1 Interaction Between the Two Immune Systems")},
+                outline_tails={(10, "Two Immune Systems.")})
+# Mutation: let a lower-case line run into the outline heading -> "### Search strategy ...
+# ures of association" (Rogowski et al. 2025, the Lancet's side-column headings).
+_ob2 = to_blocks([(3, 51, "Unadjusted and adjusted meas-"), (3, 51, "Search strategy"),
+                  (3, 51, "ures of association were taken."), (3, 63, "Then a new paragraph.")],
+                 dict(margin=51, hanging=None, paragraph=62, display=None), {}, None,
+                 outline={(3, "Search strategy"): (2, "Search strategy")})
+check("a side heading that splits a paragraph follows it, and takes none of its words",
+      [(b.get("outline"), b["text"]) for b in _ob2],
+      [(None, "Unadjusted and adjusted meas- ures of association were taken."),
+       (2, "Search strategy"), (None, "Then a new paragraph.")])
+# Mutation: only a lower-case line goes back -> "using the ### Data analysis Office of Health".
+_ob3 = to_blocks([(3, 51, "using the"), (3, 51, "Data analysis"), (3, 70, "Office of Health Assessment.")],
+                 dict(margin=51, hanging=60, paragraph=None, display=None), {}, None,
+                 outline={(3, "Data analysis"): (2, "Data analysis")})
+check("a sentence a side heading interrupts goes on past it, capital or not",
+      [b["text"] for b in _ob3], ["using the Office of Health Assessment.", "Data analysis"])
+check("an outline heading is the row it was found at, with its continuation, and nothing else",
+      [(b["kind"], b.get("outline"), b["text"].split()[-1]) for b in _ob],
+      [("body", None, "here."), ("own-heading", 2, "Systems."), ("body", None, "text.")])
+
+print("\nthe face: bold at the body's own size (7 Oct 2026)")
+from pdf_to_source import face_of, Face                                              # noqa: E402
+
+# Mutation: ignore the font's name -> Minion-Black, flagged as nothing, is not bold.
+check("a line's face is read from its flags and from its font's name",
+      [face_of([dict(text="2. The Scope", flags=16, font="Palatino")]),
+       face_of([dict(text="Results", flags=0, font="Minion-Black")]),
+       face_of([dict(text="Abstract.", flags=18, font="P-BoldItalic"), dict(text=" This article", flags=2, font="P-Italic")])],
+      [dict(bold=1.0, italic=0.0), dict(bold=1.0, italic=0.0), dict(bold=9 / 21, italic=1.0)])
+check("  and a size that knows its face is still the size", (Face(9.5, True) + 1, Face(9.5, True).bold), (10.5, True))
+
+def brow(page, y, text, small=False, x=66):
+    return (page, x, y, 790.0, text, 0, small)
+B, BS = [], []
+def put(row, size):
+    B.append(row); BS.append(size)
+for pg, head in ((4, "2. The Scope of Literary Perspectives: From Single Experiences"), (10, "6. Concluding Remarks")):
+    put(brow(pg, 300, "a change in the reader."), Face(9.0))
+    put(brow(pg, 312, "[1.2.3.4] Project MUSE (2024) Utrecht University Library", small=True, x=3), Face(8.0))
+    put(brow(pg, 310, head), Face(9.5, True))
+    if pg == 4:
+        put(brow(pg, 322, "to the Character's Heart"), Face(9.5, True))
+    put(brow(pg, 340, "So far, I have discussed the scope of literary perspectives."), Face(9.0))
+for pg in (1, 7):     # the stamp recurs, as a stamp does
+    put(brow(pg, 312, "[1.2.3.4] Project MUSE (2024) Utrecht University Library", small=True, x=3), Face(8.0))
+put(brow(12, 100, "(0.0990)"), Face(9.0)); put(brow(12, 112, "State-Level Controls"), Face(9.5, True))
+put(brow(12, 124, "Percent Smokers"), Face(9.0))
+put(brow(13, 100, "as the table shows."), Face(9.0)); put(brow(13, 112, "Table 1 Three Definitions"), Face(9.5, True))
+put(brow(13, 124, "Quality is"), Face(9.0))
+for k in range(80):
+    put(brow(20, 60 + 12 * k, "Ordinary body text of a later page that runs on at length."), Face(9.0))
+heads, tails = size_heading_map(B, BS, 9.0)
+# Mutation: drop the bold face -> nothing found; let the stamp end the paragraph -> section 6
+# lost; drop the figures test -> "State-Level Controls"; drop CAPTION -> "Table 1 ...".
+check("bold headings at body size are found, past a stamp, and not in a table or its title",
+      (sorted(heads), sorted(tails)),
+      (sorted(["2. The Scope of Literary Perspectives: From Single Experiences", "to the Character's Heart",
+               "6. Concluding Remarks"]), ["to the Character's Heart"]))
+# Mutation: let small type on the line itself be passed over -> Ramsey's "kof)" is a heading.
+R = [brow(5, 90, "denote the rate."), brow(5, 100, "hice", small=True, x=292), brow(5, 100, "kof)", x=334),
+     brow(5, 112, "Now let us denote by U(z) the total rate."),
+     brow(6, 90, "denote the rate."), brow(6, 100, "hice", small=True, x=292), brow(6, 100, "kof)", x=334),
+     brow(6, 112, "Now let us denote by U(z) the total rate.")]
+check("  small type on the line itself is part of the line",
+      size_heading_map(R + B[-80:], [Face(9.0), Face(7.0), Face(10.6), Face(9.0)] * 2 + BS[-80:], 9.0)[0], {})
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)

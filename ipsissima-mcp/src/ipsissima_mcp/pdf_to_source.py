@@ -146,6 +146,43 @@ def clean(text):
     return "".join(ch for ch in text if ch >= " " or ch in "\t\n\u00ad")
 
 
+BOLD_FONT = re.compile(r"bold|black|heavy|semibold|demi", re.I)
+ITALIC_FONT = re.compile(r"italic|oblique", re.I)
+
+
+def face_of(spans):
+    """How much of a line is set BOLD and how much ITALIC, as shares of its letters.
+
+    THE FACE IS A HEADING'S OTHER SIGNAL, and the extractor was throwing it away. Where a paper
+    sets its headings bold at the body's own size, size says nothing: Ferran's "2. The Scope of
+    Literary Perspectives: From Single Experiences" is 9.5pt Palatino Bold over a 9.5pt body, and
+    Small's "Conclusion" 12pt Garamond Bold over 11pt -- neither large enough to tell (Ferran
+    2023, Small 2024; 7 Oct 2026). The span flags say bold and italic; so, more reliably across
+    producers, does the font's own name ("Minion-Black", "Berling-BoldItalic")."""
+    tot = bold = ital = 0
+    for s in spans:
+        n = len((s.get("text") or "").strip())
+        tot += n
+        font = s.get("font") or ""
+        if s.get("flags", 0) & 16 or BOLD_FONT.search(font):
+            bold += n
+        if s.get("flags", 0) & 2 or ITALIC_FONT.search(font):
+            ital += n
+    return dict(bold=bold / tot if tot else 0.0, italic=ital / tot if tot else 0.0)
+
+
+class Face(float):
+    """A line's size that also knows whether the line is set bold or italic.
+
+    A SIZE, SO EVERY DETECTOR THAT READS SIZES READS IT UNCHANGED, and it rides through every
+    slice and filter of `body_sizes` with its row: a second list kept parallel by hand is one
+    forgotten slice away from naming the wrong line's face."""
+    def __new__(cls, size, bold=False, italic=False):
+        f = super().__new__(cls, size)
+        f.bold, f.italic = bold, italic
+        return f
+
+
 def sheet_lines(page, mark_footnotes=True):
     """Lines of one sheet with their geometry, sorted by y -- NOT in block order.
 
@@ -163,7 +200,8 @@ def sheet_lines(page, mark_footnotes=True):
                 continue
             out.append(dict(x0=l["bbox"][0], y0=l["bbox"][1], x1=l["bbox"][2],
                             width=l["bbox"][2] - l["bbox"][0],
-                            size=max(s.get("size", 0) for s in spans), text=text))
+                            size=max(s.get("size", 0) for s in spans), text=text,
+                            **face_of(spans)))
     if mark_footnotes:
         out = join_note_numbers(out)
     return sorted(out, key=lambda l: l["y0"])
@@ -1198,6 +1236,10 @@ def title_heading_map(rows, sizes, body_size, taken=()):
 LIST_TAB = re.compile(r"^(?:\(?\d{1,2}[.)]|\(?[a-z]\)|[\u2022\u25cf\u25aa\u25e6\u2013-])\t")
 
 
+#: The label a table or figure is titled with: "Table 2", "T ABLE 1" (letter-spaced), "Fig. 3".
+CAPTION = re.compile(r"^(?:T\s?ABLE|F\s?IGURE|Table|Figure|Fig\.|FIG\.)\s*[\dIVXivx]+\b")
+
+
 def size_heading_map(rows, sizes, body_size, taken=()):
     """({first line: text}, {continuation lines}) for headings set in LARGER TYPE than the body.
 
@@ -1208,14 +1250,28 @@ def size_heading_map(rows, sizes, body_size, taken=()):
     Philosophy 2023; 7 Oct 2026). A line is a heading line where it is set between a point and a
     half larger than the body and less than twice it, short, and not a sentence; consecutive such
     lines are one heading, which may wrap or be justified into fragments on one line. A size
-    counts only where at least two headings use it, so a title or a lone pull-quote does not."""
-    def cand(i):
+    counts only where at least two headings use it, so a title or a lone pull-quote does not.
+
+    OR SET BOLD AT THE BODY'S OWN SIZE, which size alone cannot see (see `face_of`): Ferran's six
+    and Small's five. A bold face is a FACE OF ITS OWN, counted apart from the sizes, and held to
+    the same tests -- two headings wear it, few lines do, it stands between paragraphs. Italic at
+    body size is not: abstracts, quotations and the titles of books are set in it."""
+    def face(i):
         page, _x, _y, _h, text, _c, small = rows[i]
         t = (text or "").strip()
         sz = sizes[i] if i < len(sizes) else 0
-        return (not small and body_size and body_size + 1.5 <= sz < body_size * 2 and t
-                and len(t) <= 90 and re.search(r"[A-Za-z]{2}", t) and not re.search(r"[.,;]$", t)
-                and "://" not in t and "@" not in t and t not in taken)
+        if not (not small and body_size and t and len(t) <= 90 and re.search(r"[A-Za-z]{2}", t)
+                and not re.search(r"[.,;]$", t) and "://" not in t and "@" not in t
+                and t not in taken):
+            return None
+        if body_size + 1.5 <= sz < body_size * 2:
+            return round(sz * 2) / 2
+        if getattr(sz, "bold", False) and body_size - 0.6 <= sz < body_size + 1.5:
+            return ("bold", round(sz * 2) / 2)
+        return None
+
+    def cand(i):
+        return face(i) is not None
     blocks, cur = [], []
     for i in range(len(rows)):
         if not cand(i):
@@ -1225,7 +1281,7 @@ def size_heading_map(rows, sizes, body_size, taken=()):
             continue
         if cur:
             j = cur[-1]
-            same = (rows[j][0] == rows[i][0] and rows[j][5] == rows[i][5]
+            same = (rows[j][0] == rows[i][0] and rows[j][5] == rows[i][5] and face(j) == face(i)
                     and abs(sizes[j] - sizes[i]) < 0.3 and 0 <= rows[i][2] - rows[j][2] <= 1.8 * sizes[i])
             if not same:
                 blocks.append(cur)
@@ -1237,9 +1293,24 @@ def size_heading_map(rows, sizes, body_size, taken=()):
     # what follows it opens with a capital. And a size worn by many lines is not a heading size
     # but a scan's measuring noise: on Ó Gráda's OCR'd pages, fragments mid-sentence measured
     # large enough to pass, and "In # speeches to" was the result (Irish Famine, 2001).
+    stamps = Counter(t for t, _pg in {(r[4].strip(), r[0]) for r in rows if r[6]})
+    stamps = {t for t, n in stamps.items() if n >= 3}
+
     def stands_apart(b):
         first, last = b[0], b[-1]
-        before = rows[first - 1] if first else None
+        # WHAT IS BEFORE IT is the last line of the PARAGRAPH before it: a note, or a watermark
+        # stamped across the page, is not -- Project MUSE's "[37.156.72.59] Project MUSE ...
+        # Utrecht University Library" stood between Ferran's section 3 and the heading of 4. But
+        # small type ON THE LINE ITSELF is part of what the line is: Ramsey's OCR'd formula "hice
+        # «6 kof)" is not a heading because its pieces are small (Economic Journal 1928). A stamp
+        # recurs from page to page, so it is passed over wherever it sits: MUSE's runs up the
+        # margin, level with the heading it interrupts.
+        k = first - 1
+        while (k >= 0 and rows[k][6] and rows[k][0] == rows[first][0]
+               and (abs(rows[k][2] - rows[first][2]) > 0.6 * (sizes[first] or 10)
+                    or rows[k][4].strip() in stamps)):
+            k -= 1
+        before = rows[k] if k >= 0 else None
         after = rows[last + 1] if last + 1 < len(rows) else None
         prior = (before[4] or "").strip() if before else ""
         # A line of figures has not ended a paragraph: it is a table row, and the cell after it --
@@ -1249,15 +1320,26 @@ def size_heading_map(rows, sizes, body_size, taken=()):
                  or re.search(r"[.?!:;\"'\u201d\u2019)\]*]$", prior)
                  or (re.search(r"\d$", prior) and wordy))
         opens = after is None or re.match(r"[A-Z0-9\"'\u201c\u2018(\[]", (after[4] or "").strip())
+        # A BOLD LINE AFTER A ROW OF FIGURES is a label inside a table: Shipan and Volden's
+        # "State-Level Controls", under "(0.0990)" (AJPS 2008). Bold only -- the weakest of the
+        # faces -- so a larger heading after a table keeps its place.
+        # A paragraph's short last line -- "(Smith 1999)." -- is not figures; "(0.0990)" is.
+        figures = len(re.findall(r"[A-Za-z]", prior)) < 0.2 * max(1, len(prior.replace(" ", "")))
+        if isinstance(face(first), tuple) and before is not None and figures:
+            return False
         return bool(ended and opens)
     worn = Counter(round(sz * 2) / 2 for sz, r in zip(sizes, rows) if not r[6])
     lines = sum(worn.values()) or 1
-    blocks = [b for b in blocks if stands_apart(b)
-              and worn[round(sizes[b[0]] * 2) / 2] <= 0.06 * lines]
-    per_size = Counter(round(sizes[b[0]] * 2) / 2 for b in blocks)
+    worn.update(("bold", round(sz * 2) / 2) for sz, r in zip(sizes, rows)
+                if not r[6] and getattr(sz, "bold", False))
+    # A TABLE'S OR A FIGURE'S TITLE is set as a heading is, and is not one: Shipan and Volden's
+    # "T ABLE 1" / "City-Level Adoption of Antismoking Policies", in Minion Bold (AJPS 2008).
+    blocks = [b for b in blocks if stands_apart(b) and worn[face(b[0])] <= 0.06 * lines
+              and not CAPTION.match(rows[b[0]][4].strip())]
+    per_size = Counter(face(b[0]) for b in blocks)
     heads, tails = {}, set()
     for b in blocks:
-        if per_size[round(sizes[b[0]] * 2) / 2] < 2:
+        if per_size[face(b[0])] < 2:
             continue
         for k, i in enumerate(b):
             t = rows[i][4].strip()
@@ -1306,6 +1388,113 @@ def author_block(rows):
                 continue
             break
     return out
+
+
+#: An outline entry that is not a heading of the article: a page bookmark ("121", "p. [333]",
+#: "image 4"), a repository's issue contents and its front and back matter, or another article of
+#: the issue ("Blocked Exchanges [pp. 4-31]").
+OUTLINE_SKIP = re.compile(
+    r"^(?:[\divxlc]+|image\s+\d+|p\.?\s*\[?[\divxlc]+\]?)$"
+    r"|^(?:(?:issue\s+)?table\s+of\s+contents|contents|front\s+matter|back\s+matter|cover|title\s+page|"
+    r"copyright)\b|\[pp?\.", re.I)
+
+
+def outline_entries(doc, first_sheet):
+    """(level, title, sheet) for each outline entry that could be a heading of the article."""
+    try:
+        toc = doc.get_toc(simple=True)
+    except Exception:
+        return []
+    out = []
+    for level, title, page in toc:
+        t = re.sub(r"\s+", " ", (title or "").replace("\ufeff", "")).strip()
+        if t and page and page - 1 >= first_sheet and not OUTLINE_SKIP.search(t):
+            out.append((level, t, page - 1))
+    return out
+
+
+def _letters(s):
+    return re.sub(r"[\W_]+", "", (s or "").lower())
+
+
+#: A line that stops in the middle of a sentence: a lower-case letter, a comma, a hyphen.
+MID_SENTENCE = re.compile(r"[a-z,\-\u2013\u00ad]$")
+
+
+def outline_heading_map(entries, rows, printed_of_sheet):
+    """Headings from the PDF's own OUTLINE, matched to the rows that print them.
+
+    THE PUBLISHER HAS ALREADY SAID WHAT THE HEADINGS ARE. A born-digital article's bookmarks name
+    its sections, with their levels: Wilson 2023's seven, Robeyns's hundred and five numbered ones.
+    Typography is a guess at the same fact, and the guesses that had to be made and mended in
+    October 2026 -- a larger face, capitals under a running head, title case at body size -- were
+    all guesses at what the outline states outright (28 of the 39 PDFs in the regression set have
+    one). So an entry is matched to the line or lines that print it, on its page or the next,
+    comparing letters only (a wrapped heading, a soft hyphen and an en space all vanish); and only
+    where at least two entries and at least half of them are found is the outline TRUSTED. A JSTOR
+    outline -- page bookmarks and the contents of the whole issue, other articles and all -- never
+    is.
+
+    KEYED BY PAGE AND TEXT, NOT TEXT ALONE. A book's running head repeats its chapter's heading
+    on every page, and its contents page repeats them all: keyed by text, each of those became a
+    heading too -- Robeyns's "2. Core Ideas and the Framework" twenty times over. Returns
+    ({(page, first row): (depth, title)}, {(page, continuation row)}, matched, considered)."""
+    by_page = {}
+    for i, r in enumerate(rows):
+        by_page.setdefault(r[0], []).append(i)
+    heads, tails, matched = {}, set(), 0
+    levels = []
+    # IN THE OUTLINE'S ORDER: each entry is looked for after the last one found. Taylor & Francis
+    # print the article type above the title -- "INTRODUCTION" -- and the outline's
+    # "Introduction" was matched to that label, before the title, instead of to the section
+    # heading (Orjuela and Parashar 2024).
+    floor = -1
+    for level, title, sheet in entries:
+        want = _letters(title)
+        if len(want) < 3:
+            continue
+        page = printed_of_sheet(sheet)
+        hit = None
+        for pg in (page, page + 1):
+            idxs = by_page.get(pg, [])
+            for k, i in enumerate(idxs):
+                if i <= floor:
+                    continue
+                got = _letters(rows[i][4])
+                if not got or not want.startswith(got) or len(got) < min(6, len(want)):
+                    continue
+                acc, span = got, [i]
+                for i2 in idxs[k + 1:k + 6]:
+                    if acc == want:
+                        break
+                    nxt = acc + _letters(rows[i2][4])
+                    if not want.startswith(nxt):
+                        break
+                    acc, span = nxt, span + [i2]
+                if acc == want:
+                    hit = span
+                    break
+            if hit:
+                break
+        # A PARAGRAPH'S FIRST LINE IS NOT A HEADING, though JSTOR's generated outline lists one:
+        # "V ARIOUS attempts have been made in recent years to state necessary", with "and
+        # sufficient conditions ..." running on below it (Gettier 1963). A heading is followed
+        # by a new sentence -- unless it interrupts one, as the Lancet's side headings do. And a
+        # first line fills the measure: the Lancet's "Methods", beside "reviewer (HK).", is short.
+        if (hit and len(title.split()) >= 8 and hit[-1] + 1 < len(rows)
+                and rows[hit[-1] + 1][4][:1].islower() and not (
+                    hit[0] and MID_SENTENCE.search(rows[hit[0] - 1][4].rstrip()))):
+            hit = None
+        if hit and (rows[hit[0]][0], rows[hit[0]][4].strip()) not in heads:
+            floor = hit[-1]
+            matched += 1
+            levels.append(level)
+            heads[(rows[hit[0]][0], rows[hit[0]][4].strip())] = (level, title)
+            tails.update((rows[i][0], rows[i][4].strip()) for i in hit[1:])
+    if levels:
+        top = min(levels)
+        heads = {t: (min(3, lv - top + 1), title) for t, (lv, title) in heads.items()}
+    return heads, tails, matched, len(entries)
 
 
 def find_boundaries(rows, margin, body_size, sizes):
@@ -1565,7 +1754,8 @@ def split_at_pages(block):
 
 
 def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_headings=True,
-              caps_headings=None, margins=None, step=None, tails=frozenset()):
+              caps_headings=None, margins=None, step=None, tails=frozenset(),
+              outline=None, outline_tails=frozenset()):
     """Lines into blocks, by left edge. See `detect_bands` for what the edges mean.
 
     Four rules beyond the bands, each of which was a bug first:
@@ -1597,6 +1787,20 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         # A fourth element flags a DISPLAYED-QUOTE line (mark_displayed_quotes); triples
         # still pass, so every older caller and test reads exactly as before.
         quote = len(row) > 3 and row[3]
+        # A HEADING FROM THE PDF'S OUTLINE is marked on its BLOCK, with its depth, and its
+        # continuation lines join it here. Recognised after `finish` by text it was lost wherever
+        # the text changed: Devanesan's "4.1.1 Interaction between the gravida's and foster's
+        # immune sys-" / "tems." was dehyphenated, no longer matched, and left "# tems." behind.
+        # Before the quote test: a centred heading sits off the margin as a quotation does.
+        if outline and not notes:
+            key = (page, text.strip())
+            if key in outline_tails and blocks and blocks[-1].get("outline"):
+                _extend(blocks[-1], page, text)
+                continue
+            if key in outline:
+                blocks.append(dict(page=page, pages={page}, kind="own-heading", text=text,
+                                   outline=outline[key][0]))
+                continue
         if quote and not notes:
             if blocks and blocks[-1]["kind"] == "quote":
                 _extend(blocks[-1], page, text)
@@ -1677,8 +1881,23 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
             # NEVER INTO A QUOTE BLOCK: the paragraph a quotation interrupted resumes at the
             # margin, usually mid-sentence -- merged into the quote it would put the author's
             # words inside somebody else's quotation marks.
-            _extend(blocks[-1], page, text)
-            continue
+            #
+            # NOR INTO AN OUTLINE HEADING, whose lines the outline has already named. The Lancet
+            # sets its section headings in a side column, level with the text, so by height one
+            # falls inside a paragraph -- "adjusted meas-" / "Search strategy and selection
+            # criteria" / "ures of association" -- and the rest of the paragraph ran into the
+            # heading (Rogowski et al. 2025). The paragraph it interrupted takes its own lines
+            # back, and the heading follows that paragraph.
+            if not blocks[-1].get("outline"):
+                _extend(blocks[-1], page, text)
+                continue
+            if (len(blocks) > 1 and blocks[-2]["kind"] in ("body", "display")
+                    and (text[:1].islower() or MID_SENTENCE.search(blocks[-2]["text"].rstrip()))):
+                head = blocks.pop()
+                _extend(blocks[-1], page, text)
+                blocks[-1].setdefault("then", []).append(head)
+                continue
+            kind = "body"
         elif (margins and step and page in margins
               and x0 > margins[page] + step - 2):
             # THE PAGE'S OWN PARAGRAPH THRESHOLD, where the per-page margins and the
@@ -1696,7 +1915,7 @@ def to_blocks(rows, bands, own_headings, end_marker, notes=False, number_heading
         else:
             kind = "body"
         blocks.append(dict(page=page, pages={page}, kind=kind, text=text))
-    return blocks
+    return [x for b in blocks for x in [b] + b.pop("then", [])]
 
 
 def trust_soft_hyphens(soft_marks, ascii_breaks):
@@ -2143,7 +2362,8 @@ def convert(cfg):
                 continue
             body.append((printed, l["x0"], l["y0"], height, l["text"], l.get("col", 0),
                          bool(doc_size) and round(l["size"], 1) < doc_size - 0.6))
-            body_sizes.append(round(l["size"], 1))
+            body_sizes.append(Face(round(l["size"], 1), l.get("bold", 0) >= 0.95,
+                                   l.get("italic", 0) >= 0.95))
             if cfg.end_marker and cfg.end_marker in l["text"]:
                 # Everything from here is back matter. `break` alone leaves the REST OF THE PAPER
                 # standing: it ends this sheet's loop and the next sheet is read in full, which
@@ -2257,13 +2477,23 @@ def convert(cfg):
     # given only to the first, all four of the Horton's became their own blocks and then none of
     # them was emitted with a `#`.
     headings_now = dict(cfg.own_headings or {})
-    headings_now.update(auto_caps)
-    sub_heads, size_tails = {}, set()
+    sub_heads, size_tails, outline_heads, outline_tails, outline_used = {}, set(), {}, set(), None
     if not cfg.own_headings:
+        # THE OUTLINE FIRST, and where it is trusted it is the only source of headings: the
+        # detectors below guess at what it states. See `outline_heading_map`.
+        o_heads, o_tails, o_found, o_total = outline_heading_map(
+            outline_entries(doc, cfg.first_sheet), body, lambda sh: first_page + (sh - cfg.first_sheet))
+        if o_found >= 2 and o_found >= 0.5 * o_total:
+            outline_used = (o_found, o_total)
+            auto_caps = {}
+            outline_heads, outline_tails = o_heads, o_tails
+    headings_now.update(auto_caps)
+    if not cfg.own_headings and outline_used is None:
         size_heads, size_tails = size_heading_map(body, body_sizes, doc_size, set(headings_now))
         headings_now.update(size_heads)
         sub_heads = title_heading_map(body, body_sizes, doc_size, set(headings_now))
         headings_now.update(sub_heads)
+    numbered = cfg.number_headings and outline_used is None
     # Displayed quotations, marked per page BEFORE assembly (G6's structure half): a run of
     # lines all off the page's own margin is somebody being quoted, and it becomes a
     # `> ` block rather than dissolving into the paragraph around it.
@@ -2272,8 +2502,9 @@ def convert(cfg):
     par_step = indent_step(flow, page_margins)
     flow = [(p, x, t, i in qmarks) for i, (p, x, t) in enumerate(flow)]
     blocks = finish(to_blocks(flow, bands, headings_now, cfg.end_marker,
-                              number_headings=cfg.number_headings, caps_headings=auto_caps,
-                              margins=page_margins, step=par_step, tails=size_tails),
+                              number_headings=numbered, caps_headings=auto_caps,
+                              margins=page_margins, step=par_step, tails=size_tails,
+                              outline=outline_heads, outline_tails=outline_tails),
                     cfg.repairs, applied, soft, dashes=(dashes := []))
     note_blocks = finish(to_blocks(notes, bands, {}, None, notes=True),
                          cfg.repairs, applied, soft)
@@ -2295,7 +2526,18 @@ def convert(cfg):
         # What tells them apart is not the text but how it ARRIVED. A heading is one line; a
         # numbered paragraph is a number in the margin and its prose beside it, two rows that
         # `to_blocks` joined. That is known there and nowhere else, so it is recorded there.
-        mo = cfg.number_headings and not b.get("numbered_para") and NUMBERED.match(b["text"])
+        # AN OUTLINE HEADING IS PRINTED AS THE PAGE PRINTS IT, at the outline's depth: the outline's
+        # own title drops what the page sets -- the full stop of Devanesan's run-in "4.1.2
+        # Implantation of the foster." -- and a quotation of the heading would not verify.
+        if b.get("outline"):
+            if b["page"] not in seen:
+                out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
+                seen.add(b["page"])
+            out.append("#" * b["outline"] + " " + b["text"])
+            used.append(b["text"])
+            prev_caps = None
+            continue
+        mo = numbered and not b.get("numbered_para") and NUMBERED.match(b["text"])
         if mo:
             if b["page"] not in seen:          # the page's marker before its heading, as below
                 out.append(f"<!-- {(cfg.page_label + ' ').lstrip()}p.{b['page']} begins here -->")
@@ -2323,7 +2565,8 @@ def convert(cfg):
                 used[-1] = used[-1] + " " + head
                 prev_caps = b["text"]
                 continue
-            out.append(("## " if b["text"] in sub_heads else "# ") + head)
+            depth = 2 if b["text"] in sub_heads else 1
+            out.append("#" * depth + " " + head)
             used.append(head)
             prev_caps = b["text"] if b["text"] in auto_caps else None
             continue
@@ -2386,7 +2629,7 @@ def convert(cfg):
         back_matter_kept=len(back_rows), back_headings=back_headings,
         notes=len(note_blocks), marks=len(FOOTNOTE_MARKS), columns=2 if split else 1,
         column_split=round(split, 1) if split else None, bands=bands,
-        headings_placed=used, possible_dashes=dashes,
+        headings_placed=used, possible_dashes=dashes, outline=outline_used,
         headings_missing=[h for _f, h in cfg.headings if h not in used]
                          + [h for h in cfg.own_headings.values() if h not in used],
         furniture=dict(dropped), running_heads=heads, footers=footers,

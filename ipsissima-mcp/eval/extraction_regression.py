@@ -33,6 +33,16 @@ IPSISSIMA_PRIVATE_CORPUS points at it (docs/CORPUS.md); and any list file given 
 IPSISSIMA_EXTRACTION_LIST -- one PDF path a line, `#` for comments. A list of copyrighted papers
 belongs in the non-GitHub folder, not here: the repository names only what it may publish.
 
+THE MAPS ARE AN ANSWER KEY (`--maps`). Every quotation a map verifies is a sentence some
+extraction of that paper got right, and that a converter must keep quotable. So each map whose
+source can be traced to its PDF -- by the `zotero:` key in the source's front matter, or the PDF
+named in its header -- is checked against a fresh conversion by each converter, and every
+quotation that verified with the old and fails with the new is NAMED. That is a verdict, not a
+difference to read: the run fails on one. The count is relative on purpose: many sources were
+repaired by hand after converting, so neither converter matches them everywhere; what matters is
+that a change loses none of what the last one had. Maps are found in `samples/`, the private
+corpus, and the folders in IPSISSIMA_MAPS_DIRS (separated as PATH is).
+
 THE BASELINE is the converter at a git commit, unpacked with `git archive` into a cache keyed by
 the commit, and its outputs are cached there too (keyed by the PDF's path, size and mtime), so a
 second run against the same baseline converts only with the working tree.
@@ -164,6 +174,117 @@ def compare(a, b, show=0):
                 notes=(a["notes"], b["notes"]), abstract=(a["abstract"], b["abstract"]))
 
 
+# --------------------------------------------------------------------------- the maps
+
+def map_roots():
+    roots = [REPO / "samples"]
+    for r in [os.environ.get("IPSISSIMA_PRIVATE_CORPUS")] + os.environ.get("IPSISSIMA_MAPS_DIRS", "").split(os.pathsep):
+        if r and Path(r).is_dir():
+            roots.append(Path(r))
+    return roots
+
+
+def pdf_for(source_md, near):
+    """The PDF a source was converted from: its Zotero attachment, or the file its header names,
+    looked for in Zotero, the ingest fixtures, the private corpus and beside the map."""
+    head = source_md.read_text(encoding="utf-8", errors="replace")[:5000]
+    z = re.search(r'^zotero:\s*"?(\w{8})', head, re.M)
+    if z:
+        hit = sorted((Path.home() / "Zotero" / "storage" / z.group(1)).glob("*.pdf"))
+        if hit:
+            return str(hit[0])
+    f = re.search(r"Made by \S+ from (.+?\.pdf)", head)
+    if not f:
+        return None
+    name = f.group(1).strip()
+    places = [Path.home() / "Zotero" / "storage", REPO / "fixtures" / "ingest", near]
+    priv = os.environ.get("IPSISSIMA_PRIVATE_CORPUS")
+    if priv:
+        places.append(Path(priv))
+    for place in places:
+        if place.is_dir():
+            hit = next(iter(place.glob("*/" + name)), None) or next(iter(place.glob(name)), None) \
+                or next(iter(place.rglob(name)), None) if place != Path.home() / "Zotero" / "storage" \
+                else next(iter(place.glob("*/" + name)), None)
+            if hit:
+                return str(hit)
+    return None
+
+
+def linked_maps(only=None):
+    """(map, chapter, pdf) for each map with ONE source file that can be traced to a PDF."""
+    out, seen = [], set()
+    for root in map_roots():
+        for m in sorted(root.rglob("*.argdown")):
+            if only and not re.search(only, str(m), re.I):
+                continue
+            text = m.read_text(encoding="utf-8", errors="replace")
+            chapters = set(re.findall(r'\bchapter:\s*"?([^"\n,}]+)"?', text))
+            if len(chapters) != 1:
+                continue
+            chapter = chapters.pop().strip()
+            src = m.parent / chapter
+            if not src.is_file():
+                continue
+            pdf = pdf_for(src, m.parent)
+            if pdf and str(m) not in seen:
+                seen.add(str(m))
+                out.append((m, chapter, pdf))
+    return out
+
+
+def quotations(map_path, chapter, md):
+    """(checked, the titles whose quotation fails) for the map against `md` as its source."""
+    if md is None:
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        shutil.copy(map_path, Path(tmp) / map_path.name)
+        dest = Path(tmp) / chapter
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(md, encoding="utf-8")
+        r = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(Path(tmp) / map_path.name),
+                            "--source-root", tmp, "--no-fix", "--format", "json"], capture_output=True, text=True)
+    try:
+        res = json.loads(r.stdout)
+    except ValueError:
+        return None
+    failing = sorted({f.get("title", "?") for f in res.get("findings", []) if f.get("check") == "quotation"})
+    return (res.get("shape", {}).get("quotations", {}).get("checked", 0), failing)
+
+
+def run_maps(args, old_conv, new_conv):
+    """Every linked map checked against both converters' outputs; returns how many lost a quotation."""
+    maps = linked_maps(args.only)
+    print(f"the maps as an answer key: {len(maps)} map(s) traced to their PDF\n")
+    # Each PDF converted once by each converter, before any map is checked: two maps of one paper
+    # (a trial's two arms) converting it at once wrote into one folder.
+    pdfs = sorted({t[2] for t in maps})
+    with ThreadPoolExecutor(args.jobs) as ex:
+        old_md = dict(zip(pdfs, ex.map(lambda p: old_conv(p)[0], pdfs)))
+        new_md = dict(zip(pdfs, ex.map(lambda p: new_conv(p)[0], pdfs)))
+        rows = list(ex.map(lambda t: (t, quotations(t[0], t[1], old_md[t[2]]),
+                                      quotations(t[0], t[1], new_md[t[2]])), maps))
+    lost_maps = 0
+    for (m, _c, _p), a, b in rows:
+        name = f"{m.parent.name}/{m.name}"[-70:]
+        if a is None or b is None:
+            print(f"  ?  {name}: could not be checked")
+            continue
+        lost = [t for t in b[1] if t not in a[1]]
+        gained = [t for t in a[1] if t not in b[1]]
+        ok_a, ok_b = a[0] - len(a[1]), b[0] - len(b[1])
+        mark = "!" if lost else ("+" if gained else " ")
+        lost_maps += bool(lost)
+        if lost or gained or args.show:
+            print(f"  {mark} {ok_a:4d} -> {ok_b:4d} of {b[0]:4d} quotations  {name}")
+            for t in lost[: max(args.show, 5)]:
+                print(f"        lost:   {t}")
+            for t in gained[: args.show]:
+                print(f"        gained: {t}")
+    print(f"\n{lost_maps} map(s) lost a quotation that verified before.")
+    return lost_maps
+
+
 # --------------------------------------------------------------------------- the run
 
 def report(rows, show):
@@ -204,14 +325,25 @@ def main():
     ap.add_argument("--only", help="a regular expression the PDF path must match")
     ap.add_argument("--show", type=int, default=0, help="changes to print in context per document")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    ap.add_argument("--maps", action="store_true", help="check every traceable map's quotations against both")
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args()
     if args.self_test:
         return self_test()
+    work = Path(tempfile.mkdtemp(prefix="extraction-regression-"))
+    if args.maps:
+        try:
+            if args.golden:
+                sys.exit("--maps compares two converters; give --base, not --golden")
+            sha, pkg = package_at(args.base)
+            print(f"against the converter at {sha[:10]} ({args.base})")
+            return 1 if run_maps(args, lambda p: convert(p, pkg, CACHE / sha / "out" / key_of(p)),
+                                 lambda p: convert(p, PKG.parent, work / key_of(p))) else 0
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
     pdfs = pdfs_from(args)
     if not pdfs:
         sys.exit("no PDFs: the fixtures are missing, and no list or private corpus was given")
-    work = Path(tempfile.mkdtemp(prefix="extraction-regression-"))
     try:
         # The working tree's outputs, converted afresh every run.
         with ThreadPoolExecutor(args.jobs) as ex:

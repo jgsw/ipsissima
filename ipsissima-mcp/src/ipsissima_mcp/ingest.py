@@ -540,6 +540,9 @@ def from_pdf_structured(path, extras=None):
     if rep["heading_gaps"]:
         notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
                      f"there before trusting the sections")
+    if rep.get("outline"):
+        notes.append(f"headings from the PDF's own outline ({rep['outline'][0]} of its "
+                     f"{rep['outline'][1]} entries found in the text)")
     if rep.get("possible_dashes"):
         notes.append(f"! {len(rep['possible_dashes'])} line-end join(s) may have been dashes -- this scan "
                      f"sets its dashes as hyphens, so the text cannot tell: "
