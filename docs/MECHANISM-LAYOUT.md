@@ -28,11 +28,12 @@ baseline, which a change may not make materially worse.
 | **M9** | **Room is made, not squeezed.** Where something must be drawn between two boxes (an arrow between stacked boxes, its label, the badges and pills on their edges), the gap between them grows to hold it, rather than the things being drawn over one another. | Not measured directly: M1 fails where it is broken. | principle |
 | **M10** | **Opening or folding moves nothing it need not.** Folding moves no box; opening a label moves only what is below it. | Existing checks in `test_mechanism_view.mjs`. | hard |
 | **M11** | **One source of geometry.** Every mark is placed by `layout`, and the drawing draws what `layout` returns, so the checks measure what is drawn. | The page test compares drawn positions with the layout's. | hard |
+| **M12** | **A box holds its words.** No line of a state's label runs past its box: a word longer than the line is broken, at its own hyphen where it has one. | Lines longer than the box's width holds; the page test holds that estimate to what the browser draws. | hard |
 
 ## How they are held
 
 - `audit(G)` in `app/src/argdown-mechanism.js` takes a finished layout and returns every breach of
-  M1 to M5 and the M6 to M8 numbers. It is pure, like `layout`, so it runs without a browser.
+  M1 to M5 and M12, and the M6 to M8 numbers. It is pure, like `layout`, so it runs without a browser.
 - `app/test_mechanism_view.mjs` requires no hard breach on every chain of every fixture and every
   public sample, opened and folded to its ends, with the text's boxes and with every state.
 - `app/mechanism_quality.mjs` prints the table for any folder of maps (the private research corpus
@@ -56,6 +57,9 @@ baseline, which a change may not make materially worse.
   of the boxes between, out of a box's side where another box stands below it. A stem (co-cause,
   blocker, moderator, measure) tries the near ways, ways under and over, out of the box's side, and
   through the column gaps, and takes the shortest that crosses nothing.
+- **A level's heading is never under a box** (M1). Where a state running through several levels
+  crosses a lane's heading strip, the heading starts past it, in the first stretch wide enough for
+  the level's name, and the actors after the name are cut to the room left (in full on hover).
 - **An AND gate's inputs** enter its flat back at their own points, the co-cause further from the
   arrow at the outer point, each led in along the arrow's direction (M5).
 

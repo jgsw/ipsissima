@@ -743,7 +743,10 @@ to see only the paths through it — what leads to it and what it leads to — w
 tested** keeps the steps backed by a study, statistics or a model.
 
 A state's name is cut at three lines; **▼ more** on the foot of its box shows the whole of it, and
-the rows below move down to make room. **▲ less** puts it back.
+the rows below move down to make room. **▲ less** puts it back. A long label on an arrow is cut
+too, and says itself whole when you hover on it. **Labels: Full**, in the bar, shows every state's
+and every arrow's label whole at once, as **Claims: Full** does in Reasons; **Short** cuts them
+again.
 
 **−** and **+** zoom the chain out and in, and the size between them, pressed, puts it back to its
 actual size; so do <kbd>Cmd/Ctrl −</kbd> and <kbd>Cmd/Ctrl =</kbd>, and a pinch or

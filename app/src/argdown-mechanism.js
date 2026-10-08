@@ -1636,7 +1636,9 @@ function layoutOnce(M, opts) {
   var boxH = {};
   ids.forEach(function (v) {
     var n = wrapWords(labelOf(v), charsFor(BW), Infinity).length;
-    boxH[v] = opts.open && opts.open[v] && !spans(v) && n > MAX_LINES ? Math.max(BH, n * LINE_H + LINE_H + 10) : BH;
+    // FULL (the bar's "labels: Full"): every box open to its whole label, as Reasons' "claims: Full".
+    var opened = opts.full || (opts.open && opts.open[v]);
+    boxH[v] = opened && !spans(v) && n > MAX_LINES ? Math.max(BH, n * LINE_H + LINE_H + 10) : BH;
     if (opts.minH && opts.minH[v] && !spans(v)) boxH[v] = Math.max(boxH[v], opts.minH[v]);
   });
   var rowHs = M.levels.map(function (lv) {
@@ -1716,7 +1718,7 @@ function layoutOnce(M, opts) {
     var p = nodes[v], all = wrapWords(labelOf(v), charsFor(p.w), Infinity);
     var cap = spans(v) ? Math.max(MAX_LINES, Math.floor((p.h - LINE_H) / LINE_H)) : MAX_LINES;
     p.more = all.length > cap;
-    p.open = !!(p.more && opts.open && opts.open[v]);
+    p.open = !!(p.more && (opts.full || (opts.open && opts.open[v])));
     if (p.open && spans(v)) p.h = Math.max(p.h, all.length * LINE_H + LINE_H + 10);
     p.lines = p.open ? all : wrapWords(labelOf(v), charsFor(p.w), cap);
   });
@@ -1724,10 +1726,17 @@ function layoutOnce(M, opts) {
   // lower lane's heading, and a long list of actors ran on under it (the Coleman boat's Schelling
   // model, 30 Sep 2026). The words are cut to the room before the first such box, and say
   // themselves in full on hover.
+  // AND THE LEVEL'S OWN NAME IS NEVER UNDER A BOX: a state running down through the first column
+  // covered "DEEP" itself, which no cut of the words after it could clear (Sewell's every chain
+  // together, James, 8 Oct 2026). The heading starts in the first stretch of its strip wide
+  // enough for the name, past any box crossing the strip before it.
   lanes.forEach(function (ln) {
-    var hd = ln.head, stop = Infinity;
-    ids.forEach(function (v) { var n = nodes[v];
-      if (n.y < hd.y + hd.h + 16 && n.y + n.h > hd.y && n.x + n.w > hd.x) stop = Math.min(stop, n.x - 8); });
+    var hd = ln.head, stop = Infinity, nameW = 8 + ln.level.length * 9;
+    var across = ids.map(function (v) { return nodes[v]; }).filter(function (n) {
+      return n.y < hd.y + hd.h + 16 && n.y + n.h > hd.y; })
+      .map(function (n) { return [n.x - 8, n.x + n.w + 8]; }).sort(function (a, b) { return a[0] - b[0]; });
+    across.forEach(function (c) { if (c[1] > hd.x && c[0] < hd.x + nameW) hd.x = c[1]; });
+    across.forEach(function (c) { if (c[1] > hd.x) stop = Math.min(stop, c[0]); });
     if (hd.x + hd.w <= stop) return;
     var room = Math.max(0, stop - hd.x - 8 - ln.level.length * 9 - 10), keepN = Math.floor(room / 6.9);
     ln.whoFull = ln.who;
@@ -1742,7 +1751,9 @@ function layoutOnce(M, opts) {
     mk.left.forEach(function (b, i) { p.badges.push({ kind: b.kind, i: b.i, x: BADGE_R + i * BADGE_STEP, y: -5, r: BADGE_R, edge: "top" }); });
     mk.right.forEach(function (b, j) { p.badges.push({ kind: b.kind, i: b.i, x: p.w - BADGE_R - j * BADGE_STEP, y: -5, r: BADGE_R, edge: "top" }); });
     mk.foot.forEach(function (b, j) { p.badges.push({ kind: b.kind, x: p.w - BADGE_R - j * BADGE_STEP, y: p.h + 5, r: BADGE_R, edge: "foot" }); });
-    p.pill = p.more ? { x: PILL_X - PILL_W / 2, y: p.h - PILL_H / 2, w: PILL_W, h: PILL_H } : null;
+    // No pill where every label is whole: there is nothing more to show, and "▲ less" would undo
+    // the reader's own choice for one box.
+    p.pill = p.more && !opts.full ? { x: PILL_X - PILL_W / 2, y: p.h - PILL_H / 2, w: PILL_W, h: PILL_H } : null;
   });
   // A STATE THE TEXT LINKS TO NOTHING says so beside its box -- and the drawing is wide enough to
   // hold the words: on the last column "✕ no link in the text" ran off the edge and read "✕ no l"
@@ -2146,56 +2157,66 @@ function layoutOnce(M, opts) {
     // depth-first walk found closing one.
     var closes = isBack || ((isVertKey[k] || isSideKey[k]) && ss.some(function (x) { return back[x.id]; }));
     var given = ss.some(function (s) { return s.given.length > 0; });
-    var viaName = function (v) { var t = String(obj(M.states[v]).label || v); return t.length > 22 ? t.slice(0, 21) + "…" : t; };
-    // A STEP THE TEXT OPENS INTO A ROUTE (profile 1.8) is labelled as a folded route is: it IS
-    // that route, not a second one beside it.
-    var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire"; }) ? s0.statedVia : null;
-    // THE SIZE ON THE ARROW (G3): two texts that agree on direction and dispute only size drew as
-    // one picture of agreement. One step with a stated value shows it.
-    var sz = s0.sizeValue || s0.size || "";
-    // NEVER CUT: "slows · 8% below the coun…" hid the finding it was there to give (James's verdict
-    // on the levy, 29 Sep 2026). The chip wraps instead (chipLines).
-    var sizeTag = sz ? " · " + (sz.length > 60 ? sz.slice(0, 59) + "…" : sz) : "";
-    // THE PERIOD ON THE ARROW, where one pair has steps in several: each is its own arrow.
-    var pd = s0.period || "";
-    var periodTag = pd && ss.every(function (x) { return x.period === pd; }) &&
-      M.steps.some(function (x) { return x.from === s0.from && x.to === s0.to && x.period && x.period !== pd; })
-      ? " · " + (pd.length > 40 ? pd.slice(0, 39) + "…" : pd) : "";
-    var route = s0.parts ? (ss.length === 1 ? " · via " + viaName(s0.via[0]) + (s0.via.length > 1 ? " +" + (s0.via.length - 1) : "")
-                                            : " · " + ss.length + " routes")
-              : stated ? " · via " + viaName(stated[0]) + (stated.length > 1 ? " +" + (stated.length - 1) : "") : "";
-    var label = breakdown.length > 1
-              ? breakdown.slice(0, 2).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
-                (breakdown.length > 2 ? " · +" + (breakdown.length - 2) + " more" : "") +
-                (given ? " ◇" : "") + (closes ? " ↻" : "")
-              : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "") +
-                // A NULL IN ONE PERIOD SAYS WHICH: "no effect" beside "raises during culling" read as
-                // a contradiction, not a time course.
-                (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "")
-              // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
-              : kind === "selection" ? "selection effect"
-              // "ASSOCIATED" (1.13): the text reports they go together, and no more.
-              : kind === "association" ? "associated" + (ss.length > 1 ? " ×" + ss.length : "") :
-                // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
-                (signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
-                // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
-                : s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
-                  ? (signs[0] === "+" ? "speeds" : "slows")
-                  // "ONLY IF" IS NOT "RAISES" (profile 1.9, G5): drawn as a plain raise, a necessary
-                  // condition read as more of the one giving more of the other.
-                  : s0.necessary === true && s0.sufficient === true ? "needed and enough for"
-                  : s0.necessary === true ? "needed for"
-                  : s0.sufficient === true ? "enough for" : signWord(signs)) +
-                (s0.sufficient === false ? " · not alone" : "") +
-                (s0.attribution ? " · " + (ATTRIBUTION_WORD[s0.attribution] || s0.attribution) +
-                  (s0.attributionBy ? " by " + String(obj(M.actors[s0.attributionBy]).label || s0.attributionBy).toLowerCase() : "") : "") +
-                // TWO ACCOUNTS THAT CANNOT BOTH HOLD SAY SO (James's verdict on Yellowstone, 29 Sep 2026).
-                (disputedKey(ss) ? " · disputed" : "") +
-                // A STEP PAST A THRESHOLD (G2) says so: drawn as a plain "raises" it read as "more
-                // of the one, more of the other", monotone, which Lenton's tipping points are not.
-                (s0.threshold ? " past a threshold" : "") +
-                (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag + periodTag +
-                (given ? " ◇" : "") + (closes ? " ↻" : "");
+    // CUT IN SHORT, WHOLE IN FULL: a label cut on the arrow had no way to be read on the map
+    // (James, 8 Oct 2026). Full names every state a route runs through, and every kind of step.
+    // The chip's words in Short or in Full, worked out both ways: a chip cut in Short says its
+    // whole label on hover.
+    var labelFor = function (FULLTEXT) {
+      var cut = function (t, n) { t = String(t); return !FULLTEXT && t.length > n ? t.slice(0, n - 1) + "…" : t; };
+      var viaName = function (v) { return cut(obj(M.states[v]).label || v, 22); };
+      var viaList = function (vs) { return FULLTEXT ? vs.map(viaName).join(" → ") : viaName(vs[0]) + (vs.length > 1 ? " +" + (vs.length - 1) : ""); };
+      // A STEP THE TEXT OPENS INTO A ROUTE (profile 1.8) is labelled as a folded route is: it IS
+      // that route, not a second one beside it.
+      var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire"; }) ? s0.statedVia : null;
+      // THE SIZE ON THE ARROW (G3): two texts that agree on direction and dispute only size drew as
+      // one picture of agreement. One step with a stated value shows it.
+      var sz = s0.sizeValue || s0.size || "";
+      // NEVER CUT: "slows · 8% below the coun…" hid the finding it was there to give (James's verdict
+      // on the levy, 29 Sep 2026). The chip wraps instead (chipLines).
+      var sizeTag = sz ? " · " + cut(sz, 60) : "";
+      // THE PERIOD ON THE ARROW, where one pair has steps in several: each is its own arrow.
+      var pd = s0.period || "";
+      var periodTag = pd && ss.every(function (x) { return x.period === pd; }) &&
+        M.steps.some(function (x) { return x.from === s0.from && x.to === s0.to && x.period && x.period !== pd; })
+        ? " · " + cut(pd, 40) : "";
+      var route = s0.parts ? (ss.length === 1 ? " · via " + viaList(s0.via) : " · " + ss.length + " routes")
+                : stated ? " · via " + viaList(stated) : "";
+      var keepKinds = FULLTEXT ? breakdown.length : 2;
+      var label = breakdown.length > 1
+                ? breakdown.slice(0, keepKinds).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
+                  (breakdown.length > keepKinds ? " · +" + (breakdown.length - keepKinds) + " more" : "") +
+                  (given ? " ◇" : "") + (closes ? " ↻" : "")
+                : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "") +
+                  // A NULL IN ONE PERIOD SAYS WHICH: "no effect" beside "raises during culling" read as
+                  // a contradiction, not a time course.
+                  (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "")
+                // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
+                : kind === "selection" ? "selection effect"
+                // "ASSOCIATED" (1.13): the text reports they go together, and no more.
+                : kind === "association" ? "associated" + (ss.length > 1 ? " ×" + ss.length : "") :
+                  // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
+                  (signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
+                  // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
+                  : s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
+                    ? (signs[0] === "+" ? "speeds" : "slows")
+                    // "ONLY IF" IS NOT "RAISES" (profile 1.9, G5): drawn as a plain raise, a necessary
+                    // condition read as more of the one giving more of the other.
+                    : s0.necessary === true && s0.sufficient === true ? "needed and enough for"
+                    : s0.necessary === true ? "needed for"
+                    : s0.sufficient === true ? "enough for" : signWord(signs)) +
+                  (s0.sufficient === false ? " · not alone" : "") +
+                  (s0.attribution ? " · " + (ATTRIBUTION_WORD[s0.attribution] || s0.attribution) +
+                    (s0.attributionBy ? " by " + String(obj(M.actors[s0.attributionBy]).label || s0.attributionBy).toLowerCase() : "") : "") +
+                  // TWO ACCOUNTS THAT CANNOT BOTH HOLD SAY SO (James's verdict on Yellowstone, 29 Sep 2026).
+                  (disputedKey(ss) ? " · disputed" : "") +
+                  // A STEP PAST A THRESHOLD (G2) says so: drawn as a plain "raises" it read as "more
+                  // of the one, more of the other", monotone, which Lenton's tipping points are not.
+                  (s0.threshold ? " past a threshold" : "") +
+                  (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag + periodTag +
+                  (given ? " ◇" : "") + (closes ? " ↻" : "");
+      return label;
+    };
+    var label = labelFor(!!opts.full), whole = labelFor(true);
     var jointly = [];
     ss.forEach(function (x) { (x.jointly || []).forEach(function (j) {
       if (has(M.states, j) && nodes[j] && j !== s0.to && jointly.indexOf(j) < 0) jointly.push(j); }); });
@@ -2222,7 +2243,8 @@ function layoutOnce(M, opts) {
                  ? ({ "+": "▲", "-": "▼", "which": "◆" })[signs[0]] || "" : "";
                var lines = chipLines(label);
                var widest = Math.max.apply(null, lines.map(function (l, i) { return l.length * 6.6 + (i === 0 && glyph ? 11 : 0); }));
-               return { x: 0, y: 0, w: widest + 14, h: 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph };
+               return { x: 0, y: 0, w: widest + 14, h: 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph,
+                        whole: whole !== label ? whole : null };
              })() };
   });
   var shown = {};
@@ -2732,7 +2754,7 @@ function placeChips(edges, nodes, lanes) {
 /* ============================================================ the rules, checked
  *
  * `audit` takes a finished layout and reports every breach of the hard rules in
- * docs/MECHANISM-LAYOUT.md (M1 to M5) and the soft numbers (M6 to M8). It reads only what `layout`
+ * docs/MECHANISM-LAYOUT.md (M1 to M5, M12) and the soft numbers (M6 to M8). It reads only what `layout`
  * returns, which is what the drawing draws (M11), so it needs no browser. */
 function curvePts(P, n) {
   var out = [];
@@ -2780,6 +2802,15 @@ function audit(G, opts) {
     if (A.lane != null && B.lane != null) continue;
     if (cut(A.r, B.r) && !excused(A, B)) hard.push({ rule: "M1", what: A.what + " overlaps " + B.what });
   }
+  // M12: A BOX HOLDS ITS WORDS. Every line of a box's label fits the line its width holds (the page
+  // test holds that estimate to what the browser draws): "non-homologous" ran out of both sides of a
+  // box two spanning states shared (Sewell, 8 Oct 2026).
+  Object.keys(shown).forEach(function (v) {
+    var n = shown[v], cap = charsFor(n.w);
+    (n.lines || []).forEach(function (l) {
+      if (l.replace(/…$/, "").length > cap) hard.push({ rule: "M12", what: "a line of " + name(v) + " is wider than its box: " + l });
+    });
+  });
   // M3: on the drawing.
   items.forEach(function (it) {
     if (it.r.x < -0.5 || it.r.y < -0.5 || it.r.x + it.r.w > G.width + 0.5 || it.r.y + it.r.h > G.height + 0.5)
@@ -2856,15 +2887,29 @@ function el(name, attrs, parent) {
   return e;
 }
 /** A label in lines of about `n` characters, cut with an ellipsis at `max` lines (three unless
- *  told otherwise; Infinity for the whole label). */
+ *  told otherwise; Infinity for the whole label).
+ *  A WORD LONGER THAN A LINE IS BROKEN, at its own hyphen where it has one and with one where it
+ *  has not: kept whole, "non-homologous" ran out of both sides of a box two spanning states shared
+ *  (Sewell's every chain together, James, 8 Oct 2026). Each piece is a word that joins the last. */
 function wrapWords(s, n, max) {
-  var words = String(s).split(/\s+/), lines = [], cur = "";
+  var toks = [], lines = [], cur = "";
   var cap = max == null ? MAX_LINES : max;
-  words.forEach(function (w) {
-    if ((cur + " " + w).trim().length > n) { if (cur.trim()) lines.push(cur.trim()); cur = w; }
-    else cur += " " + w;
+  String(s).split(/\s+/).filter(Boolean).forEach(function (w) {
+    var joins = false;
+    while (w.length > n) {
+      var cut = w.lastIndexOf("-", n - 1);
+      var piece = cut > 1 ? w.slice(0, cut + 1) : w.slice(0, n - 1) + "-";
+      w = cut > 1 ? w.slice(cut + 1) : w.slice(n - 1);
+      toks.push([piece, joins]); joins = true;
+    }
+    toks.push([w, joins]);
   });
-  if (cur.trim()) lines.push(cur.trim());
+  toks.forEach(function (t) {
+    var next = cur ? cur + (t[1] ? "" : " ") + t[0] : t[0];
+    if (cur && next.length > n) { lines.push(cur); cur = t[0]; }
+    else cur = next;
+  });
+  if (cur) lines.push(cur);
   if (lines.length > cap) { lines = lines.slice(0, cap); lines[cap - 1] = lines[cap - 1].replace(/\s*\S*$/, "") + "…"; }
   return lines;
 }
@@ -2984,8 +3029,19 @@ function injectStyle() {
     ".amech-zoom .zm+.zm{margin-left:-1px}.amech-zoom .pct{font-size:11px;min-width:44px;font-variant-numeric:tabular-nums}",
     ".amech .frame{stroke:var(--alm-group-line,#d6d6d6);stroke-width:1}",
     ".amech .caption.unsaid{font-style:italic}",
-    ".amech .st .more{cursor:pointer}.amech .st .more rect{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1;opacity:.95}",
-    ".amech .st .more text{font-size:9.5px;font-weight:600;fill:var(--accent,#3a7bd5)}.amech .st .more:hover text{text-decoration:underline}",
+    // "▼ MORE" AS REASONS DRAWS IT (James, 8 Oct 2026): the same words, size, weight and accent ink as
+    // a claim's (.alm-more). It sits in a break in the box's foot, so its ground is the box's own,
+    // with no ring of its own -- a ringed bold pill read as a different control from Reasons' link.
+    ".amech .st .more{cursor:pointer}.amech .st .more rect{fill:var(--alm-node-bg,#fff);stroke:none}",
+    ".amech .st.condition .more rect{fill:var(--mv-cond-bg)}.amech .st.intervention .more rect{fill:var(--alm-node-bg,#fff);stroke:var(--mv-text)}",
+    ".amech .st .more text{font-size:9px;fill:var(--alm-accent,var(--accent,#3a7bd5))}.amech .st .more:hover text{text-decoration:underline}",
+    // ONE SETTING, TWO VALUES: the Reasons bar's segmented control (.alm-seg), in this bar.
+    ".amech-seg{display:inline-flex;align-items:stretch;border:1px solid var(--alm-group-line,#ccc);border-radius:6px;overflow:hidden;font-size:11px}",
+    ".amech-seg b{display:inline-flex;align-items:center;padding:0 .4rem 0 .45rem;font-weight:600;opacity:.6;text-transform:uppercase;letter-spacing:.05em;font-size:9px}",
+    ".amech-seg button{font:inherit;font-size:11px;color:inherit;background:transparent;border:0;border-left:1px solid var(--alm-group-line,#ccc);padding:.15rem .5rem;cursor:pointer}",
+    ".amech-seg button.on{background:var(--alm-accent-fill,#2d6cc0);color:var(--alm-on-accent,#fff)}",
+    ".amech-seg button:hover:not(.on){background:rgba(0,0,0,.05)}",
+    ".amech-seg button:focus-visible{outline:2px solid var(--accent,#3a7bd5);outline-offset:-2px}",
     ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
     ".amech .st.intervention text.gapmark,.amech .gapmark{fill:var(--mv-gap);font-size:11px;font-weight:600}"
   ].join("\n");
@@ -3124,6 +3180,8 @@ function create(container, graph, opts) {
   var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
                chain: CHAINS.length ? CHAINS[0].id : null, then: null,
                opened: {}, zoom: null,
+               // "Labels: Short | Full", as Reasons' "claims": Full opens every box and every chip.
+               full: !!opts.fullLabels,
                // Levels as bands (null), or as frames nested one inside another ("chain", or a tree
                // { parent: {...} } handed in by a host). A reader's choice, not the default: most
                // texts' levels are not wholes containing parts (James, 30 Sep 2026).
@@ -3159,6 +3217,8 @@ function create(container, graph, opts) {
     getFolded: function () { return cur.getFolded(); },
     setBoxes: function (on) { keep.boxes = !!on && hasWholes; remount(); },
     getBoxes: function () { return keep.boxes; },
+    setLabels: function (full) { keep.full = !!full; cur.setLabels(keep.full); },
+    getLabels: function () { return keep.full ? "full" : "short"; },
     setChain: function (id) { keep.chain = CHAINS.some(function (c) { return c.id === id; }) ? id : null; remount(); },
     getChain: function () { return keep.chain; },
     zoomBy: function (f) { cur.zoomBy(f); },
@@ -3168,6 +3228,7 @@ function create(container, graph, opts) {
     getView: function () {
       var v = cur.getView();
       return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal, nest: keep.nest ? "on" : null,
+               labels: keep.full ? "full" : "short",
                opened: Object.keys(keep.opened).sort(), show: v.show, ends: v.ends, folded: v.folded,
                expanded: v.expanded, zoom: v.zoom };
     },
@@ -3179,6 +3240,7 @@ function create(container, graph, opts) {
       if ("rival" in v) keep.rival = v.rival !== false;
       if ("appraisal" in v) keep.appraisal = !!v.appraisal;
       if ("nest" in v) keep.nest = v.nest ? "on" : null;
+      if ("labels" in v) keep.full = v.labels === "full";
       keep.opened = {}; (v.opened || []).forEach(function (x) { if (has(FULL.states, x)) keep.opened[x] = true; });
       keep.zoom = null;
       remount();
@@ -3210,7 +3272,7 @@ function create(container, graph, opts) {
   var NEST = nestingOf(M.ordering);
   if (!NEST.offer) keep.nest = null;
   var nestSpec = function () { return keep.nest ? NEST.spec : null; };
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: nestSpec() });
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, nest: nestSpec() });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -3243,6 +3305,14 @@ function create(container, graph, opts) {
       CHAINS.map(function (c) { return '<option value="' + esc(c.id) + '"' + (keep.chain === c.id ? ' selected' : '') + '>' +
         esc(c.label || c.id) + '</option>'; }).join("") +
       '<option value=""' + (keep.chain ? '' : ' selected') + '>Every chain together</option></select></label>' : '') +
+    // HOW MUCH OF EACH LABEL, the Reasons bar's "claims: Short | Full" in the same shape: one setting
+    // with two values, drawn as one sunken control (James, 8 Oct 2026). Here it governs the
+    // states' words and the arrows' alike.
+    '<span class="amech-seg" role="group" aria-label="Labels"><b title="How much of each state\u2019s and each arrow\u2019s words to show">labels</b>' +
+      '<button type="button" data-labels="short"' + (keep.full ? '' : ' class="on" aria-pressed="true"') +
+      ' title="The first lines of each state, with a \u201cmore\u201d link; long arrow labels cut">Short</button>' +
+      '<button type="button" data-labels="full"' + (keep.full ? ' class="on" aria-pressed="true"' : '') +
+      ' title="Every state\u2019s and every arrow\u2019s whole label">Full</button></span>' +
     // Every control says what it does on hover (F8, clarity audit 27 Sep 2026): these three were
     // the chain's switches with nothing to say.
     (M.profile.rival_steps ? '<label class="amech-tog rival" title="The steps rival views claim, as the text reports them; switch off to see only what the text itself asserts"><input type="checkbox" data-layer="rival" checked>' +
@@ -3418,6 +3488,8 @@ function create(container, graph, opts) {
           el("tspan", {}, ct).textContent = line;
         } else ct.textContent = line;
       });
+      // A CUT LABEL SAYS ITSELF WHOLE ON HOVER; "labels: Full" says it on the chip.
+      if (e.chip.whole) el("title", {}, chip).textContent = e.chip.whole + " — click for its claims; “labels: Full” shows every label whole";
       // HOVER TIES A CHIP TO ITS LINE without a click: both stand out, the rest fade.
       var hot = function (on) { svg.classList.toggle("hovering", on); g.classList.toggle("hot", on); chip.classList.toggle("hot", on); };
       [g, chip].forEach(function (x) {
@@ -3462,11 +3534,11 @@ function create(container, graph, opts) {
       var lines = p.lines || wrapWords(s.label || v, charsFor(p.w));
       lines.forEach(function (t, i) {
         // Lifted a little where the foot carries the "more" pill, so the last line stays clear of it.
-        el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * LINE_H + 4 - (p.more ? 4 : 0), "text-anchor": "middle" }, g).textContent = t;
+        el("text", { x: p.w / 2, y: p.h / 2 + (i - (lines.length - 1) / 2) * LINE_H + 4 - (p.pill ? 4 : 0), "text-anchor": "middle" }, g).textContent = t;
       });
       // THE WHOLE LABEL ON ASKING, as a claim's "▼ more" in Reasons: a pill on the box's foot. The
       // box grows and the rows below make room; "▲ less" puts it back.
-      if (p.more) {
+      if (p.pill) {
         var mo = el("g", { "class": "more", "data-more": v, transform: "translate(" + (p.pill.x + p.pill.w / 2) + "," + (p.pill.y + p.pill.h / 2) + ")" }, g);
         el("rect", { x: -p.pill.w / 2, y: -p.pill.h / 2, width: p.pill.w, height: p.pill.h, rx: p.pill.h / 2 }, mo);
         el("text", { "text-anchor": "middle", y: 3.5 }, mo).textContent = p.open ? "▲ less" : "▼ more";
@@ -4140,12 +4212,25 @@ function create(container, graph, opts) {
   if (boxesBtn) boxesBtn.addEventListener("click", function () { keep.boxes = !keep.boxes; remount(); });
   var chainSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-chain]"));
   if (chainSel) chainSel.addEventListener("change", function () { keep.chain = chainSel.value || null; remount(); });
+  function setLabels(full) {
+    keep.full = !!full;
+    Array.prototype.forEach.call(bar.querySelectorAll("[data-labels]"), function (b) {
+      var on = (b.getAttribute("data-labels") === "full") === keep.full;
+      b.classList.toggle("on", on); if (on) b.setAttribute("aria-pressed", "true"); else b.removeAttribute("aria-pressed");
+    });
+    var was = selected && selected.state ? { state: selected.state } : null;
+    refold();
+    if (was && G.nodes[was.state]) select(was);
+  }
+  Array.prototype.forEach.call(bar.querySelectorAll("[data-labels]"), function (b) {
+    b.addEventListener("click", function () { var f = b.getAttribute("data-labels") === "full"; if (f !== keep.full) setLabels(f); });
+  });
   var guideBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-guide-go]"));
   if (guideBtn) guideBtn.addEventListener("click", function () { guideGo(0); });
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, marks: MS.marks, nest: nestSpec() });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, nest: nestSpec() });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
@@ -4220,6 +4305,7 @@ function create(container, graph, opts) {
       apply();
     },
     getLayers: function () { return { rival: layers.rival, appraisal: layers.appraisal }; },
+    setLabels: function (full) { if (!!full !== keep.full) setLabels(full); },
     setShow: function (v) { show = v === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; apply(); },
     setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
     getFolded: function () { return G.folded.slice(); },

@@ -393,6 +393,65 @@ mechanism:
   const hl = ALONE.edges.filter(e => e.from === "hazard" && e.to === "loss")[0];
   check(!!ALONE.nodes.defence && !!ALONE.nodes.devices && hl && hl.stems.some(sm => sm.tbar) && hl.stems.some(sm => sm.ring),
         "a state that only blocks or only moderates is drawn, with its stem", JSON.stringify(Object.keys(ALONE.nodes)));
+  // TWO STATES ACROSS THE SAME LEVELS, IN ONE COLUMN, share its width (Sewell's every chain
+  // together, James, 8 Oct 2026): a word longer than the narrower box's line is broken inside it
+  // (M12), and the lower level's heading starts past the boxes instead of under them (M1).
+  // Mutations: keep a long word whole in wrapWords -> M12; leave the heading at the strip's start ->
+  // "heading of deep overlaps box".
+  const NARROW = MV.layout(MV.model(graphOf.fromText(`===
+mechanism:
+    levels: [practice, surface, deep]
+    actors:
+        agents: {label: "Agents", level: practice}
+    states:
+        multiple: {label: "Many distinct, non-homologous structures", levels: [surface, deep], role: condition}
+        depth: {label: "Depth of a structure's schemas", levels: [surface, deep], role: condition}
+        durable: {label: "Durability", actor: agents, role: outcome}
+===
+
+[Aim]: A.
+
+[D]: Depth and multiplicity bear on durability.
+    {causes: [{from: depth, to: durable, sign: "+", basis: asserted}, {from: multiple, to: durable, sign: "-", basis: asserted}]}
+    +> [Aim]
+`)));
+  const nh = MV.audit(NARROW).hard;
+  check(NARROW.nodes.multiple.w < 168 && NARROW.nodes.multiple.lines.some(l => /^homologous/.test(l)) &&
+        !nh.some(b => b.rule === "M12" || /^heading/.test(b.what)),
+        "a long word is broken inside a narrow box, and a level's heading is never under a box",
+        JSON.stringify({ w: NARROW.nodes.multiple.w, lines: NARROW.nodes.multiple.lines, hard: nh.slice(0, 3) }));
+  // LABELS: SHORT OR FULL, as Reasons' "claims" (James, 8 Oct 2026). Short cuts a long route on its
+  // arrow and keeps the whole for hover; Full says it on the arrow and opens every box, with no
+  // pill left to press. Mutations: ignore opts.full in the chip's words -> the route stays cut;
+  // keep the pill in Full -> "no pill".
+  const LONGTXT = `===
+mechanism:
+    levels: [one]
+    actors:
+        people: {label: "People", level: one}
+    states:
+        cause: {label: "A cause", actor: people, role: condition}
+        mid: {label: "A long intermediate state with a great many words in it", actor: people}
+        effect: {label: "An effect described at such length that three lines of a box cannot hold the whole of what it says", actor: people, role: outcome}
+===
+
+[Aim]: A.
+
+[R]: The cause raises the effect by way of the intermediate state.
+    {causes: {from: cause, to: effect, sign: "+", basis: asserted, via: mid}}
+    +> [Aim]
+`;
+  const LM = MV.model(graphOf.fromText(LONGTXT));
+  const shortL = MV.layout(LM), fullL = MV.layout(LM, { full: true });
+  const chipOf = L => L.edges.find(e => e.from === "cause" && e.to === "effect").chip;
+  check(/…/.test(chipOf(shortL).label) && /with a great many words in it/.test(chipOf(shortL).whole || "") && !!shortL.nodes.effect.pill,
+        "in Short a long route is cut on its arrow, whole on hover, and a long state has its \u201cmore\u201d",
+        JSON.stringify({ chip: chipOf(shortL), pill: shortL.nodes.effect.pill }));
+  check(/with a great many words in it/.test(chipOf(fullL).label) && !chipOf(fullL).whole &&
+        fullL.nodes.effect.open && fullL.nodes.effect.lines.length > 3 && !fullL.nodes.effect.pill &&
+        MV.audit(fullL).hard.length === 0,
+        "in Full every label is whole, on the arrow and in the box, with no pill and every rule kept",
+        JSON.stringify({ chip: chipOf(fullL).label, lines: fullL.nodes.effect.lines, hard: MV.audit(fullL).hard.slice(0, 3) }));
   // A step's time course reads in time order, and a null names its period (the badgers, James's
   // verdicts, 29 Sep 2026). Mutation: drop timeOf from the port sort -> "no effect" leaves above.
   const CULL = MV.layout(MV.model(graphOf.fromText(`===
@@ -1628,6 +1687,28 @@ mechanism:
       return { bad, heads };
     });
     check(fit.bad.length === 0, "every label's words fit the rectangle the layout gave it", fit.bad.join("; "));
+    // M12 as drawn: every line of every box inside its box.
+    const spill = await page.evaluate(() => [...document.querySelectorAll("#mech g.st")].filter(g => {
+      const r = g.querySelector("rect.box").getBBox();
+      return [...g.querySelectorAll(":scope > text:not(.gapmark)")].some(t => { const b = t.getBBox();
+        return b.x < r.x - 0.5 || b.x + b.width > r.x + r.width + 0.5; });
+    }).map(g => g.getAttribute("data-state")));
+    check(spill.length === 0, "every state's words stay inside its box, as drawn", spill.join(", "));
+    // "LABELS: FULL" UNDER A REAL CLICK: no "more" left, no cut word on any arrow, and the setting is
+    // part of the view a fold state identifier records. Mutation: drop the button's handler -> the
+    // pills stay.
+    const pills0 = await page.locator("#mech g.more").count();
+    await page.locator('#mech [data-labels="full"]').click();
+    await page.waitForTimeout(300);
+    const afterFull = await page.evaluate(() => ({
+      pills: document.querySelectorAll("#mech g.more").length,
+      cut: [...document.querySelectorAll("#mech g.chip text")].filter(t => /…/.test(t.textContent)).length,
+      on: document.querySelector('#mech [data-labels="full"]').classList.contains("on") }));
+    check(afterFull.pills === 0 && afterFull.cut === 0 && afterFull.on,
+          "\u201clabels: Full\u201d shows every label whole, with no \u201cmore\u201d left to press", JSON.stringify({ pills0, ...afterFull }));
+    await page.locator('#mech [data-labels="short"]').click();
+    await page.waitForTimeout(300);
+    check(await page.locator("#mech g.more").count() === pills0, "and Short puts the first lines back");
     const est = MV.layout(MV.model(G), { marks: MV.markSpec(MV.model(G), MV.model(G)).marks }).lanes.map(l => l.head.w - 8);
     check(fit.heads.every((w, i) => w <= est[i] + 2), "every heading fits the width the layout reserved for it",
           JSON.stringify({ drawn: fit.heads.map(Math.round), reserved: est.map(Math.round) }));

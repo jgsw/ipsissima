@@ -7246,6 +7246,7 @@ function encodeFoldState(graph, state) {
     out.push("chain=" + (m.chain == null ? "" : encId(m.chain)));
     if (m.boxes) out.push("boxes=1");
     if (m.nest) out.push("nest=1");
+    if (m.labels === "full") out.push("mtext=full");
     if (m.rival === false) out.push("rival=0");
     if (m.show === "tested") out.push("show=tested");
     push("mfolds", m.folded);
@@ -7329,8 +7330,8 @@ function decodeFoldState(graph, text) {
   }
   const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
                  "facets", "untagged", "appraisal", "text", "more", "flow", "shape", "pages",
-                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane", "nest"];
-  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "nest"];
+                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane", "nest", "mtext"];
+  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "nest", "mtext"];
   if (fields.view !== "mech") for (const key of MECH_ONLY) if (key in fields)
     throw new Error('"' + key + '" belongs to the Mechanism arrangement, and this state is not in it');
   // The chain's own ids are not the map's claims, so they are decoded but not checked here: the
@@ -7352,6 +7353,8 @@ function decodeFoldState(graph, text) {
   }
   if ("text" in fields && fields.text !== "full")
     throw new Error('text must be "full", not "' + fields.text + '"');
+  if ("mtext" in fields && fields.mtext !== "full")
+    throw new Error('mtext must be "full", not "' + fields.mtext + '"');
   if ("flow" in fields && fields.flow !== "col")
     throw new Error('flow must be "col", not "' + fields.flow + '"');
   for (const key of seen) if (!known.includes(key))
@@ -7378,7 +7381,7 @@ function decodeFoldState(graph, text) {
     mech: fields.view !== "mech" ? null : {
       chain: fields.chain ? decodeURIComponent(fields.chain) : null,
       boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "1" || fields.nest === "chain" ? "on" : null,
-      show: fields.show === "tested" ? "tested" : "all",
+      show: fields.show === "tested" ? "tested" : "all", labels: fields.mtext === "full" ? "full" : "short",
       folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
       opened: list("mmore"), zoom
     }
