@@ -387,6 +387,13 @@ def sheet_lines(page, mark_footnotes=True):
             text = clean(join_spans(spans, mark_footnotes)).strip()
             if not text:
                 continue
+            # TEXT SET SIDEWAYS IN THE PAGE'S OUTER EDGE is the margin's, never the body's: Annual
+            # Reviews' access stamp ("Downloaded from www.annualreviews.org. <institution> ... IP:
+            # ..."), set up the left edge of every page, was banded by its top into whichever body
+            # line shared its height -- sixteen times in Hedström and Ylikoski 2010 (9 Oct 2026).
+            W = page.rect.width
+            if abs(l.get("dir", (1, 0))[1]) > 0.2 and (l["bbox"][2] < W * 0.08 or l["bbox"][0] > W * 0.92):
+                continue
             out.append(dict(x0=l["bbox"][0], y0=l["bbox"][1], x1=l["bbox"][2],
                             width=l["bbox"][2] - l["bbox"][0],
                             size=max(s.get("size", 0) for s in spans), text=text,

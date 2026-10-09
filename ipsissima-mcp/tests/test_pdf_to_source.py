@@ -1671,5 +1671,19 @@ _P.close_ligature_spaces(_Raw(_spur), _b1); _P.close_ligature_spaces(_Raw(_real)
 check("a space a ligature's next letter overlaps is closed; a real word space is kept",
       (_b1[0]["lines"][0]["spans"][0]["text"], _b2[0]["lines"][0]["spans"][0]["text"]), ("a\ufb01c", "f\ufb00 m"))
 
+print("margin furniture")
+# TEXT SET SIDEWAYS IN THE PAGE'S OUTER EDGE is an access stamp, never the body's: Annual Reviews'
+# ran into sixteen paragraphs of Hedström and Ylikoski 2010. Mutation: drop the sideways test ->
+# the stamp is a line of the sheet.
+import pymupdf as _pm  # noqa: E402
+_doc = _pm.open(); _pg = _doc.new_page(width=531, height=657)
+_pg.insert_text((60, 100), "The body of the article, a line of ordinary prose.", fontsize=9)
+_pg.insert_text((10, 560), "Downloaded from www.annualreviews.org. An Institution (ar-1) IP: 1.2.3.4", fontsize=8, rotate=90)
+_pg.insert_text((200, 300), "A label set sideways inside the page", fontsize=8, rotate=90)
+_got = [l["text"] for l in _P.sheet_lines(_pg, False)]
+check("a stamp set sideways in the page's edge is dropped; sideways text inside the page is kept",
+      (any("Downloaded" in t for t in _got), any("label set sideways" in t for t in _got), any("body of the article" in t for t in _got)),
+      (False, True, True))
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)
