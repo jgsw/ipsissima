@@ -50,6 +50,7 @@ const SUITES = [
   // THE CHART'S LAYOUT RULES (docs/MECHANISM-LAYOUT.md): no hard breach on any picture of any
   // fixture or public sample, and no soft number materially worse than its baseline.
   ["the mechanism chart keeps its rules", "node", [path.join(HERE, "mechanism_quality.mjs")]],
+  ["the author's diagram as an answer key", "node", [path.join(HERE, "test_diagram_compare.mjs")]],
   // F8, designed against the misreading (admitted 27 Sep 2026): the faults the clarity audit
   // found on screen -- help that vanished with the map, an id printed where a name belonged, a
   // bar that dropped every word -- each held by a real-input check.
