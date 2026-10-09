@@ -7248,7 +7248,8 @@ function encodeFoldState(graph, state) {
     if (m.nest) out.push("nest=1");
     if (m.labels === "full") out.push("mtext=full");
     if (m.rival === false) out.push("rival=0");
-    if (m.show === "tested") out.push("show=tested");
+    // "every" is a reader's choice of every step on a chain that opens at its core path (9 Oct 2026).
+    if (["tested", "core", "every", "panels"].indexOf(m.show) >= 0) out.push("show=" + m.show);
     push("mfolds", m.folded);
     if (m.ends) out.push("ends=1");
     push("split", m.expanded);
@@ -7381,7 +7382,7 @@ function decodeFoldState(graph, text) {
     mech: fields.view !== "mech" ? null : {
       chain: fields.chain ? decodeURIComponent(fields.chain) : null,
       boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "1" || fields.nest === "chain" ? "on" : null,
-      show: fields.show === "tested" ? "tested" : "all", labels: fields.mtext === "full" ? "full" : "short",
+      show: ["tested", "core", "every", "panels"].indexOf(fields.show) >= 0 ? fields.show : undefined, labels: fields.mtext === "full" ? "full" : "short",
       folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
       opened: list("mmore"), zoom
     }

@@ -142,6 +142,11 @@ mechanism:
   - `condition`: a standing arrangement.
 
   Leave `aspect:` out where you would be guessing.
+
+  **But not on a loop that runs either way** (*1.19*). Where the text says a loop can run in both
+  directions -- Meadows's coffee cools or warms toward the room, and she labels her states "stored
+  energy in body", not "low energy level" -- give the state a label without a direction, and give a
+  flow that runs whichever way the gap points `on: stock, net: true` (with `sign: which`).
 - **A cycle** (*1.11*). Where the text describes a cycle of reproduction and transformation rather
   than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
   `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
@@ -167,8 +172,39 @@ mechanism:
 - **A process with no owner** (*1.11*): a cascade, a flow, the dynamics of a field. It may leave out
   `actor` and give `levels:` instead. Where the text does attribute it to something, use that as its
   actor.
+- **What the states are told as** (*1.18*). Where the text defines the kind of thing nearly every
+  state is ("I use the idea of a flow … to refer to a process by which inputs are transformed into
+  outputs"), give it once on the block, as `idiom: {term, means, pinpoint}`. Never make it a state:
+  no step reaches it, and the chart draws only what a step touches.
+- **What a state's own keys add** (*1.19*), each only where the text says it:
+  - `behaviour:` the behaviour over time the text says a state follows -- `grows`, `declines`,
+    `levels off`, `s-shaped`, `oscillates`, `overshoot and collapse`, `steady` (Meadows's "inventory
+    oscillates", "the population levels off"). It is drawn as a sketch, so it is no graph of numbers.
+  - `observed: false` where the text says a state is unobserved (Knight and Winship's U*, Bias*).
+  - `dead_end: true` on an outcome the text sets out as stopping the process short (Marti and Gond's
+    symbolic use of a theory, which "will not lead to effective performativity"). Give it the step
+    that leads to it, so it is drawn; the checker then does not ask why it leads nowhere.
+  - On a chain, `conditioned:` the states its analysis holds fixed, and a list inside the list for
+    states the text says cannot be held fixed apart: `conditioned: [hours, [policy, care]]`.
+  - On a chain or the block, `boundary: {says, pinpoint}` only where the text itself draws attention
+    to where its system stops -- that the line is drawn by choice, or that things outside it act on
+    what is inside. Quote it. Every system has a boundary; do not set the key because yours does.
+- **The kinds of link** (*1.19*). Where the text tells kinds of link apart and the difference is its
+  point -- the Coleman-boat paper's ecological against social mechanisms, Rena et al.'s signalling
+  against metabolic conversion -- declare them once, `channels: {eco: {label: "ecological"}}`, in its
+  words, and mark each step with `channel:`. Not for a distinction you are making yourself.
+- **What the text keeps apart** (*1.18*). Where a chain meets no other, or its steps fall into pieces
+  that meet at no state, and the text keeps them apart (a contrast case, separate examples), say why
+  in `apart:` on the chain (or on the block, for a map with no chains). First look for a link the
+  text makes; see `parallel-pass.md`, *What meets*.
 
 ## 3. Mark the steps
+
+**Names, numbers, shapes** (*1.19*). Where the text names a step -- the kind of mechanism it is
+("situational", "transformational"), the question it asks, the feedback it is ("path dependency") --
+give `name:` in its words; where it numbers its steps (Marti and Gond's P1 to P9, Rena's 1 to 10),
+`mark:`. A relation the text says rises and then falls ("scarcer fish don't breed much, nor do
+crowded fish") is `shape: peak` (or `trough`), with no sign.
 
 **Making, keeping and changing in kind** (*1.11*). A step that brings its effect into being or ends
 it is `on: being` (`+` makes, `-` unmakes). One that keeps its effect going or wears it away is

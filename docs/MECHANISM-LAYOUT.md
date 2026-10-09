@@ -57,11 +57,37 @@ baseline, which a change may not make materially worse.
   of the boxes between, out of a box's side where another box stands below it. A stem (co-cause,
   blocker, moderator, measure) tries the near ways, ways under and over, out of the box's side, and
   through the column gaps, and takes the shortest that crosses nothing.
+- **Only what a step touches is drawn** (James's principle, 8 Oct 2026). A state whose only tie is
+  that it makes something up, or a starting point the text links to nothing, is not laid out.
+- **Pieces that meet at no state stand side by side.** The columns of each piece are its own, the
+  pieces in the order of their first column, and a rule (`rules` in the layout) stands midway
+  between them. "Together" is offered only for chains that meet (`chainGroups`).
+- **A label with no clear place widens the space it sits in** (M9). It widens the column gap where
+  it lies, among those its arrow crosses, or the gap between two boxes stacked in one band. Failing
+  both, it tries a wider set of places beside its line.
 - **A level's heading is never under a box** (M1). Where a state running through several levels
   crosses a lane's heading strip, the heading starts past it, in the first stretch wide enough for
   the level's name, and the actors after the name are cut to the room left (in full on hover).
 - **An AND gate's inputs** enter its flat back at their own points, the co-cause further from the
   arrow at the outer point, each led in along the arrow's direction (M5).
+
+- **What the diagram comparison changed** (James's decisions, 9 Oct 2026; the study is in the
+  private research folder, `diagram-comparison/`):
+  - a step stated `via` others is no arrow where its route is drawn (`summaries`, listed in the panel);
+  - the sign is the arrow's end -- a head, or a T-bar for "lowers" -- and a chip that only repeats it
+    is `quiet`: not drawn, not placed, so it takes no room; a null ends in a hollow circle;
+  - a level nothing reaches is `hidden`: no band, no heading;
+  - the core path (`corePath`, `coreModel`) is a model of its own, laid out afresh; long chains open
+    at it (`coreByDefault`); in it, a moderator the text gives no cause stands in its step's column;
+  - a stock and its flows are drawn as such; an outflow is drawn from the stock out to the flow;
+  - each loop has one mark (`centres`), placed after routing, clear of boxes, lines, gates and rings;
+  - a loop that is most of a small chain is laid out as a ring, turned so its links out face their
+    targets, and undone if any arrow would then cross a box;
+  - the text's own boxes are compartments: a whole and its parts share a column, framed;
+  - a condition on a declared state is written on the arrow and its state drawn, tied as a moderator;
+  - small multiples (`multiplesModel`): one copy of the chain per value, set apart as pieces are;
+  - an arrow moved by the spreading of heads is re-routed if it then crosses a box, and an arc down a
+    crowded column bulges no wider than the gap beside it.
 
 ## Where it stands (30 Sep 2026)
 

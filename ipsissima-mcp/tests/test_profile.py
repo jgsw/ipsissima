@@ -98,6 +98,10 @@ if re.search(r'obj\((?:FULL\.)?states\[\w+\]\)\.kind\b', MECH_JS):
 # Roles are read through rolesOf() since profile 1.1, where `role` may be a list.
 if re.search(r'function rolesOf\(state\)[^}]*\.role\b', MECH_JS, re.S):
     js_state.add("role")
+# Behaviour, observed and dead ends are read off the state where its marks are made (profile 1.19).
+for k in ("behaviour", "observed", "dead_end"):
+    if re.search(r'obj\(M\.states\[\w+\]\)\.' + k + r'\b', MECH_JS):
+        js_state.add(k)
 # Mutation: stop the page showing a state's note -> fails: a key the profile defines must reach a reader.
 check("every state key the profile defines is read by the page", state_keys <= js_state, f"unread: {sorted(state_keys - js_state)}")
 

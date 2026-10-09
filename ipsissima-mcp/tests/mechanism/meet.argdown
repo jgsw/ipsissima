@@ -1,0 +1,44 @@
+===
+title: "Meet"
+defaults:
+    chapter: "source/brief.md"
+mechanism:
+    question: "What happens?"
+    idiom: {term: "flows", means: "processes by which inputs become outputs", pinpoint: "p. 2"}
+    levels: [one]
+    chains:
+        a: {label: "A", question: "Qa?"}
+        b: {label: "B", question: "Qb?"}
+        c: {label: "C", question: "Qc?"}
+        d: {label: "D", question: "Qd?"}
+    kinds:
+        k: {label: "A kind"}
+    actors:
+        p: {label: "People", level: one}
+    states:
+        x: {label: "X", actor: p, role: condition}
+        y: {label: "Y", actor: p}
+        z: {label: "Z", actor: p, role: outcome}
+        u: {label: "U", actor: p, role: condition}
+        v: {label: "V", actor: p, role: outcome}
+        s: {label: "S", actor: p, role: condition}
+        t: {label: "T", actor: p, role: outcome}
+        e1: {label: "E1", actor: p, role: condition, kind: k}
+        f1: {label: "F1", actor: p, role: outcome}
+        e2: {label: "E2", actor: p, role: condition, kind: k}
+        f2: {label: "F2", actor: p, role: outcome}
+===
+
+[Aim]: Things happen.
+
+[A1]: X raises Y. {fidelity: "compression", causes: {from: x, to: y, sign: "+", basis: asserted, chain: a}}
+    +> [Aim]
+
+[B1]: Y raises Z. {fidelity: "compression", causes: {from: y, to: z, sign: "+", basis: asserted, chain: b}}
+    +> [Aim]
+
+[C1]: U raises V; S raises T. {fidelity: "compression", causes: [{from: u, to: v, sign: "+", basis: asserted, chain: c}, {from: s, to: t, sign: "+", basis: asserted, chain: c}]}
+    +> [Aim]
+
+[D1]: Two cases of one kind. {fidelity: "compression", causes: [{from: e1, to: f1, sign: "+", basis: asserted, chain: d}, {from: e2, to: f2, sign: "+", basis: asserted, chain: d}]}
+    +> [Aim]

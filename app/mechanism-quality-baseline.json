@@ -5,18 +5,18 @@
   "detours": 0
  },
  "chain": {
-  "chipCrossings": 8,
-  "crossings": 45,
+  "chipCrossings": 12,
+  "crossings": 56,
   "detours": 0
  },
  "chains": {
   "chipCrossings": 0,
-  "crossings": 2,
+  "crossings": 3,
   "detours": 0
  },
  "generals": {
-  "chipCrossings": 3,
-  "crossings": 3,
+  "chipCrossings": 0,
+  "crossings": 0,
   "detours": 0
  },
  "joint": {
@@ -26,7 +26,7 @@
  },
  "kinds": {
   "chipCrossings": 0,
-  "crossings": 1,
+  "crossings": 0,
   "detours": 0
  },
  "loop": {
@@ -35,38 +35,38 @@
   "detours": 0
  },
  "regimes": {
-  "chipCrossings": 8,
-  "crossings": 45,
+  "chipCrossings": 9,
+  "crossings": 56,
   "detours": 0
  },
  "sizes": {
-  "chipCrossings": 2,
-  "crossings": 62,
+  "chipCrossings": 4,
+  "crossings": 74,
   "detours": 0
  },
  "stories": {
-  "chipCrossings": 2,
-  "crossings": 6,
+  "chipCrossings": 3,
+  "crossings": 9,
   "detours": 0
  },
  "system": {
-  "chipCrossings": 2,
-  "crossings": 38,
+  "chipCrossings": 4,
+  "crossings": 69,
   "detours": 0
  },
  "times": {
-  "chipCrossings": 13,
-  "crossings": 57,
+  "chipCrossings": 7,
+  "crossings": 76,
   "detours": 0
  },
  "via": {
-  "chipCrossings": 2,
-  "crossings": 62,
+  "chipCrossings": 3,
+  "crossings": 59,
   "detours": 0
  },
  "bates-2012-price-is-wrong": {
-  "chipCrossings": 72,
-  "crossings": 322,
+  "chipCrossings": 102,
+  "crossings": 480,
   "detours": 0
  },
  "bridges": {
@@ -76,32 +76,37 @@
  },
  "process": {
   "chipCrossings": 0,
-  "crossings": 1,
+  "crossings": 2,
   "detours": 0
  },
  "reasoning": {
   "chipCrossings": 0,
-  "crossings": 0,
+  "crossings": 3,
   "detours": 0
  },
  "relations": {
-  "chipCrossings": 1,
-  "crossings": 1,
+  "chipCrossings": 0,
+  "crossings": 0,
   "detours": 0
  },
  "stocks": {
   "chipCrossings": 0,
-  "crossings": 2,
+  "crossings": 0,
   "detours": 0
  },
  "transfer": {
-  "chipCrossings": 8,
+  "chipCrossings": 2,
   "crossings": 0,
   "detours": 0
  },
  "wilson-2023-health-system-good": {
-  "chipCrossings": 545,
-  "crossings": 2805,
-  "detours": 78
+  "chipCrossings": 114,
+  "crossings": 1152,
+  "detours": 0
+ },
+ "meet": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
  }
 }

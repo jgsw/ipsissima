@@ -76,7 +76,7 @@ choose **What does this mean?** to come back here.
 <div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — how much of the argument is showing, and which claims. <a data-help="The controls">The controls</a></div>
 <div class="srow" data-draw="key"><b>The key</b>, floating in a corner, lists every marking, with this map's drawn bright. <a data-help="The key">The key</a></div>
 <div class="srow" data-draw="cards"><b>In Exposition</b>: a band for each section of the text, and a card for each paragraph, numbered ¶ 4. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
-<div class="srow" data-draw="chain"><b>In Mechanism</b>: the chain of states. A solid navy box is what the text recommends doing, a double border what the chain is for, ↻ a loop. <a data-help="Reading a causal chain">Reading a causal chain</a></div>
+<div class="srow" data-draw="chain"><b>In Mechanism</b>: the chain of states. A solid navy box is what the text recommends doing, a double border what the chain is for, R or B a loop. <a data-help="Reading a causal chain">Reading a causal chain</a></div>
 </div>
 
 ## Moving around and folding
@@ -725,11 +725,15 @@ Each arrow is drawn the way the rest of Ipsissima draws things:
   reports, violet for the reconstructor's appraisal, teal for a *selection* link — an association
   that holds because of who ends up on each side, not an effect.
 
-Its label says which way the effect runs: **raises** (more of the first brings more of the
-second) or **lowers** (more of the first, less of the second). These are effects, not the support
-and attack of the Reasons map, so they are written as words rather than + and −. A line ending in
-a bar, marked **no effect**, is a finding that nothing is brought about — often the text's answer
-to a rival view's arrow beside it. Where the text finds no effect only under a condition (a
+Its **end** says which way the effect runs: an arrowhead where more of the first brings more of
+the second (or where the text gives a cause with no direction), a red **bar** where more of the
+first brings less of the second. These are effects, not the support and attack of the Reasons map.
+An arrow carries a label only where it says more than that: a count of the claims it holds, a delay,
+a condition ("where it is Latin America"), a verb such as *closes off* or *makes likelier*, or the
+name and number the text gives the step. **Labels: Full** writes every arrow's word. A line ending
+in a hollow circle, marked **no effect**, is a finding that nothing is brought about — often the
+text's answer to a rival view's arrow beside it. Where the map declares the kinds of link the text
+tells apart (ecological and social, say), each kind has its own colour, named in the Legend. Where the text finds no effect only under a condition (a
 knockout, a subgroup, a place), the chain's panel gives the condition beside it, since a null that
 holds only there is no finding that the first never affects the second. The panel also names each
 loop **reinforcing** or **balancing** when every step on it has one sign, and lists each stated
@@ -741,6 +745,43 @@ Click an arrow to see its claims, and a claim to reach its passage in the text. 
 to see only the paths through it — what leads to it and what it leads to — with the rest faded.
 **Back to the whole chain**, or <kbd>Esc</kbd>, brings everything back. **Show only what the text
 tested** keeps the steps backed by a study, statistics or a model.
+
+**Only what is in a mechanism is drawn.** A state appears on the chart only where a step touches
+it. What something makes up, where a state of it is in no step, is listed in the panel under
+*What makes it up*. A step the text says runs **only through** others is not drawn beside them:
+it is listed in the panel under *Stated through others*, and hovering it lights its route.
+
+**The core path.** A long chain opens at its **core path**: the run of steps the text says most
+about, from where the chain starts to its outcome, with whatever holds or moderates each step,
+drawn as a thin arrow onto it. **Show: every step** draws the rest; **Show: the core path** comes
+back to it, on any chain that has one.
+
+**Stocks, flows and loops.** A state that something flows into or out of is drawn as a **stock**, a
+heavier square box, and the flows as **pipes**, each flow's state marked with a valve. Where the text
+draws attention to where its system stops, a **cloud** marks each open end of a flow: where an inflow
+comes from, or an outflow goes, outside what is mapped. Hover a cloud for the text's words. Each loop
+has **one mark at its centre**, R where it reinforces and B where it balances, numbered where there
+are several; clicking it shows that loop alone. Where a loop is most of a chain, its states are laid
+out round a ring.
+
+**The text's own boxes.** Where the text groups states into a whole, the whole is drawn as a
+**compartment** round its parts, and every arrow keeps its own ends, part to part. **Show every
+state** draws the parts apart.
+
+**One panel per condition.** Where a chain's steps hold under different values of one state — a
+cause that works in one place and not another — **Show: one panel per …** draws a small chart for
+each value, side by side.
+
+**Marks on a box.** ✱ marks a state the text says is unobserved; ⊘ an outcome that stops the process
+short, drawn grey; a small line sketch, the behaviour over time the text gives the state (growing,
+oscillating, levelling off). A square frame round a state says the text's analysis holds it fixed;
+one round two, that they cannot be held fixed apart.
+
+**Chains together.** A text that answers several questions has a chain for each, in the **Chain**
+menu. Chains that meet at a state they share can be drawn together: **Every chain together** where
+all of them meet, and a **Together** entry for each group of them otherwise. A chain that meets no
+other is drawn on its own. Where one chain's steps fall into separate pieces, the pieces stand side
+by side with a thin rule between them, so you can see they meet at no state.
 
 A state's name is cut at three lines; **▼ more** on the foot of its box shows the whole of it, and
 the rows below move down to make room. **▲ less** puts it back. A long label on an arrow is cut

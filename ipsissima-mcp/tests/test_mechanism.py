@@ -996,6 +996,68 @@ check("`basis: argued` says it is the census's word, not the map's",
       any("census's tier" in f["message"] for f in by(uk, "mechanism")), True)
 check("the bridges fixture itself has no unknown key", [f for f in by(br, "mechanism") if "is not a key" in f["message"]], [])
 
+print("\nmechanisms shown together meet at a state (James's principle, 8 Oct 2026)")
+# Mutations: drop the island line from census -> the first fails; drop the kind join from _pieces ->
+# "joined by a kind" fails; ignore `apart` -> the last two fail.
+MEET = (FIXTURE / "meet.argdown").read_text(encoding="utf-8")
+mt = run(MEET, name="meet.argdown")
+cen, sh = mt.get("census", ""), mt["shape"]["chain"]
+chs = {c["id"]: c for c in sh["chains"]}
+check("a chain that meets no other, by a state or a kind, is asked whether the text links it",
+      ("? island chain c" in cen, "? island chain a" in cen, "? island chain b" in cen), (True, False, False))
+check("a chain in two pieces is asked what they are", chs["c"]["pieces"], [["u", "v"], ["s", "t"]])
+check("  and two cases joined by a kind are one piece, not two", chs["d"]["pieces"], [])
+check("the idiom is said once, for the chart", ("told as flows: processes by which inputs become outputs (p. 2)" in cen,
+      sh["idiom"]), (True, {"term": "flows", "means": "processes by which inputs become outputs", "pinpoint": "p. 2"}))
+ap = run(MEET.replace('c: {label: "C", question: "Qc?"}', 'c: {label: "C", question: "Qc?", apart: "two separate examples"}'),
+         name="meet.argdown")
+apc = ap.get("census", "")
+check("`apart:` answers both questions, and says why", ("? island chain c" in apc, "? pieces chain c" in apc,
+      "chain c is kept apart by the text: two separate examples" in apc), (False, False, True))
+check("  and the census's questions are never faults", [f for f in mt["findings"] if f["severity"] == "!"], [])
+
+print("\nprofile 1.19: names, channels, shapes, net flows, behaviour, dead ends, conditioning")
+# The diagram comparison's keys (James's decisions, 9 Oct 2026). Mutations: drop the channel check ->
+# the undeclared channel passes; drop the dead_end exemption -> the dead end is a gap.
+K19 = MEET.replace('    kinds:', '    channels:\n        eco: {label: "ecological"}\n    kinds:', 1) \
+          .replace('        c: {label: "C", question: "Qc?"}', '        c: {label: "C", question: "Qc?", conditioned: [u, [s, t]]}', 1) \
+          .replace('y: {label: "Y", actor: p}', 'y: {label: "Y", actor: p, behaviour: oscillates, observed: false}', 1) \
+          .replace('z: {label: "Z", actor: p, role: outcome}', 'z: {label: "Z", actor: p, role: outcome}\n        w: {label: "W", actor: p, dead_end: true}', 1) \
+          .replace('causes: {from: x, to: y, sign: "+", basis: asserted, chain: a}',
+                   'causes: [{from: x, to: y, sign: "+", basis: asserted, chain: a, name: "Situational", mark: "1", channel: eco}, '
+                   '{from: x, to: w, sign: which, basis: asserted, chain: a}]', 1)
+k19 = run(K19, name="meet.argdown")
+bad = [f["message"] for f in k19["findings"] if f["severity"] == "!"]
+check("the 1.19 keys, well formed, raise no fault", bad, [])
+import json as _json  # noqa: E402
+check("  and a dead end the text sets out is not a gap",
+      ("`w` leads nowhere" in _json.dumps(k19), "leads nowhere" in _json.dumps(run(K19.replace(", dead_end: true", ""), name="meet.argdown"))),
+      (False, True))
+wrong = run(K19.replace("channel: eco", "channel: social").replace("behaviour: oscillates", "behaviour: wobbles")
+               .replace('chain: a, name:', 'chain: a, shape: peak, name:').replace("conditioned: [u, [s, t]]", "conditioned: [u, [s, nobody]]"),
+            name="meet.argdown")
+msgs = [f["message"] for f in wrong["findings"] if f["severity"] == "!"]
+check("an undeclared channel, an unknown behaviour, a signed peak and an undeclared conditioned state are faults",
+      (any("`channel: social` is not declared" in m for m in msgs), any("behaviour: wobbles" in m for m in msgs),
+       any("`shape: peak` says the step rises and falls" in m for m in msgs), any("names `nobody`" in m for m in msgs)),
+      (True, True, True, True))
+net = run(K19.replace('chain: a, name:', 'chain: a, net: true, name:'), name="meet.argdown")
+check("a net flow that flows into no stock is a fault", any("`net: true`" in f["message"] for f in net["findings"] if f["severity"] == "!"), True)
+# THE BOUNDARY (1.19): the text's words with a pinpoint. Mutations: drop the pinpoint check -> no
+# query; drop the chain call -> the chain's empty boundary passes.
+bd = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: {says: "what is outside acts on it", pinpoint: "p. 9"}', 1),
+         name="meet.argdown")
+check("a boundary in the text's words, with its page, raises nothing and is carried on its chain",
+      ([f["message"] for f in bd["findings"] if "boundary" in f["message"]],
+       [c.get("boundary") for c in bd["shape"]["chain"]["chains"] if c["id"] == "c"]),
+      ([], [{"says": "what is outside acts on it", "pinpoint": "p. 9"}]))
+bq = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: "what is outside acts on it"', 1), name="meet.argdown")
+be = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: {pinpoint: "p. 9"}', 1), name="meet.argdown")
+check("one with no pinpoint is queried, and one that says nothing is a fault",
+      (any("`boundary:` has no pinpoint" in f["message"] and f["severity"] == "?" for f in bq["findings"]),
+       any("`boundary:` says nothing" in f["message"] and f["severity"] == "!" for f in be["findings"])),
+      (True, True))
+
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.
 import mechanism as mech  # noqa: E402

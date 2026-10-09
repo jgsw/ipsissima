@@ -49,25 +49,32 @@ function findMaps(dir) {
 function pictures(FULL) {
   const out = [];
   const chains = (FULL.chains || []).map(c => c.id);
-  const bases = chains.length ? [...chains.map(id => [id, MV.chainModel(FULL, id)]), ["every chain", FULL]] : [["", FULL]];
+  // THE CHAINS THAT MEET, together: the whole map where they all meet, each group of them otherwise
+  // (James's principle, 8 Oct 2026). A chain that meets none is drawn only on its own.
+  const groups = chains.length ? MV.chainGroups(FULL).filter(g => g.length > 1) : [];
+  const together = groups.length === 1 && groups[0].length === chains.length ? [["every chain", FULL]]
+    : groups.map(g => ["together: " + g.join("+"), MV.groupModel(FULL, g)]);
+  const bases = chains.length ? [...chains.map(id => [id, MV.chainModel(FULL, id)]), ...together] : [["", FULL]];
   const hasWholes = FULL.profile.wholes.length > 0;
   for (const [cname, base] of bases) {
     for (const boxes of hasWholes ? [true, false] : [false]) {
-      const M = boxes ? MV.collapseModel(base) : base;
-      const marks = MV.markSpec(FULL, M).marks;
+      // The text's own boxes are compartments (9 Oct 2026): the parts drawn inside their wholes.
+      const M = base;
+      const spec = MV.markSpec(FULL, M), marks = spec.marks, centres = spec.centres, compartments = boxes;
       const tag = [cname, boxes ? "boxes" : ""].filter(Boolean).join(", ");
-      out.push([tag || "the chain", M, { marks }]);
+      out.push([tag || "the chain", M, { marks, centres, compartments }]);
       const toEnds = MV.foldable(M, "text");
       const hasEnds = M.ids.some(v => /intervention|condition/.test(JSON.stringify(M.states[v].role || ""))) &&
                       M.ids.some(v => /outcome/.test(JSON.stringify(M.states[v].role || "")));
       if (toEnds.length && hasEnds)
-        out.push([(tag ? tag + ", " : "") + "to its ends", M, { marks, ends: true, folded: Object.fromEntries(toEnds.map(v => [v, true])) }]);
+        out.push([(tag ? tag + ", " : "") + "to its ends", M, { marks, centres, compartments, ends: true, folded: Object.fromEntries(toEnds.map(v => [v, true])) }]);
       // Nested as the map declares (its `within:` tree), or as a chain where it declares nothing.
       const NS = MV.nestingOf(M.ordering);
-      if (M.levels.length > 1 && NS.offer) out.push([(tag ? tag + ", " : "") + "levels nested", M, { marks, nest: NS.spec }]);
-      const G0 = MV.layout(M, { marks });
+      if (M.levels.length > 1 && NS.offer) out.push([(tag ? tag + ", " : "") + "levels nested", M, { marks, centres, compartments, nest: NS.spec }]);
+      const G0 = MV.layout(M, { marks, centres, compartments });
       const cut = Object.keys(G0.nodes).filter(v => G0.nodes[v].more);
-      if (cut.length) out.push([(tag ? tag + ", " : "") + "labels opened", M, { marks, open: Object.fromEntries(cut.map(v => [v, true])) }]);
+      if (cut.length) out.push([(tag ? tag + ", " : "") + "labels opened", M, { marks, centres, compartments, open: Object.fromEntries(cut.map(v => [v, true])) }]);
+      if (cut.length || G0.edges.some(e => e.chip.whole)) out.push([(tag ? tag + ", " : "") + "labels full", M, { marks, centres, compartments, full: true }]);
     }
   }
   return out;
@@ -83,7 +90,7 @@ for (const dir of dirs) for (const file of findMaps(dir)) {
   const tot = { hard: 0, chipCrossings: 0, crossings: 0, detours: 0, pictures: 0 };
   for (const [pname, M, o] of pictures(FULL)) {
     let G, A;
-    try { G = MV.layout(M, o); A = MV.audit(G); }
+    try { G = MV.layout(M, { ...o, boundary: !!(M.reasoning && M.reasoning.boundary) }); A = MV.audit(G); }
     catch (e) { breaches.push({ map: name, picture: pname, rule: "!", what: "threw: " + e.message }); tot.hard++; continue; }
     tot.pictures++;
     tot.hard += A.hard.length;

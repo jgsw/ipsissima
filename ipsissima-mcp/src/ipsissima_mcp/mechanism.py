@@ -273,6 +273,11 @@ NOT_ENOUGH = re.compile(r"\b(itself|by itself|alone|on its own|single-handedly|q
 #: `condition` is a standing arrangement. Recorded from the text's grammar, not the reconstructor's
 #: metaphysics, so the census can say whether a chain is told in nouns or in verbs.
 ASPECTS = ("quantity", "activity", "development", "event", "condition")
+#: BEHAVIOUR OVER TIME (1.19, after Meadows): the shape the text says a state follows, drawn as a sketch
+#: on its box. Half of Meadows's figures are such graphs, and her prose explains a structure by them.
+BEHAVIOURS = ("grows", "declines", "levels off", "s-shaped", "oscillates", "overshoot and collapse", "steady")
+#: A RELATION THAT RISES AND FALLS (1.19): Meadows's fish breed most at middling density.
+SHAPES = ("peak", "trough")
 NOUN_ASPECTS = ("quantity", "condition")
 #: WHAT A STEP ACTS ON. `level` and `trend` since 1.8; since 1.11 a step may MAKE or UNMAKE its `to`
 #: (`being`, + and -), MAINTAIN or ERODE it (`persistence`: Hu's institutions "produce and maintain
@@ -524,6 +529,13 @@ def declared(fm):
         if s.get("aspect") is not None and str(s.get("aspect")) not in ASPECTS:
             problems.append(("?", f"state `{sid}` has `aspect: {s.get('aspect')}`; the aspects read are "
                                   f"{', '.join(ASPECTS)}", {"state": str(sid)}))
+        # 1.19: BEHAVIOUR, OBSERVED, DEAD END -- the diagram comparison's findings 6, 18 and 20.
+        if s.get("behaviour") is not None and str(s.get("behaviour")) not in BEHAVIOURS:
+            problems.append(("!", f"state `{sid}` has `behaviour: {s.get('behaviour')}`; the behaviours read are "
+                                  f"{', '.join(BEHAVIOURS)}", {"state": str(sid)}))
+        for key in ("observed", "dead_end"):
+            if s.get(key) is not None and not isinstance(s.get(key), bool):
+                problems.append(("!", f"state `{sid}`: `{key}:` is `true` or `false`, not `{s.get(key)}`", {"state": str(sid)}))
         # A STATE ACROSS LEVELS (profile 1.4): Wimmer's consensus, reached in micro-level
         # negotiation and holding as a macro-level fact; the Coleman boat's transformational step.
         for lv in _as_list(s.get("levels")):
@@ -611,8 +623,22 @@ def declared(fm):
     for a in _as_list(m.get("account")):
         if a not in ACCOUNTS:
             problems.append(("?", f"`account: {a}` is not one of {', '.join(ACCOUNTS)}", {}))
+    # CHANNELS (1.19): the kinds of link the text tells apart, each in its own words -- ecological
+    # against social (the Coleman-boat paper), signalling against metabolic (Rena et al.).
+    chs = m.get("channels")
+    if chs is not None and not isinstance(chs, dict):
+        problems.append(("!", "`channels:` maps an id to `{label}`", {}))
+    problems.extend(_boundary_problems(m, {}, ""))
     for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
+        problems.extend(_boundary_problems(ch, {"chain": str(cid)}, f"chain `{cid}`: "))
+        # CONDITIONED ON (1.19, Knight and Winship): the states this chain's analysis holds fixed; a
+        # list inside the list is states that cannot be conditioned on apart.
+        for item in _as_list(ch.get("conditioned")) if not isinstance(ch.get("conditioned"), list) else ch.get("conditioned"):
+            for sid in (item if isinstance(item, list) else [item]):
+                if str(sid) not in states:
+                    problems.append(("!", f"chain `{cid}`: `conditioned:` names `{sid}`, which is not a declared state",
+                                     {"chain": str(cid)}))
         for sev, msg, _ in form_of(ch)[2]:
             problems.append((sev, f"chain `{cid}`: {msg}", {"chain": str(cid)}))
         if ch.get("goal") is not None and str(ch.get("goal")) not in GOALS:
@@ -705,6 +731,13 @@ def steps(doc, appraisal):
                     # SCOPE (1.13): a particular case, or a general relation.
                     scope="" if c.get("scope") is None else str(c.get("scope")),
                     hedged=bool(c.get("hedged")),
+                    # 1.19: the step's NAME and MARK in the text's words, its CHANNEL, a SHAPE that
+                    # rises and falls, and a NET flow that runs whichever way the gap points.
+                    name="" if c.get("name") is None else str(c.get("name")),
+                    mark="" if c.get("mark") is None else str(c.get("mark")),
+                    channel="" if c.get("channel") is None else str(c.get("channel")),
+                    shape="" if c.get("shape") is None else str(c.get("shape")),
+                    net=c.get("net"),
                     basis=basis, tier=tier, lag=c.get("lag"),
                     given=[_cond(g) for g in given], given_raw=given,
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
@@ -1158,8 +1191,9 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
         # AND WHAT A CHAIN IS FOR IS NO DEAD END on the whole map: the badger follow-up's outcome,
         # an outcome only in its own chain, was reported as the chain stopping (gap tests, 27 Sep).
         # A MEASURE STOPS WHERE IT IS READ (1.9): nothing is expected to follow from an estimate.
+        # A DEAD END THE TEXT SETS OUT (1.19) stops by design: Marti and Gond's symbolic use goes nowhere.
         if (i in used and i not in outcomes and i not in ends and not (states[i] or {}).get("appraisal")
-                and not (states[i] or {}).get("measures")
+                and not (states[i] or {}).get("measures") and (states[i] or {}).get("dead_end") is not True
                 and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
@@ -1263,8 +1297,110 @@ def _chains(block):
                              # ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
                              account=_account_of(ch) or _account_of(block), own_account=bool(_account_of(ch)),
                              # ITS ORDER (1.17), its own or the block's.
-                             order=_order(ch) or _order(block) or "time")
+                             order=_order(ch) or _order(block) or "time",
+                             # KEPT APART BY THE TEXT (1.18): why this chain, or its pieces, join no other.
+                             apart=_apart(ch),
+                             # ITS BOUNDARY (1.19), its own or the block's: where the text says what
+                             # it maps is open to what it does not.
+                             boundary=_boundary(ch) or _boundary(block))
     return out
+
+
+def _apart(block):
+    """A block's or a chain's `apart:`, the reason the text keeps it apart, or None (1.18)."""
+    a = block.get("apart") if isinstance(block, dict) else None
+    return None if a is None or str(a).strip() == "" else str(a)
+
+
+def _boundary(block):
+    """A block's or a chain's `boundary:` (1.19): the text's own words drawing attention to where
+    the system it maps stops -- that the boundary is a choice, or that what is outside acts on what
+    is inside (Meadows's clouds). {says, pinpoint} or None; a bare string is what it says. Every
+    system has a boundary, so this is set only where the text says so; the view then draws clouds
+    at the open ends of its flows."""
+    b = block.get("boundary") if isinstance(block, dict) else None
+    if b is None:
+        return None
+    if not isinstance(b, dict):
+        return None if str(b).strip() == "" else dict(says=str(b), pinpoint=None)
+    g = lambda k: None if b.get(k) is None or str(b.get(k)).strip() == "" else str(b.get(k))
+    return dict(says=g("says"), pinpoint=g("pinpoint"))
+
+
+def _boundary_problems(b, where, tag):
+    """The faults in one `boundary:` (1.19)."""
+    raw = b.get("boundary") if isinstance(b, dict) else None
+    if raw is None:
+        return []
+    out = []
+    if isinstance(raw, dict):
+        extra = sorted(set(map(str, raw)) - {"says", "pinpoint"})
+        if extra:
+            out.append(("!", f"{tag}`boundary:` takes `says` and `pinpoint`, not `{extra[0]}`", where))
+    elif isinstance(raw, list):
+        out.append(("!", f"{tag}`boundary:` is the text's words, or `{{says, pinpoint}}`", where))
+        return out
+    got = _boundary(b)
+    if not got or not got["says"]:
+        out.append(("!", f"{tag}`boundary:` says nothing: give the text's words", where))
+    elif not got["pinpoint"]:
+        out.append(("?", f"{tag}`boundary:` has no pinpoint: the words are the text's, so say where",
+                    dict(where, fix="write it as `boundary: {says: \"...\", pinpoint: \"p. N\"}`")))
+    return out
+
+
+def _idiom(block):
+    """The block's `idiom:` (1.18): what the map's states are told AS, in the text's words -- Wilson
+    2023's flows, "a process by which inputs are transformed into outputs within a system". A
+    definition of the kind of thing every state is, said once for the chart, never drawn as a state.
+    {term, means, pinpoint} or None; a bare string is the term."""
+    i = block.get("idiom") if isinstance(block, dict) else None
+    if i is None:
+        return None
+    if not isinstance(i, dict):
+        return dict(term=str(i), means=None, pinpoint=None)
+    g = lambda k: None if i.get(k) is None else str(i.get(k))
+    return dict(term=g("term"), means=g("means"), pinpoint=g("pinpoint"))
+
+
+def _parts(states):
+    """Each part and the whole the text groups it in (`part_of`), as a pair: a part meets its whole,
+    for the pieces a picture falls into (1.18) -- Wilson's Trusted Research Environments are part of
+    means-improvement, not a piece of their own."""
+    return {(str(i), str(s.get("part_of"))) for i, s in states.items()
+            if isinstance(s, dict) and s.get("part_of") is not None}
+
+
+def _pieces(ids, links, kind_of=None):
+    """The separate pieces a picture's states fall into (1.18): states joined by a step (a co-cause
+    or blocker included) or by a kind they share. Each piece in declared order, the pieces in the
+    order of their first state; [] where there is one piece or none. James's principle: mechanisms
+    shown together meet at a state, and a piece that meets nothing is a question for the reading."""
+    kind_of = kind_of or {}
+    ids = list(ids)
+    nb = {i: set() for i in ids}
+    for a, b in links:
+        if a in nb and b in nb and a != b:
+            nb[a].add(b)
+            nb[b].add(a)
+    for i in ids:
+        for j in ids:
+            if i != j and kind_of.get(i) is not None and kind_of.get(i) == kind_of.get(j):
+                nb[i].add(j)
+    seen, out = set(), []
+    for i in ids:
+        if i in seen:
+            continue
+        comp, stack = set(), [i]
+        while stack:
+            x = stack.pop()
+            if x in comp:
+                continue
+            comp.add(x)
+            stack.extend(nb[x] - comp)
+        seen |= comp
+        out.append([j for j in ids if j in comp])
+    return out if len(out) > 1 else []
 
 
 def _account_of(block):
@@ -1457,6 +1593,22 @@ def analyse(fm, doc):
         if s["design"] == "illustration" and s["basis"] in ("study", "statistics", "model"):
             findings.append(("?", "mechanism", f"`design: illustration` is a hypothetical case, and "
                              f"`basis: {s['basis']}` says the text tested the step", {"title": s["title"]}))
+        if s["channel"] and s["channel"] not in (block.get("channels") or {} if isinstance(block, dict) else {}):
+            findings.append(("!", "mechanism", f"`channel: {s['channel']}` is not declared under `channels:`",
+                             {"title": s["title"], "fix": f"declare it: `channels: {{{s['channel']}: {{label: \"...\"}}}}`"}))
+        if s["shape"] and s["shape"] not in SHAPES:
+            findings.append(("!", "mechanism", f"`shape: {s['shape']}` is not one of {', '.join(SHAPES)}", {"title": s["title"]}))
+        elif s["shape"] and s["sign"] in ("+", "-", "0"):
+            findings.append(("!", "mechanism", f"`shape: {s['shape']}` says the step rises and falls, and `sign: {s['sign']}` "
+                             f"gives it one direction", {"title": s["title"], "fix": "leave the sign out, or give `sign: which`"}))
+        if s["net"] is not None and not isinstance(s["net"], bool):
+            findings.append(("!", "mechanism", f"`net:` is `true` or `false`, not `{s['net']}`", {"title": s["title"]}))
+        elif s["net"] and s["on"] != "stock":
+            findings.append(("!", "mechanism", "`net: true` is a flow that runs whichever way the gap points, "
+                             "and the step does not flow into a stock", {"title": s["title"], "fix": "add `on: stock`"}))
+        if len(s["mark"]) > 6:
+            findings.append(("?", "mechanism", f"`mark: {s['mark']}` is drawn in a small circle on the arrow: "
+                             f"six characters at most", {"title": s["title"], "fix": "put the words in `name:`"}))
         if s["on"] not in ONS:
             findings.append(("!", "mechanism", f"`on: {s['on']}` is not one of {', '.join(ONS)}",
                              {"title": s["title"]}))
@@ -1709,6 +1861,11 @@ def analyse(fm, doc):
         with_how=sum(1 for s in text if isinstance(s["how"], dict)),
         with_given=sum(1 for s in text if s["given"]),
         chains=chain_profiles, unchained=unchained,
+        # ONE PICTURE IN PIECES (1.18), where the map declares no chains: its states joined by a step
+        # or a kind. With chains, each chain says its own pieces, and islands among them.
+        pieces=[] if chains else _pieces([i for i in ids if roles_of(states[i]) or any(i in e for e in text_edges)],
+                                         text_edges | _parts(states), kind_of),
+        apart=_apart(block), idiom=_idiom(block), boundary=_boundary(block),
         kinds=kinds, akin_steps=akin_steps, instances=instances,
         moderated=sorted({(s["src"], s["dst"], s["sign"] or "", m["by"], m["effect"], m["period"])
                           for s in text_all for m in s["modifies"] if m["by"] in states}),
@@ -1914,6 +2071,7 @@ def _accounts(ids, ok):
 
 def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instances=(), rival=(), null_from=(),
                     constituted=None):
+    kind_of = kind_of or {}
     """Each declared chain's own walk (profile 1.5), and how many of the text's steps sit in none.
 
     A chain is its steps: the states it touches are those its steps run through (a co-cause
@@ -1947,7 +2105,8 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
                         entries=W["entries"], routes=W["routes"],
                         loops=[dict(states=l, reflexive=reflexive(l, mine), polarity=_polarity(l, csigns))
                                for l in _loops(cids, edges, regimes=_regimes(mine, states))],
-                        gaps=[g["message"] for g in W["gaps"]], shared=[]))
+                        gaps=[g["message"] for g in W["gaps"]], shared=[],
+                        pieces=_pieces(cids, edges | _parts(states), kind_of)))
         for i in cids:
             member.setdefault(i, []).append(cid)
     # WHAT COUPLES THEM: every state a chain shares with another, and which others.
@@ -1956,7 +2115,6 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
                         if len(member[i]) > 1]
     # AND WHAT IS AKIN (profile 1.6): a state of this chain whose kind a DIFFERENT state has in
     # another chain -- a weaker tie than a shared state, and reported as one.
-    kind_of = kind_of or {}
     for cp in out:
         akin = []
         for i in cp["states"]:
@@ -1981,6 +2139,11 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cp["contrast"] = chains[cp["id"]].get("contrast")
         cp["account"] = chains[cp["id"]].get("account") or []
         cp["order"] = chains[cp["id"]].get("order", "time")
+        # AN ISLAND (1.18): a chain that meets no other, by a state or by a kind; and whether the
+        # text keeps it apart, which answers that and its pieces.
+        cp["island"] = len(out) > 1 and not cp["shared"] and not cp["akin"]
+        cp["apart"] = chains[cp["id"]].get("apart")
+        cp["boundary"] = chains[cp["id"]].get("boundary")
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -2276,6 +2439,22 @@ def census(profile):
         lines.append(f"      span    {st} runs across {', '.join(lvs)}")
     for w, parts in p.get("wholes", []):
         lines.append(f"      whole   {w}: {', '.join(parts)} -- drawn as one box at the text's own level")
+    idi = p.get("idiom")
+    if idi and idi.get("term"):
+        lines.append(f"      told as {idi['term']}" + (f": {idi['means']}" if idi.get("means") else "")
+                     + (f" ({idi['pinpoint']})" if idi.get("pinpoint") else "")
+                     + " -- what the states are, said once for the chart")
+    def _pieces_line(what, pcs, apart):
+        if apart:
+            return [f"      apart   {what} is kept apart by the text: {apart}"]
+        if not pcs:
+            return []
+        return [f"      ? pieces {what} falls into {len(pcs)} pieces that meet at no state: "
+                + " | ".join(", ".join(x) for x in pcs)
+                + " -- cases of one kind (`kind:`), questions of their own (chains), or kept apart "
+                  "by the text (`apart:`)?"]
+    if not p.get("chains"):
+        lines += _pieces_line("the chain", p.get("pieces"), p.get("apart"))
     by_id = {ch["id"]: ch for ch in p.get("chains", [])}
     for ch in p.get("chains", []):
         lines.append(f"      chain   {ch['id']}" + (f" \"{ch['label']}\"" if ch.get("label") else "")
@@ -2302,6 +2481,13 @@ def census(profile):
         for o, n in ch.get("case_of", []):
             lines.append(f"              case of {o}: {n} of its steps {'is a case' if n == 1 else 'are cases'} "
                          f"of a general step there")
+        # JAMES'S PRINCIPLE (8 Oct 2026): mechanisms shown together meet at a state. A chain that
+        # meets no other, and one in pieces, are questions for the reading -- the map may have
+        # stopped where the text goes on (Sewell's durability), or the text may keep them apart.
+        if ch.get("island") and not ch.get("apart"):
+            lines.append(f"      ? island chain {ch['id']} meets no other chain, by a state or a kind -- does the text "
+                         f"link it? If it keeps it apart, say why in the chain's `apart:`")
+        lines += _pieces_line(f"chain {ch['id']}", ch.get("pieces"), ch.get("apart"))
     for k in p.get("kinds", []):
         if len(k["states"]) > 1:
             lines.append(f"      kind    {k['id']}" + (f" \"{k['label']}\"" if k.get("label") else "")

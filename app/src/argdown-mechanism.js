@@ -349,6 +349,13 @@ function model(graph) {
         // AN ASSOCIATION and a SCOPE (profile 1.13) -- see mechanism.py.
         assoc: !!raw.association, scope: raw.scope == null ? "" : String(raw.scope),
         lag: raw.lag == null ? "" : String(raw.lag), given: given.map(condText),
+        // 1.19 -- see mechanism.py: the step's name and mark, its channel, a shape, a net flow.
+        name: raw.name == null ? "" : String(raw.name), mark: raw.mark == null ? "" : String(raw.mark),
+        channel: raw.channel == null ? "" : String(raw.channel), shape: raw.shape == null ? "" : String(raw.shape),
+        net: raw.net === true,
+        // A CONDITION ON A DECLARED STATE, kept as one: the chart names the state and draws it.
+        givenOn: given.filter(function (g) { return g && typeof g === "object" && !Array.isArray(g) && has(states, String(g.state)); })
+                      .map(function (g) { return { state: String(g.state), value: g.value == null ? "" : String(g.value) }; }),
         how: raw.how && typeof raw.how === "object" ? raw.how : null,
         reflexive: !!raw.reflexive, supports: supports,
         // JOINTLY (profile 1.4): the states together with which alone the step holds.
@@ -398,7 +405,8 @@ function model(graph) {
   });
   var ordering = levelOrder(block, levels);
   var form = formOf(block);
-  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast), account: accountOf(block) };
+  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast), account: accountOf(block),
+                    apart: apartOf(block), idiom: idiomOf(block), boundary: boundaryOf(block) };
   var prof = profile(levels, actors, states, ids, ok,
                      m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering,
                      form, consts, reasoning);
@@ -442,6 +450,8 @@ function model(graph) {
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            form: form, constitutions: consts, reasoning: reasoning,
            order: block.order == null ? "time" : String(block.order),
+           // THE KINDS OF LINK THE TEXT TELLS APART (1.19), in its own words: drawn as colour.
+           channels: Object.keys(obj(block.channels)).map(function (k) { return { id: String(k), label: String(obj(block.channels[k]).label || k) }; }),
            profile: prof };
 }
 
@@ -656,9 +666,58 @@ function chainsOf(block) {
                // ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
                account: accountOf(c).length ? accountOf(c) : accountOf(block),
                // ITS ORDER (1.17), its own or the block's: time, or the order of explanation.
-               order: c.order != null ? String(c.order) : block.order != null ? String(block.order) : "time" });
+               order: c.order != null ? String(c.order) : block.order != null ? String(block.order) : "time",
+               // KEPT APART BY THE TEXT (1.18) -- as the checker has it.
+               apart: apartOf(c),
+               // CONDITIONED ON (1.19): states held fixed; a list inside the list, states held together.
+               // ITS BOUNDARY (1.19), its own or the block's -- as the checker has it.
+               boundary: boundaryOf(c) || boundaryOf(block),
+               conditioned: (Array.isArray(c.conditioned) ? c.conditioned : c.conditioned == null ? [] : [c.conditioned])
+                 .map(function (x) { return asList(x); }) });
   });
   return out;
+}
+/** A block's or a chain's `apart:` (1.18), or null -- mechanism.py's `_apart`. */
+function apartOf(b) { var a = obj(b).apart; return a == null || String(a).trim() === "" ? null : String(a); }
+/** A block's or a chain's `boundary:` (1.19) as {says, pinpoint}, or null -- mechanism.py's `_boundary`. */
+function boundaryOf(b) {
+  var x = obj(b).boundary;
+  if (x == null) return null;
+  if (typeof x !== "object" || Array.isArray(x)) return String(x).trim() === "" ? null : { says: String(x), pinpoint: null };
+  var g = function (k) { return x[k] == null || String(x[k]).trim() === "" ? null : String(x[k]); };
+  return { says: g("says"), pinpoint: g("pinpoint") };
+}
+/** The block's `idiom:` (1.18): what the map's states are told AS -- mechanism.py's `_idiom`. */
+function idiomOf(b) {
+  var i = obj(b).idiom;
+  if (i == null) return null;
+  if (typeof i !== "object" || Array.isArray(i)) return { term: String(i), means: null, pinpoint: null };
+  var g = function (k) { return i[k] == null ? null : String(i[k]); };
+  return { term: g("term"), means: g("means"), pinpoint: g("pinpoint") };
+}
+/** Each part and the whole it is grouped in, as a pair -- mechanism.py's `_parts`. */
+function partsOf(states) {
+  return Object.keys(states).filter(function (i) { return obj(states[i]).part_of != null; })
+    .map(function (i) { return [i, String(states[i].part_of)]; });
+}
+/** THE PIECES A PICTURE FALLS INTO (1.18), joined by a step or a kind -- mechanism.py's `_pieces`,
+ *  in the same order: each piece in declared order, the pieces by their first state; [] for one. */
+function piecesOf(ids, links, kindOf) {
+  kindOf = kindOf || {};
+  var nb = {}; ids.forEach(function (i) { nb[i] = {}; });
+  links.forEach(function (e) { if (has(nb, e[0]) && has(nb, e[1]) && e[0] !== e[1]) { nb[e[0]][e[1]] = true; nb[e[1]][e[0]] = true; } });
+  ids.forEach(function (i) { ids.forEach(function (j) {
+    if (i !== j && kindOf[i] != null && kindOf[i] === kindOf[j]) nb[i][j] = true; }); });
+  var seen = {}, out = [];
+  ids.forEach(function (i) {
+    if (seen[i]) return;
+    var comp = {}, stack = [i];
+    while (stack.length) { var x = stack.pop(); if (comp[x]) continue; comp[x] = true;
+      Object.keys(nb[x]).forEach(function (y) { if (!comp[y]) stack.push(y); }); }
+    Object.keys(comp).forEach(function (k) { seen[k] = true; });
+    out.push(ids.filter(function (j) { return comp[j]; }));
+  });
+  return out.length > 1 ? out : [];
 }
 
 /** The kinds a block declares (profile 1.6), in declared order -- mechanism.py's _kinds, less the
@@ -755,8 +814,9 @@ function walkChain(ids, states, edges, signs, regimes, nullFrom, rivalEdges, end
     onward = onward || (constituted[i] || []).some(function (w) {
       return w.indexOf("actor:") === 0 || outcomes.indexOf(w) >= 0 || !!from[w]; });
     // A MEASURE STOPS WHERE IT IS READ (1.9) -- as the checker has it.
+    // A DEAD END THE TEXT SETS OUT (1.19) stops by design -- as the checker has it.
     if (used[i] && outcomes.indexOf(i) < 0 && !ends[i] && !obj(states[i]).appraisal && obj(states[i]).measures == null
-        && !onward && !from[i])
+        && obj(states[i]).dead_end !== true && !onward && !from[i])
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
@@ -852,7 +912,8 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
                steps: Object.keys(best).length, claims: Object.keys(titles).length, states: cids,
                roles: roles, entries: W.entries, routes: W.routes,
                loops: loops(cids, edges, regimesOf(mine, states)).map(function (l) { return { states: l, reflexive: isReflexive(l, mine), polarity: polarity(l, csigns) }; }),
-               gaps: W.gaps.map(function (g) { return g.message; }), shared: [] });
+               gaps: W.gaps.map(function (g) { return g.message; }), shared: [],
+               pieces: piecesOf(cids, edges.concat(partsOf(states)), kindOf || {}) });
     cids.forEach(function (i) { (member[i] = member[i] || []).push(c.id); });
   });
   out.forEach(function (cp) {
@@ -893,6 +954,10 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     cp.contrast = ch.contrast == null ? null : ch.contrast;
     cp.account = ch.account || [];
     cp.order = ch.order || "time";
+    // AN ISLAND (1.18) -- as the checker has it.
+    cp.island = out.length > 1 && !cp.shared.length && !cp.akin.length;
+    cp.apart = ch.apart == null ? null : ch.apart;
+    cp.boundary = ch.boundary || null;
   });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
@@ -1068,6 +1133,10 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     with_how: text.filter(function (s) { return !!s.how; }).length,
     with_given: text.filter(function (s) { return s.given.length > 0; }).length,
     chains: CP.chains, unchained: CP.unchained,
+    // ONE PICTURE IN PIECES (1.18) -- as the checker has it.
+    pieces: (chains || []).length ? [] : piecesOf(ids.filter(function (i) {
+      return rolesOf(states[i]).length || edges.some(function (e) { return e[0] === i || e[1] === i; }); }), edges.concat(partsOf(states)), kindOf),
+    apart: reasoning.apart == null ? null : reasoning.apart, idiom: reasoning.idiom || null, boundary: reasoning.boundary || null,
     kinds: kindList, akin_steps: AK.akin, instances: AK.instances,
     moderated: uniqSorted([].concat.apply([], textAll.map(function (s) {
       return s.modifies.filter(function (m) { return has(states, m.by); })
@@ -1271,7 +1340,7 @@ var BW = 168, BH = 56, COL = 300, GUT = 40, ROW = 100, PADY = 16, TOP = 34, HEAD
 var STACK_GAP = 84;
 // The marks on a box's edges (M11: placed here, drawn from here). A badge is a circle of BADGE_R
 // on the top border (or the foot, for a measure); the "more" pill sits on the foot at the left.
-var BADGE_R = 10, BADGE_STEP = 26, PILL_W = 50, PILL_H = 15, PILL_X = 32, GAPWORD_W = 128;
+var BADGE_R = 10, BADGE_STEP = 26, PILL_W = 50, PILL_H = 15, PILL_X = 32;
 // One arrowhead for every arrow, whatever its weight (M4).
 var HEAD_LEN = 10, HEAD_W = 10;
 // Nested levels: each frame is inset this far inside its parent, and closes this far below the
@@ -1305,9 +1374,8 @@ function nestTree(levels, spec) {
   if (!maxDepth) return null;
   return { parent: parent, depth: depth, last: last, maxDepth: maxDepth };
 }
-// A box's label: three lines of 14px unless opened; the room kept right of the last column for a
-// state's "✕ no link in the text".
-var MAX_LINES = 3, LINE_H = 14, UNLINKED_W = 150;
+// A box's label: three lines of 14px unless opened.
+var MAX_LINES = 3, LINE_H = 14;
 // Zoom: each press of + or − is one step; the chart is never drawn smaller or larger than these.
 var ZOOM_STEP = 1.2, ZOOM_MIN = 0.25, ZOOM_MAX = 3;
 
@@ -1412,7 +1480,8 @@ function modStates(e) { return (e.modifiers || []).map(function (m) { return m.s
 var ATTRIBUTION_WORD = { intentional: "intended", mechanical: "guided", inadvertent: "inadvertent",
                          accidental: "accident", complex: "complex" };
 /** What a moderator does to a step, in the panel's words (profile 1.9). */
-var EFFECT_WORD = { strengthens: "strengthens it", weakens: "weakens it", reverses: "reverses it", "0": "does not change it, the text finds" };
+var EFFECT_WORD = { strengthens: "strengthens it", weakens: "weakens it", reverses: "reverses it", "0": "does not change it, the text finds",
+                    given: "the step holds where it has the value written on the arrow" };
 
 /** A step that makes, keeps or changes in kind (profile 1.11), in the chip's one word: Arthur's
  *  verbs, which a "raises" or "lowers" would turn back into nouns. Null for any other step. */
@@ -1447,13 +1516,19 @@ function markSpec(FULL, M) {
   var marks = {};
   M.ids.forEach(function (v) {
     var right = [], left = [], foot = [];
-    LOOPS.forEach(function (l, li) { if (l.states.indexOf(v) >= 0) right.push({ kind: "loop", i: li }); });
-    SYS.forEach(function (f, fi) { if (f.states.indexOf(v) >= 0) right.push({ kind: "system", i: fi }); });
+    // A LOOP IS ONE MARK AT ITS CENTRE, not a badge on each of its states (James's decision, 9 Oct
+    // 2026): Meadows marks each loop once, B or R, inside it; three badges on every state of the
+    // energy chain said nothing the one mark does not. See `centres` below.
     var elsewhere = M.chain && M.chain.shared && M.chain.shared[v];
     if (elsewhere && elsewhere.length) left.push({ kind: "shared" });
     // NOT (YET) ACTUAL (1.12): ◌ a possibility, … what cannot be specified in advance.
     var stt = obj(M.states[v]).status;
     if (stt === "possible" || stt === "open") left.push({ kind: stt });
+    // 1.19: UNOBSERVED (Knight and Winship's asterisk), A DEAD END (Marti and Gond's D1-D5), and
+    // the BEHAVIOUR OVER TIME the text gives it (Meadows's graphs), sketched.
+    if (obj(M.states[v]).observed === false) left.push({ kind: "unobserved" });
+    if (obj(M.states[v]).dead_end === true) left.push({ kind: "deadend" });
+    if (BEHAVIOUR_PATH[obj(M.states[v]).behaviour]) right.push({ kind: "behaviour" });
     var k = FULL ? obj(FULL.states[v]).kind : null, kd = k == null ? null : KINDS.filter(function (x) { return x.id === String(k); })[0];
     if (kd && kd.states.some(function (w) { return w !== v; })) left.push({ kind: "kin" });
     var ms = FULL ? obj(FULL.states[v]).measures : null;
@@ -1465,7 +1540,13 @@ function markSpec(FULL, M) {
     if (CS.some(function (c) { return !c.toActor && c.to === v && c.layer !== "appraisal"; })) foot.push({ kind: "constituted" });
     marks[v] = { left: left, right: right, foot: foot };
   });
-  return { marks: marks, loops: LOOPS, systems: SYS };
+  // ONE MARK PER LOOP, R OR B by the census's own count, numbered where there are several; one per
+  // feedback system too large to list its loops, lettered.
+  var centres = LOOPS.map(function (l, li) {
+    var pol = l.polarity === "reinforcing" ? "R" : l.polarity === "balancing" ? "B" : "↻";
+    return { kind: "loop", i: li, states: l.states, label: pol + (LOOPS.length > 1 ? li + 1 : "") };
+  }).concat(SYS.map(function (f, fi) { return { kind: "system", i: fi, states: f.states, label: "⟳" + String.fromCharCode(65 + fi) }; }));
+  return { marks: marks, loops: LOOPS, systems: SYS, centres: centres };
 }
 
 /** Lay the chain out. Twice where the first pass finds a box too short for the arrows arriving
@@ -1473,20 +1554,27 @@ function markSpec(FULL, M) {
  *  apart, and everything below moves down to make room. */
 function layout(M, opts) {
   opts = opts || {};
-  var G = layoutOnce(M, opts), minH = {}, minW = {};
+  var G = layoutOnce(M, opts), minH = {}, minW = {}, minGap = {};
   // Up to three passes: making room in one place can show a need in another. Needs only grow, so
   // this settles.
   for (var pass = 0; pass < 3; pass++) {
     var grew = false;
     Object.keys(G.needH || {}).forEach(function (v) { if (!(minH[v] >= G.needH[v])) { minH[v] = G.needH[v]; grew = true; } });
     Object.keys(G.needW || {}).forEach(function (c) { if (!(minW[c] >= G.needW[c])) { minW[c] = G.needW[c]; grew = true; } });
+    Object.keys(G.needGap || {}).forEach(function (k) { if (!(minGap[k] >= G.needGap[k])) { minGap[k] = G.needGap[k]; grew = true; } });
     if (!grew) break;
-    G = layoutOnce(M, Object.assign({}, opts, { minH: minH, minW: minW }));
+    G = layoutOnce(M, Object.assign({}, opts, { minH: minH, minW: minW, minGap: minGap }));
   }
-  delete G.needH; delete G.needW;
+  delete G.needH; delete G.needW; delete G.needGap;
   return G;
 }
 function layoutOnce(M, opts) {
+  // AN OUTFLOW RUNS FROM ITS STOCK OUT TO THE FLOW, as Meadows draws it: "deaths flow out of the
+  // population" drawn from deaths back into the population looped under the boxes (9 Oct 2026). The
+  // step is the same; only its drawing runs the other way, its head at the flow.
+  if (M.steps.some(function (s) { return s.on === "stock" && s.sign === "-" && !s.isNull; }))
+    M = Object.assign({}, M, { steps: M.steps.map(function (s) {
+      return s.on === "stock" && s.sign === "-" && !s.isNull ? Object.assign({}, s, { from: s.to, to: s.from, outflow: true }) : s; }) });
   // A CO-CAUSE ORDERS THE CHAIN AS A CAUSE DOES (profile 1.4): "belief moves people to act only
   // with a wish to fit in" puts the wish before the act, as the checker's routes have it. So the
   // columns, the systems and the depth-first walk see each co-cause as a step of its own; only
@@ -1496,22 +1584,25 @@ function layoutOnce(M, opts) {
     // A BLOCKER AND A MODERATOR ARE PLACED AS A CO-CAUSE IS, before the step's end. Left out, a
     // state with no step or role of its own was never drawn at all, and its stem hung from nothing:
     // the planted defences and Marti and Gond's devices and backers (James's verdicts, 29 Sep 2026).
-    (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), s.measuredBy || []).forEach(function (j) {
+    (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), s.measuredBy || [],
+                             (s.givenOn || []).map(function (g) { return g.state; })).forEach(function (j) {
       if (has(M.states, j) && j !== s.to) ordering.push({ id: s.id + " & " + j, from: j, to: s.to, layer: s.layer,
                                                           isNull: s.isNull, selects: s.selects, assoc: s.assoc });
     });
   });
-  // WHAT MAKES SOMETHING UP IS DRAWN, AND BEFORE ITS WHOLE (profile 1.11): a state whose only tie is
-  // a constitutive relation was left undrawn, and its ⊂ with it (James's health-system map, 30 Sep
-  // 2026). Ordered as a co-cause is, for the columns only: nothing is drawn between them.
-  (M.constitutions || []).forEach(function (c) {
-    if (!c.toActor && has(M.states, c.from) && has(M.states, c.to))
-      ordering.push({ id: "constitutes " + c.from + " " + c.to, from: c.from, to: c.to, layer: c.layer, isNull: false, selects: false, constitution: true });
-  });
+  // NO STATE IS DRAWN UNLESS IT IS IN A MECHANISM OR A FLOW (James's principle, 8 Oct 2026): a step
+  // touches it, as cause, effect, co-cause, blocker, moderator or measure. A state whose only tie is
+  // that it makes something up, or a starting point the text links to nothing, is not drawn: the
+  // panel lists the first, and the gaps the second. (Drawn, Wilson 2023's definition of a flow stood
+  // as a box across all three levels that no arrow reached; this reverses the rule of 30 Sep 2026.)
   var used = {};
   ordering.forEach(function (s) { used[s.from] = used[s.to] = true; });
-  M.ids.forEach(function (i) { if (isStart(M.states[i])) used[i] = true; });
-  (M.constitutions || []).forEach(function (c) { if (has(M.states, c.from)) used[c.from] = true; });
+  // What makes something up still comes before its whole, where both are drawn: ordered as a
+  // co-cause is, for the columns only, and nothing is drawn between them.
+  (M.constitutions || []).forEach(function (c) {
+    if (!c.toActor && used[c.from] && used[c.to])
+      ordering.push({ id: "constitutes " + c.from + " " + c.to, from: c.from, to: c.to, layer: c.layer, isNull: false, selects: false, constitution: true });
+  });
   var ids = M.ids.filter(function (i) { return used[i]; });
 
   // Back edges by depth-first search from the interventions first, so a loop is drawn as a loop
@@ -1540,7 +1631,6 @@ function layoutOnce(M, opts) {
     return (rank[v] = best);
   }
   ids.forEach(function (v) { r(v, {}); });
-
   // SEQUENCE BETWEEN SYSTEMS, A BLOCK WITHIN ONE. Left to right means "comes after" -- which is
   // true between feedback systems and meaningless inside one, where every state reaches every
   // other and the depth-first order above only decides where each loop is cut. Laid out by that
@@ -1589,6 +1679,42 @@ function layoutOnce(M, opts) {
   }
   var col = {};
   ids.forEach(function (v) { col[v] = offset(unitOf[v], {}) + local[v]; });
+  // A MODERATOR THE TEXT GIVES NO CAUSE STANDS BY THE STEP IT MODERATES, in its source's column, not in
+  // the first: Marti and Gond's six boundary conditions sat at the left edge, their stems crossing the
+  // chart to the arrows they act on (9 Oct 2026). So too a state a step holds under.
+  // (In the core path only: across a whole chart, moving them sent their stems through other boxes.)
+  var caused = {};
+  M.steps.forEach(function (s) { caused[s.to] = true; });
+  if (M.core) M.steps.forEach(function (s) {
+    if (!has(col, s.from)) return;
+    (s.modifies || []).map(function (m) { return m.by; }).concat((s.givenOn || []).map(function (g) { return g.state; })).forEach(function (j) {
+      if (has(col, j) && !caused[j] && j !== s.to && col[j] < col[s.from]) col[j] = col[s.from];
+    });
+  });
+
+  // PIECES THAT MEET AT NO STATE STAND SIDE BY SIDE, a rule between them (James's principle, 8 Oct
+  // 2026): mechanisms on one picture meet at a state, and where a chain's steps do not -- three
+  // examples of one claim, a contrast case -- the reader is shown that they are apart, not left to
+  // guess it from white space while their columns interleave. Each piece keeps its own columns, in
+  // the order of its first column and then of its first state; the checker asks about them.
+  var pRoot = {};
+  ids.forEach(function (v) { pRoot[v] = v; });
+  var pFind = function (x) { while (pRoot[x] !== x) x = pRoot[x] = pRoot[pRoot[x]]; return x; };
+  pairs.forEach(function (pr) { pRoot[pFind(pr[0])] = pFind(pr[1]); });
+  // A part meets the whole the text groups it in.
+  partsOf(M.states).forEach(function (pr) { if (has(pRoot, pr[0]) && has(pRoot, pr[1])) pRoot[pFind(pr[0])] = pFind(pr[1]); });
+  var pieceOf = {}, pieceList = [];
+  ids.forEach(function (v) { var r = pFind(v); if (!has(pieceOf, r)) { pieceOf[r] = pieceList.length; pieceList.push([]); } pieceList[pieceOf[r]].push(v); });
+  var lowCol = function (pc) { return Math.min.apply(null, pc.map(function (v) { return col[v]; })); };
+  pieceList.sort(function (a, b) { return lowCol(a) - lowCol(b) || ids.indexOf(a[0]) - ids.indexOf(b[0]); });
+  if (pieceList.length > 1) {
+    var nextCol = 0;
+    pieceList.forEach(function (pc) {
+      var lo = lowCol(pc), hi = Math.max.apply(null, pc.map(function (v) { return col[v]; }));
+      pc.forEach(function (v) { col[v] = col[v] - lo + nextCol; });
+      nextCol += hi - lo + 1;
+    });
+  }
 
   // A STATE ACROSS LEVELS (profile 1.4) is one box running down through every lane from its top
   // level to its bottom one: the Coleman boat's shared expectation, at once many people's belief
@@ -1618,14 +1744,60 @@ function layoutOnce(M, opts) {
     ids.forEach(function (u) { if (u !== v && col[u] > c) col[u] += 1; });
     col[v] = c + 1;
   });
+  // AND TWO SPANS THAT MEET IN ONE COLUMN TAKE A COLUMN EACH. Squeezed side by side into its width,
+  // each box was 80px wide -- "non-homologous" ran out of both sides -- and every arrow into the right
+  // one ran through the left (Sewell's durability and transformation, 8 Oct 2026). The later in
+  // declared order moves one column on, with all that comes after it.
+  var spanList = ids.filter(spans);
+  for (var moved = true, guard = 0; moved && guard < 200; guard++) {
+    moved = false;
+    for (var si = 0; si < spanList.length && !moved; si++) for (var sj = si + 1; sj < spanList.length && !moved; sj++) {
+      var v1 = spanList[si], v2 = spanList[sj];
+      if (col[v1] !== col[v2] || range[v1][0] > range[v2][1] || range[v2][0] > range[v1][1]) continue;
+      var c2 = col[v2];
+      ids.forEach(function (u) { if (u !== v2 && col[u] > c2) col[u] += 1; });
+      col[v2] = c2 + 1;
+      moved = true;
+    }
+  }
+  // COMPARTMENTS (James's decision, 9 Oct 2026): at the text's own boxes, a whole is drawn round its
+  // parts -- Wimmer's field holding institutional order, power and networks, Rena's cell holding its
+  // mitochondrion -- and every step keeps its real ends, part to part. The whole, where it has steps
+  // of its own, is the compartment's first box; its parts follow it down one column, one lane.
+  var compOf = {}, wholeParts = {};
+  if (opts.compartments) {
+    ids.forEach(function (v) { var w = obj(M.states[v]).part_of;
+      if (w != null && has(M.states, String(w)) && String(w) !== v) (wholeParts[String(w)] = wholeParts[String(w)] || []).push(v); });
+    Object.keys(wholeParts).forEach(function (w) {
+      var members = (ids.indexOf(w) >= 0 ? [w] : []).concat(wholeParts[w]), lane = range[wholeParts[w][0]][0];
+      if (members.some(function (v) { return spans(v) || range[v][0] !== lane || compOf[v]; })) { delete wholeParts[w]; return; }
+      // At its members' last column, where nothing they lead to stands at or before it, so what feeds
+      // the compartment stays to its left: at their first, Wimmer's field and strategies shared a column
+      // and the field's steps into the strategies ran down it through other boxes (9 Oct 2026).
+      var cs = members.map(function (v) { return col[v]; });
+      var c0 = Math.max.apply(null, cs), isMember = {};
+      members.forEach(function (v) { isMember[v] = true; });
+      if (ordering.some(function (st) { return isMember[st.from] && !isMember[st.to] && has(col, st.to) && col[st.to] <= c0; }))
+        c0 = Math.min.apply(null, cs);
+      members.forEach(function (v) { col[v] = c0; compOf[v] = w; });
+    });
+  }
+  // A compartment's members are placed together, the whole first.
+  var slotOrder = [], seenSlot = {};
+  ids.forEach(function (v) {
+    if (seenSlot[v]) return;
+    var w = compOf[v];
+    var group = w ? (ids.indexOf(w) >= 0 ? [w] : []).concat(wholeParts[w]) : [v];
+    group.forEach(function (x) { if (!seenSlot[x]) { seenSlot[x] = true; slotOrder.push(x); } });
+  });
   var slots = {};
   var place = function (v, li) { var k = M.levels[li] + "|" + col[v]; (slots[k] = slots[k] || []).push(v); };
   M.levels.forEach(function (lv, li) {
     // Ending here (from above) first, then this lane's own states, then those going on below.
-    ids.forEach(function (v) { if (spans(v) && range[v][1] === li) place(v, li); });
-    ids.forEach(function (v) { if (spans(v) && range[v][0] < li && range[v][1] > li) place(v, li); });
-    ids.forEach(function (v) { if (!spans(v) && range[v][0] === li) place(v, li); });
-    ids.forEach(function (v) { if (spans(v) && range[v][0] === li) place(v, li); });
+    slotOrder.forEach(function (v) { if (spans(v) && range[v][1] === li) place(v, li); });
+    slotOrder.forEach(function (v) { if (spans(v) && range[v][0] < li && range[v][1] > li) place(v, li); });
+    slotOrder.forEach(function (v) { if (!spans(v) && range[v][0] === li) place(v, li); });
+    slotOrder.forEach(function (v) { if (spans(v) && range[v][0] === li) place(v, li); });
   });
   // A BOX THE READER HAS OPENED TO ITS WHOLE LABEL IS TALLER, and its row with it (James, 29 Sep
   // 2026: a label cut at three lines hid what the state was). Rows are no longer one fixed pitch:
@@ -1660,7 +1832,8 @@ function layoutOnce(M, opts) {
       if (k.slice(0, lv.length + 1) !== lv + "|") return;
       var col0 = slots[k];
       for (var r = 0; r + 1 < col0.length; r++)
-        if (joined[col0[r] + "\u0000" + col0[r + 1]]) gs[r] = STACK_GAP;
+        if (joined[col0[r] + "\u0000" + col0[r + 1]])
+          gs[r] = Math.max(STACK_GAP, (opts.minGap && opts.minGap[col0[r] + "\u0000" + col0[r + 1]]) || 0);
     });
     return gs;
   });
@@ -1668,19 +1841,23 @@ function layoutOnce(M, opts) {
   // NESTED LEVELS (opts.nest): each level a frame inside its parent's, instead of a band beside it.
   var nest = nestTree(M.levels, opts.nest);
   var closeAt = function (li) { return nest ? M.levels.filter(function (lv) { return nest.last[lv] === li; }).length : 0; };
-  var lanes = [], y = TOP;
+  var lanes = [], y = TOP + (M.panels ? 26 : 0);
   M.levels.forEach(function (lv, li) {
     var rows = rowHs[li].length;
-    // A level nothing in the text reaches is a thin strip that says so, not an empty band.
-    var h = rows ? HEAD + rowOff(li, rows) + PADY : HEAD + 4;
+    // A LEVEL NOTHING IN THE CHAIN REACHES IS NOT DRAWN (James's decision, 9 Oct 2026): two strips
+    // saying "nothing in the text at this level" took half the height of Bright's and Knight and
+    // Winship's one-level DAGs. The panel still names the chain's height among the levels. Nested,
+    // a level is a frame round those below it, and stays a thin strip.
+    var h = rows ? HEAD + rowOff(li, rows) + PADY : nest ? HEAD + 4 : 0;
     var actorsHere = Object.keys(M.actors).filter(function (a) { return obj(M.actors[a]).level === lv; })
                            .map(function (a) { return obj(M.actors[a]).label || a; });
     // THE HEADING'S EXTENT, estimated as the chips' are, so labels keep clear of its words (M1) and
     // not of the whole strip; the page test holds the estimate to what the browser draws.
     var who = !rows ? "nothing in the text at this level" : actorsHere.join(" · ");
     var dep = nest ? nest.depth[lv] : 0;
-    lanes.push({ level: lv, y: y, h: h, empty: !rows, actors: actorsHere, who: who, depth: dep,
-                 head: { x: 8 + dep * NEST_INSET, y: y + 4, w: 8 + lv.length * 9 + 10 + who.length * 6.9, h: 18 } });
+    lanes.push({ level: lv, y: y, h: h, empty: !rows, hidden: !h, actors: actorsHere, who: who, depth: dep,
+                 head: h ? { x: 8 + dep * NEST_INSET, y: y + 4, w: 8 + lv.length * 9 + 10 + who.length * 6.9, h: 18 }
+                         : { x: 0, y: y, w: 0, h: 0 } });
     // Room below a lane for every frame that closes there, innermost first.
     y += h + closeAt(li) * NEST_CLOSE;
   });
@@ -1688,6 +1865,11 @@ function layoutOnce(M, opts) {
   // M9 ACROSS: a gap between two columns is widened where a label on an arrow across it had no
   // clear place (Badger culling's ranging → contact, 30 Sep 2026); asked for by placeChips below.
   var nestPad = nest ? nest.maxDepth * NEST_INSET : 0;
+  // ROOM ON THE LEFT FOR A CLOUD, where the text marks its boundary and an inflow starts the chart.
+  if (opts.boundary && M.steps.some(function (s) {
+    return s.on === "stock" && s.sign === "+" && !s.outflow && col[s.from] === 0 && !M.steps.some(function (t) {
+      return t.on === "stock" && t.sign === "-" && (t.outflow ? t.to : t.from) === s.from; });
+  })) nestPad += 44;
   var xOfCol = function (c) { var x = GUT + nestPad + c * COL; for (var i = 0; i < c; i++) x += (opts.minW && opts.minW[i]) || 0; return x; };
   ids.forEach(function (v) {
     var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + rowOff(li, slots[M.levels[li] + "|" + col[v]].indexOf(v)); };
@@ -1695,22 +1877,6 @@ function layoutOnce(M, opts) {
     nodes[v] = { x: xOfCol(col[v]), y: top, w: BW, h: bottom - top, col: col[v] };
     if (spans(v)) nodes[v].levels = M.levels.slice(range[v][0], range[v][1] + 1);
     maxRank = Math.max(maxRank, col[v]);
-  });
-  // Spanning boxes in one column whose heights meet stand side by side, each a share of the width.
-  var spanCols = {};
-  ids.filter(spans).forEach(function (v) { (spanCols[col[v]] = spanCols[col[v]] || []).push(v); });
-  Object.keys(spanCols).forEach(function (c) {
-    var list = spanCols[c], groups2 = [];
-    list.forEach(function (v) {
-      var g = groups2.filter(function (gr) { return gr.some(function (w) {
-        return nodes[w].y < nodes[v].y + nodes[v].h && nodes[v].y < nodes[w].y + nodes[w].h; }); })[0];
-      if (g) g.push(v); else groups2.push([v]);
-    });
-    groups2.forEach(function (gr) {
-      if (gr.length < 2) return;
-      var w = (BW - 8 * (gr.length - 1)) / gr.length;
-      gr.forEach(function (v, i) { nodes[v].x += i * (w + 8); nodes[v].w = w; });
-    });
   });
   // WHAT EACH BOX SAYS, and whether it says all of it. Three lines, or as many as a box running
   // through several lanes has room for; `more` offers the rest, `open` is showing it.
@@ -1722,6 +1888,17 @@ function layoutOnce(M, opts) {
     if (p.open && spans(v)) p.h = Math.max(p.h, all.length * LINE_H + LINE_H + 10);
     p.lines = p.open ? all : wrapWords(labelOf(v), charsFor(p.w), cap);
   });
+  // THE COMPARTMENTS' FRAMES, round their members; a whole with no box of its own names the frame on
+  // a tab above its first part.
+  var compartments = Object.keys(wholeParts).map(function (w) {
+    var members = (ids.indexOf(w) >= 0 ? [w] : []).concat(wholeParts[w]).filter(function (v) { return nodes[v]; });
+    var x0 = Math.min.apply(null, members.map(function (v) { return nodes[v].x; })), y0 = Math.min.apply(null, members.map(function (v) { return nodes[v].y; }));
+    var x1 = Math.max.apply(null, members.map(function (v) { return nodes[v].x + nodes[v].w; })), y1 = Math.max.apply(null, members.map(function (v) { return nodes[v].y + nodes[v].h; }));
+    var boxed = ids.indexOf(w) >= 0, tab = boxed ? 0 : 20;
+    return { whole: w, label: obj(M.states[w]).label || w, boxed: boxed, members: members,
+             x: x0 - 12, y: y0 - 12 - tab, w: x1 - x0 + 24, h: y1 - y0 + 24 + tab,
+             tab: boxed ? null : { x: x0 - 12, y: y0 - 12 - tab, w: Math.min(x1 - x0 + 24, 12 + (obj(M.states[w]).label || w).length * 6.6), h: 18 } };
+  });
   // A HEADING STOPS SHORT OF A BOX IN ITS STRIP (M1): a state across levels runs down through the
   // lower lane's heading, and a long list of actors ran on under it (the Coleman boat's Schelling
   // model, 30 Sep 2026). The words are cut to the room before the first such box, and say
@@ -1731,8 +1908,9 @@ function layoutOnce(M, opts) {
   // together, James, 8 Oct 2026). The heading starts in the first stretch of its strip wide
   // enough for the name, past any box crossing the strip before it.
   lanes.forEach(function (ln) {
+    if (ln.hidden) return;
     var hd = ln.head, stop = Infinity, nameW = 8 + ln.level.length * 9;
-    var across = ids.map(function (v) { return nodes[v]; }).filter(function (n) {
+    var across = ids.map(function (v) { return nodes[v]; }).concat(compartments).filter(function (n) {
       return n.y < hd.y + hd.h + 16 && n.y + n.h > hd.y; })
       .map(function (n) { return [n.x - 8, n.x + n.w + 8]; }).sort(function (a, b) { return a[0] - b[0]; });
     across.forEach(function (c) { if (c[1] > hd.x && c[0] < hd.x + nameW) hd.x = c[1]; });
@@ -1755,18 +1933,6 @@ function layoutOnce(M, opts) {
     // the reader's own choice for one box.
     p.pill = p.more && !opts.full ? { x: PILL_X - PILL_W / 2, y: p.h - PILL_H / 2, w: PILL_W, h: PILL_H } : null;
   });
-  // A STATE THE TEXT LINKS TO NOTHING says so beside its box -- and the drawing is wide enough to
-  // hold the words: on the last column "✕ no link in the text" ran off the edge and read "✕ no l"
-  // (James, Valentino's second chain, 29 Sep 2026).
-  var unlinkedRight = false;
-  ids.forEach(function (v) {
-    var s = M.states[v];
-    nodes[v].unlinked = isStart(s) && !M.steps.some(function (x) {
-      return x.layer === "text" && (x.from === v || (x.jointly || []).indexOf(v) >= 0 || (x.unless || []).indexOf(v) >= 0 ||
-                                    (x.modifies || []).some(function (m) { return m.by === v; })); });
-    if (nodes[v].unlinked && col[v] === maxRank) unlinkedRight = true;
-    nodes[v].gapword = nodes[v].unlinked ? { x: nodes[v].w + 10, y: nodes[v].h / 2 - 8, w: GAPWORD_W, h: 14 } : null;
-  });
   /** Where on a box's top or foot an arrow may meet it: the stretch clear of that edge's marks
    *  (M4: the head of Admissions' arrow up into "How students think" sat on its "more" pill). */
   var freeSpan = function (v, edge) {
@@ -1788,6 +1954,36 @@ function layoutOnce(M, opts) {
   // arrows through it are drawn from where they start to where they end.
   var drawn = foldSteps(M, opts.folded || {}, nodes);
   drawn.steps.forEach(function (s) { if (s.parts) s.back = nodes[s.to].x <= nodes[s.from].x; });
+  // A STEP STATED THROUGH OTHERS IS NO ARROW OF ITS OWN where its route is drawn (James's decision,
+  // 9 Oct 2026). "Z affects Y only through T" drawn as Z -> Y beside Z -> T -> Y said the opposite of
+  // Knight and Winship's instrument, whose point is that no such arrow exists, and drew the arrow
+  // Coleman's 1986 boat leaves out; Rena's "metformin is given" sent ten summaries across the chart.
+  // It is listed in the panel, where hovering it lights the route. A summary whose route is not all
+  // drawn (a state of it folded, or outside the chain) keeps its arrow, labelled "via".
+  var hopKey = function (a, b, layer) { return a + "\u0000" + b + "\u0000" + layer; };
+  var hops = {};
+  drawn.steps.forEach(function (s) {
+    if (s.isNull || s.selects || s.assoc) return;
+    if (!((s.statedVia || []).length && s.share === "entire")) hops[hopKey(s.from, s.to, s.layer)] = true;
+    (s.jointly || []).forEach(function (j) { hops[hopKey(j, s.to, s.layer)] = true; });
+  });
+  // STOCKS AND FLOWS (James's decision, 9 Oct 2026): a state a flow runs into or out of (`on: stock`)
+  // is drawn as a stock, and the state that is the flow as a valve, as Meadows draws them.
+  var stocks = {}, flows = {};
+  M.steps.forEach(function (s) {
+    if (s.on !== "stock" || s.isNull || s.selects || s.assoc || (s.sign !== "+" && s.sign !== "-")) return;
+    var stock = s.outflow ? s.from : s.to, flow = s.outflow ? s.to : s.from;
+    stocks[stock] = true;
+    flows[flow] = flows[flow] && flows[flow] !== (s.sign === "+" ? "in" : "out") ? "both" : (s.sign === "+" ? "in" : "out");
+  });
+  var summaries = [];
+  drawn.steps = drawn.steps.filter(function (s) {
+    if (s.parts || s.isNull || !(s.statedVia || []).length || s.share !== "entire") return true;
+    var run = [s.from].concat(s.statedVia, [s.to]);
+    for (var i = 0; i + 1 < run.length; i++) if (!hops[hopKey(run[i], run[i + 1], s.layer)]) return true;
+    summaries.push(s);
+    return false;
+  });
   // THE ENDS: only the intervention's routes to the outcomes. Folding every state between them was
   // not enough on the J-PAL sample, which names four other causes and six places its chain stops:
   // their routes still filled the page. Everything off that line is set aside -- not drawn, and
@@ -1840,6 +2036,9 @@ function layoutOnce(M, opts) {
             (FORMATION.indexOf(s.on) >= 0 ? "\u0000o" + s.on : "") +
             // and a step in one regime, or past a threshold, is not the same arrow as one in all.
             (s.regime ? "\u0000@" + s.regime : "") + (s.threshold ? "\u0000|" : "") +
+            // and so is a step under another condition: merged, Bright's multinet drew its two regimes
+            // as one arrow with a "◇" that said neither (9 Oct 2026).
+            ((s.givenOn || []).length ? "\u0000?" + s.givenOn.map(condText).join("\u0001") : "") +
             // and so is a step in another period: merged, Valentino's 1990s moderation and its
             // 2010 null moderation drew one arrow with one ring (28 Sep 2026).
             (s.period ? "\u0000#" + s.period : "") +
@@ -1849,7 +2048,10 @@ function layoutOnce(M, opts) {
             // and "only if", "enough on its own", a moderated step and a type of attribution each say
             // something a plain "raises" does not (profile 1.9).
             (s.necessary === true ? "\u0000N" : "") + (typeof s.sufficient === "boolean" ? "\u0000S" + s.sufficient : "") +
-            (s.attribution ? "\u0000A" + s.attribution : "");
+            (s.attribution ? "\u0000A" + s.attribution : "") +
+            // and (1.19) a named step, a numbered one, one of another channel, a peaked one, a net flow.
+            (s.name ? "\u0000n" + s.name : "") + (s.mark ? "\u0000m" + s.mark : "") + (s.channel ? "\u0000c" + s.channel : "") +
+            (s.shape ? "\u0000s" + s.shape : "") + (s.net ? "\u0000net" : "");
     // A MODERATOR IS NOT A SECOND ARROW: it acts on the relationship, and Marti and Gond's six
     // propositions about one pair of states drew six parallel arrows. Its ring goes on the one arrow.
     // AN ARROW THE READER HAS OPENED draws each of its steps apart: "raises ×2" said how many, not
@@ -2073,6 +2275,10 @@ function layoutOnce(M, opts) {
     var fidelity = ss.map(function (s) { return s.fidelity; })
                      .sort(function (p, q) { return FIDELITY.indexOf(p) - FIDELITY.indexOf(q); })[0];
     var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : kind === "association" ? "association" : "text";   // kind is "step" when mixed
+    // A CHANNEL IS A COLOUR (1.19): the text's own kinds of link -- the Coleman-boat paper's ecological
+    // arrows in teal, Rena's signalling and metabolism -- each its own ink, its heads with it.
+    var chIdx = (M.channels || []).map(function (c) { return c.id; }).indexOf(s0.channel);
+    if (ink === "text" && s0.channel && chIdx >= 0 && ss.every(function (x) { return x.channel === s0.channel; })) ink = "ch" + (chIdx % CHANNEL_INKS);
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P, segs = null;
@@ -2089,7 +2295,15 @@ function layoutOnce(M, opts) {
       stub = "M" + vx + "," + vyE + " L" + vx + "," + vy2;
     } else if (isSideKey[k]) {
       var goesDown = b.y > a.y, lane = sideKeys[a.x + (goesDown ? "L" : "R")];
-      var bulge = 26 + lane.indexOf(k) * 12, sgn = goesDown ? -1 : 1;
+      // NO WIDER THAN THE GAP BESIDE THE COLUMN: twelve more pixels for each arrow down a crowded
+      // column ran into the next column's boxes (Wimmer's compartments, 9 Oct 2026). Past the room,
+      // they share the outermost track.
+      var lo2 = Math.min(a.y, b.y), hi2 = Math.max(a.y + a.h, b.y + b.h), room = Infinity;
+      Object.keys(nodes).forEach(function (w) { var m = nodes[w];
+        if (!drawnHere(w) || m.y > hi2 || m.y + m.h < lo2) return;
+        if (goesDown && m.x + m.w <= a.x) room = Math.min(room, a.x - (m.x + m.w));
+        if (!goesDown && m.x >= a.x + a.w) room = Math.min(room, m.x - (a.x + a.w)); });
+      var bulge = Math.min(26 + lane.indexOf(k) * 12, Math.max(18, (room === Infinity ? 1e6 : room) - 16)), sgn = goesDown ? -1 : 1;
       var ex = goesDown ? a.x : a.x + a.w, ya = a.y + a.h / 2 + (goesDown ? 8 : -8), yb = b.y + b.h / 2 + (goesDown ? -8 : 8);
       var sx2 = goesDown ? b.x - 2 : b.x + b.w + 2, sxE = sx2 + sgn * STUB;
       P = [[ex, ya], [ex + sgn * bulge, ya], [sxE + sgn * (bulge - STUB), yb], [sxE, yb]];
@@ -2153,9 +2367,7 @@ function layoutOnce(M, opts) {
     }
     var signs = [];
     ss.forEach(function (s) { if (s.sign && signs.indexOf(s.sign) < 0) signs.push(s.sign); });
-    // ↻ marks the step that closes a loop: an arc that returns, or a step in one column that the
-    // depth-first walk found closing one.
-    var closes = isBack || ((isVertKey[k] || isSideKey[k]) && ss.some(function (x) { return back[x.id]; }));
+    // (The step that closed a loop carried ↻ on its chip until 9 Oct 2026: each loop now has one mark.)
     var given = ss.some(function (s) { return s.given.length > 0; });
     // CUT IN SHORT, WHOLE IN FULL: a label cut on the arrow had no way to be read on the map
     // (James, 8 Oct 2026). Full names every state a route runs through, and every kind of step.
@@ -2179,13 +2391,36 @@ function layoutOnce(M, opts) {
       var periodTag = pd && ss.every(function (x) { return x.period === pd; }) &&
         M.steps.some(function (x) { return x.from === s0.from && x.to === s0.to && x.period && x.period !== pd; })
         ? " · " + cut(pd, 40) : "";
+      // THE LAG ON THE ARROW (James's decision, 9 Oct 2026): a delay is what Meadows's inventory figure
+      // draws on the link it slows, and a bare arrowhead cannot say it.
+      // THE CONDITION ON THE ARROW, in words (James's decision, 9 Oct 2026): "◇" said only that there
+      // was one, and Bright's two regimes could not be told apart.
+      var gs = s0.given || [], gKey = gs.join("\u0001");
+      var condWord = function (g) {
+        var on = (s0.givenOn || []).filter(function (o) { return condText(o) === g; })[0];
+        // On the arrow's own source, its value alone: "where it is Latin America" (Bright's multinet).
+        if (on && on.state === s0.from) return "where it is " + (on.value || "so");
+        return on ? cut(obj(M.states[on.state]).label || on.state, 28) + (on.value ? " = " + on.value : "") : cut(g, 40);
+      };
+      var conds = {};
+      ss.forEach(function (x) { if ((x.given || []).length) conds[(x.given || []).join("\u0001")] = true; });
+      var nCond = Object.keys(conds).length;
+      // A condition in the text's own words is written in Full; in Short, only one on a declared state
+      // is, since those are short ("where it is Latin America") and the free ones run to sentences.
+      var onState = function (g) { return (s0.givenOn || []).some(function (o) { return condText(o) === g; }); };
+      var uniform = gs.length && ss.every(function (x) { return (x.given || []).join("\u0001") === gKey; });
+      var written = uniform && (FULLTEXT || gs.every(onState));
+      var givenTag = written ? " · " + gs.map(function (g) { var w = condWord(g); return /^where it is /.test(w) ? w : "given " + w; }).join("; ")
+        : given ? " · under " + (nCond > 1 ? nCond + " conditions" : uniform && gs.length > 1 ? gs.length + " conditions" : "a condition") : "";
+      var lg = s0.lag || "";
+      var lagTag = lg && ss.every(function (x) { return x.lag === lg; }) ? " · " + cut(lg, 24) : "";
       var route = s0.parts ? (ss.length === 1 ? " · via " + viaList(s0.via) : " · " + ss.length + " routes")
                 : stated ? " · via " + viaList(stated) : "";
       var keepKinds = FULLTEXT ? breakdown.length : 2;
       var label = breakdown.length > 1
                 ? breakdown.slice(0, keepKinds).map(function (b) { return b.word + " ×" + b.count; }).join(" · ") +
                   (breakdown.length > keepKinds ? " · +" + (breakdown.length - keepKinds) + " more" : "") +
-                  (given ? " ◇" : "") + (closes ? " ↻" : "")
+                  givenTag
                 : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "") +
                   // A NULL IN ONE PERIOD SAYS WHICH: "no effect" beside "raises during culling" read as
                   // a contradiction, not a time course.
@@ -2194,8 +2429,14 @@ function layoutOnce(M, opts) {
                 : kind === "selection" ? "selection effect"
                 // "ASSOCIATED" (1.13): the text reports they go together, and no more.
                 : kind === "association" ? "associated" + (ss.length > 1 ? " ×" + ss.length : "") :
+                  // A NAMED STEP (1.19) says its name, in the text's words, where the verb was.
+                  (s0.name && ss.every(function (x) { return x.name === s0.name; }) ? cut(s0.name, 34)
+                  // A RELATION THAT RISES AND FALLS (1.19) says so: it has no one sign.
+                  : s0.shape === "peak" ? "rises, then falls" : s0.shape === "trough" ? "falls, then rises"
+                  // A NET FLOW (1.19) runs whichever way the gap points.
+                  : s0.net ? "net flow"
                   // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
-                  (signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
+                  : signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
                   // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
                   : s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
                     ? (signs[0] === "+" ? "speeds" : "slows")
@@ -2212,8 +2453,8 @@ function layoutOnce(M, opts) {
                   // A STEP PAST A THRESHOLD (G2) says so: drawn as a plain "raises" it read as "more
                   // of the one, more of the other", monotone, which Lenton's tipping points are not.
                   (s0.threshold ? " past a threshold" : "") +
-                  (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag + periodTag +
-                  (given ? " ◇" : "") + (closes ? " ↻" : "");
+                  (route || (ss.length > 1 ? " ×" + ss.length : "")) + sizeTag + periodTag + lagTag +
+                  givenTag;
       return label;
     };
     var label = labelFor(!!opts.full), whole = labelFor(true);
@@ -2232,21 +2473,167 @@ function layoutOnce(M, opts) {
     ss.forEach(function (x) { (x.modifies || []).forEach(function (m) {
       if (has(M.states, m.by) && nodes[m.by] && m.by !== s0.to && m.by !== s0.from &&
           !modifiers.some(function (y) { return y.state === m.by; })) modifiers.push({ state: m.by, effect: m.effect }); }); });
+    // A STATE THE STEP HOLDS UNDER is drawn and tied to the arrow as a moderator is: Bright's context
+    // Y, the point of its Fig. 2, was in the map and nowhere on the chart (9 Oct 2026).
+    ss.forEach(function (x) { (x.givenOn || []).forEach(function (g) {
+      if (nodes[g.state] && g.state !== s0.to && g.state !== s0.from &&
+          !modifiers.some(function (y) { return y.state === g.state; })) modifiers.push({ state: g.state, effect: "given", value: g.value }); }); });
     return { key: k, base: baseOf[k] || k, expanded: (baseOf[k] || k) !== k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, modifiers: modifiers, rests: rests, stems: [], junction: /** @type {null | {x:number,y:number,bar:string,gate:string,back:number[],u?:number[],n?:number[],box?:any}} */ (null),
              head: /** @type {null | {x:number,y:number,w:number,h:number}} */ (null), gateT: 0,
              ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P, segs: segs,
              // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
              // where many chips crowd, and not the + and − that mean support and attack in Reasons.
+             // "LOWERS" IS DRAWN BY ITS HEAD, a T-bar (James's decision, 9 Oct 2026; Rena et al.'s convention).
+             neg: kind === "step" && signs.length === 1 && signs[0] === "-" &&
+                  !ss.every(function (x) { return x.on === "stock"; }),
+             // A FLOW IS A PIPE: "in" runs into the stock, "out" runs out of it to the flow (drawn that way round).
+             stock: kind === "step" && ss.every(function (x) { return x.on === "stock"; })
+                    ? (ss.every(function (x) { return x.net; }) ? "net" : signs.length === 1 && signs[0] === "+" ? "in" : signs.length === 1 && signs[0] === "-" ? "out" : null) : null,
              chip: (function () {
                var glyph = kind === "step" && breakdown.length === 1 && signs.length === 1
                  ? ({ "+": "▲", "-": "▼", "which": "◆" })[signs[0]] || "" : "";
-               var lines = chipLines(label);
-               var widest = Math.max.apply(null, lines.map(function (l, i) { return l.length * 6.6 + (i === 0 && glyph ? 11 : 0); }));
-               return { x: 0, y: 0, w: widest + 14, h: 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph,
-                        whole: whole !== label ? whole : null };
+               // A CHIP THAT ONLY REPEATS THE SIGN IS NOT DRAWN (James's decision, 9 Oct 2026). "link" or
+               // "◆ decides which" on every arrow of a DAG, "raises" on every arrow of Rena's pathway: the
+               // head says it, and the authors draw bare arrows. A chip stays where it says more -- a count,
+               // a lag, a condition, a verb such as "closes off" -- and "labels: Full" writes every one.
+               var quiet = !opts.full && kind === "step" && breakdown.length <= 1 &&
+                 ["raises", "lowers", "decides which", "link", "flows into", "flows out of"].indexOf(label) >= 0;
+               var lines = quiet ? [] : chipLines(label);
+               var widest = quiet ? 0 : Math.max.apply(null, lines.map(function (l, i) { return l.length * 6.6 + (i === 0 && glyph ? 11 : 0); }));
+               // A MARK (1.19), the text's number for the step, in a circle at the chip's start.
+               var mark = s0.mark && ss.every(function (x) { return x.mark === s0.mark; }) ? s0.mark : "";
+               if (mark) quiet = false, lines = lines.length ? lines : chipLines(label), widest = Math.max.apply(null, lines.map(function (l) { return l.length * 6.6; }));
+               return { x: 0, y: 0, w: quiet ? 0 : widest + 14 + (mark ? 12 + mark.length * 7 : 0), h: quiet ? 0 : 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph,
+                        quiet: quiet, mark: mark, whole: quiet ? label : whole !== label ? whole : null };
              })() };
   });
+  // A LOOP LAID OUT AS A LOOP (James's decision, 9 Oct 2026): where a chain's longest loop runs through
+  // three states or more, those states go round a ring in the loop's order, and the rest of the chart
+  // stands aside -- as Meadows, Wimmer and Hedström and Ylikoski draw a cycle. Laid out in columns, the
+  // self-fulfilling prophecy ran in two rows with its return drawn as an arc under them. Kept to small
+  // charts where the loop is most of the chain, its states in one level, so curves between boxes stay
+  // clear of the rest.
+  var ring = null;
+  (function () {
+    if (opts.ring === false || opts.compartments || opts.ends || opts.nest || Object.keys(drawn.folded).length || ids.length > 14) return;
+    var L = (M.profile.loops_text || []).filter(function (l) { return l.states.length >= 3 && l.states.every(function (v) { return nodes[v]; }); })
+      .sort(function (p, q) { return q.states.length - p.states.length; })[0];
+    // Only where the loop is most of the chain: Meadows's inventory loop, four of thirteen states, drawn
+    // round a ring among the rest crossed everything else.
+    if (!L || L.states.length * 2 < ids.length) return;
+    var inLoop = {}; L.states.forEach(function (v) { inLoop[v] = true; });
+    var li = range[L.states[0]][0];
+    if (ids.some(function (v) { return spans(v); }) || L.states.some(function (v) { return range[v][0] !== li; })) return;
+    var cs = L.states.map(function (v) { return col[v]; }), c0 = Math.min.apply(null, cs), c1 = Math.max.apply(null, cs);
+    if (ids.some(function (v) { return !inLoop[v] && range[v][0] === li && col[v] >= c0 && col[v] <= c1; })) return;
+    var k = L.states.length, Rx = 150, Ry = 80, at = function (i) { var t = Math.PI + 2 * Math.PI * i / k; return [Math.cos(t), Math.sin(t)]; };
+    var clear = function () {
+      for (var i = 0; i < k; i++) for (var j = i + 1; j < k; j++) {
+        var p = at(i), q = at(j), dx = Math.abs(p[0] - q[0]) * Rx, dy = Math.abs(p[1] - q[1]) * Ry;
+        if (dx < BW + 36 && dy < BH + 44) return false;
+      }
+      return true;
+    };
+    for (var guard = 0; !clear() && guard < 40; guard++) { Rx *= 1.1; Ry *= 1.1; }
+    // Kept only if no arrow then runs through a box: undone otherwise, the columns stand.
+    var saved = { y: y, lanes: lanes.map(function (ln) { return [ln.y, ln.h, ln.head && ln.head.y]; }),
+                  nodes: ids.map(function (v) { return [v, nodes[v].x, nodes[v].y]; }),
+                  edges: edges.map(function (e) { return [e.curve, e.segs, e.path, e.stub, e.back, e.vertical, e.side]; }) };
+    var lane = lanes[li], need = HEAD + PADY + 2 * Ry + BH + 24;
+    var grow = Math.max(0, need - lane.h);
+    if (grow) {
+      lane.h += grow;
+      lanes.forEach(function (ln, j) { if (j > li) { ln.y += grow; if (ln.head) ln.head.y += grow; } });
+      ids.forEach(function (v) { if (range[v][0] > li) nodes[v].y += grow; });
+      y += grow;
+    }
+    var cx = xOfCol(c0) + BW / 2 + Rx, cy = lane.y + HEAD + PADY / 2 + Ry + BH / 2 + 8;
+    var dx = Math.max(0, cx + Rx + BW / 2 - (xOfCol(c1) + BW));
+    if (dx) ids.forEach(function (v) { if (col[v] > c1) nodes[v].x += dx; });
+    // TURNED SO THE STATES WITH STEPS OUT OF THE RING FACE WHAT THEY LEAD TO: each turn tried, nearest
+    // first, until no arrow runs through a box.
+    var outside = edges.filter(function (e) { return inLoop[e.from] !== inLoop[e.to] && nodes[e.from] && nodes[e.to]; });
+    var placeAt = function (r) {
+      L.states.forEach(function (v, i) { var u = at((i + r) % k); nodes[v].x = cx + Rx * u[0] - BW / 2; nodes[v].y = cy + Ry * u[1] - nodes[v].h / 2; });
+    };
+    var cost = function (r) {
+      placeAt(r);
+      return outside.reduce(function (t, e) { var a = nodes[e.from], b = nodes[e.to];
+        return t + Math.hypot(a.x + a.w / 2 - b.x - b.w / 2, a.y + a.h / 2 - b.y - b.h / 2); }, 0);
+    };
+    var turns = []; for (var r0 = 0; r0 < k; r0++) turns.push([r0, cost(r0)]);
+    turns.sort(function (p, q) { return p[1] - q[1] || p[0] - q[0]; });
+    var redraw = function () {
+    ring = { cx: cx, cy: cy, states: L.states.slice() };
+      // EVERY ARROW AGAIN, box to box: from the edge of one facing the other, bowed outward where it
+      // runs round the ring, its head on a short stub as everywhere.
+      var border = function (n, tx, ty) {
+        var ox = n.x + n.w / 2, oy = n.y + n.h / 2, ddx = tx - ox, ddy = ty - oy;
+        var sx = ddx ? (n.w / 2) / Math.abs(ddx) : Infinity, sy = ddy ? (n.h / 2) / Math.abs(ddy) : Infinity, f = Math.min(sx, sy);
+        return [ox + ddx * f, oy + ddy * f];
+      };
+      var spread = {};
+      edges.forEach(function (e) {
+        var a = nodes[e.from], b = nodes[e.to];
+        if (!a || !b || e.from === e.to) return;
+        var ac = [a.x + a.w / 2, a.y + a.h / 2], bc = [b.x + b.w / 2, b.y + b.h / 2];
+        // Two arrows between one pair run apart.
+        var pk = [e.from, e.to].sort().join("\u0000"), nth = spread[pk] = (spread[pk] || 0) + 1;
+        var nx = -(bc[1] - ac[1]), ny = bc[0] - ac[0], nl = Math.hypot(nx, ny) || 1, side = (nth - 1) * 14 * (e.from < e.to ? 1 : -1);
+        var S = border(a, bc[0] + nx / nl * side, bc[1] + ny / nl * side), T = border(b, ac[0] + nx / nl * side, ac[1] + ny / nl * side);
+        S = [S[0] + nx / nl * side * 0.5, S[1] + ny / nl * side * 0.5]; T = [T[0] + nx / nl * side * 0.5, T[1] + ny / nl * side * 0.5];
+        // AN ARROW BETWEEN THE RING AND THE REST leaves or meets its ring state on the side away from the
+        // ring's centre, and bends out before turning: drawn straight, the prophecy's "Ego acts" to its
+        // outcome ran through "Ego's belief" beside it.
+        if (inLoop[e.from] !== inLoop[e.to]) {
+          var rn = inLoop[e.from] ? a : b, rc = [rn.x + rn.w / 2, rn.y + rn.h / 2];
+          var rx = rc[0] - cx, ry = rc[1] - cy, rl = Math.hypot(rx, ry) || 1, far = [rc[0] + rx / rl * 400, rc[1] + ry / rl * 400];
+          var R0 = border(rn, far[0], far[1]), out = [R0[0] + rx / rl * 70, R0[1] + ry / rl * 70];
+          if (inLoop[e.from]) { S = R0; } else { T = R0; }
+          var mid2 = out;
+          var dl2 = Math.hypot(T[0] - mid2[0], T[1] - mid2[1]) || 1;
+          var E2 = [T[0] - (T[0] - mid2[0]) / dl2 * STUB, T[1] - (T[1] - mid2[1]) / dl2 * STUB];
+          var r2 = function (q) { return [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10]; };
+          var Q1 = inLoop[e.from] ? out : [S[0] + (out[0] - S[0]) * 0.5, S[1] + (out[1] - S[1]) * 0.5];
+          var Q2 = inLoop[e.from] ? [E2[0] + (out[0] - E2[0]) * 0.4, E2[1] + (out[1] - E2[1]) * 0.4] : out;
+          e.curve = [r2(S), r2(Q1), r2(Q2), r2(E2)]; e.segs = null;
+          e.path = "M" + e.curve[0] + " C" + e.curve[1] + " " + e.curve[2] + " " + e.curve[3];
+          e.stub = "M" + r2(E2)[0] + "," + r2(E2)[1] + " L" + r2(T)[0] + "," + r2(T)[1];
+          e.back = false; e.vertical = false; e.side = false;
+          return;
+        }
+        var mid = [(S[0] + T[0]) / 2, (S[1] + T[1]) / 2];
+        if (inLoop[e.from] && inLoop[e.to]) {
+          var ux = mid[0] - cx, uy = mid[1] - cy, ul = Math.hypot(ux, uy) || 1;
+          mid = [mid[0] + ux / ul * 34, mid[1] + uy / ul * 34];
+        }
+        var dl = Math.hypot(T[0] - mid[0], T[1] - mid[1]) || 1;
+        var E = [T[0] - (T[0] - mid[0]) / dl * STUB, T[1] - (T[1] - mid[1]) / dl * STUB];
+        var P1 = [S[0] + (mid[0] - S[0]) * 0.66, S[1] + (mid[1] - S[1]) * 0.66], P2 = [E[0] + (mid[0] - E[0]) * 0.66, E[1] + (mid[1] - E[1]) * 0.66];
+        var r1 = function (q) { return [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10]; };
+        e.curve = [r1(S), r1(P1), r1(P2), r1(E)]; e.segs = null;
+        e.path = "M" + e.curve[0] + " C" + e.curve[1] + " " + e.curve[2] + " " + e.curve[3];
+        e.stub = "M" + r1(E)[0] + "," + r1(E)[1] + " L" + r1(T)[0] + "," + r1(T)[1];
+        e.back = false; e.vertical = false; e.side = false;
+      });
+    };
+    var through = true;
+    for (var ti = 0; ti < turns.length && through; ti++) {
+      placeAt(turns[ti][0]);
+      redraw();
+      through = edges.some(function (e) {
+      return e.curve && ids.some(function (v) { return v !== e.from && v !== e.to && polyHitsRect(pathPts(e, 40), nodes[v], 2); });
+      });
+    }
+    if (through) {
+      y = saved.y;
+      lanes.forEach(function (ln, j) { ln.y = saved.lanes[j][0]; ln.h = saved.lanes[j][1]; if (ln.head) ln.head.y = saved.lanes[j][2]; });
+      saved.nodes.forEach(function (q) { nodes[q[0]].x = q[1]; nodes[q[0]].y = q[2]; });
+      edges.forEach(function (e, i) { var q = saved.edges[i]; e.curve = q[0]; e.segs = q[1]; e.path = q[2]; e.stub = q[3]; e.back = q[4]; e.vertical = q[5]; e.side = q[6]; });
+      ring = null;
+    }
+  })();
   var shown = {};
   Object.keys(nodes).forEach(function (v) { if (!drawn.folded[v] && setAside.indexOf(v) < 0) shown[v] = nodes[v]; });
   // EVERY HEAD ON A SIDE OF A BOX, APART (M1). Each kind of arrow chose where it arrives on its own
@@ -2289,6 +2676,14 @@ function layoutOnce(M, opts) {
       e.stub = e.stub.replace(/M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/, function (_, a1, b1, c1, d1) {
         return across ? "M" + a1 + "," + (+b1 + d) + " L" + c1 + "," + (+d1 + d) : "M" + (+a1 + d) + "," + b1 + " L" + (+c1 + d) + "," + d1; });
       reStub(e);
+      // MOVED, IT MAY NOW CROSS A BOX it cleared before: Wimmer's new actors into the alliance networks,
+      // spread 20px along the box's side, clipped the corner of the power box (9 Oct 2026). Routed
+      // through the columns, then, as any arrow that would cross one is.
+      var fa = nodes[e.from], fb = nodes[e.to];
+      if (!e.segs && !e.vertical && !e.side && !e.back && fa && fb && fb.col - fa.col > 1 && hitsBox([e.curve], [e.from, e.to])) {
+        var r2 = routeThrough(e.curve[0], e.curve[3], fa.col, fb.col, e.curve[0][1] === fa.y || e.curve[0][1] === fa.y + fa.h);
+        e.segs = r2; e.curve = [r2[0][0], r2[0][1], r2[r2.length - 1][2], r2[r2.length - 1][3]]; reStub(e);
+      }
     });
   });
   // THE HEAD'S OWN RECTANGLE, from the stub it rides (M4): what labels keep clear of, and what the
@@ -2331,27 +2726,114 @@ function layoutOnce(M, opts) {
     return routeThrough(S, T, n.col, cT, false, under);
   };
   edges.forEach(function (e) { stemsOf(e, shown, taken, stemRouter, lanes); });
-  var chipFails = placeChips(edges, shown, lanes);
+  // THE LOOPS' MARKS, each at the centre of its drawn states, moved out to the nearest clear place
+  // where that centre falls on a box, a heading, an arrow or another loop's mark. Placed once the
+  // arrows are routed, so a mark never sits on one (Meadows's R and B did, 9 Oct 2026), and before
+  // the chips, which keep clear of it.
+  var centres = [], CENTRE_R = 13, lineSamples = edges.map(function (e) { return pathPts(e, 48); });
+  (opts.centres || []).forEach(function (c) {
+    var pts = c.states.filter(function (v) { return nodes[v]; }).map(function (v) { return [nodes[v].x + nodes[v].w / 2, nodes[v].y + nodes[v].h / 2]; });
+    if (pts.length < 2 && !(pts.length === 1 && c.states.length === 1)) return;
+    var cx = pts.reduce(function (a, q) { return a + q[0]; }, 0) / pts.length, cy = pts.reduce(function (a, q) { return a + q[1]; }, 0) / pts.length;
+    var clash = function (x, y) {
+      var r = { x: x - CENTRE_R - 4, y: y - CENTRE_R - 4, w: 2 * CENTRE_R + 8, h: 2 * CENTRE_R + 8 };
+      if (r.x < 2 || r.y < 2) return true;
+      return ids.some(function (v) { var n = nodes[v]; return overlap(r, { x: n.x - 4, y: n.y - 8, w: n.w + 8, h: n.h + 16 }) > 0; }) ||
+        lanes.some(function (ln) { return !ln.hidden && ln.head && overlap(r, ln.head) > 0; }) ||
+        centres.some(function (o) { return Math.hypot(o.x - x, o.y - y) < 2 * CENTRE_R + 8; }) ||
+        lineSamples.some(function (S) { return S.some(function (q) { return Math.hypot(q[0] - x, q[1] - y) < CENTRE_R + 5; }); }) ||
+        edges.some(function (e) { return (e.junction && e.junction.box && overlap(r, e.junction.box) > 0) ||
+          (e.stems || []).some(function (sm) { return sm.ring && Math.hypot(sm.ring.x - x, sm.ring.y - y) < CENTRE_R + sm.ring.r + 4; }); });
+    };
+    var best = null;
+    for (var ring = 0; ring <= 12 && !best; ring++) {
+      var n = ring ? 8 * ring : 1;
+      for (var k = 0; k < n && !best; k++) {
+        var a = 2 * Math.PI * k / n, x = cx + ring * 18 * Math.cos(a), y = cy + ring * 18 * Math.sin(a);
+        if (!clash(x, y)) best = [x, y];
+      }
+    }
+    if (!best) best = [cx, cy];
+    centres.push({ kind: c.kind, i: c.i, label: c.label, states: c.states, x: Math.round(best[0]), y: Math.round(best[1]), r: CENTRE_R });
+  });
+  // CLOUDS AT THE OPEN ENDS OF THE FLOWS (James's decision, 9 Oct 2026), only where the text
+  // draws attention to where its system stops (`boundary:`): every system has a boundary, and a
+  // cloud on every flow would say nothing. A flow that fills a stock comes from a cloud on its
+  // left; one that drains a stock runs into a cloud on its right. A flow between two stocks has no
+  // open end. Set where nothing else is, or not at all.
+  var clouds = [], CLOUD_W = 30, CLOUD_H = 18;
+  var openEnds = !opts.boundary ? {} : Object.keys(flows).reduce(function (o, v) {
+    if (flows[v] === "in" || flows[v] === "out") o[v] = flows[v] === "in" ? -1 : 1;
+    return o;
+  }, {});
+  // Straight out from the flow's outer end where that is clear; else at an angle off it, nearer
+  // first (Meadows's population: the inflow's left is where its causes' arrows come in).
+  var nearSeg = function (S, a, b, d) {
+    return S.some(function (q) {
+      var vx = b[0] - a[0], vy = b[1] - a[1], L = vx * vx + vy * vy || 1;
+      var t = Math.max(0, Math.min(1, ((q[0] - a[0]) * vx + (q[1] - a[1]) * vy) / L));
+      return Math.hypot(q[0] - a[0] - t * vx, q[1] - a[1] - t * vy) < d;
+    });
+  };
+  Object.keys(openEnds).forEach(function (v) {
+    var n = shown[v], side = openEnds[v];
+    if (!n) return;
+    var edgeX = side < 0 ? n.x - 8 : n.x + n.w, mid = n.y + n.h / 2, done = false;
+    [34, 48, 62, 76].forEach(function (r) {
+      [0, -30, 30, -55, 55, -75, 75].forEach(function (deg) {
+        if (done) return;
+        var a = deg * Math.PI / 180, cx = edgeX + side * r * Math.cos(a), cy = mid + r * Math.sin(a);
+        var ey = Math.max(n.y + 8, Math.min(n.y + n.h - 8, cy));
+        var box = { x: cx - CLOUD_W / 2, y: cy - CLOUD_H / 2, w: CLOUD_W, h: CLOUD_H }, pb = pad(box, 4);
+        if (box.x < 2 || box.y < TOP - 4) return;
+        var A = [cx, cy], E = [edgeX, ey];
+        var hit = ids.some(function (o) { var m = nodes[o]; return overlap(pb, pad(m, 4)) > 0; }) ||
+          ids.some(function (o) { if (o === v) return false; var m = nodes[o]; for (var t = 0; t <= 1; t += 0.1) { var x = A[0] + t * (E[0] - A[0]), y = A[1] + t * (E[1] - A[1]); if (x > m.x - 3 && x < m.x + m.w + 3 && y > m.y - 3 && y < m.y + m.h + 3) return true; } return false; }) ||
+          lanes.some(function (ln) { return !ln.hidden && ln.head && overlap(pb, ln.head) > 0; }) ||
+          centres.some(function (c) { return overlap(pb, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }) > 0 || nearSeg([[c.x, c.y]], A, E, c.r + 3); }) ||
+          clouds.some(function (c) { return overlap(pb, c.box) > 0; }) ||
+          lineSamples.some(function (S) { return S.some(function (q) { return q[0] > pb.x && q[0] < pb.x + pb.w && q[1] > pb.y && q[1] < pb.y + pb.h; }) || nearSeg(S, A, E, 6); });
+        if (hit) return;
+        clouds.push({ flow: v, side: side, x: Math.round(cx), y: Math.round(cy), w: CLOUD_W, h: CLOUD_H, edgeX: edgeX, endY: Math.round(ey), box: box });
+        done = true;
+      });
+    });
+  });
+  var chipFails = placeChips(edges, shown, lanes, centres.concat(compartments, clouds));
   // Wide enough for every lane's heading too (M3: a one-column chain cut its headings off).
   var headRight = Math.max.apply(null, lanes.map(function (ln) { return ln.head ? ln.head.x + ln.head.w + 10 : 0; }).concat([0]));
   var needW = {};
-  ids.forEach(function (v) {
-    var n = nodes[v];
-    if (n.gapword && n.col < maxRank) {
-      var want = GAPWORD_W + 30 - (COL - BW) + ((opts.minW && opts.minW[n.col]) || 0);
-      if (want > ((opts.minW && opts.minW[n.col]) || 0)) needW[n.col] = Math.max(needW[n.col] || 0, want);
-    }
+  // M9 DOWN: a label between two boxes stacked in one column with no clear place widens the gap
+  // between them, as one across columns widens a column's (Sewell's commodity form and surface
+  // structures, each driving the other, 8 Oct 2026).
+  var needGap = {};
+  chipFails.forEach(function (e) {
+    var a = nodes[e.from], b = nodes[e.to];
+    if (!a || !b || a.col !== b.col) return;
+    var up = a.y < b.y ? e.from : e.to, dn = up === e.from ? e.to : e.from, k = up + "\u0000" + dn;
+    var gap = nodes[dn].y - (nodes[up].y + nodes[up].h);
+    needGap[k] = Math.max(needGap[k] || 0, Math.min(gap + e.chip.h + 16, 400));
   });
   chipFails.forEach(function (e) {
     var a = nodes[e.from], b = nodes[e.to];
     if (!a || !b || b.col <= a.col) return;
-    // The widest gap the arrow crosses gets the room: a label sits where there is most already.
-    var c = a.col, want = e.chip.w + 44 - (COL - BW) + ((opts.minW && opts.minW[c]) || 0);
+    // THE GAP THE LABEL SITS IN gets the room, among those the arrow crosses: a gap between columns
+    // holds no box at any height, so once it is wide enough a label of any height fits there. (The
+    // first gap got it, and a long route's label, whole under "labels: Full", stayed on a box at the
+    // far end: Wilson 2023, 8 Oct 2026.)
+    var c = a.col, far = Infinity;
+    for (var k = a.col; k < b.col; k++) {
+      var mid = (xOfCol(k) + BW + xOfCol(k + 1)) / 2, d = Math.abs(e.chip.x - mid);
+      if (d < far) { far = d; c = k; }
+    }
+    var want = e.chip.w + 44 - (COL - BW) + ((opts.minW && opts.minW[c]) || 0);
     needW[c] = Math.max(needW[c] || 0, Math.min(want, 400));
   });
   // THE DRAWING HOLDS EVERYTHING DRAWN (M3), routes and labels included: a returning arc goes out
   // into the gap beside the last column, and its label went off the edge with it.
   var extX = 0, extY = 0;
+  Object.keys(nodes).forEach(function (v) { extX = Math.max(extX, nodes[v].x + nodes[v].w + 24); extY = Math.max(extY, nodes[v].y + nodes[v].h + 24); });
+  clouds.forEach(function (c) { extX = Math.max(extX, c.box.x + c.w + 8); });
   edges.forEach(function (e) {
     pathPts(e, 8).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); });
     extX = Math.max(extX, e.chip.x + e.chip.w / 2); extY = Math.max(extY, e.chip.y + e.chip.h / 2);
@@ -2360,18 +2842,32 @@ function layoutOnce(M, opts) {
   // WHAT THE LEVELS ARE, in words, on the drawing's top line after "in sequence, left to right".
   var caption = M.levels.length > 1 ? { text: orderingWords(M.ordering), x: GUT + (M.form && M.form.form === "cycle" ? 290 : 200), y: 22 } : null;
   if (caption) caption.w = caption.text.length * 6.4;
-  var width = Math.max(headRight, xOfCol(maxRank) + BW + (unlinkedRight ? UNLINKED_W : 40), extX + 16, caption ? caption.x + caption.w + 16 : 0) + nestPad;
+  var width = Math.max(headRight, xOfCol(maxRank) + BW + 40, extX + 16, caption ? caption.x + caption.w + 16 : 0) + nestPad;
   var height = Math.max(y + 70, extY + 16);
+  // THE RULES BETWEEN PIECES, midway between the last box of one and the first of the next.
+  // EACH PANEL NAMED for the value it shows, over its first column (small multiples).
+  var panelTitles = !M.panels ? [] : M.panels.list.map(function (pn) {
+    var mine = ids.filter(function (v) { return v.slice(-pn.suffix.length) === pn.suffix; });
+    if (!mine.length) return null;
+    return { x: Math.min.apply(null, mine.map(function (v) { return nodes[v].x; })), y: TOP + 12, text: pn.title };
+  }).filter(Boolean);
+  var rules = [];
+  for (var pi = 0; pi + 1 < pieceList.length; pi++) {
+    var right = Math.max.apply(null, pieceList[pi].map(function (v) { return nodes[v].x + nodes[v].w; }));
+    var left = Math.min.apply(null, pieceList[pi + 1].map(function (v) { return nodes[v].x; }));
+    rules.push({ x: Math.round((right + left) / 2), y: TOP, h: y - TOP });
+  }
   // THE FRAMES, from their lane's top to below the last lane inside them, each inset by its depth.
   var frames = !nest ? null : M.levels.map(function (lv, li) {
     var L = lanes[nest.last[lv]], d = nest.depth[lv];
     var bottom = L.y + L.h + (nest.depth[M.levels[nest.last[lv]]] - d) * NEST_CLOSE + 4;
     return { level: lv, depth: d, x: 4 + d * NEST_INSET, y: lanes[li].y + 2, w: width - 8 - 2 * d * NEST_INSET, h: bottom - lanes[li].y - 2 };
   });
-  return { needH: needH, needW: needW, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames, caption: caption,
+  return { needH: needH, needW: needW, needGap: needGap, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames, caption: caption, rules: rules,
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
-           ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain };
+           ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain,
+           summaries: summaries, centres: centres, clouds: clouds, openEnds: openEnds, stocks: stocks, flows: flows, compartments: compartments, ring: ring, panelTitles: panelTitles };
 }
 
 /** PATH FOLDING. A folded state is taken out of the chain and every pair of steps through it --
@@ -2469,6 +2965,7 @@ function foldable(M, voice) {
 var CHIP_T = [0.5, 0.4, 0.6, 0.3, 0.7, 0.45, 0.55, 0.22, 0.78, 0.35, 0.65, 0.15, 0.85, 0.1, 0.9,
               0.25, 0.75, 0.33, 0.67, 0.2, 0.8, 0.12, 0.88, 0.05, 0.95];
 var CHIP_DY = [0, -13, 13, -24, 24, -36, 36, -50, 50];
+var CHIP_FAR = [-64, 64, -80, 80, -100, 100, -124, 124];
 /** JOINT CAUSES, DRAWN AS THE REASONS MAP DRAWS LINKED PREMISES. Each co-cause sends a stem to a
  *  bar across the arrow near its head: the effect passes the bar only with every stem in. Drawn
  *  only from a co-cause on the page; the panel names every one whatever is drawn. */
@@ -2662,14 +3159,14 @@ function markRects(n) {
   var out = [];
   (n.badges || []).forEach(function (b) { out.push({ x: n.x + b.x - b.r, y: n.y + b.y - b.r, w: 2 * b.r, h: 2 * b.r, kind: "badge" }); });
   if (n.pill) out.push({ x: n.x + n.pill.x, y: n.y + n.pill.y, w: n.pill.w, h: n.pill.h, kind: "pill" });
-  if (n.gapword) out.push({ x: n.x + n.gapword.x, y: n.y + n.gapword.y, w: n.gapword.w, h: n.gapword.h, kind: "gap" });
   return out;
 }
-function placeChips(edges, nodes, lanes) {
+function placeChips(edges, nodes, lanes, centres) {
   var fixed = [];
+  (centres || []).forEach(function (c) { if (c.tab) fixed.push(pad(c.tab, 3)); else if (c.box) { fixed.push(pad(c.box, 3)); fixed.push(pad({ x: Math.min(c.x, c.edgeX), y: Math.min(c.y, c.endY), w: Math.abs(c.x - c.edgeX), h: Math.abs(c.y - c.endY) || 2 }, 2)); } else if (c.r) fixed.push({ x: c.x - c.r - 3, y: c.y - c.r - 3, w: 2 * c.r + 6, h: 2 * c.r + 6 }); });
   // EVERYTHING DRAWN IS AN OBSTACLE (M1): the headings' words, the boxes and every mark on them,
   // the gates. Labels were placed clear of boxes and of each other only, and sat on badges.
-  (lanes || []).forEach(function (ln) { var hd = ln.head || { x: 0, y: ln.y, w: 100000, h: HEAD - 2 }; fixed.push(pad(hd, 3)); });
+  (lanes || []).forEach(function (ln) { if (ln.hidden) return; var hd = ln.head || { x: 0, y: ln.y, w: 100000, h: HEAD - 2 }; fixed.push(pad(hd, 3)); });
   Object.keys(nodes).forEach(function (v) {
     var n = nodes[v];
     fixed.push({ x: n.x - 6, y: n.y - 6, w: n.w + 12, h: n.h + 12 });
@@ -2747,6 +3244,20 @@ function placeChips(edges, nodes, lanes) {
     }
     if (move) { e.chip.x = Math.round(move.x * 10) / 10; e.chip.y = Math.round(move.y * 10) / 10; placed[i] = move.box; }
   });
+  // A LAST, WIDER LOOK for what found no clear place: further from its line, where a crowd of
+  // arrows between two boxes left no room beside it (Sewell's commodity form and surface structures,
+  // each driving the other across two levels, 8 Oct 2026). Still on its own line's side.
+  order.forEach(function (i) {
+    if (clear(placed[i], i)) return;
+    var e = edges[i];
+    for (var k = 0; k < CHIP_T.length * CHIP_FAR.length; k++) {
+      var t = CHIP_T[k % CHIP_T.length], dy = CHIP_FAR[Math.floor(k / CHIP_T.length)];
+      var at = chipAt(e, t, dy, e.chip.w), box = { x: at[0] - e.chip.w / 2, y: at[1] - e.chip.h / 2, w: e.chip.w, h: e.chip.h };
+      if (!clear(box, i)) continue;
+      e.chip.x = Math.round(at[0] * 10) / 10; e.chip.y = Math.round(at[1] * 10) / 10; placed[i] = box;
+      break;
+    }
+  });
   // What found no clear place: the layout makes room for it (M9).
   return order.filter(function (i) { return !clear(placed[i], i); }).map(function (i) { return edges[i]; });
 }
@@ -2771,7 +3282,9 @@ function audit(G, opts) {
   // EVERY DRAWN THING, with who owns it: a mark may sit on its own box's border, and a head or a
   // gate on its own arrow, and nothing else may touch anything.
   var items = [];
-  G.lanes.forEach(function (ln, i) { if (ln.head) items.push({ r: ln.head, what: "heading of " + ln.level, lane: i }); });
+  G.lanes.forEach(function (ln, i) { if (ln.head && !ln.hidden) items.push({ r: ln.head, what: "heading of " + ln.level, lane: i }); });
+  (G.centres || []).forEach(function (c) { items.push({ r: { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }, what: "loop mark " + c.label }); });
+  (G.clouds || []).forEach(function (c) { if (shown[c.flow]) items.push({ r: c.box, what: "cloud by " + name(c.flow), on: c.flow }); });
   Object.keys(shown).forEach(function (v) {
     var n = shown[v];
     items.push({ r: { x: n.x, y: n.y, w: n.w, h: n.h }, what: "box " + name(v), box: v });
@@ -2928,12 +3441,14 @@ function injectStyle() {
     // rival view the text reports in slate, NOT red -- red is attack everywhere else on the page;
     // the appraisal in the violet the Reasons map gives it; selection, a different relation, teal.
     // The light-and-shadow bar is shades of the one navy, as its lines are weights of it.
-    "  --mv-cond-bg:#dfe7f3;--mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;",
+    "  --mv-cond-bg:#dfe7f3;--mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;--mv-neg:#b4352f;",
+    "  --mv-ch0:#0f8a7e;--mv-ch1:#7c3aed;--mv-ch2:#a16207;--mv-ch3:#0369a1;--mv-ch4:#be185d;--mv-ch5:#4d7c0f;",
     "  --mv-selection:#2f8f83;--mv-association:#8a6d3b;",
     "  --mv-evidence:#203a6a;--mv-argued:#5a78a8;--mv-asserted:#a7b6cf;--mv-imputed:#dde2ea;",
     "  --mv-lane-a:rgba(0,0,0,.035);--mv-lane-b:rgba(0,0,0,.015);--mv-sel:#e0a800}",
     "@media (prefers-color-scheme:dark){.amech{",
-    "  --mv-cond-bg:#23324a;--mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;",
+    "  --mv-cond-bg:#23324a;--mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;--mv-neg:#ec7d74;",
+    "  --mv-ch0:#4cc3b5;--mv-ch1:#b49cf5;--mv-ch2:#e0b45c;--mv-ch3:#6cb7e8;--mv-ch4:#f08cbf;--mv-ch5:#a3d06a;",
     "  --mv-selection:#5fc2b5;--mv-association:#d2b27a;",
     "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
@@ -3003,6 +3518,15 @@ function injectStyle() {
     ".amech .st.condition rect.box{fill:var(--mv-cond-bg);stroke:var(--mv-text)}",
     ".amech .loopmark{cursor:pointer}.amech .loopmark circle{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
     ".amech .loopmark text{font-size:10.5px;font-weight:700;fill:var(--mv-text)}",
+    ".amech .loopmark .sketch{fill:none;stroke:var(--mv-text);stroke-width:1.5}",
+    ".amech .st.deadend rect.box{fill:var(--mv-dead-bg,#eceef1);stroke:var(--mv-rival)}.amech .st.deadend>text{fill:var(--muted,#5b6472)}",
+    ".amech .condframe{fill:none;stroke:var(--mv-text);stroke-width:1.4}",
+    ".amech .chipmark{fill:currentColor;stroke:none}.amech .chipmark-t{font-size:10px;font-weight:700;fill:var(--panel,#fff)}",
+    ".amech .panel-l{font-size:12.5px;font-weight:700;fill:var(--mv-text)}.amech .st.comphead text{font-weight:600}.amech .comp{fill:var(--mv-comp,rgba(34,64,111,.06));stroke:var(--mv-rival);stroke-width:1.2}.amech .comp-l{font-size:11px;font-weight:600;fill:var(--mv-text)}",
+    ".amech .st.stock rect.box{stroke-width:2.8}.amech .valve{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
+    ".amech .cloud .pipe{stroke:var(--mv-text);opacity:.55}.amech .cloud .puff{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.3}",
+    ".amech .pipe-core{stroke:var(--panel,#fff)}.amech svg.hovering g[data-edge].hot .pipe{stroke-width:8.5}",
+    ".amech .loopmark.centre circle{stroke:var(--mv-rival);stroke-width:1.2}.amech .loopmark.centre text{font-size:12.5px}",
     ".amech-loop{display:block;text-align:left;font:inherit;background:none;border:1px solid var(--line,#ddd);border-radius:6px;",
     "  padding:3px 7px;margin:0 0 4px;cursor:pointer;color:var(--fg,#1a1a1a);width:100%}",
     ".amech-loop:hover{border-color:var(--mv-text)}",
@@ -3019,6 +3543,8 @@ function injectStyle() {
     ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
     ".amech-legend .g{color:var(--fg-dim,#666);font-size:11.5px;margin-top:4px}",
     ".amech-route{border:1px solid var(--line,#ddd);border-radius:7px;padding:6px 9px;margin:6px 0}",
+    ".amech-sum{border-left:3px solid var(--line,#ddd);padding:3px 0 3px 9px;margin:6px 0;cursor:default}.amech-sum:hover,.amech-sum:focus{border-left-color:var(--mv-text,#223)}",
+    ".amech-sum>.m{color:var(--muted,#666);font-size:.92em}.amech-shared{display:inline}.amech-shared>summary{display:inline;cursor:pointer;text-decoration:underline dotted}",
     ".amech-route>.t{font-weight:600}.amech-fold{display:flex;flex-wrap:wrap;gap:4px;align-items:center}",
     ".amech-fold button,.amech-state-act button{font:inherit;font-size:12px;background:none;border:1px solid var(--line,#ddd);",
     "  border-radius:5px;padding:1px 7px;cursor:pointer;color:var(--fg,#1a1a1a)}",
@@ -3028,6 +3554,7 @@ function injectStyle() {
     ".amech-zoom .zm:first-child{border-radius:5px 0 0 5px}.amech-zoom .zm:last-child{border-radius:0 5px 5px 0}",
     ".amech-zoom .zm+.zm{margin-left:-1px}.amech-zoom .pct{font-size:11px;min-width:44px;font-variant-numeric:tabular-nums}",
     ".amech .frame{stroke:var(--alm-group-line,#d6d6d6);stroke-width:1}",
+    ".amech .piece-rule{stroke:var(--alm-group-line,#ccc);stroke-width:1.5}",
     ".amech .caption.unsaid{font-style:italic}",
     // "▼ MORE" AS REASONS DRAWS IT (James, 8 Oct 2026): the same words, size, weight and accent ink as
     // a claim's (.alm-more). It sits in a break in the box's foot, so its ground is the box's own,
@@ -3042,13 +3569,24 @@ function injectStyle() {
     ".amech-seg button.on{background:var(--alm-accent-fill,#2d6cc0);color:var(--alm-on-accent,#fff)}",
     ".amech-seg button:hover:not(.on){background:rgba(0,0,0,.05)}",
     ".amech-seg button:focus-visible{outline:2px solid var(--accent,#3a7bd5);outline-offset:-2px}",
-    ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}",
-    ".amech .st.intervention text.gapmark,.amech .gapmark{fill:var(--mv-gap);font-size:11px;font-weight:600}"
+    ".amech-focus{margin:0 0 8px;padding:6px 9px;border-radius:6px;border:1px solid var(--mv-sel);font-size:12.5px}"
   ].join("\n");
   document.head.appendChild(s);
 }
 
-var INKS = ["text", "rival", "appraisal", "selection", "association"];
+var CHANNEL_INKS = 6;
+/** A SKETCH OF EACH BEHAVIOUR OVER TIME (1.19), in a 16 x 10 box: never a graph of numbers the text
+ *  does not give, only the shape it names. */
+var BEHAVIOUR_PATH = {
+  "grows": "M-8,4 C-2,4 2,2 4,-1 C5,-3 6,-4 8,-6",
+  "declines": "M-8,-6 C-6,-4 -4,-1 -2,1 C1,3 4,4 8,4",
+  "levels off": "M-8,4 C-5,-2 -2,-4 2,-5 C4,-5 6,-5 8,-5",
+  "s-shaped": "M-8,4 C-4,4 -2,3 0,0 C2,-3 4,-5 8,-5",
+  "oscillates": "M-8,0 C-6,-6 -4,-6 -2,0 C0,6 2,6 4,0 C5,-3 7,-4 8,-3",
+  "overshoot and collapse": "M-8,4 C-4,3 -2,-6 0,-6 C2,-6 3,0 5,3 C6,4 7,4 8,4",
+  "steady": "M-8,0 L8,0"
+};
+var INKS = ["text", "rival", "appraisal", "selection", "association", "ch0", "ch1", "ch2", "ch3", "ch4", "ch5"];
 /** How an arrow is drawn: weight from what the text offers, pattern from how close its claims
  *  stand to the words, colour from whose step it is. A null finding is drawn thin whatever backs
  *  it -- its chip and its bar say what it is. */
@@ -3107,7 +3645,7 @@ function collapseModel(M) {
            form: M.form, constitutions: consts, reasoning: M.reasoning,
            profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims, undefined, undefined, undefined, M.ordering,
                             M.form, consts, M.reasoning),
-           chains: [], chain: M.chain, kinds: M.kinds,
+           chains: [], chain: M.chain, kinds: M.kinds, channels: M.channels,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
 }
@@ -3124,7 +3662,8 @@ function chainModel(M, id) {
   var inIds = {};
   chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
   M.steps.forEach(function (s) { if (s.chain.indexOf(id) >= 0) {
-    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }))
+    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }),
+                                                          (s.givenOn || []).map(function (g) { return g.state; }))
       .forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
   var ids = M.ids.filter(function (i) { return inIds[i]; });
   var steps = M.steps.filter(function (s) {
@@ -3141,15 +3680,178 @@ function chainModel(M, id) {
   ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cform = { form: c.form || "chain", settles: c.settles == null ? null : c.settles };
-  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast, account: c.account || [] };
+  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast, account: c.account || [],
+                  apart: c.apart == null ? null : c.apart, idiom: M.reasoning ? M.reasoning.idiom : null, boundary: c.boundary || null };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
   return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
            question: c.question || M.question, chains: [], kinds: M.kinds,
-           chain: { id: c.id, label: c.label || c.id, shared: shared },
+           chain: { id: c.id, label: c.label || c.id, shared: shared, conditioned: c.conditioned || [] }, channels: M.channels,
            form: cform, constitutions: consts, reasoning: creason, order: c.order || "time",
            profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
                             cform, consts, creason) };
+}
+
+/** THE CHAINS THAT MEET (James's principle, 8 Oct 2026): mechanisms shown on one picture meet at a
+ *  state. Each group is the chains joined by the states they share, in declared order; a chain that
+ *  meets no other is a group of one, offered only on its own. A kind is not a meeting: cases of one
+ *  kind are compared through ≈, not drawn as one picture. */
+/** THE CORE PATH (James's decision, 9 Oct 2026): the run of the text's own steps the text says most
+ *  about, from where the chain starts -- its interventions and conditions, or else the states nothing
+ *  leads to. Marti and Gond's Fig. 2 is three fat arrows and six thin ones landing on them; the chain
+ *  the map holds had 27 steps, and the chart buried the figure. Each step weighs the claims that assert
+ *  it and the moderators the text attaches to it; a run ending at an outcome gains a little; among
+ *  equals, the longer. (The longest run alone started from a moderator, Marti and Gond's material
+ *  devices, and missed the anomalies the figure turns on.) Returns the run's states in order, or [].
+ */
+function corePath(M) {
+  var steps = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && !s.assoc && s.from !== s.to &&
+                                                    has(M.states, s.from) && has(M.states, s.to); });
+  var out = {}, into = {}, weight = {};
+  steps.forEach(function (s) {
+    var k = s.from + "\u0000" + s.to;
+    if (!has(weight, k)) { weight[k] = 0; (out[s.from] = out[s.from] || []).push(s.to); }
+    weight[k] += 1 + (s.modifies || []).length + (s.jointly || []).length;
+    into[s.to] = true;
+  });
+  var ids = M.ids.filter(function (v) { return out[v] || into[v]; });
+  var starts = ids.filter(function (v) { return isStart(M.states[v]); });
+  if (!starts.length) starts = ids.filter(function (v) { return !into[v]; });
+  var best = [], bestScore = -1;
+  starts.forEach(function (v0) {
+    var budget = 20000, seen = {};
+    var walk = function (v, path, score) {
+      if (--budget < 0) return;
+      var fin = score + (hasRole(M.states[v], "outcome") ? 2 : 0);
+      if (path.length > 2 && (fin > bestScore || fin === bestScore && path.length > best.length)) { best = path.slice(); bestScore = fin; }
+      (out[v] || []).forEach(function (w) {
+        if (seen[w]) return;
+        seen[w] = true; path.push(w); walk(w, path, score + weight[v + "\u0000" + w]); path.pop(); delete seen[w];
+      });
+    };
+    seen[v0] = true; walk(v0, [v0], 0);
+  });
+  return best;
+}
+/** The chain cut to its core path: the run's states and steps, with each step's co-causes, blockers and
+ *  moderators, and nothing that only leads to those. */
+function coreModel(M) {
+  var path = corePath(M);
+  if (!path.length) return null;
+  var on = {}, ids = {};
+  path.forEach(function (v) { on[v] = true; ids[v] = true; });
+  var steps = M.steps.filter(function (s) { return s.layer === "text" && on[s.from] && on[s.to] && path.indexOf(s.to) === path.indexOf(s.from) + 1; });
+  steps.forEach(function (s) {
+    (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), (s.givenOn || []).map(function (g) { return g.state; }))
+      .forEach(function (j) { if (has(M.states, j)) ids[j] = true; });
+  });
+  var keepIds = M.ids.filter(function (v) { return ids[v]; });
+  var states = {}; keepIds.forEach(function (v) { states[v] = M.states[v]; });
+  var actors = {};
+  keepIds.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
+  var all = M.steps.filter(function (s) { return s.layer === "text"; }).length;
+  return Object.assign({}, M, { states: states, ids: keepIds, steps: steps, actors: actors, constitutions: [],
+    core: { path: path, steps: steps.length, of: all },
+    profile: profile(M.levels, actors, states, keepIds, steps, 0, [], M.kinds, undefined, M.ordering, M.form, [], M.reasoning) });
+}
+/** SMALL MULTIPLES (James's decision, 9 Oct 2026): where a chain's steps hold under different values of
+ *  one state -- Bright, Malinsky and Thompson's multinet, immigration status raising incarceration
+ *  where origin is Latin America and doing nothing elsewhere -- one panel per value, as the authors
+ *  draw it: each panel the steps that hold under that value, and those that hold under any. Returns
+ *  the conditioning state with the most such steps, where it has two values or more, else null. */
+function multiplesOf(M) {
+  var by = {};
+  M.steps.forEach(function (s) { if (s.layer !== "text") return; (s.givenOn || []).forEach(function (g) {
+    var b = by[g.state] = by[g.state] || { n: 0, values: [] };
+    b.n++; if (b.values.indexOf(g.value) < 0) b.values.push(g.value); }); });
+  var best = /** @type {string|null} */ (null);
+  Object.keys(by).forEach(function (v) { if (by[v].values.length > 1 && (!best || by[v].n > by[best].n)) best = v; });
+  return best ? { state: best, values: by[best].values } : null;
+}
+function multiplesModel(M) {
+  var mo = multiplesOf(M);
+  if (!mo) return null;
+  var st = mo.state, states = {}, ids = [], steps = [], panels = [];
+  mo.values.forEach(function (val, i) {
+    var sfx = "~" + i, mine = M.steps.filter(function (s) {
+      var on = (s.givenOn || []).filter(function (g) { return g.state === st; });
+      return !on.length || on.some(function (g) { return g.value === val; }); });
+    var ren = function (v) { return v == null ? v : has(M.states, v) ? v + sfx : v; };
+    mine.forEach(function (s) {
+      var c = Object.assign({}, s, { id: s.id + sfx, from: ren(s.from), to: ren(s.to),
+        jointly: (s.jointly || []).map(ren), unless: (s.unless || []).map(ren),
+        modifies: (s.modifies || []).map(function (m) { return Object.assign({}, m, { by: ren(m.by) }); }),
+        givenOn: (s.givenOn || []).filter(function (g) { return g.state !== st; }).map(function (g) { return { state: ren(g.state), value: g.value }; }),
+        given: (s.given || []).filter(function (g) { return !(s.givenOn || []).some(function (o) { return o.state === st && condText(o) === g; }); }) });
+      steps.push(c);
+      [c.from, c.to].concat(c.jointly, c.unless, c.modifies.map(function (m) { return m.by; }), c.givenOn.map(function (g) { return g.state; }))
+        .forEach(function (v) { if (v != null && !has(states, v) && has(M.states, v.slice(0, -sfx.length))) { states[v] = M.states[v.slice(0, -sfx.length)]; } });
+    });
+    M.ids.forEach(function (v) { if (has(states, v + sfx)) ids.push(v + sfx); });
+    var stName = String(obj(M.states[st]).label || st);
+    panels.push({ suffix: sfx, value: val, title: (stName.length > 34 ? stName.slice(0, 33).replace(/[\s,:;]+\S*$/, "") + "…" : stName) + " = " + val });
+  });
+  return Object.assign({}, M, { states: states, ids: ids, steps: steps, constitutions: [],
+    panels: { state: st, list: panels },
+    profile: profile(M.levels, M.actors, states, ids, steps, 0, [], M.kinds, undefined, M.ordering, M.form, [], M.reasoning) });
+}
+/** WHICH CHAINS OPEN AT THEIR CORE PATH (James's decision, 9 Oct 2026, on a survey of the 243 chains in
+ *  the samples and the research maps): one that draws more than 15 states, whose core path keeps at
+ *  least 5 of them, and that the text does not set out as a cycle -- a loop's explanation is the loop,
+ *  and a core path through it misses it (Meadows's fishery kept 3 of 19 states; Wimmer's cycle of
+ *  strategies 5 of 36). Twelve chains open so: Rena's liver and gut, Marti and Gond's process and its
+ *  cases, Meadows's oil, Reason's Swiss cheese, Wimmer's 1995 map among them. */
+var CORE_OPENS_OVER = 15, CORE_KEEPS_AT_LEAST = 5;
+function coreByDefault(M) {
+  if (!M || (M.form && M.form.form === "cycle") || M.ids.length <= CORE_OPENS_OVER) return false;
+  var cm = coreModel(M);
+  return !!cm && cm.ids.length >= CORE_KEEPS_AT_LEAST;
+}
+function chainGroups(M) {
+  var P = (M.profile && M.profile.chains) || [], par = {};
+  P.forEach(function (c) { par[c.id] = c.id; });
+  var find = function (x) { while (par[x] !== x) x = par[x] = par[par[x]]; return x; };
+  P.forEach(function (c) { c.shared.forEach(function (sh) { sh[1].forEach(function (o) { if (has(par, o)) par[find(c.id)] = find(o); }); }); });
+  var groups = [], at = {};
+  P.forEach(function (c) { var r = find(c.id); if (!has(at, r)) { at[r] = groups.length; groups.push([]); } groups[at[r]].push(c.id); });
+  return groups;
+}
+/** SEVERAL CHAINS THAT MEET, as one model: the steps of each, the states they run through in their
+ *  declared roles, and the rival's and the appraisal's steps between those states. One chain is
+ *  `chainModel`; every chain of a map that is one group is the whole map. */
+function groupModel(M, gids) {
+  if (gids.length === 1) return chainModel(M, gids[0]);
+  var inG = function (s) { return s.chain.some(function (c) { return gids.indexOf(c) >= 0; }); };
+  var inIds = {};
+  (M.chains || []).forEach(function (c) {
+    if (gids.indexOf(c.id) < 0) return;
+    var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && !s.assoc && s.chain.indexOf(c.id) >= 0; });
+    chainIds(c, M.states, M.ids, text).forEach(function (i) { inIds[i] = true; });
+  });
+  M.steps.forEach(function (s) { if (inG(s)) {
+    inIds[s.from] = inIds[s.to] = true; (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }),
+                                                          (s.givenOn || []).map(function (g) { return g.state; }))
+      .forEach(function (j) { if (has(M.states, j)) inIds[j] = true; }); } });
+  var ids = M.ids.filter(function (i) { return inIds[i]; });
+  var steps = M.steps.filter(function (s) { return inG(s) || (s.layer !== "text" && !s.chain.length && inIds[s.from] && inIds[s.to]); });
+  var states = {}; ids.forEach(function (i) { states[i] = M.states[i]; });
+  var appr = {}; steps.forEach(function (s) { if (s.layer === "appraisal") appr[s.claim.title] = true; });
+  var actors = {};
+  ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
+  steps.forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
+  var cs = (M.chains || []).filter(function (c) { return gids.indexOf(c.id) >= 0; });
+  var gform = { form: cs.every(function (c) { return c.form === "cycle"; }) ? "cycle" : "chain", settles: null };
+  var greason = { goal: null, contrast: null, account: M.reasoning ? M.reasoning.account || [] : [], apart: null,
+                  idiom: M.reasoning ? M.reasoning.idiom : null,
+                  boundary: cs.map(function (c) { return c.boundary; }).filter(Boolean)[0] || null };
+  var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
+  return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
+           dropped: 0, appraisalClaims: Object.keys(appr).length, question: M.question, chains: [], kinds: M.kinds,
+           chain: { id: "together:" + gids[0], label: cs.map(function (c) { return c.label || c.id; }).join(" · "), shared: {}, group: gids.slice(),
+                    conditioned: [].concat.apply([], cs.map(function (c) { return c.conditioned || []; })) }, channels: M.channels,
+           form: gform, constitutions: consts, reasoning: greason, order: "time",
+           profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
+                            gform, consts, greason) };
 }
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
@@ -3197,11 +3899,40 @@ function create(container, graph, opts) {
     .map(function (c) { return c.id; }); };
   var generalOfKind = function (k) { var x = KINDS.filter(function (y) { return y.id === k; })[0]; return x ? x.general : null; };
   var chainLabel = function (id) { var c = CHAINS.filter(function (x) { return x.id === id; })[0]; return c && c.label || id; };
+  // TOGETHER, BY GROUP (James's principle, 8 Oct 2026): chains are drawn on one picture only where
+  // they meet at a state. A map whose chains all meet keeps "Every chain together"; any other offers
+  // one "Together" for each group of chains that meet, and a chain that meets none only on its own.
+  var GROUPS = chainGroups(FULL).filter(function (g) { return g.length > 1; });
+  var WHOLE = GROUPS.length === 1 && GROUPS[0].length === CHAINS.length;
+  var groupOf = function (v) { var id = String(v).replace(/^together:/, "");
+    return GROUPS.filter(function (g) { return g.indexOf(id) >= 0; })[0] || null; };
+  /** What the chain menu may be set to: a chain, a group's "together:<first chain>", or null for the
+   *  whole map where its chains all meet. Anything else is not on offer, and falls to the default. */
+  var chainOk = function (v) {
+    if (!v) return !CHAINS.length || WHOLE;
+    if (String(v).indexOf("together:") === 0) { var g = groupOf(v); return !!g && "together:" + g[0] === v; }
+    return CHAINS.some(function (c) { return c.id === v; });
+  };
+  var baseModel = function (v) {
+    if (v && String(v).indexOf("together:") === 0) return groupModel(FULL, groupOf(v));
+    if (v) return chainModel(FULL, v);
+    return FULL;
+  };
   var cur = null;
   function remount() {
     container.innerHTML = "";
-    var base = keep.chain ? chainModel(FULL, keep.chain) : FULL;
-    cur = mount(keep.boxes ? collapseModel(base) : base);
+    var base = baseModel(keep.chain);
+    // THE CORE PATH, where the reader has chosen it, or by default on a long chain that has one.
+    var coreM = !keep.panels && (keep.core === true || keep.core == null && coreByDefault(base)) ? coreModel(base) : null;
+    if (coreM) base = coreM;
+    // ONE PANEL PER VALUE of the state the chain's steps are conditioned on, where the reader asks.
+    var panelsM = keep.panels ? multiplesModel(base) : null;
+    if (panelsM) base = panelsM;
+    // THE TEXT'S OWN BOXES ARE COMPARTMENTS (James's decision, 9 Oct 2026): the parts drawn inside their
+    // wholes, every step at its real ends. Folded into one box each, as until then, Wimmer's seventeen
+    // part-to-part steps became one arrow from the field to the strategies.
+    var nParts = base.ids.filter(function (v) { var w = obj(base.states[v]).part_of; return w != null && has(base.states, String(w)); }).length;
+    cur = mount(keep.boxes && nParts ? Object.assign({}, base, { compartmented: { parts: nParts, wholes: base.profile.wholes.length } }) : base);
     // Arriving from another chain at a state, or at a kind, shows it there.
     if (keep.then) { var t = keep.then; keep.then = null; cur.select(t); }
   }
@@ -3219,7 +3950,7 @@ function create(container, graph, opts) {
     getBoxes: function () { return keep.boxes; },
     setLabels: function (full) { keep.full = !!full; cur.setLabels(keep.full); },
     getLabels: function () { return keep.full ? "full" : "short"; },
-    setChain: function (id) { keep.chain = CHAINS.some(function (c) { return c.id === id; }) ? id : null; remount(); },
+    setChain: function (id) { keep.chain = chainOk(id) ? (id || null) : CHAINS.length ? CHAINS[0].id : null; remount(); },
     getChain: function () { return keep.chain; },
     zoomBy: function (f) { cur.zoomBy(f); },
     fit: function () { cur.fit(); },
@@ -3229,18 +3960,19 @@ function create(container, graph, opts) {
       var v = cur.getView();
       return { chain: keep.chain, boxes: keep.boxes, rival: keep.rival, appraisal: keep.appraisal, nest: keep.nest ? "on" : null,
                labels: keep.full ? "full" : "short",
-               opened: Object.keys(keep.opened).sort(), show: v.show, ends: v.ends, folded: v.folded,
+               opened: Object.keys(keep.opened).sort(), show: cur.model && cur.model.panels ? "panels" : cur.model && cur.model.core ? "core" : keep.core === false && v.show === "all" ? "every" : v.show, ends: v.ends, folded: v.folded,
                expanded: v.expanded, zoom: v.zoom };
     },
     /** The inverse: ids this chain does not know are ignored rather than drawn as nonsense. */
     setView: function (v) {
       if (!v) return;
-      if ("chain" in v) keep.chain = v.chain && CHAINS.some(function (c) { return c.id === v.chain; }) ? v.chain : null;
+      if ("chain" in v) keep.chain = chainOk(v.chain) ? (v.chain || null) : CHAINS.length ? CHAINS[0].id : null;
       if ("boxes" in v) keep.boxes = !!v.boxes && hasWholes;
       if ("rival" in v) keep.rival = v.rival !== false;
       if ("appraisal" in v) keep.appraisal = !!v.appraisal;
       if ("nest" in v) keep.nest = v.nest ? "on" : null;
       if ("labels" in v) keep.full = v.labels === "full";
+      if ("show" in v) { keep.core = v.show === "core" ? true : v.show ? false : null; keep.panels = v.show === "panels"; }
       keep.opened = {}; (v.opened || []).forEach(function (x) { if (has(FULL.states, x)) keep.opened[x] = true; });
       keep.zoom = null;
       remount();
@@ -3272,7 +4004,7 @@ function create(container, graph, opts) {
   var NEST = nestingOf(M.ordering);
   if (!NEST.offer) keep.nest = null;
   var nestSpec = function () { return keep.nest ? NEST.spec : null; };
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, nest: nestSpec() });
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, boundary: !!(M.reasoning && M.reasoning.boundary) });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -3290,6 +4022,10 @@ function create(container, graph, opts) {
   // model -- nulls included, since a null is a finding -- so the evidence can be read on its own.
   var show = "all", fit = false, zk = 1;
   var anyUntested = G.edges.some(function (e) { return !e.steps.some(function (x) { return x.tier === "evidence"; }); });
+  // The core path is offered where it leaves something out.
+  var hasCore = !!M.core || (!M.panels && (function () { var cm = coreModel(M); return !!cm && cm.core.steps < cm.core.of; })());
+  var multi = M.panels ? { state: M.panels.state } : multiplesOf(M);
+  var multiName = multi ? obj(FULL.states[multi.state]).label || multi.state : "";
 
   // THE QUESTION HEADS THE CHART; THE CONTROLS SIT BELOW IT, as the other arrangements' do
   // (ruled D10, 27 Sep 2026). They were a top bar of their own, in a different type and shape
@@ -3297,14 +4033,21 @@ function create(container, graph, opts) {
   // and changed how they looked. The bar is now the map bar's cousin: the same place, the same
   // small type and pills.
   var head = document.createElement("div"); head.className = "amech-head";
-  head.innerHTML = '<div class="amech-q">' + esc(M.question) + '</div>';
+  head.innerHTML = '<div class="amech-q">' + esc(M.question) + '</div>' +
+    // WHAT THE STATES ARE TOLD AS (1.18), said once for the chart and never drawn as a box: Wilson
+    // 2023's flows, "a process by which inputs are transformed into outputs" (James, 8 Oct 2026).
+    (M.profile.idiom && M.profile.idiom.term ? '<div class="amech-q amech-idiom">Told as <b>' + esc(M.profile.idiom.term) + '</b>' +
+      (M.profile.idiom.means ? ': ' + esc(M.profile.idiom.means) : '') + (M.profile.idiom.pinpoint ? ' (' + esc(M.profile.idiom.pinpoint) + ')' : '') + '</div>' : '');
   container.appendChild(head);
   var bar = document.createElement("div"); bar.className = "amech-bar";
   bar.innerHTML =
     (CHAINS.length ? '<label class="amech-tog chain" title="The text answers several questions, each with a chain of its own">Chain <select data-chain>' +
       CHAINS.map(function (c) { return '<option value="' + esc(c.id) + '"' + (keep.chain === c.id ? ' selected' : '') + '>' +
         esc(c.label || c.id) + '</option>'; }).join("") +
-      '<option value=""' + (keep.chain ? '' : ' selected') + '>Every chain together</option></select></label>' : '') +
+      (WHOLE ? '<option value=""' + (keep.chain ? '' : ' selected') + '>Every chain together</option>'
+             : GROUPS.map(function (g) { var v = "together:" + g[0], t = "Together: " + g.map(chainLabel).join(" · ");
+                 return '<option value="' + esc(v) + '"' + (keep.chain === v ? ' selected' : '') + ' title="' + esc(t) + '">' +
+                   esc(t.length > 90 ? t.slice(0, 89) + "…" : t) + '</option>'; }).join("")) + '</select></label>' : '') +
     // HOW MUCH OF EACH LABEL, the Reasons bar's "claims: Short | Full" in the same shape: one setting
     // with two values, drawn as one sunken control (James, 8 Oct 2026). Here it governs the
     // states' words and the arrows' alike.
@@ -3319,8 +4062,10 @@ function create(container, graph, opts) {
       '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
     (M.appraisalClaims ? '<label class="amech-tog appr" title="The reconstructor’s own reading of the text against the world, off until asked for; never something the text says"><input type="checkbox" data-layer="appraisal">' +
       '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
-    (anyUntested ? '<label class="amech-tog" title="Every step the text sets out, or only those it backs with a study, statistics or a model">Show <select data-show><option value="all">every step</option>' +
-      '<option value="tested">only what the text tested</option></select></label>' : '') +
+    (anyUntested || hasCore || multi ? '<label class="amech-tog" title="What to draw: every step, the core path to the outcome, one panel per condition, or only what the text tested">Show <select data-show><option value="all">every step</option>' +
+      (hasCore ? '<option value="core">the core path</option>' : '') +
+      (multi ? '<option value="panels">one panel per ' + esc(multiName.length > 40 ? multiName.slice(0, 39) + "…" : multiName) + '</option>' : '') +
+      (anyUntested ? '<option value="tested">only what the text tested</option>' : '') + '</select></label>' : '') +
     // Offered only where there is something to fold (F2: a control is a promise).
     // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
     // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
@@ -3377,10 +4122,19 @@ function create(container, graph, opts) {
     var mk = el("marker", { id: "amech-ar-" + t, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
                             markerWidth: HEAD_LEN, markerHeight: HEAD_W, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, mk);
-    // A NULL FINDING ENDS IN A BAR: the line reaches the state and nothing passes.
-    var bar = el("marker", { id: "amech-bar-" + t, viewBox: "0 0 4 12", refX: 2, refY: 6,
-                             markerWidth: 4, markerHeight: 12, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
-    el("rect", { x: 0.5, y: 0, width: 3, height: 12, fill: "var(--mv-" + t + ")" }, bar);
+    // A NULL FINDING ENDS IN A HOLLOW CIRCLE: the line reaches the state and nothing passes. (It ended
+    // in a bar until 9 Oct 2026, when a T-bar came to mean "lowers".)
+    var bar = el("marker", { id: "amech-bar-" + t, viewBox: "0 0 10 10", refX: 9, refY: 5,
+                             markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
+    el("circle", { cx: 5, cy: 5, r: 3.6, fill: "var(--panel,#fff)", stroke: "var(--mv-" + t + ")", "stroke-width": 1.6 }, bar);
+    // A PIPE'S HEAD, wide enough to cap it.
+    var ph = el("marker", { id: "amech-pipe-" + t, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
+                            markerWidth: 14, markerHeight: 16, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, ph);
+    // "LOWERS" ENDS IN A T-BAR, in one colour for every voice: the line keeps its voice's colour.
+    var tb = el("marker", { id: "amech-tbar-" + t, viewBox: "0 0 4 14", refX: 3.5, refY: 7,
+                            markerWidth: 4, markerHeight: 14, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
+    el("rect", { x: 0.5, y: 0, width: 3, height: 14, fill: "var(--mv-neg)" }, tb);
   });
   var gL = el("g", {}, svg);
   // THREE LAYERS, and the chips on top. Each arrow carries a 14px invisible hit stroke so it can
@@ -3399,13 +4153,27 @@ function create(container, graph, opts) {
       el("rect", { x: f.x, y: f.y, width: f.w, height: f.h, rx: 10, "class": "frame", "data-level": f.level,
                    fill: f.depth % 2 ? "var(--mv-lane-a)" : "var(--mv-lane-b)" }, gL);
     });
-    G.lanes.forEach(function (ln, i) {
-      if (!G.frames) el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: i % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, gL);
+    var shade = 0;
+    G.lanes.forEach(function (ln) {
+      if (ln.hidden) return;
+      if (!G.frames) el("rect", { x: 0, y: ln.y, width: G.width, height: ln.h, fill: shade++ % 2 ? "var(--mv-lane-b)" : "var(--mv-lane-a)" }, gL);
       var head = el("text", { x: ln.head.x + 4, y: ln.y + 17, "class": "lane-l" }, gH);
       head.textContent = ln.level.toUpperCase();
       var who = el("tspan", { "class": "actor-l", dx: 10 }, head);
       who.textContent = ln.who;
       if (ln.whoFull) el("title", {}, head).textContent = ln.level.toUpperCase() + " — " + ln.whoFull;
+    });
+    // COMPARTMENTS: a light frame round a whole's parts, named on a tab where the whole has no box.
+    (G.compartments || []).forEach(function (c) {
+      var fr = el("rect", { x: c.x, y: c.y, width: c.w, height: c.h, rx: 12, "class": "comp", "data-whole": c.whole }, gL);
+      el("title", {}, fr).textContent = "“" + c.label + "”, and the parts the text makes of it";
+      if (c.tab) el("text", { x: c.tab.x + 10, y: c.tab.y + 13, "class": "comp-l" }, gH).textContent = c.label.length > 60 ? c.label.slice(0, 59) + "…" : c.label;
+    });
+    (G.panelTitles || []).forEach(function (t) { el("text", { x: t.x, y: t.y, "class": "panel-l" }, gH).textContent = t.text; });
+    // A THIN RULE BETWEEN PIECES THAT MEET AT NO STATE (James's principle, 8 Oct 2026).
+    (G.rules || []).forEach(function (r) {
+      var ru = el("line", { x1: r.x, y1: r.y, x2: r.x, y2: r.y + r.h, "class": "piece-rule" }, gL);
+      el("title", {}, ru).textContent = "Apart: the steps on either side of this rule meet at no state";
     });
     while (gCap.firstChild) gCap.removeChild(gCap.firstChild);
     if (G.caption) el("text", { x: G.caption.x, y: G.caption.y, "class": "actor-l caption" + (M.ordering && M.ordering.kind ? "" : " unsaid") }, gCap).textContent = G.caption.text;
@@ -3441,11 +4209,18 @@ function create(container, graph, opts) {
       var g = el("g", { "data-layer": e.layer, "data-edge": e.from + ">" + e.to, "data-kind": e.kind,
                         "data-fidelity": e.fidelity, "data-tier": e.tier }, gE);
       if (e.route) g.setAttribute("data-route", "1");
-      var p = el("path", { d: e.path, "class": "ed", stroke: col, "stroke-width": st.width }, g);
-      if (st.dash) p.setAttribute("stroke-dasharray", st.dash);
+      // A PIPE: a wide line in the step's colour with a hollow core, its head where the flow goes --
+      // into the stock for an inflow, out at the flow for an outflow.
+      if (e.stock) [e.path, e.stub].filter(Boolean).forEach(function (d) {
+        el("path", { d: d, "class": "pipe", stroke: col, "stroke-width": 7, fill: "none" }, g);
+        el("path", { d: d, "class": "pipe-core", "stroke-width": 3.2, fill: "none" }, g);
+      });
+      var p = el("path", { d: e.path, "class": "ed" + (e.stock ? " flow" : ""), stroke: col, "stroke-width": e.stock ? 0.01 : st.width }, g);
+      if (st.dash && !e.stock) p.setAttribute("stroke-dasharray", st.dash);
       if (e.kind === "null") p.setAttribute("marker-end", "url(#amech-bar-" + e.ink + ")");
-      if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": st.width,
-                               "marker-end": "url(#amech-ar-" + e.ink + ")" }, g);
+      if (e.stock === "net") p.setAttribute("marker-start", "url(#amech-pipe-" + e.ink + ")");
+      if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": e.stock ? 0.01 : st.width,
+                               "marker-end": e.stock ? "url(#amech-pipe-" + e.ink + ")" : "url(#amech-" + (e.neg ? "tbar-" : "ar-") + e.ink + ")" }, g);
       el("path", { d: e.path, "class": "hit" }, g);
       e.stems.forEach(function (sm) {
         if (obj(M.states[sm.state]).appraisal && !layers.appraisal) return;
@@ -3473,16 +4248,24 @@ function create(container, graph, opts) {
         var gt = el("path", { d: e.junction.gate, "class": "gate", stroke: col, "stroke-width": 1.8, "data-gate": "and" }, g);
         el("title", {}, gt).textContent = "AND: the step runs only with every cause coming in";
       }
-      var chip = el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
+      // A QUIET CHIP (the sign alone) is not drawn: the arrow's head says it, its title names it.
+      var chip = e.chip.quiet ? null : el("g", { "class": "chip", style: "color:" + col, "data-layer": e.layer,
                            "data-edge": e.from + ">" + e.to, "data-kind": e.kind }, gC);
+      if (chip) {
       var tw = e.chip.w;
       // THE CHIP LOOKS LIKE ITS LINE: its border takes the line's pattern (F5 -- a dotted step's
       // chip is dotted), so a chip in a crowd is tied to its line by more than nearness.
       var th = e.chip.h || 18, lines = e.chip.lines || [e.chip.label];
       var cr = el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - th / 2, width: tw, height: th, rx: 9 }, chip);
       if (st.dash) cr.setAttribute("stroke-dasharray", st.dash);
+      var markW = e.chip.mark ? 12 + e.chip.mark.length * 7 : 0;
+      if (e.chip.mark) {
+        var mcx = e.chip.x - tw / 2 + 3 + markW / 2;
+        el("rect", { x: mcx - markW / 2 + 1, y: e.chip.y - 8, width: markW - 2, height: 16, rx: 8, "class": "chipmark" }, chip);
+        el("text", { x: mcx, y: e.chip.y + 4, "text-anchor": "middle", "class": "chipmark-t" }, chip).textContent = e.chip.mark;
+      }
       lines.forEach(function (line, li) {
-        var ct = el("text", { x: e.chip.x, y: e.chip.y - th / 2 + 13 + 14 * li, "text-anchor": "middle" }, chip);
+        var ct = el("text", { x: e.chip.x + markW / 2, y: e.chip.y - th / 2 + 13 + 14 * li, "text-anchor": "middle" }, chip);
         if (li === 0 && e.chip.glyph) {
           el("tspan", { "class": "glyph" }, ct).textContent = e.chip.glyph + " ";
           el("tspan", {}, ct).textContent = line;
@@ -3490,22 +4273,23 @@ function create(container, graph, opts) {
       });
       // A CUT LABEL SAYS ITSELF WHOLE ON HOVER; "labels: Full" says it on the chip.
       if (e.chip.whole) el("title", {}, chip).textContent = e.chip.whole + " — click for its claims; “labels: Full” shows every label whole";
+      }
       // HOVER TIES A CHIP TO ITS LINE without a click: both stand out, the rest fade.
-      var hot = function (on) { svg.classList.toggle("hovering", on); g.classList.toggle("hot", on); chip.classList.toggle("hot", on); };
-      [g, chip].forEach(function (x) {
+      var hot = function (on) { svg.classList.toggle("hovering", on); g.classList.toggle("hot", on); if (chip) chip.classList.toggle("hot", on); };
+      [g, chip].filter(Boolean).forEach(function (x) {
         x.addEventListener("mouseenter", function () { hot(true); });
         x.addEventListener("mouseleave", function () { hot(false); });
       });
       var title = el("title", {}, g);
-      title.textContent = e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
+      title.textContent = (e.chip.quiet ? e.chip.label + ": " : "") + e.steps.length + " claim" + (e.steps.length === 1 ? "" : "s") +
         (e.jointly.length ? ", holding only together with " + e.jointly.map(function (j) { return obj(M.states[j]).label || j; }).join(" and ") : "") +
         (e.blockers.length ? ", unless " + e.blockers.map(function (j) { return obj(M.states[j]).label || j; }).join(" or ") + " holds" : "") +
         ((e.modifiers || []).length ? ", moderated by " + e.modifiers.map(function (m) { return (obj(M.states[m.state]).label || m.state) + " (" + (EFFECT_WORD[m.effect] || m.effect) + ")"; }).join(" and ") : "") +
         " — click to see";
       var pick = function (ev) { ev.stopPropagation(); select({ edge: e, path: p }); };
       g.addEventListener("click", pick);
-      chip.addEventListener("click", pick);
-      chip.setAttribute("cursor", "pointer");
+      if (chip) chip.addEventListener("click", pick);
+      if (chip) chip.setAttribute("cursor", "pointer");
       drawnEdges.push({ e: e, p: p, g: g, chip: chip });
       if (selected && selected.edge && selected.edge.key === e.key) { p.classList.add("sel"); selected.path = p; }
     });
@@ -3530,7 +4314,16 @@ function create(container, graph, opts) {
       // left. Never dashed: on these charts a pattern is fidelity, as on every box (F5).
       var notActual = s.status === "possible" || s.status === "open";
       if (notActual) { g.setAttribute("data-status", String(s.status)); g.setAttribute("class", cls + " notactual"); }
+      if (G.stocks && G.stocks[v]) { rx = 2; g.setAttribute("class", g.getAttribute("class") + " stock"); }
+      if (s.dead_end === true) g.setAttribute("class", g.getAttribute("class") + " deadend");
+      // A COMPARTMENT'S WHOLE heads it, its name in bold.
+      if ((G.compartments || []).some(function (c) { return c.whole === v && c.boxed; })) g.setAttribute("class", g.getAttribute("class") + " comphead");
       el("rect", { "class": "box", width: p.w, height: p.h, rx: rx }, g);
+      // A FLOW CARRIES A VALVE on its left edge: the tap that sets how fast the stock fills or drains.
+      if (G.flows && G.flows[v]) {
+        g.setAttribute("class", g.getAttribute("class") + " flowstate");
+        el("path", { "class": "valve", d: "M-8," + (p.h / 2 - 8) + " L8," + (p.h / 2 + 8) + " L8," + (p.h / 2 - 8) + " L-8," + (p.h / 2 + 8) + " Z" }, g);
+      }
       var lines = p.lines || wrapWords(s.label || v, charsFor(p.w));
       lines.forEach(function (t, i) {
         // Lifted a little where the foot carries the "more" pill, so the last line stays clear of it.
@@ -3579,6 +4372,17 @@ function create(container, graph, opts) {
             var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
             " — click to see " + (other && other.label || elsewhere[0]);
           mk.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; keep.then = { state: v }; remount(); });
+        } else if (b.kind === "unobserved") {
+          tx.textContent = "*";
+          ti.textContent = "Unobserved: the text says this is not measured or seen";
+        } else if (b.kind === "deadend") {
+          tx.textContent = "⊘";
+          ti.textContent = "A dead end: the text sets this out as an outcome that stops the process short";
+        } else if (b.kind === "behaviour") {
+          var bh = String(obj(M.states[v]).behaviour);
+          tx.textContent = "";
+          el("path", { d: BEHAVIOUR_PATH[bh], "class": "sketch" }, mk);
+          ti.textContent = "Over time, the text says: " + bh;
         } else if (b.kind === "kin") {
           var kin = kinOf(v), gk = generalOfKind(kindOfState(v));
           mk.setAttribute("data-kind", kindOfState(v));
@@ -3613,9 +4417,56 @@ function create(container, graph, opts) {
           mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
         }
       });
-      // A co-cause is linked: its step is the one it joins (profile 1.4).
-      if (p.gapword) el("text", { x: p.gapword.x, y: p.gapword.y + 12, "class": "gapmark" }, g).textContent = "✕ no link in the text";
       g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
+    });
+    // CONDITIONED ON (1.19): a square frame round each state the chain's analysis holds fixed, one round
+    // two the text says cannot be held apart -- Knight and Winship's boxes and tall box.
+    ((M.chain && M.chain.conditioned) || []).forEach(function (grp) {
+      var ns = grp.filter(function (v) { return drawnNodes[v]; }).map(function (v) { return G.nodes[v]; });
+      if (!ns.length) return;
+      var x0 = Math.min.apply(null, ns.map(function (n) { return n.x; })) - 6, y0 = Math.min.apply(null, ns.map(function (n) { return n.y; })) - 6;
+      var x1 = Math.max.apply(null, ns.map(function (n) { return n.x + n.w; })) + 6, y1 = Math.max.apply(null, ns.map(function (n) { return n.y + n.h; })) + 6;
+      var others = Object.keys(drawnNodes).some(function (w) { var n = G.nodes[w];
+        return grp.indexOf(w) < 0 && n.x < x1 && n.x + n.w > x0 && n.y < y1 && n.y + n.h > y0; });
+      (ns.length > 1 && !others ? [[x0, y0, x1, y1]] : ns.map(function (n) { return [n.x - 6, n.y - 6, n.x + n.w + 6, n.y + n.h + 6]; }))
+        .forEach(function (r) {
+          var fr = el("rect", { x: r[0], y: r[1], width: r[2] - r[0], height: r[3] - r[1], rx: 1, "class": "condframe" }, gN);
+          el("title", {}, fr).textContent = grp.length > 1 ? "Conditioned on together: the text says these cannot be held fixed apart"
+                                                          : "Conditioned on: held fixed in this analysis";
+        });
+    });
+    // THE CLOUDS, each joined to its flow by a stub of pipe.
+    (G.clouds || []).forEach(function (c) {
+      if (!drawnNodes[c.flow]) return;
+      var cg = el("g", { "class": "cloud", "data-cloud": c.flow }, gN);
+      var stub = "M" + c.x + "," + c.y + " L" + c.edgeX + "," + c.endY;
+      el("path", { d: stub, "class": "pipe", "stroke-width": 7, fill: "none" }, cg);
+      el("path", { d: stub, "class": "pipe-core", "stroke-width": 3.2, fill: "none" }, cg);
+      el("path", { "class": "puff", transform: "translate(" + c.x + "," + c.y + ")",
+                   d: "M-13,6 A5,5 0 0,1 -12,-3 A7,7 0 0,1 0,-6 A6,6 0 0,1 10,-3 A5,5 0 0,1 13,6 Z" }, cg);
+      var B = M.reasoning && M.reasoning.boundary;
+      el("title", {}, cg).textContent = (c.side < 0 ? "From outside what is mapped" : "Out of what is mapped") +
+        (B && B.says ? ": the text draws attention to its boundary — “" + B.says + "”" + (B.pinpoint ? " (" + B.pinpoint + ")" : "") : "");
+    });
+    // ONE MARK PER LOOP, at its centre, where every state of it is drawn (James's decision, 9 Oct 2026).
+    (G.centres || []).forEach(function (c) {
+      if (c.states.some(function (v) { return !drawnNodes[v]; })) return;
+      var mk = el("g", { "class": "loopmark centre" + (c.kind === "system" ? " sys" : ""), transform: "translate(" + c.x + "," + c.y + ")" }, gN);
+      el("circle", { r: c.r }, mk);
+      el("text", { "text-anchor": "middle", y: 4.5 }, mk).textContent = c.label;
+      var ti = el("title", {}, mk);
+      if (c.kind === "loop") {
+        mk.setAttribute("data-loop", c.i);
+        var pol = obj(LOOPS[c.i]).polarity;
+        ti.textContent = (pol === "reinforcing" ? "A reinforcing loop" : pol === "balancing" ? "A balancing loop" : "A loop") + ": " +
+          loopNames(LOOPS[c.i]) + " — click to see it alone";
+        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ cycle: LOOPS[c.i], name: "Loop " + c.label }); });
+      } else {
+        mk.setAttribute("data-system", c.i);
+        ti.textContent = "Feedback system " + sysName(c.i) + ": " + SYS[c.i].states.length + " states, " + SYS[c.i].loops +
+          (SYS[c.i].capped ? "+" : "") + " loops — click to see it alone";
+        mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ system: c.i }); });
+      }
     });
   }
 
@@ -3672,7 +4523,7 @@ function create(container, graph, opts) {
     var f = focusSets(), lit = {};
     drawnEdges.forEach(function (d) {
       var on = !f || f.edge(d.e);
-      d.g.classList.toggle("dim", !on); d.chip.classList.toggle("dim", !on);
+      d.g.classList.toggle("dim", !on); if (d.chip) d.chip.classList.toggle("dim", !on);
       if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.concat(d.e.blockers, modStates(d.e)).forEach(function (j) { lit[j] = true; }); }
     });
     Object.keys(drawnNodes).forEach(function (v) {
@@ -3770,7 +4621,15 @@ function create(container, graph, opts) {
      ["association", "associated: the text reports they go together, not that one brings the other about"]].forEach(function (r) {
       if (ink[r[0]]) out += row(line("var(--mv-" + r[0] + ")", 2, ""), r[1]);
     });
-    if (isNull) out += row(line("var(--mv-text)", 1.4, "", true), "no effect found: nothing passes");
+    // THE CHANNELS (1.19), each its colour and the text's word for it.
+    var inksSeen = {}; G.edges.forEach(function (e) { if (e.layer === "text" || layers[e.layer]) inksSeen[e.ink] = true; });
+    var chRows = (M.channels || []).map(function (c, i) { return inksSeen["ch" + (i % CHANNEL_INKS)] ? row(line("var(--mv-ch" + (i % CHANNEL_INKS) + ")", 2.4, ""), c.label) : ""; }).join("");
+    if (chRows) out += '<div class="g">Colour: the kind of link, in the text’s words</div>' + chRows;
+    if (isNull) out += row('<svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="37" y2="6" stroke="var(--mv-text)" stroke-width="1.4"/>' +
+      '<circle cx="40.5" cy="6" r="3.6" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.6"/></svg>', "no effect found: nothing passes");
+    if (G.edges.some(function (e) { return e.neg && (e.layer === "text" || layers[e.layer]); }))
+      out += row('<svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="40" y2="6" stroke="var(--mv-text)" stroke-width="2"/>' +
+        '<rect x="40" y="-1" width="3" height="14" fill="var(--mv-neg)"/></svg>', "a bar at the end: lowers (an arrowhead: raises, or a cause with no sign given)");
     // THE GATE AS THE CHART DRAWS IT (James, 30 Sep 2026: the old icon was cut off at top and foot):
     // the arrow into the middle of its flat back, the co-cause into its own point beside it, and the
     // arrow on out of its round front.
@@ -3827,6 +4686,34 @@ function create(container, graph, opts) {
       '<button type="button" data-unfold="*">Unfold all</button></div>' +
       (notes.length ? '<div class="amech-q">Not drawn while folded: ' + esc(notes.join("; ")) + '.</div>' : '');
   }
+  /** WHAT A CHAIN SHARES, AS A COUNT, the states behind a "show". Listed whole, every shared state with
+   *  every chain, the note ran to some 30 lines on Wimmer's strategies chain (James's decision, 9 Oct
+   *  2026). It names the chains it meets, each with how many states, and keeps the list a click away. */
+  function sharedNote(shared) {
+    var label = function (i) { return obj(M.states[i]).label || i; };
+    var byChain = {}, order = [];
+    Object.keys(shared).forEach(function (v) { shared[v].forEach(function (o) {
+      if (!byChain[o]) { byChain[o] = []; order.push(o); } byChain[o].push(v); }); });
+    var name = function (o) { var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return '“' + esc(x && x.label || o) + '”'; };
+    var n = Object.keys(shared).length;
+    var meets = order.map(function (o) { return name(o) + (byChain[o].length > 1 ? ' (' + byChain[o].length + ' states)' : ''); });
+    return ' It meets ' + (order.length === 1 ? meets[0] : order.length + ' other chains: ' + meets.join(", ")) +
+      ', through ' + n + ' state' + (n === 1 ? '' : 's') + '. <details class="amech-shared"><summary>Which states</summary>' +
+      Object.keys(shared).map(function (v) { return '“' + esc(label(v)) + '” with ' + shared[v].map(name).join(" and "); }).join("; ") +
+      '</details> (⇄ on a state opens the other chain.)';
+  }
+  /** The steps the text states through others, which the chart draws as their route (see layout). */
+  function summariesHTML() {
+    if (!(G.summaries || []).length) return "";
+    var label = function (i) { return obj(M.states[i]).label || i; };
+    return '<h3>Stated through others</h3><div class="amech-q" style="margin:4px 0 6px">Not drawn as arrows: each runs along the route drawn. Hover one to light its route.</div>' +
+      G.summaries.map(function (s) {
+        var run = [s.from].concat(s.statedVia, [s.to]);
+        return '<div class="amech-sum" tabindex="0" data-route="' + esc(run.join(">")) + '"><b>' + esc(label(s.from)) + '</b> → <b>' + esc(label(s.to)) +
+          '</b> only through ' + s.statedVia.map(function (v) { return esc(label(v)); }).join(" → ") +
+          (s.claim ? '<div class="m">' + esc(s.claim.title) + (opts.onClaim && s.claim.id != null ? ' <button type="button" data-claim="' + esc(s.claim.title) + '">Show in the text</button>' : '') + '</div>' : '') + '</div>';
+      }).join("");
+  }
   function profileHTML() {
     var P = M.profile, T = P.tiers, tot = 0;
     TIERS.forEach(function (t) { tot += T[t]; });
@@ -3837,7 +4724,9 @@ function create(container, graph, opts) {
         return '<button type="button" class="amech-loop" data-system="' + i + '">⟳' + sysName(i) + ' a feedback system: ' +
           f.states.length + ' states, ' + f.loops + (f.capped ? '+' : '') + ' loops</button>'; }).join("") +
       LOOPS.map(function (l, i) {
-        return '<button type="button" class="amech-loop" data-loop="' + i + '">↻' + (LOOPS.length > 1 ? (i + 1) : "") + ' ' +
+        // The same name the loop's mark carries on the chart: R1, B2.
+        var mark = (MS.centres || []).filter(function (c) { return c.kind === "loop" && c.i === i; })[0];
+        return '<button type="button" class="amech-loop" data-loop="' + i + '">' + esc(mark ? mark.label : "↻" + (LOOPS.length > 1 ? (i + 1) : "")) + ' ' +
           esc(l.states.concat(l.states[0]).map(label).join(" → ")) + (l.polarity ? ' <i>(' + l.polarity + ')</i>' : '') +
           (l.reflexive ? ' <i>(reflexive)</i>' : '') + '</button>'; }).join("")
                                        : "none closed in the text";
@@ -3860,16 +4749,25 @@ function create(container, graph, opts) {
            : g.state ? s + " leads nowhere in the text: the chain stops there."
            : String(g.message || "");
     };
-    var boxesNote = M.collapsed ? '<div class="amech-focus">Showing the text’s own boxes: ' + M.collapsed.parts + ' state' +
+    var coreNote = M.core ? '<div class="amech-focus">Showing the core path: ' + M.core.steps + ' of the chain’s ' + M.core.of +
+      ' steps, from “' + esc(label(M.core.path[0])) + '” to “' + esc(label(M.core.path[M.core.path.length - 1])) +
+      '”, with what holds or moderates each. <b>Show: every step</b> draws the rest.</div>' : '';
+    var panelsNote = M.panels ? '<div class="amech-focus">One panel for each value of “' + esc(obj(FULL.states[M.panels.state]).label || M.panels.state) + '” the chain’s steps hold under: ' +
+      M.panels.list.map(function (pn) { return '<b>' + esc(pn.value) + '</b>'; }).join(", ") + '. Each panel draws the steps that hold under its value, and those that hold under any.</div>' : '';
+    var boxesNote = coreNote + panelsNote + (M.compartmented ? '<div class="amech-focus">Showing the text’s own boxes: ' + M.compartmented.parts + ' state' +
+      (M.compartmented.parts === 1 ? '' : 's') + ' drawn inside the ' + M.compartmented.wholes + ' whole' + (M.compartmented.wholes === 1 ? '' : 's') +
+      ' the text makes of them, each step at its own ends. <b>Show every state</b> draws each apart.</div>' :
+      M.collapsed ? '<div class="amech-focus">Showing the text’s own boxes: ' + M.collapsed.parts + ' state' +
       (M.collapsed.parts === 1 ? '' : 's') + ' drawn inside ' + M.collapsed.wholes + ' of them' +
       (M.collapsed.inside ? '; ' + M.collapsed.inside + ' step' + (M.collapsed.inside === 1 ? '' : 's') + ' between parts of one box not drawn' : '') +
-      '. <b>Show every state</b> draws each apart; the counts below are of what is drawn.</div>' : '';
-    var chainNote = M.chain ? '<div class="amech-focus">One of the text’s ' + CHAINS.length + ' chains: <b>' + esc(M.chain.label) + '</b>.' +
-      (Object.keys(M.chain.shared).length ? ' It shares ' + Object.keys(M.chain.shared).map(function (v) {
-        return '“' + esc(label(v)) + '” with ' + M.chain.shared[v].map(function (o) {
-          var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return '“' + esc(x && x.label || o) + '”'; }).join(" and "); }).join("; ") +
-        ' (⇄ on the state opens the other).' : ' It shares no state with another chain.') + '</div>' : '';
-    return chainNote + boxesNote + foldedHTML() + '<h3>The chain</h3>' +
+      '. <b>Show every state</b> draws each apart; the counts below are of what is drawn.</div>' : '');
+    var chainNote = M.chain && M.chain.group ? '<div class="amech-focus">' + M.chain.group.length + ' of the text’s ' + CHAINS.length +
+      ' chains, drawn together because they meet at states they share: ' + M.chain.group.map(function (g) { return '<b>' + esc(chainLabel(g)) + '</b>'; }).join(", ") +
+      '. Chains that meet none of these are drawn on their own.</div>'
+      : M.chain ? '<div class="amech-focus">One of the text’s ' + CHAINS.length + ' chains: <b>' + esc(M.chain.label) + '</b>.' +
+      (Object.keys(M.chain.shared).length ? sharedNote(M.chain.shared) : ' It shares no state with another chain.') +
+      (P.apart ? ' The text keeps it apart: ' + esc(P.apart) : '') + '</div>' : '';
+    return chainNote + boxesNote + foldedHTML() + summariesHTML() + '<h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       (P.levels.length > 1 ? '<div class="amech-row"><span class="k">levels are</span><span>' + esc(orderingWords(P.ordering).replace(/^levels: /, "")) +
         (P.ordering && P.ordering.within && P.ordering.within.length ? '; ' + esc(P.ordering.within.map(function (q) { return q[0] + " within " + q[1]; }).join(", ")) : '') + '</span></div>' : '') +
@@ -3916,6 +4814,17 @@ function create(container, graph, opts) {
         P.gaps.filter(function (g) { return !(g.state && HANDED[g.state]); }).map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
       (P.gaps.some(function (g) { return g.state && HANDED[g.state]; }) ? '<h3>Taken on by the argument</h3><ul class="amech-handed">' +
         P.gaps.filter(function (g) { return g.state && HANDED[g.state]; }).map(function (g) { return '<li>' + esc(gapText(g)) + '</li>'; }).join("") + '</ul>' : '') +
+      // WHAT MAKES SOMETHING UP, WHERE A STATE OF IT IS NOT DRAWN (James's principle, 8 Oct 2026): a
+      // state no step touches is not on the chart, and what it makes up, or is made of, is said here.
+      (function () {
+        var CU = (M.constitutions || []).filter(function (c) { return c.layer !== "appraisal" &&
+          (!G.nodes[c.from] || (!c.toActor && !G.nodes[c.to])); });
+        return CU.length ? '<h3>What makes it up</h3><div class="amech-q">Not drawn: no step touches ' +
+          (CU.length === 1 ? 'one of these states' : 'some of these states') + '.</div><ul class="amech-handed">' + CU.map(function (c) {
+            var to = c.toActor ? (obj(M.actors[c.to]).label || c.to) : (obj(FULL.states[c.to]).label || c.to);
+            return '<li>“' + esc(obj(FULL.states[c.from]).label || c.from) + '” ' + (c.extent === "partial" ? 'partly makes up' : 'makes up') +
+              ' “' + esc(to) + '” <span class="amech-q">(' + esc(c.claim.title) + ')</span></li>'; }).join("") + '</ul>' : '';
+      })() +
       // "LEGEND", because "Key" names the floating card the other arrangements share, and Help ▸
       // Show the Key opens that card, not this (clarity audit, 27 Sep 2026).
       '<h3>Legend</h3>' + legendHTML() + '<div class="amech-q">An arrow says the text holds that one state brings about a change in another: ' +
@@ -4152,6 +5061,20 @@ function create(container, graph, opts) {
     select(null);
   };
   if (doc) doc.addEventListener("keydown", onEsc);
+  // HOVERING A SUMMARY LIGHTS ITS ROUTE, as hovering an arrow lights the arrow.
+  var routeHot = function (row, on) {
+    var run = row.getAttribute("data-route").split(">");
+    var svgNow = container.querySelector(".amech svg");
+    if (!svgNow) return;
+    svgNow.classList.toggle("hovering", on);
+    for (var i = 0; i + 1 < run.length; i++) {
+      svgNow.querySelectorAll('g[data-edge="' + run[i] + '>' + run[i + 1] + '"]').forEach(function (g) { g.classList.toggle("hot", on); });
+    }
+  };
+  ["mouseover", "focusin"].forEach(function (evn) { side.addEventListener(evn, function (ev) {
+    var tg = /** @type {Element} */ (ev.target), row = tg && tg.closest ? tg.closest("[data-route]") : null; if (row) routeHot(row, true); }); });
+  ["mouseout", "focusout"].forEach(function (evn) { side.addEventListener(evn, function (ev) {
+    var tg = /** @type {Element} */ (ev.target), row = tg && tg.closest ? tg.closest("[data-route]") : null; if (row) routeHot(row, false); }); });
   side.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
@@ -4230,7 +5153,7 @@ function create(container, graph, opts) {
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, nest: nestSpec() });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, boundary: !!(M.reasoning && M.reasoning.boundary) });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.
@@ -4274,7 +5197,16 @@ function create(container, graph, opts) {
     refold();
   });
   var showSel = /** @type {HTMLSelectElement|null} */ (bar.querySelector("select[data-show]"));
-  if (showSel) showSel.addEventListener("change", function () { show = showSel.value; apply(); });
+  if (showSel) {
+    if (M.core) showSel.value = "core";
+    if (M.panels) showSel.value = "panels";
+    showSel.addEventListener("change", function () {
+      var v = showSel.value;
+      if (v === "core" || v === "panels" || M.core || M.panels) {
+        keep.core = v === "core"; keep.panels = v === "panels"; show = v === "tested" ? "tested" : "all"; remount(); return; }
+      show = v; apply();
+    });
+  }
   svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
   fitBtn.addEventListener("click", function () { setFit(!fit); });
   Array.prototype.forEach.call(bar.querySelectorAll("[data-zoom]"), function (b) {
@@ -4316,7 +5248,7 @@ function create(container, graph, opts) {
                                     zoom: fit ? "fit" : zk }; },
     setView: function (v) {
       if (!v) return;
-      if (v.show) { show = v.show === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; }
+      if (v.show && v.show !== "core" && v.show !== "panels") { show = v.show === "tested" ? "tested" : "all"; if (showSel) showSel.value = show; }
       folded = {}; (v.folded || []).forEach(function (x) { folded[x] = true; });
       ends = !!v.ends && hasEnds;
       expanded = {}; (v.expanded || []).forEach(function (x) { expanded[x] = true; });
@@ -4327,7 +5259,7 @@ function create(container, graph, opts) {
   }
 }
 
-var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, TIERS: TIERS, BASES: BASES,
+var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, chainGroups: chainGroups, groupModel: groupModel, corePath: corePath, coreModel: coreModel, coreByDefault: coreByDefault, multiplesOf: multiplesOf, multiplesModel: multiplesModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH, BRIDGES: BRIDGES, bridgeScheme: bridgeScheme };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;

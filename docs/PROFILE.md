@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.17 — 1 October 2026.** The machine-readable registry of everything below is
+**Version 1.19 — 9 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -215,9 +215,12 @@ mechanism:
 | `order` | `time` \| `explanation` | Whether the chains run in the order of **time** (the default) or in the order of **explanation**, as a pragmatic genealogy's stages do: each adds a complication, and later means less idealised, not later in history (Queloz 2021, p. 16). The chart says which, so left to right is not read as history. Also on each chain (*added in 1.17*). |
 | `depth` | `full` \| `sketch` \| `none` | **How far the mechanism is mapped.** Under the parallel method every text's mechanism is considered: in `full`; as a `sketch` -- the question, actors and chains, with steps only where the argument relies on them, so a state with no step is left open rather than queried; or `none`, considered and not mapped. A parallel map with no `mechanism:` block is queried (*added in 1.17*). |
 | `depth_reason` | string | Why a mechanism is a sketch or not mapped, in a line; the Mechanism view shows it (*added in 1.17*). |
+| `idiom` | string, or `{term, means, pinpoint}` | **What the states are told as**, in the text's words: Wilson 2023's *flows*, "a process by which inputs are transformed into outputs within a system" (p. 352). A definition of the kind of thing every state is, said once for the chart under its question; never a state, since no step reaches it (*added in 1.18*). |
+| `apart` | string | **Why the text keeps something apart**: on a chain, that it meets no other chain, or that its steps fall into pieces that meet at no state; on the block, the same for a map with no chains. It answers the census's `? island` and `? pieces`; say in a line what the text does instead (a contrast case, separate examples) (*added in 1.18*). |
+| `channels.<id>` | `{label}` | **The kinds of link the text tells apart**, each in its own words: the Coleman-boat paper's ecological and social mechanisms, Rena et al.'s signalling and metabolic conversion. A step names one with `channel`; the chart draws each in its own colour, with a key (*added in 1.19*). |
 | `actors.<id>` | `{label, level}` | A position the text names — "courts", "the household" — at one of the levels. |
 | `kinds.<id>` | `{label, general}` | A kind of state that recurs across cases — rural–urban migration, forest cover — named so that states in different cases can say they are of it (*added in 1.6*); `general` names the state that is the general claim, the others being its cases (*1.7*). |
-| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
+| `states.<id>` | `{label, actor, role, measured, appraisal, note, part_of, levels, kind, measures, method, aspect, behaviour, observed, dead_end}` | A change in an actor's condition or conduct — or, since 1.11, a process with no owner, which leaves out `actor` and is placed by its `levels`. `role` is `intervention` (what the text recommends doing), `condition` (a cause it sets out from without recommending it — the explanans of an explanatory text; *added in 1.1*) or `outcome` (what the chain is for, or what the text explains) — or a **list** of these, for a state that is both, such as where a circle starts and what a remedy is for (*1.1*). The chain starts from its interventions and conditions. `measured` says how the text measures it; `appraisal: true` makes it the reconstructor's own state; `note` records which of the text's words were read as one state; `part_of` names a larger state it is a part, facet or instance of (*1.2*); `levels` lists the levels a state holds at when it holds at more than its actor's (*1.4*); `kind` names the declared kind it is a case of (*1.6*); `measures` names the state it is a measure, indicator or estimate of, and `method` how the measure is taken (*1.9*); `aspect` says what kind of occurrence it is — `quantity`, `activity`, `development`, `event` or `condition` (*1.11*); `status` whether it is `actual` (the default), `possible` or `open`, and `actor` may be a **list** for a relation or a doing of several actors together (*1.12*). |
 
 A claim that states a step carries `causes:` — one map, or a list:
 
@@ -257,13 +260,38 @@ substantially reduces adoption".
 | `attribution` | `intentional` \| `mechanical` \| `inadvertent` \| `accidental` \| `complex`, or `{type, by}` | The **type of causing** the step attributes, and `by` **whose** action or intention it is, an actor (*added in 1.9*). |
 | `measured_by` | state id, or list of them | The **measure** the step's evidence is read from, a state with `measures` (*added in 1.9*). |
 | `stance` | `rejected` \| `unjudged` | On a `#reported` or `#contested` step: whether the text sets the view out to **reject** it or leaves it **unjudged** (*added in 1.9*). |
+| `name` | string | The step's **name** in the text's words: the kind of mechanism it is (Hedström and Ylikoski's situational, action-formation and transformational mechanisms), the question it asks (the Coleman-boat paper's arrows), the feedback it is (Wimmer's "Path dependency"). Drawn on the arrow in place of the verb (*added in 1.19*). |
+| `mark` | string | The **number** the text gives the step, "1" or "P4", drawn in a circle on the arrow; six characters at most (*added in 1.19*). |
+| `channel` | channel id | The **kind of link** the step is, one declared under `channels` (*added in 1.19*). |
+| `shape` | `peak` \| `trough` | A relation that **rises and then falls**, or falls and then rises: Meadows's fish breed most at middling density, since "scarcer fish don't breed much, nor do crowded fish". Such a step has no single sign: leave `sign` out, or give `which` (*added in 1.19*). |
+| `net` | boolean | With `on: stock`: a **net flow**, running into the stock or out of it whichever way the gap points, as Meadows's coffee cools or warms toward the room (*added in 1.19*). |
 
 **Parts and wholes (1.2).** A state declared `part_of: <id>` is drawn inside that state when the
-view shows *the text's own boxes*: every step from or to a part becomes the whole's, and a step
-between two parts of one whole is counted rather than drawn. Declare it where the text itself
+view shows *the text's own boxes*: since 1.19 the whole is a **compartment** round its parts, as
+Wimmer draws the field and the strategies and Rena et al. the cell and its mitochondrion, and every
+step keeps its own ends, part to part. (Until 1.19 each part was folded into its whole, and its steps
+became the whole's.) Declare it where the text itself
 groups finer states into one — a box in its own diagram, a typology under one heading. A whole may
 be part of a larger whole; it may not contain itself. A general mechanism and its cases are not
 parts and a whole: since 1.6 and 1.7 they are states of one kind, with the general one named.
+
+**What a state's own keys add (1.19).** `behaviour` names the **behaviour over time** the text says
+the state follows -- `grows`, `declines`, `levels off`, `s-shaped`, `oscillates`, `overshoot and
+collapse`, `steady` -- drawn as a small sketch on its box, never a graph of numbers the text does not
+give: Meadows explains a structure by the behaviour it produces. `observed: false` marks a state the
+text says is **unobserved**, with an asterisk, as Knight and Winship write U* and Bias*. `dead_end:
+true` marks an outcome the text sets out as **stopping the process short** -- Marti and Gond's symbolic
+use of a theory, D1 of their five dead ends: drawn muted with ⊘, and never a gap for leading nowhere.
+On a chain, `conditioned:` lists the states its analysis **holds fixed**, a box round each, and a list
+inside the list states the text says **cannot be held fixed apart**, one box round them (Knight and
+Winship's tall box round T1 and T2).
+
+`boundary:`, on a chain or the block, quotes the text where it **draws attention to where its system
+stops**: that the boundary is a choice, or that what lies outside acts on what is inside. Every
+system has a boundary, so the key is set only where the text says so, as `boundary: {says: "...",
+pinpoint: "p. 97"}` (a bare string is what it says, and is queried for its page). The view then draws
+a cloud at each open end of a flow -- the source of an inflow, the sink of an outflow -- as Meadows
+does; a flow between two stocks has no open end.
 
 **Joint causes (1.4).** "Belief that others comply moves people to comply, but only where they
 wish to fit in" is one step with two causes, neither enough alone. Two steps would say each
@@ -311,7 +339,12 @@ forest cover is what the first chain explains and where the second begins, one b
 next one's condition. The census walks each chain on its own (its routes, loops and gaps, with its
 own roles) as well as the whole, and names what each shares with which other and in what role
 there. The view opens at the first chain, laid out alone; a shared state carries ⇄, which opens the
-other chain; *every chain together* draws the whole. A step marked with no chain is counted.
+other chain. Chains that meet at a shared state can be drawn **together**: *every chain together* where
+they all meet, one *Together* for each group of them otherwise (*since 1.18*). A chain that meets no
+other, by a state or a kind, is drawn only on its own, and the census asks whether the text links it
+(`? island`); a chain whose steps fall into pieces that meet at no state is drawn with its pieces
+side by side, a rule between them, and the census asks what they are (`? pieces`). `apart:` on the
+chain answers both, with the text's reason. A step marked with no chain is counted.
 
 **The same kind across cases (1.6).** Two states can be the same kind of thing in different
 cases without being one state: the Coleman-boat paper's general rural–urban migration and its
@@ -798,6 +831,34 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.19** (9 October 2026) added, after the diagram comparison study (twelve texts mapped blind
+and held against their authors' figures) and James's decisions on its proposals:
+- `name` and `mark` on a step: the text's name for it, and its number, drawn on the arrow;
+- `channels` on the block and `channel` on a step: the kinds of link the text tells apart, as colour;
+- `shape` (`peak`, `trough`) and `net` on a step: a relation that rises and falls, a net flow;
+- `behaviour`, `observed` and `dead_end` on a state, and `conditioned` on a chain;
+- `boundary` on a chain or the block: the text's words on where its system stops, drawn as clouds.
+
+The checker reads them and the census does not walk them. The view changed too, with no key: a step
+stated `via` others is listed, not drawn beside its route; the sign rides the arrow's end (a T-bar for
+"lowers") and a chip that only repeats it is not drawn; an empty level is not drawn; a long chain
+opens at its core path; a stock is a stock and its flows pipes; one mark per loop, at its centre; a
+loop that is most of a chain is laid out as a ring; the text's own boxes are compartments; a step's
+condition is written on it and the state drawn; and a chain conditioned on one state can be shown as
+one panel per value. Every 1.18 file conforms unchanged.
+
+**1.18** (8 October 2026) added, after James's two principles for the Mechanism view ("no state is
+shown unless it is involved in a mechanism or flow"; "mechanisms shown together meet at at least one
+state"):
+- `idiom` on the block: what the states are told as, said once for the chart, never drawn as a state;
+- `apart` on a chain or the block: why the text keeps a chain, or the pieces of one, apart.
+
+The census asks of each chain that meets no other, by a state or a kind, whether the text links it
+(`? island`), and of each chain whose steps fall into pieces that meet at no state whether they are
+cases of one kind, questions of their own, or kept apart (`? pieces`). The view draws only states a
+step touches, offers "Together" only for chains that meet, and stands a chain's pieces side by side
+with a rule between them. Every 1.17 file conforms unchanged.
 
 **1.17** (1 October 2026) added, after the parallel-pass trial and James's rulings the same day:
 - **the mechanism always considered** under the parallel method: `depth` (`full`, `sketch`, `none`)

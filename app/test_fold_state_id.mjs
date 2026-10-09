@@ -234,6 +234,12 @@ console.log("\nevery arrangement");
   ok("a chart's field outside the chart is refused",
      threw(() => decodeFoldState(tiny, good + " chain=x"), /Mechanism arrangement/));
   ok("a zoom that is not a number is refused", threw(() => decodeFoldState(tiny, good + " zoom=big"), /positive number/));
+  // THE CORE PATH (9 Oct 2026): chosen, or every step chosen on a chain that opens at it; unsaid, the
+  // chain's own default. Mutation: drop "every" from the encoder -> the reader's choice is lost.
+  const shows = ["core", "every"].map(v => decodeFoldState(tiny, encodeFoldState(tiny, Object.assign({}, empty, { mech: { chain: null, show: v } }))).mech.show);
+  ok("the core path, or every step chosen against it, survives; unsaid, the chain decides",
+     shows.join() === "core,every" && decodeFoldState(tiny, encodeFoldState(tiny, Object.assign({}, empty, { mech: { chain: null } }))).mech.show === undefined,
+     JSON.stringify(shows));
 }
 
 if (failed) { console.log(`\n${failed} check(s) FAILED`); process.exit(1); }

@@ -13,6 +13,9 @@ defaults:
 mechanism:
     question: "What does improving a health system element by element, centred on cost-effectiveness, do to the system as a whole -- and how else are its means and values improved?"
     contrast: "improvement centred on the cost-effectiveness of each element"
+    # WHAT THE STATES ARE TOLD AS (profile 1.18): the text's definition of a flow, which nearly every state
+    # is; said once for the chart. It was a state spanning all three levels that no step reached.
+    idiom: {term: "flows", means: "processes by which inputs are transformed into outputs within a system: money, referral journeys, health information", pinpoint: "p. 352"}
     levels: [system, services, people]
     ordering: mixed          # the reconstructor's reading (profile 1.11 pass): "interlinked subsystems, some of which are arranged hierarchically, and others that interact without formally specified chains of authority" (p. 359)
     chains:
@@ -20,15 +23,22 @@ mechanism:
         cascade:     {label: "From social care to ambulance response: one trajectory", question: "How does a lack of social care resources ramify into worse ambulance response times?"}
         scarcity:    {label: "Scarcity cascades, in general", question: "How can scarcity in one narrow domain worsen scarcity elsewhere?"}
         lean:        {label: "Leanness and brittleness", question: "Why is a system made maximally cost-effective brittle?"}
-        proximity:   {label: "Proximity and surgical outcomes", question: "Why is the value of proximity in tension with minimising surgical complications?"}
+        proximity:   {label: "Proximity and surgical outcomes", question: "Why is the value of proximity in tension with minimising surgical complications?",
+                      apart: "the text's example of a value in tension with minimising complications (p. 353); it says nothing of how centralising bears on the system's other chains"}
         cataract:    {label: "Waiting for a progressive condition: cataract surgery", question: "Why do cataract waiting lists feed themselves, and what does waiting do to patients and to cost-effectiveness?"}
-        dynamic:     {label: "Effects and rankings that do not hold still", question: "Why do the effects and rankings cost-effectiveness analysis relies on shift with the system?"}
+        dynamic:     {label: "Effects and rankings that do not hold still", question: "Why do the effects and rankings cost-effectiveness analysis relies on shift with the system?",
+                      apart: "two assumptions the text rejects one after the other (pp. 354-356): external validity, since changes elsewhere shift an intervention's effects; and static ranking, since changing circumstances shift which ranking is right. Each is a general step with its cases"}
         improvement: {label: "Means and values, each improving the other", question: "How are a health system's means and values improved, each through the other?", form: cycle, settles: false}
-        staff:       {label: "The human elements of the system", question: "What do workload and institutional pressure do to clinicians, and to care?"}
+        staff:       {label: "The human elements of the system", question: "What do workload and institutional pressure do to clinicians, and to care?",
+                      apart: "the photocopier is the text's contrast case, set against clinicians by argument ('Human beings are not replaceable', p. 362), not joined to them by any step"}
     kinds:
         localscarce: {label: "Scarcity in one part of the system", general: localscarcity}
         spread:      {label: "Scarcity spreading elsewhere in the system", general: cascade}
         waits:       {label: "Waiting times growing", general: waiting}
+        context:     {label: "A change in the system around an intervention", general: syschange}
+        effect:      {label: "What an intervention achieves, and at what cost", general: effects}
+        circ:        {label: "A change in the circumstances a prioritisation assumed", general: circumstances}
+        rank:        {label: "Which prioritisation is right", general: ranking}
     actors:
         nhs:          {label: "The health system as a whole: the English NHS", level: system}
         policymakers: {label: "Policymakers", level: system}
@@ -83,15 +93,19 @@ mechanism:
         casetime:     {label: "Operations become more complex, take longer and bring more complications", actor: cataract, aspect: quantity}
         qol:          {label: "Waiting patients' quality of life", actor: patients, role: outcome, aspect: quantity}
         accidents:    {label: "Patients lose the ability to drive, and have more accidents", actor: patients, aspect: activity}
-        cataractce:   {label: "How cost-effective the cataract service is", actor: cataract, role: outcome, aspect: quantity}
+        cataractce:   {label: "How cost-effective the cataract service is", actor: cataract, role: outcome, kind: effect, aspect: quantity}
         # effects and rankings that do not hold still (p. 356)
-        adherence:    {label: "Patients are supported to adhere to their treatment", actor: patients, role: condition, aspect: activity}
-        drugce:       {label: "A drug's effectiveness and cost-effectiveness in practice", actor: nhs, role: outcome, aspect: quantity}
-        beyond:       {label: "Patient flows exceed the parameters services were calibrated for", actor: hospitals, role: condition, aspect: condition,
+        adherence:    {label: "Patients are supported to adhere to their treatment", actor: patients, role: condition, kind: context, aspect: activity}
+        drugce:       {label: "A drug's effectiveness and cost-effectiveness in practice", actor: nhs, role: outcome, kind: effect, aspect: quantity}
+        beyond:       {label: "Patient flows exceed the parameters services were calibrated for", actor: hospitals, role: condition, kind: circ, aspect: condition,
                        note: "the text's examples: 300 beds sufficing even at moments of high demand; A&E processing no more than 40 patients an hour"}
-        calibration:  {label: "Which calibration of services is most cost-effective", actor: hospitals, role: outcome, aspect: condition}
-        change:       {label: "Waiting patients' conditions change, relative to their own baseline and to one another", actor: patients, role: condition, aspect: development}
-        fairorder:    {label: "The waiting list's order stays fair", actor: hospitals, role: outcome, aspect: condition}
+        calibration:  {label: "Which calibration of services is most cost-effective", actor: hospitals, role: outcome, kind: rank, aspect: condition}
+        change:       {label: "Waiting patients' conditions change, relative to their own baseline and to one another", actor: patients, role: condition, kind: circ, aspect: development}
+        fairorder:    {label: "The waiting list's order stays fair", actor: hospitals, role: outcome, kind: rank, aspect: condition}
+        syschange:    {label: "Changes elsewhere in the health system", actor: nhs, aspect: activity, kind: context}
+        effects:      {label: "An intervention's effects, and hence its cost-effectiveness", actor: nhs, aspect: quantity, kind: effect}
+        circumstances: {label: "Circumstances relevant to prioritisation change within a round of allocation", actor: nhs, aspect: event, kind: circ}
+        ranking:      {label: "Which prioritisation ranking is right", actor: nhs, aspect: condition, kind: rank}
         # means and values, each improving the other (pp. 361-363): a cycle
         valuesimp:    {label: "Values-improvement: specifying and reconciling the values the system should instantiate and promote", levels: [system], aspect: activity}
         meansimp:     {label: "Means-improvement: reconfiguring flows so the system as a whole better achieves its values, every day and at every level", levels: [system, services, people], aspect: activity}
@@ -130,9 +144,9 @@ mechanism:
         savings:      {label: "The reform's cost savings", actor: hospitals, aspect: quantity}
         careelse:     {label: "Patient care improves elsewhere in the system", actor: nhs, aspect: condition}
         limitcare:    {label: "Clinicians practise without being able to give good enough care", actor: clinicians, aspect: activity}
-        interact:     {label: "Waiting problems across the NHS interact and exacerbate each other", levels: [services], aspect: activity}
+        interact:     {label: "Waiting problems across the NHS interact and exacerbate each other", levels: [services], aspect: activity, kind: spread,
+                       note: "the text's problems that 'interact with and exacerbate each other', which its 'Thus' makes a case of scarcity spreading (p. 359)"}
         # what makes the system up (pp. 352, 359-360): constitution, not steps
-        flows:        {label: "Flows: processes by which inputs are transformed into outputs -- money, referral journeys, health information", levels: [system, services, people], aspect: activity}
         elementce:    {label: "Each element's performance and cost-effectiveness, measured separately", levels: [services], aspect: quantity}
         interactions: {label: "Elements interact, hierarchically and horizontally, through multiple feedback loops", levels: [services], aspect: activity}
         systemce:     {label: "How effective the system as a whole is at its core functions", actor: nhs, aspect: quantity}
@@ -200,10 +214,10 @@ mechanism:
     <+ [EV and SR fail]
 
 [EV and SR fail]: "neither external validity nor static ranking is correct within large-scale and interconnected health systems" {fidelity: "quotation", pinpoint: "p. 354", note: "Scope kept: within large-scale and interconnected health systems."}
-    <+ [EV usually false]: "It is a substantive, and usually false, assumption that the effects (and hence cost-effectiveness) of an intervention are atomic" {fidelity: "quotation", pinpoint: "p. 356", note: "External validity: cost-effectiveness assessed in one context transfers without significant difficulty to the policymaker's own."}
+    <+ [EV usually false]: "It is a substantive, and usually false, assumption that the effects (and hence cost-effectiveness) of an intervention are atomic, i.e. that they are the same everywhere the intervention is undertaken, rather than shifting in response to changes elsewhere in health systems." {fidelity: "quotation", pinpoint: "p. 356", note: "External validity: cost-effectiveness assessed in one context transfers without significant difficulty to the policymaker's own. The general step; adherence and the cataract service are its cases.", causes: {from: syschange, to: effects, sign: which, scope: general, basis: example, chain: dynamic}}
         <+ [Adherence]: "The effectiveness (and cost-effectiveness) of a drug in practice depends on, among other things, on the level of support that patients have in adhering to treatment." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: adherence, to: drugce, sign: "+", basis: asserted, chain: dynamic}}
         <+ [Trial gap]: "there may be a significant gap between the effects of an intervention in an experimental context, and the effects that the same intervention will have in a real-world context" {fidelity: "quotation", pinpoint: "p. 355"}
-    <+ [Rankings change]: "it is common, rather than rare, for circumstances to change in ways that require rankings delivered in prioritisation processes to be reconfigured within rounds of resource allocation, rather than only at the beginning of such a period" {fidelity: "quotation", pinpoint: "p. 356", note: "Static ranking: that prioritisation rankings will not change unexpectedly over the period governed by the allocation."}
+    <+ [Rankings change]: "it is common, rather than rare, for circumstances to change in ways that require rankings delivered in prioritisation processes to be reconfigured within rounds of resource allocation, rather than only at the beginning of such a period" {fidelity: "quotation", pinpoint: "p. 356", note: "Static ranking: that prioritisation rankings will not change unexpectedly over the period governed by the allocation.", causes: {from: circumstances, to: ranking, sign: which, scope: general, basis: example, chain: dynamic}}
         <+ [Operating parameters]: "If the system needs to start operating outside of these parameters, then this may make a significant difference to what calibration of services will be overall most cost-effective." {fidelity: "quotation", pinpoint: "p. 356", note: "The parameters are assumed patient flows, e.g. 300 beds sufficing, or an A&E department processing no more than 40 patients an hour.", causes: {from: beyond, to: calibration, sign: which, basis: example, hedged: true, chain: dynamic}}
         <+ [Fair ordering decays]: "A prioritisation ordering that was fair may not remain fair as patients’ conditions change." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: change, to: fairorder, sign: "-", on: persistence, basis: asserted, hedged: true, chain: dynamic}}
 
@@ -332,7 +346,7 @@ mechanism:
 
 [Slower responses, more calls]: "This leads to worse response times for ambulances, which then leads to additional load on emergency call handlers, as they respond to repeated calls about ambulances that have not arrived." {fidelity: "quotation", pinpoint: "p. 360", note: "'This' is ambulances taken out of service. Footnote 8 gives the response times against target for June 2022.", causes: [{from: outofservice, to: response, sign: "+", basis: asserted, chain: cascade}, {from: response, to: callload, sign: "+", basis: asserted, chain: cascade}]}
 
-[Flows make up the system]: "I use the idea of a flow in a broad sense, to refer to a process by which inputs are transformed into outputs within a system." {fidelity: "quotation", pinpoint: "p. 352", note: "A definition: flows are processes within the system, so they partly make it up. The paper's move to a 'flow-centric' paradigm (p. 363) rests on it.", constitutes: {from: flows, to: nhs, extent: partial, whole: organised, basis: definition}}
+[Flows make up the system]: "I use the idea of a flow in a broad sense, to refer to a process by which inputs are transformed into outputs within a system." {fidelity: "quotation", pinpoint: "p. 352", note: "A definition: flows are processes within the system, so they partly make it up. The paper's move to a 'flow-centric' paradigm (p. 363) rests on it. Said once for the chart as the mechanism's `idiom:`; never a state, since nearly every state is one."}
 
 <Cataract argument>: Where demand outstrips capacity for a progressive condition, first come, first served lets patients deteriorate while they wait; so a cataract service that makes people wait is both less cost-effective and less ethically defensible. {fidelity: "compression", pinpoint: "pp. 358-359"}
 
@@ -471,9 +485,16 @@ mechanism:
 
 [Continual and iterative]
     <+ [Imaginative failure]: "It may be a sign of imaginative failure rather than argumentative success if it comes to seem that the goals of a health system have all been fully specified and no longer need further debate." {fidelity: "quotation", pinpoint: "p. 363"}
-        <+ [Dewey on fixations]: Dewey: "All ends and values that are cut off from the ongoing process become arrests, fixations." {fidelity: "compression", pinpoint: "p. 363", causes: {from: cutoff, to: fixation, sign: which, on: character, basis: testimony, chain: improvement}}
+        <+ <Closed goals become fixations>
     <- [Not everything at once]: "not everything can or should be called into question at the same time" #conceded {fidelity: "quotation", pinpoint: "p. 363", note: "The author's own limit on open-endedness: even if all democratic ends are up for renegotiation, they are not all open at once."}
     <- [Static internal morality]
+
+<Closed goals become fixations>: Ends and values cut off from the ongoing process become fixations, and goals taken as fully specified are cut off from it; so goals that seem fully specified are a sign of imaginative failure. {fidelity: "compression", pinpoint: "p. 363"}
+
+(1) [Dewey on fixations]: Dewey: "All ends and values that are cut off from the ongoing process become arrests, fixations." {fidelity: "compression", pinpoint: "p. 363", causes: {from: cutoff, to: fixation, sign: which, on: character, basis: testimony, chain: improvement}}
+(2) [Closing the goals cuts them off]: Where a health system's goals are taken as fully specified and values-improvement stops, its ends and values are cut off from the ongoing process of improvement. {fidelity: "imputation", warrant: "enthymeme", note: "The step the inference from Dewey to imaginative failure relies on, and no claim states: goals 'fully specified and no longer need[ing] further debate' (p. 363) are ends cut off from the ongoing process of means- and values-improvement.", causes: {from: valuesimp, to: cutoff, sign: "-", basis: asserted, chain: improvement}}
+-----
+(3) [Imaginative failure]
 
 [Static internal morality]: Some scholars suggest that medicine has an internal morality which "provides an objective and static basis for the goals of medicine, rather than these being subject to debate and change" #reported {fidelity: "compression", pinpoint: "p. 362", note: "Footnote 11, citing Pellegrino (2001); on such a view 'there may be purposes that are excluded by physicians’ integrity, such as participating in state executions' (Miller and Brody 1995)."}
     <- [Practice goals change]: MacIntyre himself holds that "practices never have a goal or goals fixed for all time" {fidelity: "compression", pinpoint: "p. 362"}

@@ -62,6 +62,9 @@ claim. Interpretive load stayed at zero: everything added was the author's words
    it does not, that is a finding, never a gap to close.
 5. **Write `method: parallel`** in the reading policy (`reconstruction:`), then `argdown_check` with
    `source_root` until ok and verified.
+6. **Answer the census's `? island` and `? pieces`** (*What meets*, below): find the link the text
+   makes, declare the kind, give the piece its own chain, or record with `apart:` that the text keeps
+   it apart.
 
 ## How far to map it
 
@@ -133,6 +136,42 @@ and the plain `-----` is kept.
 The questions are not yours to answer. They tell you where to look in the text. Often the census
 answers one already: an `unless` on the route, a rival chain, a one-case query.
 
+## What the chart shows, and what meets
+
+James's two principles for the Mechanism view (8 October 2026):
+
+- **No state is shown unless it is in a mechanism or a flow.** The chart draws only states a step
+  touches, as cause, effect, co-cause, blocker, moderator or measure. A state whose only tie is
+  that it makes something up is listed in the panel, not drawn. So is a starting point the text
+  links to nothing; the census reports it as a gap.
+  - **A definition of what every state is, is not a state.** Wilson 2023 says "I use the idea of a
+    flow in a broad sense, to refer to a process by which inputs are transformed into outputs
+    within a system" (p. 352). Nearly every state of that map is a flow in that sense. Say it once
+    with `idiom: {term: flows, means: "...", pinpoint: "p. 352"}` on the block; the chart shows it
+    under its question.
+- **Mechanisms shown together meet at a state.** The census asks two questions:
+  - `? island`: a chain meets no other chain, by a state or a kind;
+  - `? pieces`: a chain's steps fall into pieces that meet at no state.
+
+  Each disconnected piece is one of four things. Say which, and act on it:
+
+  1. **A link the text makes and the map missed.** Sewell's *durability of a structure* stopped
+     where the text goes on: depth is what capitalism's chain explains, durability is the other face
+     of transformation, and deep, powerful structures shape whole societies. **Look first for this**,
+     in the text around the piece. Mark the steps the text states. A step the argument relies on and
+     no claim states is an imputation, by the usual rule.
+  2. **A definition or framing made a state.** Take it off the chain: an `idiom:`, or a claim in the
+     argument.
+  3. **Cases of one kind with no kind declared.** Three examples of one claim are three pieces until
+     a `kind:` joins them. Declare it only where the text treats them as the same kind of thing.
+  4. **A contrast or an illustration**, related to the rest by argument, not by cause: the
+     photocopier against the clinicians ("Human beings are not replaceable"). Keep it apart, and say
+     so: `apart: "..."` on the chain.
+
+  Never invent a link to answer the question: a piece the text keeps apart stays apart, and
+  `apart:` records why. The chart offers *Together* only for chains that meet, and stands a chain's
+  pieces side by side with a rule between them.
+
 ## Six things the trial taught
 
 1. **An explanation is not a reason.** "A `because` drawn as support" is still the commonest error,
@@ -183,6 +222,9 @@ answers one already: an `unless` on the route, a rival chain, a one-case query.
   by argument rather than by cause. Unlike a gap, it is not queried.
 - **? gap**: a state the chain stops at and nothing argues from. As before, a finding about the text,
   never something to close.
+- **? island** and **? pieces**: a chain that meets no other, and one in pieces (*What meets*,
+  above). `apart` reports one the text keeps apart, with its reason.
+- **told as**: the block's `idiom:`.
 
 ## Going back
 
