@@ -545,6 +545,75 @@ def detect_columns(pages, page_width):
     return statistics.median(found)
 
 
+def sheet_splits(pages, page_width, split):
+    """Each page's own gutter where the paper's pages put it in more than one place, else `split`.
+
+    A MIRRORED LAYOUT HAS TWO GUTTERS. Annual Reviews sets its text block left of centre on a recto
+    and right of centre on a verso, the margin for its notes on the outer side: Hedström and
+    Ylikoski 2010 has its gutter at x=229 on the odd pages and x=302 on the even. One split for the
+    whole paper -- the median, 302 -- put both columns of every odd page to its left, and the
+    reading order took a line from each in turn: "describe the waiting to be filled by a new
+    occupant. The vaaction-formation mechanisms linking individcancy..." (the blind session's
+    report, 9 Oct 2026). Two-thirds of the text on those pages was out of order.
+
+    So the pages' own gutters are clustered (within 4% of the page width), and where two clusters
+    each hold a quarter of the pages that have a gutter, a page whose gutter falls in one uses that
+    cluster's position. A page with no gutter of its own, or one in no cluster, keeps the median,
+    as before: a title page's stray gap is never trusted on its own.
+    """
+    if split is None or not pages:
+        return [split] * len(pages)
+    own = [gutter_on_page([(l["x0"], l.get("x1", l["x0"])) for l in pg], page_width) for pg in pages]
+    found = sorted(g for g in own if g is not None)
+    clusters, near = [], page_width * 0.04
+    for g in found:
+        if clusters and g - clusters[-1][-1] <= near:
+            clusters[-1].append(g)
+        else:
+            clusters.append([g])
+    big = [c for c in clusters if len(c) >= max(2, len(found) * 0.25)]
+    if len(big) < 2:
+        return [split] * len(pages)
+    # The cluster the paper's median falls in IS the median: one gutter, said once.
+    centres = [split if abs(statistics.median(c) - split) <= near else statistics.median(c) for c in big]
+    out = []
+    for g in own:
+        at = None if g is None else min(centres, key=lambda c: abs(c - g))
+        out.append(at if at is not None and abs(at - g) <= near else split)
+    return out
+
+
+def column_frames(pages, splits):
+    """For each gutter position, how far its right column sits from its left (`offset`) and how far
+    its whole text block sits right of the paper's (`shift`). Returns (offsets, shifts), keyed by
+    split.
+
+    AND ONE LEFT MARGIN. A mirrored page's block sits further right (Reason 2000: x=48 on the odd
+    pages, 138 on the even), and the indent bands are measured against one margin for the paper.
+    The distance between the columns is the same on every page, so it is measured on the pages with
+    the most text and each other page's left margin read from its RIGHT column: its left edges can
+    be outnumbered by a boxed panel (Reason's, at 60, in 13 lines to 8). One gutter throughout
+    shifts nothing.
+    """
+    groups = {}
+    for pg, sp in zip(pages, splits):
+        if sp is not None:
+            groups.setdefault(sp, []).extend(pg)
+    offsets, shifts = {}, {}
+    if len(groups) == 1:
+        sp = next(iter(groups))
+        offsets[sp] = column_offset(groups[sp], sp)
+    elif groups:
+        margin = lambda xs: Counter(round(x) for x in xs).most_common(1)[0][0] if xs else 0
+        ref = max(groups, key=lambda sp: len(groups[sp]))
+        off = column_offset(groups[ref], ref)
+        left_ref = margin([x["x0"] for x in groups[ref] if x["x0"] < ref])
+        for sp, g in groups.items():
+            offsets[sp] = off
+            shifts[sp] = (margin([x["x0"] for x in g if x["x0"] >= sp]) - off) - left_ref if sp != ref else 0
+    return offsets, shifts
+
+
 def reading_order(lines):
     """One column's lines in the order a person reads them: down the page, left to right.
 
@@ -586,7 +655,7 @@ def reading_order(lines):
     return out
 
 
-def order_columns(lines, split, offset):
+def order_columns(lines, split, offset, shift=0.0):
     """One page's lines in reading order -- left column top to bottom, then right -- with the
     right column's left edges SHIFTED into the left column's frame.
 
@@ -598,8 +667,10 @@ def order_columns(lines, split, offset):
     """
     if split is None:
         return reading_order([dict(l, col=0) for l in lines])
-    left = [dict(l, col=0) for l in lines if l["x0"] < split]
-    right = [dict(l, col=1, x0=l["x0"] - offset) for l in lines if l["x0"] >= split]
+    # `shift` moves a mirrored page's whole text block onto the paper's common left margin, as
+    # `offset` moves its right column onto its left (see sheet_splits).
+    left = [dict(l, col=0, x0=l["x0"] - shift) for l in lines if l["x0"] < split]
+    right = [dict(l, col=1, x0=l["x0"] - offset - shift) for l in lines if l["x0"] >= split]
     return reading_order(left) + reading_order(right)
 
 
@@ -2332,6 +2403,26 @@ def indented_past(row, edge, by=15.0):
     return row[1] > edge + by
 
 
+#: THE HEADINGS OF A PAPER'S BACK MATTER, which medical and science journals set at the notes' size,
+#: at the foot of a column: the Lancet's, the BMJ's, Elsevier's and Springer's own words.
+BACK_MATTER_HEADS = re.compile(
+    r"(contributors|author contributions?|contributorship|funding|role of the funding source|"
+    r"declaration of (competing )?interests?|competing interests?|conflicts? of interests?|"
+    r"data sharing|data availability( statement)?|acknowledge?ments?|ethics( approval| statement)?|"
+    r"patient consent( for publication)?|provenance and peer review|patient and public involvement)",
+    re.I)
+
+
+def heads_a_block(text):
+    """True for a line that is only the heading of a piece of back matter: "Contributors",
+    "Declaration of interests". The words are a list, not a shape: an author's name, a table's
+    header and a table's first cell all have a heading's shape at the foot of a column, and were
+    rightly kept out of the flow (the regression of 9 Oct 2026)."""
+    t = (text or "").strip().rstrip(":")
+    # In capitals it is a book's running head or foot ("ACKNOWLEDGEMENTS vii"), not a heading.
+    return bool(BACK_MATTER_HEADS.fullmatch(t)) and not t.isupper()
+
+
 def is_runover(row):
     """True if this row is apparatus-sized, and so could be the tail of a carried-over note.
 
@@ -2416,6 +2507,12 @@ def split_footnotes(body, display_edge, low=0.70, margin=None, kept=None):
             if idxs and body[idxs[-1]][2] > body[idxs[-1]][3] * 0.50:
                 while k > 0 and is_runover(body[idxs[k - 1]]):
                     k -= 1
+            # A HEADED BLOCK IS NOT A NOTE CARRIED OVER. A runover resumes mid-sentence; a run that
+            # opens on a lone heading is back matter set at the notes' size -- the Lancet's
+            # "Contributors", at the foot of the right column on Rogowski et al.'s p. 11, was lifted
+            # whole into a note once the columns were read apart (9 Oct 2026).
+            if k < len(idxs) and heads_a_block(body[idxs[k]][4]):
+                k = len(idxs)
             cut = k if k < len(idxs) else None
         else:
             number = (note_opening(body[idxs[cut]][4], dotted=True) or ("",))[0]
@@ -2529,8 +2626,12 @@ def convert(cfg):
 
     split = detect_columns([l for l, _, _ in sheets], sheets[0][2]) if cfg.columns is None else (
         None if cfg.columns == 1 else sheets[0][2] / 2)
-    offset = column_offset(every, split) if split is not None else 0
-    sheets = [(order_columns(l, split, offset), h, w) for l, h, w in sheets]
+    # EACH PAGE ITS OWN GUTTER where the layout is mirrored (sheet_splits), and the column offset
+    # measured over the pages that share each gutter.
+    splits = sheet_splits([l for l, _, _ in sheets], sheets[0][2], split) if cfg.columns is None else [split] * len(sheets)
+    offsets, shifts = column_frames([l for l, _, _ in sheets], splits)
+    sheets = [(order_columns(l, sp, offsets.get(sp, 0), shifts.get(sp, 0)), h, w)
+              for (l, h, w), sp in zip(sheets, splits)]
     abstract, abstract_keep = None, None
     is_furniture, heads, footers = detect_furniture([(l, h) for l, h, _ in sheets], cfg.furniture)
 
@@ -2883,6 +2984,8 @@ def convert(cfg):
         figure_words=sum(f["label_words"] + (len(f["caption"].split()) if cfg.figures == "omit" else 0)
                          for f in FIGURES),
         column_split=round(split, 1) if split else None, bands=bands,
+        # A MIRRORED LAYOUT says both of its gutters.
+        column_splits=sorted({round(sp, 1) for sp in splits if sp is not None}) if len({sp for sp in splits if sp is not None}) > 1 else None,
         headings_placed=used, possible_dashes=dashes, outline=outline_used,
         headings_missing=[h for _f, h in cfg.headings if h not in used]
                          + [h for h in cfg.own_headings.values() if h not in used],
@@ -3086,7 +3189,8 @@ def header(cfg, r):
 
 def print_report(r):
     print(f"  {r['words']} words in {r['blocks']} blocks, {r['notes']} footnotes"
-          + (f", 2 columns split at x={r['column_split']}" if r["columns"] == 2 else ""))
+          + (f", 2 columns split at x={r['column_split']}" if r["columns"] == 2 and not r.get("column_splits") else "")
+          + (f", 2 columns, mirrored: split at x={' and '.join(map(str, r['column_splits']))} by page" if r.get("column_splits") else ""))
     b = r["bands"]
     print(f"  left edges: " + ", ".join(f"{k}={round(b[k])}" for k in
           ("margin", "display", "paragraph", "hanging") if b[k] is not None)

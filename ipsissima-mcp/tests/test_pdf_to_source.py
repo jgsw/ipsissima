@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
-from pdf_to_source import (detect_columns, detect_bands, split_footnotes,   # noqa: E402
+from pdf_to_source import (detect_columns, sheet_splits, column_frames, heads_a_block, detect_bands, split_footnotes,   # noqa: E402
                             heading_gaps, note_opening, join_spans, to_blocks,
                             printed_numbers, page_offset, detect_furniture, resolve_bands,
                             find_boundaries, looks_like_heading, title_case)
@@ -63,6 +63,34 @@ check("a deep hanging indent is not a second column", detect_columns(gettier, 45
 check("too little text to judge is not guessed at", detect_columns(lines((60, 5)), 450), None)
 check("  one full-width title does not hide a gutter",
       detect_columns(williams + lines((63, 1), right=455), 522) is not None, True)
+
+# A MIRRORED LAYOUT (Hedström and Ylikoski 2010, Annual Reviews): the text block left of centre on
+# the odd pages, right of it on the even, so the gutter is at 229 on one and 302 on the other.
+# Mutation: return [split] * len(pages) always -> the odd pages keep 302 and read across both columns.
+recto = lines((46, 50), (58, 6), right=223) + lines((235, 50), (247, 6), right=411)
+verso = lines((120, 50), (132, 6), right=296) + lines((308, 50), (320, 6), right=485)
+title = lines((46, 30), right=485)
+pages = [title, recto, verso, recto, verso, recto, verso]
+med = detect_columns(pages, 531)
+sp = sheet_splits(pages, 531, med)
+check("a mirrored layout: each page splits at its own gutter, a page with none at the paper's",
+      (all(220 < x < 236 for x in sp[1::2]), all(296 < x < 310 for x in sp[2::2]), sp[0] == med), (True, True, True))
+check("  and one gutter throughout is left as it was",
+      sheet_splits([recto] * 4, 531, detect_columns([recto] * 4, 531)) == [detect_columns([recto] * 4, 531)] * 4, True)
+
+# AND ITS LEFT MARGIN MOVES: Reason 2000's odd pages start at 48, its even at 138, where a boxed
+# panel at 60 outnumbers the body's lines. Mutation: read the left margin from the left edges ->
+# the even pages shift by 12, not 90.
+odd = lines((48, 50), right=258) + lines((275, 50), right=485)
+even = lines((60, 13), right=335) + lines((138, 8), right=347) + lines((365, 53), right=575)
+offs, shifts = column_frames([odd, odd, even], [266, 266, 357])
+check("a mirrored page's block is shifted onto the paper's margin, read from its right column",
+      (offs[266], offs[357], shifts.get(266, 0), shifts[357]), (227, 227, 0, 90))
+# BACK MATTER AT THE NOTES' SIZE is not a note carried over (Rogowski et al.'s "Contributors").
+check("a back-matter heading opens a block; a running head, a table and a name do not",
+      [heads_a_block(t) for t in ("Contributors", "Declaration of interests", "ACKNOWLEDGEMENTS",
+                                  "Table 1", "Charles Weingartner", "Notes")],
+      [True, True, False, False, False, False])
 
 print("detect_bands")
 b = detect_bands(lines((67, 60), (77, 12), (83, 7), (225, 6)))
@@ -133,6 +161,16 @@ check("  and the sentence it interrupted is left whole", len(flow3), 1)
 other = [stone[0], row(65, 551, "17 Ralph Nader, Unsafe at Any Speed (New York: Bantam Books, 1973).")] + stone[2:]
 check("  a line numbered out of sequence is not",
       len(split_footnotes(other, 60, margin=54)[0]), 2)
+# A HEADED BLOCK AT THE NOTES' SIZE is back matter, not a note carried over (Rogowski et al., the
+# Lancet, p. 11). Mutation: drop the heads_a_block guard -> all three rows are lifted.
+lancet = [row(262, 500, "benefits."),
+          row(262, 526, "Contributors", small=True),
+          row(262, 535, "CBBR: primary acquisition of data, analysis concept, analysis, and", small=True),
+          row(262, 544, "interpretation of data. Primary drafting of the manuscript.", small=True)]
+check("a block headed Contributors at the foot of a column stays in the flow",
+      len(split_footnotes(lancet, 300)[1]), 0)
+check("  while one with no heading, low on the page, is still a note carried over",
+      len(split_footnotes(lancet[:1] + lancet[2:], 300)[1]), 2)
 check("high-up numbered text is not a footnote",
       len(split_footnotes([row(40, 100, "1 Not a note, too high.")], 30)[1]), 0)
 
