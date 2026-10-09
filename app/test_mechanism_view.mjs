@@ -1494,6 +1494,25 @@ mechanism:
   const ab = at("a", "b"), bc = at("b", "c"), net = G.edges.find(e => e.stock === "net");
   check(ab && /Situational/.test(ab.chip.label) && ab.chip.mark === "1" && ab.ink === "ch0" && !ab.chip.quiet,
         "a named, numbered step says its name and number, in its channel's colour", JSON.stringify(ab && [ab.chip, ab.ink]));
+  // A numbered step whose words only repeat the sign shows its number alone. Mutation: drop markOnly -> "raises" drawn.
+  const K2 = MV.model(toGraph(argdown.run({ input: `===
+mechanism:
+    levels: [one]
+    actors:
+        p: {label: "P", level: one}
+    states:
+        a: {label: "A", actor: p, role: condition}
+        b: {label: "B", actor: p, role: outcome}
+===
+
+[Aim]: A.
+
+[N]: A raises B. {causes: {from: a, to: b, sign: "+", mark: "4", basis: asserted}}
+    +> [Aim]
+`, ...RUN })));
+  const m4 = MV.layout(K2).edges[0].chip;
+  check(m4.markOnly && m4.mark === "4" && m4.lines.join("") === "" && m4.whole === "raises",
+        "a numbered step that only rises shows its number alone, and says the rest on hover", JSON.stringify(m4));
   check(bc && bc.chip.label === "rises, then falls" && net && net.chip.label === "net flow",
         "a peaked relation and a net flow say so", JSON.stringify([bc && bc.chip.label, net && net.chip.label]));
   const mk = MV.markSpec(K, K).marks;
@@ -1542,6 +1561,109 @@ mechanism:
         "a text that marks its boundary gets a cloud at each open end of a flow, and none between two stocks or without the key",
         JSON.stringify([G.clouds, G0.clouds]));
   check(MV.audit(G).hard.length === 0, "and the clouds sit clear of everything", JSON.stringify(MV.audit(G).hard));
+}
+
+// THE REDRAW OF 9 OCT 2026, against the authors' figures. Mutations: drop givenTag from the null ->
+// "no effect" alone; go back to cutting the full label -> "W*: unobserved…"; drop the pair-level cut ->
+// the outflow sits left of its stock; drop the loops from coreModel -> the return step is gone.
+{
+  const run = (src) => MV.model(toGraph(argdown.run({ input: src, ...RUN })));
+  const K = run(`===
+mechanism:
+    levels: [one]
+    actors:
+        p: {label: "P", level: one}
+    states:
+        x: {label: "X", actor: p, role: condition}
+        w: {label: "W*: unobserved heterogeneity across individuals in how they respond", actor: p}
+        z: {label: "Z", actor: p, role: outcome}
+===
+
+[Aim]: A.
+
+[R]: X raises Z where W* is 1, and does nothing where it is 0.
+    {causes: [{from: x, to: z, sign: "+", given: [{state: w, value: "1"}], basis: asserted},
+              {from: x, to: z, sign: "0", given: [{state: w, value: "0"}], basis: asserted}]}
+    +> [Aim]
+`);
+  const G = MV.layout(K), labels = G.edges.map(e => e.chip.label);
+  check(labels.includes("no effect · given W* = 0") && labels.includes("raises · given W* = 1"),
+        "a null says the condition it holds under, and a condition names its state by the short name before the colon",
+        JSON.stringify(labels));
+  const far = G.edges.filter(e => !e.chip.quiet && e.chip.w).filter(e => {
+    const S = MV.pathPts ? MV.pathPts(e, 32) : null; return S && !e.chip.leader &&
+      S.every(q => Math.max(Math.abs(q[0] - e.chip.x) - e.chip.w / 2, Math.abs(q[1] - e.chip.y) - e.chip.h / 2) > 16); });
+  check(far.length === 0, "and a chip sits by its own line or is tied to it by a leader", JSON.stringify(far.map(e => e.chip)));
+
+  // A loop through a stock: deliveries fill it, sales drain it, sales are perceived, orders follow,
+  // and orders set deliveries. The walk once cut the loop at the sales pipe.
+  const S = run(`===
+mechanism:
+    levels: [one]
+    actors:
+        p: {label: "P", level: one}
+    states:
+        demand: {label: "Demand", actor: p, role: condition}
+        sales: {label: "Sales", actor: p}
+        perceived: {label: "Perceived sales", actor: p}
+        orders: {label: "Orders", actor: p}
+        deliveries: {label: "Deliveries", actor: p}
+        stock: {label: "Inventory", actor: p, role: outcome}
+===
+
+[Aim]: A.
+
+[A]: Demand raises sales. {causes: {from: demand, to: sales, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[B]: Sales drain the stock. {causes: [{from: sales, to: stock, on: stock, sign: "-", basis: asserted}, {from: sales, to: stock, on: stock, sign: "-", basis: asserted, design: illustration}]}
+    +> [Aim]
+
+[C]: Sales are perceived. {causes: {from: sales, to: perceived, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[D]: Perceived sales raise orders. {causes: {from: perceived, to: orders, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[E]: Orders raise deliveries. {causes: {from: orders, to: deliveries, sign: "+", basis: asserted}}
+    +> [Aim]
+
+[F]: Deliveries fill the stock. {causes: {from: deliveries, to: stock, on: stock, sign: "+", basis: asserted}}
+    +> [Aim]
+`);
+  const GS = MV.layout(S), c = v => GS.nodes[v].col;
+  check(c("deliveries") <= c("stock") && c("stock") <= c("sales") && c("stock") < c("sales"),
+        "a loop through a stock is cut at an arrow of information: inflow, stock and outflow run left to right",
+        JSON.stringify(Object.fromEntries(Object.entries(GS.nodes).map(([v, n]) => [v, n.col]))));
+  check(GS.edges.filter(e => e.stock === "out").every(e => !e.chip.w),
+        "and a pipe's label is not drawn, counted or not", JSON.stringify(GS.edges.map(e => [e.from, e.to, e.chip.label, e.chip.w])));
+  // The core path keeps the loop it runs through: a -> b -> c -> d, and c feeds back to b through y.
+  const L = run(`===
+mechanism:
+    levels: [one]
+    actors:
+        p: {label: "P", level: one}
+    states:
+        a: {label: "A", actor: p, role: condition}
+        b: {label: "B", actor: p}
+        c: {label: "C", actor: p}
+        d: {label: "D", actor: p, role: outcome}
+        y: {label: "Y", actor: p}
+===
+
+[Aim]: A.
+
+[P]: A raises B, B raises C, C raises D.
+    {causes: [{from: a, to: b, sign: "+", basis: asserted}, {from: b, to: c, sign: "+", basis: asserted}, {from: c, to: d, sign: "+", basis: asserted}]}
+    +> [Aim]
+
+[Q]: C raises Y, which raises B. {causes: [{from: c, to: y, sign: "+", basis: asserted}, {from: y, to: b, sign: "+", basis: asserted}]}
+    +> [Aim]
+`);
+  const C = MV.coreModel(L);
+  const kept = C ? C.steps.map(s => s.from + ">" + s.to) : [];
+  check(C && C.core.path.join() === "a,b,c,d" && kept.includes("c>y") && kept.includes("y>b"),
+        "the core path keeps the loops that run through it", JSON.stringify([C && C.core.path, kept]));
 }
 
 console.log("\na map with no chain");

@@ -753,8 +753,11 @@ it is listed in the panel under *Stated through others*, and hovering it lights 
 
 **The core path.** A long chain opens at its **core path**: the run of steps the text says most
 about, from where the chain starts to its outcome, with whatever holds or moderates each step,
-drawn as a thin arrow onto it. **Show: every step** draws the rest; **Show: the core path** comes
+drawn as a thin arrow onto it. The loops that run through it are kept, so a stock's feedback still shows. **Show: every step** draws the rest; **Show: the core path** comes
 back to it, on any chain that has one.
+
+**A label away from its arrow** is tied to it by a thin dotted line, where the arrow's own stretch
+had no room for it.
 
 **Stocks, flows and loops.** A state that something flows into or out of is drawn as a **stock**, a
 heavier square box, and the flows as **pipes**, each flow's state marked with a valve. Where the text

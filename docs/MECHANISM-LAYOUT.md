@@ -88,6 +88,14 @@ baseline, which a change may not make materially worse.
   - small multiples (`multiplesModel`): one copy of the chain per value, set apart as pieces are;
   - an arrow moved by the spreading of heads is re-routed if it then crosses a box, and an arc down a
     crowded column bulges no wider than the gap beside it.
+- **What the redraw against the figures changed** (9 Oct 2026, `diagram-comparison/REDRAW.html`):
+  - a chip's distance from its own line costs in `placeChips`' second pass, and a chip still more than
+    14px from it gets a dotted `leader` to the nearest point of the line;
+  - the depth-first walk that sets the columns cuts a loop at an arrow of information, never at a pipe
+    (`on: stock`), so inflow, stock and outflow run left to right;
+  - the core path keeps each loop the text closes through two of its states (short loops first, ten
+    added states at most);
+  - a numbered step whose words only repeat the sign shows its number alone (`markOnly`).
 
 ## Where it stands (30 Sep 2026)
 

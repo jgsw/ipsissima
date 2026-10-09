@@ -5,7 +5,7 @@
   "detours": 0
  },
  "chain": {
-  "chipCrossings": 12,
+  "chipCrossings": 16,
   "crossings": 56,
   "detours": 0
  },
@@ -35,7 +35,7 @@
   "detours": 0
  },
  "regimes": {
-  "chipCrossings": 9,
+  "chipCrossings": 13,
   "crossings": 56,
   "detours": 0
  },
@@ -55,7 +55,7 @@
   "detours": 0
  },
  "times": {
-  "chipCrossings": 7,
+  "chipCrossings": 17,
   "crossings": 76,
   "detours": 0
  },

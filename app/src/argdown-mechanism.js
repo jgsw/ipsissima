@@ -1621,6 +1621,49 @@ function layoutOnce(M, opts) {
   ids.filter(function (i) { return hasRole(M.states[i], "intervention"); }).forEach(function (i) { if (!mark[i]) dfs(i); });
   ids.filter(function (i) { return hasRole(M.states[i], "condition"); }).forEach(function (i) { if (!mark[i]) dfs(i); });
   ids.forEach(function (i) { if (!mark[i]) dfs(i); });
+  // A LOOP IS CUT AT AN ARROW OF INFORMATION, NEVER AT A PIPE. Where the walk above cut a loop at a
+  // flow, the flow went to the far side of its stock and its pipe ran back across the chart
+  // (Meadows's car dealer: sales left of the inventory it drains, the redraw of 9 Oct 2026). So a
+  // pipe the walk cut is restored and the loop cut instead at the last other arrow before it closes,
+  // where that leaves no loop uncut; otherwise the walk's cut stands.
+  var isPipe = function (st) { return st.on === "stock" && !st.isNull && !st.selects && !st.assoc; };
+  var acyclic = function () {
+    var m = {}, ok = true;
+    var go = function (v) {
+      m[v] = 1;
+      (out[v] || []).forEach(function (st) { if (!ok || back[st.id]) return; if (m[st.to] === 1) ok = false; else if (!m[st.to]) go(st.to); });
+      m[v] = 2;
+    };
+    ids.forEach(function (i) { if (ok && !m[i]) go(i); });
+    return ok;
+  };
+  var pairOf = function (st) { return ordering.filter(function (x) { return x.from === st.from && x.to === st.to; }); };
+  var pathBack = function (from, to) {
+    var prev = {}, queue = [from], seen = {};
+    seen[from] = true;
+    while (queue.length && !seen[to]) {
+      var v = queue.shift();
+      (out[v] || []).forEach(function (st) { if (!back[st.id] && !seen[st.to]) { seen[st.to] = true; prev[st.to] = st; queue.push(st.to); } });
+    }
+    if (!seen[to]) return null;
+    var path = [];
+    for (var w = to; w !== from; w = prev[w].from) path.unshift(prev[w]);
+    return path;
+  };
+  ordering.filter(function (st) { return back[st.id] && isPipe(st); }).forEach(function (p) {
+    if (!back[p.id]) return;
+    var was = {};
+    ordering.forEach(function (st) { was[st.id] = !!back[st.id]; });
+    pairOf(p).forEach(function (st) { back[st.id] = false; });
+    // Cut each loop the pipe now closes at its last arrow that is not a pipe, all the steps of that
+    // pair at once (two claims of one arrow are one arrow here).
+    for (var n = 0; n < 12 && !acyclic(); n++) {
+      var path = pathBack(p.to, p.from), cutAt = path && path.filter(function (st) { return !isPipe(st); }).pop();
+      if (!cutAt) break;
+      pairOf(cutAt).forEach(function (st) { back[st.id] = true; });
+    }
+    if (!acyclic()) ordering.forEach(function (st) { back[st.id] = was[st.id]; });
+  });
   var rank = {};
   function r(v, seen) {
     if (has(rank, v)) return rank[v];
@@ -2374,7 +2417,19 @@ function layoutOnce(M, opts) {
     // The chip's words in Short or in Full, worked out both ways: a chip cut in Short says its
     // whole label on hover.
     var labelFor = function (FULLTEXT) {
-      var cut = function (t, n) { t = String(t); return !FULLTEXT && t.length > n ? t.slice(0, n - 1) + "…" : t; };
+      // Cut at a word, never inside one ("heterogeneit…", the redraw of 9 Oct 2026).
+      var cut = function (t, n) {
+        t = String(t);
+        if (FULLTEXT || t.length <= n) return t;
+        var c = t.slice(0, n - 1), sp = c.lastIndexOf(" ");
+        return (sp > n / 2 ? c.slice(0, sp) : c).replace(/[\s,;:.\-–—]+$/, "") + "…";
+      };
+      // A STATE NAMED IN A CONDITION goes by its short name where its label gives one before a colon:
+      // "given W* = 0", not "given W*: unobserved heterogeneit… = 0" (Knight and Winship).
+      var shortName = function (v) {
+        var l = String(obj(M.states[v]).label || v), i = l.indexOf(": ");
+        return i > 0 && i <= 28 ? l.slice(0, i) : cut(l, 28);
+      };
       var viaName = function (v) { return cut(obj(M.states[v]).label || v, 22); };
       var viaList = function (vs) { return FULLTEXT ? vs.map(viaName).join(" → ") : viaName(vs[0]) + (vs.length > 1 ? " +" + (vs.length - 1) : ""); };
       // A STEP THE TEXT OPENS INTO A ROUTE (profile 1.8) is labelled as a folded route is: it IS
@@ -2400,7 +2455,7 @@ function layoutOnce(M, opts) {
         var on = (s0.givenOn || []).filter(function (o) { return condText(o) === g; })[0];
         // On the arrow's own source, its value alone: "where it is Latin America" (Bright's multinet).
         if (on && on.state === s0.from) return "where it is " + (on.value || "so");
-        return on ? cut(obj(M.states[on.state]).label || on.state, 28) + (on.value ? " = " + on.value : "") : cut(g, 40);
+        return on ? shortName(on.state) + (on.value ? " = " + on.value : "") : cut(g, 40);
       };
       var conds = {};
       ss.forEach(function (x) { if ((x.given || []).length) conds[(x.given || []).join("\u0001")] = true; });
@@ -2424,7 +2479,9 @@ function layoutOnce(M, opts) {
                 : kind === "null" ? "no effect" + (ss.length > 1 ? " ×" + ss.length : "") +
                   // A NULL IN ONE PERIOD SAYS WHICH: "no effect" beside "raises during culling" read as
                   // a contradiction, not a time course.
-                  (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "")
+                  (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "") +
+                  // AND UNDER WHICH CONDITION: "no effect" beside "raises · given Y = 1" said nothing of Y = 0.
+                  givenTag
                 // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
                 : kind === "selection" ? "selection effect"
                 // "ASSOCIATED" (1.13): the text reports they go together, and no more.
@@ -2497,15 +2554,24 @@ function layoutOnce(M, opts) {
                // "◆ decides which" on every arrow of a DAG, "raises" on every arrow of Rena's pathway: the
                // head says it, and the authors draw bare arrows. A chip stays where it says more -- a count,
                // a lag, a condition, a verb such as "closes off" -- and "labels: Full" writes every one.
+               // ON A PIPE A COUNT SAYS NOTHING MORE: "flows into ×2" is two claims of one flow, and the pipe
+               // says it (the redraw of 9 Oct 2026). Elsewhere "raises ×2" stays: it is the handle that
+               // draws the steps apart.
+               var bare = label.replace(/ ×\d+$/, "");
                var quiet = !opts.full && kind === "step" && breakdown.length <= 1 &&
-                 ["raises", "lowers", "decides which", "link", "flows into", "flows out of"].indexOf(label) >= 0;
+                 (["raises", "lowers", "decides which", "link", "flows into", "flows out of"].indexOf(label) >= 0 ||
+                  ["flows into", "flows out of"].indexOf(bare) >= 0);
                var lines = quiet ? [] : chipLines(label);
                var widest = quiet ? 0 : Math.max.apply(null, lines.map(function (l, i) { return l.length * 6.6 + (i === 0 && glyph ? 11 : 0); }));
                // A MARK (1.19), the text's number for the step, in a circle at the chip's start.
                var mark = s0.mark && ss.every(function (x) { return x.mark === s0.mark; }) ? s0.mark : "";
-               if (mark) quiet = false, lines = lines.length ? lines : chipLines(label), widest = Math.max.apply(null, lines.map(function (l) { return l.length * 6.6; }));
-               return { x: 0, y: 0, w: quiet ? 0 : widest + 14 + (mark ? 12 + mark.length * 7 : 0), h: quiet ? 0 : 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph,
-                        quiet: quiet, mark: mark, whole: quiet ? label : whole !== label ? whole : null };
+               // A NUMBERED STEP WHOSE WORDS ONLY REPEAT THE SIGN carries its number alone, as Rena et al. and
+               // the Coleman-boat paper number their arrows (the redraw of 9 Oct 2026).
+               var markOnly = !!mark && quiet;
+               if (mark) quiet = false;
+               if (markOnly) lines = [""], glyph = "", widest = 0;
+               return { x: 0, y: 0, w: quiet ? 0 : markOnly ? 12 + mark.length * 7 + 6 : widest + 14 + (mark ? 12 + mark.length * 7 : 0), h: quiet ? 0 : markOnly ? 18 : 4 + 14 * lines.length, label: label, lines: lines, glyph: glyph, markOnly: markOnly,
+                        quiet: quiet, mark: mark, whole: quiet || markOnly ? (whole || label) : whole !== label ? whole : null };
              })() };
   });
   // A LOOP LAID OUT AS A LOOP (James's decision, 9 Oct 2026): where a chain's longest loop runs through
@@ -3229,9 +3295,20 @@ function placeChips(edges, nodes, lanes, centres) {
     if (fixed.some(function (f) { return overlap(box, f) > 0; })) return false;
     return !placed.some(function (f, j) { return j !== self && f && overlap(box, { x: f.x - 3, y: f.y - 3, w: f.w + 6, h: f.h + 6 }) > 0; });
   };
+  // HOW FAR A CHIP IS FROM ITS OWN LINE. A chip that found fewer crossings forty pixels off read
+  // as another arrow's label (Bright's border chain, the oil chain's "lowers", the redraw of 9 Oct
+  // 2026): distance costs too.
+  var gapTo = function (box, i) {
+    var best = Infinity, S = samples[i];
+    for (var r = 0; r < S.length; r++) {
+      var dx = Math.max(box.x - S[r][0], 0, S[r][0] - box.x - box.w), dy = Math.max(box.y - S[r][1], 0, S[r][1] - box.y - box.h);
+      best = Math.min(best, Math.hypot(dx, dy));
+    }
+    return best;
+  };
   order.forEach(function (i) {
     var e = edges[i], P = e, cur = placed[i];
-    var score = function (box, dy) { return crossings(box, i) + (dy ? 2 + Math.abs(dy) / 12 : 0); };
+    var score = function (box, dy) { return crossings(box, i) + (dy ? 2 + Math.abs(dy) / 12 : 0) + gapTo(box, i) / 25; };
     var bestScore = clear(cur, i) ? score(cur, Math.abs(cur.y + cur.h / 2 - e.chip.y) > 0.5 ? 1 : 0) : Infinity, move = null;
     if (!bestScore) return;
     for (var k = 0; k < CHIP_T.length * CHIP_DY.length; k++) {
@@ -3257,6 +3334,19 @@ function placeChips(edges, nodes, lanes, centres) {
       e.chip.x = Math.round(at[0] * 10) / 10; e.chip.y = Math.round(at[1] * 10) / 10; placed[i] = box;
       break;
     }
+  });
+  // A LEADER where a chip still sits away from its line: a thin line from the chip to the nearest
+  // point of its arrow, as a map labels a road it could not write along.
+  order.forEach(function (i) {
+    var e = edges[i], box = placed[i];
+    if (!box || e.chip.quiet || !e.chip.w) { e.chip.leader = null; return; }
+    var S = samples[i], best = null, bd = Infinity;
+    S.forEach(function (q) {
+      var cx = Math.max(box.x, Math.min(q[0], box.x + box.w)), cy = Math.max(box.y, Math.min(q[1], box.y + box.h));
+      var d = Math.hypot(q[0] - cx, q[1] - cy);
+      if (d < bd) { bd = d; best = { x1: cx, y1: cy, x2: q[0], y2: q[1] }; }
+    });
+    e.chip.leader = bd > 14 ? best : null;
   });
   // What found no clear place: the layout makes room for it (M9).
   return order.filter(function (i) { return !clear(placed[i], i); }).map(function (i) { return edges[i]; });
@@ -3524,6 +3614,7 @@ function injectStyle() {
     ".amech .chipmark{fill:currentColor;stroke:none}.amech .chipmark-t{font-size:10px;font-weight:700;fill:var(--panel,#fff)}",
     ".amech .panel-l{font-size:12.5px;font-weight:700;fill:var(--mv-text)}.amech .st.comphead text{font-weight:600}.amech .comp{fill:var(--mv-comp,rgba(34,64,111,.06));stroke:var(--mv-rival);stroke-width:1.2}.amech .comp-l{font-size:11px;font-weight:600;fill:var(--mv-text)}",
     ".amech .st.stock rect.box{stroke-width:2.8}.amech .valve{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
+    ".amech .chip .leader{stroke:currentColor;stroke-width:1;stroke-dasharray:2 2;fill:none;opacity:.7}",
     ".amech .cloud .pipe{stroke:var(--mv-text);opacity:.55}.amech .cloud .puff{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.3}",
     ".amech .pipe-core{stroke:var(--panel,#fff)}.amech svg.hovering g[data-edge].hot .pipe{stroke-width:8.5}",
     ".amech .loopmark.centre circle{stroke:var(--mv-rival);stroke-width:1.2}.amech .loopmark.centre text{font-size:12.5px}",
@@ -3741,6 +3832,25 @@ function coreModel(M) {
   var on = {}, ids = {};
   path.forEach(function (v) { on[v] = true; ids[v] = true; });
   var steps = M.steps.filter(function (s) { return s.layer === "text" && on[s.from] && on[s.to] && path.indexOf(s.to) === path.indexOf(s.from) + 1; });
+  // AND THE LOOPS THAT RUN THROUGH IT. A core that drops them drops Meadows's whole point: the oil
+  // company's capital lost its R and its B, and drew as a line (the redraw of 9 Oct 2026). Each loop
+  // the text closes through two states of the path or more is kept whole, short loops first, while
+  // they add ten states or fewer between them.
+  var added = 0;
+  ((M.profile && M.profile.loops_text) || []).filter(function (l) {
+    return l.states.length <= 8 && l.states.filter(function (v) { return on[v]; }).length >= 2;
+  }).sort(function (a, b) { return a.states.length - b.states.length; }).forEach(function (l) {
+    var extra = l.states.filter(function (v) { return !ids[v]; }).length;
+    if (added + extra > 10) return;
+    added += extra;
+    var n = l.states.length;
+    l.states.forEach(function (v) { ids[v] = true; });
+    M.steps.forEach(function (s) {
+      if (s.layer !== "text" || s.isNull || s.selects || s.assoc || steps.indexOf(s) >= 0) return;
+      var i = l.states.indexOf(s.from), j = l.states.indexOf(s.to);
+      if (i >= 0 && j >= 0 && (i + 1) % n === j) steps.push(s);
+    });
+  });
   steps.forEach(function (s) {
     (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), (s.givenOn || []).map(function (g) { return g.state; }))
       .forEach(function (j) { if (has(M.states, j)) ids[j] = true; });
@@ -4256,6 +4366,7 @@ function create(container, graph, opts) {
       // THE CHIP LOOKS LIKE ITS LINE: its border takes the line's pattern (F5 -- a dotted step's
       // chip is dotted), so a chip in a crowd is tied to its line by more than nearness.
       var th = e.chip.h || 18, lines = e.chip.lines || [e.chip.label];
+      if (e.chip.leader) el("path", { "class": "leader", d: "M" + e.chip.leader.x1 + "," + e.chip.leader.y1 + " L" + e.chip.leader.x2 + "," + e.chip.leader.y2 }, chip);
       var cr = el("rect", { x: e.chip.x - tw / 2, y: e.chip.y - th / 2, width: tw, height: th, rx: 9 }, chip);
       if (st.dash) cr.setAttribute("stroke-dasharray", st.dash);
       var markW = e.chip.mark ? 12 + e.chip.mark.length * 7 : 0;
