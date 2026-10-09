@@ -34,9 +34,5 @@ survive = [
 ]
 
 [[defect]]
-what = "the author note and both figure captions fall into # Notes as one paragraph"
-shows = "Rockville, MD, 20892, USA Figure 1:"
-
-[[defect]]
 what = "a formula's subscripts read as note references"
 shows = "[^54]+[^23] = 0.701"

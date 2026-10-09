@@ -36,6 +36,7 @@ exact failure the fidelity markers exist to prevent.
     python3 pdf_to_source.py <file.pdf> <out.md>          # detect only, report, write nothing
 """
 
+import os
 import re
 import statistics
 import textwrap
@@ -83,6 +84,11 @@ class Config:
     stretch_limit: float = 11.0           # points per character; body median is ~4.5
     columns: int = None                   # None = detect; 1 or 2 to force
     bands: dict = None                    # override detection: {display, paragraph, hanging}
+    #: Where a figure's caption goes: "section" gathers the captions under "# Figures" at the end,
+    #: "omit" leaves them out (a blind reconstruction, made without the figures). Either way the
+    #: words drawn inside a figure -- its labels, its axes -- are kept out of the text. The default
+    #: comes from IPSISSIMA_FIGURES, which `ingest.py --figures` sets.
+    figures: str = field(default_factory=lambda: os.environ.get("IPSISSIMA_FIGURES", "section"))
 
 
 # --------------------------------------------------------------------------- extraction
@@ -91,6 +97,186 @@ class Config:
 #: module-level tally rather than a return value because the line reader is called deep inside
 #: the page walk and threading a count back out would touch every caller.
 FOOTNOTE_MARKS = []
+
+#: The figures the page walk found: one dict per caption, {sheet, caption, labels}. Module-level
+#: for the reason FOOTNOTE_MARKS is.
+FIGURES = []
+
+#: The document's body size, measured once over every sheet before the page walk (convert sets it).
+#: A page that is mostly figure and caption has no body of its own to measure: Rena et al.'s Fig. 2
+#: page is 2,800 characters of 8.5pt caption and labels against 18 of text.
+DOC_BODY = [None]
+
+#: A figure's caption: "Fig. 14.5", "Figure 15.", "FIGURE 2". Not a table's: a table's words are
+#: text, and a table's rules are not a drawing to lift words out of.
+FIG_CAPTION = re.compile(r"^(?:F\s?IGURE|Figure|Fig\.|FIG\.)\s*[\dIVX]+(?:[.\-–]\d+)*\b")
+#: ...and one punctuated as a caption is ("Fig. 1.", "Figure 2:", "Fig. 2.—"), which a sentence
+#: that opens by naming a figure ("Figure 15 shows the loop") is not.
+FIG_CAPTION_MARKED = re.compile(r"^(?:F\s?IGURE|Figure|Fig\.|FIG\.)\s*[\dIVX]+(?:[.\-–]\d+)*\s*[.:—–|]")
+
+
+def figure_regions(page):
+    """The regions of a sheet that are figures: drawings and images run together. Returns [Rect];
+    `split_figures` keeps only those with a "Fig."/"Figure" caption beside them.
+
+    WHY. A diagram's words are part of the text layer, and the reader ran them into the prose:
+    "Fig. 14.5 Graph U* illustrating the Front Door Criterion T M Y condition on it" (Knight and
+    Winship 2013), and Meadows's "heat from furnace heat to outside room temperature" in the
+    middle of her thermostat (8 Oct 2026). The labels belong to the picture, not the sentence; and
+    a reconstruction meant to be compared with the picture must be made without them."""
+    W, H = page.rect.width, page.rect.height
+    rects = []
+    for d in page.get_drawings():
+        r = pymupdf.Rect(d["rect"])
+        if r.height < 2 and r.width > 0.6 * W or r.width < 2 and r.height > 0.6 * H:
+            continue                      # a rule across the page or down a column
+        if r.width * r.height > 0.5 * W * H:
+            continue                      # a page's background or clip: run together with it, every
+                                          # figure on Hedström and Ylikoski's page was one page-sized region
+        rects.append(r + (-1, -1, 1, 1))
+    for im in page.get_image_info():
+        r = pymupdf.Rect(im["bbox"])
+        if r.width * r.height < 0.6 * W * H:  # a scanned page is one image: not a figure
+            rects.append(r)
+    regions = []
+    for r in rects:                       # run together what lies within 10pt of each other
+        r = pymupdf.Rect(r)
+        merged = True
+        while merged:
+            merged = False
+            for g in regions:
+                if (g + (-10, -10, 10, 10)).intersects(r):
+                    r |= g
+                    regions.remove(g)
+                    merged = True
+                    break
+        regions.append(r)
+    return [g for g in regions if g.width * g.height > 1500 and min(g.width, g.height) > 15
+            and g.width * g.height < 0.8 * W * H]
+
+
+def split_figures(page, lines):
+    """Lines that are a figure's labels or caption taken out; the captions kept in FIGURES."""
+    caps = [i for i, l in enumerate(lines) if FIG_CAPTION.match(l["text"])]
+    if not caps:
+        return lines
+    regions = figure_regions(page)
+    if not regions:
+        return lines
+    # A CAPTION IS SET SMALLER THAN THE TEXT: "Fig. 14.5" opening a line of the body is a sentence
+    # about the figure, not its caption (Knight and Winship's 8.5pt captions on a 10pt body;
+    # Meadows's 9pt on 11pt).
+    # The body's size: the document's, where convert has measured it; otherwise from the lines OUTSIDE
+    # the figures, since on a page that is mostly figure the labels outnumber the text.
+    weights = {}
+    outside = [l for l in lines if not any(g.contains(pymupdf.Point((l["x0"] + l["x1"]) / 2, l["y0"] + l["size"] / 2))
+                                          for g in regions)] or lines
+    for l in outside:
+        weights[round(l["size"], 1)] = weights.get(round(l["size"], 1), 0) + len(l["text"])
+    body = DOC_BODY[0] or max(weights, key=weights.get)
+    figs, taken = [], set()
+    for i in caps:
+        c = lines[i]
+        # ...unless it is punctuated as one: the Coleman-boat paper sets "Fig. 1." in the body's size.
+        if c["size"] > 0.97 * body and not FIG_CAPTION_MARKED.match(c["text"]):
+            continue
+        for g in regions:
+            # Below it or above it, overlapping it across; or beside it, as a Springer chapter sets
+            # its captions in the margin by the figure.
+            under_over = ((-6 < c["y0"] - g.y1 < 60 or -6 < g.y0 - (c["y0"] + c["size"]) < 60)
+                          and min(c["x1"], g.x1) - max(c["x0"], g.x0) > 0)
+            alongside = g.y0 - 10 < c["y0"] < g.y1 and (c["x1"] < g.x0 or c["x0"] > g.x1)
+            # Or inside it, where the region runs on below its caption (a rule under Wimmer's Fig. 2):
+            # then the figure is what lies above the caption.
+            within = g.contains(pymupdf.Point((c["x0"] + c["x1"]) / 2, c["y0"] + c["size"] / 2)) and c["y0"] > g.y0 + 20
+            if within:
+                under_over = True
+            if not (under_over or alongside):
+                continue
+            # THE FIGURE IS THE CAPTION'S OWN PART OF THE REGION. Two columns' figures can run
+            # together across the gutter, and a heading below one of them sat inside the whole:
+            # Williams et al.'s "Phases of commissioning digital health solutions" was lifted out
+            # as a label (8 Oct 2026). Cut to the caption's column where the region spans both,
+            # and to the caption's side: above a caption printed under its figure, below one
+            # printed over it.
+            # ...unless the caption runs on in the other column, level with its first line: then the
+            # figure is one across the page, its caption set in two columns under it (Rena et al.'s
+            # Fig. 2, whose right half and labels were left in the text, 9 Oct 2026).
+            g = pymupdf.Rect(g)
+            mid = page.rect.width / 2
+            level = None
+            if g.x0 < mid - 20 and g.x1 > mid + 20 and (c["x1"] < mid + 10 or c["x0"] > mid - 10):
+                level = next((k for k, l in enumerate(lines) if abs(l["y0"] - c["y0"]) < 2
+                              and abs(l["size"] - c["size"]) < 0.3 and not FIG_CAPTION.match(l["text"])
+                              and (l["x0"] > mid - 10 if c["x1"] < mid + 10 else l["x1"] < mid + 10)), None)
+                if level is None:
+                    g = g & (pymupdf.Rect(0, 0, mid, g.y1) if c["x1"] < mid + 10 else pymupdf.Rect(mid, 0, page.rect.width, g.y1))
+            if under_over and c["y0"] >= g.y0 + 10:
+                g.y1 = min(g.y1, c["y0"])
+            elif under_over:
+                g.y0 = max(g.y0, c["y0"] + c["size"])
+            figs.append((i, g, level))
+            break
+
+    def caption_run(i):
+        """The caption runs on in its own type: lines of its size, under it and close below the
+        last, past any line of the text between them (a margin caption runs beside the body's lines)."""
+        run = [i]
+        for j in range(i + 1, len(lines)):
+            l = lines[j]
+            if l["y0"] - lines[run[-1]]["y0"] >= 1.8 * lines[i]["size"]:
+                break
+            if (abs(l["size"] - lines[i]["size"]) < 0.3 and not FIG_CAPTION.match(l["text"])
+                    and min(l["x1"], lines[i]["x1"]) - max(l["x0"], lines[i]["x0"]) > 0):
+                run.append(j)
+        return run
+
+    for i, g, level in figs:
+        # ...and on into the other column, where it is set in two.
+        run = caption_run(i) + (caption_run(level) if level is not None else [])
+        # Its words: any short line inside it, and a label just outside the lines drawn -- a node's
+        # name sits beyond the arrow that ends at it ("U*", "W*" by Knight and Winship's DAGs).
+        mid = lambda l: pymupdf.Point((l["x0"] + l["x1"]) / 2, l["y0"] + l["size"] / 2)
+        inner = [k for k, l in enumerate(lines) if k not in run and k not in caps and (
+                 (len(l["text"]) <= 80 and g.contains(mid(l)))
+                 or (len(l["text"]) <= 25 and (g + (-16, -16, 16, 16)).contains(mid(l)))
+                 or (l.get("turned") and len(l["text"]) <= 60 and (g + (-40, -40, 40, 40)).contains(mid(l))))]
+        caption = " ".join(lines[k]["text"] for k in run)
+        FIGURES.append(dict(sheet=page.number, caption=caption, labels=len(inner),
+                            label_words=sum(len(lines[k]["text"].split()) for k in inner)))
+        taken |= set(run) | set(inner)
+    return [l for k, l in enumerate(lines) if k not in taken]
+
+
+#: Ligatures some typesetters follow with a space the reader keeps: "simpliﬁ cation", "ﬂ ow".
+LIG_SPACE = re.compile("[\ufb00-\ufb06] ")
+
+
+def close_ligature_spaces(page, blocks):
+    """A space straight after a ligature that the next letter starts on top of is not a space.
+
+    Meadows's Chelsea Green PDF sets one after every fi and fl: the space's box is 2.5pt wide, but
+    the next letter starts where the ligature ends (a gap of 0.0pt against a real space's 2.5pt),
+    so it is a typesetting artefact, not a word break. Read from the characters' own boxes, so
+    "staﬀ members" and "oﬀ the" -- real spaces -- are left alone. Only pages that have the pattern
+    pay for the character-level read."""
+    raw = page.get_text("rawdict").get("blocks", [])
+    for bi, b in enumerate(blocks):
+        for li, l in enumerate(b.get("lines", [])):
+            for si, sp in enumerate(l.get("spans", [])):
+                if not LIG_SPACE.search(sp.get("text", "")):
+                    continue
+                try:
+                    chars = raw[bi]["lines"][li]["spans"][si]["chars"]
+                except (IndexError, KeyError):
+                    continue
+                keep = []
+                for k, ch in enumerate(chars):
+                    if (ch["c"] == " " and 0 < k < len(chars) - 1 and "\ufb00" <= chars[k - 1]["c"] <= "\ufb06"
+                            and chars[k + 1]["bbox"][0] - chars[k - 1]["bbox"][2] < 0.15 * sp.get("size", 10)):
+                        continue
+                    keep.append(ch["c"])
+                sp["text"] = "".join(keep)
 
 
 def join_spans(spans, mark_footnotes=True):
@@ -190,7 +376,10 @@ def sheet_lines(page, mark_footnotes=True):
     two share a sheet: the extractor can return the neighbour's block first.
     """
     out = []
-    for b in page.get_text("dict").get("blocks", []):
+    blocks = page.get_text("dict").get("blocks", [])
+    if any(LIG_SPACE.search(s.get("text", "")) for b in blocks for l in b.get("lines", []) for s in l.get("spans", [])):
+        close_ligature_spaces(page, blocks)
+    for b in blocks:
         for l in b.get("lines", []):
             spans = l.get("spans", [])
             if not spans:
@@ -201,10 +390,13 @@ def sheet_lines(page, mark_footnotes=True):
             out.append(dict(x0=l["bbox"][0], y0=l["bbox"][1], x1=l["bbox"][2],
                             width=l["bbox"][2] - l["bbox"][0],
                             size=max(s.get("size", 0) for s in spans), text=text,
+                            # Turned text -- an axis title, a label set along an arrow -- is a
+                            # figure's, never the body's (split_figures).
+                            turned=abs(l.get("dir", (1, 0))[1]) > 0.2,
                             **face_of(spans)))
     if mark_footnotes:
         out = join_note_numbers(out)
-    return sorted(out, key=lambda l: l["y0"])
+    return split_figures(page, sorted(out, key=lambda l: l["y0"]))
 
 
 #: A footnote's own number standing as a line of its own: one or two digits, or the symbol of
@@ -2308,6 +2500,14 @@ def convert(cfg):
                                    for i in range(doc.page_count)), encoding="utf-8")
 
     FOOTNOTE_MARKS.clear()
+    FIGURES.clear()
+    tally = Counter()
+    for i in range(cfg.first_sheet, doc.page_count):
+        for b in doc[i].get_text("dict").get("blocks", []):
+            for l in b.get("lines", []):
+                for sp in l.get("spans", []):
+                    tally[round(sp.get("size", 0), 1)] += len(sp.get("text", "").strip())
+    DOC_BODY[0] = tally.most_common(1)[0][0] if tally else None
     sheets = [(sheet_lines(doc[i], cfg.markdown_footnotes), doc[i].rect.height, doc[i].rect.width)
               for i in range(cfg.first_sheet, doc.page_count)]
     every = [l for lines, _, _ in sheets for l in lines]
@@ -2639,6 +2839,16 @@ def convert(cfg):
             op = note_opening(t, dotted=True)   # a lifted note is apparatus by construction
             out.append(f"[^{op[0]}]: {op[1]}" if (op and op[0] in seen_marks) else t)
 
+    # THE FIGURES' CAPTIONS, gathered as the notes are: out of the flow they were run into, each
+    # with the page it was printed on. Left out altogether for a blind reconstruction.
+    if FIGURES and cfg.figures != "omit":
+        out.append("# Figures")
+        out.append("<!-- The figures' captions, lifted out of the text they were printed in; the words "
+                   "drawn inside each figure are left out. -->")
+        for f in FIGURES:
+            out.append(f"<!-- caption printed on p. {first_page + (f['sheet'] - cfg.first_sheet)} -->")
+            out.append(f["caption"])
+
     back_headings = []
     if back_rows:
         out.append("<!-- Back matter, kept for the reader (the author's ruling, 15 Sep "
@@ -2668,6 +2878,10 @@ def convert(cfg):
         quotes=sum(1 for b in blocks if b["kind"] == "quote"),
         back_matter_kept=len(back_rows), back_headings=back_headings,
         notes=len(note_blocks), marks=len(FOOTNOTE_MARKS), columns=2 if split else 1,
+        figures=len(FIGURES), figure_labels=sum(f["labels"] for f in FIGURES), figures_mode=cfg.figures,
+        # The words the figures took out of the text: their labels, and their captions where left out.
+        figure_words=sum(f["label_words"] + (len(f["caption"].split()) if cfg.figures == "omit" else 0)
+                         for f in FIGURES),
         column_split=round(split, 1) if split else None, bands=bands,
         headings_placed=used, possible_dashes=dashes, outline=outline_used,
         headings_missing=[h for _f, h in cfg.headings if h not in used]
@@ -2702,6 +2916,7 @@ def convert(cfg):
     sidecar_path = Path(str(cfg.out) + ".geometry.json")
     sidecar_path.write_text(sidecar, encoding="utf-8")
     report["geometry"] = sidecar_path.name
+    DOC_BODY[0] = None
     return report
 
 

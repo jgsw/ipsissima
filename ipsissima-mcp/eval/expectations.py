@@ -66,6 +66,10 @@ def load(dirs):
     return specs
 
 
+#: The comment the converter writes under its "# Figures" (pdf_to_source.py).
+FIGURES_NOTE = "<!-- The figures' captions, lifted out of the text they were printed in"
+
+
 def facts(md):
     """What the expectations are checked against: the headings, notes, abstract and body text."""
     front = re.match(r"(?s)\A---\n(.*?)\n---\n", md)
@@ -75,6 +79,10 @@ def facts(md):
         abstract = len(mo.group(1).split()) if mo else 0
     body = md[front.end():] if front else md
     heads = [" ".join(l.split()) for l in body.splitlines() if re.match(r"#{1,6} ", l)]
+    # THE CONVERTER'S OWN "# Figures" (8 Oct 2026), where it gathers the captions it lifted out of
+    # the text: apparatus, like its "# Notes", not a heading the paper prints.
+    if FIGURES_NOTE in body:
+        heads = [h for h in heads if h != "# Figures"]
     notes = len(re.findall(r"(?m)^\[\^\d+\]:", body))
     return dict(heads=heads, abstract=abstract, notes=notes, text=norm(body))
 
@@ -224,7 +232,7 @@ def sentences(md):
     """Candidate sentences from the body's paragraphs: ordinary prose, 12 to 45 words."""
     f = re.match(r"(?s)\A---\n.*?\n---\n", md)
     body = md[f.end():] if f else md
-    cut = re.search(r"(?m)^# (?:Notes|References|Bibliography|Works Cited)\s*$", body)
+    cut = re.search(r"(?m)^# (?:Notes|Figures|References|Bibliography|Works Cited)\s*$", body)
     body = body[:cut.start()] if cut else body
     vocab = Counter(re.findall(r"[a-z]+", MARKER.sub(" ", body).lower()))
     out = []

@@ -513,6 +513,8 @@ def from_pdf_structured(path, extras=None):
                 extras["geometry"] = side.read_text(encoding="utf-8")
             if extras is not None and rep.get("abstract"):
                 extras["abstract"] = rep["abstract"]
+            if extras is not None:
+                extras["figure_words"] = rep.get("figure_words", 0)
         except SystemExit as e:
             return None, str(e).split("\n")[0][:160]
         except Exception as e:                                  # noqa: BLE001 -- the fallback
@@ -581,8 +583,12 @@ def from_pdf(path, allow_ocr=True, extras=None):
         # scan has not. The floor is the honesty check: structured output holding many fewer
         # words than the raw layer (beyond the furniture it is meant to drop) means text was
         # misplaced, and the plain route -- ugly but complete -- wins.
-        body, s_notes = from_pdf_structured(path, extras)
-        if body is not None and len(body.split()) >= 0.85 * len(best.split()):
+        # The figures' words count as accounted for: a figure's labels, and its caption where left
+        # out for a blind run, are taken out on purpose (Rena et al., 9 Oct 2026, fell to the plain
+        # route once its two figures' labels were lifted).
+        got = extras if extras is not None else {}
+        body, s_notes = from_pdf_structured(path, got)
+        if body is not None and len(body.split()) + got.get("figure_words", 0) >= 0.85 * len(best.split()):
             return body, s_notes + [f"(the raw text layer held "
                                     f"{len(best.split())} words; this keeps "
                                     f"{len(body.split())}, the difference measured "
@@ -925,7 +931,12 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-ocr", action="store_true",
                     help="never OCR, even if the text layer looks damaged")
+    ap.add_argument("--figures", choices=["section", "omit"],
+                    help="a figure's caption: gathered under '# Figures' (the default), or left out "
+                         "altogether, for a reconstruction made without the figures")
     a = ap.parse_args()
+    if a.figures:
+        os.environ["IPSISSIMA_FIGURES"] = a.figures
 
     results = []
     for path in a.inputs:

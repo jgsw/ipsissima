@@ -27,7 +27,7 @@ abstract: >-
      back matter kept for the reader (References) -- in the file, trimmed from the extraction prompt
      abstract kept (173 words) -- in the file's front matter, which the app shows on the orientation panel and a claim may quote; it is never trimmed from the extraction prompt
      headings from the PDF's own outline (19 of its 22 entries found in the text)
-     (the raw text layer held 7936 words; this keeps 7610, the difference measured furniture and front matter) -->
+     (the raw text layer held 7936 words; this keeps 7666, the difference measured furniture and front matter) -->
 
 <!-- p.1 begins here -->
 
@@ -249,7 +249,7 @@ P(T = 1|T ≠3, W = w, Z = 1) exp(α2 + β2 + γ2w + η2w). Scenario 1: violatio
 
 <!-- p.10 begins here -->
 
-10 Figure 3: Simulation results of scenario 1 in Section 8.1, over 5,000 replications. Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied when β2 = η2 = 0. The contrast estimated in practice does not clearly relate to any quantities of causal interest when β2 ≠0 or η2 ≠ 0 because Condition (i)W is violated. the elevation of risk of the event in period 2 (i.e., with β2 and with η2). In particular, for β2 = β1, the contrast for stratum W = 0 tends to wrongly suggest a null effect of Z. As a remark, there is a small sample bias when β2 = η2 = 0 but this goes away with larger populations; see Section S4.2 of the supplementary material where we consider populations with n = 5 × 10[^6] and n = 10[^7] individuals. Scenario 2: violation of Condition (ii) due to a variation in the baseline risk between period 1 and period 2 The parameter values we consider are pW = 0.6, pZ|W = 0 = 0.35, pZ|W = 1 = 0.2, α1 = log(0.00004), α2 ∈α1, log(0.00010) [ ], β1 = 0.3, β2 = 0, γ1 = 0.2, γ2 ∈{γ1, 0.3, 0.4}, and η1 = η2 = 0. Z does not have an effect on T in period 2 (β2 = η2 = 0). Thus when α1 = α2 and γ1 = γ2, Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied. On the other hand, when α1 ≠α2 and/or γ1 ≠γ2, Condition (ii)W, and thus Condition (ii), is violated as there is a variation in the baseline risk of the event between period 1 and period 2. In addition, βW=1 = βW=0 = β = βZ=1 = 0.3, and Z is harmful. On average over the 5,000 replications when α1 = α2 and γ1 = γ2, 27 individuals are included in the SCCS data. Because the effect of Z is homogeneous across strata, in Figure 4 we focus on the logarithm of the marginal contrast estimated with the SCCSdata. Itisbiasedwhen α1 ≠α2 orγ1 ≠γ2, and the biasincreasesasthedifference between thebaseline risk ofthe event in period 1 and period 2 increases. The quantity estimated in practice even tends to suggest a protective effect of Z when α2 > β + α1 + log { exp(γ1)pZ|W=1pW+pZ|W=0(1−pW) }, i.e., when γ2 = γ1 and α2 > −9.826, or γ2 = 0.3 and α2 > −9.879, or exp(γ2)pZ|W=1pW+pZ|W=0(1−pW) γ2 = 0.4 and α2 > −9.934.
+10 the elevation of risk of the event in period 2 (i.e., with β2 and with η2). In particular, for β2 = β1, the contrast for stratum W = 0 tends to wrongly suggest a null effect of Z. As a remark, there is a small sample bias when β2 = η2 = 0 but this goes away with larger populations; see Section S4.2 of the supplementary material where we consider populations with n = 5 × 10[^6] and n = 10[^7] individuals. Scenario 2: violation of Condition (ii) due to a variation in the baseline risk between period 1 and period 2 The parameter values we consider are pW = 0.6, pZ|W = 0 = 0.35, pZ|W = 1 = 0.2, α1 = log(0.00004), α2 ∈α1, log(0.00010) [ ], β1 = 0.3, β2 = 0, γ1 = 0.2, γ2 ∈{γ1, 0.3, 0.4}, and η1 = η2 = 0. Z does not have an effect on T in period 2 (β2 = η2 = 0). Thus when α1 = α2 and γ1 = γ2, Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied. On the other hand, when α1 ≠α2 and/or γ1 ≠γ2, Condition (ii)W, and thus Condition (ii), is violated as there is a variation in the baseline risk of the event between period 1 and period 2. In addition, βW=1 = βW=0 = β = βZ=1 = 0.3, and Z is harmful. On average over the 5,000 replications when α1 = α2 and γ1 = γ2, 27 individuals are included in the SCCS data. Because the effect of Z is homogeneous across strata, in Figure 4 we focus on the logarithm of the marginal contrast estimated with the SCCSdata. Itisbiasedwhen α1 ≠α2 orγ1 ≠γ2, and the biasincreasesasthedifference between thebaseline risk ofthe event in period 1 and period 2 increases. The quantity estimated in practice even tends to suggest a protective effect of Z when α2 > β + α1 + log { exp(γ1)pZ|W=1pW+pZ|W=0(1−pW) }, i.e., when γ2 = γ1 and α2 > −9.826, or γ2 = 0.3 and α2 > −9.879, or exp(γ2)pZ|W=1pW+pZ|W=0(1−pW) γ2 = 0.4 and α2 > −9.934.
 
 ## 8.2 Setting with acceleration effect
 
@@ -257,13 +257,11 @@ As a reminder, in such a setting the vaccine accelerates the development of adve
 
 <!-- p.11 begins here -->
 
-Figure 4: Simulation results of scenario 2 in Section 8.1, over 5,000 replications. Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied when α2 = α1 and γ2 = γ1. The contrast estimated in practice does not clearly relate to any quantities of causal interest when α2 ≠α1 or γ2 ≠γ1 because Condition (ii)W is violated. Figure 5: Simulation results of the scenario with Acceleration Effect in Section 8.2, over 5,000 replications. Conditions (i) and (ii) are satisfied when P(T Z=1 = 1|T Z=0 = 2) = 0. The contrast estimated in practice does not clearly relate to any quantities of causal interest when P(T Z=1 = 1|T Z=0 = 2) ≠0 because Condition (i) is violated. The log causal risk ratio over period 1 is defined as log { P(TZ=[^1]=1) }, the log causal risk ratio over P(TZ=[^0]=1) P(TZ=[^1]=2) period 2 is defined as log { P(TZ=[^0]=2) }, the log causal risk ratio over periods 1 and 2 is defined as log { P(TZ=[^1]=1)+P(TZ=[^1]=2) }. P(TZ=[^0]=1)+P(TZ=[^0]=2) with α = log(0.00008). We simulate T Z=1 such that P(T Z=1 = 1|T Z=0 = 1) = 1, P(T Z=1 = 3|T Z=0 = 3) = 1, and P(TZ=[^1] = 1|TZ=[^0] = 2) ∈0, 0.2
+estimated in practice does not clearly relate to any quantities of causal interest when P(T Z=1 = 1|T Z=0 = 2) ≠0 because Condition (i) is violated. The log causal risk ratio over period 1 is defined as log { P(TZ=[^1]=1) }, the log causal risk ratio over P(TZ=[^0]=1) P(TZ=[^1]=2) period 2 is defined as log { P(TZ=[^0]=2) }, the log causal risk ratio over periods 1 and 2 is defined as log { P(TZ=[^1]=1)+P(TZ=[^1]=2) }. P(TZ=[^0]=1)+P(TZ=[^0]=2) with α = log(0.00008). We simulate T Z=1 such that P(T Z=1 = 1|T Z=0 = 1) = 1, P(T Z=1 = 3|T Z=0 = 3) = 1, and P(TZ=[^1] = 1|TZ=[^0] = 2) ∈0, 0.2
 
 [
 
-]. The SCCS data consists of the observations from individuals with Z = 1 and T ≠3. On average over the 5,000 replications, 48 individuals are included in the SCCS data. The acceleration effect does not occur when P(T Z=1 = 1|T Z=0 = 2) = 0, but it does and Condition (i) is violated when P(T Z=1 = 1|TZ=0 = 2) > 0, because
-
-P(T Z=1 = 2) < P(T Z=0 = 2). In Figure 5 we focus on the logarithm of P(T=[^1]|T≠[^3],Z=[^1]) P(T=[^2]|T≠[^3],Z=[^1]) estimated with the SCCS data. It is biased when P(T Z=1 = 1|T Z=0 = 2) > 0, and the bias increases with P(T Z=1 = 1|T Z=0 = 2). In Figure 5, we also display the true value of the logarithm of the causal risk ratio over period 1, over period 2, and over periods 1 and 2. As mentioned in Section 5.2, they all answer different causal questions and thus differ when P(T Z=1 = 1|T Z=0 = 2) > 0.
+]. The SCCS data consists of the observations from individuals with Z = 1 and T ≠3. On average over the 5,000 replications, 48 individuals are included in the SCCS data. The acceleration effect does not occur when P(T Z=1 = 1|T Z=0 = 2) = 0, but it does and Condition (i) is violated when P(T Z=1 = 1|TZ=0 = 2) > 0, because P(T Z=1 = 2) < P(T Z=0 = 2). In Figure 5 we focus on the logarithm of P(T=[^1]|T≠[^3],Z=[^1]) P(T=[^2]|T≠[^3],Z=[^1]) estimated with the SCCS data. It is biased when P(T Z=1 = 1|T Z=0 = 2) > 0, and the bias increases with P(T Z=1 = 1|T Z=0 = 2). In Figure 5, we also display the true value of the logarithm of the causal risk ratio over period 1, over period 2, and over periods 1 and 2. As mentioned in Section 5.2, they all answer different causal questions and thus differ when P(T Z=1 = 1|T Z=0 = 2) > 0.
 
 <!-- p.12 begins here -->
 
@@ -293,9 +291,33 @@ In summary, we have discussed sufficient conditions for valid causal interpretat
 
 # Notes
 
-<!-- Footnotes, printed at the foot of p. 1, p. 2, p. 3. Lifted here because they fall inside a sentence that runs across the page break. -->
+<!-- Footnotes, printed at the foot of p. 1. Lifted here because they fall inside a sentence that runs across the page break. -->
 
-*Corresponding author: Lola Etiévant, Biostatistics Branch, Division of Cancer Epidemiology and Genetics, National Cancer Institute, National Institutes of Health, 9609 Medical Center Drive, Rockville, MD, 20850, USA, E-mail: lola.e.etievant@gmail.com Mitchell H. Gail, Biostatistics Branch, Division of Cancer Epidemiology and Genetics, National Cancer Institute, National Institutes of Health, 9609 Medical Center Drive, Rockville, MD, 20850, USA Dean Follmann, Biostatistics Research Branch, Division of Clinical Research, National Institute of Allergy and Infectious Diseases, National Institutes of Health, 5601 Fishers Lane, Rockville, MD, 20892, USA Figure 1: Distribution of Guillain Barré Syndrome (GBS) events following Influenza A 2009 Monovalent vaccination, from Salmon et al. [11]. The blue line indicates period 1 (1–42 days), the red line indicates period 2 (50–91 days), and the dashed gray line indicates the washout period. Figure 2: Causal graphs depicting the relationships among the variables in A – The general setting. B – The general setting, when risk factor Ut is also depicted. C – The general setting with confounder W. D – The setting in Section 9 where an association between H1N1 vaccination (Z) and influenza (I) could be induced by conditioning on influenza symptoms (S).
+*Corresponding author: Lola Etiévant, Biostatistics Branch, Division of Cancer Epidemiology and Genetics, National Cancer Institute, National Institutes of Health, 9609 Medical Center Drive, Rockville, MD, 20850, USA, E-mail: lola.e.etievant@gmail.com Mitchell H. Gail, Biostatistics Branch, Division of Cancer Epidemiology and Genetics, National Cancer Institute, National Institutes of Health, 9609 Medical Center Drive, Rockville, MD, 20850, USA Dean Follmann, Biostatistics Research Branch, Division of Clinical Research, National Institute of Allergy and Infectious Diseases, National Institutes of Health, 5601 Fishers Lane, Rockville, MD, 20892, USA
+
+# Figures
+
+<!-- The figures' captions, lifted out of the text they were printed in; the words drawn inside each figure are left out. -->
+
+<!-- caption printed on p. 2 -->
+
+Figure 1: Distribution of Guillain Barré Syndrome (GBS) events following Influenza A 2009 Monovalent vaccination, from Salmon et al. [11]. The blue line indicates period 1 (1–42 days), the red line indicates period 2 (50–91 days), and the dashed gray line indicates the washout period.
+
+<!-- caption printed on p. 3 -->
+
+Figure 2: Causal graphs depicting the relationships among the variables in A – The general setting. B – The general setting, when risk factor Ut is also depicted. C – The general setting with confounder W. D – The setting in Section 9 where an association between H1N1 vaccination (Z) and influenza (I) could be induced by conditioning on influenza symptoms (S).
+
+<!-- caption printed on p. 10 -->
+
+Figure 3: Simulation results of scenario 1 in Section 8.1, over 5,000 replications. Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied when β2 = η2 = 0. The contrast estimated in practice does not clearly relate to any quantities of causal interest when β2 ≠0 or η2 ≠ 0 because Condition (i)W is violated.
+
+<!-- caption printed on p. 11 -->
+
+Figure 4: Simulation results of scenario 2 in Section 8.1, over 5,000 replications. Conditions (i)W and (ii)W, and thus Conditions (i) and (ii), are satisfied when α2 = α1 and γ2 = γ1. The contrast estimated in practice does not clearly relate to any quantities of causal interest when α2 ≠α1 or γ2 ≠γ1 because Condition (ii)W is violated.
+
+<!-- caption printed on p. 11 -->
+
+Figure 5: Simulation results of the scenario with Acceleration Effect in Section 8.2, over 5,000 replications. Conditions (i) and (ii) are satisfied when P(T Z=1 = 1|T Z=0 = 2) = 0. The contrast
 
 <!-- Back matter, kept for the reader (the author's ruling, 15 Sep 2026): reference lists and their kin stay in the file; the extraction prompt is trimmed from the first back-matter heading below. -->
 

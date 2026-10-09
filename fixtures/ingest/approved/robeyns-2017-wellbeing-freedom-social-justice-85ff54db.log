@@ -1,7 +1,7 @@
 == ingest -> <out>
 
    robeyns-2017-wellbeing-freedom-social-justice.pdf
-      -> source/robeyns-2017-wellbeing-freedom-social-justice.md   94993 words
+      -> source/robeyns-2017-wellbeing-freedom-social-justice.md   95016 words
       front matter written with the paper's abstract, which the app shows on the orientation panel and a claim may quote
       structured route (pdf_to_source): 103 heading(s), 21 displayed quotation(s) as blockquotes, 1 footnote(s) under `# Notes`
       dropped: journal licence (29), page number (66), running head (189)
@@ -9,9 +9,9 @@
       abstract kept (760 words) -- in the file's front matter, which the app shows on the orientation panel and a claim may quote; it is never trimmed from the extraction prompt
       headings from the PDF's own outline (103 of its 105 entries found in the text)
       ! 6 line(s) look stretched -- possible dropped words; the converter's report names them
-      (the raw text layer held 95478 words; this keeps 94993, the difference measured furniture and front matter)
-      121 heading(s), 1071 line(s) long enough to locate a claim
-      prompt extract stops at '# Acknowledgements', saving 94184 words (809 sent)
+      (the raw text layer held 95478 words; this keeps 95016, the difference measured furniture and front matter)
+      122 heading(s), 1071 line(s) long enough to locate a claim
+      prompt extract stops at '# Acknowledgements', saving 94207 words (809 sent)
 
    one source: no project file needed, and none written
    wrote 1 file(s) to <out>/source

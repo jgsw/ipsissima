@@ -1539,5 +1539,99 @@ R = [brow(5, 90, "denote the rate."), brow(5, 100, "hice", small=True, x=292), b
 check("  small type on the line itself is part of the line",
       size_heading_map(R + B[-80:], [Face(9.0), Face(7.0), Face(10.6), Face(9.0)] * 2 + BS[-80:], 9.0)[0], {})
 
+# A FIGURE'S WORDS ARE THE FIGURE'S (8 Oct 2026): Meadows's "heat from furnace heat to outside room
+# temperature" and Knight and Winship's "T M Y" were run into the prose. Mutations: return the lines
+# unfiltered from split_figures -> the labels stay; drop the caption's size test -> the sentence
+# opening with "Figure 15 shows" is lifted out as a caption; run page-sized drawings in with the
+# rest -> nothing is lifted (Hedström and Ylikoski 2010).
+print("\na figure's labels and caption come out of the text, a sentence about it stays")
+import pdf_to_source as _P  # noqa: E402
+_fd = pymupdf.open()
+_fp = _fd.new_page(width=595, height=842)
+for k, line in enumerate(["The thermostat turns the furnace on whenever the room is too cold for comfort,",
+                          "and off again when the room has warmed up to the setting chosen for it."]):
+    _fp.insert_text((72, 100 + 14 * k), line, fontsize=11)
+_fp.draw_rect(pymupdf.Rect(-12, -40, 607, 870), color=(1, 1, 1))  # a page-sized clip, as Annual Reviews sets one
+_fp.draw_rect(pymupdf.Rect(220, 160, 330, 220), color=(0, 0, 0))
+_fp.draw_line((120, 190), (220, 190), color=(0, 0, 0), width=3)
+_fp.draw_line((330, 190), (430, 190), color=(0, 0, 0), width=3)
+_fp.insert_text((235, 195), "room temperature", fontsize=9)
+_fp.insert_text((122, 182), "heat from furnace", fontsize=9)
+_fp.insert_text((340, 182), "heat to outside", fontsize=9)
+_fp.insert_text((72, 245), "Figure 15. Room temperature regulated by a thermostat and furnace.", fontsize=9)
+for k, line in enumerate(["Figure 15 shows the loop that holds the room near its goal, and the leak that",
+                          "drains it all the while toward the temperature outside the house itself."]):
+    _fp.insert_text((72, 280 + 14 * k), line, fontsize=11)
+_P.FIGURES.clear()
+_fl = [l["text"] for l in _P.sheet_lines(_fp)]
+check("the labels drawn in a figure, and its caption, are not in the text",
+      [t for t in _fl if t in ("room temperature", "heat from furnace", "heat to outside") or t.startswith("Figure 15. Room")], [])
+check("  the caption is kept, apart", [f["caption"] for f in _P.FIGURES],
+      ["Figure 15. Room temperature regulated by a thermostat and furnace."])
+check("  and a sentence of the text that names the figure stays in the text",
+      any(t.startswith("Figure 15 shows the loop") for t in _fl), True)
+
+# A CAPTION IN THE BODY'S OWN SIZE, punctuated as a caption, inside a region that runs on below it
+# (the Coleman-boat paper; Wimmer's Fig. 2 with a rule under its caption). Mutations: drop
+# FIG_CAPTION_MARKED from the size test, or drop `within` -> nothing is lifted.
+_gp = _fd.new_page(width=595, height=842)
+for k in range(6):
+    _gp.insert_text((72, 90 + 14 * k), "Ordinary body text of the article that runs on across the column at length.", fontsize=11)
+_gp.draw_rect(pymupdf.Rect(150, 200, 400, 300), color=(0, 0, 0))
+_gp.insert_text((170, 250), "Macro-level association", fontsize=8)
+_gp.insert_text((150, 320), "Fig. 1. The social-ecological expansion of the diagram.", fontsize=11)
+_gp.draw_rect(pymupdf.Rect(140, 190, 410, 345), color=(0, 0, 0))   # a frame round figure and caption
+_P.FIGURES.clear()
+_gl = [l["text"] for l in _P.sheet_lines(_gp)]
+check("a caption in the body's size, punctuated as one and inside its region, is lifted with the figure's words",
+      ([t for t in _gl if "Macro-level" in t or t.startswith("Fig. 1.")], [f["caption"] for f in _P.FIGURES]),
+      ([], ["Fig. 1. The social-ecological expansion of the diagram."]))
+
+# A FIGURE ACROSS BOTH COLUMNS, ITS CAPTION SET IN TWO (Rena et al.'s Fig. 2, 9 Oct 2026): the cut
+# to the caption's column left the right half's labels and the caption's right half in the text, and
+# a blind reconstruction read them. A body line level with the caption in the other column is not the
+# caption's. Mutation: never find the level line -> the right label and half stay in the text.
+_hp = _fd.new_page(width=595, height=790)
+for k in range(8):
+    _hp.insert_text((51, 520 + 14 * k), "Body text of the left column, set at the body's size.", fontsize=10)
+    _hp.insert_text((306, 520 + 14 * k), "Body text of the right column, set at the body's size.", fontsize=10)
+_hp.draw_rect(pymupdf.Rect(134, 70, 462, 460), color=(0, 0, 0))
+_hp.insert_text((150, 120), "Glucose", fontsize=8)
+_hp.insert_text((410, 120), "Adenylate cyclase", fontsize=7)
+_hp.insert_text((51, 480), "Fig. 2 The multiple mechanism via which metformin", fontsize=8.5)
+_hp.insert_text((51, 490), "affects liver metabolism. (1) Uptake by OCT1.", fontsize=8.5)
+_hp.insert_text((306, 480), "lowering cAMP by another mechanism. (7) Glucagon", fontsize=8.5)
+_hp.insert_text((306, 490), "raises cAMP and activates PKA.", fontsize=8.5)
+_P.FIGURES.clear()
+_P.DOC_BODY[0] = 10.0
+_hl = [l["text"] for l in _P.sheet_lines(_hp)]
+_P.DOC_BODY[0] = None
+check("a figure across both columns loses its labels on both sides, and its two-column caption whole",
+      ([t for t in _hl if t in ("Glucose", "Adenylate cyclase") or t.startswith(("lowering cAMP", "raises cAMP", "Fig. 2"))],
+       [f["caption"] for f in _P.FIGURES]),
+      ([], ["Fig. 2 The multiple mechanism via which metformin affects liver metabolism. (1) Uptake by OCT1. "
+            "lowering cAMP by another mechanism. (7) Glucagon raises cAMP and activates PKA."]))
+check("  and the body text below it stays, in both columns",
+      sum(t.startswith("Body text of the") for t in _hl), 16)
+
+# A SPACE AFTER A LIGATURE THAT THE NEXT LETTER STARTS ON TOP OF IS NOT A SPACE (Meadows, 8 Oct 2026);
+# one with a real gap is. Mutation: drop the gap test -> "staﬀ members" is joined.
+class _Raw:
+    def __init__(self, chars): self.chars = chars
+    def get_text(self, kind): return {"blocks": [{"lines": [{"spans": [{"chars": self.chars}]}]}]}
+def _chars(spec):
+    out, x = [], 0.0
+    for c, w, back in spec:
+        out.append({"c": c, "bbox": (x, 0, x + w, 10)})
+        x += w - back
+    return out
+_spur = _chars([("a", 5, 0), ("\ufb01", 5, 0), (" ", 2.5, 2.5), ("c", 5, 0)])   # the space is kerned back
+_real = _chars([("f", 3, 0), ("\ufb00", 6, 0), (" ", 2.5, 0), ("m", 6, 0)])      # a real word space
+_b1 = [{"lines": [{"spans": [{"text": "a\ufb01 c", "size": 11}]}]}]
+_b2 = [{"lines": [{"spans": [{"text": "f\ufb00 m", "size": 11}]}]}]
+_P.close_ligature_spaces(_Raw(_spur), _b1); _P.close_ligature_spaces(_Raw(_real), _b2)
+check("a space a ligature's next letter overlaps is closed; a real word space is kept",
+      (_b1[0]["lines"][0]["spans"][0]["text"], _b2[0]["lines"][0]["spans"][0]["text"]), ("a\ufb01c", "f\ufb00 m"))
+
 print(f"\n{fails} FAILED" if fails else "\nall passed")
 sys.exit(1 if fails else 0)
