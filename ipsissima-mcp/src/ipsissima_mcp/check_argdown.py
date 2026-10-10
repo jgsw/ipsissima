@@ -518,7 +518,7 @@ PROFILE_VERSION = _profile_version()
 #: premise-conclusion lines;
 #: `isGroup` on headings.
 EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes",
-                   "question")
+                   "question", "mechanism")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
@@ -2432,7 +2432,10 @@ def _report(cli, path, a):
         _fm = _prov.read_frontmatter(path) or {}
     except ImportError:
         _fm = {}
-    draft = str(_fm.get("draft", "")).lower() in ("true", "1")
+    # IN THE READING POLICY, where docs/PROFILE.md documents it, or at the top, where this read it
+    # alone until 10 Oct 2026 -- so a `reconstruction: {draft: true}` was not read here at all.
+    _pol = _fm.get("reconstruction") if isinstance(_fm.get("reconstruction"), dict) else {}
+    draft = any(str(x).lower() in ("true", "1") for x in (_fm.get("draft"), _pol.get("draft")) if x is not None)
     if draft:
         print("   DRAFT: the frontmatter says this text is still being written. Findings about "
               "unfinishedness\n      are reported as observations rather than faults; every "

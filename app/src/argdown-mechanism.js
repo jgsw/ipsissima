@@ -295,9 +295,18 @@ function bridgeQuestions(M, b) {
   var froms = uniqList(P.map(function (x) { return x.from; })), tos = uniqList(P.map(function (x) { return x.to; }));
   var verb = function (x) { return verbOf(x, x.sign ? [x.sign] : [], x.isNull ? "null" : x.selects ? "selection" : x.assoc ? "association" : "step"); };
   var stepSaid = function (x) { var v = verb(x); return L(x.from) + (/^(no effect|selection effect|associated)$/.test(v) ? " → " + L(x.to) + ": " + v : " " + v + " " + L(x.to)); };
+  // Items are [said, about]: what is said, and the claim it rests on (null for the premises' own
+  // qualifications), each said once with the first claim kept -- mechanism.py's `uniq`.
+  var uniq = function (items) {
+    var seen = {}, out = [];
+    items.forEach(function (it) { if (it[0] != null && !seen[it[0]]) { seen[it[0]] = true; out.push(it); } });
+    return out;
+  };
+  var own = function (xs) { return xs.map(function (t) { return [t, null]; }); };
   // The text's other steps out of where the premises start, to states they do not reach.
   var onward = function (keep) {
-    return uniqList(TX.filter(function (y) { return !want[y.claim.title] && froms.indexOf(y.from) >= 0 && tos.indexOf(y.to) < 0 && keep(y.to); }).map(stepSaid));
+    return uniq(TX.filter(function (y) { return !want[y.claim.title] && froms.indexOf(y.from) >= 0 && tos.indexOf(y.to) < 0 && keep(y.to); })
+      .map(function (y) { return [stepSaid(y), y.claim.title]; }));
   };
   var probe = {
     backing: function () {
@@ -305,27 +314,27 @@ function bridgeQuestions(M, b) {
       P.forEach(function (x) { (by[x.tier] = by[x.tier] || []).push(x); });
       return TIERS.filter(function (t) { return by[t]; }).map(function (t) {
         var bases = uniqList(by[t].map(function (x) { return x.basis; }).filter(Boolean));
-        return (TIER_SAID[t] || t) + ": " + by[t].length + (bases.length && t === "evidence" ? " (" + bases.join(", ") + ")" : ""); });
+        return [(TIER_SAID[t] || t) + ": " + by[t].length + (bases.length && t === "evidence" ? " (" + bases.join(", ") + ")" : ""), null]; });
     },
     counter: function () {
       var out = [];
       P.forEach(function (x) {
-        (x.unless || []).forEach(function (u) { out.push(stepSaid(x) + " unless " + L(u)); });
-        (x.despite || []).forEach(function (u) { out.push(stepSaid(x) + " despite " + L(u)); });
-        if (x.regime) out.push(stepSaid(x) + ", regime: " + x.regime);
-        if (x.threshold) out.push(stepSaid(x) + " past a threshold: " + x.threshold);
+        (x.unless || []).forEach(function (u) { out.push([stepSaid(x) + " unless " + L(u), null]); });
+        (x.despite || []).forEach(function (u) { out.push([stepSaid(x) + " despite " + L(u), null]); });
+        if (x.regime) out.push([stepSaid(x) + ", regime: " + x.regime, null]);
+        if (x.threshold) out.push([stepSaid(x) + " past a threshold: " + x.threshold, null]);
       });
       M.steps.forEach(function (y) {
         if (want[y.claim.title] || tos.indexOf(y.to) < 0) return;
-        if (y.layer === "rival") out.push("a view the text reports: " + stepSaid(y));
+        if (y.layer === "rival") out.push(["a view the text reports: " + stepSaid(y), y.claim.title]);
         else if (y.layer === "text" && froms.indexOf(y.from) < 0 && P.some(function (x) { return x.to === y.to && x.sign && y.sign && (x.sign === "+" && y.sign === "-" || x.sign === "-" && y.sign === "+"); }))
-          out.push(stepSaid(y));
+          out.push([stepSaid(y), y.claim.title]);
       });
-      return uniqList(out);
+      return uniq(out);
     },
     rivals: function () {
-      return uniqList(M.steps.filter(function (y) { return y.layer === "rival" && (tos.indexOf(y.to) >= 0 || froms.indexOf(y.to) >= 0); })
-        .map(function (y) { return stepSaid(y) + (y.stance ? " (" + y.stance + ")" : ""); }));
+      return uniq(M.steps.filter(function (y) { return y.layer === "rival" && (tos.indexOf(y.to) >= 0 || froms.indexOf(y.to) >= 0); })
+        .map(function (y) { return [stepSaid(y) + (y.stance ? " (" + y.stance + ")" : ""), y.claim.title]; }));
     },
     stops: function () {
       if (!P.length) return [];
@@ -338,23 +347,23 @@ function bridgeQuestions(M, b) {
         if (!on.length) ends.push(v);
         on.forEach(function (x) { if (!seen[x.to]) queue.push(x.to); });
       }
-      return ends.length ? ["the chain goes on to " + ends.map(L).join(", ") + ", and stops there"] : ["the chain closes on itself: every state it reaches leads on"];
+      return [[ends.length ? "the chain goes on to " + ends.map(L).join(", ") + ", and stops there" : "the chain closes on itself: every state it reaches leads on", null]];
     },
     common: function () {
       var out = [];
       P.forEach(function (x) {
         M.ids.forEach(function (c) {
           if (c === x.from || c === x.to) return;
-          var a = TX.some(function (y) { return y.from === c && y.to === x.from; }), z = TX.some(function (y) { return y.from === c && y.to === x.to; });
-          if (a && z) out.push(L(c) + " leads to both " + L(x.from) + " and " + L(x.to));
+          var a = TX.filter(function (y) { return y.from === c && y.to === x.from; })[0], z = TX.filter(function (y) { return y.from === c && y.to === x.to; })[0];
+          if (a && z) out.push([L(c) + " leads to both " + L(x.from) + " and " + L(x.to), z.claim.title]);
         });
       });
-      return uniqList(out);
+      return uniq(out);
     },
     reverse: function () {
-      return uniqList(P.map(function (x) {
+      return uniq(P.map(function (x) {
         var back = M.steps.filter(function (y) { return y.from === x.to && y.to === x.from; })[0];
-        return back ? stepSaid(back) + " as well" : null; }).filter(Boolean));
+        return back ? [stepSaid(back) + " as well", back.claim.title] : null; }).filter(Boolean));
     },
     mediated: function () {
       var out = [];
@@ -365,11 +374,11 @@ function bridgeQuestions(M, b) {
         if (x.period) out.push(stepSaid(x) + ": " + x.period);
         if (x.scope) out.push(stepSaid(x) + ": " + (x.scope === "singular" ? "a single case" : "a general relation"));
       });
-      return uniqList(out);
+      return uniq(own(out));
     },
     measure: function () {
-      return uniqList(P.filter(function (x) { return (x.measuredBy || []).length; })
-        .map(function (x) { return stepSaid(x) + ", read from " + x.measuredBy.map(L).join(", "); }));
+      return uniq(own(P.filter(function (x) { return (x.measuredBy || []).length; })
+        .map(function (x) { return stepSaid(x) + ", read from " + x.measuredBy.map(L).join(", "); })));
     },
     kinds: function () {
       var out = [];
@@ -379,23 +388,23 @@ function bridgeQuestions(M, b) {
         var kd = (M.kinds || []).filter(function (y) { return y.id === String(k); })[0];
         out.push(L(v) + " is of the kind “" + (kd && kd.label || k) + "”" + (kd && kd.general && kd.general !== v ? ", whose general claim is " + L(kd.general) : kd && kd.general === v ? ", its general claim" : ""));
       });
-      return uniqList(out);
+      return uniq(own(out));
     },
     howmany: function () {
       if (!P.length) return [];
       var settings = uniqList(P.map(function (x) { return x.regime; }).filter(Boolean));
       var kinds = uniqList(froms.concat(tos).map(function (v) { var k = obj(M.states[v]).kind; return k == null ? null : String(k); }).filter(Boolean));
-      return [P.length + " step" + (P.length === 1 ? "" : "s") + (settings.length ? ", in " + settings.length + " setting" + (settings.length === 1 ? "" : "s") + ": " + settings.join("; ") : "") +
-              (kinds.length ? ", across " + kinds.length + " kind" + (kinds.length === 1 ? "" : "s") : "")];
+      return [[P.length + " step" + (P.length === 1 ? "" : "s") + (settings.length ? ", in " + settings.length + " setting" + (settings.length === 1 ? "" : "s") + ": " + settings.join("; ") : "") +
+              (kinds.length ? ", across " + kinds.length + " kind" + (kinds.length === 1 ? "" : "s") : ""), null]];
     },
     onecase: function () {
-      return P.filter(function (x) { return x.scope === "singular"; }).map(function (x) { return stepSaid(x) + " is about a single case"; });
+      return P.filter(function (x) { return x.scope === "singular"; }).map(function (x) { return [stepSaid(x) + " is about a single case", x.claim.title]; });
     },
     here: function () {
       var t = ((M.profile && M.profile.transfers) || []).filter(function (r) { return r[0] === b.argument && r[1] === b.step; })[0];
       if (!t || t[2].length < 2) return [];
-      return t[3].length ? t[3].map(function (u) { return "only " + (u[0] ? "under “" + u[0] + "”" : "where no setting is named") + ": " + L(u[1]) + " → " + L(u[2]) + (u[3] ? " (" + u[3] + ")" : ""); })
-                         : ["each step has its counterpart in every setting the premises name (" + t[2].join("; ") + ")"];
+      return t[3].length ? t[3].map(function (u) { return ["only " + (u[0] ? "under “" + u[0] + "”" : "where no setting is named") + ": " + L(u[1]) + " → " + L(u[2]) + (u[3] ? " (" + u[3] + ")" : ""), null]; })
+                         : [["each step has its counterpart in every setting the premises name (" + t[2].join("; ") + ")", null]];
     },
     support: function () {
       var out = [];
@@ -404,27 +413,28 @@ function bridgeQuestions(M, b) {
         (x.givenOn || []).forEach(function (g) { out.push(stepSaid(x) + " given " + L(g.state) + (g.value ? " = " + g.value : "")); });
         (x.given || []).forEach(function (g) { if (!(x.givenOn || []).some(function (o) { return condText(o) === g; })) out.push(stepSaid(x) + " given " + g); });
       });
-      return uniqList(out);
+      return uniq(own(out));
     },
     elsewhere: function () { return onward(function () { return true; }); },
     // An action's other GOALS are the outcomes its other steps reach; its SIDE EFFECTS, the rest.
     goals: function () { return onward(function (v) { return hasRole(M.states[v], "outcome"); }); },
     sideeffects: function () { return onward(function (v) { return !hasRole(M.states[v], "outcome"); }); },
     otherroutes: function () {
-      return uniqList(TX.filter(function (y) { return !want[y.claim.title] && tos.indexOf(y.to) >= 0 && froms.indexOf(y.from) < 0; }).map(stepSaid));
+      return uniq(TX.filter(function (y) { return !want[y.claim.title] && tos.indexOf(y.to) >= 0 && froms.indexOf(y.from) < 0; })
+        .map(function (y) { return [stepSaid(y), y.claim.title]; }));
     },
     blockers: function () {
       var out = [];
       M.steps.forEach(function (y) {
         if (!(want[y.claim.title] || (y.layer === "text" && froms.indexOf(y.from) >= 0))) return;
-        (y.unless || []).forEach(function (u) { out.push(stepSaid(y) + " unless " + L(u)); });
+        (y.unless || []).forEach(function (u) { out.push([stepSaid(y) + " unless " + L(u), y.claim.title]); });
       });
-      return uniqList(out);
+      return uniq(out);
     },
-    route: function () { return P.length ? [uniqList(P.map(stepSaid)).join("; ")] : []; },
+    route: function () { return P.length ? [[uniqList(P.map(stepSaid)).join("; "), null]] : []; },
     possible: function () {
-      return uniqList(froms.concat(tos).filter(function (v) { var st = obj(M.states[v]).status; return st === "possible" || st === "open"; })
-        .map(function (v) { return L(v) + (obj(M.states[v]).status === "open" ? " cannot be specified in advance, the text says" : " is a possibility the text sets out"); }));
+      return uniq(own(froms.concat(tos).filter(function (v) { var st = obj(M.states[v]).status; return st === "possible" || st === "open"; })
+        .map(function (v) { return L(v) + (obj(M.states[v]).status === "open" ? " cannot be specified in advance, the text says" : " is a possibility the text sets out"); })));
     },
     scope: function () {
       var out = [];
@@ -434,21 +444,52 @@ function bridgeQuestions(M, b) {
         if (x.period) out.push(stepSaid(x) + ": " + x.period);
         (x.given || []).forEach(function (g) { out.push(stepSaid(x) + " given " + g); });
       });
-      return uniqList(out);
+      return uniq(own(out));
     },
     order: function () {
       var ids = uniqList([].concat.apply([], P.map(function (x) { return x.chain || []; })));
       var cs = (M.chains || []).filter(function (c) { return ids.indexOf(c.id) >= 0 && c.order === "explanation"; });
-      if (cs.length) return cs.map(function (c) { return "the chain “" + (c.label || c.id) + "” runs in order of explanation, not of time"; });
-      return M.order === "explanation" ? ["the map's chains run in order of explanation, not of time"] : [];
+      if (cs.length) return cs.map(function (c) { return ["the chain “" + (c.label || c.id) + "” runs in order of explanation, not of time", null]; });
+      return M.order === "explanation" ? [["the map's chains run in order of explanation, not of time", null]] : [];
     }
   };
+  var taken = {}; (b.taken || []).forEach(function (t) { taken[t] = true; });
   return sch.questions.map(function (q, i) {
     var asks = (sch.asks || [])[i] || null;
-    if (!asks || !probe[asks]) return { question: q, asks: null, status: "reader", said: [] };
-    var said = probe[asks]();
-    return { question: q, asks: asks, status: said.length ? "recorded" : "none", said: said };
+    var has_ = asks && probe[asks];
+    var items = has_ ? probe[asks]() : [];
+    var status = !has_ ? "reader" : items.length ? "recorded" : "none";
+    var v = b.draft ? verdictOf(has_ ? asks : null, status, items, P, want, taken) : [null, null];
+    return { question: q, asks: has_ ? asks : null, status: status, said: items.map(function (it) { return it[0]; }), verdict: v[0], why: v[1] };
   });
+}
+/** A DRAFT'S VERDICT on one question (James, 10 Oct 2026: a map of the author's own draft may be
+ *  told how well each question is answered) -- mechanism.py's _verdict, word for word. A probe that
+ *  lists what bears against the move is answered where the argument takes each item up: the claim it
+ *  rests on is a reason in the argument, or one of its claims attacks it. */
+var CHALLENGE_PROBES = ["counter", "rivals", "otherroutes", "goals", "sideeffects", "blockers", "common", "reverse"];
+function verdictOf(asks, status, items, P, want, taken) {
+  if (status === "reader") return [null, null];
+  if (asks === "backing") {
+    var n = P.length, strong = P.filter(function (x) { return x.tier === "evidence" || x.tier === "argued"; }).length;
+    if (n && strong === n) return ["answered", "every step is tested or argued for"];
+    if (strong) return ["partly", (n - strong) + " of " + n + " steps only asserted"];
+    return ["open", n ? "every step is only asserted" : "no step to back"];
+  }
+  if (asks === "onecase") return status === "none" ? ["answered", "no general claim here rests on a single case"] : ["open", "a general claim rests on a single case"];
+  if (asks === "here") {
+    if (status === "none") return ["open", "the map names no second setting"];
+    if (items.length && items[0][0].indexOf("each step has its counterpart") === 0) return ["answered", "each step has its counterpart there"];
+    return ["partly", items.length + " step(s) with no counterpart in the other setting"];
+  }
+  if (status === "none") return ["open", "the draft does not take this up"];
+  if (CHALLENGE_PROBES.indexOf(asks) >= 0) {
+    var k = items.filter(function (it) { return it[1] == null || want[it[1]] || taken[it[1]]; }).length;
+    if (k === items.length) return ["answered", "each is taken up in the argument"];
+    if (k) return ["partly", k + " of " + items.length + " taken up in the argument; the rest are stated and not answered"];
+    return ["open", "stated in the map, not answered in the argument"];
+  }
+  return ["answered", "the map records it"];
 }
 function uniqList(xs) { var seen = {}, out = []; xs.forEach(function (x) { if (x != null && !seen[x]) { seen[x] = true; out.push(x); } }); return out; }
 
@@ -653,6 +694,18 @@ function model(graph) {
                                .map(function (s) { return [s.to, s.claim.title]; }));
   var stepTitles = {};
   (m.claims || []).forEach(function (c) { stepTitles[c.title] = true; });
+  // CLAIMS THAT STAND FOR A CHAIN (1.20) -- mechanism.py's chain_claims: a bridge whose premise is
+  // one has a step-bearing premise, and its questions read the chain's steps.
+  var CC = chainClaimsOf(m, chains);
+  CC.forEach(function (cc) { stepTitles[cc.title] = true; });
+  var ccOf = {}; CC.forEach(function (cc) { ccOf[cc.title] = cc; });
+  var expandInputs = function (ins) {
+    return uniqList(ins.concat([].concat.apply([], ins.map(function (t) { return ccOf[t] ? chainStepsOf(ccOf[t], ok).map(function (x) { return x.claim.title; }) : []; }))));
+  };
+  prof.chain_claims = CC.filter(function (cc) { return cc.ok; }).map(function (cc) {
+    var xs = chainStepsOf(cc, ok);
+    return [cc.title, cc.chain === true ? "*" : String(cc.chain), xs.length, TIERS.map(function (t) { return xs.filter(function (x) { return x.tier === t; }).length; })];
+  }).sort(cmpDeep);
   prof.bridges = uniqSorted((m.inferences || []).map(function (f) {
     var sch = bridgeScheme(f.rules);
     return sch ? [f.argument, f.step, sch.name, f.inputs.length, f.inputs.filter(function (t) { return stepTitles[t]; }).length] : null;
@@ -680,15 +733,20 @@ function model(graph) {
   // WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026) -- mechanism.py's bridge_questions.
   var forQ = { steps: ok, states: states, ids: ids, chains: chains, kinds: kinds, profile: prof,
                order: block.order == null ? "time" : String(block.order) };
+  // What the argument takes up, for a draft's verdicts: its reasons, and the claims it attacks.
+  var takenQ = (m.reasons || []).concat(m.attacked || []);
   prof.bridge_questions = (m.inferences || []).map(function (f) {
     var sch = bridgeScheme(f.rules);
-    return sch ? [f.argument, f.step, sch.name, bridgeQuestions(forQ, { argument: f.argument, step: f.step, scheme: sch.name, inputs: f.inputs })
-      .map(function (q) { return [q.question, q.asks, q.status, q.said]; })] : null;
+    return sch ? [f.argument, f.step, sch.name, bridgeQuestions(forQ, { argument: f.argument, step: f.step, scheme: sch.name, inputs: expandInputs(f.inputs),
+                                                                     draft: !!m.draft, taken: takenQ })
+      .map(function (q) { return [q.question, q.asks, q.status, q.said, q.verdict, q.why]; })] : null;
   }).filter(Boolean);
   // HOW FAR THE MECHANISM IS MAPPED (1.17): mechanism.py's depth and depth_reason.
   prof.depth = block.depth == null ? "full" : String(block.depth);
   prof.depth_reason = block.depth_reason == null ? null : String(block.depth_reason);
   return { levels: levels, ordering: ordering, actors: actors, states: states, ids: ids, steps: ok,
+           // A DRAFT, and what its argument takes up: for the verdicts on a bridge's questions.
+           draft: !!m.draft, taken: takenQ, chainClaims: CC,
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            form: form, constitutions: consts, reasoning: reasoning,
@@ -1771,6 +1829,24 @@ function signWord(signs) {
   if (signs.length > 1) return "mixed";
   return signs[0] === "+" ? "raises" : signs[0] === "-" ? "lowers" : signs[0] === "0" ? "no effect"
        : signs[0] === "which" ? "decides which" : signs[0];
+}
+
+/** CLAIMS THAT STAND FOR A CHAIN (profile 1.20) -- mechanism.py's chain_claims: each with its voice
+ *  and whether the chain it names is one the map declares (`ok`). */
+function chainClaimsOf(m, chains) {
+  var ids = (chains || []).map(function (c) { return c.id; });
+  return (m.chainClaims || []).map(function (c) {
+    var tags = c.tags || [];
+    var layer = tags.indexOf("appraisal") >= 0 ? "appraisal" : (tags.indexOf("reported") >= 0 || tags.indexOf("contested") >= 0) ? "rival" : "text";
+    var ch = c.chain;
+    var ok = !!m.block && (ch === true || ((typeof ch === "string" || typeof ch === "number") && ids.indexOf(String(ch)) >= 0));
+    return { title: c.title, id: c.id, chain: ch, layer: layer, ok: ok };
+  });
+}
+/** The steps such a claim stands for: the chain's steps in its own voice, or every step in that voice
+ *  for the whole mechanism -- mechanism.py's chain_steps. */
+function chainStepsOf(cc, steps) {
+  return steps.filter(function (s) { return s.layer === cc.layer && (cc.chain === true || s.chain.indexOf(String(cc.chain)) >= 0); });
 }
 
 /** WHAT EACH STEP SAYS, IN WORDS: the readback the editor sets under each `causes:` block
@@ -4532,7 +4608,21 @@ function create(container, graph, opts) {
     // WHAT THE STATES ARE TOLD AS (1.18), said once for the chart and never drawn as a box: Wilson
     // 2023's flows, "a process by which inputs are transformed into outputs" (James, 8 Oct 2026).
     (M.profile.idiom && M.profile.idiom.term ? '<div class="amech-q amech-idiom">Told as <b>' + esc(M.profile.idiom.term) + '</b>' +
-      (M.profile.idiom.means ? ': ' + esc(M.profile.idiom.means) : '') + (M.profile.idiom.pinpoint ? ' (' + esc(M.profile.idiom.pinpoint) + ')' : '') + '</div>' : '');
+      (M.profile.idiom.means ? ': ' + esc(M.profile.idiom.means) : '') + (M.profile.idiom.pinpoint ? ' (' + esc(M.profile.idiom.pinpoint) + ')' : '') + '</div>' : '') +
+    // WHERE THE ARGUMENT TAKES THIS CHAIN UP AS ONE ACCOUNT (1.20): the claims that stand for it.
+    (function () {
+      var mine = ((FULL && FULL.chainClaims) || []).filter(function (cc) {
+        return cc.ok && (M.chain ? cc.chain !== true && String(cc.chain) === M.chain.id : cc.chain === true); });
+      return mine.length ? '<div class="amech-q amech-account">In the argument as ' + mine.map(function (cc) {
+        return '\u2039' + esc(cc.title) + '\u203a' + (cc.layer === "rival" ? ' (a view the text reports)' : '') +
+          (cc.id != null && opts.onClaim ? ' <button type="button" data-claim-account="' + esc(cc.title) + '">Show in the text</button>' : ''); }).join('; ') + '</div>' : '';
+    })();
+  head.addEventListener("click", function (ev) {
+    var t = /** @type {Element} */ (ev.target), at = t.getAttribute && t.getAttribute("data-claim-account");
+    if (!at || !opts.onClaim) return;
+    var cc = ((FULL && FULL.chainClaims) || []).filter(function (x) { return x.title === at; })[0];
+    if (cc && cc.id != null) opts.onClaim({ title: cc.title, id: cc.id });
+  });
   container.appendChild(head);
   var bar = document.createElement("div"); bar.className = "amech-bar";
   bar.innerHTML =

@@ -1462,6 +1462,34 @@ def _goal(block):
     return str(g) if g is not None and str(g) in GOALS else None
 
 
+def chain_claims(doc):
+    """Every claim that stands for a chain (profile 1.20): [{title, chain, layer}], `chain` the
+    declared id as written, or True for the whole mechanism. Proposal B of NOTES-integration.md
+    (James's go, 10 Oct 2026): the account a text gives, as one node in the argument -- supported
+    as one account, attacked by a rival, a premise of a bridge, whose steps are then its steps."""
+    import argdown_provenance as prov
+    appraisal = prov.appraisal_titles(doc)
+    out = []
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            d = _data(node)
+            if "mechanism" not in d:
+                continue
+            tags = prov.node_tags(node)
+            layer = ("appraisal" if title in appraisal
+                     else "rival" if ("reported" in tags or "contested" in tags) else "text")
+            out.append(dict(title=title, chain=d["mechanism"], layer=layer))
+    return out
+
+
+def chain_steps(cc, steps_):
+    """The steps a claim standing for a chain stands for: the chain's steps in the claim's own voice --
+    the text's, or (a claim tagged #reported) the view it reports -- or every step in that voice for
+    the whole mechanism (`true`)."""
+    ch = cc["chain"]
+    return [s for s in steps_ if s["layer"] == cc["layer"] and (ch is True or str(ch) in s["chain"])]
+
+
 def analyse(fm, doc):
     """(findings, profile) for a file. Findings are (severity, check, message, where).
 
@@ -1499,7 +1527,8 @@ def analyse(fm, doc):
                                   "fix": "keep the appraisal outside the author's arguments: "
                                          "attach it with +> or -> instead"}))
 
-    if block is None and not all_steps and not constitutions(doc, appraisal):
+    all_cc = chain_claims(doc)
+    if block is None and not all_steps and not constitutions(doc, appraisal) and not all_cc:
         return findings, None
     if block is None and all_steps:
         findings.append(("!", "mechanism",
@@ -1562,6 +1591,22 @@ def analyse(fm, doc):
                 constituted[c["src"]].append(w)
 
     chains = _chains(block)
+    # A CLAIM THAT STANDS FOR A CHAIN (1.20): the chain must be one the front matter declares.
+    for cc in all_cc:
+        ch, where = cc["chain"], {"title": cc["title"]}
+        if block is None:
+            findings.append(("!", "mechanism", f"`mechanism: {ch}` on a claim stands for a chain, and the front matter "
+                             f"declares no `mechanism:` block", where))
+        elif ch is True:
+            pass
+        elif isinstance(ch, bool) or not isinstance(ch, (str, int, float)):
+            findings.append(("!", "mechanism", "`mechanism:` on a claim is a chain id, or `true` for the whole "
+                             "mechanism", where))
+        elif str(ch) not in chains:
+            findings.append(("!", "mechanism",
+                             f"`mechanism: {ch}` is not one of the chains declared under `mechanism: chains:`" if chains else
+                             f"`mechanism: {ch}` names a chain, but the front matter declares no `chains:` -- "
+                             f"`mechanism: true` stands for the whole mechanism", where))
     for s in all_steps:
         for c in s["chain"]:
             if c not in chains:
@@ -2013,7 +2058,8 @@ def analyse(fm, doc):
             findings.append(("?", "mechanism", f"chain `{cp['id']}` is declared but no step of the "
                              f"text's own is marked `chain: {cp['id']}`", {"chain": cp["id"]}))
     # BRIDGES (1.15): a named causal scheme with no step among its premises bridges nothing.
-    step_titles = {s["title"] for s in all_steps} | {c["title"] for c in constitutions(doc, appraisal)}
+    step_titles = ({s["title"] for s in all_steps} | {c["title"] for c in constitutions(doc, appraisal)}
+                   | {cc["title"] for cc in all_cc})
     for arg, step, scheme, inputs, with_steps in bridges_of(doc, step_titles):
         if not with_steps:
             findings.append(("?", "mechanism", f"<{arg}> step {step} names the bridge `{scheme}`, and none of its "
@@ -2044,10 +2090,25 @@ def analyse(fm, doc):
         _d, _why = depth_of(block)
         profile = {**profile, "bridges": profile_bridges, "depth": _d, "depth_reason": _why,
                    "transfers": sorted(transfers)}
-        # WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026): see bridge_questions.
+        # WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026): see bridge_questions. What the
+        # argument TAKES UP, for a draft's verdicts: every claim that is a reason in it, or that one
+        # of its claims attacks, contradicts or undercuts (the appraisal's relations left out).
+        _edges = prov.title_edges(prov.without_appraisal(doc))
+        _taken = {a for a, b, k in _edges} | {b for a, b, k in _edges if k in ATTACK_KINDS}
+        # A premise that stands for a chain (1.20) brings the chain's steps with it.
+        _cc_of = {cc["title"]: cc for cc in all_cc}
+        _expand = lambda ins: _uniq(list(ins) + [x["title"] for t in ins if t in _cc_of for x in chain_steps(_cc_of[t], ok)])
         profile["bridge_questions"] = [
-            [arg, step, scheme, bridge_questions(ok, states, block, sorted(transfers), arg, step, scheme, inputs)]
+            [arg, step, scheme, bridge_questions(ok, states, block, sorted(transfers), arg, step, scheme, _expand(inputs),
+                                                 draft=is_draft(fm), taken=_taken)]
             for arg, step, scheme, inputs, _w in bridges_of(doc, step_titles)]
+        # Each claim that stands for a chain: [title, chain ("*" for the whole), steps, tiers].
+        profile["chain_claims"] = sorted(
+            [cc["title"], "*" if cc["chain"] is True else str(cc["chain"]), len(chain_steps(cc, ok)),
+             [sum(1 for x in chain_steps(cc, ok) if x["tier"] == t) for t in TIERS]]
+            for cc in all_cc if block is not None and (cc["chain"] is True or (isinstance(cc["chain"], (str, int, float))
+                                                                               and not isinstance(cc["chain"], bool)
+                                                                               and str(cc["chain"]) in chains)))
     return findings, profile
 
 
@@ -2104,15 +2165,69 @@ def _uniq(xs):
     return out
 
 
-def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs):
+#: WHICH WAY A PROBE POINTS, for a draft's verdicts (10 Oct 2026). A CHALLENGE lists what bears
+#: against the move -- a blocker, a rival account, another route, another consequence -- and is
+#: answered where the argument takes each up. ONE CASE is answered where nothing is recorded. The
+#: rest list what the move needs, and are answered where the map records it.
+CHALLENGE_PROBES = ("counter", "rivals", "otherroutes", "goals", "sideeffects", "blockers", "common", "reverse")
+ATTACK_KINDS = ("attack", "undercut", "contradictory", "contrary")
+
+
+def is_draft(fm):
+    """Whether the front matter says the text is still being written: `draft: true` in the reading
+    policy (`reconstruction:`), as the profile documents it, or at the top of the front matter, where
+    the checker has always read it."""
+    fm = fm if isinstance(fm, dict) else {}
+    pol = fm.get("reconstruction") if isinstance(fm.get("reconstruction"), dict) else {}
+    return any(str(x).lower() in ("true", "1") for x in (fm.get("draft"), pol.get("draft")) if x is not None)
+
+
+def _verdict(asks, status, items, P, inputs, taken):
+    """A draft's verdict on one question: (answered | partly | open, why), or (None, None) for a
+    question only a reader can answer. `items` are (said, about) -- `about` the claim an item
+    rests on -- and `taken` the claims the argument uses or answers."""
+    if status == "reader":
+        return None, None
+    if asks == "backing":
+        n = len(P)
+        strong = sum(1 for x in P if x["tier"] in ("evidence", "argued"))
+        if n and strong == n:
+            return "answered", "every step is tested or argued for"
+        if strong:
+            return "partly", f"{n - strong} of {n} steps only asserted"
+        return "open", "every step is only asserted" if n else "no step to back"
+    if asks == "onecase":
+        return (("answered", "no general claim here rests on a single case") if status == "none"
+                else ("open", "a general claim rests on a single case"))
+    if asks == "here":
+        if status == "none":
+            return "open", "the map names no second setting"
+        if items and items[0][0].startswith("each step has its counterpart"):
+            return "answered", "each step has its counterpart there"
+        return "partly", f"{len(items)} step(s) with no counterpart in the other setting"
+    if status == "none":
+        return "open", "the draft does not take this up"
+    if asks in CHALLENGE_PROBES:
+        k = sum(1 for _t, about in items if about is None or about in inputs or about in taken)
+        if k == len(items):
+            return "answered", "each is taken up in the argument"
+        if k:
+            return "partly", f"{k} of {len(items)} taken up in the argument; the rest are stated and not answered"
+        return "open", "stated in the map, not answered in the argument"
+    return "answered", "the map records it"
+
+
+def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs, draft=False, taken=()):
     """WHAT THE MAP SAYS TO A BRIDGE'S QUESTIONS (10 Oct 2026; NOTES-integration.md, Proposal A).
 
     Each scheme's question names in `asks` what in the map bears on it -- a blocker, a rival account,
-    another route -- and this reads it off the map for one bridge: [question, asks, status, said],
-    status `recorded` (the map records something on it), `none` (the map records nothing: the text
-    may be silent, or the map may have missed it) or `reader` (only a reader can answer). It
-    REPORTS; it does not judge whether the move succeeds. argdown-mechanism.js's bridgeQuestions
-    gives the same answers, and test_mechanism_view.mjs holds the two together."""
+    another route -- and this reads it off the map for one bridge: [question, asks, status, said,
+    verdict, why], status `recorded` (the map records something on it), `none` (the map records
+    nothing: the text may be silent, or the map may have missed it) or `reader` (only a reader can
+    answer). It REPORTS; it does not judge whether the move succeeds -- except in a DRAFT, where the
+    author asked to be told (James, 10 Oct 2026): then `verdict` is answered, partly or open, and
+    `why` says on what grounds (`_verdict`). Otherwise both are None. argdown-mechanism.js's
+    bridgeQuestions gives the same answers, and test_mechanism_lint.mjs holds the two together."""
     sch = BRIDGES.get(str(scheme).lower())
     if not sch:
         return []
@@ -2128,11 +2243,20 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs):
         return lab(x["src"]) + (" \u2192 " + lab(x["dst"]) + ": " + v if v in ("no effect", "selection effect", "associated")
                                 else " " + v + " " + lab(x["dst"]))
 
+    def uniq(items):
+        """Items (said, about), each said once, the first claim it rests on kept."""
+        out, seen = [], set()
+        for t, a in items:
+            if t is not None and t not in seen:
+                seen.add(t)
+                out.append((t, a))
+        return out
+
     def is_outcome(v):
         return "outcome" in roles_of(states.get(v))
 
     def onward(keep):
-        return _uniq([said(y) for y in TX if y["title"] not in want and y["src"] in froms and y["dst"] not in tos and keep(y["dst"])])
+        return uniq([(said(y), y["title"]) for y in TX if y["title"] not in want and y["src"] in froms and y["dst"] not in tos and keep(y["dst"])])
 
     def given_on(x):
         return [g for g in x["given_raw"] if isinstance(g, dict) and str(g.get("state")) in states]
@@ -2143,8 +2267,187 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs):
             xs = [x for x in P if x["tier"] == t]
             if xs:
                 bases = _uniq([x["basis"] for x in xs if x["basis"]])
-                out.append(f"{_TIER_SAID.get(t, t)}: {len(xs)}" + (f" ({', '.join(bases)})" if bases and t == "evidence" else ""))
+                out.append((f"{_TIER_SAID.get(t, t)}: {len(xs)}" + (f" ({', '.join(bases)})" if bases and t == "evidence" else ""), None))
         return out
+
+    def counter():
+        out = []
+        for x in P:
+            out += [(said(x) + " unless " + lab(u), None) for u in x["unless"]]
+            out += [(said(x) + " despite " + lab(u), None) for u in x["despite"]]
+            if x["regime"]:
+                out.append((said(x) + ", regime: " + x["regime"], None))
+            if x["threshold"]:
+                out.append((said(x) + " past a threshold: " + x["threshold"], None))
+        for y in ok:
+            if y["title"] in want or y["dst"] not in tos:
+                continue
+            if y["layer"] == "rival":
+                out.append(("a view the text reports: " + said(y), y["title"]))
+            elif y["layer"] == "text" and y["src"] not in froms and any(
+                    x["dst"] == y["dst"] and x["sign"] and y["sign"] and {x["sign"], y["sign"]} == {"+", "-"} for x in P):
+                out.append((said(y), y["title"]))
+        return uniq(out)
+
+    def rivals():
+        return uniq([(said(y) + (f" ({y['stance']})" if y["stance"] else ""), y["title"]) for y in ok
+                     if y["layer"] == "rival" and (y["dst"] in tos or y["dst"] in froms)])
+
+    def stops():
+        if not P:
+            return []
+        seen, ends, queue = set(), [], list(tos)
+        while queue:
+            v = queue.pop(0)
+            if v in seen:
+                continue
+            seen.add(v)
+            on = [x for x in TX if x["src"] == v and x["dst"] != v]
+            if not on:
+                ends.append(v)
+            queue += [x["dst"] for x in on if x["dst"] not in seen]
+        return ([(f"the chain goes on to {', '.join(lab(v) for v in ends)}, and stops there", None)] if ends
+                else [("the chain closes on itself: every state it reaches leads on", None)])
+
+    def common():
+        out = []
+        for x in P:
+            for c in states:
+                if c in (x["src"], x["dst"]):
+                    continue
+                a = next((y for y in TX if y["src"] == c and y["dst"] == x["src"]), None)
+                z = next((y for y in TX if y["src"] == c and y["dst"] == x["dst"]), None)
+                if a and z:
+                    out.append((f"{lab(c)} leads to both {lab(x['src'])} and {lab(x['dst'])}", z["title"]))
+        return uniq(out)
+
+    def reverse():
+        out = []
+        for x in P:
+            back = next((y for y in ok if y["src"] == x["dst"] and y["dst"] == x["src"]), None)
+            if back:
+                out.append((said(back) + " as well", back["title"]))
+        return uniq(out)
+
+    def mediated():
+        out = []
+        for x in P:
+            if x["via"]:
+                out.append(said(x) + " through " + " \u2192 ".join(lab(v) for v in x["via"]))
+            if x["regime"]:
+                out.append(said(x) + ", regime: " + x["regime"])
+            if x["threshold"]:
+                out.append(said(x) + " past a threshold: " + x["threshold"])
+            if x["period"]:
+                out.append(said(x) + ": " + x["period"])
+            if x["scope"]:
+                out.append(said(x) + ": " + ("a single case" if x["scope"] == "singular" else "a general relation"))
+        return uniq([(t, None) for t in out])
+
+    def measure():
+        return uniq([(said(x) + ", read from " + ", ".join(lab(v) for v in x["measured_by"]), None) for x in P if x["measured_by"]])
+
+    raw_kinds = blk.get("kinds") if isinstance(blk.get("kinds"), dict) else {}
+
+    def kinds():
+        out = []
+        for v in froms + tos:
+            k = (states.get(v) if isinstance(states.get(v), dict) else {}).get("kind")
+            if k is None:
+                continue
+            kd = next((dict(label=(x or {}).get("label") if isinstance(x, dict) else None,
+                            general=None if not isinstance(x, dict) or x.get("general") is None else str(x.get("general")))
+                       for kid, x in raw_kinds.items() if str(kid) == str(k)), None)
+            name = (kd and kd["label"]) or k
+            tail = (f", whose general claim is {lab(kd['general'])}" if kd and kd["general"] and kd["general"] != v
+                    else ", its general claim" if kd and kd["general"] == v else "")
+            out.append((f"{lab(v)} is of the kind \u201c{name}\u201d{tail}", None))
+        return uniq(out)
+
+    def howmany():
+        if not P:
+            return []
+        settings = _uniq([x["regime"] for x in P if x["regime"]])
+        ks = _uniq([str((states.get(v) if isinstance(states.get(v), dict) else {}).get("kind"))
+                    for v in froms + tos if (states.get(v) if isinstance(states.get(v), dict) else {}).get("kind") is not None])
+        return [(f"{len(P)} step{'' if len(P) == 1 else 's'}"
+                 + (f", in {len(settings)} setting{'' if len(settings) == 1 else 's'}: {'; '.join(settings)}" if settings else "")
+                 + (f", across {len(ks)} kind{'' if len(ks) == 1 else 's'}" if ks else ""), None)]
+
+    def onecase():
+        return [(said(x) + " is about a single case", x["title"]) for x in P if x["scope"] == "singular"]
+
+    def here():
+        t = next((r for r in transfers if r[0] == arg and r[1] == step), None)
+        if not t or len(t[2]) < 2:
+            return []
+        if t[3]:
+            return [("only " + (f"under \u201c{u[0]}\u201d" if u[0] else "where no setting is named")
+                     + f": {lab(u[1])} \u2192 {lab(u[2])}" + (f" ({u[3]})" if u[3] else ""), None) for u in t[3]]
+        return [(f"each step has its counterpart in every setting the premises name ({'; '.join(t[2])})", None)]
+
+    def support():
+        out = []
+        for x in P:
+            if x["jointly"]:
+                out.append(said(x) + " only together with " + ", ".join(lab(v) for v in x["jointly"]))
+            gon = given_on(x)
+            for g in gon:
+                out.append(said(x) + " given " + lab(str(g.get("state"))) + (f" = {g['value']}" if g.get("value") not in (None, "") else ""))
+            texts = {_cond(g) for g in gon}
+            out += [said(x) + " given " + g for g in x["given"] if g not in texts]
+        return uniq([(t, None) for t in out])
+
+    def blockers():
+        out = []
+        for y in ok:
+            if y["title"] in want or (y["layer"] == "text" and y["src"] in froms):
+                out += [(said(y) + " unless " + lab(u), y["title"]) for u in y["unless"]]
+        return uniq(out)
+
+    def possible():
+        out = []
+        for v in froms + tos:
+            st = (states.get(v) if isinstance(states.get(v), dict) else {}).get("status")
+            if st in ("possible", "open"):
+                out.append((lab(v) + (" cannot be specified in advance, the text says" if st == "open" else " is a possibility the text sets out"), None))
+        return uniq(out)
+
+    def scope():
+        out = []
+        for x in P:
+            if x["scope"]:
+                out.append(said(x) + ": " + ("a single case" if x["scope"] == "singular" else "a general relation"))
+            if x["regime"]:
+                out.append(said(x) + ", regime: " + x["regime"])
+            if x["period"]:
+                out.append(said(x) + ": " + x["period"])
+            out += [said(x) + " given " + g for g in x["given"]]
+        return uniq([(t, None) for t in out])
+
+    def order():
+        ids = _uniq([c for x in P for c in x["chain"]])
+        cs = [(cid, c) for cid, c in _chains(block).items() if cid in ids and c["order"] == "explanation"]
+        if cs:
+            return [(f"the chain \u201c{c['label'] or cid}\u201d runs in order of explanation, not of time", None) for cid, c in cs]
+        return [("the map's chains run in order of explanation, not of time", None)] if (_order(block) or "time") == "explanation" else []
+
+    probes = dict(backing=backing, counter=counter, rivals=rivals, stops=stops, common=common, reverse=reverse,
+                  mediated=mediated, measure=measure, kinds=kinds, howmany=howmany, onecase=onecase, here=here,
+                  support=support, blockers=blockers, possible=possible, scope=scope, order=order,
+                  route=lambda: [("; ".join(_uniq([said(x) for x in P])), None)] if P else [],
+                  otherroutes=lambda: uniq([(said(y), y["title"]) for y in TX if y["title"] not in want and y["dst"] in tos and y["src"] not in froms]),
+                  elsewhere=lambda: onward(lambda v: True), goals=lambda: onward(is_outcome),
+                  sideeffects=lambda: onward(lambda v: not is_outcome(v)))
+    taken = set(taken)
+    out = []
+    for i, q in enumerate(sch["questions"]):
+        asks = (sch.get("asks") or [None] * len(sch["questions"]))[i]
+        items = probes[asks]() if asks in probes else []
+        status = "reader" if asks not in probes else "recorded" if items else "none"
+        verdict, why = _verdict(asks if asks in probes else None, status, items, P, want, taken) if draft else (None, None)
+        out.append([q, asks if asks in probes else None, status, [t for t, _a in items], verdict, why])
+    return out
 
     def counter():
         out = []
@@ -2871,13 +3174,26 @@ def census(profile):
             lines.append(f"      open    {g} -- left open by the sketch")
         else:
             lines.append(f"      ? gap   {g}")
+    for title, ch, n, tiers in p.get("chain_claims", []):
+        said = ", ".join(f"{k} {w}" for k, w in zip(tiers, ("tested", "argued", "asserted", "imputed")) if k)
+        lines.append(f"      account <{title}> stands for {'the whole mechanism' if ch == '*' else f'chain `{ch}`'}: "
+                     f"{n} step(s)" + (f" ({said})" if said else ""))
     qs_of = {(a, st): qs for a, st, _sch, qs in p.get("bridge_questions", [])}
     for arg, step, scheme, n_in, n_steps in p.get("bridges", []):
         lines.append(f"      bridge  <{arg}> step {step}: {scheme}, {n_steps} of {n_in} premise(s) stating a step")
         # ITS QUESTIONS, as the map answers them: the ones it records nothing on are named, since
         # those are where the text may be silent -- or the map may have missed what it says.
         qs = qs_of.get((arg, step), [])
-        if qs:
+        if qs and any(len(q) > 4 and q[4] for q in qs):
+            # A DRAFT asked to be told how well each question is answered.
+            cnt = lambda v: sum(1 for q in qs if q[4] == v)
+            n_read = sum(1 for q in qs if q[2] == "reader")
+            lines.append(f"              questions (a draft, so judged): {cnt('answered')} answered, {cnt('partly')} partly, "
+                         f"{cnt('open')} not answered" + (f", {n_read} for the reader" if n_read else ""))
+            for q in qs:
+                if q[4] in ("partly", "open"):
+                    lines.append(f"              - {'partly' if q[4] == 'partly' else 'not answered'}: {q[0]} ({q[5]})")
+        elif qs:
             n_rec = sum(1 for q in qs if q[2] == "recorded")
             n_none = [q for q in qs if q[2] == "none"]
             n_read = sum(1 for q in qs if q[2] == "reader")

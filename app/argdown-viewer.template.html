@@ -879,6 +879,10 @@ body.fs #fsexit{display:inline-flex}
 #brfqs li{margin:.35rem 0}
 #brfqs .said{margin:.15rem 0 0;padding-left:1rem;list-style:disc;color:var(--fg)}
 #brfqs .none,#brfqs .reader{color:var(--fg-dim);font-style:italic;font-size:.92em}
+#brfqs .verdict{font-size:.88em;margin-top:.1rem;font-weight:600}
+#brfqs .v-answered{color:var(--syn-relation, #15803d)}
+#brfqs .v-partly{color:var(--syn-number, #8a6d1f)}
+#brfqs .v-open{color:var(--syn-invalid, #b91c1c)}
 #brffoot{display:flex;align-items:center;gap:.6rem;padding:.45rem .8rem;border-top:1px solid var(--line);font-size:.85em}
 #brffoot .brfnote{opacity:.75}
 #about{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
@@ -1959,7 +1963,7 @@ function openingDepth(graph){
     // hands the reader's own rung back and must keep it.
     readableScale: READABLE_SCALE,
     onLocate: msLocate,
-    onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow,
+    onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
     onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
@@ -6625,7 +6629,7 @@ function redrawFrom(graph){
   if (LIVE) { LIVE.destroy(); LIVE = null; }
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
-    onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow,
+    onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
@@ -7806,12 +7810,21 @@ function bridgeShow(b){
                                       title: "These steps in the Mechanism view: click to open it there" } });
   fig.hidden = !BRF;
   var M = MV.model(g);
-  var qs = M ? MV.bridgeQuestions(M, { argument: b.argument, step: b.step, scheme: sch.name, inputs: inf.inputs }) : [];
+  var qs = M ? MV.bridgeQuestions(M, { argument: b.argument, step: b.step, scheme: sch.name, inputs: inf.inputs,
+                                      draft: M.draft, taken: M.taken }) : [];
   var ol = $("brfqs");
   ol.textContent = "";
   qs.forEach(function(q){
     var li = document.createElement("li");
     var t = document.createElement("div"); t.textContent = q.question; li.appendChild(t);
+    // A DRAFT IS TOLD HOW WELL (James, 10 Oct 2026): answered, partly, or not, and on what grounds.
+    if (q.verdict) {
+      var v = document.createElement("div");
+      v.className = "verdict v-" + q.verdict;
+      v.textContent = (q.verdict === "answered" ? "\u2713 Answered" : q.verdict === "partly" ? "\u25d0 Partly answered" : "\u25cb Not answered") +
+                      (q.why ? ": " + q.why : "");
+      li.appendChild(v);
+    }
     if (q.status === "recorded") {
       var ul = document.createElement("ul"); ul.className = "said";
       q.said.forEach(function(x){ var it = document.createElement("li"); it.textContent = x; ul.appendChild(it); });
@@ -7833,7 +7846,9 @@ function bridgeShow(b){
   open.onclick = function(){ bridgeOpen(BRF_TITLES); };
   foot.appendChild(open);
   var note = document.createElement("span"); note.className = "brfnote";
-  note.textContent = BRF ? "A bridge is a defeasible causal move, never checked for validity. This says what the map records; whether the move succeeds is yours to judge."
+  note.textContent = BRF ? (M && M.draft
+      ? "A draft, so each question is judged: answered where the argument takes up what the map records on it. Whether the move succeeds is still yours to judge."
+      : "A bridge is a defeasible causal move, never checked for validity. This says what the map records; whether the move succeeds is yours to judge.")
                          : "None of its premises states a step, so there is nothing to draw.";
   foot.appendChild(note);
   $("brfclose").focus({ preventScroll: true });
@@ -7873,6 +7888,52 @@ function cardStepsShow(d){
   open.onclick = function(){ bridgeOpen(BRF_TITLES); };
   foot.appendChild(open);
   $("brfclose").focus({ preventScroll: true });
+}
+/* A CLAIM THAT STANDS FOR A CHAIN (profile 1.20): its "↝ n" opens the chain it stands for -- the
+ * account as one node, and here the account drawn, with each of its steps in words. */
+function chainClaimShow(cof){
+  var g = CURRENT_GRAPH, MV = window.ArgdownMechanism;
+  if (!g || !g.mechanism || !MV || !cof) return;
+  var M = MV.model(g);
+  var cc = M ? (M.chainClaims || []).filter(function(x){ return x.title === cof.title; })[0] : null;
+  if (!cc || !cc.ok) return;
+  var chainId = cc.chain === true ? null : String(cc.chain);
+  var ch = chainId ? (M.chains || []).filter(function(c){ return c.id === chainId; })[0] : null;
+  var steps = M.steps.filter(function(s){ return s.layer === cc.layer && (cc.chain === true || s.chain.indexOf(chainId) >= 0); });
+  BRF_TITLES = steps.map(function(s){ return s.claim.title; });
+  $("brfhead").textContent = "\u2039" + cc.title + "\u203a stands for " + (ch ? "\u201c" + (ch.label || ch.id) + "\u201d" : "the whole mechanism");
+  var tiers = {}; steps.forEach(function(s){ tiers[s.tier] = (tiers[s.tier] || 0) + 1; });
+  var said = ["evidence", "argued", "asserted", "imputed"].filter(function(k){ return tiers[k]; }).map(function(k){
+    return tiers[k] + " " + ({ evidence: "tested", argued: "argued for", asserted: "asserted", imputed: "imputed" })[k]; });
+  $("brfmove").textContent = (ch && ch.question ? ch.question + " " : "") + steps.length + (steps.length === 1 ? " step" : " steps") +
+    (said.length ? ": " + said.join(", ") + "." : ".") + (cc.layer === "rival" ? " A view the text reports." : "");
+  $("brf").hidden = false;
+  if (BRF) { BRF.destroy(); BRF = null; }
+  var fig = $("brffig");
+  fig.textContent = "";
+  // The steps it stands for, in its own voice; the Mechanism view shows the chain with the rest.
+  BRF = MV.create(fig, g, { figure: { titles: BRF_TITLES, onOpen: function(){ chainOpen(chainId); },
+                                      title: "This chain in the Mechanism view: click to open it there" } });
+  fig.hidden = !BRF;
+  $("brfqh").textContent = "What each step says";
+  var ol = $("brfqs");
+  ol.textContent = "";
+  var lineOf = {};
+  (MV.readback(g) || []).forEach(function(r){ r.lines.forEach(function(l, i){ lineOf[r.title + "#" + i] = l; }); });
+  steps.forEach(function(s){ if (lineOf[s.id]) { var li = document.createElement("li"); li.textContent = lineOf[s.id]; ol.appendChild(li); } });
+  var foot = $("brffoot");
+  foot.textContent = "";
+  var open = document.createElement("button");
+  open.type = "button"; open.textContent = "Open in the Mechanism view";
+  open.disabled = !BRF;
+  open.onclick = function(){ chainOpen(chainId); };
+  foot.appendChild(open);
+  $("brfclose").focus({ preventScroll: true });
+}
+function chainOpen(chainId){
+  bridgeHide();
+  setArrangement("mechanism");
+  if (MECH && typeof MECH.setChain === "function") MECH.setChain(chainId);
 }
 function bridgeOpen(titles){
   bridgeHide();

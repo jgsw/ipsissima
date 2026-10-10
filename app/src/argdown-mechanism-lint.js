@@ -367,7 +367,8 @@ function findings(graph) {
     (c.causes || []).forEach(function (raw, i) { steps.push({ claim: c, i: i, raw: isDict(raw) ? raw : {}, layer: layer }); });
     (c.constitutes || []).forEach(function (raw, i) { consts.push({ claim: c, i: i, raw: isDict(raw) ? raw : {}, layer: layer }); });
   });
-  if (block == null && !steps.length && !consts.length) return [];
+  var CC = mech.chainClaims || [];
+  if (block == null && !steps.length && !consts.length && !CC.length) return [];
   if (block == null && steps.length)
     out.push(F("!", steps.length + " step(s) are marked with `causes:` but the front matter declares no `mechanism:` block, so no state they name exists",
                { claim: steps[0].claim.title, rel: "causes", i: steps[0].i }));
@@ -402,6 +403,18 @@ function findings(graph) {
   });
 
   var chainIds = isDict(block) && isDict(block.chains) ? Object.keys(block.chains).map(py) : [];
+  // A CLAIM THAT STANDS FOR A CHAIN (1.20) -- mechanism.py's check in analyse.
+  CC.forEach(function (cc) {
+    var ch = cc.chain, at = { claim: cc.title, rel: "mechanism", key: null, onValue: true };
+    if (block == null)
+      out.push(F("!", "`mechanism: " + py(ch) + "` on a claim stands for a chain, and the front matter declares no `mechanism:` block", at));
+    else if (ch === true) { /* the whole mechanism */ }
+    else if (typeof ch === "boolean" || !(typeof ch === "string" || typeof ch === "number"))
+      out.push(F("!", "`mechanism:` on a claim is a chain id, or `true` for the whole mechanism", at));
+    else if (chainIds.indexOf(py(ch)) < 0)
+      out.push(F("!", chainIds.length ? "`mechanism: " + py(ch) + "` is not one of the chains declared under `mechanism: chains:`"
+        : "`mechanism: " + py(ch) + "` names a chain, but the front matter declares no `chains:` -- `mechanism: true` stands for the whole mechanism", at));
+  });
   var channels = isDict(block) && isDict(block.channels) ? block.channels : {};
   steps.forEach(function (k) {
     var c = k.raw, title = k.claim.title, at = function (key, tok) { return { claim: title, rel: "causes", i: k.i, key: key, token: tok }; };
@@ -698,6 +711,7 @@ function locate(t, at) {
       for (var j = 0; j < es.length; j++) if (es[j].key === (at.rel || "causes")) { pick = defs[d]; rel = es[j]; break; }
     }
     if (!pick) return defs.length ? defs[0].line : { from: 0, to: Math.min(t.length, (t.indexOf("\n") + 1 || t.length + 1) - 1) };
+    if (at.onValue && rel.vt > rel.vf) return { from: rel.vf, to: rel.vt };
     var its = items(t, rel.vf, rel.vt), it = its[at.i || 0] || its[0];
     if (!it) return { from: rel.kf, to: rel.kt };
     if (at.key == null) return { from: rel.kf, to: rel.kt };
@@ -893,6 +907,16 @@ function declaredIds(graph) {
  *  Keys with their one-line meanings; after a key that names a state, a chain, an actor or a level,
  *  the declared ones with their labels; after a key with listed values, the values. */
 function complete(t, pos, graph) {
+  // A CLAIM THAT STANDS FOR A CHAIN (1.20): after `mechanism:` in a claim's `{…}`, the declared chains.
+  var fs0 = frontSpan(t);
+  if (!(fs0 && pos >= fs0.f && pos <= fs0.t)) {
+    var mm = /\{[^{}\n]*\bmechanism\s*:\s*([\w$.-]*)$/.exec(t.slice(Math.max(0, pos - 300), pos));
+    if (mm) {
+      var cs = declaredIds(graph).chain.map(function (x) { return { label: x.id, detail: x.label, info: x.detail, type: "constant" }; });
+      cs.push({ label: "true", detail: "the whole mechanism", info: "For a map that declares no chains.", type: "keyword" });
+      return { from: pos - mm[1].length, options: cs };
+    }
+  }
   var ctx = contextAt(t, pos);
   if (!ctx) return null;
   var reg = registryAt(ctx), ids = declaredIds(graph), opts = [];

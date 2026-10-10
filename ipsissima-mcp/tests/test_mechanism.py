@@ -343,7 +343,7 @@ check("a common cause and a step the other way are found",
       (bq["Correlation"]["common"][2], bq["Correlation"]["reverse"][2]), ("recorded", "recorded"))
 check("the rival account the text reports, with its stance", bq["Effect to cause"]["rivals"][3],
       ["\u201cHabit\u201d raises \u201cShoppers drink less sugar\u201d (rejected)"])
-check("nothing recorded is said as nothing: no blocker on the lever", bq["Lever"]["blockers"][2:], ["none", []])
+check("nothing recorded is said as nothing: no blocker on the lever", bq["Lever"]["blockers"][2:4], ["none", []])
 check("a case's kind, and the kind's general claim", len(bq["Cases"]["kinds"][3]), 2)
 check("a question only a reader can answer is left to the reader",
       [q[2] for k, q in bq["Vindication"].items() if k.startswith("reader")], ["reader", "reader", "reader"])
@@ -353,6 +353,55 @@ cen = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(FIXTURE
                      capture_output=True, text=True).stdout
 check("the census names each question the map records nothing on",
       "- nothing recorded: Is a general claim drawn from one case?" in cen, True)
+
+print("\na draft is told how well each question is answered (10 Oct 2026)")
+# James: "when the user declares it's a draft, perhaps there should be some indication of whether a
+# question has been answered well". Mutations: count every item as taken up -> the counter question
+# is answered; read only the top-level `draft:` -> no verdicts; drop the tier test -> backing answered.
+DRAFT = BQ.replace('title: "Planted -- what the map says to a bridge\'s questions"',
+                   'title: "Planted -- what the map says to a bridge\'s questions"\nreconstruction:\n    draft: true')
+rd = run(DRAFT)
+vd = {a: {q[1] or f"reader{i}": q for i, q in enumerate(qs)} for a, _st, _sch, qs in rd["shape"]["chain"]["bridge_questions"]}
+check("not a draft: no verdicts", {q[4] for qs in bq.values() for q in qs.values()}, {None})
+check("a draft: backing with one step only asserted is partly answered",
+      vd["Cause to effect"]["backing"][4:], ["partly", "1 of 2 steps only asserted"])
+check("counter-considerations the argument does not take up leave the question partly answered",
+      vd["Cause to effect"]["counter"][4:], ["partly", "2 of 5 taken up in the argument; the rest are stated and not answered"])
+check("a rival account stated and never answered: not answered", vd["Effect to cause"]["rivals"][4], "open")
+check("nothing on a question: the draft does not take it up", vd["Lever"]["blockers"][4:], ["open", "the draft does not take this up"])
+check("no general claim from one case: answered", vd["Cases"]["onecase"][4], "answered")
+check("a question for the reader gets no verdict", [q[4] for k, q in vd["Vindication"].items() if k.startswith("reader")], [None] * 3)
+td2 = tempfile.mkdtemp(prefix="mechanism-draft-")
+open(os.path.join(td2, "d.argdown"), "w", encoding="utf-8").write(DRAFT)
+cen_d = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), os.path.join(td2, "d.argdown"), "--no-fix"],
+                       capture_output=True, text=True).stdout
+check("the census says the draft's questions are judged, and names those not answered",
+      "questions (a draft, so judged)" in cen_d and "- not answered: Which rival accounts does the text set out?" in cen_d, True)
+check("and the checker reads `draft:` in the reading policy, where the profile puts it", "DRAFT:" in cen_d, True)
+
+print("\nprofile 1.20: a claim that stands for a chain")
+# Proposal B of NOTES-integration.md (James's go, 10 Oct 2026). Mutations: count the steps of every
+# voice -> the rival account stands for 2 steps; leave chain claims out of the bridges' step titles
+# -> the bridge has no step premise; drop the undeclared-chain check -> no fault.
+CN = (FIXTURE / "chain-node.argdown").read_text(encoding="utf-8")
+rc = run(CN)
+chc = rc["shape"]["chain"]
+check("each account: its chain, its steps in its own voice, and how they are backed", chc.get("chain_claims"),
+      [["The habit story", "habit", 1, [0, 0, 1, 0]], ["The levy works by price", "price", 2, [1, 0, 1, 0]]])
+check("a bridge whose premise stands for a chain has a step premise", chc.get("bridges"),
+      [["Impose it", 1, "From a mechanism to what to do", 2, 1]])
+check("an account of a chain the map does not declare is a fault",
+      any("`mechanism: nowhere` is not one of the chains declared" in f["message"] for f in by(rc, "mechanism")), True)
+check("an account with no mechanism block is a fault",
+      any("on a claim stands for a chain, and the front matter declares no `mechanism:` block" in f["message"]
+          for f in by(run("[A]: An account. {mechanism: price}\n"), "mechanism")), True)
+check("the whole mechanism, for a map with no chains", run(CN.replace("{mechanism: price}", "{mechanism: true}")
+      .replace("    chains:\n        price:\n            label: \"The price route\"\n            question: \"How does the levy cut sugar?\"\n        habit:\n            label: \"The habit story\"\n            question: \"Why might drinking not fall?\"\n", "")
+      .replace(", chain: price", "").replace(", chain: habit", "").replace("{mechanism: habit}", "").replace("{mechanism: nowhere}", ""))["shape"]["chain"].get("chain_claims"),
+      [["The levy works by price", "*", 2, [1, 0, 1, 0]]])
+cen_c = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(FIXTURE / "chain-node.argdown"), "--no-fix"],
+                       capture_output=True, text=True).stdout
+check("the census names each account", "account <The levy works by price> stands for chain `price`: 2 step(s) (1 tested, 1 asserted)" in cen_c, True)
 
 print("\nprofile 1.4: a joint effect, and a state across levels")
 # THE COLEMAN BOAT (26 Sep 2026). "Belief moves people to act only where they wish to fit in" had

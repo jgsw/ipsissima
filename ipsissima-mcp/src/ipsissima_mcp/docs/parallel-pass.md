@@ -84,7 +84,8 @@ is queried: the decision has not been recorded.
 
 ## How a mechanism enters the argument
 
-A claim that states a step enters the argument in one of two ways, and no other.
+A claim that states a step enters the argument in one of two ways, and a chain as a whole in a
+third.
 
 - **As the support of a claim it bears on**, where the text uses it as a reason for that claim:
   `[Value for money leaves no room to flex]` under `[Cost-effective is brittle]`.
@@ -135,6 +136,22 @@ and the plain `-----` is kept.
 
 The questions are not yours to answer. They tell you where to look in the text. Often the census
 answers one already: an `unless` on the route, a rival chain, a one-case query.
+
+**A chain as one node (profile 1.20).** Where the text argues about its account *as a whole* --
+cites evidence for the account, sets it against a rival, or draws a conclusion from it -- give that
+account a claim of its own, in the text's words, with `mechanism:` naming the chain:
+
+```argdown
+[The levy works by price]: The levy cuts sugar by making drinks dearer. {mechanism: price}
+    + [A trial found prices rose]: ...
+    - [The habit story]: Habit, not price, decides what shoppers drink. #reported {mechanism: habit}
+```
+
+A rival account is a `#reported` claim standing for the rival's chain, which attacks the text's. As
+a bridge's premise, such a claim brings the chain's steps with it. Use it only where the text
+treats the account as one thing; where it argues step by step, the steps' own claims carry it, as
+above. `mechanism: true` stands for the whole mechanism of a map with no chains. The census lists
+each one (`account`), with its steps and how they are backed.
 
 ## What the chart shows, and what meets
 
@@ -225,6 +242,10 @@ James's two principles for the Mechanism view (8 October 2026):
   Where the text is silent, leave it: the silence is the finding. The probes are the registry's
   (`bridges`, each question's `asks`), and the Reasons view shows the same answers when a bridge's
   name is clicked.
+  In a **draft** (`draft: true` in the reading policy) each question is also judged -- answered,
+  partly, not answered, with the grounds -- since the author asked to be told. Those are for the
+  author: report them, and change nothing in the map on their account.
+- **account**: each claim that stands for a chain (1.20), with its steps and how they are backed.
 - **handed**: a state the chain stops at, whose step is a reason in the argument. The text goes on,
   by argument rather than by cause. Unlike a gap, it is not queried.
 - **? gap**: a state the chain stops at and nothing argues from. As before, a finding about the text,

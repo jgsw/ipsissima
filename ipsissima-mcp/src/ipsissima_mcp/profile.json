@@ -1,7 +1,7 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.19",
-  "date": "2026-10-09",
+  "version": "1.20",
+  "date": "2026-10-10",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
   "licence": "CC-BY-4.0",
@@ -17,6 +17,7 @@
     "questions": {"type": "map of id to {text, pinpoint}", "summary": "The questions the text works on, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (since 1.17)."},
     "text-provenance": {"type": "string", "values": ["generated"], "summary": "Declares that the manuscript itself was machine-generated; shown beside the title."},
     "author": {"type": "string", "summary": "Who drew a survey map (a map with no source text)."},
+    "draft": {"type": "boolean", "summary": "As the reading policy's `draft`, read here too, where older maps put it."},
     "date": {"type": "string", "summary": "When a survey map was drawn."},
     "mechanism": {"type": "map", "summary": "The causal chain the text asserts.", "keys": "mechanism"}
   },
@@ -45,6 +46,7 @@
     "reviewed": {"type": "string", "summary": "The date a person reviewed the claim. Never set by a model."},
     "causes": {"type": "map or list of maps", "summary": "The causal step(s) the claim states.", "keys": "causes"},
     "question": {"type": "{id, move, into} or a list of them", "values": ["answers", "reframes", "splits", "dissolves"], "summary": "What the claim does to a declared question: answers it; reframes it, or splits it, `into` the question(s) that take its place; or dissolves it, showing it has no answer to give. A reframing is a move on a question, not a reason (since 1.17)."},
+    "mechanism": {"type": "a chain id, or true", "summary": "The claim states a declared chain as a whole -- the account the text gives -- and stands for it in the argument: supported as one account, attacked by a rival, a premise of a bridge, where its steps count as the premise's. `true` stands for the whole mechanism of a map with no chains (since 1.20)."},
     "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"}
   },
 

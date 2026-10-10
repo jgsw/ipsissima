@@ -1,0 +1,52 @@
+// Planted fixture for profile 1.20: a claim that stands for a chain, as one node in the argument
+// (NOTES-integration.md, Proposal B; James's go, 10 Oct 2026). The text's account is supported by a
+// trial and attacked by a rival account the text reports; it is the premise of a bridge, whose
+// questions then read the chain's steps. test_mechanism.py and the page are held to the same answers.
+===
+title: "Planted -- a chain as one node"
+mechanism:
+    question: "Why would the levy cut sugar?"
+    levels: [state, people]
+    actors:
+        gov:    {label: "Government", level: state}
+        people: {label: "Shoppers", level: people}
+    states:
+        levy:   {label: "The levy is imposed", actor: gov, role: intervention}
+        dear:   {label: "Sugary drinks cost more", actor: people}
+        drink:  {label: "Shoppers drink less sugar", actor: people, role: outcome}
+        habit:  {label: "Habit", actor: people}
+    chains:
+        price:
+            label: "The price route"
+            question: "How does the levy cut sugar?"
+        habit:
+            label: "The habit story"
+            question: "Why might drinking not fall?"
+===
+
+[Levy raises prices]: The levy makes sugary drinks dearer.
+    {causes: {from: levy, to: dear, sign: "+", basis: study, chain: price}}
+
+[Dear drinks cut sugar]: Dearer drinks mean less sugar drunk.
+    {causes: {from: dear, to: drink, sign: "-", basis: asserted, chain: price}}
+
+[Prices not passed on]: Some say retailers absorb the levy, so prices do not rise. #reported
+    {causes: {from: levy, to: dear, sign: "0", basis: asserted, chain: price, stance: rejected}}
+
+[Habit holds]: Habit keeps shoppers drinking whatever the price. #reported
+    {causes: {from: habit, to: drink, sign: "+", basis: asserted, chain: habit, stance: rejected}}
+
+[The levy works by price]: The levy cuts sugar by making drinks dearer. {mechanism: price}
+    + [A trial found prices rose]: A trial found that prices rose after the levy.
+    - [The habit story]: Habit, not price, decides what shoppers drink. #reported {mechanism: habit}
+
+[Health matters]: Less sugar is better for health.
+
+<Impose it>
+
+(1) [The levy works by price]
+(2) [Health matters]
+-- From a mechanism to what to do {uses: [1, 2]} --
+(3) [Impose the levy]: The government should impose the levy.
+
+[Nowhere account]: An account of a chain nobody declared. {mechanism: nowhere}

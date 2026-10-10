@@ -438,6 +438,21 @@ export function mechanismOf(res, titleToId) {
       });
     }
   }
+  // CLAIMS THAT STAND FOR A CHAIN (profile 1.20): `mechanism: <chain id>` (or `true`, the whole
+  // mechanism) on a claim -- the account the text gives, as one node in the argument.
+  const chainClaims = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.mechanism == null) continue;
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const t of (m.tags || [])) tags.add(t);
+      chainClaims.push({ title, kind: kind === "arguments" ? "argument" : "statement",
+                         id: titleToId && titleToId.has(title) ? titleToId.get(title) : null,
+                         tags: [...tags], chain: data.mechanism });
+    }
+  }
   // How many claims the appraisal holds in all -- including those that assert no step, which the
   // chain never draws but the census counts. The toggle shows how many IT hides; this is the total.
   let appraisal = 0;
@@ -465,12 +480,17 @@ export function mechanismOf(res, titleToId) {
   const mainOf = {};
   for (const [name, arg] of Object.entries(res.arguments || {}))
     for (const s of (arg && arg.pcs) || []) if (s.role === "main-conclusion" && s.title) mainOf[name] = s.title;
-  const reasons = new Set();
+  const reasons = new Set(), attacked = new Set();
   const endOf = e => !e ? null : e.type === "argument" ? (mainOf[e.title] || e.title) : e.title;
   for (const r of res.relations || []) {
     if (!r || !r.from || !r.to || gone.has(r.from.title) || gone.has(r.to.title)) continue;
     const a = endOf(r.from), b = endOf(r.to);
-    if (a && b && a !== b) reasons.add(a);
+    if (a && b && a !== b) {
+      reasons.add(a);
+      // WHAT THE ARGUMENT ANSWERS (10 Oct 2026): a claim one of its claims attacks, contradicts or
+      // undercuts -- mechanism.py's ATTACK_KINDS -- for a draft's verdicts on a bridge's questions.
+      if (["attack", "undercut", "contradictory", "contrary"].includes(String(r.relationType || "support"))) attacked.add(b);
+    }
   }
   const inferences = [];
   for (const [name, arg] of Object.entries(res.arguments || {})) {
@@ -499,7 +519,11 @@ export function mechanismOf(res, titleToId) {
       prev = n; run = []; step++;
     });
   }
-  return (block || claims.length) ? { block, claims, appraisal, reasons: [...reasons], inferences } : null;
+  // A DRAFT (the reading policy's `draft:`, or the front matter's own, as mechanism.is_draft reads it).
+  const pol = (fm.reconstruction && typeof fm.reconstruction === "object") ? fm.reconstruction : {};
+  const draft = [fm.draft, pol.draft].some(x => x != null && ["true", "1"].includes(String(x).toLowerCase()));
+  return (block || claims.length || chainClaims.length)
+    ? { block, claims, appraisal, reasons: [...reasons], attacked: [...attacked], inferences, draft, chainClaims } : null;
 }
 
 export function toGraph(res) {

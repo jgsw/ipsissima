@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.19 — 9 October 2026.** The machine-readable registry of everything below is
+**Version 1.20 — 10 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -122,6 +122,7 @@ On any claim or argument, in its `{data}` block:
 | `note` | string | What the notation cannot carry. |
 | `reviewed` | date | A person's review of this claim. Never written by a model. |
 | `causes` | map, or list of maps | The causal step or steps the claim states: §5. |
+| `mechanism` | a chain id, or `true` | The claim states a declared chain as a whole and stands for it in the argument, as one node: §5, *A chain as one node* (*added in 1.20*). |
 | `question` | `{id, move, into}`, or a list | What the claim does to a declared question. `move` is `answers`, `reframes`, `splits` or `dissolves`; `into` names the question(s) that take its place, and a reframing or a split needs one. The census lists each question with the moves on it, and the page lists them from a pill in the orientation strip (*added in 1.17*). |
 
 ### The fidelity ladder
@@ -718,6 +719,41 @@ force (`parallel-pass.md`), reversibly: one setting brings the series method bac
   carried conclusion, or the source of a relation. Then the census reports it as `handed`, not as a
   gap.
 
+**A chain as one node (1.20).** A text often argues about its account as a whole: the evidence that
+supports it, the rival account it rejects, and what follows if it holds (Bex et al., 2010, on stories
+and arguments). Step by step, the Reasons view cannot show that. `mechanism:` on a claim, naming a
+declared chain (or `true` for the whole mechanism of a map with no chains), makes that claim **stand
+for the chain**:
+
+```argdown
+[The levy works by price]: The levy cuts sugar by making drinks dearer. {mechanism: price}
+    + [A trial found prices rose]: A trial found that prices rose after the levy.
+    - [The habit story]: Habit, not price, decides what shoppers drink. #reported {mechanism: habit}
+```
+
+- It is an ordinary claim in the argument: supported, attacked, a premise. A **rival account** is a
+  claim tagged `#reported` that stands for the rival's chain, and attacks it.
+- It stands for the chain's steps **in its own voice**: the text's steps for a claim in the text's
+  voice, the reported view's for a `#reported` claim.
+- As the premise of a **bridge**, it brings the chain's steps: the bridge has a step premise, and the
+  scheme's questions are read off the chain.
+- The Reasons view marks it **↝ n** (n the chain's steps). The mark opens the chain, drawn as the
+  Mechanism view draws it, with how its steps are backed and each in words; the Mechanism view names
+  the claim above the chain it stands for. The census lists each one, as *account ‹title› stands for
+  chain price: 2 step(s) (1 tested, 1 asserted)*.
+- The checker faults a `mechanism:` that names an undeclared chain, or appears with no `mechanism:`
+  block.
+
+**Answered well? In a draft (since 10 October 2026).** The census and the Reasons view report what the
+map records on each of a bridge's questions and do not judge. In a draft (`draft: true` in the
+reading policy), the author is also told how well each is answered: **answered**, **partly** or **not
+answered**, and on what grounds. A question listing what bears against the move (a blocker, a rival
+account, another route or consequence) is answered where the argument takes each item up: the claim
+it rests on is a reason in the argument, or one of the argument's claims attacks it. Backing is
+graded by how many steps are tested or argued for; "a general claim from one case" is answered where
+none is recorded; and what the move needs (a route, its cases, its settings) is answered where the
+map records it. Questions only a reader can answer are left to the reader.
+
 ## 6. The source file
 
 The text a map reads is a Markdown file. Its YAML front matter may carry:
@@ -831,6 +867,13 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.20** (10 October 2026) added `mechanism:` on a claim: the claim stands for a declared chain as a
+whole, one node in the argument (Proposal B of the integration notes, on James's go). A bridge whose
+premise is such a claim reads the chain's steps. The same day, without a key: a bridge's questions
+are read off the map (the registry's `asks`), and in a draft each is judged answered, partly, or not;
+and the checker reads `draft:` in the reading policy, where this document puts it, as well as at the
+top of the front matter, where it alone was read before. Every 1.19 file conforms unchanged.
 
 **1.19** (9 October 2026) added, after the diagram comparison study (twelve texts mapped blind
 and held against their authors' figures) and James's decisions on its proposals:

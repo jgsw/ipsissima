@@ -693,6 +693,17 @@ first of the steps, in its chain. A bridge is never checked for validity, as a d
 argument** lists the states where the chain stops but a claim stating the step into them is a reason
 in the argument. The text goes on there, by argument rather than by cause.
 
+**A chain as one node.** A claim that stands for a whole chain — the account a text gives, argued
+for as one thing, or a rival account it rejects — carries **↝ n** at the foot of its box in Reasons,
+n the chain's steps. Click it to see the chain drawn, how its steps are backed, and each step in
+words; **Open in the Mechanism view** shows it there, where the claim is named above the chain it
+stands for. A bridge whose premise is such a claim reads the chain's steps.
+
+**In a draft.** Where the map says the text is still being written (`draft: true`), a bridge's
+panel also says how well each question is answered — **answered**, **partly**, **not answered** —
+and why: a blocker or rival account counts as answered where the argument takes it up, as a reason
+or by answering it; backing by how many steps are tested or argued for.
+
 **Sketched, or not mapped.** A map may map its text's mechanism only as far as the argument relies on
 it. A **sketch** names the question, the actors and the chains, and marks steps only where the
 argument uses them; the Mechanism panel says so, with the reason, and the states left without a step

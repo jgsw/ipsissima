@@ -1529,6 +1529,63 @@ async function cardStepsChecks(browser, built) {
   await ctx.close();
 }
 
+/* A CHAIN AS ONE NODE (profile 1.20), and A DRAFT TOLD HOW WELL (10 Oct 2026). On the planted
+ * chain-node map, the claim that stands for the price route carries "↝ 2"; a real click opens the
+ * chain drawn, how its steps are backed and each in words, and "Open in the Mechanism view" opens that
+ * chain with the claim named above it. Then the bridges map marked as a draft: its bridge panel says
+ * how well each question is answered. */
+async function chainNodeChecks(browser) {
+  const out = path.join(tmp, "editor-standalone.html");
+  if (!fs.existsSync(out)) { check(false, "chain node: the editor build exists", out); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.click("#picknew");
+  await page.waitForSelector(".cm-content", { timeout: 20000 });
+  const fx = n => fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", n), "utf8");
+  await page.evaluate(t => window.__ARGDOWN_EDITOR__.loadText(t), fx("chain-node.argdown"));
+  await page.waitForFunction(() => document.querySelectorAll("#map .alm-chainpill").length >= 2, null, { timeout: 10000 }).catch(() => {});
+  await page.click('button[data-close="argdown"]');
+  await page.waitForTimeout(600);
+  const pills = await page.evaluate(() => [...document.querySelectorAll("#map .alm-chainpill text")].map(e => e.textContent));
+  check(JSON.stringify(pills.sort()) === JSON.stringify(["↝ 1", "↝ 2"]), "chain node: each account is marked with its chain's steps", JSON.stringify(pills));
+  let opened = false;
+  try { await page.locator("#map .alm-chainpill", { hasText: "↝ 2" }).first().click({ timeout: 5000 }); opened = await page.locator("#brf").isVisible(); } catch { /* asserted below */ }
+  check(opened, "chain node: clicking the mark opens the chain");
+  if (opened) {
+    const got = await page.evaluate(() => ({ head: document.getElementById("brfhead").textContent, move: document.getElementById("brfmove").textContent,
+      arrows: document.querySelectorAll("#brffig svg g[data-edge]").length, lines: document.querySelectorAll("#brfqs > li").length }));
+    check(/stands for “The price route”/.test(got.head) && /1 tested, 1 asserted/.test(got.move) && got.arrows === 2 && got.lines === 2,
+          "chain node: the chain drawn, how it is backed, each step in words", JSON.stringify(got));
+    await page.click("#brffoot button");
+    await page.waitForTimeout(500);
+    const there = await page.evaluate(() => ({ mech: !document.getElementById("mech").hidden,
+      chain: (document.querySelector("#mech select[data-chain]") || {}).value, account: (document.querySelector("#mech .amech-account") || {}).textContent || "" }));
+    check(there.mech && there.chain === "price" && /The levy works by price/.test(there.account),
+          "chain node: the Mechanism view opens at the chain, naming the claim that stands for it", JSON.stringify(there));
+  }
+  // A draft: the same bridges map, with the reading policy's draft:, tells how well. A page of its own.
+  const p2 = await ctx.newPage();
+  await p2.goto("file://" + out);
+  await p2.click("#picknew");
+  await p2.waitForSelector(".cm-content", { timeout: 20000 });
+  await p2.evaluate(t => window.__ARGDOWN_EDITOR__.loadText(t),
+    fx("bridges.argdown").replace(/^title: (.*)$/m, "title: $1\nreconstruction:\n    draft: true"));
+  await p2.waitForFunction(() => document.querySelectorAll("#map .alm-bridge-hit").length >= 3, null, { timeout: 10000 }).catch(() => {});
+  await p2.click('button[data-close="argdown"]');
+  await p2.waitForTimeout(600);
+  let verdicts = [];
+  try {
+    await p2.locator("#map .alm-bridge-hit", { hasText: "cause → effect" }).first().click({ timeout: 5000 });
+    verdicts = await p2.evaluate(() => [...document.querySelectorAll("#brfqs .verdict")].map(e => e.textContent));
+  } catch { /* asserted below */ }
+  check(JSON.stringify(verdicts) === JSON.stringify(["○ Not answered: every step is only asserted", "○ Not answered: the draft does not take this up"]),
+        "a draft: the bridge panel says how well each question is answered", JSON.stringify(verdicts));
+  await ctx.close();
+}
+
 /* A CLAIM LINK STILL FOLLOWS WHILE FIND IS OPEN (reported by the author, 30 Sep 2026). Find's
  * highlight on part of a title splits the link's mark into pieces, and the click used to read
  * the name off the piece it landed on: "-claim]" names nothing, so the map stayed where it was.
@@ -3056,6 +3113,7 @@ await editorChecks(browser);
 await mechanismEditorChecks(browser);
 await bridgePanelChecks(browser);
 await cardStepsChecks(browser, built);
+await chainNodeChecks(browser);
 await refClickChecks(browser);
 await quoteChecks(browser);
 await guidedChecks(browser);

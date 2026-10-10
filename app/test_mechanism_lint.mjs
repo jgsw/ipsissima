@@ -70,6 +70,7 @@ function pyFindings(file) {
         const j = JSON.parse(out);
         const msgs = (j.findings || []).filter(f => f.check === "mechanism").map(f => f.severity + " " + f.message);
         msgs.bridgeQuestions = ((j.shape && j.shape.chain) || {}).bridge_questions || [];
+        msgs.chainClaims = ((j.shape && j.shape.chain) || {}).chain_claims || [];
         resolve(msgs);
       } catch (e) { resolve(null); }
     });
@@ -145,13 +146,21 @@ mechanism:
 [Made of nothing]: Something. {constitutes: {to: migration}}
 
 [Self-made]: Income makes itself. {constitutes: {from: income, to: income, stance: rejected}}
+
+[Account of nothing]: An account of a chain never declared. {mechanism: ghosts}
+
+[Account of a list]: An account that names two chains at once. {mechanism: [one, two]}
 `;
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "mechlint-"));
 const faultsFile = path.join(tmp, "faults.argdown");
 fs.writeFileSync(faultsFile, FAULTS);
 
-const files = [faultsFile, ...dirs.flatMap(findMaps)].filter(f => {
+// A DRAFT, so the verdicts on a bridge's questions are given and compared too.
+const draftFile = path.join(tmp, "bridge-questions-draft.argdown");
+fs.writeFileSync(draftFile, fs.readFileSync(path.join(REPO, "ipsissima-mcp", "tests", "mechanism", "bridge-questions.argdown"), "utf8")
+  .replace(/^title: (.*)$/m, "title: $1\nreconstruction:\n    draft: true"));
+const files = [faultsFile, draftFile, ...dirs.flatMap(findMaps)].filter(f => {
   const t = fs.readFileSync(f, "utf8");
   return /causes:|constitutes:|^mechanism:/m.test(t);
 });
@@ -175,6 +184,7 @@ check("py() prints Python's values", L.py(true) === "True" && L.py(null) === "No
   check("an actor's bad level is marked on its level", at("actor `state` has level") === "galactic", at("actor `state` has level"));
   check("a chain's role for an undeclared state is marked on the id", at("chain `one` gives a role to `ghost`") === "ghost", at("chain `one` gives a role to `ghost`"));
   check("a bad value in a block-style map is marked on the value", at("`ordering: stacking`") === "stacking", at("`ordering: stacking`"));
+  check("an account of an undeclared chain is marked on the chain it names", at("`mechanism: ghosts`") === "ghosts", at("`mechanism: ghosts`"));
   check("a relation with no from is marked on its key", at("a constitutive relation has no `from:`") === "constitutes", at("a constitutive relation has no `from:`"));
   // Completion and hover at real places in the faults file.
   const p1 = t.indexOf("to: migraton") + 4;
@@ -195,6 +205,9 @@ check("py() prints Python's values", L.py(true) === "True" && L.py(null) === "No
   const p6 = t.indexOf("actor: herders, role") + 8;
   const c6 = L.complete(t, p6, g);
   check("a state's actor: offers the declared actors", c6 && c6.options.some(o => o.label === "herders"), JSON.stringify(c6 && c6.options));
+  const p7 = t.indexOf("{mechanism: ghosts}") + "{mechanism: gh".length;
+  const c7 = L.complete(t, p7, g);
+  check("after a claim's mechanism:, the declared chains", c7 && c7.options.some(o => o.label === "one") && c7.options.some(o => o.label === "true"), JSON.stringify(c7 && c7.options));
   const h1 = L.hover(t, t.indexOf("from: drought, to: migration, sign: \"+\", basis: study") + 22, g);
   check("hover on a state id gives its label and actor", h1 && /Migration/.test(h1) && /Herders, nomads/.test(h1), h1);
   const h2 = L.hover(t, t.indexOf("basis: argued") + 1, g);
@@ -204,7 +217,7 @@ check("py() prints Python's values", L.py(true) === "True" && L.py(null) === "No
 /* --------------------------------------------------------------- parity, map by map */
 console.log("\n-- parity with mechanism.py");
 const pool = 6;
-let i = 0, missing = [], extra = [], located = 0, unlocated = [], bqDiffer = [], bqCount = 0;
+let i = 0, missing = [], extra = [], located = 0, unlocated = [], bqDiffer = [], bqCount = 0, draftVerdicts = 0, ccDiffer = [], ccCount = 0;
 async function one(file) {
   const text = fs.readFileSync(file, "utf8");
   let g;
@@ -225,6 +238,11 @@ async function one(file) {
   const jq = M ? M.profile.bridge_questions : [];
   bqCount += jq.length;
   if (JSON.stringify(jq) !== JSON.stringify(py.bridgeQuestions || [])) bqDiffer.push(name);
+  // AND THE CLAIMS THAT STAND FOR A CHAIN (1.20): which chain, how many steps, how backed.
+  const jc = M ? M.profile.chain_claims : [];
+  ccCount += jc.length;
+  if (JSON.stringify(jc) !== JSON.stringify(py.chainClaims || [])) ccDiffer.push(name);
+  if (file === draftFile) draftVerdicts = jq.flatMap(b => b[3].map(q => q[4])).filter(Boolean).length;
   if (miss.length) missing.push(name + ":\n  " + miss.join("\n  "));
   // Every finding lands somewhere real: a claim's finding on its claim, a front-matter one inside the front matter.
   for (const f of js) {
@@ -242,6 +260,8 @@ check("every finding the editor shows, the checker gives in the same words", !ex
 check("every local finding the checker gives, the editor shows", !missing.length, missing.slice(0, 8).join("\n"));
 check(`every finding is placed in the text (${located})`, !unlocated.length, unlocated.slice(0, 5).join("\n"));
 check(`what the map says to each bridge's questions, the page and the checker alike (${bqCount} bridges)`, !bqDiffer.length, bqDiffer.join(", "));
+check(`claims that stand for a chain, the page and the checker alike (${ccCount})`, !ccDiffer.length && ccCount >= 2, ccDiffer.join(", ") || String(ccCount));
+check(`and a draft's verdicts on them, alike (${draftVerdicts} verdicts)`, draftVerdicts > 20 && !bqDiffer.includes("bridge-questions-draft.argdown"), String(draftVerdicts));
 
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(fails ? `\n${fails} failed` : "\neverything passed");

@@ -3585,6 +3585,29 @@ function createLiveMap(container, graph, options) {
   const STEPS_OF = new Map();
   for (const c of ((graph && graph.mechanism && graph.mechanism.claims) || []))
     if ((c.causes || []).length) STEPS_OF.set(c.title, c.causes.length);
+  // A CLAIM THAT STANDS FOR A CHAIN (profile 1.20) carries a mark that opens the chain: how many steps
+  // of it, in the claim's own voice, as the checker counts them (mechanism.chain_steps).
+  const CHAIN_OF = new Map();
+  {
+    const mech = graph && graph.mechanism;
+    const voice = tags => (tags || []).includes("appraisal") ? "appraisal" : ((tags || []).includes("reported") || (tags || []).includes("contested")) ? "rival" : "text";
+    const chains = mech && mech.block && mech.block.chains && typeof mech.block.chains === "object" ? mech.block.chains : {};
+    for (const cc of ((mech && mech.chainClaims) || [])) {
+      const whole = cc.chain === true;
+      if (!mech.block || !(whole || ((typeof cc.chain === "string" || typeof cc.chain === "number") && Object.prototype.hasOwnProperty.call(chains, String(cc.chain))))) continue;
+      const v = voice(cc.tags);
+      let n = 0;
+      for (const c of (mech.claims || [])) {
+        if (voice(c.tags) !== v) continue;
+        for (const st of (c.causes || [])) {
+          const cs = st.chain == null ? [] : (Array.isArray(st.chain) ? st.chain : [st.chain]).map(String);
+          if (whole || cs.includes(String(cc.chain))) n++;
+        }
+      }
+      const lbl = whole ? "the whole mechanism" : String((chains[String(cc.chain)] && chains[String(cc.chain)].label) || cc.chain);
+      CHAIN_OF.set(cc.title, { title: cc.title, chain: whole ? true : String(cc.chain), label: lbl, steps: n });
+    }
+  }
   // Repair anything that cannot be drawn, and SAY SO. A silently mended file teaches its
   // author nothing, and this map is meant to be handed around with other people's Argdown.
   const cleaned = sanitiseGraph(graph);
@@ -4410,6 +4433,26 @@ function createLiveMap(container, graph, options) {
         ex.addEventListener("click", ev => { ev.stopPropagation(); opt.onExplode(n, ev); });
         box.appendChild(ex);
       }
+    }
+
+    // A CLAIM THAT STANDS FOR A CHAIN (1.20): "↝ n" at the foot, on the left, opening the chain --
+    // the account it stands for, drawn as the Mechanism view draws it.
+    const cof = CHAIN_OF.get(n.label);
+    if (cof && typeof opt.onChainClaim === "function") {
+      const lab = "\u219d " + cof.steps;
+      const w = 10 + lab.length * 5.6, h = 13, bx = opt.padX, by = s.height - h - 5;
+      const cg = el("g", { class: "alm-chainpill" });
+      cg.append(el("rect", { x: bx, y: by, width: w, height: h, rx: 6.5 }),
+                el("text", { x: bx + w / 2, y: by + 9.5, "text-anchor": "middle", "font-size": 9 }));
+      cg.querySelector("text").textContent = lab;
+      const ct = el("title");
+      ct.textContent = "Stands for " + (cof.chain === true ? "the whole mechanism" : "the chain \u201c" + cof.label + "\u201d") +
+        ": " + cof.steps + (cof.steps === 1 ? " step" : " steps") + ". Click to see it drawn, as the Mechanism view draws it.";
+      cg.appendChild(ct);
+      cg.addEventListener("pointerdown", ev => ev.stopPropagation());
+      cg.addEventListener("mousedown", ev => ev.stopPropagation());
+      cg.addEventListener("click", ev => { ev.stopPropagation(); opt.onChainClaim(cof, ev); });
+      box.appendChild(cg);
     }
 
     // "show more / show less" for the claim text itself, at the foot of the text block.
@@ -6941,6 +6984,10 @@ function injectStyle() {
 .alm-card-box{fill:var(--alm-fg,#1f1f1f);fill-opacity:.035;stroke:var(--alm-fg,#1f1f1f);
   stroke-opacity:.14;stroke-width:1}
 .alm-card-no{fill:var(--alm-fg-dim,#6b6b6b);font-variant-numeric:tabular-nums}
+.alm-chainpill{cursor:pointer}
+.alm-chainpill rect{fill:var(--alm-accent,#3a7bd5);fill-opacity:.12;stroke:var(--alm-accent,#3a7bd5);stroke-width:.8}
+.alm-chainpill text{fill:var(--alm-accent,#3a7bd5);font-weight:600;pointer-events:none}
+.alm-chainpill:hover rect{fill-opacity:.25}
 .alm-card-steps{fill:var(--alm-accent,#3a7bd5);cursor:pointer;pointer-events:auto;font-variant-numeric:tabular-nums}
 .alm-card-steps:hover{text-decoration:underline}
 .alm-echo{cursor:pointer}
