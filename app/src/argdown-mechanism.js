@@ -96,6 +96,10 @@ var BRIDGES = [
     "questions": [
      "How strong is each step, and what backs it?",
      "Does anything stated block or counteract the effect (unless, despite, a rival route, a regime)?"
+    ],
+    "asks": [
+     "backing",
+     "counter"
     ]
    },
    {
@@ -105,6 +109,10 @@ var BRIDGES = [
     "questions": [
      "Which rival accounts does the text set out?",
      "How thorough is the account: where does the chain stop?"
+    ],
+    "asks": [
+     "rivals",
+     "stops"
     ]
    },
    {
@@ -116,6 +124,12 @@ var BRIDGES = [
      "Could it run the other way?",
      "Is it mediated, and over what range does it hold?",
      "Is the measure itself the source of the change?"
+    ],
+    "asks": [
+     "common",
+     "reverse",
+     "mediated",
+     "measure"
     ]
    },
    {
@@ -126,6 +140,11 @@ var BRIDGES = [
      "Are the cases kinds of the general step?",
      "How many cases, and how different?",
      "Is a general claim drawn from one case?"
+    ],
+    "asks": [
+     "kinds",
+     "howmany",
+     "onecase"
     ]
    },
    {
@@ -138,6 +157,13 @@ var BRIDGES = [
      "Is there a counteracting mechanism here that was absent there?",
      "For a stipulated case: what did it stipulate that the world does not have?",
      "For a normative conclusion: does the consideration keep its weight and polarity here?"
+    ],
+    "asks": [
+     "here",
+     "support",
+     "counter",
+     null,
+     null
     ]
    },
    {
@@ -149,6 +175,12 @@ var BRIDGES = [
      "What other routes reach the goal?",
      "Can the action be taken: does anything block it?",
      "What other consequences does it have?"
+    ],
+    "asks": [
+     "goals",
+     "otherroutes",
+     "blockers",
+     "sideeffects"
     ]
    },
    {
@@ -159,6 +191,11 @@ var BRIDGES = [
      "Does the route exist in the text?",
      "What other consequences does the text give?",
      "What criterion of good or bad does the step rely on?"
+    ],
+    "asks": [
+     "route",
+     "elsewhere",
+     null
     ]
    },
    {
@@ -168,6 +205,10 @@ var BRIDGES = [
     "questions": [
      "Does anything block the lever?",
      "Is the outcome only possible, or open?"
+    ],
+    "asks": [
+     "blockers",
+     "possible"
     ]
    },
    {
@@ -176,6 +217,9 @@ var BRIDGES = [
     "move": "A mechanism the theory denies or ignores holds, so the theory fails.",
     "questions": [
      "Does the mechanism hold where the theory claims to hold (scope, regime, conditions)?"
+    ],
+    "asks": [
+     "scope"
     ]
    },
    {
@@ -184,6 +228,9 @@ var BRIDGES = [
     "move": "What the mechanism does makes the case one of a kind (forced, momentous, brittle).",
     "questions": [
      "Does the mechanism establish each condition the kind requires?"
+    ],
+    "asks": [
+     null
     ]
    },
    {
@@ -193,6 +240,10 @@ var BRIDGES = [
     "questions": [
      "Is the producing cause one that could not track the truth?",
      "Does the critique apply to the critic's own view?"
+    ],
+    "asks": [
+     null,
+     null
     ]
    },
    {
@@ -204,6 +255,12 @@ var BRIDGES = [
      "Whose needs are these, and do we share and endorse them?",
      "Do the needs the story starts from still hold for us?",
      "Is the story's order historical, or the order in which complications are added?"
+    ],
+    "asks": [
+     null,
+     null,
+     null,
+     "order"
     ]
    },
    {
@@ -214,9 +271,187 @@ var BRIDGES = [
      "Does the formation process really give no reason to prefer it?",
      "Is contingency being taken as a reason against it, which it is not?",
      "Would a rival have met the same needs as well?"
+    ],
+    "asks": [
+     null,
+     null,
+     null
     ]
    }
-  ];
+   ];
+/** WHAT THE MAP SAYS TO A BRIDGE'S QUESTIONS (10 Oct 2026; NOTES-integration.md, Proposal A). Each
+ *  scheme's question names in `asks` what in the map bears on it -- a blocker, a rival account, another
+ *  route -- and this reads it off the map for one bridge: what is recorded, or that nothing is, or
+ *  that only a reader can answer. It REPORTS; it does not judge whether the move succeeds (James,
+ *  1 Oct 2026: "report not evaluate"). mechanism.py's bridge_questions gives the same answers, and
+ *  test_mechanism_view.mjs holds the two together. `b` is {argument, step, scheme, inputs}. */
+function bridgeQuestions(M, b) {
+  var sch = BRIDGE_BY_NAME[String(b.scheme).toLowerCase()];
+  if (!M || !sch) return [];
+  var want = {}; (b.inputs || []).forEach(function (t) { want[t] = true; });
+  var P = M.steps.filter(function (x) { return want[x.claim.title]; });
+  var TX = M.steps.filter(function (x) { return x.layer === "text" && !x.isNull && !x.selects && !x.assoc; });
+  var L = function (v) { return "“" + String(obj(M.states[v]).label || v) + "”"; };
+  var froms = uniqList(P.map(function (x) { return x.from; })), tos = uniqList(P.map(function (x) { return x.to; }));
+  var verb = function (x) { return verbOf(x, x.sign ? [x.sign] : [], x.isNull ? "null" : x.selects ? "selection" : x.assoc ? "association" : "step"); };
+  var stepSaid = function (x) { var v = verb(x); return L(x.from) + (/^(no effect|selection effect|associated)$/.test(v) ? " → " + L(x.to) + ": " + v : " " + v + " " + L(x.to)); };
+  // The text's other steps out of where the premises start, to states they do not reach.
+  var onward = function (keep) {
+    return uniqList(TX.filter(function (y) { return !want[y.claim.title] && froms.indexOf(y.from) >= 0 && tos.indexOf(y.to) < 0 && keep(y.to); }).map(stepSaid));
+  };
+  var probe = {
+    backing: function () {
+      var by = {};
+      P.forEach(function (x) { (by[x.tier] = by[x.tier] || []).push(x); });
+      return TIERS.filter(function (t) { return by[t]; }).map(function (t) {
+        var bases = uniqList(by[t].map(function (x) { return x.basis; }).filter(Boolean));
+        return (TIER_SAID[t] || t) + ": " + by[t].length + (bases.length && t === "evidence" ? " (" + bases.join(", ") + ")" : ""); });
+    },
+    counter: function () {
+      var out = [];
+      P.forEach(function (x) {
+        (x.unless || []).forEach(function (u) { out.push(stepSaid(x) + " unless " + L(u)); });
+        (x.despite || []).forEach(function (u) { out.push(stepSaid(x) + " despite " + L(u)); });
+        if (x.regime) out.push(stepSaid(x) + ", regime: " + x.regime);
+        if (x.threshold) out.push(stepSaid(x) + " past a threshold: " + x.threshold);
+      });
+      M.steps.forEach(function (y) {
+        if (want[y.claim.title] || tos.indexOf(y.to) < 0) return;
+        if (y.layer === "rival") out.push("a view the text reports: " + stepSaid(y));
+        else if (y.layer === "text" && froms.indexOf(y.from) < 0 && P.some(function (x) { return x.to === y.to && x.sign && y.sign && (x.sign === "+" && y.sign === "-" || x.sign === "-" && y.sign === "+"); }))
+          out.push(stepSaid(y));
+      });
+      return uniqList(out);
+    },
+    rivals: function () {
+      return uniqList(M.steps.filter(function (y) { return y.layer === "rival" && (tos.indexOf(y.to) >= 0 || froms.indexOf(y.to) >= 0); })
+        .map(function (y) { return stepSaid(y) + (y.stance ? " (" + y.stance + ")" : ""); }));
+    },
+    stops: function () {
+      if (!P.length) return [];
+      var seen = {}, ends = [], queue = tos.slice();
+      while (queue.length) {
+        var v = queue.shift();
+        if (seen[v]) continue;
+        seen[v] = true;
+        var on = TX.filter(function (x) { return x.from === v && x.to !== v; });
+        if (!on.length) ends.push(v);
+        on.forEach(function (x) { if (!seen[x.to]) queue.push(x.to); });
+      }
+      return ends.length ? ["the chain goes on to " + ends.map(L).join(", ") + ", and stops there"] : ["the chain closes on itself: every state it reaches leads on"];
+    },
+    common: function () {
+      var out = [];
+      P.forEach(function (x) {
+        M.ids.forEach(function (c) {
+          if (c === x.from || c === x.to) return;
+          var a = TX.some(function (y) { return y.from === c && y.to === x.from; }), z = TX.some(function (y) { return y.from === c && y.to === x.to; });
+          if (a && z) out.push(L(c) + " leads to both " + L(x.from) + " and " + L(x.to));
+        });
+      });
+      return uniqList(out);
+    },
+    reverse: function () {
+      return uniqList(P.map(function (x) {
+        var back = M.steps.filter(function (y) { return y.from === x.to && y.to === x.from; })[0];
+        return back ? stepSaid(back) + " as well" : null; }).filter(Boolean));
+    },
+    mediated: function () {
+      var out = [];
+      P.forEach(function (x) {
+        if ((x.statedVia || []).length) out.push(stepSaid(x) + " through " + x.statedVia.map(L).join(" → "));
+        if (x.regime) out.push(stepSaid(x) + ", regime: " + x.regime);
+        if (x.threshold) out.push(stepSaid(x) + " past a threshold: " + x.threshold);
+        if (x.period) out.push(stepSaid(x) + ": " + x.period);
+        if (x.scope) out.push(stepSaid(x) + ": " + (x.scope === "singular" ? "a single case" : "a general relation"));
+      });
+      return uniqList(out);
+    },
+    measure: function () {
+      return uniqList(P.filter(function (x) { return (x.measuredBy || []).length; })
+        .map(function (x) { return stepSaid(x) + ", read from " + x.measuredBy.map(L).join(", "); }));
+    },
+    kinds: function () {
+      var out = [];
+      froms.concat(tos).forEach(function (v) {
+        var k = obj(M.states[v]).kind;
+        if (k == null) return;
+        var kd = (M.kinds || []).filter(function (y) { return y.id === String(k); })[0];
+        out.push(L(v) + " is of the kind “" + (kd && kd.label || k) + "”" + (kd && kd.general && kd.general !== v ? ", whose general claim is " + L(kd.general) : kd && kd.general === v ? ", its general claim" : ""));
+      });
+      return uniqList(out);
+    },
+    howmany: function () {
+      if (!P.length) return [];
+      var settings = uniqList(P.map(function (x) { return x.regime; }).filter(Boolean));
+      var kinds = uniqList(froms.concat(tos).map(function (v) { var k = obj(M.states[v]).kind; return k == null ? null : String(k); }).filter(Boolean));
+      return [P.length + " step" + (P.length === 1 ? "" : "s") + (settings.length ? ", in " + settings.length + " setting" + (settings.length === 1 ? "" : "s") + ": " + settings.join("; ") : "") +
+              (kinds.length ? ", across " + kinds.length + " kind" + (kinds.length === 1 ? "" : "s") : "")];
+    },
+    onecase: function () {
+      return P.filter(function (x) { return x.scope === "singular"; }).map(function (x) { return stepSaid(x) + " is about a single case"; });
+    },
+    here: function () {
+      var t = ((M.profile && M.profile.transfers) || []).filter(function (r) { return r[0] === b.argument && r[1] === b.step; })[0];
+      if (!t || t[2].length < 2) return [];
+      return t[3].length ? t[3].map(function (u) { return "only " + (u[0] ? "under “" + u[0] + "”" : "where no setting is named") + ": " + L(u[1]) + " → " + L(u[2]) + (u[3] ? " (" + u[3] + ")" : ""); })
+                         : ["each step has its counterpart in every setting the premises name (" + t[2].join("; ") + ")"];
+    },
+    support: function () {
+      var out = [];
+      P.forEach(function (x) {
+        if ((x.jointly || []).length) out.push(stepSaid(x) + " only together with " + x.jointly.map(L).join(", "));
+        (x.givenOn || []).forEach(function (g) { out.push(stepSaid(x) + " given " + L(g.state) + (g.value ? " = " + g.value : "")); });
+        (x.given || []).forEach(function (g) { if (!(x.givenOn || []).some(function (o) { return condText(o) === g; })) out.push(stepSaid(x) + " given " + g); });
+      });
+      return uniqList(out);
+    },
+    elsewhere: function () { return onward(function () { return true; }); },
+    // An action's other GOALS are the outcomes its other steps reach; its SIDE EFFECTS, the rest.
+    goals: function () { return onward(function (v) { return hasRole(M.states[v], "outcome"); }); },
+    sideeffects: function () { return onward(function (v) { return !hasRole(M.states[v], "outcome"); }); },
+    otherroutes: function () {
+      return uniqList(TX.filter(function (y) { return !want[y.claim.title] && tos.indexOf(y.to) >= 0 && froms.indexOf(y.from) < 0; }).map(stepSaid));
+    },
+    blockers: function () {
+      var out = [];
+      M.steps.forEach(function (y) {
+        if (!(want[y.claim.title] || (y.layer === "text" && froms.indexOf(y.from) >= 0))) return;
+        (y.unless || []).forEach(function (u) { out.push(stepSaid(y) + " unless " + L(u)); });
+      });
+      return uniqList(out);
+    },
+    route: function () { return P.length ? [uniqList(P.map(stepSaid)).join("; ")] : []; },
+    possible: function () {
+      return uniqList(froms.concat(tos).filter(function (v) { var st = obj(M.states[v]).status; return st === "possible" || st === "open"; })
+        .map(function (v) { return L(v) + (obj(M.states[v]).status === "open" ? " cannot be specified in advance, the text says" : " is a possibility the text sets out"); }));
+    },
+    scope: function () {
+      var out = [];
+      P.forEach(function (x) {
+        if (x.scope) out.push(stepSaid(x) + ": " + (x.scope === "singular" ? "a single case" : "a general relation"));
+        if (x.regime) out.push(stepSaid(x) + ", regime: " + x.regime);
+        if (x.period) out.push(stepSaid(x) + ": " + x.period);
+        (x.given || []).forEach(function (g) { out.push(stepSaid(x) + " given " + g); });
+      });
+      return uniqList(out);
+    },
+    order: function () {
+      var ids = uniqList([].concat.apply([], P.map(function (x) { return x.chain || []; })));
+      var cs = (M.chains || []).filter(function (c) { return ids.indexOf(c.id) >= 0 && c.order === "explanation"; });
+      if (cs.length) return cs.map(function (c) { return "the chain “" + (c.label || c.id) + "” runs in order of explanation, not of time"; });
+      return M.order === "explanation" ? ["the map's chains run in order of explanation, not of time"] : [];
+    }
+  };
+  return sch.questions.map(function (q, i) {
+    var asks = (sch.asks || [])[i] || null;
+    if (!asks || !probe[asks]) return { question: q, asks: null, status: "reader", said: [] };
+    var said = probe[asks]();
+    return { question: q, asks: asks, status: said.length ? "recorded" : "none", said: said };
+  });
+}
+function uniqList(xs) { var seen = {}, out = []; xs.forEach(function (x) { if (x != null && !seen[x]) { seen[x] = true; out.push(x); } }); return out; }
+
 var BRIDGE_BY_NAME = {};
 BRIDGES.forEach(function (b) { BRIDGE_BY_NAME[b.name.toLowerCase()] = b; });
 /** The scheme a line's rule names, or null: exactly one name, and a registered one. */
@@ -442,6 +677,14 @@ function model(graph) {
     });
     return [f.argument, f.step, regimes, unmatched.sort(cmpDeep)];
   }).filter(Boolean).sort(cmpDeep);
+  // WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026) -- mechanism.py's bridge_questions.
+  var forQ = { steps: ok, states: states, ids: ids, chains: chains, kinds: kinds, profile: prof,
+               order: block.order == null ? "time" : String(block.order) };
+  prof.bridge_questions = (m.inferences || []).map(function (f) {
+    var sch = bridgeScheme(f.rules);
+    return sch ? [f.argument, f.step, sch.name, bridgeQuestions(forQ, { argument: f.argument, step: f.step, scheme: sch.name, inputs: f.inputs })
+      .map(function (q) { return [q.question, q.asks, q.status, q.said]; })] : null;
+  }).filter(Boolean);
   // HOW FAR THE MECHANISM IS MAPPED (1.17): mechanism.py's depth and depth_reason.
   prof.depth = block.depth == null ? "full" : String(block.depth);
   prof.depth_reason = block.depth_reason == null ? null : String(block.depth_reason);
@@ -1457,6 +1700,8 @@ function overlap(a, b) {
 /** A chip's label as lines: broken at its " · " parts, joined while they fit, and a part too long
  *  for a line broken at its words. Nothing is cut. */
 var CHIP_LINE = 28;
+/** How many figures this page has drawn: each one's markers get ids of their own. */
+var FIGURES = 0;
 function chipLines(label) {
   var lines = [];
   String(label).split(" · ").forEach(function (part) {
@@ -1495,11 +1740,105 @@ function formationWord(on, sign) {
   if (on === "stock") return sign === "+" ? "flows into" : sign === "-" ? "flows out of" : null;
   return null;
 }
+/** THE VERB A STEP IS DRAWN WITH, the chip's and the editor's alike (the readback under each step in
+ *  the editor says what the chart says, word for word). `signs` are the arrow's signs, `kind` its
+ *  kind: "null", "selection", "association" or "step". The step's own name, where it has one, is the
+ *  caller's to prefer. */
+function verbOf(s0, signs, kind) {
+  if (kind === "null") return "no effect";
+  // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
+  if (kind === "selection") return "selection effect";
+  // "ASSOCIATED" (1.13): the text reports they go together, and no more.
+  if (kind === "association") return "associated";
+  // A RELATION THAT RISES AND FALLS (1.19) says so: it has no one sign.
+  if (s0.shape === "peak") return "rises, then falls";
+  if (s0.shape === "trough") return "falls, then rises";
+  // A NET FLOW (1.19) runs whichever way the gap points.
+  if (s0.net) return "net flow";
+  // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
+  if (signs.length === 1 && formationWord(s0.on, signs[0])) return formationWord(s0.on, signs[0]);
+  // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
+  if (s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")) return signs[0] === "+" ? "speeds" : "slows";
+  // "ONLY IF" IS NOT "RAISES" (profile 1.9, G5): drawn as a plain raise, a necessary condition read
+  // as more of the one giving more of the other.
+  if (s0.necessary === true && s0.sufficient === true) return "needed and enough for";
+  if (s0.necessary === true) return "needed for";
+  if (s0.sufficient === true) return "enough for";
+  return signWord(signs);
+}
 function signWord(signs) {
   if (!signs.length) return "link";
   if (signs.length > 1) return "mixed";
   return signs[0] === "+" ? "raises" : signs[0] === "-" ? "lowers" : signs[0] === "0" ? "no effect"
        : signs[0] === "which" ? "decides which" : signs[0];
+}
+
+/** WHAT EACH STEP SAYS, IN WORDS: the readback the editor sets under each `causes:` block
+ *  (NOTES-integration.md item 4, 10 Oct 2026). The YAML is exact and hard to read with confidence;
+ *  "Drought raises Migration · asserted · in the drought chain" is what the chart will draw, said
+ *  in the chart's own words (verbOf, the chip's verb) -- so a step that means something other than
+ *  what its writer meant shows it at once, where it is written. Returns one entry per claim that
+ *  states a step: {title, lines}, a line per step in the order the claim lists them. */
+var TIER_SAID = { evidence: "tested", argued: "argued for", asserted: "asserted", imputed: "imputed by the reconstructor" };
+var TRANSITIVE = /^(raises|lowers|makes|unmakes|maintains|erodes|transforms|opens up|closes off|makes likelier|makes less likely|flows into|flows out of|speeds|slows|decides which|needed for|enough for|needed and enough for)$/;
+function readback(graph) {
+  var mech = graph && graph.mechanism;
+  if (!mech || !(mech.claims || []).length) return [];
+  var M = null;
+  try { M = model(graph); } catch (e) { M = null; }
+  var states = (M && M.states) || obj(obj(mech.block).states);
+  var byId = {};
+  ((M && M.steps) || []).forEach(function (st) { byId[st.id] = st; });
+  // QUOTED, because the labels are often whole sentences: unquoted, "Patients wait longer raises
+  // How cost-effective the service is" could not be parsed at a glance.
+  var name = function (v) { var st = obj(states[v]); return "“" + (st.label != null ? String(st.label) : String(v)) + "”"; };
+  var names = function (vs) { return vs.map(name).join(", "); };
+  var chainLabel = {};
+  ((M && M.chains) || []).forEach(function (c) { chainLabel[c.id] = c.label || c.id; });
+  var out = [];
+  mech.claims.forEach(function (c) {
+    if (!(c.causes || []).length) return;
+    var lines = (c.causes || []).map(function (raw, i) {
+      var s = byId[c.title + "#" + i];
+      raw = obj(raw);
+      if (!s) {
+        var missing = [raw.from, raw.to].filter(function (v) { return v == null || !has(states, v); });
+        return "`" + String(raw.from) + "` → `" + String(raw.to) + "`: not drawn, " +
+          (missing.length ? missing.map(function (v) { return v == null ? "an end is missing" : "`" + v + "` is not a declared state"; }).join(", ") : "it names an undeclared state");
+      }
+      var kind = s.isNull ? "null" : s.selects ? "selection" : s.assoc ? "association" : "step";
+      var signs = s.sign ? [s.sign] : [];
+      var verb = verbOf(s, signs, kind);
+      var a = name(s.from), b = name(s.to);
+      var head = kind === "association" ? a + " is associated with " + b
+               : kind === "null" ? a + " has no effect on " + b
+               : TRANSITIVE.test(verb) ? a + " " + verb + " " + b
+               : a + " → " + b + ": " + verb;
+      var q = [];
+      if (s.name) q.push("“" + s.name + "”");
+      if (s.sufficient === false) q.push("not alone");
+      if ((s.jointly || []).length) q.push("only together with " + names(s.jointly));
+      if ((s.unless || []).length) q.push("unless " + names(s.unless));
+      if ((s.despite || []).length) q.push("despite " + names(s.despite));
+      if ((s.statedVia || []).length) q.push("through " + names(s.statedVia) + (s.share && s.share !== "entire" ? " (" + s.share + " of it)" : ""));
+      (s.givenOn || []).forEach(function (g) { q.push("given " + name(g.state) + (g.value ? " = " + g.value : "")); });
+      (s.given || []).forEach(function (g) { if (!(s.givenOn || []).some(function (o) { return condText(o) === g; })) q.push("given " + g); });
+      if (s.regime) q.push("regime: " + s.regime);
+      if (s.threshold) q.push("past a threshold: " + s.threshold);
+      if (s.period) q.push(s.period);
+      if (s.lag) q.push("after " + s.lag);
+      if (s.size) q.push(s.size);
+      (s.modifies || []).forEach(function (m) { if (m.by) q.push(name(m.by) + " " + (EFFECT_WORD[m.effect] || m.effect || "moderates it").replace(/, the text finds$/, "")); });
+      if (s.attribution) q.push((ATTRIBUTION_WORD[s.attribution] || s.attribution) + (s.attributionBy ? " by " + s.attributionBy : ""));
+      if (s.hedged) q.push("put as a possibility");
+      var voice = s.layer === "appraisal" ? "the reconstructor's appraisal" : s.layer === "rival" ? "a view the text reports" + (s.stance ? ", " + s.stance : "") : null;
+      var backing = TIER_SAID[s.tier] + (s.tier === "evidence" && s.basis ? " (" + s.basis + (s.design ? ", " + s.design : "") + ")" : s.basis && s.tier !== "imputed" && s.basis !== "asserted" ? " (" + s.basis + ")" : "");
+      var where = (s.chain || []).length ? (s.chain.length === 1 ? "chain: " : "chains: ") + s.chain.map(function (x) { return chainLabel[x] || x; }).join("; ") : "";
+      return head + (q.length ? " — " + q.join("; ") : "") + " · " + [voice, backing, where].filter(Boolean).join(" · ");
+    });
+    out.push({ title: c.title, lines: lines });
+  });
+  return out;
 }
 
 /** Geometry for the whole chain, every layer included. Pure: the same model gives the same
@@ -2482,26 +2821,9 @@ function layoutOnce(M, opts) {
                   (pd && ss.every(function (x) { return x.period === pd; }) ? " · " + pd : "") +
                   // AND UNDER WHICH CONDITION: "no effect" beside "raises · given Y = 1" said nothing of Y = 0.
                   givenTag
-                // "SELECTION EFFECT", in full: "selection" alone named no relation (James's verdict).
-                : kind === "selection" ? "selection effect"
-                // "ASSOCIATED" (1.13): the text reports they go together, and no more.
-                : kind === "association" ? "associated" + (ss.length > 1 ? " ×" + ss.length : "") :
+                : kind === "selection" || kind === "association" ? verbOf(s0, signs, kind) + (kind === "association" && ss.length > 1 ? " ×" + ss.length : "") :
                   // A NAMED STEP (1.19) says its name, in the text's words, where the verb was.
-                  (s0.name && ss.every(function (x) { return x.name === s0.name; }) ? cut(s0.name, 34)
-                  // A RELATION THAT RISES AND FALLS (1.19) says so: it has no one sign.
-                  : s0.shape === "peak" ? "rises, then falls" : s0.shape === "trough" ? "falls, then rises"
-                  // A NET FLOW (1.19) runs whichever way the gap points.
-                  : s0.net ? "net flow"
-                  // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
-                  : signs.length === 1 && formationWord(s0.on, signs[0]) ? formationWord(s0.on, signs[0])
-                  // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
-                  : s0.on === "trend" && signs.length === 1 && (signs[0] === "+" || signs[0] === "-")
-                    ? (signs[0] === "+" ? "speeds" : "slows")
-                    // "ONLY IF" IS NOT "RAISES" (profile 1.9, G5): drawn as a plain raise, a necessary
-                    // condition read as more of the one giving more of the other.
-                    : s0.necessary === true && s0.sufficient === true ? "needed and enough for"
-                    : s0.necessary === true ? "needed for"
-                    : s0.sufficient === true ? "enough for" : signWord(signs)) +
+                  (s0.name && ss.every(function (x) { return x.name === s0.name; }) ? cut(s0.name, 34) : verbOf(s0, signs, kind)) +
                   (s0.sufficient === false ? " · not alone" : "") +
                   (s0.attribution ? " · " + (ATTRIBUTION_WORD[s0.attribution] || s0.attribution) +
                     (s0.attributionBy ? " by " + String(obj(M.actors[s0.attributionBy]).label || s0.attributionBy).toLowerCase() : "") : "") +
@@ -3575,6 +3897,11 @@ function injectStyle() {
     ".amech-nestbanner[hidden]{display:none}",
     ".amech-body{flex:1 1 auto;display:flex;min-height:0}",
     ".amech-stage{flex:1 1 auto;overflow:auto;min-width:0}",
+    // A FIGURE inside another arrangement: the chart alone, at most its actual size, one control.
+    ".amech.amech-figure{height:auto;cursor:pointer;border-radius:6px}",
+    ".amech-figure .amech-head,.amech-figure .amech-bar,.amech-figure .amech-side,.amech-figure .amech-banner,.amech-figure .amech-nestbanner{display:none!important}",
+    ".amech-figure .amech-stage{overflow:hidden}",
+    ".amech-figure:focus-visible{outline:2px solid var(--accent,#2d6cc0);outline-offset:2px}",
     ".amech-side{flex:0 0 320px;overflow:auto;border-left:1px solid var(--line,#ddd);padding:10px 14px;font-size:13px}",
     "@media (max-width:760px){.amech-body{flex-direction:column}.amech-side{flex:0 0 auto;max-height:45%;border-left:0;border-top:1px solid var(--line,#ddd)}}",
     ".amech-side h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-dim,#666);margin:10px 0 6px;font-weight:600}",
@@ -3864,6 +4191,32 @@ function coreModel(M) {
     core: { path: path, steps: steps.length, of: all },
     profile: profile(M.levels, actors, states, keepIds, steps, 0, [], M.kinds, undefined, M.ordering, M.form, [], M.reasoning) });
 }
+/** THE STEPS SOME CLAIMS STATE, drawn alone: what a bridge's premises carry into the argument, or
+ *  what one paragraph of the text sets out (NOTES-integration.md, 10 Oct 2026). Every voice's steps
+ *  stated by those claims, the states they join, and the states each step names as a co-cause, a
+ *  blocker, a moderator or a condition -- as coreModel keeps them. Null where the claims state none
+ *  that can be drawn. */
+function stepsModel(M, titles) {
+  var want = {}; (titles || []).forEach(function (t) { want[t] = true; });
+  var steps = M.steps.filter(function (s) { return want[s.claim.title]; });
+  if (!steps.length) return null;
+  var ids = {};
+  steps.forEach(function (s) {
+    ids[s.from] = ids[s.to] = true;
+    (s.jointly || []).concat(s.unless || [], (s.modifies || []).map(function (m) { return m.by; }), (s.givenOn || []).map(function (g) { return g.state; }))
+      .forEach(function (j) { if (has(M.states, j)) ids[j] = true; });
+  });
+  var keepIds = M.ids.filter(function (v) { return ids[v]; });
+  var states = {}; keepIds.forEach(function (v) { states[v] = M.states[v]; });
+  var actors = {};
+  keepIds.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
+  var appr = {}; steps.forEach(function (s) { if (s.layer === "appraisal") appr[s.claim.title] = true; });
+  var consts = (M.constitutions || []).filter(function (x) { return ids[x.from] && (ids[x.to] || x.toActor); });
+  return Object.assign({}, M, { states: states, ids: keepIds, steps: steps, actors: actors, constitutions: consts,
+    chains: [], chain: null, dropped: 0, appraisalClaims: Object.keys(appr).length, figure: { titles: titles.slice() },
+    profile: profile(M.levels, actors, states, keepIds, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering, M.form, consts, M.reasoning) });
+}
+
 /** SMALL MULTIPLES (James's decision, 9 Oct 2026): where a chain's steps hold under different values of
  *  one state -- Bright, Malinsky and Thompson's multinet, immigration status raising incarceration
  *  where origin is Latin America and doing nothing elsewhere -- one panel per value, as the authors
@@ -3981,6 +4334,16 @@ function create(container, graph, opts) {
   container.innerHTML = "";
   container.classList.add("amech");
   if (!FULL) { container.textContent = "This map declares no mechanism."; return null; }
+  // A FIGURE (10 Oct 2026): the steps some claims state, drawn by this same renderer and nothing
+  // else -- no question, no bar, no panel -- inside another arrangement: a bridge's premises in
+  // Reasons, a paragraph's steps in Exposition. The whole figure is one control, which opens the
+  // Mechanism view (`opts.figure.onOpen`). Its markers carry their own ids, since a page may hold
+  // several figures and the view itself, and a marker found inside a hidden one is not drawn.
+  var FIG = opts.figure || null;
+  var FIGM = FIG ? stepsModel(FULL, FIG.titles || []) : null;
+  if (FIG && !FIGM) { container.classList.remove("amech"); return null; }
+  var UID = FIG ? "-f" + (++FIGURES) : "";
+  if (FIG) container.classList.add("amech-figure");
   // A SHELL AND A MOUNT. What persists across the two levels of detail -- the layer switches, and
   // which level is showing -- lives here; everything drawn from one model lives in `mount`, and
   // moving between the text's own boxes and every state mounts afresh. The host holds this one
@@ -3988,7 +4351,7 @@ function create(container, graph, opts) {
   var hasWholes = FULL.profile.wholes.length > 0;
   // SEVERAL CHAINS OPEN AT THE FIRST (F7), each laid out on its own; "every chain together" is
   // one choice away.
-  var CHAINS = FULL.chains || [];
+  var CHAINS = FIG ? [] : FULL.chains || [];
   var keep = { boxes: hasWholes, rival: true, appraisal: !!opts.appraisal,
                chain: CHAINS.length ? CHAINS[0].id : null, then: null,
                opened: {}, zoom: null,
@@ -4024,6 +4387,7 @@ function create(container, graph, opts) {
     return CHAINS.some(function (c) { return c.id === v; });
   };
   var baseModel = function (v) {
+    if (FIGM) return FIGM;
     if (v && String(v).indexOf("together:") === 0) return groupModel(FULL, groupOf(v));
     if (v) return chainModel(FULL, v);
     return FULL;
@@ -4033,7 +4397,7 @@ function create(container, graph, opts) {
     container.innerHTML = "";
     var base = baseModel(keep.chain);
     // THE CORE PATH, where the reader has chosen it, or by default on a long chain that has one.
-    var coreM = !keep.panels && (keep.core === true || keep.core == null && coreByDefault(base)) ? coreModel(base) : null;
+    var coreM = !FIG && !keep.panels && (keep.core === true || keep.core == null && coreByDefault(base)) ? coreModel(base) : null;
     if (coreM) base = coreM;
     // ONE PANEL PER VALUE of the state the chain's steps are conditioned on, where the reader asks.
     var panelsM = keep.panels ? multiplesModel(base) : null;
@@ -4047,6 +4411,15 @@ function create(container, graph, opts) {
     if (keep.then) { var t = keep.then; keep.then = null; cur.select(t); }
   }
   remount();
+  if (FIG) {
+    container.setAttribute("role", "button");
+    container.setAttribute("tabindex", "0");
+    container.setAttribute("aria-label", "The steps these premises state, drawn as the Mechanism view draws them. Open the Mechanism view");
+    container.title = FIG.title || "Open these steps in the Mechanism view";
+    var openIt = function (ev) { ev.stopPropagation(); ev.preventDefault(); if (FIG.onOpen) FIG.onOpen(FIGM); };
+    container.addEventListener("click", openIt, true);
+    container.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") openIt(ev); });
+  }
   return {
     get model() { return cur.model; },
     // A getter: folding replaces the geometry, and a copy taken at creation would go stale.
@@ -4064,6 +4437,18 @@ function create(container, graph, opts) {
     getChain: function () { return keep.chain; },
     zoomBy: function (f) { cur.zoomBy(f); },
     fit: function () { cur.fit(); },
+    /** Open on the steps these claims state: the chain that holds the first of them, and its arrow
+     *  selected. Where a bridge's figure in Reasons leads. */
+    showSteps: function (titles) {
+      var want = {}; (titles || []).forEach(function (t) { want[t] = true; });
+      var st = FULL.steps.filter(function (x) { return want[x.claim.title]; })[0];
+      if (st && CHAINS.length && st.chain.length && !(keep.chain === st.chain[0])) { keep.chain = chainOk(st.chain[0]) ? st.chain[0] : keep.chain; remount(); }
+      else if (st && CHAINS.length && !st.chain.length && keep.chain) { keep.chain = chainOk(null) ? null : keep.chain; remount(); }
+      if (cur.showSteps(titles)) return true;
+      // Not on the core path the chain opened at: every step, then.
+      if (keep.core !== false) { keep.core = false; remount(); return cur.showSteps(titles); }
+      return false;
+    },
     /** Everything the reader has set on the chart, in one plain object -- what the fold state
      *  identifier encodes for this arrangement, so a drawing fault can be reported and rebuilt. */
     getView: function () {
@@ -4130,7 +4515,7 @@ function create(container, graph, opts) {
   }
   // WHAT IS SHOWN. "tested" keeps only the steps the text backs with a study, statistics or a
   // model -- nulls included, since a null is a finding -- so the evidence can be read on its own.
-  var show = "all", fit = false, zk = 1;
+  var show = "all", fit = !!FIG, zk = 1;
   var anyUntested = G.edges.some(function (e) { return !e.steps.some(function (x) { return x.tier === "evidence"; }); });
   // The core path is offered where it leaves something out.
   var hasCore = !!M.core || (!M.panels && (function () { var cm = coreModel(M); return !!cm && cm.core.steps < cm.core.of; })());
@@ -4229,20 +4614,20 @@ function create(container, graph, opts) {
   INKS.forEach(function (t) {
     // ONE SIZE OF HEAD (M4): in the line's own units a head grew with its weight, and a tested
     // step's head was a slab wider than the stub it rode (the law school rankings, 30 Sep 2026).
-    var mk = el("marker", { id: "amech-ar-" + t, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
+    var mk = el("marker", { id: "amech-ar-" + t + UID, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
                             markerWidth: HEAD_LEN, markerHeight: HEAD_W, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, mk);
     // A NULL FINDING ENDS IN A HOLLOW CIRCLE: the line reaches the state and nothing passes. (It ended
     // in a bar until 9 Oct 2026, when a T-bar came to mean "lowers".)
-    var bar = el("marker", { id: "amech-bar-" + t, viewBox: "0 0 10 10", refX: 9, refY: 5,
+    var bar = el("marker", { id: "amech-bar-" + t + UID, viewBox: "0 0 10 10", refX: 9, refY: 5,
                              markerWidth: 9, markerHeight: 9, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
     el("circle", { cx: 5, cy: 5, r: 3.6, fill: "var(--panel,#fff)", stroke: "var(--mv-" + t + ")", "stroke-width": 1.6 }, bar);
     // A PIPE'S HEAD, wide enough to cap it.
-    var ph = el("marker", { id: "amech-pipe-" + t, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
+    var ph = el("marker", { id: "amech-pipe-" + t + UID, viewBox: "0 0 10 10", refX: 10, refY: 5, markerUnits: "userSpaceOnUse",
                             markerWidth: 14, markerHeight: 16, orient: "auto-start-reverse" }, defs);
     el("path", { d: "M0,0 L10,5 L0,10 z", fill: "var(--mv-" + t + ")" }, ph);
     // "LOWERS" ENDS IN A T-BAR, in one colour for every voice: the line keeps its voice's colour.
-    var tb = el("marker", { id: "amech-tbar-" + t, viewBox: "0 0 4 14", refX: 3.5, refY: 7,
+    var tb = el("marker", { id: "amech-tbar-" + t + UID, viewBox: "0 0 4 14", refX: 3.5, refY: 7,
                             markerWidth: 4, markerHeight: 14, markerUnits: "userSpaceOnUse", orient: "auto" }, defs);
     el("rect", { x: 0.5, y: 0, width: 3, height: 14, fill: "var(--mv-neg)" }, tb);
   });
@@ -4327,10 +4712,10 @@ function create(container, graph, opts) {
       });
       var p = el("path", { d: e.path, "class": "ed" + (e.stock ? " flow" : ""), stroke: col, "stroke-width": e.stock ? 0.01 : st.width }, g);
       if (st.dash && !e.stock) p.setAttribute("stroke-dasharray", st.dash);
-      if (e.kind === "null") p.setAttribute("marker-end", "url(#amech-bar-" + e.ink + ")");
-      if (e.stock === "net") p.setAttribute("marker-start", "url(#amech-pipe-" + e.ink + ")");
+      if (e.kind === "null") p.setAttribute("marker-end", "url(#amech-bar-" + e.ink + UID + ")");
+      if (e.stock === "net") p.setAttribute("marker-start", "url(#amech-pipe-" + e.ink + UID + ")");
       if (e.stub) el("path", { d: e.stub, "class": "ed stub", stroke: col, "stroke-width": e.stock ? 0.01 : st.width,
-                               "marker-end": e.stock ? "url(#amech-pipe-" + e.ink + ")" : "url(#amech-" + (e.neg ? "tbar-" : "ar-") + e.ink + ")" }, g);
+                               "marker-end": e.stock ? "url(#amech-pipe-" + e.ink + UID + ")" : "url(#amech-" + (e.neg ? "tbar-" : "ar-") + e.ink + UID + ")" }, g);
       el("path", { d: e.path, "class": "hit" }, g);
       e.stems.forEach(function (sm) {
         if (obj(M.states[sm.state]).appraisal && !layers.appraisal) return;
@@ -5282,7 +5667,7 @@ function create(container, graph, opts) {
   var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
   var pctBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-zoom='1']"));
   /** The scale the chart is drawn at: the reader's, or the pane's width when fitted. */
-  function scaleNow() { return fit ? Math.max(0.05, (stage.clientWidth - 4) / G.width) : zk; }
+  function scaleNow() { return fit ? Math.max(0.05, Math.min(FIG ? 1 : Infinity, (stage.clientWidth - 4) / G.width)) : zk; }
   function sizeSvg() {
     var k = scaleNow();
     // Style over the attributes: the drawing's own size stays what the layout says.
@@ -5353,6 +5738,16 @@ function create(container, graph, opts) {
     setFolded: function (list) { folded = {}; (list || []).forEach(function (v) { folded[v] = true; }); refold(); },
     getFolded: function () { return G.folded.slice(); },
     select: function (x) { if (x && (x.kind || (x.state && G.nodes[x.state]))) select(x); },
+    /** Select the first drawn arrow carrying a step one of these claims states, and bring it into
+     *  view: where a bridge's figure opens the view. True if there was one. */
+    showSteps: function (titles) {
+      var want = {}; (titles || []).forEach(function (t) { want[t] = true; });
+      var hit = drawnEdges.filter(function (d) { return d.e.steps.some(function (x) { return x.claim && want[x.claim.title]; }); })[0];
+      if (!hit) return false;
+      select({ edge: hit.e, path: hit.p });
+      if (hit.g && hit.g.scrollIntoView) try { hit.g.scrollIntoView({ block: "center", inline: "center" }); } catch (e) { /* older engines */ }
+      return true;
+    },
     zoomBy: function (f) { zoomBy(f); },
     fit: function () { setFit(true); },
     getView: function () { return { show: show, ends: ends, folded: Object.keys(folded).sort(), expanded: Object.keys(expanded).sort(),
@@ -5371,7 +5766,8 @@ function create(container, graph, opts) {
 }
 
 var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, chainGroups: chainGroups, groupModel: groupModel, corePath: corePath, coreModel: coreModel, coreByDefault: coreByDefault, multiplesOf: multiplesOf, multiplesModel: multiplesModel, TIERS: TIERS, BASES: BASES,
-            FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH, BRIDGES: BRIDGES, bridgeScheme: bridgeScheme };
+            FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH, BRIDGES: BRIDGES, bridgeScheme: bridgeScheme,
+            readback: readback, verbOf: verbOf, stepsModel: stepsModel, bridgeQuestions: bridgeQuestions };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;
 })(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));

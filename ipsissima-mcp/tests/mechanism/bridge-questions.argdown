@@ -1,0 +1,124 @@
+// Planted fixture for the bridges' questions (10 Oct 2026): what the map records on each question a
+// scheme asks. test_mechanism.py pins the answers; app/test_mechanism_lint.mjs holds the page's to
+// the checker's on this file as on every other. Each state and step is here for a probe.
+===
+title: "Planted -- what the map says to a bridge's questions"
+mechanism:
+    question: "What does the levy do to health?"
+    levels: [state, people]
+    actors:
+        gov:    {label: "Government", level: state}
+        people: {label: "Shoppers", level: people}
+    kinds:
+        price:  {label: "A price signal", general: dear}
+    states:
+        levy:    {label: "The levy is imposed", actor: gov, role: intervention}
+        dear:    {label: "Sugary drinks cost more", actor: people, kind: price}
+        drink:   {label: "Shoppers drink less sugar", actor: people}
+        health:  {label: "Health improves", actor: people, role: outcome, status: possible}
+        revenue: {label: "Revenue is raised", actor: gov, role: outcome}
+        smuggle: {label: "Cross-border shopping", actor: people}
+        habit:   {label: "Habit", actor: people}
+        ads:     {label: "Advertising", actor: gov}
+        income:  {label: "Household income", actor: people}
+        survey:  {label: "Survey of drinking", actor: people, measures: drink}
+        sweets:  {label: "Sweets cost more", actor: people, kind: price}
+    chains:
+        levy:
+            label: "The levy's route to health"
+            question: "How would the levy improve health?"
+            order: explanation
+===
+
+[Levy raises prices]: The levy makes sugary drinks dearer.
+    {causes: {from: levy, to: dear, sign: "+", basis: study, unless: smuggle, regime: "in towns", chain: levy, scope: general}}
+
+[Dear drinks cut sugar]: Dearer drinks mean less sugar drunk.
+    {causes: {from: dear, to: drink, sign: "-", basis: asserted, via: [habit], period: "after 2018", measured_by: survey, jointly: income, given: ["where no substitute is sold"], chain: levy}}
+
+[Less sugar, better health]: Less sugar improves health.
+    {causes: {from: drink, to: health, sign: "-", basis: asserted, scope: singular, chain: levy}}
+
+[Habit says otherwise]: Some say habit keeps shoppers drinking. #reported
+    {causes: {from: habit, to: drink, sign: "+", basis: asserted, stance: rejected}}
+
+[Advertising pushes drinking]: Advertising raises how much is drunk.
+    {causes: {from: ads, to: drink, sign: "+", basis: asserted}}
+
+[Levy raises revenue]: The levy raises revenue.
+    {causes: {from: levy, to: revenue, sign: "+", basis: asserted}}
+
+[Levy prompts smuggling]: The levy prompts cross-border shopping.
+    {causes: {from: levy, to: smuggle, sign: "+", basis: asserted}}
+
+[Income drives both]: Income moves both prices paid and drinking.
+    {causes: [{from: income, to: dear, sign: "+", basis: asserted}, {from: income, to: drink, sign: "+", basis: asserted}]}
+
+[Drinking props up prices]: Heavy drinking keeps prices up.
+    {causes: {from: drink, to: dear, sign: "+", basis: asserted}}
+
+[Dearer in villages too]: In villages, too, the levy makes drinks dearer.
+    {causes: {from: levy, to: dear, sign: "+", basis: asserted, regime: "in villages"}}
+
+[Sweets dearer too]: Sweets cost more as well.
+    {causes: {from: levy, to: sweets, sign: "+", basis: asserted}}
+
+<Cause to effect>
+
+(1) [Levy raises prices]
+(2) [Dear drinks cut sugar]
+-- From cause to effect {uses: [1, 2]} --
+(3) [Sugar falls]: Sugar drunk falls.
+
+<What to do>
+
+(1) [Levy raises prices]
+(2) [Dear drinks cut sugar]
+(3) [Less sugar, better health]
+-- From a mechanism to what to do {uses: [1, 2, 3]} --
+(4) [Impose the levy]: The government should impose the levy.
+
+<Correlation>
+
+(1) [Dear drinks cut sugar]
+-- From correlation to cause {uses: [1]} --
+(2) [Price drives drinking]: Price drives drinking.
+
+<Effect to cause>
+
+(1) [Dear drinks cut sugar]
+-- From effect to cause {uses: [1]} --
+(2) [Price explains the fall]: Price explains the fall in drinking.
+
+<Lever>
+
+(1) [Less sugar, better health]
+-- From a mechanism to a possibility {uses: [1]} --
+(2) [Health can improve]: Health can be improved.
+
+<Cases>
+
+(1) [Levy raises prices]
+(2) [Sweets dearer too]
+-- From cases to a general mechanism {uses: [1, 2]} --
+(3) [Levies raise prices]: Levies raise prices.
+
+<Theory>
+
+(1) [Less sugar, better health]
+-- From a mechanism against a theory {uses: [1]} --
+(2) [Choice theory fails]: The theory of free choice fails here.
+
+<There to here>
+
+(1) [Levy raises prices]
+(2) [Dear drinks cut sugar]
+(3) [Dearer in villages too]
+-- From there to here {uses: [1, 2, 3]} --
+(4) [It would work in villages]: The levy would cut sugar in villages too.
+
+<Vindication>
+
+(1) [Levy raises prices]
+-- Vindicatory genealogy {uses: [1]} --
+(2) [The levy is warranted]: The levy meets needs we have.

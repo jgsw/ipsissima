@@ -14,8 +14,9 @@
  * something other than what was written.
  */
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
-         drawSelection, rectangularSelection, Decoration, ViewPlugin } from "@codemirror/view";
-import { EditorState, Compartment } from "@codemirror/state";
+         drawSelection, rectangularSelection, Decoration, ViewPlugin, WidgetType,
+         hoverTooltip } from "@codemirror/view";
+import { EditorState, Compartment, StateField, StateEffect } from "@codemirror/state";
 import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo,
          undoDepth, redoDepth } from "@codemirror/commands";
 import { search, searchKeymap, highlightSelectionMatches, openSearchPanel } from "@codemirror/search";
@@ -399,6 +400,86 @@ const argdownIndent = indentService.of((ctx, pos) => {
   return col;
 });
 
+/* ------------------------------------------------- the mechanism vocabulary, where it is written */
+
+/** COMPLETION THAT KNOWS WHERE IT IS (NOTES-integration.md §3, item 2). Inside `{causes:` the keys
+ *  with their one-line meanings; after `from:`, `to:`, `via:`, `unless:` and the rest, the declared
+ *  states with their labels; after `sign:` or `on:`, the values with what each means. The host
+ *  answers (`opts.complete`), from profile.json and the last good parse, so the list is the map's
+ *  own and the registry's, and never this file's opinion. */
+function vocabularyCompletions(completeAt) {
+  return context => {
+    if (!completeAt) return null;
+    const r = completeAt(context.state.doc.toString(), context.pos);
+    if (!r || !r.options || !r.options.length) return null;
+    // Only when asked, or when a word is under way: an empty list popping up after every space
+    // inside a block would be noise.
+    if (!context.explicit && r.from === context.pos && !/[:\[,{]\s*$/.test(context.state.doc.sliceString(Math.max(0, r.from - 3), r.from))) return null;
+    return {
+      from: r.from,
+      options: r.options.map(o => ({ label: o.label, detail: o.detail || undefined, info: o.info || undefined,
+                                     apply: o.apply || o.label, type: o.type || undefined })),
+      validFor: /^[\w$.+\-]*$/
+    };
+  };
+}
+
+/** HOVER: a state id says its label, actor, level and role; a key says what it means. */
+function vocabularyHover(hoverAt) {
+  return hoverTooltip((view, pos) => {
+    if (!hoverAt) return null;
+    const said = hoverAt(view.state.doc.toString(), pos);
+    if (!said) return null;
+    return { pos, above: true, create() {
+      const dom = document.createElement("div");
+      dom.className = "cm-ad-hover";
+      dom.textContent = said;
+      return { dom };
+    } };
+  }, { hoverTime: 350 });
+}
+
+/** THE READBACK (item 4): a quiet line under each `causes:` block saying in words what the YAML
+ *  means -- "“Drought” raises “Migration” · asserted · chain: drought" -- in the chart's own wording,
+ *  so a step that means something other than what was meant shows it where it was written. The
+ *  host computes the lines from the last good parse and hands them in with the offset each block
+ *  ends at; between parses they ride along with the edits. */
+const setReadbacks = StateEffect.define();
+class ReadbackWidget extends WidgetType {
+  constructor(lines) { super(); this.lines = lines; }
+  eq(o) { return o.lines.join("\n") === this.lines.join("\n"); }
+  toDOM() {
+    const d = document.createElement("div");
+    d.className = "cm-ad-readback";
+    d.setAttribute("aria-label", "What this step says, in words");
+    for (const l of this.lines) {
+      const p = document.createElement("div");
+      p.textContent = "↳ " + l;
+      d.appendChild(p);
+    }
+    return d;
+  }
+  ignoreEvent() { return false; }
+}
+const readbackField = StateField.define({
+  create: () => Decoration.none,
+  update(deco, tr) {
+    deco = deco.map(tr.changes);
+    for (const e of tr.effects) if (e.is(setReadbacks)) {
+      const doc = tr.state.doc, out = [];
+      for (const r of e.value || []) {
+        if (r.pos == null || r.pos < 0 || r.pos > doc.length || !r.lines || !r.lines.length) continue;
+        const end = doc.lineAt(r.pos).to;
+        out.push(Decoration.widget({ widget: new ReadbackWidget(r.lines), block: true, side: 1 }).range(end));
+      }
+      out.sort((a, b) => a.from - b.from);
+      deco = Decoration.set(out, true);
+    }
+    return deco;
+  },
+  provide: f => EditorView.decorations.from(f)
+});
+
 /* ---------------------------------------------------------------- the editor */
 
 export function create(parent, opts) {
@@ -409,6 +490,8 @@ export function create(parent, opts) {
   // rebuilds the field from nothing, which is the documented way to give CodeMirror a fresh
   // past. See `loadText`.
   const past = new Compartment();
+  // The readback can be switched off; the field stays, so switching it on again is instant.
+  const said = new Compartment();
   const lintSource = view => {
     const text = view.state.doc.toString();
     const found = traps(text).concat(o.lint ? (o.lint(text) || []) : []);
@@ -459,7 +542,14 @@ export function create(parent, opts) {
         // service holds the writer's level across Enter — see argdownIndent above.
         indentUnit.of("    "), argdownIndent,
         closeBrackets(),
-        autocompletion({ override: [titleCompletions(o.titles)] }),
+        autocompletion({ override: [titleCompletions(o.titles), vocabularyCompletions(o.complete)] }),
+        vocabularyHover(o.hover),
+        said.of(o.readback === false ? [] : [readbackField]),
+        EditorView.theme({
+          ".cm-ad-readback": { color: "var(--fg-dim, #6b7280)", fontSize: "0.86em", fontStyle: "italic",
+                               padding: "0 0 2px 2.2em", lineHeight: "1.35", whiteSpace: "pre-wrap", cursor: "default" },
+          ".cm-ad-hover": { padding: "4px 8px", maxWidth: "36em", whiteSpace: "pre-wrap", fontSize: "0.9em", lineHeight: "1.4" }
+        }),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap,
                    ...searchKeymap, indentWithTab]),
         EditorView.lineWrapping,
@@ -569,6 +659,22 @@ export function create(parent, opts) {
       view.contentDOM.focus({ preventScroll: true });
     },
     setDiagnostics: ds => view.dispatch(setDiagnostics(view.state, ds || [])),
+    /** The readback lines: [{pos, lines}], `pos` an offset inside the block the lines describe. */
+    setReadbacks(list) {
+      if (!view.state.field(readbackField, false)) return;
+      view.dispatch({ effects: setReadbacks.of(list || []) });
+    },
+    /** Show or hide the readback. Returns whether it is now shown. */
+    setReadbackShown(on) {
+      view.dispatch({ effects: said.reconfigure(on ? [readbackField] : []) });
+      return !!on;
+    },
+    readbackCount() {
+      const f = view.state.field(readbackField, false);
+      let n = 0;
+      if (f) f.between(0, view.state.doc.length, () => { n++; });
+      return n;
+    },
     /** Put a claim's own line in view without stealing the keyboard — used when the map points
      *  at it, where the reader is working in the map and not in the text. */
     revealLine(n) {

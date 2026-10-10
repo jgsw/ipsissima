@@ -863,6 +863,24 @@ body.fs #fsexit{display:inline-flex}
 .xmode button:first-child{border-radius:6px 0 0 6px}
 .xmode button:last-child{border-radius:0 6px 6px 0;border-left:0}
 .xmode button.on{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
+/* ---- a bridge's steps, and its questions ---- */
+#brf{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);display:grid;place-items:center;padding:2rem}
+#brf[hidden]{display:none}
+#brf .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  width:min(52rem,95vw);max-height:min(46rem,90vh);display:flex;flex-direction:column;
+  box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
+#brf header{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;border-bottom:1px solid var(--line)}
+#brfbody{overflow:auto;padding:.8rem 1rem}
+#brfmove{margin:0 0 .6rem;color:var(--fg-dim)}
+#brffig{border:1px solid var(--line);border-radius:8px;max-height:24rem;overflow:auto}
+#brffig .amech-stage{max-height:none}
+.brfh{margin:.9rem 0 .3rem;font-size:.82em;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-dim)}
+#brfqs{margin:0;padding-left:1.3rem}
+#brfqs li{margin:.35rem 0}
+#brfqs .said{margin:.15rem 0 0;padding-left:1rem;list-style:disc;color:var(--fg)}
+#brfqs .none,#brfqs .reader{color:var(--fg-dim);font-style:italic;font-size:.92em}
+#brffoot{display:flex;align-items:center;gap:.6rem;padding:.45rem .8rem;border-top:1px solid var(--line);font-size:.85em}
+#brffoot .brfnote{opacity:.75}
 #about{position:fixed;inset:0;z-index:40;background:rgba(20,24,34,.38);
   display:grid;place-items:center;padding:2rem}
 #about[hidden]{display:none}
@@ -1346,6 +1364,26 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
     </div>
   </div>
 
+  <!-- A BRIDGE'S STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). Clicking a causal scheme's
+       name on an inference bar in Reasons: the steps its premises state, drawn as the Mechanism
+       view draws them, and what the map says to each of the scheme's questions. -->
+  <div id="brf" hidden role="dialog" aria-modal="true" aria-labelledby="brfhead">
+    <div class="card">
+      <header>
+        <b id="brfhead"></b>
+        <span class="grow"></span>
+        <button class="plain x" id="brfclose" title="Close (Esc)">&times;</button>
+      </header>
+      <div id="brfbody">
+        <p id="brfmove"></p>
+        <div id="brffig"></div>
+        <h4 class="brfh" id="brfqh">What to ask of it, and what the map records</h4>
+        <ol id="brfqs"></ol>
+      </div>
+      <footer id="brffoot"></footer>
+    </div>
+  </div>
+
   <!-- Right-click on a claim puts this up. A menu rather than an action, because everywhere
        else a right-click offers choices and one that acts cannot be taken back. -->
   <div id="ctx" hidden role="menu"></div>
@@ -1408,6 +1446,10 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
         <button class="plain tiny icon" id="adfind" hidden title="Find in the Argdown (Cmd/Ctrl-F)">
           <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.1"/><path d="M12.4 12.4 17 17"/></svg><span>Find</span></button>
         <button class="plain tiny" id="adnums" hidden title="Show or hide line numbers">1,2,3</button>
+        <!-- STEPS IN WORDS. Shown only on a map whose claims state steps: under each `causes:`
+             block, a quiet line saying what it means, in the Mechanism view's own words. -->
+        <button class="plain tiny" id="adsaid" hidden
+                title="Under each step (causes:), say in words what it means, as the Mechanism view will draw it">↳ steps</button>
         <button class="plain tiny" id="adfold" hidden
                 title="Fold every {…} provenance block, so the argument's shape is on one screen. Again to unfold.">{…}</button>
         <button class="plain tiny icon" id="adsave" hidden title="Write the Argdown back to disk">
@@ -1917,7 +1959,7 @@ function openingDepth(graph){
     // hands the reader's own rung back and must keep it.
     readableScale: READABLE_SCALE,
     onLocate: msLocate,
-    onMenu: ctxShow, onExplode: explodeShow,
+    onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow,
     onMargin: openMargin,
     onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
@@ -4920,6 +4962,7 @@ document.addEventListener("keydown", function(e){
   // Mechanism chart's focus, the message box) does not act on the same press.
   var one = function(f){ e.preventDefault(); f(); };
   if (!$("expl").hidden) return one(explHide);
+  if (!$("brf").hidden) return one(bridgeHide);
   if (!$("about").hidden) return one(closeAbout);
   if (!$("cdlg").hidden) return one(closeCommentDialog);
   if (!$("ctx").hidden) return one(ctxHide);
@@ -5619,6 +5662,8 @@ $("xsvg").onclick = explExportSVG;
 $("xpng").onclick = explExportPNG;
 // Clicking the dim surround dismisses it, as it does for the About card.
 $("expl").onclick = function(ev){ if (ev.target === $("expl")) explHide(); };
+$("brf").onclick = function(ev){ if (ev.target === $("brf")) bridgeHide(); };
+$("brfclose").onclick = bridgeHide;
 
 function msIndexParagraphs(lines){
   MSPARA = new Array(lines.length + 1);
@@ -6298,6 +6343,10 @@ $("mszothl").onclick = zotHighlightSelection;
  * time is a picture of a file that no longer exists.
  */
 var ED = null, LAST_GOOD = null, previewTimer = null, DIRTY = false;
+/* THE GRAPH THE LINTER LAST PARSED, and the text it parsed. The checks, the readback and the
+ * completion all read it, so one parse per pause in the typing serves all three. */
+var LINT_GRAPH = null, LINT_TEXT = null;
+var AD_SAID = (function(){ try { return localStorage.getItem("ipsissima.adsaid") !== "off"; } catch (e) { return true; } })();
 // How many claims the last version that parsed had. See `schedulePreview`.
 var LAST_GOOD_N = 0;
 
@@ -6308,7 +6357,18 @@ function showArgdown(text){
       ED = window.ArgdownEditor.create($("adhost"), {
         doc: text,
         lineNumbers: false,
-        lint: parseErrors,
+        lint: editorLint,
+        // THE MECHANISM VOCABULARY WHERE IT IS WRITTEN (NOTES-integration.md §3): completion and
+        // hover from profile.json and the last good parse. Inert on a build without the module.
+        complete: function(text, pos){
+          var L = window.ArgdownMechanismLint;
+          return L ? L.complete(text, pos, LINT_GRAPH || CURRENT_GRAPH) : null;
+        },
+        hover: function(text, pos){
+          var L = window.ArgdownMechanismLint;
+          return L ? L.hover(text, pos, LINT_GRAPH || CURRENT_GRAPH) : null;
+        },
+        readback: AD_SAID,
         knowsClaim: function(name){ return !!claimByLabel(name); },
         // The completion list is the map's own: whatever the last good parse defined. It goes
         // stale only as far as the live preview does, which is a keystroke's worth.
@@ -6324,6 +6384,7 @@ function showArgdown(text){
                                   schedulePreview(); }
       });
       ["adfind","adnums","adfold","adsave","adsaveas"].forEach(function(id){ $(id).hidden = false; });
+      $("adsaid").classList.toggle("on", AD_SAID);
       // Published for the same reason `__ARGDOWN_PARSE__` is: a page that embeds this needs a
       // way in, and so does anything driving it to check that an edit really reaches the map.
       window.__ARGDOWN_EDITOR__ = ED;
@@ -6375,6 +6436,33 @@ function followClaim(n){
 
 /** Argdown's OWN errors, positioned. The parser is the authority on what is valid; the editor
  *  module only adds the traps that parse cleanly and mean the wrong thing. */
+/** What the editor marks: the parser's errors first, and where the file parses, the mechanism
+ *  vocabulary's faults and queries (argdown-mechanism-lint.js: mechanism.py's local rules, in its
+ *  words). Each successful parse also refreshes the readback under each step. */
+function editorLint(text){
+  var errs = parseErrors(text);
+  if (errs.length || LINT_TEXT !== text || !LINT_GRAPH) return errs;
+  var L = window.ArgdownMechanismLint, out = [];
+  if (L) { try { out = L.lint(text, LINT_GRAPH); } catch (e) { out = []; } }
+  refreshReadback(text, LINT_GRAPH);
+  return out;
+}
+function refreshReadback(text, graph){
+  if (!ED || typeof ED.setReadbacks !== "function") return;
+  var M = window.ArgdownMechanism, L = window.ArgdownMechanismLint;
+  var list = [];
+  if (AD_SAID && M && L && typeof M.readback === "function" && graph && graph.mechanism) {
+    try {
+      M.readback(graph).forEach(function(r){
+        var at = L.stepAnchor(text, r.title);
+        if (at != null) list.push({ pos: at, lines: r.lines });
+      });
+    } catch (e) { list = []; }
+  }
+  ED.setReadbacks(list);
+  $("adsaid").hidden = !(graph && graph.mechanism && (graph.mechanism.claims || []).length);
+}
+
 function parseErrors(text){
   if (typeof window.__ARGDOWN_PARSE__ !== "function") return [];
   // Broken braces first, and reported one per block rather than only the first: the parser
@@ -6392,8 +6480,9 @@ function parseErrors(text){
       });
     }
   }
-  try { window.__ARGDOWN_PARSE__(text); return []; }
+  try { LINT_GRAPH = window.__ARGDOWN_PARSE__(text); LINT_TEXT = text; return []; }
   catch (e) {
+    LINT_GRAPH = null; LINT_TEXT = null;
     var msg = String(e && e.message || e);
     // The parser reports "At 7:1" — enough to put the mark on the right line.
     var m = /(?:At\s+)?(\d+):(\d+)/.exec(msg);
@@ -6536,7 +6625,7 @@ function redrawFrom(graph){
   if (LIVE) { LIVE.destroy(); LIVE = null; }
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
-    onExplode: explodeShow,
+    onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow,
     onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
@@ -6986,6 +7075,17 @@ $("adfold").onclick = function(){
     setTimeout(markState, 1600);
   }
   $("adfold").classList.toggle("on", AD_FOLDED);
+};
+
+/* STEPS IN WORDS: the readback under each `causes:` block, on by default, remembered per reader. */
+$("adsaid").onclick = function(){
+  AD_SAID = !AD_SAID;
+  try { localStorage.setItem("ipsissima.adsaid", AD_SAID ? "on" : "off"); } catch (e) {}
+  $("adsaid").classList.toggle("on", AD_SAID);
+  if (ED && typeof ED.setReadbackShown === "function") {
+    ED.setReadbackShown(AD_SAID);
+    if (AD_SAID && LINT_GRAPH && LINT_TEXT === ED.getText()) refreshReadback(LINT_TEXT, LINT_GRAPH);
+  }
 };
 
 $("adnums").onclick = function(){
@@ -7678,6 +7778,107 @@ function ctxHide(){ $("ctx").hidden = true; }
  * text, step, rule and verdict. Nothing is recomputed and nothing is stored: the panel is
  * transient, which is the whole reason it is a panel. */
 function explHide(){ $("expl").hidden = true; }
+
+/* A BRIDGE'S STEPS (10 Oct 2026). A causal scheme's name on an inference bar says the step carries
+ * the mechanism into the argument; this shows which steps, drawn by the Mechanism view itself, and
+ * what the map says to each of the scheme's questions -- what it records, or that it records
+ * nothing. It reports; whether the move succeeds is the reader's to judge. */
+var BRF = null, BRF_TITLES = null;
+function bridgeHide(){
+  $("brf").hidden = true;
+  if (BRF) { BRF.destroy(); BRF = null; }
+}
+function bridgeShow(b){
+  var g = CURRENT_GRAPH, MV = window.ArgdownMechanism;
+  if (!g || !g.mechanism || !MV) return;
+  var inf = (g.mechanism.inferences || []).filter(function(f){ return f.argument === b.argument && f.step === b.step; })[0];
+  var sch = MV.bridgeScheme([b.scheme]);
+  if (!inf || !sch) return;
+  BRF_TITLES = inf.inputs.slice();
+  $("brfqh").textContent = "What to ask of it, and what the map records";
+  $("brfhead").textContent = sch.name + " \u2014 \u2039" + b.argument + "\u203a, step " + b.step;
+  $("brfmove").textContent = sch.move;
+  $("brf").hidden = false;          // before drawing: the chart measures the box it fits
+  if (BRF) { BRF.destroy(); BRF = null; }
+  var fig = $("brffig");
+  fig.textContent = "";
+  BRF = MV.create(fig, g, { figure: { titles: BRF_TITLES, onOpen: function(){ bridgeOpen(BRF_TITLES); },
+                                      title: "These steps in the Mechanism view: click to open it there" } });
+  fig.hidden = !BRF;
+  var M = MV.model(g);
+  var qs = M ? MV.bridgeQuestions(M, { argument: b.argument, step: b.step, scheme: sch.name, inputs: inf.inputs }) : [];
+  var ol = $("brfqs");
+  ol.textContent = "";
+  qs.forEach(function(q){
+    var li = document.createElement("li");
+    var t = document.createElement("div"); t.textContent = q.question; li.appendChild(t);
+    if (q.status === "recorded") {
+      var ul = document.createElement("ul"); ul.className = "said";
+      q.said.forEach(function(x){ var it = document.createElement("li"); it.textContent = x; ul.appendChild(it); });
+      li.appendChild(ul);
+    } else {
+      var p = document.createElement("div"); p.className = q.status;
+      p.textContent = q.status === "none" ? "The map records nothing on this: the text may be silent, or the map may have missed what it says."
+                                         : "For the reader: nothing in the map can answer this.";
+      li.appendChild(p);
+    }
+    li.dataset.status = q.status;
+    ol.appendChild(li);
+  });
+  var foot = $("brffoot");
+  foot.textContent = "";
+  var open = document.createElement("button");
+  open.type = "button"; open.textContent = "Open in the Mechanism view";
+  open.disabled = !BRF;
+  open.onclick = function(){ bridgeOpen(BRF_TITLES); };
+  foot.appendChild(open);
+  var note = document.createElement("span"); note.className = "brfnote";
+  note.textContent = BRF ? "A bridge is a defeasible causal move, never checked for validity. This says what the map records; whether the move succeeds is yours to judge."
+                         : "None of its premises states a step, so there is nothing to draw.";
+  foot.appendChild(note);
+  $("brfclose").focus({ preventScroll: true });
+}
+/* A PARAGRAPH'S STEPS (10 Oct 2026): the "↝ n steps" at the foot of an Exposition card. The steps
+ * its claims state, drawn as the Mechanism view draws them, where the text sets them out -- and each
+ * in words, as the editor's readback says it. Same panel as a bridge's, without the questions. */
+function cardStepsShow(d){
+  var g = CURRENT_GRAPH, MV = window.ArgdownMechanism;
+  if (!g || !g.mechanism || !MV || !d || !(d.titles || []).length) return;
+  BRF_TITLES = d.titles.slice();
+  $("brfhead").textContent = (d.para ? "\u00b6 " + d.para + ": t" : "T") + "he " +
+    (d.steps === 1 ? "step" : d.steps + " steps") + " this paragraph sets out";
+  $("brfmove").textContent = "Where the text sets them out. In the Mechanism view they stand in their chain, beside the steps the rest of the text gives.";
+  $("brf").hidden = false;
+  if (BRF) { BRF.destroy(); BRF = null; }
+  var fig = $("brffig");
+  fig.textContent = "";
+  BRF = MV.create(fig, g, { figure: { titles: BRF_TITLES, onOpen: function(){ bridgeOpen(BRF_TITLES); },
+                                      title: "These steps in the Mechanism view: click to open it there" } });
+  fig.hidden = !BRF;
+  $("brfqh").textContent = "What each step says";
+  var ol = $("brfqs");
+  ol.textContent = "";
+  var want = {}; BRF_TITLES.forEach(function(t){ want[t] = true; });
+  (typeof MV.readback === "function" ? MV.readback(g) : []).forEach(function(r){
+    if (!want[r.title]) return;
+    r.lines.forEach(function(line){
+      var li = document.createElement("li"); li.textContent = line; ol.appendChild(li);
+    });
+  });
+  var foot = $("brffoot");
+  foot.textContent = "";
+  var open = document.createElement("button");
+  open.type = "button"; open.textContent = "Open in the Mechanism view";
+  open.disabled = !BRF;
+  open.onclick = function(){ bridgeOpen(BRF_TITLES); };
+  foot.appendChild(open);
+  $("brfclose").focus({ preventScroll: true });
+}
+function bridgeOpen(titles){
+  bridgeHide();
+  setArrangement("mechanism");
+  if (MECH && typeof MECH.showSteps === "function") MECH.showSteps(titles || []);
+}
 
 function explGo(title){
   var node = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).filter(function(x){

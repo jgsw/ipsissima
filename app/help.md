@@ -463,6 +463,12 @@ paragraph of its section, so you can find it in the text. The numbers also show 
 gave no claim: from ¶ 2 to ¶ 5, two paragraphs were passed over. Read down a card, then along to
 the next, and at the end of a row on to the next row, as you would lines of text.
 
+Where a paragraph's claims set out a mechanism — they state causal steps, in a map that has one —
+the card says so at the right of its foot: **↝ 3 steps**. Click it to see those steps drawn as the
+Mechanism view draws them, at the place in the text where they are set out, as an author puts a
+diagram beside the passage that explains it, with each step in words beneath. **Open in the
+Mechanism view** shows them in their chain, beside the steps the rest of the text gives.
+
 **The column.** Every claim has a row of its own, top to bottom in the order the text runs, so the
 map reads the way the Manuscript beside it does. The relations move into the margins as arcs. On
 the left are reasons the reader has **already met** when they reach the claim; on the right are
@@ -677,8 +683,13 @@ finding of no effect. A "no effect" line says the text finds none.
 **Bridges.** In the Reasons map, an argument whose step names a causal scheme draws the scheme's
 short name in italics on its inference bar: "consequences", "means → end", "cases → general",
 "cause → effect". Such a step, a bridge, carries the mechanism into the argument: its premises are
-steps the text states. Hover the name to see what move it makes and what to ask of it. A bridge is
-never checked for validity, as a deductive rule is. In the Mechanism view, **Taken on by the
+steps the text states. Hover the name to see what move it makes and what to ask of it; **click it**
+to see the steps its premises state, drawn as the Mechanism view draws them, and, under each of the
+scheme's questions, what the map records on it — a blocker, a rival account, another route to the
+same outcome — or that it records nothing there, which is where the text may be silent or the map may
+have missed what it says. Some questions only a reader can answer, and the panel says which. It
+reports; whether the move succeeds is yours to judge. **Open in the Mechanism view** goes to the
+first of the steps, in its chain. A bridge is never checked for validity, as a deductive rule is. In the Mechanism view, **Taken on by the
 argument** lists the states where the chain stops but a claim stating the step into them is a reason
 in the argument. The text goes on there, by argument rather than by cause.
 
@@ -1253,6 +1264,20 @@ The editor helps with the mechanics, so the argument gets your attention instead
 - **Where a line does not parse, the margin says so on the line**, with the real Argdown
   parser doing the judging — plus warnings for the traps that parse cleanly and mean the
   wrong thing, which are worse.
+- **A mechanism is checked as you write it.** Inside a step's `{causes: …}`, or the front matter's
+  `mechanism:` block, a key the profile does not know (`sgn:`), a value not in its list
+  (`on: stocks`), or a state, actor, chain or level that is not declared (`from: droght`) is marked
+  where it is written, with what it may have meant — the same faults, in the same words, that the
+  checker reports. A query (the checker asks; it may be right as it is) is marked more quietly.
+- **Completion knows the vocabulary.** Inside `{causes:`, the keys with what each means; after
+  `from:`, `to:`, `via:`, `unless:` and the like, the declared states with their labels; after
+  `sign:` or `on:`, the values, with what each draws. <kbd>Ctrl-Space</kbd> asks for the list.
+  Rest the pointer on a state's id to see its label, actor and role, or on a key to see its meaning.
+- **Under each step, a line says in words what it means** — “Drought” raises “Migration” ·
+  asserted · chain: drought — in the words the Mechanism view will draw it with. A step that means
+  something other than what you meant shows it there, at once. With **{…}** folding the metadata
+  away, the claims and what each step says are left on one screen. **↳ steps** in the Argdown pane
+  switches these lines off and on.
 
 **THE MOST EXPENSIVE MISTAKE IN THE LANGUAGE** is writing a relation the wrong way up. Both
 parse; only one is what you meant.

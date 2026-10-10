@@ -848,6 +848,20 @@ loop that is most of a chain is laid out as a ring; the text's own boxes are com
 condition is written on it and the state drawn; and a chain conditioned on one state can be shown as
 one panel per value. Every 1.18 file conforms unchanged.
 
+Since 10 October 2026 the checker also reports a key the `mechanism:` block, a state, an actor, a
+chain, a kind or a channel cannot carry, as it has a step's since 1.16: such a key was never read.
+In 64 maps it found one (a step's `design:` written on a state). The editor marks these faults, and
+the checker's other faults and queries about single keys, states and chains, where they are written
+(`app/src/argdown-mechanism-lint.js`, held to the checker word for word by
+`app/test_mechanism_lint.mjs`); the census's questions about the whole chain stay the checker's.
+
+The same day, each bridge scheme's questions gained `asks` in the registry: for each question, the
+probe that reads what the map records on it (`counter`: blockers, regimes, rival and opposed steps
+into the same outcome; `rivals`; `otherroutes`; `goals` and `sideeffects`; `common`; and the rest),
+or null where only a reader can answer it. The census reports, for each bridge, which questions the
+map records something on and which nothing; the Reasons view shows the same when a bridge's name is
+clicked. It reports and does not judge. No key in a map changed.
+
 **1.18** (8 October 2026) added, after James's two principles for the Mechanism view ("no state is
 shown unless it is involved in a mechanism or flow"; "mechanisms shown together meet at at least one
 state"):

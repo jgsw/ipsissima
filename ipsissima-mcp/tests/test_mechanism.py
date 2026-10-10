@@ -308,6 +308,52 @@ for bad, why in ((SYSTEM.replace("part_of: strat}", "part_of: nowhere}", 1), "no
                                  "{label: \"Strategies of boundary making\", actor: actors, part_of: expand}"), "runs in a circle")):
     check(f"a bad part_of is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
+print("\nunknown keys in the front matter (10 Oct 2026)")
+# A misspelt key on a state, an actor, a chain, or the block itself was never read and nothing said
+# so, as a step's were before 1.16. Mutation: drop the call for states -> `lable` passes silently.
+ku = run(CHAIN.replace('work:    {label: "Stays in work", actor: person}',
+                       'work:    {lable: "Stays in work", actor: person}')
+              .replace('person:   {label: "Offender", level: micro}', 'person:   {label: "Offender", levl: micro}')
+              .replace('    levels: [macro, meso, micro]', '    levels: [macro, meso, micro]\n    qestion: "?"'))
+kmsg = [f["message"] for f in by(ku, "mechanism")]
+check("a misspelt key on a state is named, with what it may have meant",
+      "state `work`: `lable` is not a key a state can carry, so it is never read -- did you mean `label`?" in kmsg, True)
+check("and on an actor", any(m.startswith("actor `person`: `levl` is not a key an actor can carry") for m in kmsg), True)
+check("and on the block itself", any(m.startswith("`qestion` is not a key the `mechanism:` block can carry") and "`question`" in m for m in kmsg), True)
+check("a clean block says nothing of keys", [m for m in by(run(CHAIN), "mechanism") if "is not a key" in m["message"]], [])
+
+print("\nwhat the map says to a bridge's questions (10 Oct 2026)")
+# Each scheme's question names a probe (`asks`), and the census reads it off the map: recorded,
+# nothing recorded, or for the reader. Mutations: drop the blockers from `counter`, the rival steps
+# from `rivals`, the outcome test from `goals`, or the kind's general claim from `kinds` -> fails.
+BQ = (FIXTURE / "bridge-questions.argdown").read_text(encoding="utf-8")
+rq = run(BQ)
+bq = {a: {q[1] or f"reader{i}": q for i, q in enumerate(qs)} for a, _st, _sch, qs in rq["shape"]["chain"]["bridge_questions"]}
+check("a blocker and a regime answer 'does anything counteract it?'",
+      [x for x in bq["Cause to effect"]["counter"][3] if "unless" in x or "regime:" in x],
+      ["\u201cThe levy is imposed\u201d raises \u201cSugary drinks cost more\u201d unless \u201cCross-border shopping\u201d",
+       "\u201cThe levy is imposed\u201d raises \u201cSugary drinks cost more\u201d, regime: in towns"])
+check("so do a view the text reports and an opposed step into the same outcome",
+      sum(1 for x in bq["Cause to effect"]["counter"][3] if x.startswith("a view the text reports") or x.startswith("\u201cAdvertising\u201d")), 2)
+check("backing says what the text offers for each step", bq["Cause to effect"]["backing"][3], ["tested: 1 (study)", "asserted: 1"])
+check("an action's other goals are the outcomes it reaches, its side effects the rest",
+      (bq["What to do"]["goals"][3], len(bq["What to do"]["sideeffects"][3])),
+      (["\u201cThe levy is imposed\u201d raises \u201cRevenue is raised\u201d"], 2))
+check("a common cause and a step the other way are found",
+      (bq["Correlation"]["common"][2], bq["Correlation"]["reverse"][2]), ("recorded", "recorded"))
+check("the rival account the text reports, with its stance", bq["Effect to cause"]["rivals"][3],
+      ["\u201cHabit\u201d raises \u201cShoppers drink less sugar\u201d (rejected)"])
+check("nothing recorded is said as nothing: no blocker on the lever", bq["Lever"]["blockers"][2:], ["none", []])
+check("a case's kind, and the kind's general claim", len(bq["Cases"]["kinds"][3]), 2)
+check("a question only a reader can answer is left to the reader",
+      [q[2] for k, q in bq["Vindication"].items() if k.startswith("reader")], ["reader", "reader", "reader"])
+check("a step in one setting only, for a conclusion carried to another",
+      bq["There to here"]["here"][3][:1], ["only where no setting is named: \u201cSugary drinks cost more\u201d \u2192 \u201cShoppers drink less sugar\u201d (-)"])
+cen = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(FIXTURE / "bridge-questions.argdown"), "--no-fix"],
+                     capture_output=True, text=True).stdout
+check("the census names each question the map records nothing on",
+      "- nothing recorded: Is a general claim drawn from one case?" in cen, True)
+
 print("\nprofile 1.4: a joint effect, and a state across levels")
 # THE COLEMAN BOAT (26 Sep 2026). "Belief moves people to act only where they wish to fit in" had
 # no notation: two separate arrows claimed each cause suffices alone. And Wimmer's consensus,

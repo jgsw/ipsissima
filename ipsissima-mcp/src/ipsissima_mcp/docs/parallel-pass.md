@@ -217,7 +217,14 @@ James's two principles for the Mechanism view (8 October 2026):
 ## What the census reports
 
 - **bridge**: each bridge, its scheme, and how many of its premises state a step. A bridge none of
-  whose premises states a step is queried, because it bridges nothing.
+  whose premises states a step is queried, because it bridges nothing. Under each, its **questions**:
+  how many the map records something on, how many nothing, and how many only a reader can answer,
+  with each question it records nothing on named (`- nothing recorded: ...`). That is the bridge
+  pass's checklist: go back to the source for each. Where the text answers it -- a blocker, a rival
+  account, another route -- mark it (`unless:`, `#reported`, the step itself), and the line goes.
+  Where the text is silent, leave it: the silence is the finding. The probes are the registry's
+  (`bridges`, each question's `asks`), and the Reasons view shows the same answers when a bridge's
+  name is clicked.
 - **handed**: a state the chain stops at, whose step is a reason in the argument. The text goes on,
   by argument rather than by cause. Unlike a gap, it is not queried.
 - **? gap**: a state the chain stops at and nothing argues from. As before, a finding about the text,

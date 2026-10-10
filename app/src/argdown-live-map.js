@@ -2652,7 +2652,7 @@ function pcsRows(pcs) {
   for (const l of pcs) {
     if (!l) continue;
     const concl = l.role === "intermediary-conclusion" || l.role === "main-conclusion";
-    rows.push({ n: l.n, role: l.role, concl, bar: concl, ref: !!l.drawn,
+    rows.push({ n: l.n, role: l.role, concl, bar: concl, ref: !!l.drawn, step: l.step == null ? null : l.step,
                 refLabel: l.drawn ? String(l.title || "") : null,
                 text: l.drawn ? "[" + String(l.title || "") + "]" : String(l.text || ""),
                 rule: concl ? (l.rule || null) : null,
@@ -3508,6 +3508,19 @@ function bridgeTip(b) {
          "\n\nWhat to ask of it:\n" + b.questions.map(q => "• " + q).join("\n") +
          "\n\nA defeasible causal move, not a deductive rule, so it is never checked for validity.";
 }
+/** A BRIDGE'S NAME OPENS ITS STEPS (10 Oct 2026; NOTES-integration.md, Proposal A): the steps its
+ *  premises state, drawn as the Mechanism view draws them, and what the map says to each of the
+ *  scheme's questions. The host draws the panel (`opt.onBridge`); a map without one keeps the
+ *  tooltip alone. `b` is {argument, step, scheme}. */
+function bridgeClick(rt, rtip, b, opt) {
+  if (!opt || typeof opt.onBridge !== "function") return;
+  rt.classList.add("alm-bridge-hit");
+  rtip.textContent += "\n\nClick to see the steps it carries, and what the map says to each question.";
+  const go = ev => { ev.stopPropagation(); ev.preventDefault(); opt.onBridge(b, ev); };
+  rt.addEventListener("pointerdown", ev => ev.stopPropagation());
+  rt.addEventListener("mousedown", ev => ev.stopPropagation());
+  rt.addEventListener("click", go);
+}
 function shortRule(name) {
   return String(name).split(",").map(part => {
     const t = part.trim();
@@ -3567,10 +3580,18 @@ const DEFAULTS = {
 
 function createLiveMap(container, graph, options) {
   const opt = Object.assign({}, DEFAULTS, options || {});
+  // HOW MANY STEPS EACH CLAIM STATES (profile `causes:`), read before the repair below, which keeps
+  // only what the argument map draws: a paragraph card says when its claims set out a mechanism.
+  const STEPS_OF = new Map();
+  for (const c of ((graph && graph.mechanism && graph.mechanism.claims) || []))
+    if ((c.causes || []).length) STEPS_OF.set(c.title, c.causes.length);
   // Repair anything that cannot be drawn, and SAY SO. A silently mended file teaches its
   // author nothing, and this map is meant to be handed around with other people's Argdown.
   const cleaned = sanitiseGraph(graph);
   graph = cleaned.graph;
+  const byIdLabel = new Map((graph.nodes || []).map(n => [n.id, n.label]));
+  /** What each card's "↝ n steps" opens: kept beside the element, which is reused across redraws. */
+  const cardSteps = new WeakMap();
   if (cleaned.problems.length && typeof console !== "undefined" && console.warn)
     console.warn("argdown-live-map: the graph needed repair before it could be drawn:\n  - " +
                  cleaned.problems.join("\n  - "));
@@ -4248,6 +4269,9 @@ function createLiveMap(container, graph, options) {
                                  + "formulas were written, so they may no longer say what the "
                                  + "claims say. Re-read them before trusting this step."
                : "");
+            // The map counts an argument's inference steps from 0; the mechanism's record, as the
+            // checker does, from 1.
+            if (bridge && r.step != null) bridgeClick(rt, rtip, { argument: n.label, step: r.step + 1, scheme: bridge.name }, opt);
             rt.appendChild(rtip);
             box.appendChild(rt);
             if (v === "invalid") {
@@ -5087,6 +5111,7 @@ function createLiveMap(container, graph, options) {
         ? node.pcs.filter(l => l && l.role === "premise" && l.step === step && !l.drawn).length
         : 0;
       bars.set(k, { geo, name: list[0].name, count: list.length + inside, inside, hull,
+                    arg: node ? node.label : null, step,
                     arrivals, rule: named ? named.rule : null,
                     validity: named ? named.validity : null,
                     countermodel: named ? named.countermodel : null });
@@ -5179,6 +5204,7 @@ function createLiveMap(container, graph, options) {
         let rtip = rt.querySelector("title");
         if (!rtip) { rtip = el("title"); rt.appendChild(rtip); }
         rtip.textContent = bridge ? bridgeTip(bridge) : info.rule;
+        if (bridge && !rt.hasAttribute("data-bridge")) { rt.setAttribute("data-bridge", "1"); bridgeClick(rt, rtip, { argument: info.arg, step: info.step + 1, scheme: bridge.name }, opt); }
 
         /* WHAT THE NAME'S CLAIM CAME TO -- and only one of the four states is loud.
          *
@@ -5444,6 +5470,31 @@ function createLiveMap(container, graph, options) {
       const t = box.querySelector(".alm-card-no");
       t.setAttribute("x", cd.x + 8); t.setAttribute("y", cd.y + cd.height - 5);
       t.textContent = cd.para ? "\u00b6 " + cd.para : "";
+      // A PARAGRAPH THAT SETS OUT A MECHANISM SAYS SO (10 Oct 2026; NOTES-integration.md): "↝ 3 steps"
+      // at the card's foot, where its claims state steps, opening a figure of them -- the author's
+      // diagram, as it were, where the text explains. Not drawn in the card: at a card's width a
+      // chain cannot be read.
+      const titles = cd.ids.map(id => (byIdLabel.get(id) || "")).filter(lbl => STEPS_OF.has(lbl));
+      const nSteps = titles.reduce((a, lbl) => a + STEPS_OF.get(lbl), 0);
+      let mk = box.querySelector(".alm-card-steps");
+      if (nSteps && typeof opt.onCardSteps === "function") {
+        if (!mk) {
+          const m = el("text", { class: "alm-card-steps", "font-size": 9.5, "text-anchor": "end" });
+          m.append(el("tspan"), el("title"));
+          box.appendChild(m);
+          // The map pans from a press on its background, and takes the pointer to do it; a press
+          // here is a click on the mark, not the start of a pan.
+          m.addEventListener("pointerdown", ev => ev.stopPropagation());
+          m.addEventListener("mousedown", ev => ev.stopPropagation());
+          m.addEventListener("click", ev => { ev.stopPropagation(); const d = cardSteps.get(m); if (d) opt.onCardSteps(d, ev); });
+          mk = m;
+        }
+        cardSteps.set(mk, { titles, para: cd.para, steps: nSteps });
+        mk.setAttribute("x", cd.x + cd.width - 8); mk.setAttribute("y", cd.y + cd.height - 5);
+        mk.querySelector("tspan").textContent = "\u219d " + nSteps + (nSteps === 1 ? " step" : " steps");
+        mk.querySelector("title").textContent = "The " + (nSteps === 1 ? "step" : nSteps + " steps") +
+          " this paragraph's claims set out, drawn as the Mechanism view draws them: click to see";
+      } else if (mk) mk.remove();
       box.querySelector("title").textContent =
         (cd.para ? "Paragraph " + cd.para + " of this section" : "One passage of the text") +
         (cd.count > 1 ? ": its " + cd.count + " claims, top to bottom, in the order it makes " +
@@ -6890,6 +6941,8 @@ function injectStyle() {
 .alm-card-box{fill:var(--alm-fg,#1f1f1f);fill-opacity:.035;stroke:var(--alm-fg,#1f1f1f);
   stroke-opacity:.14;stroke-width:1}
 .alm-card-no{fill:var(--alm-fg-dim,#6b6b6b);font-variant-numeric:tabular-nums}
+.alm-card-steps{fill:var(--alm-accent,#3a7bd5);cursor:pointer;pointer-events:auto;font-variant-numeric:tabular-nums}
+.alm-card-steps:hover{text-decoration:underline}
 .alm-echo{cursor:pointer}
 .alm-echo-box{fill:var(--alm-node-bg,#fff);fill-opacity:.6;stroke:var(--alm-fg-dim,#6b6b6b);
   stroke-width:1;stroke-dasharray:1.5 3;stroke-opacity:.8}
@@ -6915,6 +6968,8 @@ function injectStyle() {
 /* The rule name beside the bar. Italic and small: it names the LICENCE for the step, which is a
    remark about the argument rather than a move in it. */
 .alm-join-rule{font-style:italic;opacity:.85;pointer-events:none}
+.alm-bridge-hit{pointer-events:auto;cursor:pointer}
+.alm-bridge-hit:hover{opacity:1;fill:var(--alm-accent,#3a7bd5)}
 /* WHAT BECAME OF THE CLAIM THE RULE NAME MAKES. Four states, and only one is loud.
 
    NO NEW COLOUR. All four of the relation colours are spoken for -- green support, red attack,

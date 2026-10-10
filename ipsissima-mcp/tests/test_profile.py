@@ -12,6 +12,7 @@ both directions where the code has the whole list, and the document must name ev
 registry holds.
 """
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -113,6 +114,16 @@ check("the page's bridge schemes are the registry's, word for word", js_bridges 
 check("and the checker reads the same schemes", sorted(mechanism.BRIDGES) == sorted(b["name"].lower() for b in P["bridges"]["schemes"]))
 check("no scheme name holds a comma: Argdown splits a rule list on commas",
       not any("," in b["name"] for b in P["bridges"]["schemes"]))
+# WHAT EACH QUESTION ASKS OF THE MAP (10 Oct 2026): one `asks` per question, and every probe it names
+# is one both the checker and the page can run. Mutation: rename a probe in either -> fails.
+_asks = {a for b in P["bridges"]["schemes"] for a in b.get("asks") or [] if a}
+check("each scheme names what each of its questions asks of the map",
+      all(len(b.get("asks") or []) == len(b["questions"]) for b in P["bridges"]["schemes"]))
+_py_src = open(os.path.join(os.path.dirname(mechanism.__file__), "mechanism.py"), encoding="utf-8").read()
+_py_missing = sorted(a for a in _asks if not re.search(r"\b" + a + r"=", _py_src))
+_js_missing = sorted(a for a in _asks if not re.search(r"\b" + a + r": function", MECH_JS))
+check("and the checker can run every probe they name", not _py_missing, f"missing: {_py_missing}")
+check("and so can the page", not _js_missing, f"missing: {_js_missing}")
 
 print("\nthe registry against the method")
 conv_tags = set(re.findall(r"^\| `#(\w+)`", CONVENTIONS, re.M))

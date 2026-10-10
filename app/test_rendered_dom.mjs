@@ -1366,6 +1366,169 @@ async function editorChecks(browser) {
   await ctx.close();
 }
 
+/* THE MECHANISM VOCABULARY WHERE IT IS WRITTEN (NOTES-integration.md §3, 10 Oct 2026). Driven as a
+ * writer meets it, with real keys: a step's key misspelt by one keystroke is marked on the key with
+ * what it may have meant; typing a state id after `to:` offers the declared states with their
+ * labels; under each step a line says in words what it means, and the "↳ steps" button takes it
+ * away and brings it back. Setup (loading the planted chain) is by API; the behaviour is keys. */
+async function mechanismEditorChecks(browser) {
+  const out = path.join(tmp, "editor-standalone.html");
+  if (!fs.existsSync(out)) { check(false, "mechanism editor: the editor build exists", out); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.click("#picknew");
+  await page.waitForSelector(".cm-content", { timeout: 20000 });
+  const chain = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8");
+  await page.evaluate(t => window.__ARGDOWN_EDITOR__.loadText(t), chain);
+  await page.waitForFunction(() => window.__ARGDOWN_EDITOR__.readbackCount() > 0, null, { timeout: 8000 }).catch(() => {});
+  const said = await page.evaluate(() => [...document.querySelectorAll(".cm-ad-readback")].map(e => e.textContent));
+  // "argued for": the claim stating it has support in the map; the next step's claim has none.
+  check(/“Community order given” raises “Stays in work” · argued for/.test(said.join(" | ")) && /“Stays in work” raises “Reintegrates” · asserted/.test(said.join(" | ")),
+        "mechanism editor: under a step, what it says in words", said.slice(0, 2).join(" | ") || "no readback");
+  // One keystroke: `sign` becomes `sgn` (Delete after the s).
+  await page.evaluate(() => {
+    const ed = window.__ARGDOWN_EDITOR__, t = ed.getText();
+    const p = t.indexOf("to: work, sign") + "to: work, s".length;
+    ed.view.dispatch({ selection: { anchor: p }, scrollIntoView: true });
+    ed.view.contentDOM.focus();
+  });
+  await page.keyboard.press("Delete");
+  let marked = [];
+  try {
+    await page.waitForFunction(() => [...document.querySelectorAll(".cm-lintRange-warning")].some(e => e.textContent === "sgn"), null, { timeout: 5000 });
+    marked = await page.evaluate(() => [...document.querySelectorAll(".cm-lintRange-warning")].map(e => e.textContent));
+  } catch { /* asserted below */ }
+  check(marked.includes("sgn"), "mechanism editor: a misspelt key is marked where it was typed", "marked: " + (marked.join(", ") || "nothing"));
+  const linkSaid = await page.evaluate(() => [...document.querySelectorAll(".cm-ad-readback")].map(e => e.textContent).join(" | "));
+  check(/“Community order given” → “Stays in work”: link/.test(linkSaid),
+        "mechanism editor: and the readback says what the step now means (a link with no sign)", linkSaid.slice(0, 200));
+  // Typing a state id: replace `reint` after `to:` with `re`, and the declared states are offered.
+  await page.evaluate(() => {
+    const ed = window.__ARGDOWN_EDITOR__, t = ed.getText();
+    const p = t.indexOf("from: work, to: reint") + "from: work, to: ".length;
+    ed.view.dispatch({ selection: { anchor: p, head: p + 5 } });
+    ed.view.contentDOM.focus();
+  });
+  await page.keyboard.type("re", { delay: 40 });
+  let offered = [];
+  try {
+    await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 4000 });
+    offered = await page.evaluate(() => [...document.querySelectorAll(".cm-tooltip-autocomplete li")].map(e => e.textContent));
+  } catch { /* asserted below */ }
+  check(offered.some(x => /reint/.test(x) && /Reintegrates/.test(x)) && offered.some(x => /reoff/.test(x)),
+        "mechanism editor: after to:, the declared states with their labels", "offered: " + (offered.join(" | ") || "nothing"));
+  await page.keyboard.press("Escape");
+  const btn = page.locator("#adsaid");
+  check(await btn.isVisible(), "mechanism editor: the steps-in-words button shows on a map with steps");
+  await btn.click();
+  const off = await page.evaluate(() => window.__ARGDOWN_EDITOR__.readbackCount());
+  await btn.click();
+  await page.waitForTimeout(300);
+  const on = await page.evaluate(() => window.__ARGDOWN_EDITOR__.readbackCount());
+  check(off === 0 && on > 0, "mechanism editor: the button takes the readback away and brings it back", JSON.stringify({ off, on }));
+  await ctx.close();
+}
+
+/* A BRIDGE'S NAME OPENS ITS STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). On the planted
+ * bridges map, a real click on "cause → effect" in the Reasons map opens a panel with the two steps
+ * its premises state, drawn by the Mechanism view's own renderer (two arrows, the T-bar for
+ * "lowers"), and the scheme's questions with what the map records; "Open in the Mechanism view"
+ * switches arrangement with the bridge's first step selected. */
+async function bridgePanelChecks(browser) {
+  const out = path.join(tmp, "editor-standalone.html");
+  if (!fs.existsSync(out)) { check(false, "bridge panel: the editor build exists", out); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await ctx.newPage();
+  page.on("dialog", d => d.accept());
+  await page.goto("file://" + out);
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.click("#picknew");
+  await page.waitForSelector(".cm-content", { timeout: 20000 });
+  const text = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", "bridges.argdown"), "utf8");
+  await page.evaluate(t => window.__ARGDOWN_EDITOR__.loadText(t), text);
+  await page.waitForFunction(() => document.querySelectorAll("#map .alm-bridge-hit").length >= 3, null, { timeout: 10000 }).catch(() => {});
+  // The map alone, as a reader would look at it: beside the Argdown pane the bridge sat under it.
+  await page.click('button[data-close="argdown"]');
+  await page.waitForTimeout(600);
+  const hit = page.locator("#map .alm-bridge-hit", { hasText: "cause → effect" }).first();
+  let opened = false;
+  try { await hit.scrollIntoViewIfNeeded(); await hit.click({ timeout: 5000 }); opened = await page.locator("#brf").isVisible(); } catch { /* asserted below */ }
+  check(opened, "bridge panel: clicking a bridge's scheme name opens its steps");
+  if (!opened) { await ctx.close(); return; }
+  const got = await page.evaluate(() => ({
+    head: document.getElementById("brfhead").textContent,
+    arrows: document.querySelectorAll("#brffig svg g[data-edge]").length,
+    tbar: !!document.querySelector('#brffig svg path[marker-end*="tbar"]'),
+    qs: [...document.querySelectorAll("#brfqs > li")].map(li => li.dataset.status)
+  }));
+  check(/From cause to effect/.test(got.head) && /The curfew costs trust/.test(got.head), "bridge panel: it names the scheme and the argument", got.head);
+  check(got.arrows === 2 && got.tbar, "bridge panel: the premises' two steps, drawn as the Mechanism view draws them", JSON.stringify(got));
+  check(JSON.stringify(got.qs) === JSON.stringify(["recorded", "none"]),
+        "bridge panel: what the map records on each question, and where it records nothing", JSON.stringify(got.qs));
+  await page.click("#brffoot button");
+  await page.waitForTimeout(400);
+  const there = await page.evaluate(() => ({ mech: !document.getElementById("mech").hidden, brf: document.getElementById("brf").hidden,
+    side: (document.querySelector("#mech .amech-side") || {}).textContent || "" }));
+  check(there.mech && there.brf && /The curfew breeds resentment/.test(there.side),
+        "bridge panel: Open in the Mechanism view lands on the bridge's first step", JSON.stringify(there).slice(0, 200));
+  // A FIGURE'S MARKERS ARE ITS OWN. Open the panel again with the Mechanism view drawn: arrowheads
+  // that shared ids with the view's would be looked up in whichever came first, hidden or not.
+  await page.click('#view button[data-v="reasons"]');
+  await page.locator("#map .alm-bridge-hit", { hasText: "cause → effect" }).first().click({ timeout: 5000 }).catch(() => {});
+  const ids = await page.evaluate(() => [...document.querySelectorAll("marker[id]")].map(m => m.id));
+  check(ids.length > 0 && new Set(ids).size === ids.length && ids.some(i => /-f\d+$/.test(i)),
+        "bridge panel: a figure's arrowheads have ids of their own", ids.length + " markers, " + new Set(ids).size + " distinct");
+  await page.keyboard.press("Escape");
+  await ctx.close();
+}
+
+/* A PARAGRAPH THAT SETS OUT A MECHANISM SAYS SO (10 Oct 2026). On the Wilson 2023 sample in
+ * Exposition, with every claim shown, a card whose claims state steps carries "↝ n steps"; a real
+ * click on one opens the figure of those steps and each step in words, and "Open in the Mechanism
+ * view" goes there. Setup (the arrangement and the slider) by API; the click is a click. */
+async function cardStepsChecks(browser, built) {
+  const m = built.find(b => /^wilson-2023/.test(b.name));
+  if (!m) { check(false, "card steps: the Wilson 2023 sample is built"); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + m.html);
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.reload();
+  await page.waitForSelector("#map svg", { timeout: 15000 });
+  await page.click('#view button[data-v="exposition"]');
+  await page.evaluate(() => { const r = document.querySelector("#map .alm-range"); if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); } });
+  await page.waitForTimeout(1500);
+  const marks = await page.evaluate(() => [...document.querySelectorAll("#map .alm-card-steps")].map(e => e.textContent));
+  check(marks.length >= 10 && marks.every(x => /^↝ \d+ steps?/.test(x)),
+        "card steps: a card whose claims state steps says how many", marks.length + " marks: " + marks.slice(0, 3).join(" | "));
+  // One the map shows: the map pans its own drawing, so a mark off the stage is not one to click.
+  const at = await page.evaluate(() => {
+    const st = document.getElementById("map").getBoundingClientRect();
+    return [...document.querySelectorAll("#map .alm-card-steps")].findIndex(e => {
+      const r = e.getBoundingClientRect();
+      return r.width > 0 && r.left > st.left && r.right < st.right && r.top > st.top + 40 && r.bottom < st.bottom - 160;
+    });
+  });
+  let opened = false;
+  if (at >= 0) try { await page.locator("#map .alm-card-steps").nth(at).click({ timeout: 5000 }); opened = await page.locator("#brf").isVisible(); } catch { /* asserted below */ }
+  check(opened, "card steps: a click on the mark opens the steps");
+  if (opened) {
+    const got = await page.evaluate(() => ({ head: document.getElementById("brfhead").textContent,
+      arrows: document.querySelectorAll("#brffig svg g[data-edge]").length,
+      lines: [...document.querySelectorAll("#brfqs > li")].map(li => li.textContent) }));
+    check(/sets out/.test(got.head) && got.arrows >= 1 && got.lines.length >= 1 && got.lines.every(l => /“.+” .+ “.+”|→/.test(l)),
+          "card steps: the figure of them, and each in words", JSON.stringify(got).slice(0, 300));
+    await page.click("#brffoot button");
+    await page.waitForTimeout(400);
+    check(await page.evaluate(() => !document.getElementById("mech").hidden && document.getElementById("brf").hidden),
+          "card steps: Open in the Mechanism view goes there");
+  }
+  await ctx.close();
+}
+
 /* A CLAIM LINK STILL FOLLOWS WHILE FIND IS OPEN (reported by the author, 30 Sep 2026). Find's
  * highlight on part of a title splits the link's mark into pieces, and the click used to read
  * the name off the piece it landed on: "-claim]" names nothing, so the map stayed where it was.
@@ -2890,6 +3053,9 @@ await voiceChecks(browser);
 await tocChecks(browser);
 await navChecks(browser);
 await editorChecks(browser);
+await mechanismEditorChecks(browser);
+await bridgePanelChecks(browser);
+await cardStepsChecks(browser, built);
 await refClickChecks(browser);
 await quoteChecks(browser);
 await guidedChecks(browser);

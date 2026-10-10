@@ -287,7 +287,13 @@ function editorBundle() {
   bundle({ entryPoints: ["argdown-editor.src.mjs"], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(out, { force: true });
-  return wrap("CodeMirror 6 + the Argdown mode", js, "EDITOR");
+  // THE MECHANISM VOCABULARY, checked and offered where it is written (NOTES-integration.md §3):
+  // the registry itself, so a key added to the profile is known to the editor at once, and the
+  // module that ports mechanism.py's local rules. Editor builds only, as the editor is.
+  const profile = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp", "profile.json"), "utf8");
+  return wrap("CodeMirror 6 + the Argdown mode", js, "EDITOR") +
+         wrap("profile.json, the vocabulary the editor checks", "window.IPSISSIMA_PROFILE = " + safeJSON(JSON.parse(profile)) + ";", "EDITOR") +
+         wrap("argdown-mechanism-lint.js", readScript("argdown-mechanism-lint.js"), "EDITOR");
 }
 
 /** The annotated-manuscript export: the `docx` package plus the module that drives it.

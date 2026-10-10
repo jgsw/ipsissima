@@ -425,6 +425,9 @@ export function mechanismOf(res, titleToId) {
         title, kind: kind === "arguments" ? "argument" : "statement",
         id: titleToId && titleToId.has(title) ? titleToId.get(title) : null,
         tags: [...tags], text,
+        // EVERY MEMBER'S WORDS, joined as the checker joins them (mechanism.steps): its wording
+        // queries -- "associated with", "by itself" -- read all of a claim's statements, not one.
+        joined: members.map(m => m.text == null ? "" : String(m.text)).join(" "),
         fidelity: data.fidelity == null ? null : String(data.fidelity),
         warrant: data.warrant == null ? null : String(data.warrant),
         pinpoint: data.pinpoint == null ? null : String(data.pinpoint),

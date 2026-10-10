@@ -193,6 +193,43 @@ def _relation_keys():
 RELATION_KEYS = _relation_keys()
 
 
+def _declaration_keys():
+    """{"block", "states", "actors", "chains", "kinds", "channels"}: the keys each part of the
+    `mechanism:` block may carry, from the registry, as RELATION_KEYS has them for steps."""
+    try:
+        import json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
+                  encoding="utf-8") as fh:
+            m = json.load(fh)["mechanism"]
+        out = {"block": frozenset(k for k in m if k != "summary"), "channels": frozenset({"label"})}
+        for part in ("states", "actors", "chains", "kinds"):
+            out[part] = frozenset(m[part]["keys"])
+        return out
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+#: UNKNOWN KEYS IN THE FRONT MATTER WERE SILENT TOO (10 Oct 2026), as a step's were until 1.16: a
+#: misspelt `lable:` on a state, or a step's `design:` written on a state, was never read and
+#: nothing said so. Found once in 64 maps when the editor began to check the vocabulary as it is
+#: written (NOTES-integration.md, item 1).
+DECLARATION_KEYS = _declaration_keys()
+
+
+def _unknown_in(d, part):
+    """(key, nearest known key or None) for each key of `d` that part `part` of the block may not carry."""
+    import difflib
+    known = DECLARATION_KEYS.get(part)
+    if not known or not isinstance(d, dict):
+        return []
+    out = []
+    for k in d:
+        if str(k) not in known:
+            near = difflib.get_close_matches(str(k), sorted(known), n=1, cutoff=0.6)
+            out.append((str(k), near[0] if near else None))
+    return out
+
+
 def _unknown_keys(c, kind):
     """(key, nearest known key or None) for each key of relation `c` the profile does not know."""
     import difflib
@@ -659,6 +696,19 @@ def declared(fm):
                 problems.append(("?", f"chain `{cid}` gives `{sid}` the role `{sorted(bad)[0]}`; the "
                                       f"roles read are `intervention`, `condition` and `outcome`",
                                  {"chain": str(cid)}))
+    # KEYS THE PROFILE DOES NOT KNOW, in the block and in each thing it declares: never read.
+    _dym = lambda near: f" -- did you mean `{near}`?" if near else ""
+    for k, near in _unknown_in(m, "block"):
+        problems.append(("!", f"`{k}` is not a key the `mechanism:` block can carry, so it is never "
+                              f"read" + _dym(near), {}))
+    for part, noun, a in (("states", "state", "a state"), ("actors", "actor", "an actor"),
+                          ("chains", "chain", "a chain"), ("kinds", "kind", "a kind"),
+                          ("channels", "channel", "a channel")):
+        coll = m.get(part)
+        for xid, x in (coll.items() if isinstance(coll, dict) else ()):
+            for k, near in _unknown_in(x, part):
+                problems.append(("!", f"{noun} `{xid}`: `{k}` is not a key {a} can carry, so it is "
+                                      f"never read" + _dym(near), {noun: str(xid)}))
     # A WHOLE MAY NOT CONTAIN ITSELF, however far round: the view collapses parts into their
     # outermost whole, and a cycle has none.
     for sid in states:
@@ -1994,7 +2044,284 @@ def analyse(fm, doc):
         _d, _why = depth_of(block)
         profile = {**profile, "bridges": profile_bridges, "depth": _d, "depth_reason": _why,
                    "transfers": sorted(transfers)}
+        # WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026): see bridge_questions.
+        profile["bridge_questions"] = [
+            [arg, step, scheme, bridge_questions(ok, states, block, sorted(transfers), arg, step, scheme, inputs)]
+            for arg, step, scheme, inputs, _w in bridges_of(doc, step_titles)]
     return findings, profile
+
+
+_TIER_SAID = {"evidence": "tested", "argued": "argued for", "asserted": "asserted",
+              "imputed": "imputed by the reconstructor"}
+
+
+def _formation_word(on, sign):
+    """The chart's one-word verb for a step that makes, keeps, changes in kind, changes a chance, or
+    flows -- argdown-mechanism.js's formationWord."""
+    if on == "character":
+        return "transforms"
+    words = {"possibility": ("opens up", "closes off"), "being": ("makes", "unmakes"),
+             "persistence": ("maintains", "erodes"), "chance": ("makes likelier", "makes less likely"),
+             "stock": ("flows into", "flows out of")}
+    if on in words and sign in ("+", "-"):
+        return words[on][0 if sign == "+" else 1]
+    return None
+
+
+def step_verb(s):
+    """The verb the chart draws a step with -- argdown-mechanism.js's verbOf, word for word."""
+    if s["null"]:
+        return "no effect"
+    if s["selects"]:
+        return "selection effect"
+    if s["assoc"]:
+        return "associated"
+    if s["shape"] == "peak":
+        return "rises, then falls"
+    if s["shape"] == "trough":
+        return "falls, then rises"
+    if s["net"] is True:
+        return "net flow"
+    sign = s["sign"] or ""
+    if sign and _formation_word(s["on"], sign):
+        return _formation_word(s["on"], sign)
+    if s["on"] == "trend" and sign in ("+", "-"):
+        return "speeds" if sign == "+" else "slows"
+    if s["necessary"] is True and s["sufficient"] is True:
+        return "needed and enough for"
+    if s["necessary"] is True:
+        return "needed for"
+    if s["sufficient"] is True:
+        return "enough for"
+    return {"": "link", "+": "raises", "-": "lowers", "0": "no effect", "which": "decides which"}.get(sign, sign)
+
+
+def _uniq(xs):
+    out = []
+    for x in xs:
+        if x is not None and x not in out:
+            out.append(x)
+    return out
+
+
+def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs):
+    """WHAT THE MAP SAYS TO A BRIDGE'S QUESTIONS (10 Oct 2026; NOTES-integration.md, Proposal A).
+
+    Each scheme's question names in `asks` what in the map bears on it -- a blocker, a rival account,
+    another route -- and this reads it off the map for one bridge: [question, asks, status, said],
+    status `recorded` (the map records something on it), `none` (the map records nothing: the text
+    may be silent, or the map may have missed it) or `reader` (only a reader can answer). It
+    REPORTS; it does not judge whether the move succeeds. argdown-mechanism.js's bridgeQuestions
+    gives the same answers, and test_mechanism_view.mjs holds the two together."""
+    sch = BRIDGES.get(str(scheme).lower())
+    if not sch:
+        return []
+    want = set(inputs)
+    P = [s for s in ok if s["title"] in want]
+    TX = [s for s in ok if s["layer"] == "text" and not s["null"] and not s["selects"] and not s["assoc"]]
+    blk = block if isinstance(block, dict) else {}
+    lab = lambda v: "\u201c" + str((states.get(v) if isinstance(states.get(v), dict) else {}).get("label") or v) + "\u201d"
+    froms, tos = _uniq([s["src"] for s in P]), _uniq([s["dst"] for s in P])
+
+    def said(x):
+        v = step_verb(x)
+        return lab(x["src"]) + (" \u2192 " + lab(x["dst"]) + ": " + v if v in ("no effect", "selection effect", "associated")
+                                else " " + v + " " + lab(x["dst"]))
+
+    def is_outcome(v):
+        return "outcome" in roles_of(states.get(v))
+
+    def onward(keep):
+        return _uniq([said(y) for y in TX if y["title"] not in want and y["src"] in froms and y["dst"] not in tos and keep(y["dst"])])
+
+    def given_on(x):
+        return [g for g in x["given_raw"] if isinstance(g, dict) and str(g.get("state")) in states]
+
+    def backing():
+        out = []
+        for t in TIERS:
+            xs = [x for x in P if x["tier"] == t]
+            if xs:
+                bases = _uniq([x["basis"] for x in xs if x["basis"]])
+                out.append(f"{_TIER_SAID.get(t, t)}: {len(xs)}" + (f" ({', '.join(bases)})" if bases and t == "evidence" else ""))
+        return out
+
+    def counter():
+        out = []
+        for x in P:
+            out += [said(x) + " unless " + lab(u) for u in x["unless"]]
+            out += [said(x) + " despite " + lab(u) for u in x["despite"]]
+            if x["regime"]:
+                out.append(said(x) + ", regime: " + x["regime"])
+            if x["threshold"]:
+                out.append(said(x) + " past a threshold: " + x["threshold"])
+        for y in ok:
+            if y["title"] in want or y["dst"] not in tos:
+                continue
+            if y["layer"] == "rival":
+                out.append("a view the text reports: " + said(y))
+            elif y["layer"] == "text" and y["src"] not in froms and any(
+                    x["dst"] == y["dst"] and x["sign"] and y["sign"] and {x["sign"], y["sign"]} == {"+", "-"} for x in P):
+                out.append(said(y))
+        return _uniq(out)
+
+    def rivals():
+        return _uniq([said(y) + (f" ({y['stance']})" if y["stance"] else "") for y in ok
+                      if y["layer"] == "rival" and (y["dst"] in tos or y["dst"] in froms)])
+
+    def stops():
+        if not P:
+            return []
+        seen, ends, queue = set(), [], list(tos)
+        while queue:
+            v = queue.pop(0)
+            if v in seen:
+                continue
+            seen.add(v)
+            on = [x for x in TX if x["src"] == v and x["dst"] != v]
+            if not on:
+                ends.append(v)
+            queue += [x["dst"] for x in on if x["dst"] not in seen]
+        return ([f"the chain goes on to {', '.join(lab(v) for v in ends)}, and stops there"] if ends
+                else ["the chain closes on itself: every state it reaches leads on"])
+
+    def common():
+        out = []
+        for x in P:
+            for c in states:
+                if c in (x["src"], x["dst"]):
+                    continue
+                if any(y["src"] == c and y["dst"] == x["src"] for y in TX) and any(y["src"] == c and y["dst"] == x["dst"] for y in TX):
+                    out.append(f"{lab(c)} leads to both {lab(x['src'])} and {lab(x['dst'])}")
+        return _uniq(out)
+
+    def reverse():
+        out = []
+        for x in P:
+            back = next((y for y in ok if y["src"] == x["dst"] and y["dst"] == x["src"]), None)
+            if back:
+                out.append(said(back) + " as well")
+        return _uniq(out)
+
+    def mediated():
+        out = []
+        for x in P:
+            if x["via"]:
+                out.append(said(x) + " through " + " \u2192 ".join(lab(v) for v in x["via"]))
+            if x["regime"]:
+                out.append(said(x) + ", regime: " + x["regime"])
+            if x["threshold"]:
+                out.append(said(x) + " past a threshold: " + x["threshold"])
+            if x["period"]:
+                out.append(said(x) + ": " + x["period"])
+            if x["scope"]:
+                out.append(said(x) + ": " + ("a single case" if x["scope"] == "singular" else "a general relation"))
+        return _uniq(out)
+
+    def measure():
+        return _uniq([said(x) + ", read from " + ", ".join(lab(v) for v in x["measured_by"]) for x in P if x["measured_by"]])
+
+    raw_kinds = blk.get("kinds") if isinstance(blk.get("kinds"), dict) else {}
+
+    def kinds():
+        out = []
+        for v in froms + tos:
+            k = (states.get(v) if isinstance(states.get(v), dict) else {}).get("kind")
+            if k is None:
+                continue
+            kd = next((dict(label=(x or {}).get("label") if isinstance(x, dict) else None,
+                            general=None if not isinstance(x, dict) or x.get("general") is None else str(x.get("general")))
+                       for kid, x in raw_kinds.items() if str(kid) == str(k)), None)
+            name = (kd and kd["label"]) or k
+            tail = (f", whose general claim is {lab(kd['general'])}" if kd and kd["general"] and kd["general"] != v
+                    else ", its general claim" if kd and kd["general"] == v else "")
+            out.append(f"{lab(v)} is of the kind \u201c{name}\u201d{tail}")
+        return _uniq(out)
+
+    def howmany():
+        if not P:
+            return []
+        settings = _uniq([x["regime"] for x in P if x["regime"]])
+        ks = _uniq([str((states.get(v) if isinstance(states.get(v), dict) else {}).get("kind"))
+                    for v in froms + tos if (states.get(v) if isinstance(states.get(v), dict) else {}).get("kind") is not None])
+        return [f"{len(P)} step{'' if len(P) == 1 else 's'}"
+                + (f", in {len(settings)} setting{'' if len(settings) == 1 else 's'}: {'; '.join(settings)}" if settings else "")
+                + (f", across {len(ks)} kind{'' if len(ks) == 1 else 's'}" if ks else "")]
+
+    def onecase():
+        return [said(x) + " is about a single case" for x in P if x["scope"] == "singular"]
+
+    def here():
+        t = next((r for r in transfers if r[0] == arg and r[1] == step), None)
+        if not t or len(t[2]) < 2:
+            return []
+        if t[3]:
+            return ["only " + (f"under \u201c{u[0]}\u201d" if u[0] else "where no setting is named")
+                    + f": {lab(u[1])} \u2192 {lab(u[2])}" + (f" ({u[3]})" if u[3] else "") for u in t[3]]
+        return [f"each step has its counterpart in every setting the premises name ({'; '.join(t[2])})"]
+
+    def support():
+        out = []
+        for x in P:
+            if x["jointly"]:
+                out.append(said(x) + " only together with " + ", ".join(lab(v) for v in x["jointly"]))
+            gon = given_on(x)
+            for g in gon:
+                out.append(said(x) + " given " + lab(str(g.get("state"))) + (f" = {g['value']}" if g.get("value") not in (None, "") else ""))
+            texts = {_cond(g) for g in gon}
+            out += [said(x) + " given " + g for g in x["given"] if g not in texts]
+        return _uniq(out)
+
+    def blockers():
+        out = []
+        for y in ok:
+            if y["title"] in want or (y["layer"] == "text" and y["src"] in froms):
+                out += [said(y) + " unless " + lab(u) for u in y["unless"]]
+        return _uniq(out)
+
+    def possible():
+        out = []
+        for v in froms + tos:
+            st = (states.get(v) if isinstance(states.get(v), dict) else {}).get("status")
+            if st in ("possible", "open"):
+                out.append(lab(v) + (" cannot be specified in advance, the text says" if st == "open" else " is a possibility the text sets out"))
+        return _uniq(out)
+
+    def scope():
+        out = []
+        for x in P:
+            if x["scope"]:
+                out.append(said(x) + ": " + ("a single case" if x["scope"] == "singular" else "a general relation"))
+            if x["regime"]:
+                out.append(said(x) + ", regime: " + x["regime"])
+            if x["period"]:
+                out.append(said(x) + ": " + x["period"])
+            out += [said(x) + " given " + g for g in x["given"]]
+        return _uniq(out)
+
+    def order():
+        ids = _uniq([c for x in P for c in x["chain"]])
+        cs = [(cid, c) for cid, c in _chains(block).items() if cid in ids and c["order"] == "explanation"]
+        if cs:
+            return [f"the chain \u201c{c['label'] or cid}\u201d runs in order of explanation, not of time" for cid, c in cs]
+        return ["the map's chains run in order of explanation, not of time"] if (_order(block) or "time") == "explanation" else []
+
+    probes = dict(backing=backing, counter=counter, rivals=rivals, stops=stops, common=common, reverse=reverse,
+                  mediated=mediated, measure=measure, kinds=kinds, howmany=howmany, onecase=onecase, here=here,
+                  support=support, blockers=blockers, possible=possible, scope=scope, order=order,
+                  route=lambda: ["; ".join(_uniq([said(x) for x in P]))] if P else [],
+                  otherroutes=lambda: _uniq([said(y) for y in TX if y["title"] not in want and y["dst"] in tos and y["src"] not in froms]),
+                  elsewhere=lambda: onward(lambda v: True), goals=lambda: onward(is_outcome),
+                  sideeffects=lambda: onward(lambda v: not is_outcome(v)))
+    out = []
+    for i, q in enumerate(sch["questions"]):
+        asks = (sch.get("asks") or [None] * len(sch["questions"]))[i]
+        if not asks or asks not in probes:
+            out.append([q, None, "reader", []])
+            continue
+        got = probes[asks]()
+        out.append([q, asks, "recorded" if got else "none", got])
+    return out
 
 
 def _sustains(loop, steps_):
@@ -2544,8 +2871,20 @@ def census(profile):
             lines.append(f"      open    {g} -- left open by the sketch")
         else:
             lines.append(f"      ? gap   {g}")
+    qs_of = {(a, st): qs for a, st, _sch, qs in p.get("bridge_questions", [])}
     for arg, step, scheme, n_in, n_steps in p.get("bridges", []):
         lines.append(f"      bridge  <{arg}> step {step}: {scheme}, {n_steps} of {n_in} premise(s) stating a step")
+        # ITS QUESTIONS, as the map answers them: the ones it records nothing on are named, since
+        # those are where the text may be silent -- or the map may have missed what it says.
+        qs = qs_of.get((arg, step), [])
+        if qs:
+            n_rec = sum(1 for q in qs if q[2] == "recorded")
+            n_none = [q for q in qs if q[2] == "none"]
+            n_read = sum(1 for q in qs if q[2] == "reader")
+            lines.append(f"              questions: {n_rec} the map records something on, {len(n_none)} nothing"
+                         + (f", {n_read} for the reader" if n_read else ""))
+            for q in n_none:
+                lines.append(f"              - nothing recorded: {q[0]}")
     for arg, step, regimes, unmatched in p.get("transfers", []):
         name = lambda r: f"`{r}`" if r else "(no regime)"
         if len(regimes) < 2:
