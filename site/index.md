@@ -53,9 +53,9 @@ the manuscript with it so the claims can be laid out by where they appear in the
 to open yet? The same panel can **start a new one**: a worked skeleton you replace claim by
 claim, with the map redrawing as you write.
 
-New to argument maps? Open one of the worked examples below and take the walkthrough: it is the
-first entry under **How to use**, it runs on the map you have open, and it takes about two
-minutes.
+New to argument maps? Open one of the worked examples below and the walkthrough offers itself:
+about two minutes, on the map you have open. After that it is the first entry under **How to
+use**, whenever you want it again.
 
 There is also a <a href="{{ '/ipsissima-reader.html' | relative_url }}">read-only Reader</a>,
 which is smaller and has no editor — the right one to send to somebody you want to *show* a
