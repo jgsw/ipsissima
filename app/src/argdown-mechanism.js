@@ -1758,6 +1758,8 @@ function overlap(a, b) {
 /** A chip's label as lines: broken at its " · " parts, joined while they fit, and a part too long
  *  for a line broken at its words. Nothing is cut. */
 var CHIP_LINE = 28;
+/** The smallest a figure is drawn, as a share of actual size: below it, its host scrolls. */
+var FIG_MIN = 0.8;
 /** How many figures this page has drawn: each one's markers get ids of their own. */
 var FIGURES = 0;
 function chipLines(label) {
@@ -3976,7 +3978,8 @@ function injectStyle() {
     // A FIGURE inside another arrangement: the chart alone, at most its actual size, one control.
     ".amech.amech-figure{height:auto;cursor:pointer;border-radius:6px}",
     ".amech-figure .amech-head,.amech-figure .amech-bar,.amech-figure .amech-side,.amech-figure .amech-banner,.amech-figure .amech-nestbanner{display:none!important}",
-    ".amech-figure .amech-stage{overflow:hidden}",
+    // The host's box scrolls a figure wider or taller than it (FIG_MIN), so the stage lets it out.
+    ".amech-figure .amech-stage{overflow:visible}",
     ".amech-figure:focus-visible{outline:2px solid var(--accent,#2d6cc0);outline-offset:2px}",
     ".amech-side{flex:0 0 320px;overflow:auto;border-left:1px solid var(--line,#ddd);padding:10px 14px;font-size:13px}",
     "@media (max-width:760px){.amech-body{flex-direction:column}.amech-side{flex:0 0 auto;max-height:45%;border-left:0;border-top:1px solid var(--line,#ddd)}}",
@@ -4432,7 +4435,8 @@ function create(container, graph, opts) {
                chain: CHAINS.length ? CHAINS[0].id : null, then: null,
                opened: {}, zoom: null,
                // "Labels: Short | Full", as Reasons' "claims": Full opens every box and every chip.
-               full: !!opts.fullLabels,
+               // A figure is always Full: it has no bar to open a box from (James, 10 Oct 2026).
+               full: FIG ? true : !!opts.fullLabels,
                // Levels as bands (null), or as frames nested one inside another ("chain", or a tree
                // { parent: {...} } handed in by a host). A reader's choice, not the default: most
                // texts' levels are not wholes containing parts (James, 30 Sep 2026).
@@ -4492,7 +4496,12 @@ function create(container, graph, opts) {
     container.setAttribute("tabindex", "0");
     container.setAttribute("aria-label", "The steps these premises state, drawn as the Mechanism view draws them. Open the Mechanism view");
     container.title = FIG.title || "Open these steps in the Mechanism view";
-    var openIt = function (ev) { ev.stopPropagation(); ev.preventDefault(); if (FIG.onOpen) FIG.onOpen(FIGM); };
+    var openIt = function (ev) {
+      // A press on the figure's own scrollbar scrolls it; it is not a click on the drawing.
+      if (ev.type === "click" && ev.target === container &&
+          (ev.offsetX >= container.clientWidth || ev.offsetY >= container.clientHeight)) return;
+      ev.stopPropagation(); ev.preventDefault(); if (FIG.onOpen) FIG.onOpen(FIGM);
+    };
     container.addEventListener("click", openIt, true);
     container.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") openIt(ev); });
   }
@@ -5757,7 +5766,9 @@ function create(container, graph, opts) {
   var fitBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-fit]"));
   var pctBtn = /** @type {HTMLElement} */ (bar.querySelector("[data-zoom='1']"));
   /** The scale the chart is drawn at: the reader's, or the pane's width when fitted. */
-  function scaleNow() { return fit ? Math.max(0.05, Math.min(FIG ? 1 : Infinity, (stage.clientWidth - 4) / G.width)) : zk; }
+  // A FIGURE SCROLLS RATHER THAN SHRINKS past FIG_MIN: three steps across a panel drew at under
+  // half size, too small to read (James, 10 Oct 2026).
+  function scaleNow() { return fit ? Math.max(FIG ? FIG_MIN : 0.05, Math.min(FIG ? 1 : Infinity, (stage.clientWidth - 4) / G.width)) : zk; }
   function sizeSvg() {
     var k = scaleNow();
     // Style over the attributes: the drawing's own size stays what the layout says.

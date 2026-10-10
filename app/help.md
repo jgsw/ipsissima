@@ -466,8 +466,10 @@ the next, and at the end of a row on to the next row, as you would lines of text
 Where a paragraph's claims set out a mechanism — they state causal steps, in a map that has one —
 the card says so at the right of its foot: **↝ 3 steps**. Click it to see those steps drawn as the
 Mechanism view draws them, at the place in the text where they are set out, as an author puts a
-diagram beside the passage that explains it, with each step in words beneath. **Open in the
-Mechanism view** shows them in their chain, beside the steps the rest of the text gives.
+diagram beside the passage that explains it, with each step in words beneath. Every state is
+written whole there, and a drawing too wide for the panel scrolls rather than shrinking past
+legibility. **Open in the Mechanism view** shows them in their chain, beside the steps the rest of
+the text gives.
 
 **The column.** Every claim has a row of its own, top to bottom in the order the text runs, so the
 map reads the way the Manuscript beside it does. The relations move into the margins as arcs. On

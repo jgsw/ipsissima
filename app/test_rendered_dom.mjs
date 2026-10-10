@@ -1460,7 +1460,7 @@ async function bridgePanelChecks(browser) {
   if (!opened) { await ctx.close(); return; }
   const got = await page.evaluate(() => ({
     head: document.getElementById("brfhead").textContent,
-    arrows: document.querySelectorAll("#brffig svg g[data-edge]").length,
+    arrows: document.querySelectorAll("#brffig svg g[data-edge]:not(.chip)").length,
     tbar: !!document.querySelector('#brffig svg path[marker-end*="tbar"]'),
     qs: [...document.querySelectorAll("#brfqs > li")].map(li => li.dataset.status)
   }));
@@ -1517,10 +1517,31 @@ async function cardStepsChecks(browser, built) {
   check(opened, "card steps: a click on the mark opens the steps");
   if (opened) {
     const got = await page.evaluate(() => ({ head: document.getElementById("brfhead").textContent,
-      arrows: document.querySelectorAll("#brffig svg g[data-edge]").length,
+      arrows: document.querySelectorAll("#brffig svg g[data-edge]:not(.chip)").length,
       lines: [...document.querySelectorAll("#brfqs > li")].map(li => li.textContent) }));
     check(/sets out/.test(got.head) && got.arrows >= 1 && got.lines.length >= 1 && got.lines.every(l => /“.+” .+ “.+”|→/.test(l)),
           "card steps: the figure of them, and each in words", JSON.stringify(got).slice(0, 300));
+    // FULL, AND NOT SHRUNK (James, 10 Oct 2026): a figure has no bar to open a box from, so every
+    // state is written whole; and it is drawn at 80% or more, its box scrolling where it is wider.
+    const size = await page.evaluate(() => {
+      const f = document.getElementById("brffig"), sv = f.querySelector("svg");
+      return { k: parseFloat(sv.style.width) / sv.viewBox.baseVal.width, more: f.querySelectorAll("g[data-more]").length,
+               cut: [...f.querySelectorAll("g[data-state] text")].filter(t => /…/.test(t.textContent)).length,
+               fits: f.scrollWidth <= f.clientWidth + 1 || getComputedStyle(f).overflowX === "auto" };
+    });
+    check(size.k >= 0.799 && size.more === 0 && size.cut === 0 && size.fits,
+          "card steps: the figure writes every state whole, at 80% or more, and scrolls", JSON.stringify(size));
+    // A panel narrower than the drawing at 80%: fitting would shrink it below; it scrolls instead.
+    await page.setViewportSize({ width: 560, height: 900 });
+    await page.waitForTimeout(500);
+    const narrow = await page.evaluate(() => {
+      const f = document.getElementById("brffig"), sv = f.querySelector("svg"), w = sv.viewBox.baseVal.width;
+      return { k: parseFloat(sv.style.width) / w, fitWould: (f.clientWidth - 4) / w, scrolls: f.scrollWidth > f.clientWidth };
+    });
+    check(narrow.fitWould < 0.8 && narrow.k >= 0.799 && narrow.scrolls,
+          "card steps: in a narrow panel the figure keeps 80% and scrolls, not shrinks", JSON.stringify(narrow));
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.waitForTimeout(300);
     await page.click("#brffoot button");
     await page.waitForTimeout(400);
     check(await page.evaluate(() => !document.getElementById("mech").hidden && document.getElementById("brf").hidden),
@@ -1556,7 +1577,7 @@ async function chainNodeChecks(browser) {
   check(opened, "chain node: clicking the mark opens the chain");
   if (opened) {
     const got = await page.evaluate(() => ({ head: document.getElementById("brfhead").textContent, move: document.getElementById("brfmove").textContent,
-      arrows: document.querySelectorAll("#brffig svg g[data-edge]").length, lines: document.querySelectorAll("#brfqs > li").length }));
+      arrows: document.querySelectorAll("#brffig svg g[data-edge]:not(.chip)").length, lines: document.querySelectorAll("#brfqs > li").length }));
     check(/stands for “The price route”/.test(got.head) && /1 tested, 1 asserted/.test(got.move) && got.arrows === 2 && got.lines === 2,
           "chain node: the chain drawn, how it is backed, each step in words", JSON.stringify(got));
     await page.click("#brffoot button");
