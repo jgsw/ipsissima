@@ -200,6 +200,8 @@ actually does.
 
 ## Reading the code
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jgsw/ipsissima)
+
 `docs/PROFILE.md` specifies the **Ipsissima profile for Argdown**: every annotation Ipsissima
 reads — where a claim comes from, how far it stands from the words, whose view it is, the causal
 chain a text asserts — and where each one sits in a standard Argdown file. A file written to it is
