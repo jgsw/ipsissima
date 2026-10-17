@@ -45,7 +45,16 @@ from pathlib import Path
 #: The newest `userdata` schema this file has been read against. Zotero's layout is not a public
 #: interface, and every query below names columns in it. Refusing above a checked ceiling turns a
 #: silently wrong answer into a message; see `_check_schema`.
-SCHEMA_MAX = 129
+#:
+#: 130 CHECKED 17 Oct 2026, on Zotero 10.0.5. The step is Zotero's own consolidation: it re-runs
+#: 122-129, testing for each change before making it, and adds nothing new. Read against
+#: `xpcom/schema.js` and the live library: every column queried below is still there under the
+#: same name. The added columns (`clientVersion`, the `*Normalized` ones, `lastRead`) are ones
+#: no query here reads. The one change to data is step 128, which cuts a `storage:` path into a
+#: subfolder down to its bare filename; that is the form `_library` already resolves, and no
+#: path in this library has a separator left. Moore's "Proof of an External World" (3DP5TXCS)
+#: still comes back with its one PDF, FD2DQA8X, found by record key, attachment key and title.
+SCHEMA_MAX = 130
 
 #: Best first: the order of the list is what decides. Markdown is gold, what pandoc reads is
 #: silver, a PDF is bronze (G2) -- a heading in the first two is a heading because the document
