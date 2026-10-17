@@ -412,6 +412,7 @@ Naming the form tells you where the text's case is thin and what its own critica
 | **interrupted time series** | the series bent at the intervention | a step `on: trend`, with its `period` and `size` against the counterfactual |
 | **tipping point** | past a threshold, the system switches | `threshold:`; the regimes either side as `regime:` |
 | **rival stories** | one harm, several accounts, attributed by camp | `#reported` steps with `stance` and `attribution`; the census's accounts line |
+| **Coleman boat** | macro A → micro B → micro C → macro D; A–D is what is to be explained | corners at their levels; arrows with the text's `mark` and `name`; A–D left out, an `association`, or a numbered `via` summary, as the text has it; feedback C → B a step (`mechanism-pass.md`) |
 
 Govier's **objectionable cause** (pp. 306–8) includes a variant in which two things the author
 dislikes are joined causally. Mark it faithfully and let `basis: asserted` show what holds it up.

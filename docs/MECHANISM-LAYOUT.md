@@ -96,6 +96,22 @@ baseline, which a change may not make materially worse.
   - the core path keeps each loop the text closes through two of its states (short loops first, ten
     added states at most);
   - a numbered step whose words only repeat the sign shows its number alone (`markOnly`).
+- **The Coleman boat** (James, 17 Oct 2026: needed for teaching, and what users expect; drawn to
+  Ylikoski 2016, Figs. 1 and 7, and Martínez-Peña and Ylikoski 2024, Fig. 1). A chart is a `boat`
+  where a step runs down from one level to a lower one and a later step runs back up. In a boat:
+  - a step between levels runs **straight**, from where the line between the two boxes leaves one to
+    where it meets the other (`diag`), if it clears every other box by 8px; its ends keep to the part
+    of an edge the badges and pill leave free, a head's length clear, and off the corners of a side.
+    Not where two arrows join the same pair (they would run as one line), and not into a side other
+    arrows already arrive by (the heads would meet); those keep their ports;
+  - a step back within a lower level -- the feedback C → B -- arcs **over** the boxes, inside the hull
+    (`over`), clear of boxes and the levels' headings, before it would go under; a loop it closes has
+    its mark centred on its drawn arrows, so it sits inside the loop;
+  - a summary the text **numbers** (`mark` with `via`: the boat's A-D, Ylikoski's "?") is drawn, as the
+    text's figure draws it; an unnumbered summary stays in the panel.
+- **A compartment stands between what feeds it and what it leads to** where there is a column for it,
+  and the columns its members left empty close up. (Its parts come before it in the order, so the
+  boat paper's B stood four columns from A, and when sent back to its first member's column, under A.)
 
 ## Where it stands (30 Sep 2026)
 

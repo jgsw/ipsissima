@@ -1971,18 +1971,19 @@ function markSpec(FULL, M) {
  *  apart, and everything below moves down to make room. */
 function layout(M, opts) {
   opts = opts || {};
-  var G = layoutOnce(M, opts), minH = {}, minW = {}, minGap = {};
+  var G = layoutOnce(M, opts), minH = {}, minW = {}, minGap = {}, noDiag = Object.assign({}, opts.noDiag || {});
   // Up to three passes: making room in one place can show a need in another. Needs only grow, so
   // this settles.
   for (var pass = 0; pass < 3; pass++) {
     var grew = false;
+    Object.keys(G.needNoDiag || {}).forEach(function (k) { if (!noDiag[k]) { noDiag[k] = true; grew = true; } });
     Object.keys(G.needH || {}).forEach(function (v) { if (!(minH[v] >= G.needH[v])) { minH[v] = G.needH[v]; grew = true; } });
     Object.keys(G.needW || {}).forEach(function (c) { if (!(minW[c] >= G.needW[c])) { minW[c] = G.needW[c]; grew = true; } });
     Object.keys(G.needGap || {}).forEach(function (k) { if (!(minGap[k] >= G.needGap[k])) { minGap[k] = G.needGap[k]; grew = true; } });
     if (!grew) break;
-    G = layoutOnce(M, Object.assign({}, opts, { minH: minH, minW: minW, minGap: minGap }));
+    G = layoutOnce(M, Object.assign({}, opts, { minH: minH, minW: minW, minGap: minGap, noDiag: noDiag }));
   }
-  delete G.needH; delete G.needW; delete G.needGap;
+  delete G.needH; delete G.needW; delete G.needGap; delete G.needNoDiag;
   return G;
 }
 function layoutOnce(M, opts) {
@@ -2224,7 +2225,8 @@ function layoutOnce(M, opts) {
   // parts -- Wimmer's field holding institutional order, power and networks, Rena's cell holding its
   // mitochondrion -- and every step keeps its real ends, part to part. The whole, where it has steps
   // of its own, is the compartment's first box; its parts follow it down one column, one lane.
-  var compOf = {}, wholeParts = {};
+  var compOf = {}, wholeParts = {}, filledBefore = {};
+  ids.forEach(function (v) { filledBefore[col[v]] = true; });
   if (opts.compartments) {
     ids.forEach(function (v) { var w = obj(M.states[v]).part_of;
       if (w != null && has(M.states, String(w)) && String(w) !== v) (wholeParts[String(w)] = wholeParts[String(w)] || []).push(v); });
@@ -2237,10 +2239,31 @@ function layoutOnce(M, opts) {
       var cs = members.map(function (v) { return col[v]; });
       var c0 = Math.max.apply(null, cs), isMember = {};
       members.forEach(function (v) { isMember[v] = true; });
-      if (ordering.some(function (st) { return isMember[st.from] && !isMember[st.to] && has(col, st.to) && col[st.to] <= c0; }))
+      // BETWEEN WHAT FEEDS IT AND WHAT IT LEADS TO, where there is a column for it: right of every state
+      // with a step into a member, left of every state a member has a step to (steps that close a loop
+      // aside). Sent back to its members' first column, the boat's B -- whose action situation starts
+      // the chain at column 0 -- stood under A, and the boat lost its slant (17 Oct 2026).
+      var lo = -Infinity, hi = Infinity;
+      ordering.forEach(function (st) {
+        if (back[st.id]) return;
+        if (!isMember[st.from] && isMember[st.to] && has(col, st.from)) lo = Math.max(lo, col[st.from] + 1);
+        if (isMember[st.from] && !isMember[st.to] && has(col, st.to)) hi = Math.min(hi, col[st.to] - 1);
+      });
+      if (lo <= hi) c0 = Math.min(Math.max(c0, lo), hi);
+      else if (ordering.some(function (st) { return isMember[st.from] && !isMember[st.to] && has(col, st.to) && col[st.to] <= c0; }))
         c0 = Math.min.apply(null, cs);
       members.forEach(function (v) { col[v] = c0; compOf[v] = w; });
     });
+    // A COLUMN THE COMPARTMENTS EMPTIED IS CLOSED UP. A whole's parts come before it in the order,
+    // so the boat paper's B -- action situation, mental states, capacities -- stood four columns
+    // from A, gathered there with three empty columns between: arrow 1 crossed half the chart and C
+    // and D ran off it (17 Oct 2026). Only columns emptied here close; a column left empty on
+    // purpose stays.
+    var filledAfter = {};
+    ids.forEach(function (v) { filledAfter[col[v]] = true; });
+    var emptied = Object.keys(filledBefore).map(Number).filter(function (c) { return !filledAfter[c]; });
+    if (emptied.length) ids.forEach(function (v) {
+      col[v] -= emptied.filter(function (c) { return c < col[v]; }).length; });
   }
   // A compartment's members are placed together, the whole first.
   var slotOrder = [], seenSlot = {};
@@ -2436,9 +2459,13 @@ function layoutOnce(M, opts) {
     stocks[stock] = true;
     flows[flow] = flows[flow] && flows[flow] !== (s.sign === "+" ? "in" : "out") ? "both" : (s.sign === "+" ? "in" : "out");
   });
+  // BUT A SUMMARY THE TEXT NUMBERS IS ITS FIGURE'S OWN ARROW, and is drawn: the boat's arrow 4, A to D
+  // across the top, which Coleman's 1987 and 1990 boats draw and Hedström and Swedberg number. It is
+  // the relation the boat sets out to explain, and a boat without it, where the text has it, is not
+  // the text's boat (17 Oct 2026). An unnumbered summary stays in the panel.
   var summaries = [];
   drawn.steps = drawn.steps.filter(function (s) {
-    if (s.parts || s.isNull || !(s.statedVia || []).length || s.share !== "entire") return true;
+    if (s.parts || s.isNull || !(s.statedVia || []).length || s.share !== "entire" || s.mark) return true;
     var run = [s.from].concat(s.statedVia, [s.to]);
     for (var i = 0; i + 1 < run.length; i++) if (!hops[hopKey(run[i], run[i + 1], s.layer)]) return true;
     summaries.push(s);
@@ -2648,13 +2675,98 @@ function layoutOnce(M, opts) {
     return segs;
   };
 
+  // THE BOAT (Coleman's diagram; James, 17 Oct 2026: "something I'll need for teaching, and something
+  // users will expect"). A chart is a boat where one step runs down from a level to a lower one and a
+  // later step runs back up: A to B, then C to D (Ylikoski 2016, Fig. 1). The boat is drawn as Coleman,
+  // Hedström and Swedberg and Ylikoski draw it. A step between the levels runs STRAIGHT from the box it
+  // leaves to the box it reaches, corner toward corner -- the hull's two diagonals -- where nothing
+  // stands in its way; routed as any other arrow, it left A's foot, bent, and came into B's side, and
+  // the boat's shape was lost in the curves. And a step back within the lower level (C to B: the
+  // feedback Ylikoski adds as a fifth arrow) arcs OVER the boxes, inside the hull, not under them.
+  var laneOfV = function (v) { return range[v][0]; };
+  var crossesLevels = function (k) {
+    var s0 = groups[k][0];
+    return s0.from !== s0.to && !spans(s0.from) && !spans(s0.to) && laneOfV(s0.from) !== laneOfV(s0.to);
+  };
+  // Two levels drawn, as Coleman's macro and micro: Rena's four, from the body down to the cell's
+  // organelles, are a pathway that crosses levels, not a boat, and its stems lost their way round the
+  // straight lines (17 Oct 2026).
+  var boat = !nest && lanes.filter(function (ln) { return !ln.hidden && !ln.empty; }).length === 2 && order.some(function (k) {
+    var d0 = groups[k][0];
+    if (isBackKey[k] || !crossesLevels(k) || laneOfV(d0.to) < laneOfV(d0.from)) return false;
+    return order.some(function (k2) {
+      var u0 = groups[k2][0];
+      return !isBackKey[k2] && crossesLevels(k2) && laneOfV(u0.to) < laneOfV(u0.from) && nodes[u0.to].col > nodes[d0.from].col;
+    });
+  });
+  /** Where the line from a box's centre toward (tx, ty) leaves the box. */
+  var borderToward = function (n, tx, ty) {
+    var ox = n.x + n.w / 2, oy = n.y + n.h / 2, ddx = tx - ox, ddy = ty - oy;
+    var f = Math.min(ddx ? (n.w / 2) / Math.abs(ddx) : Infinity, ddy ? (n.h / 2) / Math.abs(ddy) : Infinity);
+    return [ox + ddx * f, oy + ddy * f];
+  };
+  var diag = {}, perPair = {};
+  order.forEach(function (k) { var p0 = groups[k][0], pk = [p0.from, p0.to].sort().join("\u0000"); perPair[pk] = (perPair[pk] || 0) + 1; });
+  if (boat) order.forEach(function (k) {
+    if (isBackKey[k] || isVertKey[k] || isSideKey[k] || !crossesLevels(k)) return;
+    var s0 = groups[k][0], a = nodes[s0.from], b = nodes[s0.to];
+    // ONLY THE PAIR'S ONE ARROW: two drawn between the same boxes -- the text's and a rival's, two
+    // signs -- would run as one line to one head, so they keep their ports, apart.
+    if (perPair[[s0.from, s0.to].sort().join("\u0000")] > 1) return;
+    // NOR ONE WITH STEMS: a co-cause's gate, a blocker's bar, a moderator's ring sit on the routed arrow,
+    // and their stems found no clear way to a slanted one (Reason's latent conditions, Rena's AMPK).
+    if (groups[k].some(function (x) { return (x.jointly || []).length || (x.unless || []).length || (x.modifies || []).length ||
+                                             (x.measuredBy || []).length || (x.givenOn || []).length; })) return;
+    // NOR ONE THE SECOND PASS FOUND ITS HEAD ON ANOTHER'S: drawn as any arrow, its head joins the others
+    // spread along the side (Lenton's monsoon, Wimmer's identification).
+    if (opts.noDiag && opts.noDiag[k]) return;
+    var ac = [a.x + a.w / 2, a.y + a.h / 2], bc = [b.x + b.w / 2, b.y + b.h / 2];
+    var S = borderToward(a, bc[0], bc[1]), T = borderToward(b, ac[0], ac[1]);
+    var len = Math.hypot(T[0] - S[0], T[1] - S[1]);
+    if (len < STUB + 40) return;
+    var ux = (T[0] - S[0]) / len, uy = (T[1] - S[1]) / len;
+    var r1 = function (q) { return [Math.round(q[0] * 10) / 10, Math.round(q[1] * 10) / 10]; };
+    // NOT ON A BOX'S MARKS (M4): an end on the top or the foot keeps to the stretch its badges and pill
+    // leave free -- the situational arrow into the boat paper's believer landed on its ⇄ and ≈.
+    var keepFree = function (v, n, q) {
+      var edge = Math.abs(q[1] - n.y) < 0.5 ? "top" : Math.abs(q[1] - n.y - n.h) < 0.5 ? "foot" : null;
+      // On a side, clear of the corners, where the top's badges and the foot's pill reach over the edge.
+      if (!edge) return [q[0], Math.min(Math.max(q[1], n.y + 14), n.y + n.h - 14)];
+      var fs = freeSpan(v, edge);
+      // A head at a slant reaches back along its line: a head's length more, or it sat on the pill.
+      return [Math.min(Math.max(q[0], n.x + fs[0] + 6 + HEAD_LEN), n.x + fs[1] - 6 - HEAD_LEN), q[1]];
+    };
+    S = keepFree(s0.from, a, S); T = keepFree(s0.to, b, T);
+    len = Math.hypot(T[0] - S[0], T[1] - S[1]);
+    if (len < STUB + 40) return;
+    ux = (T[0] - S[0]) / len; uy = (T[1] - S[1]) / len;
+    T = [T[0] - ux * 2, T[1] - uy * 2];
+    var E = [T[0] - ux * STUB, T[1] - uy * STUB];
+    var P = [S, [S[0] + (E[0] - S[0]) / 3, S[1] + (E[1] - S[1]) / 3], [S[0] + 2 * (E[0] - S[0]) / 3, S[1] + 2 * (E[1] - S[1]) / 3], E].map(r1);
+    // Clear of every other box by a margin, badges included: a straight line that grazes a corner reads
+    // as running into the box (Hedström and Swedberg's believer, under the beliefs box it passed).
+    if (Object.keys(nodes).some(function (v) {
+      return drawnHere(v) && v !== s0.from && v !== s0.to && polyHitsRect([S, T], { x: nodes[v].x, y: nodes[v].y - 10, w: nodes[v].w, h: nodes[v].h + 20 }, -8);
+    })) return;
+    diag[k] = { P: P, T: r1(T), side: Math.abs(T[0] + ux * 2 - b.x) < 0.5 ? "L" : Math.abs(T[0] + ux * 2 - b.x - b.w) < 0.5 ? "R" : null };
+  });
+  // A DIAGONAL GIVES WAY ON A SIDE OTHER ARROWS ARRIVE BY: their ports are spread along it, and a head
+  // set down among them at a slant sat on one (Wilson 2023's cataract surgery).
+  Object.keys(diag).forEach(function (k) {
+    var to = groups[k][0].to;
+    if (diag[k].side === "L" && (ins[to] || []).some(function (k2) { return k2 !== k && !diag[k2]; })) delete diag[k];
+  });
+  // The diagonals take no port on a side: they leave and arrive where the line between the boxes does.
+  Object.keys(outs).forEach(function (v) { outs[v] = outs[v].filter(function (k) { return !diag[k]; }); });
+  Object.keys(ins).forEach(function (v) { ins[v] = ins[v].filter(function (k) { return !diag[k]; }); });
+
   // WHERE EACH ROUTED ARROW HEADS, before its port is chosen: an arrow that goes under a box on its
   // way leaves from low on its side, whatever the height of where it ends (the Coleman boat in
   // general: C's two arrows crossed as they left it, 30 Sep 2026).
   var aimOut = {}, aimIn = {};
   order.forEach(function (k) {
     var s0 = groups[k][0], a = nodes[s0.from], b = nodes[s0.to];
-    if (isBackKey[k] || isVertKey[k] || isSideKey[k] || b.col - a.col < 2) return;
+    if (isBackKey[k] || isVertKey[k] || isSideKey[k] || diag[k] || b.col - a.col < 2) return;
     var S = [a.x + a.w, cyOf(s0.from)], E = [b.x - 2 - STUB, cyOf(s0.to)], cc0 = Math.max(40, (E[0] - S[0]) / 2);
     if (!hitsBox([[S, [S[0] + cc0, S[1]], [E[0] - cc0, E[1]], E]], [s0.from, s0.to])) return;
     var ys = [], prev = S;
@@ -2741,7 +2853,7 @@ function layoutOnce(M, opts) {
     if (ink === "text" && s0.channel && chIdx >= 0 && ss.every(function (x) { return x.channel === s0.channel; })) ink = "ch" + (chIdx % CHANNEL_INKS);
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
-    var d, stub, P, segs = null;
+    var d, stub, P, segs = null, overArc = false;
     if (isVertKey[k]) {
       // Downward arrows to the left of the centre, upward ones to the right, spread if several.
       var down = b.y > a.y, mine = pairKeys[[s0.from, s0.to].sort().join("\u0000")];
@@ -2768,6 +2880,32 @@ function layoutOnce(M, opts) {
       var sx2 = goesDown ? b.x - 2 : b.x + b.w + 2, sxE = sx2 + sgn * STUB;
       P = [[ex, ya], [ex + sgn * bulge, ya], [sxE + sgn * (bulge - STUB), yb], [sxE, yb]];
       stub = "M" + sxE + "," + yb + " L" + sx2 + "," + yb;
+    } else if (diag[k]) {
+      P = diag[k].P;
+      stub = "M" + P[3][0] + "," + P[3][1] + " L" + diag[k].T[0] + "," + diag[k].T[1];
+    } else if (isBack && boat && laneOfV(s0.from) === laneOfV(s0.to) && laneOfV(s0.from) > 0 && !spans(s0.from) && !spans(s0.to) &&
+               (function () {
+      // THE BOAT'S FEEDBACK, over the boxes and inside the hull: from the near part of the top of the box
+      // it leaves to the near part of the top of the box it returns to, as Ylikoski's fifth arrow runs
+      // from C back to B (Ylikoski 2016, Fig. 7). Only where that way is clear; otherwise under, as any.
+      var xo1 = a.x + a.w * 0.3 + off, xo2 = b.x + b.w * 0.7 + off, ye = b.y - 2 - STUB;
+      var top0 = Math.min(a.y, b.y);
+      for (var lift = 30 + Math.abs(off) * 2; lift <= 150; lift += 12) {
+        var up = top0 - lift;
+        var W = roundPath([[xo1, a.y], [xo1, up], [xo2, up], [xo2, ye]], 18);
+        if (hitsBox(W, [s0.from, s0.to])) continue;
+        // Nor through a level's heading, which the arc can reach where the lower level begins.
+        var wp = pathPts({ segs: W }, 40);
+        if (lanes.some(function (ln) { return !ln.hidden && ln.head && ln.head.w && polyHitsRect(wp, pad(ln.head, 4), 0); })) continue;
+        segs = W; overArc = true;
+        var lastO = segs[segs.length - 1];
+        P = [segs[0][0], segs[0][1], lastO[2], lastO[3]];
+        stub = "M" + xo2 + "," + ye + " L" + xo2 + "," + (b.y - 2);
+        return true;
+      }
+      return false;
+    })()) {
+      // drawn over, above
     } else if (isBack) {
       // A RETURNING ARC runs under the boxes, from its source's foot to its target's (M2). Where a
       // box stands below either end in its column, that leg cannot go straight down or up through
@@ -2851,7 +2989,9 @@ function layoutOnce(M, opts) {
       var viaList = function (vs) { return FULLTEXT ? vs.map(viaName).join(" → ") : viaName(vs[0]) + (vs.length > 1 ? " +" + (vs.length - 1) : ""); };
       // A STEP THE TEXT OPENS INTO A ROUTE (profile 1.8) is labelled as a folded route is: it IS
       // that route, not a second one beside it.
-      var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire"; }) ? s0.statedVia : null;
+      // A NUMBERED SUMMARY is the text's arrow and carries its number, as the text draws it; the route
+      // it summarises is drawn beside it, and the panel names it.
+      var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire" && !x.mark; }) ? s0.statedVia : null;
       // THE SIZE ON THE ARROW (G3): two texts that agree on direction and dispute only size drew as
       // one picture of agreement. One step with a stated value shows it.
       var sz = s0.sizeValue || s0.size || "";
@@ -2937,7 +3077,7 @@ function layoutOnce(M, opts) {
           !modifiers.some(function (y) { return y.state === g.state; })) modifiers.push({ state: g.state, effect: "given", value: g.value }); }); });
     return { key: k, base: baseOf[k] || k, expanded: (baseOf[k] || k) !== k, from: s0.from, to: s0.to, layer: s0.layer, kind: kind, tier: tier, fidelity: fidelity, jointly: jointly, blockers: blockers, modifiers: modifiers, rests: rests, stems: [], junction: /** @type {null | {x:number,y:number,bar:string,gate:string,back:number[],u?:number[],n?:number[],box?:any}} */ (null),
              head: /** @type {null | {x:number,y:number,w:number,h:number}} */ (null), gateT: 0,
-             ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], mixed: breakdown.length > 1, breakdown: breakdown,
+             ink: ink, route: !!s0.parts, back: isBack, vertical: !!isVertKey[k], side: !!isSideKey[k], diag: !!diag[k], over: overArc, mixed: breakdown.length > 1, breakdown: breakdown,
              steps: ss, path: d, stub: stub, curve: P, segs: segs,
              // A DIRECTION GLYPH BEFORE THE WORD: ▲ raises, ▼ lowers, ◆ decides which -- read at a glance
              // where many chips crowd, and not the + and − that mean support and attack in Reasons.
@@ -3108,7 +3248,8 @@ function layoutOnce(M, opts) {
   // along it, in the order they came, a head's width and a little apart, within what the side's
   // marks leave free; a side with no room for them asks the second pass for a taller box.
   var sideOf = function (e) {
-    if (!e.stub) return null;
+    // The boat's diagonals arrive at a slant, wherever the line between the boxes meets the box.
+    if (!e.stub || e.diag) return null;
     var m = /M([-\d.]+),([-\d.]+) L([-\d.]+),([-\d.]+)/.exec(e.stub), b = nodes[e.to];
     var x1 = +m[3], y1 = +m[4];
     if (+m[2] === y1) return Math.abs(x1 - b.x) < Math.abs(x1 - b.x - b.w) ? "L" : "R";
@@ -3164,22 +3305,37 @@ function layoutOnce(M, opts) {
     e.head = x0 === x1 ? { x: x1 - hw, y: lo[1], w: HEAD_W, h: hi[1] - lo[1] }
                        : { x: lo[0], y: y1 - hw, w: hi[0] - lo[0], h: HEAD_W };
   });
+  // A DIAGONAL'S HEAD ON ANOTHER'S, or on its box's badges or pill, is asked back: the second pass in
+  // `layout` draws that arrow as any other.
+  var needNoDiag = {};
+  edges.forEach(function (e) {
+    if (!e.diag || !e.head) return;
+    var b = nodes[e.to], hr = pad(e.head, 2);
+    var marks = (b.badges || []).map(function (bg) { return { x: b.x + bg.x - bg.r, y: b.y + bg.y - bg.r, w: 2 * bg.r, h: 2 * bg.r }; });
+    if (b.pill) marks.push({ x: b.x + b.pill.x, y: b.y + b.pill.y, w: b.pill.w, h: b.pill.h });
+    if (edges.some(function (o) { return o !== e && o.head && o.to === e.to && overlap(hr, o.head) > 0; }) ||
+        marks.some(function (r) { return overlap(hr, r) > 0; })) needNoDiag[e.key] = true;
+  });
   // GATES APART (M1): where several joint steps run into one state, their gates at one point along
   // each arrow sat on each other near the head (Badger culling's TB). Each takes the first place
   // along its arrow clear of the gates already placed.
   var gatesAt = [];
   edges.forEach(function (e) {
     if (!e.jointly.length || e.back) return;
-    var pick = JUNCTION_T;
+    var pick = null, near = null;
     for (var gi = 0; gi < GATE_T.length; gi++) {
       var tt = GATE_T[gi], gq = pathAt(e, tt), gxp = gq[0], gyp = gq[1];
       var gbox = { x: gxp - 16, y: gyp - 16, w: 32, h: 32 };
       var hitsBox = Object.keys(shown).some(function (v) { var n = shown[v];
         return overlap(gbox, { x: n.x - 4, y: n.y - 16, w: n.w + 8, h: n.h + 32 }) > 0; }) ||
         lanes.some(function (ln) { return overlap(gbox, ln.head) > 0; });
+      if (!hitsBox && near == null) near = tt;
       if (!hitsBox && gatesAt.every(function (q) { return Math.hypot(q[0] - gxp, q[1] - gyp) > 34; })) { pick = tt; break; }
     }
-    e.gateT = pick;
+    // With no place clear of everything, the first clear of the boxes and the headings: near another
+    // gate is better than on a level's name (Marti and Gond's theory into the experiment, 17 Oct 2026).
+    e.gateT = pick != null ? pick : near != null ? near : JUNCTION_T;
+    pick = e.gateT;
     gatesAt.push(pathAt(e, pick));
   });
   var taken = gatesAt.slice();
@@ -3201,6 +3357,15 @@ function layoutOnce(M, opts) {
     var pts = c.states.filter(function (v) { return nodes[v]; }).map(function (v) { return [nodes[v].x + nodes[v].w / 2, nodes[v].y + nodes[v].h / 2]; });
     if (pts.length < 2 && !(pts.length === 1 && c.states.length === 1)) return;
     var cx = pts.reduce(function (a, q) { return a + q[0]; }, 0) / pts.length, cy = pts.reduce(function (a, q) { return a + q[1]; }, 0) / pts.length;
+    // A LOOP CLOSED BY THE BOAT'S ARC OVER THE BOXES has its middle between its arrows, not between its
+    // boxes: there the mark sat on the arrow from B to C and was moved out below it, outside the loop.
+    var inC = {}; c.states.forEach(function (v) { inC[v] = true; });
+    var loopEdges = edges.filter(function (e) { return inC[e.from] && inC[e.to] && e.from !== e.to; });
+    if (loopEdges.some(function (e) { return e.over; })) {
+      var lp = [];
+      loopEdges.forEach(function (e) { pathPts(e, 24).forEach(function (q) { lp.push(q); }); });
+      cx = lp.reduce(function (a, q) { return a + q[0]; }, 0) / lp.length; cy = lp.reduce(function (a, q) { return a + q[1]; }, 0) / lp.length;
+    }
     var clash = function (x, y) {
       var r = { x: x - CENTRE_R - 4, y: y - CENTRE_R - 4, w: 2 * CENTRE_R + 8, h: 2 * CENTRE_R + 8 };
       if (r.x < 2 || r.y < 2) return true;
@@ -3329,7 +3494,7 @@ function layoutOnce(M, opts) {
     var bottom = L.y + L.h + (nest.depth[M.levels[nest.last[lv]]] - d) * NEST_CLOSE + 4;
     return { level: lv, depth: d, x: 4 + d * NEST_INSET, y: lanes[li].y + 2, w: width - 8 - 2 * d * NEST_INSET, h: bottom - lanes[li].y - 2 };
   });
-  return { needH: needH, needW: needW, needGap: needGap, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames, caption: caption, rules: rules,
+  return { needH: needH, needW: needW, needGap: needGap, needNoDiag: needNoDiag, width: width, height: height, lanes: lanes, nodes: nodes, frames: frames, caption: caption, rules: rules,
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
            ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain,

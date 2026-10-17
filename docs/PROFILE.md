@@ -249,7 +249,7 @@ substantially reduces adoption".
 | `jointly` | state id, or list of them | The step holds **only together with** these states: a joint cause, not two causes each sufficient alone (*added in 1.4*). |
 | `unless` | state id, or list of them | The step holds **unless** these states hold: a blocker, such as a defence between a hazard and harm (*added in 1.8*). |
 | `despite` | state id, or list of them | The step held **although** these states acted against it: a blocker that failed (*added in 1.8*). |
-| `via` | state id, or list of them | The finer route the text opens this step into, in order: the step **is** that route, not a second one beside it (*added in 1.8*). |
+| `via` | state id, or list of them | The finer route the text opens this step into, in order: the step **is** that route, not a second one beside it (*added in 1.8*). The chart draws the route and lists the step in the panel; where the step also has a `mark`, it is an arrow of the text's own figure (the Coleman boat's A to D) and is drawn as well. |
 | `regime` | string | The **regime** the step holds in, in the text's words: a dose, a place, a model (*added in 1.8*). |
 | `threshold` | string | The **threshold** the step acts past, in the text's words: the step switches something rather than moving it smoothly (*added in 1.8*). |
 | `share` | `entire` \| `most` \| `partial` \| `none` | How much of the step runs by its `via` route: all of it (the default), most, part, or **none** ("AMPK-independent") (*added in 1.8*). |
@@ -262,7 +262,7 @@ substantially reduces adoption".
 | `measured_by` | state id, or list of them | The **measure** the step's evidence is read from, a state with `measures` (*added in 1.9*). |
 | `stance` | `rejected` \| `unjudged` | On a `#reported` or `#contested` step: whether the text sets the view out to **reject** it or leaves it **unjudged** (*added in 1.9*). |
 | `name` | string | The step's **name** in the text's words: the kind of mechanism it is (Hedström and Ylikoski's situational, action-formation and transformational mechanisms), the question it asks (the Coleman-boat paper's arrows), the feedback it is (Wimmer's "Path dependency"). Drawn on the arrow in place of the verb (*added in 1.19*). |
-| `mark` | string | The **number** the text gives the step, "1" or "P4", drawn in a circle on the arrow; six characters at most (*added in 1.19*). |
+| `mark` | string | The **number** the text gives the step, "1" or "P4", drawn in a circle on the arrow; six characters at most (*added in 1.19*). Ylikoski's "?" on the Coleman boat's A-D arrow is a mark. A step with `via` and a mark is drawn, not only listed. |
 | `channel` | channel id | The **kind of link** the step is, one declared under `channels` (*added in 1.19*). |
 | `shape` | `peak` \| `trough` | A relation that **rises and then falls**, or falls and then rises: Meadows's fish breed most at middling density, since "scarcer fish don't breed much, nor do crowded fish". Such a step has no single sign: leave `sign` out, or give `which` (*added in 1.19*). |
 | `net` | boolean | With `on: stock`: a **net flow**, running into the stock or out of it whichever way the gap points, as Meadows's coffee cools or warms toward the room (*added in 1.19*). |

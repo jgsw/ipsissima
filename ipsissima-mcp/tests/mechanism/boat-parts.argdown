@@ -1,0 +1,51 @@
+// Planted BOAT WITH B IN PARTS (17 Oct 2026), after Martínez-Peña and Ylikoski (2024): B is agents'
+// attributes, a whole the text breaks into the action situation, mental states and capacities, two
+// of them in a loop, each bearing on C. A whole's parts come before it in the chart's order, so
+// B's compartment once stood columns away from A with empty columns between; the page closes them up.
+===
+title: "Planted -- a boat whose B has parts"
+mechanism:
+    question: "How does a macro change bring about a macro outcome through agents?"
+    levels: [macro, micro]
+    ordering: scale
+    actors:
+        agents: {label: "Agents", level: micro}
+    states:
+        macroA:   {label: "A macro change (A)", levels: [macro], role: condition}
+        attrB:    {label: "Agents' attributes change (B)", actor: agents}
+        actsit:   {label: "Agents' action situation changes", actor: agents, part_of: attrB}
+        mental:   {label: "Agents' mental states change", actor: agents, part_of: attrB}
+        capacity: {label: "Agents' capacities", actor: agents, part_of: attrB}
+        behC:     {label: "Agents' behaviour changes (C)", actor: agents}
+        macroD:   {label: "The macro outcome (D)", levels: [macro], role: outcome}
+===
+
+[The boat]: A macro change brings about a macro outcome through what agents are and do.
+
+[Arrow 1]: A change in A brings about a change in B.
+    {causes: {from: macroA, to: attrB, sign: which, basis: asserted, mark: "1"}}
+    +> [The boat]
+
+[Arrow 2]: The changes in B bring about changes in behaviour.
+    {causes: {from: attrB, to: behC, sign: which, basis: asserted, mark: "2"}}
+    +> [The boat]
+
+[Situation to mind]: Agents must learn of a change in their situation for it to change what they believe.
+    {causes: {from: actsit, to: mental, sign: which, basis: asserted}}
+    +> [The boat]
+
+[Learning loop]: Learning expands capacities, and capacities shape what agents come to believe.
+    {causes: [{from: mental, to: capacity, sign: "+", basis: asserted}, {from: capacity, to: mental, sign: "+", basis: asserted}]}
+    +> [The boat]
+
+[Each part to behaviour]: Each of B's parts bears on what agents do: the situation through what they believe, what they believe, and what they can do.
+    {causes: [{from: actsit, to: behC, sign: which, via: [mental], basis: asserted, mark: "2"}, {from: mental, to: behC, sign: which, basis: asserted, mark: "2"}, {from: capacity, to: behC, sign: "+", basis: asserted, mark: "2"}]}
+    +> [The boat]
+
+[Arrow 3]: Agents' actions change their own and others' later situations.
+    {causes: {from: behC, to: attrB, sign: which, basis: asserted, mark: "3"}}
+    +> [The boat]
+
+[Arrow 4]: Behavioural changes add up to the macro outcome.
+    {causes: {from: behC, to: macroD, sign: which, basis: asserted, mark: "4"}}
+    +> [The boat]

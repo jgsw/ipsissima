@@ -1,0 +1,41 @@
+// Planted COLEMAN BOAT (17 Oct 2026): the diagram as Coleman (1990, p. 8) tells Weber's thesis, with
+// Ylikoski's fifth arrow, feedback from behaviour to values (Ylikoski 2016, Fig. 7), and the A-D arrow
+// as Ylikoski (2021) marks it, "?": a numbered summary of the route through B and C. The page draws it
+// as a boat: the two diagonals straight, A-D across the top, the feedback arcing inside the hull.
+===
+title: "Planted -- Coleman's boat, Weber's thesis"
+mechanism:
+    question: "How did Protestant doctrine bring about capitalist economic organisation?"
+    levels: [macro, micro]
+    ordering: scale
+    actors:
+        society:  {label: "A society", level: macro}
+        people:   {label: "Individual adherents", level: micro}
+    states:
+        doctrine:    {label: "Protestant religious doctrine", actor: society, role: condition}
+        values:      {label: "Adherents hold certain values", actor: people}
+        orientation: {label: "Orientations to economic behaviour", actor: people}
+        capitalism:  {label: "Capitalist economic organisation", actor: society, role: outcome}
+===
+
+[Weber's thesis]: Protestant doctrine helped bring about capitalism.
+
+[Doctrine generates values]: Protestant religious doctrine generates certain values in its adherents.
+    {causes: {from: doctrine, to: values, sign: "+", basis: asserted, mark: "1", name: "Situational mechanism"}}
+    +> [Weber's thesis]
+
+[Values orient behaviour]: Individuals with certain values adopt certain kinds of orientations to economic behaviour.
+    {causes: {from: values, to: orientation, sign: "+", basis: asserted, mark: "2", name: "Action-formation mechanism"}}
+    +> [Weber's thesis]
+
+[Orientations bring capitalism]: Certain orientations to economic behaviour help bring about capitalist economic organisation.
+    {causes: {from: orientation, to: capitalism, sign: "+", basis: asserted, mark: "3", name: "Transformational mechanism"}}
+    +> [Weber's thesis]
+
+[Behaviour feeds back]: What adherents do in economic life reinforces the values they hold.
+    {causes: {from: orientation, to: values, sign: "+", basis: asserted, mark: "5"}}
+    +> [Weber's thesis]
+
+[Doctrine brought capitalism]: Protestant doctrine brought about capitalism, through what adherents valued and did.
+    {causes: {from: doctrine, to: capitalism, sign: "+", via: [values, orientation], basis: asserted, mark: "?"}}
+    +> [Weber's thesis]

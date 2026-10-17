@@ -183,6 +183,70 @@ const VIAF = path.join(FIXTURE, "via.argdown");
         "the opened link is listed as a summary of its route, not drawn as an arrow beside it",
         JSON.stringify({ arrows: arrow.map(e => [e.layer, e.chip.label]), summaries: GV.summaries.map(x => [x.from, x.to, x.statedVia]) }));
 }
+// THE COLEMAN BOAT, DRAWN AS ITS AUTHORS DRAW IT (James, 17 Oct 2026: for teaching, and what users
+// expect). Ylikoski's Fig. 1 and Fig. 7: A and D above, B and C below; arrows 1 and 3 the hull's
+// straight diagonals; A-D across the top where the text numbers it, here Ylikoski's "?" on a summary
+// of the route; the feedback C -> B arcing over the boxes, inside the hull, its loop mark inside the
+// loop. Mutations: no `diag` branch -> the straight check fails; drop `|| s.mark` from the summary
+// filter -> no "?" arrow; no over-arc -> the feedback runs under; centre from the boxes -> the mark
+// below arrow 2.
+{
+  const MB = MV.model(graphOf(path.join(FIXTURE, "boat.argdown"))), specB = MV.markSpec(MB, MB);
+  const GB = MV.layout(MB, { marks: specB.marks, centres: specB.centres });
+  const E = (f, t) => GB.edges.find(e => e.from === f && e.to === t);
+  const straight = e => {
+    // Each control point within half a pixel of the line from start to end (coordinates are rounded).
+    const [p0, p1, p2, p3] = e.curve, off = (a, b, c) => Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])) / Math.hypot(b[0] - a[0], b[1] - a[1]);
+    return off(p0, p3, p1) < 0.5 && off(p0, p3, p2) < 0.5 && p3[0] > p0[0] && p0[1] !== p3[1];
+  };
+  const one = E("doctrine", "values"), three = E("orientation", "capitalism");
+  check(one && three && one.diag && three.diag && straight(one) && straight(three) &&
+        one.curve[3][1] > one.curve[0][1] && three.curve[3][1] < three.curve[0][1],
+        "a boat's steps between levels are its straight diagonals, down from A and up to D",
+        JSON.stringify({ one: one && [one.diag, one.curve], three: three && [three.diag, three.curve] }));
+  const four = E("doctrine", "capitalism");
+  check(four && four.chip.mark === "?" && !GB.summaries.some(s => s.from === "doctrine" && s.to === "capitalism"),
+        "a summary the text numbers (Ylikoski's '?', A to D) is drawn, carrying its number",
+        JSON.stringify({ four: four && four.chip, summaries: GB.summaries.map(s => [s.from, s.to]) }));
+  const five = E("orientation", "values"), B = GB.nodes.values, C = GB.nodes.orientation;
+  const ys = five ? MV.pathPts(five, 40).map(q => q[1]) : [];
+  check(five && five.over && Math.max(...ys) <= Math.max(B.y, C.y) + 0.5 && Math.min(...ys) < Math.min(B.y, C.y) - 20,
+        "the feedback from C back to B arcs over the boxes, inside the hull",
+        JSON.stringify({ over: five && five.over, ys: [Math.min(...ys), Math.max(...ys)], tops: [B.y, C.y] }));
+  const mark = (GB.centres || []).find(c => c.states.includes("values") && c.states.includes("orientation"));
+  check(mark && mark.y < B.y + B.h / 2 && mark.y > Math.min(...ys),
+        "the loop the arc closes carries its mark inside it, between the arc and arrow 2",
+        JSON.stringify({ mark: mark && [mark.x, mark.y], arc: Math.min(...ys), arrow2: B.y + B.h / 2 }));
+  // A PATHWAY ACROSS THREE LEVELS IS NOT A BOAT: Rena's body-to-organelle chart lost its stems' way round
+  // straight lines. Mutation: drop the two-level test -> the step is a diagonal.
+  const threeLv = graphOf.fromText(fs.readFileSync(path.join(FIXTURE, "boat.argdown"), "utf8")
+    .replace("levels: [macro, micro]", "levels: [macro, meso, micro]")
+    .replace('people:   {label: "Individual adherents", level: micro}', 'people:   {label: "Individual adherents", level: micro}\n        firms:    {label: "Firms", level: meso}')
+    .replace("        capitalism:", '        firm:        {label: "Firms organise", actor: firms}\n        capitalism:') +
+    '\n[Firms]: Orientations shape how firms organise.\n    {causes: {from: orientation, to: firm, sign: "+", basis: asserted}}\n    +> [Weber\'s thesis]\n');
+  const G3 = MV.layout(MV.model(threeLv));
+  check(G3.lanes.filter(l => !l.hidden && !l.empty).length === 3 && !G3.edges.some(e => e.diag),
+        "a chart across three levels is not drawn as a boat",
+        JSON.stringify({ lanes: G3.lanes.filter(l => !l.hidden && !l.empty).map(l => l.level), diag: G3.edges.filter(e => e.diag).map(e => [e.from, e.to]) }));
+  // A BOAT WHOSE B HAS PARTS (Martínez-Peña and Ylikoski 2024): the compartment stands between A and C,
+  // with no column left empty. Mutations: drop the close-up -> empty columns; the old first-column
+  // fallback -> B under A.
+  const GP = MV.layout(MV.model(graphOf(path.join(FIXTURE, "boat-parts.argdown"))), { compartments: true });
+  const cols = [...new Set(Object.values(GP.nodes).map(n => n.col))].sort((a, b) => a - b);
+  const N = GP.nodes;
+  check(N.attrB.col > N.macroA.col && N.attrB.col < N.behC.col && N.behC.col < N.macroD.col &&
+        cols.every((c, i) => c === i),
+        "a boat's B in parts stands between A and C, its compartment closing up the columns its parts left",
+        JSON.stringify({ A: N.macroA.col, B: N.attrB.col, C: N.behC.col, D: N.macroD.col, cols }));
+  // AND WHERE ONLY THE WHOLE LEADS ON, its first part starting the chain in A's column: the compartment
+  // still stands right of A, not under it. Mutation: drop the between rule -> B in A's column.
+  const onlyWhole = graphOf.fromText(fs.readFileSync(path.join(FIXTURE, "boat-parts.argdown"), "utf8")
+    .replace(/\[Each part to behaviour\][\s\S]*?\+> \[The boat\]\n\n/, ""));
+  const NW = MV.layout(MV.model(onlyWhole), { compartments: true }).nodes;
+  check(NW.attrB.col > NW.macroA.col && NW.attrB.col < NW.behC.col,
+        "a boat's B in parts stands right of A even where its first part starts the chain",
+        JSON.stringify({ A: NW.macroA.col, B: NW.attrB.col, C: NW.behC.col }));
+}
 // AND ON A BLOCKER, A FAILED ONE, AND STEPS THAT DIFFER BY CONDITION (profile 1.8, G1). Mutations:
 // drop the flip in signsOf -> `routes` differ; draw no T-bar -> the drawing check fails.
 const BLOCKF = path.join(FIXTURE, "blockers.argdown");

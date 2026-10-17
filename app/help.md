@@ -734,8 +734,11 @@ cause. A story the text endorses is drawn as its own.
 
 **A link the text opens into a route.** A text often states a link whole and then says how it
 runs: a trial's total effect, then the mechanism through which it came about. The map marks the
-whole link `via` the states between, and its arrow is labelled *via* the first of them, as a folded
-route is. It is the same route, counted once, not a second route beside the finer one.
+whole link `via` the states between. It is the same route, counted once, not a second route
+beside the finer one, so where the route is drawn the whole link is listed in the panel, not drawn
+as an arrow beside it; hovering it there lights the route. Where the text numbers the whole link
+(`mark`), it is an arrow of the text's own figure, as the Coleman boat's arrow from A to D is, and
+it is drawn.
 
 ### What an arrow says
 
@@ -824,6 +827,14 @@ scrolls the chain. **Fit to width** scales a wide chain to the window.
 The top line of the drawing says **what the levels are**: parts within wholes, regions within
 regions, a chain of command, larger and smaller, a food chain, separate systems — and whether that is
 what the text says or the reconstructor's reading. Where the map does not say, the line says so.
+
+**A Coleman boat is drawn as a boat.** Where a step runs down from one level to a lower one and a
+later step runs back up, as in Coleman's macro-micro-macro diagram, the steps between the levels
+are drawn straight, box to box: the hull's two diagonals, from A down to B and from C up to D. A
+step back within the lower level (Ylikoski's feedback from C to B) arcs over the boxes, inside the
+hull, with its loop's mark inside it. Arrow 4, from A to D across the top, is drawn as the map
+gives it: as an association where the text reports only that the two go together, and as an arrow
+where the text numbers it, even when it is a summary of the route below.
 
 **Nest the levels** draws each level as a frame inside the one it is part of, instead of as a band
 beneath it; **Levels as bands** puts them back. Nesting says each level is part of the one around
