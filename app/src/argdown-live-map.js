@@ -4047,6 +4047,7 @@ function createLiveMap(container, graph, options) {
     drawEchoes(expo ? g : null);
     drawCards(expo ? g : null);
     drawNodes(g, vis, sizes);
+    applySupposed();
 
     const gl = g.graph();
     // WHERE THE APEX SITS, so a map too big to fit can be anchored on its contention rather
@@ -5040,6 +5041,20 @@ function createLiveMap(container, graph, options) {
     applyConnectors();
   }
   function setLit(ids) { lit = new Set(ids || []); applyLit(); }
+
+  /* THE READER'S SUPPOSITIONS (James's go, 17 Oct 2026; argdown-suppose.js works them out). What
+   * is supposed false, or has lost the support the map gives it, fades, and the lines leaving it;
+   * nothing new is drawn for it. A folded block fades when everything it stands for has. */
+  let supposedOut = new Set();
+  function applySupposed() {
+    const byId = new Map(lastVis.nodes.map(n => [n.id, n]));
+    for (const [id, box] of drawn) {
+      const n = byId.get(id), mem = (n && n.members) || [];
+      box.classList.toggle("is-supposed-out", supposedOut.has(id) || (mem.length > 0 && mem.every(m => supposedOut.has(m))));
+    }
+    for (const [key, path] of drawnEdge) path.classList.toggle("is-supposed-out", supposedOut.has(key.split(" ")[0]));
+  }
+  function setSupposition(ids) { supposedOut = new Set(ids || []); applySupposed(); }
 
   /** Work out which edges belong to a linked inference step, and where each bar goes.
    *
@@ -6737,6 +6752,7 @@ function createLiveMap(container, graph, options) {
   }
 
   return {
+    setSupposition,
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
     // Fit also undoes a re-cut of the pages for a zoom: the column goes back to the pages it
@@ -7084,6 +7100,9 @@ function injectStyle() {
 .alm-n:focus-visible,.alm-toggle:focus-visible{
   outline:2.5px solid var(--alm-accent,#3a7bd5);outline-offset:3px;border-radius:3px}
 .alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5)}
+/* The reader's suppositions: what is supposed false, or has lost its support, fades. */
+.alm-n.is-supposed-out > *{opacity:.3}
+.alm-e.is-supposed-out{stroke-opacity:.2}
 .alm-n.is-lit{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 /* The box a hovered reference row names. Same voice as is-lit -- both mean "this one, here" --
    kept as its own class so a hover cannot fight the marks the reader has pinned. */

@@ -47,6 +47,7 @@ const SUITES = [
   // not run `npx playwright install chromium` still runs everything else.
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
+  ["suppositions and contraposition", "node", [path.join(HERE, "test_suppose.mjs")]],
   // THE MECHANISM VOCABULARY IN THE EDITOR: its checks are mechanism.py's local rules, ported, and
   // held to the checker word for word on every fixture and sample with a mechanism.
   ["the editor checks a mechanism as the checker does", "node", [path.join(HERE, "test_mechanism_lint.mjs")]],

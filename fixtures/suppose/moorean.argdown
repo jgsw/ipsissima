@@ -1,0 +1,52 @@
+// A TEACHING MAP FOR CONTRAPOSITION, in the reconstructor's own words (17 Oct 2026). It sets out
+// the exchange at the end of G. E. Moore's "Proof of an External World" (1939) without quoting it:
+// the text is in copyright in the UK until 2029, so the quoted map stays private. Open it, deny
+// the conclusion of either argument, and keep what each side grants: the page then says which
+// premise must go. Kept by app/test_suppose.mjs.
+//
+// One person's modus ponens is another's modus tollens. The sceptic runs the argument forward from
+// "if you cannot prove it, you do not know it". Moore keeps two of its premisses, denies its
+// conclusion, and so denies that first premiss. Deny the conclusion of Moore's proof instead, keep
+// what hands are, and the page forces his premiss: the move an idealist has to make.
+===
+title: "Teaching -- one person's modus ponens"
+===
+
+# Moore's proof {isGroup: true}
+
+[External things exist]: At least two things outside our minds exist now.
+
+<Moore's proof>: Holding up his hands, Moore proves that external things exist.
+
+(1) [Here are two hands]: Here is one hand, and here is another.
+    {formalization: "h"}
+(2) [Hands are external]: If here are two hands, then at least two things outside our minds exist.
+    {formalization: "h -> e"}
+-- Modus ponens --
+(3) [External things exist]
+    {formalization: "e"}
+
+# The sceptic's reply {isGroup: true}
+
+<The sceptic's argument>: If Moore cannot prove his premiss he does not know it; if he does not know it, his proof proves nothing. #reported
+
+(1) [No proof, no knowledge]: If Moore cannot prove that here are two hands, he does not know it. #reported
+    {formalization: "-p -> -k"}
+(2) [Moore cannot prove it]: Moore cannot prove that here are two hands: he cannot prove he is not dreaming. #conceded
+    {formalization: "-p"}
+-- Modus ponens {uses: [1, 2]} --
+(3) [Moore does not know it]: Moore does not know that here are two hands. #reported
+    {formalization: "-k"}
+(4) [Knowledge needed]: If Moore does not know his premiss, his proof proves nothing. #conceded
+    {formalization: "-k -> -c"}
+-- Modus ponens {uses: [3, 4]} --
+(5) [The proof proves nothing]: Moore's proof proves nothing. #reported
+    {formalization: "-c"}
+
+[The proof proves nothing]
+    -> [External things exist]
+
+# Moore's answer {isGroup: true}
+
+[Knowledge without proof]: Moore can know things he cannot prove, and he knew the premisses of his proof.
+    >< [No proof, no knowledge]

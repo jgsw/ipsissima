@@ -894,6 +894,39 @@ names, places its chain stops — naming them in the panel. **Unfold the chain**
 Nothing moves when you fold: every state keeps its place, so unfolding returns exactly what you
 saw.
 
+## Supposing, and denying a conclusion
+
+<p class="also" hidden>suppose, what if, objection holds, deny the conclusion, contraposition, modus tollens, non-monotonic</p>
+
+The map reports and does not judge: it never says which side of a dispute wins. You can ask what
+would follow if one side did. **Right-click a claim** (or an argument) and choose:
+
+- **Suppose this is false**: the claim is denied.
+- **Suppose this objection holds**, on a claim that objects to something: what it attacks or
+  contradicts is denied, or the step it undercuts is cut. An objection to a whole argument does not
+  say which part it denies, so the panel asks you: one of the premises, or the step.
+- **Suppose its step fails**, on an argument: its premises stand, and its conclusion loses the
+  support that step gave it.
+- **Deny its conclusion**, on an argument (also **Deny the conclusion** in its staircase, ⊞).
+
+What then **loses the support the map gives it** fades, and a panel says why. Losing support is not
+being false: a claim may still be true for reasons the map does not give. A reason on its own keeps
+a claim supported; an argument whose premises work together needs every one of them and its step;
+a claim with nothing supporting it stands unless you deny it. Objections do nothing until you
+suppose them, and where the text answers an objection you have granted, the panel names the
+answer and leaves the choice to you. Suppositions combine, and adding one can take a conclusion
+away. They are yours, never the text's, and never saved into the map; **Clear** ends them.
+
+**Deny the conclusion.** Where you deny a claim the map supports, the panel walks back through
+each argument for it to the premises it rests on: for the claim to be false, every reason for it
+must fail. Mark the premises you **keep**. Where every step claims to be deductive (it names a rule
+such as modus ponens), keeping all but one premise commits you to denying the last: this is modus
+tollens, the reverse of the argument. Where a step claims no such validity, as most steps do, it can
+fail with every premise true, so the panel lists the step itself among what may give, with any
+objections the map records against it. Where the steps are formalized and checked valid, the page
+works out exactly which premises your choices force false, and the least you could give up; where a
+formalized step is invalid, denying its conclusion forces nothing.
+
 ## Studying a map
 
 <p class="also" hidden>study, quiz, predict, test yourself</p>

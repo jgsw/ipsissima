@@ -677,6 +677,24 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #ctx .why{padding:.1rem .5rem .3rem;color:var(--fg-dim);font-size:11px;white-space:normal}
 #ctx hr{border:0;border-top:1px solid var(--line);margin:.25rem .3rem}
 #ctx .tick{display:inline-block;width:1.1em;color:var(--accent)}
+/* THE READER'S SUPPOSITIONS (17 Oct 2026): a card over the map's right edge, below the bar. Never
+   the text's, and said so; nothing in it is saved into the map. */
+#supp{position:fixed;z-index:35;right:14px;top:96px;width:23rem;max-width:calc(100vw - 28px);max-height:62vh;
+  overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
+  box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
+#supp[hidden]{display:none}
+#supp header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
+#supp header b{font-size:13px}
+#supp header .grow{flex:1}
+#supp h4{margin:.6rem 0 .25rem;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-dim);font-weight:600}
+#supp ul{margin:.1rem 0 .3rem 1.1rem;padding:0}
+#supp li{margin:.12rem 0}
+#supp button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .15rem}
+#supp .muted,#supp .q{color:var(--fg-dim)}
+#supp .leaf{display:flex;gap:.35rem;align-items:baseline;margin:.12rem 0}
+#supp .leaf button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
+#supp .verdict{margin:.25rem 0 .1rem;padding:.25rem .4rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
+#supp .go{cursor:pointer;text-decoration:underline dotted}
 #ctx button.ctxon:hover .tick{color:var(--on-accent)}
 #ctx .hint{display:block;margin-left:1.1em;color:var(--fg-dim);font-size:11px}
 #ctx button.hasicon{display:grid;grid-template-columns:26px 1fr;align-items:center;
@@ -1361,12 +1379,17 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
         <span class="xmode xsave">
           <button id="xsvg" title="Save the staircase as an SVG">SVG</button><button id="xpng" title="Save the staircase as a PNG">PNG</button>
         </span>
+        <button id="xdeny" title="Suppose the conclusion is false, and see what must give: walks back through the steps to the premises it rests on">Deny the conclusion</button>
         <button class="plain x" id="explclose" title="Close (Esc)">&times;</button>
       </header>
       <div id="explbody"></div>
       <footer id="explfoot"></footer>
     </div>
   </div>
+
+  <!-- THE READER'S SUPPOSITIONS in Reasons (17 Oct 2026): what each costs, and for a denied
+       conclusion, what must give. Filled by suppRender; see argdown-suppose.js. -->
+  <aside id="supp" hidden aria-label="Your suppositions"></aside>
 
   <!-- A BRIDGE'S STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). Clicking a causal scheme's
        name on an inference bar in Reasons: the steps its premises state, drawn as the Mechanism
@@ -1969,6 +1992,8 @@ function openingDepth(graph){
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
   syncDock();
+  // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
+  suppApply();
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
   // order `positions` used. Rebuilt per file loaded, and the pane starts closed: it is an answer
@@ -5660,6 +5685,7 @@ $("qchip").onclick = function(){
   showQuestions();
 };
 $("explclose").onclick = explHide;
+$("xdeny").onclick = function(){ if (EXPL_NODE) { explHide(); suppDenyArgument(EXPL_NODE); } };
 $("xmstair").onclick = function(){ EXPL_MODE = "stair"; explDraw(); };
 $("xmcompact").onclick = function(){ EXPL_MODE = "compact"; explDraw(); };
 $("xsvg").onclick = explExportSVG;
@@ -6642,6 +6668,8 @@ function redrawFrom(graph){
     view: keep ? keep.view : null, userMoved: keep ? keep.userMoved : false
   });
   syncDock();
+  // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
+  suppApply();
   buildKeys(graph);
   statsLine(graph);
   if (PANES.notes) renderNotes();
@@ -8011,6 +8039,160 @@ function explExportPNG(){
     { save: saveBlob, onError: showErr });
 }
 
+/* THE READER'S SUPPOSITIONS IN REASONS (James's go, 17 Oct 2026; the proposal "Supposing in the
+ * Reasons view, and contraposition"). Kept by LABEL, not id, so an edit that renumbers the nodes
+ * does not move them: "s:" a statement, "a:" an argument, "a:Name#n" a line drawn only inside its
+ * argument. Never saved into the map, never in the fold state: the reader's, not the text's. */
+var SUPP = { false: [], holds: [], cut: [], choice: {} }, SUPP_KEEP = [];
+function suppKey(n){ return (n.kind === "argument" ? "a:" : "s:") + n.label; }
+function suppIdOf(key){
+  var g = CURRENT_GRAPH, m = /^([sa]):(.*?)(#\d+)?$/.exec(key || "");
+  if (!g || !m) return null;
+  var kind = m[1] === "a" ? "argument" : "statement";
+  var hit = (g.nodes || []).filter(function(x){ return x.kind === kind && x.label === m[2]; })[0];
+  return hit ? hit.id + (m[3] || "") : null;
+}
+function suppLabel(id){
+  var g = CURRENT_GRAPH, base = String(id).split("#")[0], k = String(id).split("#")[1];
+  var n = ((g && g.nodes) || []).filter(function(x){ return x.id === base; })[0];
+  if (!n) return id;
+  if (k == null) return n.label;
+  var l = (n.pcs || []).filter(function(x){ return String(x.n) === k; })[0];
+  return l && l.title ? l.title : n.label + " (" + k + ")";
+}
+function suppHas(list, key){ return list.indexOf(key) >= 0; }
+function suppToggle(list, key){ var i = list.indexOf(key); if (i >= 0) list.splice(i, 1); else list.push(key); suppApply(); }
+function suppAttacks(n){
+  return ((CURRENT_GRAPH && CURRENT_GRAPH.edges) || []).some(function(e){
+    return e.from === n.id && ["attack", "undercut", "contradictory", "contrary"].indexOf(e.type) >= 0; });
+}
+/** The main conclusion of an argument, as a key: its statement where it has one drawn, else its line. */
+function suppConclusionKey(n){
+  var pcs = n.pcs || [], main = pcs.filter(function(l){ return l.role === "main-conclusion"; })[0] || pcs[pcs.length - 1];
+  if (!main) return null;
+  var drawnStmt = ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).some(function(x){ return x.kind === "statement" && x.label === main.title; });
+  return drawnStmt ? "s:" + main.title : "a:" + n.label + "#" + main.n;
+}
+function suppLastStep(n){ var pcs = n.pcs || []; return pcs.reduce(function(k, l){ return l.role !== "premise" ? Math.max(k, l.step || 0) : k; }, 0); }
+function suppMenu(n){
+  var out = [], key = suppKey(n);
+  if (n.kind === "statement") {
+    out.push(suppHas(SUPP.false, key)
+      ? { act: "false", label: "Undo: let it stand", hint: "Take back the supposition that this is false", run: function(){ suppToggle(SUPP.false, key); } }
+      : { act: "false", label: "Suppose this is false", hint: "See what then loses the support the map gives it, and, where it is a conclusion, what must give for it to be false", run: function(){ suppToggle(SUPP.false, key); } });
+  } else {
+    var ck = suppConclusionKey(n), cut = "a:" + n.label + "#" + suppLastStep(n);
+    if (ck) out.push(suppHas(SUPP.false, ck)
+      ? { act: "deny", label: "Undo: let its conclusion stand", hint: "Take back the denial of this argument's conclusion", run: function(){ suppToggle(SUPP.false, ck); } }
+      : { act: "deny", label: "Deny its conclusion", hint: "Suppose its conclusion is false, and see what must give: the premises it rests on, or a step", run: function(){ suppToggle(SUPP.false, ck); } });
+    out.push(suppHas(SUPP.cut, cut)
+      ? { act: "cut", label: "Undo: let its step go through", hint: "Take back the supposition that this step fails", run: function(){ suppToggle(SUPP.cut, cut); } }
+      : { act: "cut", label: "Suppose its step fails", hint: "Its premises stand; see what loses the support this step gave", run: function(){ suppToggle(SUPP.cut, cut); } });
+  }
+  if (suppAttacks(n)) out.push(suppHas(SUPP.holds, key)
+    ? { act: "holds", label: "Undo: the objection need not hold", hint: "Take back the supposition that this objection holds", run: function(){ suppToggle(SUPP.holds, key); } }
+    : { act: "holds", label: "Suppose this objection holds", hint: "Deny what it attacks or contradicts, or cut the step it undercuts, and see what that costs", run: function(){ suppToggle(SUPP.holds, key); } });
+  return out;
+}
+function suppDenyArgument(n){ var ck = suppConclusionKey(n); if (ck && !suppHas(SUPP.false, ck)) { SUPP.false.push(ck); suppApply(); } }
+function suppIds(){
+  var map = function(list){ return list.map(suppIdOf).filter(Boolean); };
+  var choice = {};
+  Object.keys(SUPP.choice).forEach(function(k){
+    var p = k.split(">"), a = suppIdOf(p[0]), b = suppIdOf(p[1]);
+    if (a && b) choice[a + ">" + b] = SUPP.choice[k];
+  });
+  return { "false": map(SUPP.false), holds: map(SUPP.holds), cut: map(SUPP.cut), choice: choice, keep: map(SUPP_KEEP) };
+}
+function suppClear(){ SUPP = { false: [], holds: [], cut: [], choice: {} }; SUPP_KEEP = []; suppApply(); }
+var SUPP_LAST = null;
+function suppApply(){
+  var box = $("supp");
+  if (!box || !window.ArgdownSuppose) return;
+  if (!(SUPP.false.length + SUPP.holds.length + SUPP.cut.length) || !CURRENT_GRAPH) {
+    SUPP_LAST = null; box.hidden = true; box.innerHTML = ""; if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]); return;
+  }
+  var I = suppIds();
+  var r = ArgdownSuppose.suppose(CURRENT_GRAPH, I, { appraisal: APPRAISAL_ON });
+  SUPP_LAST = r;
+  if (LIVE && LIVE.setSupposition) LIVE.setSupposition(r.lost.concat(r.denied.filter(function(x){ return x.indexOf("#") < 0; })));
+  box.innerHTML = suppHTML(r, I);
+  box.hidden = false;
+}
+function suppHTML(r, I){
+  var esc = ArgdownStaircase.esc, q = function(id){ return "‹" + esc(suppLabel(id)) + "›"; };
+  var go = function(id){ return id.indexOf("#") < 0 ? '<span class="go" data-supp-go="' + esc(id) + '">' + q(id) + '</span>' : q(id); };
+  var mine = [];
+  I["false"].forEach(function(id, i){ mine.push([q(id) + " is false", "false", SUPP.false[i]]); });
+  I.holds.forEach(function(id, i){ mine.push([q(id) + " holds, as an objection", "holds", SUPP.holds[i]]); });
+  I.cut.forEach(function(id, i){ mine.push(["the step of " + q(id.split("#")[0]) + " fails", "cut", SUPP.cut[i]]); });
+  var h = '<header><b>Your suppositions</b><span class="grow"></span><button type="button" data-supp-clear="1" title="Take every supposition back">Clear</button></header>' +
+    '<div class="q">Yours, not the text’s, and never saved into the map. What follows is read off the map’s own support: a claim that loses it is not thereby false.</div>' +
+    '<ul>' + mine.map(function(m){ return '<li>Suppose ' + m[0] + ' <button type="button" data-supp-undo="' + m[1] + '" data-key="' + esc(m[2]) + '" title="Take this back">Undo</button></li>'; }).join("") + '</ul>';
+  // ATTACKS ON A WHOLE ARGUMENT, waiting for the reader to say which part they deny.
+  r.waiting.forEach(function(w){
+    var a = r.index.args[w.to];
+    h += '<div class="verdict">' + q(w.from) + ' objects to ' + q(w.to) + ' as a whole. The map does not say whether it denies a premise or that the step goes through. Which do you suppose?<div>' +
+      w.premises.map(function(n){ var l = a.byN[n]; return '<button type="button" data-supp-choice="premise:' + n + '" data-from="' + esc(suppLabel(w.from)) + '" data-to="' + esc(suppLabel(w.to)) + '">(' + n + ') ' + esc(l && l.title || "") + '</button>'; }).join("") +
+      '<button type="button" data-supp-choice="step" data-from="' + esc(suppLabel(w.from)) + '" data-to="' + esc(suppLabel(w.to)) + '">the step</button></div></div>';
+  });
+  r.replies.forEach(function(x){ h += '<div class="q">The text answers ' + q(x.objection) + ' with ' + go(x.reply) + '; you have supposed the objection holds anyway.</div>'; });
+  var forced = r.denied.filter(function(id){ return r.why[id] && r.why[id].by !== "you"; });
+  var heldForced = r.held.filter(function(id){ return r.why[id] && r.why[id].holds; });
+  if (forced.length || heldForced.length) h += '<h4>Denied or held in turn</h4><ul>' +
+    forced.map(function(id){ var w = r.why[id]; return '<li>' + go(id) + ' is false: ' + ({ rebuttal: "rebutted by", contradictory: "it contradicts", contrary: "it cannot hold with", undercut: "undercut by", objection: "denied by" }[w.by] || "by") + ' ' + q(w.from) + '</li>'; }).join("") +
+    heldForced.map(function(id){ return '<li>' + go(id) + ' holds: it is the contradictory of ' + q(r.why[id].from) + '</li>'; }).join("") + '</ul>';
+  h += '<h4>Lose the support the map gives them' + (r.lost.length ? ' (' + r.lost.length + ')' : '') + '</h4>' +
+    (r.lost.length ? '<ul>' + r.lost.map(function(id){
+      var ow = (r.owing[id] || []);
+      return '<li>' + go(id) + (ow.length && mine.length > 1 ? ' <span class="q">(because of ' + ow.map(q).join(" or ") + ')</span>' : '') + '</li>'; }).join("") + '</ul>'
+      : '<div class="q">Nothing: every claim that had support keeps some line of it.</div>');
+  // DENY THE CONCLUSION: for each claim the reader supposes false that the map supports, what must give.
+  I["false"].forEach(function(id){
+    var D = ArgdownSuppose.deny(CURRENT_GRAPH, id.indexOf("#") >= 0 ? id.split("#")[0] : id, I.keep, { appraisal: APPRAISAL_ON, index: r.index });
+    if (D.none) return;
+    h += '<h4>For ' + q(D.claim) + ' to be false</h4>' + (D.reasons.length > 1 ? '<div class="q">Every reason the map gives it must fail:</div>' : '');
+    D.reasons.forEach(function(x){
+      if (x.kind === "reason") { h += '<div class="verdict">' + go(x.from) + ' is false, or it does not support it.</div>'; return; }
+      var kindWords = { valid: "Every step is formalized and checked valid.", named: "Every step names a deductive rule; not every one is checked against formalizations.",
+        invalid: "As formalized, a step here is invalid: denying the conclusion forces nothing about its premises.",
+        defeasible: "A step here is a defeasible scheme: it can fail with every premise true.",
+        conductive: "Its step claims no validity: it weighs considerations, and can fail with every premise true." };
+      h += '<div class="verdict"><b>' + q(x.arg) + '</b> rests on:' +
+        x.leaves.map(function(l){
+          var k = l.sid ? "s:" + suppLabel(l.sid) : "a:" + suppLabel(x.arg) + "#" + l.n;
+          return '<div class="leaf"><button type="button" data-supp-keep="' + esc(k) + '"' + (l.kept ? ' class="on" aria-pressed="true"' : '') + ' title="' + (l.kept ? 'Kept: press to let it go' : 'Keep it: see what denying the conclusion then forces') + '">' + (l.kept ? 'Kept' : 'Keep') + '</button>' +
+            '<span>' + (l.n != null ? '(' + l.n + ') ' : '') + (l.sid ? go(l.sid) : esc(l.title || "")) + '</span></div>'; }).join("") +
+        '<div class="q">' + kindWords[x.all] + '</div>';
+      var open = x.leaves.filter(function(l){ return !l.kept; });
+      var name = function(l){ return (l.n != null ? '(' + l.n + ') ' : '') + '‹' + esc(l.title || suppLabel(l.sid)) + '›'; };
+      if (x.contradiction) h += '<div>You cannot keep all of these and deny ' + q(D.claim) + ': the steps are deductive.</div>';
+      else if (x.forced && x.all !== "invalid") h += '<div>Keeping the others, denying ' + q(D.claim) + ' commits you to denying ' + name(x.forced[0]) + (x.orStep.length ? ', or to saying the step fails.' : '.') + '</div>';
+      else if (open.length) h += '<div>At least one of ' + (open.length === x.leaves.length ? 'these' : 'those you have not kept') + ' is false' + (x.orStep.length && x.all !== "invalid" ? ', or the step fails' : '') + '.</div>';
+      if (x.formal) {
+        h += '<div class="q">Decided from the formalizations: ' + (x.formal.forced.length ? 'the conclusion’s denial, with what you keep, forces ' + x.formal.forced.map(name).join(" and ") + ' false. ' : '') +
+          (x.formal.minimal.length ? 'The least you can give up: ' + x.formal.minimal.map(function(m){ return m.map(name).join(" and "); }).join("; or ") + '.' : '') + '</div>';
+      }
+      if (x.orStep.length && x.objections.length) h += '<div class="q">The map records objections to the step: ' + x.objections.map(go).join(", ") + '.</div>';
+      h += '</div>';
+    });
+  });
+  return h;
+}
+$("supp").addEventListener("click", function(ev){
+  var t = ev.target;
+  if (!t || !t.getAttribute) return;
+  if (t.getAttribute("data-supp-clear")) { suppClear(); return; }
+  var u = t.getAttribute("data-supp-undo");
+  if (u) { var list = SUPP[u], k = t.getAttribute("data-key"), i = list.indexOf(k); if (i >= 0) list.splice(i, 1); suppApply(); return; }
+  var c = t.getAttribute("data-supp-choice");
+  if (c) { SUPP.choice["s:" + t.getAttribute("data-from") + ">a:" + t.getAttribute("data-to")] = c; suppApply(); return; }
+  var kp = t.getAttribute("data-supp-keep");
+  if (kp) { suppToggle(SUPP_KEEP, kp); return; }
+  var g = t.closest ? t.closest("[data-supp-go]") : null;
+  if (g && LIVE) LIVE.markClaims([g.getAttribute("data-supp-go")], { centreAlways: true });
+});
+
 function ctxShow(n, ev){
   var m = $("ctx");
   m.textContent = "";
@@ -8066,6 +8248,18 @@ function ctxShow(n, ev){
       };
       m.appendChild(del);
     }
+  }
+  // THE READER'S SUPPOSITIONS (17 Oct 2026): suppose a claim false, an objection true, a step
+  // failing. Offered on a claim or an argument, never on a section.
+  if ((n.kind === "statement" || n.kind === "argument") && window.ArgdownSuppose && LIVE) {
+    m.appendChild(document.createElement("hr"));
+    suppMenu(n).forEach(function(it){
+      var sb = document.createElement("button");
+      sb.type = "button"; sb.textContent = it.label; sb.title = it.hint;
+      sb.setAttribute("data-supp-menu", it.act);
+      sb.onclick = function(){ ctxHide(); it.run(); };
+      m.appendChild(sb);
+    });
   }
   // THE KEY, from the moment of puzzlement: somebody staring at a border, a coloured line or
   // a chip is exactly who the card is for, and the context menu is in-context rather than

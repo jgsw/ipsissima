@@ -1,0 +1,67 @@
+// Planted for app/test_suppose.mjs (17 Oct 2026): two convergent arguments for one conclusion, an
+// objection with a reply, an undercut, an attack on a whole argument, a contradictory pair, a step
+// named deductive, and a formalized modus ponens, valid and invalid.
+===
+title: "Planted -- suppositions and contraposition"
+===
+
+[Main]: The main conclusion holds.
+
+<Linked>: Two premises together.
+
+(1) [P1]: The first premise holds.
+(2) [P2]: The second premise holds.
+----
+(3) [Main]
+
+<Alone>: A reason on its own.
+
+(1) [P3]: The third premise holds.
+----
+(2) [Main]
+
+[Obj]: Something tells against the first premise.
+    -> [P1]
+
+[Reply]: The objection misreads the first premise.
+    -> [Obj]
+
+[Under]: The third premise does not bear on the conclusion.
+    _> <Alone>
+
+[Whole]: The linked argument fails somewhere.
+    -> <Linked>
+
+[Rival]: The third premise is false.
+    >< [P3]
+
+[Named]: A conclusion reached by a named rule.
+
+<Ponens>: Named, not formalized.
+
+(1) [If A then B]: If a then b.
+(2) [A]: A holds.
+-- Modus ponens --
+(3) [Named]
+
+[Formal]: B holds, formally.
+    {formalization: "b"}
+
+<Checked>: A formalized modus ponens.
+
+(1) [Rule]: If a then b, formally.
+    {formalization: "a -> b"}
+(2) [Fact]: A holds, formally.
+    {formalization: "a"}
+-- Modus ponens --
+(3) [Formal]
+
+[Wrong]: A holds, by affirming the consequent.
+    {formalization: "a"}
+
+<Affirming>: An invalid step.
+
+(1) [Rule]
+(2) [Formal]
+-- Modus ponens --
+(3) [Wrong]

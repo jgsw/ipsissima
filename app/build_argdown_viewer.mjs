@@ -216,6 +216,9 @@ function liveMapDeps() {
          // verdict, and before the bundle carrying argdown-graph.mjs, which computes it off
          // `globalThis.ArgdownValidity`. 7 KB, and inert on every map that names no rule.
          wrap("argdown-validity.js", readScript("argdown-validity.js"), "LIVEMAP_DEPS") +
+         // The reader's suppositions in Reasons, and contraposition (17 Oct 2026): pure, read off
+         // the graph, after the validity checker whose decision procedure it borrows.
+         wrap("argdown-suppose.js", readScript("argdown-suppose.js"), "LIVEMAP_DEPS") +
          wrap("argdown-host.js", readScript("argdown-host.js"), "LIVEMAP_DEPS") +
          markdownBundle();
 }
