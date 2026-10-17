@@ -4416,6 +4416,7 @@ function injectStyle() {
     ".amech[hidden]{display:none}",
     ".amech-head{padding:8px 12px;border-bottom:1px solid var(--line,#ddd)}",
     ".amech-q{color:var(--fg-dim,#666);font-size:13px;min-width:0}",
+    ".amech-none{max-width:62ch;margin:72px auto 0;padding:0 24px;color:var(--fg-dim,#666);font-size:14px;line-height:1.5;text-align:center;text-wrap:balance}",
     // The map bar's look, from the page's own tokens (argdown-live-map.js, .alm-bar).
     ".amech-guide{font-size:13px;line-height:1.5;margin:.3rem 0 .6rem}",
     ".amech-helplink{border:0;background:none;padding:0;font:inherit;color:var(--accent,#3a7bd5);text-decoration:underline;text-underline-offset:2px;cursor:pointer}",
@@ -4883,16 +4884,27 @@ function create(container, graph, opts) {
   // CONSIDERED, NOT MAPPED (1.17): under the parallel method every text's mechanism is considered,
   // and a map may record that it was not mapped, and why. That record is what this view shows.
   var DEPTH = obj(graph && graph.mechanism && graph.mechanism.block);
-  if (DEPTH.depth === "none") {
-    container.textContent = "The mechanism was considered, and not mapped" +
-      (DEPTH.depth_reason ? ": " + String(DEPTH.depth_reason) : ".");
+  // A NOTE, NOT BARE TEXT. Written straight into the container it sat at the pane's top-left
+  // corner, which is where the map's provenance chip ("machine-written map") is pinned, so the
+  // chip covered its first words (Moore 1939, 17 Oct 2026). Set in from the corner, and centred.
+  var note = function (text) {
+    if (typeof document === "undefined") { container.textContent = text; return null; }   // Node
+    injectStyle();
+    container.innerHTML = "";
+    var d = document.createElement("p");
+    d.className = "amech-none";
+    d.textContent = text;
+    container.appendChild(d);
     return null;
-  }
+  };
+  if (DEPTH.depth === "none")
+    return note("The mechanism was considered, and not mapped" +
+                (DEPTH.depth_reason ? ": " + String(DEPTH.depth_reason) : "."));
   injectStyle();
   var FULL = model(graph);
   container.innerHTML = "";
   container.classList.add("amech");
-  if (!FULL) { container.textContent = "This map declares no mechanism."; return null; }
+  if (!FULL) return note("This map declares no mechanism.");
   // A FIGURE (10 Oct 2026): the steps some claims state, drawn by this same renderer and nothing
   // else -- no question, no bar, no panel -- inside another arrangement: a bridge's premises in
   // Reasons, a paragraph's steps in Exposition. The whole figure is one control, which opens the

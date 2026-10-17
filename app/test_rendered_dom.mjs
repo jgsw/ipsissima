@@ -1613,6 +1613,43 @@ async function chainNodeChecks(browser) {
  * Driven as the author met it: open Find, search for "main", then click with the mouse on the
  * part of `[main-claim]` the search did NOT highlight. The first check proves the link really
  * was split, so a pass means the bug's path was exercised, not avoided. */
+/* A MAP LAID OUT IN A HIDDEN PANE, THEN SHOWN. A file that opens straight into Mechanism lays its
+ * Reasons view out while that pane is display:none, where every text measures 0 wide. Moore 1939
+ * (17 Oct 2026): the single-line widths were cached at 0, so back in Reasons no premise row was cut
+ * -- it ran out past its box -- and the inference bar ran on through the rule's name.
+ * Mutation: cache the zero in `textWidth` AND leave `widthCache` out of `remeasureIfBlind` -> the
+ * row overflows and the bar meets the rule. Either half alone suffices, since `measure` goes blind
+ * in the same pass and so the clear always runs. */
+async function hiddenFirstLayoutChecks(browser) {
+  const src = path.join(REPO, "fixtures", "display", "pcs-hidden-first-layout.argdown");
+  const html = path.join(tmp, "pcs-hidden-first-layout.html");
+  execFileSync("node", [BUILDER, src, "-o", html], { stdio: "pipe" });
+  const hidden = path.join(tmp, "pcs-hidden-first-layout.hidden.html");
+  const page0 = fs.readFileSync(html, "utf8");
+  const at = page0.indexOf("</head>");
+  fs.writeFileSync(hidden, page0.slice(0, at) + "<style id=hideMap>#map{display:none!important}</style>" + page0.slice(at));
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + hidden);
+  await page.waitForTimeout(800);
+  await page.evaluate(() => document.getElementById("hideMap").remove());
+  await page.waitForTimeout(1200);
+  const g = await page.evaluate(() => {
+    const box = [...document.querySelectorAll("#map g.alm-n")].find(n => n.querySelector(".alm-pcs-bar"));
+    if (!box) return null;
+    const r = box.querySelector("rect").getBBox();
+    const rows = [...box.querySelectorAll(".alm-pcs-text")].map(t => ({ text: t.textContent, right: t.getBBox().x + t.getBBox().width }));
+    const bars = [...box.querySelectorAll(".alm-pcs-bar")].map(b => b.getBBox().x + b.getBBox().width);
+    const rules = [...box.querySelectorAll(".alm-pcs-rule")].map(t => ({ text: t.textContent, left: t.getBBox().x }));
+    return { right: r.x + r.width, rows, bars, rules };
+  });
+  check(!!g && g.rows.length >= 4 && g.rows.every(x => x.right <= g.right + 0.5) && g.rows.some(x => x.text.endsWith("…")),
+        "hidden first layout: premise rows are cut to their box once the pane is shown", JSON.stringify(g));
+  check(!!g && g.rules.length === 2 && g.rules.every((rl, i) => g.bars[i] != null && g.bars[i] < rl.left),
+        "hidden first layout: each inference bar stops before its rule's name", JSON.stringify(g && { bars: g.bars, rules: g.rules }));
+  await ctx.close();
+}
+
 async function refClickChecks(browser) {
   const out = path.join(tmp, "editor-standalone.html");
   if (!fs.existsSync(out)) { check(false, "find + link: the editor build exists", out); return; }
@@ -3136,6 +3173,7 @@ await bridgePanelChecks(browser);
 await cardStepsChecks(browser, built);
 await chainNodeChecks(browser);
 await refClickChecks(browser);
+await hiddenFirstLayoutChecks(browser);
 await quoteChecks(browser);
 await guidedChecks(browser);
 await exportChecks(browser);

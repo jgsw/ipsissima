@@ -3813,6 +3813,7 @@ function createLiveMap(container, graph, options) {
     if (container.clientWidth <= 40 || container.clientHeight <= 120) return false;
     measuredBlind = false;
     measureCache.clear();
+    widthCache.clear();
     return true;
   }
 
@@ -3932,6 +3933,13 @@ function createLiveMap(container, graph, options) {
     try { w = probe.getComputedTextLength(); }
     catch (e) { w = String(text).length * size * 0.55; }   // headless / detached
     probe.remove();
+    // THE SAME BLINDNESS AS `measure`, and it did the same damage until this line existed: a map
+    // opened straight into Mechanism lays Reasons out in a hidden pane, every single-line width
+    // came back 0 and was CACHED, and `remeasureIfBlind` cleared only the wrapping cache. Back in
+    // Reasons, every premise row "fitted" and so was never cut, running out past its box, and the
+    // inference bar -- which stops where the rule's name begins -- ran on through the name (Moore
+    // 1939, 17 Oct 2026). A zero for real text is the absence of a measurement: not remembered.
+    if (!w && String(text).trim()) { measuredBlind = true; return w; }
     widthCache.set(key, w);
     return w;
   }

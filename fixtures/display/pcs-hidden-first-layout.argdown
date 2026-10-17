@@ -1,0 +1,28 @@
+// WHAT THIS IS FOR: a map whose Reasons view is first laid out while its pane is HIDDEN -- as it
+// is when a file opens straight into the Mechanism arrangement -- and then shown.
+//
+// In a hidden pane every text measures 0 wide. The wrapping measurement already knew to throw such
+// a zero away; the single-line one, which cuts a premise row to its box and stops the inference
+// bar where the rule's name begins, cached it. Back in Reasons, every row "fitted", so none was
+// cut and the long ones ran out past the box, and the bar ran on through the rule's name. Found
+// on Moore 1939, 17 Oct 2026.
+//
+// WHAT TO SEE, after a hidden first layout:
+//   - premise (1), far longer than the box is wide, cut with an ellipsis INSIDE the box
+//   - the bars stopping short of "EG" and "MP", never running through them
+//
+// IF THE DEFECT IS PRESENT: premise (1) runs on past the right-hand edge of the box, and a line
+// is struck through each rule name. Kept by app/test_rendered_dom.mjs (hiddenFirstLayoutChecks).
+
+[External things exist]: At least two things outside our minds exist now.
+
+<Two hands>: Holding up his hands, the speaker proves that external things exist.
+
+<Two hands>
+
+(1) Here is one hand, held up for the audience to see, and here is another, held up beside it.
+-- Existential generalisation --
+(2) Two human hands exist now.
+(3) If two human hands exist now, then at least two things outside our minds exist now.
+-- Modus ponens {uses: [2, 3]} --
+(4) [External things exist]
