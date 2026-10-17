@@ -598,7 +598,8 @@ asking its own question; **Chain** at the top switches between them, or shows *e
 together*. A state two chains share carries **⇄**: click it to open the other chain, where the
 same state may play a different part — what one chain explains can be where the next begins.
 
-**The same kind in different cases.** A state marked **≈** is the same kind of thing as a state in
+**The same kind in different cases.** A state marked **≈** (under **Marks: All**; under the plain
+marks its panel names the kind) is the same kind of thing as a state in
 another case — a general claim's rural–urban migration and one region's herders' migration — but
 not the same state: nothing runs from one to the other. Click ≈ to see every state of that kind,
 which chain each is in (with a button to open it), and any step the cases share. Where the text
@@ -768,6 +769,29 @@ timing with its own step. The **Legend** beside the chain shows each kind of lin
 
 ### Studying the chain
 
+**What follows from the steps.** The panel opens on what the text's own steps add up to, which no
+one of them says: a route from where the chain starts to an outcome that no one step states; an
+outcome some routes raise and others lower, so that which wins turns on sizes the text may not give;
+a step the text only asserts that every route passes, where the rest is backed better; a step the
+text states that other routes agree with; a loop the steps close, and whether it reinforces or
+balances itself; two accounts the argument sets against each other. These are findings about the
+text, never verdicts on it. Click one to light what it rests on and list its steps. Where nothing
+follows, the panel says so: the drawing then restates the text.
+
+**Your experiments.** A state's panel offers **Suppose this does not happen**, and, where the state
+blocks or moderates a step, **Suppose this holds**; an arrow's offers **Suppose this step does not
+run**. The chart then fades every state and step the text's steps no longer bring about, and the
+panel says what changed: an outcome no longer reached, a direction turned, a loop broken. Supposing
+that a blocker holds can withdraw an outcome: adding a fact takes a conclusion away. Experiments
+combine; a banner says they are yours, not the text's, and **Clear** ends them. They are never
+saved into the map.
+
+**How might this step work?** Where the text does not say how a step works, its panel offers
+questions to put to it, by the kind of step: down a level, how the cause reaches people (by force,
+by pressure, by example; through what they can do, believe or want); up a level, how many people's
+doings become the whole (by adding up, by something emerging, by meeting an arrangement already
+there); between wholes, through whom it runs. They are questions, not readings of the text.
+
 Click an arrow to see its claims, and a claim to reach its passage in the text. **Click a state**
 to see only the paths through it — what leads to it and what it leads to — with the rest faded.
 **Back to the whole chain**, or <kbd>Esc</kbd>, brings everything back. **Show only what the text
@@ -802,10 +826,19 @@ state** draws the parts apart.
 cause that works in one place and not another — **Show: one panel per …** draws a small chart for
 each value, side by side.
 
-**Marks on a box.** ✱ marks a state the text says is unobserved; ⊘ an outcome that stops the process
-short, drawn grey; a small line sketch, the behaviour over time the text gives the state (growing,
-oscillating, levelling off). A square frame round a state says the text's analysis holds it fixed;
-one round two, that they cannot be held fixed apart.
+**Marks on a box.** An outcome that stops the process short is drawn grey, and a possibility the
+text sets out, not (or not yet) actual, hollow and in italic; hover either for what it is. Under
+**Marks: All**, ✱ marks a state the text says is unobserved; a small line sketch, the behaviour over
+time the text gives the state (growing, oscillating, levelling off); and a square frame round a state
+says the text's analysis holds it fixed, one round two that they cannot be held fixed apart.
+
+**Marks: Plain | All.** The chain opens on its **plain** marks: boxes, arrows with their heads and
+weights, loops, AND gates and blockers, the marks a reader can follow without the Legend. Every
+line is solid, since a dashed arrow reads as a weaker causal claim, and a dash here meant only that
+a claim paraphrases the text. **All** adds the marks that need the Legend: line patterns for how
+close each claim stands to the text's words, ≈ ≙ ⊂ ⊃, stocks and flows drawn as pipes with clouds,
+round-ended activities, a colour for each kind of link the text tells apart. What plain leaves out
+is in each arrow's and each state's panel, in words.
 
 **Chains together.** A text that answers several questions has a chain for each, in the **Chain**
 menu. Chains that meet at a state they share can be drawn together: **Every chain together** where

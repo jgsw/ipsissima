@@ -7349,6 +7349,8 @@ function encodeFoldState(graph, state) {
     if (m.boxes) out.push("boxes=1");
     if (m.nest) out.push("nest=1");
     if (m.labels === "full") out.push("mtext=full");
+    // WHICH MARKS (17 Oct 2026): only when all; plain is what the view opens on.
+    if (m.marks === "all") out.push("mmarks=all");
     if (m.rival === false) out.push("rival=0");
     // "every" is a reader's choice of every step on a chain that opens at its core path (9 Oct 2026).
     if (["tested", "core", "every", "panels"].indexOf(m.show) >= 0) out.push("show=" + m.show);
@@ -7433,8 +7435,8 @@ function decodeFoldState(graph, text) {
   }
   const known = ["map", "view", "depth", "spine", "sects", "folds", "opens", "gf", "lanes",
                  "facets", "untagged", "appraisal", "text", "more", "flow", "shape", "pages",
-                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane", "nest", "mtext"];
-  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "nest", "mtext"];
+                 "chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "zoom", "pane", "nest", "mtext", "mmarks"];
+  const MECH_ONLY = ["chain", "boxes", "rival", "show", "mfolds", "ends", "split", "mmore", "nest", "mtext", "mmarks"];
   if (fields.view !== "mech") for (const key of MECH_ONLY) if (key in fields)
     throw new Error('"' + key + '" belongs to the Mechanism arrangement, and this state is not in it');
   // The chain's own ids are not the map's claims, so they are decoded but not checked here: the
@@ -7458,6 +7460,8 @@ function decodeFoldState(graph, text) {
     throw new Error('text must be "full", not "' + fields.text + '"');
   if ("mtext" in fields && fields.mtext !== "full")
     throw new Error('mtext must be "full", not "' + fields.mtext + '"');
+  if ("mmarks" in fields && fields.mmarks !== "all")
+    throw new Error('mmarks must be "all", not "' + fields.mmarks + '"');
   if ("flow" in fields && fields.flow !== "col")
     throw new Error('flow must be "col", not "' + fields.flow + '"');
   for (const key of seen) if (!known.includes(key))
@@ -7485,6 +7489,7 @@ function decodeFoldState(graph, text) {
       chain: fields.chain ? decodeURIComponent(fields.chain) : null,
       boxes: fields.boxes === "1", rival: fields.rival !== "0", nest: fields.nest === "1" || fields.nest === "chain" ? "on" : null,
       show: ["tested", "core", "every", "panels"].indexOf(fields.show) >= 0 ? fields.show : undefined, labels: fields.mtext === "full" ? "full" : "short",
+      marks: fields.mmarks === "all" ? "all" : "plain",
       folded: list("mfolds"), ends: fields.ends === "1", expanded: list("split"),
       opened: list("mmore"), zoom
     }

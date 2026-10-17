@@ -339,8 +339,10 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   check(two.profile.spanning.some(r => r[0] === "fishing" && same(r[1], ["practice", "beings"])),
         "a state of several actors runs across all their levels", JSON.stringify(two.profile.spanning));
   const top = v => (LR.nodes[v].badges || []).filter(b => b.edge === "top").map(b => b.kind);
-  check(top("grafting").includes("possible") && top("surplus").includes("open") && !top("fishing").some(k => k === "possible" || k === "open"),
-        "what is not (yet) actual is marked ◌ or … by the layout, and nothing else is", JSON.stringify({ grafting: top("grafting"), surplus: top("surplus") }));
+  // SINCE 17 OCT 2026 NO BADGE: the hollow italic box says it, and its title in words (see the page checks).
+  check(!["grafting", "surplus", "fishing"].some(v => top(v).some(k => k === "possible" || k === "open")) &&
+        MR.states.grafting.status === "possible" && MR.states.surplus.status === "open",
+        "what is not (yet) actual carries no badge: its box says it", JSON.stringify({ grafting: top("grafting"), surplus: top("surplus") }));
 }
 // AND ON CAUSAL REASONING (profile 1.13, after Johansson et al. 2024): an association with a common
 // cause drawn, singular and general steps, a general step from one case, a goal and a contrast.
@@ -1579,9 +1581,13 @@ mechanism:
         "a numbered step that only rises shows its number alone, and says the rest on hover", JSON.stringify(m4));
   check(bc && bc.chip.label === "rises, then falls" && net && net.chip.label === "net flow",
         "a peaked relation and a net flow say so", JSON.stringify([bc && bc.chip.label, net && net.chip.label]));
-  const mk = MV.markSpec(K, K).marks;
-  check(mk.b.right.some(x => x.kind === "behaviour") && mk.b.left.some(x => x.kind === "unobserved") && mk.d.left.some(x => x.kind === "deadend"),
-        "behaviour, unobserved and a dead end are marked on their boxes", JSON.stringify([mk.b, mk.d]));
+  // A DEAD END CARRIES NO BADGE SINCE 17 OCT 2026: its muted box says it. Behaviour and unobserved are
+  // marks of "marks: All", not of the plain marks the view opens on. Mutation: drop the PLAIN return ->
+  // the plain spec carries them.
+  const mk = MV.markSpec(K, K).marks, mp = MV.markSpec(K, K, "plain").marks;
+  check(mk.b.right.some(x => x.kind === "behaviour") && mk.b.left.some(x => x.kind === "unobserved") && !mk.d.left.some(x => x.kind === "deadend") &&
+        !mp.b.right.length && !mp.b.left.length,
+        "behaviour and unobserved are marked on their boxes under all marks, not under plain; a dead end not at all", JSON.stringify([mk.b, mk.d, mp.b]));
   check(!K.profile.gaps.some(g => g.state === "d"), "and a dead end is not a gap");
 }
 
@@ -1735,6 +1741,106 @@ const plain = graphOf(path.join(REPO, "samples", "Darwin 1859 - Natural selectio
 check(plain.mechanism === null, "carries no mechanism");
 check(MV.model(plain) === null, "and the page builds no model");
 
+/* ------------------------------------------------------------ what follows, and the reader's experiment */
+// WHAT FOLLOWS FROM THE TEXT'S OWN STEPS, AND THE READER'S EXPERIMENT (James's go, 17 Oct 2026; the think
+// piece "What the Mechanism view is for"). Planted maps, one point each.
+console.log("\nwhat follows from the text's own steps, and the reader's experiment");
+{
+  const planted = (states, steps) => MV.model(graphOf.fromText(`===
+mechanism:
+    levels: [one]
+    actors:
+        p: {label: "P", level: one}
+    states:
+${states.map(s => "        " + s).join("\n")}
+===
+
+[Aim]: Aim.
+
+${steps.map((s, i) => `[S${i}]: Step ${i}. {causes: ${s}}\n    +> [Aim]\n`).join("\n")}`));
+  const kinds = M => MV.follows(M).items.map(i => i.kind);
+  const A = 'a: {label: "A", actor: p, role: intervention}', B = 'b: {label: "B", actor: p}', C = 'c: {label: "C", actor: p, role: outcome}';
+  const D = 'd: {label: "D", actor: p}';
+  // A route no one step states. Mutation: drop the composed branch -> no item.
+  const line = planted([A, B, C], ['{from: a, to: b, sign: "+", basis: asserted}', '{from: b, to: c, sign: "+", basis: asserted}']);
+  const lf = MV.follows(line).items;
+  check(same(kinds(line), ["composed"]) && /No one step states this\. Its one route raises it, through “B”/.test(lf[0].lines[0]) &&
+        same(lf[0].nodes.sort(), ["a", "b", "c"]),
+        "a route no one step states is told, with the states it runs through", JSON.stringify(lf));
+  // Nothing follows from one step: the drawing restates it.
+  check(MV.follows(planted([A, C], ['{from: a, to: c, sign: "+", basis: asserted}'])).items.length === 0,
+        "one stated step: nothing follows that the text does not say");
+  // Said in one step and by another route too. Mutation: drop the agree branch -> no item.
+  const agree = planted([A, B, C], ['{from: a, to: b, sign: "+", basis: asserted}', '{from: b, to: c, sign: "+", basis: asserted}',
+                                    '{from: a, to: c, sign: "+", basis: asserted}']);
+  check(same(kinds(agree), ["agree"]) && /1 more route, which raises it too/.test(MV.follows(agree).items[0].lines[0]),
+        "a step the text states that another route agrees with is told as not resting on that one step", JSON.stringify(MV.follows(agree).items));
+  // Routes both ways. Mutation: drop the both branch -> composed only.
+  const both = planted([A, B, D, C], ['{from: a, to: b, sign: "+", basis: asserted}', '{from: b, to: c, sign: "+", basis: asserted}',
+                                      '{from: a, to: d, sign: "+", basis: asserted}', '{from: d, to: c, sign: "-", basis: asserted}']);
+  check(kinds(both)[0] === "both" && /Which wins turns on how strong each is, and the text gives no sizes/.test(MV.follows(both).items[0].lines[0]),
+        "routes that raise and lower one outcome are told first: which wins turns on sizes", JSON.stringify(MV.follows(both).items));
+  // A weak link every route passes, only where something else on the way is backed better. Mutations:
+  // drop the `better` test -> the all-asserted chain gets one too; drop the gathering -> two items.
+  const weak = planted([A, B, C], ['{from: a, to: b, sign: "+", basis: study}', '{from: b, to: c, sign: "+", basis: asserted}']);
+  const wk = MV.follows(weak).items.filter(i => i.kind === "weak");
+  check(wk.length === 1 && /^“B” → “C”, which the text only asserts$/.test(wk[0].title) && wk[0].step === "b\u0000c" &&
+        !kinds(line).includes("weak"),
+        "a step the text only asserts on every route, where the rest is tested, is told once; an all-asserted chain is not", JSON.stringify(wk));
+  // Only the text's own starts: a cause it names in passing is not a finding when it names an intervention.
+  const side = planted([A, B, C, 'x: {label: "X", actor: p}'], ['{from: a, to: b, sign: "+", basis: asserted}', '{from: b, to: c, sign: "+", basis: asserted}',
+                                                             '{from: x, to: b, sign: "+", basis: asserted}']);
+  check(MV.follows(side).items.every(i => !/^“X”/.test(i.title)), "a cause the text names in passing does not crowd out its intervention",
+        JSON.stringify(MV.follows(side).items.map(i => i.title)));
+  // A loop, and its polarity. Mutation: drop the loop branch -> none.
+  const loopM = planted(['a: {label: "A", actor: p, role: condition}', B], ['{from: a, to: b, sign: "+", basis: asserted}', '{from: b, to: a, sign: "-", basis: asserted}']);
+  const lp = MV.follows(loopM).items.filter(i => i.kind === "loop");
+  check(lp.length === 1 && /It balances itself/.test(lp[0].lines[0]) && /No one step states the loop/.test(lp[0].lines[0]),
+        "a loop the steps close is told with its polarity", JSON.stringify(lp));
+  // The boat: its feedback is a loop; its A-D summary is stated, so A-D is no finding of its own.
+  const MBf = MV.model(graphOf(path.join(FIXTURE, "boat.argdown")));
+  const bf = MV.follows(MBf).items;
+  check(bf.some(i => i.kind === "loop" && /reinforces itself/.test(i.lines[0])) && !bf.some(i => i.kind === "composed"),
+        "on the boat: the feedback is a reinforcing loop, and A to D, which the text states, is not told as composed", JSON.stringify(bf.map(i => [i.kind, i.title])));
+
+  // THE EXPERIMENT. Mutations noted on each.
+  const lost = MV.suppose(line, { fail: ["b"] });
+  check(same(lost.lost, ["c"]) && same(lost.lostStates.sort(), ["b", "c"]) && lost.stoppedSteps.length === 2,
+        "suppose a state does not happen: what it alone led to is no longer reached", JSON.stringify(lost));
+  check(same(MV.suppose(line, {}).lost, []) && !MV.suppose(line, {}).any, "and no experiment changes nothing");
+  // Non-monotonic: adding that a blocker holds withdraws the outcome. Mutation: ignore `hold` in cutStep -> c stays.
+  const blk = planted(['h: {label: "H", actor: p, role: condition}', D, C], ['{from: h, to: c, sign: "+", basis: asserted, unless: d}']);
+  const held = MV.suppose(blk, { hold: ["d"] });
+  check(same(held.lost, ["c"]) && same(MV.suppose(blk, {}).lost, []),
+        "suppose a blocker holds: the step it blocks stops, and the outcome is withdrawn", JSON.stringify(held));
+  // A joint step needs every co-cause. Mutation: drop the jointly test -> c stays.
+  const jt = planted([A, 'j: {label: "J", actor: p}', C], ['{from: a, to: c, sign: "+", basis: asserted, jointly: [j]}']);
+  check(same(MV.suppose(jt, { fail: ["j"] }).lost, ["c"]), "suppose a co-cause does not happen: the joint step stops");
+  // A step switched off where another route remains. Mutation: compare by pair, not by step -> nothing stops.
+  const off = MV.suppose(agree, { off: ["a\u0000c"] });
+  check(same(off.lost, []) && off.stoppedSteps.length === 1 && same(off.changes, []),
+        "suppose one step does not run: another route still brings the outcome about, in the same direction", JSON.stringify(off));
+  // A moderator that reverses a step turns its direction. Mutation: drop `flipped` -> no change.
+  const rev = planted([A, 'm: {label: "M", actor: p}', C], ['{from: a, to: c, sign: "+", basis: asserted, modifies: {by: m, effect: reverses}}']);
+  check(same(MV.suppose(rev, { hold: ["m"] }).changes, [{ start: "a", outcome: "c", before: "raises", after: "lowers" }]),
+        "suppose a reversing moderator holds: the step's direction turns", JSON.stringify(MV.suppose(rev, { hold: ["m"] })));
+  // A loop with no way in is given; break it and what it alone led to goes. Mutation: seed entryless loops
+  // whatever is failed -> z stays.
+  const cyc = planted(['x: {label: "X", actor: p}', 'y: {label: "Y", actor: p}', 'z: {label: "Z", actor: p, role: outcome}'],
+                      ['{from: x, to: y, sign: "+", basis: asserted}', '{from: y, to: x, sign: "+", basis: asserted}', '{from: y, to: z, sign: "+", basis: asserted}']);
+  const cy = MV.suppose(cyc, { fail: ["x"] });
+  check(same(MV.suppose(cyc, {}).lost, []) && same(cy.lost, ["z"]) && cy.broken.length === 1,
+        "a loop nothing leads into is given; suppose a state of it fails and the loop breaks", JSON.stringify(cy));
+
+  // HOW MIGHT THIS STEP WORK: the questions follow the levels. Mutation: swap the down and up tests -> fails.
+  const stepOf = (f, t) => MBf.steps.find(s => s.from === f && s.to === t);
+  const q = (f, t) => (MV.openQuestions(MBf, stepOf(f, t)) || {}).kind;
+  check(q("doctrine", "values") === "down" && q("orientation", "capitalism") === "up" && q("values", "orientation") === "across" &&
+        MV.openQuestions(MBf, stepOf("doctrine", "capitalism")) === null,
+        "a step down a level asks how it reaches people; up, how their doings become the whole; a step opened into a route asks nothing",
+        JSON.stringify(["down", "up", "across"].map((k, i) => [k, [q("doctrine", "values"), q("orientation", "capitalism"), q("values", "orientation")][i]])));
+}
+
 /* ------------------------------------------------------------ the page, under real clicks */
 let chromium = null;
 try { ({ chromium } = await import("playwright")); await chromium.executablePath(); }
@@ -1877,12 +1983,22 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(150);
     check(await nEdges() === all, "and every step returns");
 
-    // THE DRAWN PATTERN IS THE FIDELITY LADDER. Mutation: dash by tier, or draw everything solid -> fails.
+    // THE DRAWN PATTERN IS THE FIDELITY LADDER, under "marks: All"; the plain marks the view opens on
+    // draw every line solid, since a dashed arrow reads as a weaker causal claim (17 Oct 2026).
+    // Mutations: dash by tier, or draw everything solid -> fails; drop the PLAIN solid -> the first fails.
     const ladder = MV.FIDELITY_DASH;
-    const drawnDash = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
+    const dashes = () => page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
       .map(g => [g.getAttribute("data-fidelity"), (g.querySelector("path.ed:not(.stub)").getAttribute("stroke-dasharray") || "")]));
+    const plainDash = await dashes();
+    check(plainDash.length > 0 && plainDash.every(([, d]) => d === "") && plainDash.some(([f]) => f !== "quotation"),
+          "under the plain marks the view opens on, every arrow is solid, whatever its fidelity", JSON.stringify(plainDash.slice(0, 6)));
+    await page.locator('#mech [data-marks="all"]').click();
+    await page.waitForTimeout(250);
+    const drawnDash = await dashes();
     check(drawnDash.length > 0 && drawnDash.every(([f, d]) => d === ladder[f]) && drawnDash.some(([f]) => f !== "quotation"),
-          "every arrow is drawn in its claims' fidelity pattern, as their boxes are", JSON.stringify(drawnDash.slice(0, 6)));
+          "under all marks every arrow is drawn in its claims' fidelity pattern, as their boxes are", JSON.stringify(drawnDash.slice(0, 6)));
+    await page.locator('#mech [data-marks="plain"]').click();
+    await page.waitForTimeout(250);
 
     // FOLDING, DRIVEN. Mutation: drop the data-fold handler -> the state stays drawn.
     await page.locator('#mech .st[data-state="work"]').click();
@@ -2120,6 +2236,10 @@ mechanism:
     await page.waitForTimeout(600);
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(400);
+    // ≈ is a mark of "marks: All" since 17 Oct 2026; under the plain marks the state's panel names its kind.
+    check(await page.locator("#mech .kin").count() === 0, "under the plain marks no state carries ≈");
+    await page.locator('#mech [data-marks="all"]').click();
+    await page.waitForTimeout(300);
     const kinMarked = await page.evaluate(() => [...document.querySelectorAll("#mech .kin")].map(m => m.closest(".st").getAttribute("data-state")).sort());
     check(same(kinMarked, ["forest", "migr"]), "≈ marks each state whose kind another state shares, in whatever chain", JSON.stringify(kinMarked));
     await page.locator('#mech .st[data-state="migr"] .kin').click();
@@ -2141,6 +2261,8 @@ mechanism:
     await page.waitForTimeout(600);
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(400);
+    await page.locator('#mech [data-marks="all"]').click();
+    await page.waitForTimeout(300);
     await page.locator('#mech .st[data-state="migr"] .kin').click();
     await page.waitForTimeout(200);
     const genSide = await page.locator(".amech-side").innerText();
@@ -2187,13 +2309,16 @@ mechanism:
           await page.locator('#mech [data-zoom="1"]').innerText());
     await page.keyboard.press("Control+Minus");
     await page.waitForTimeout(150);
+    // THE MARKS TOO (17 Oct 2026). Mutation: leave `mmarks` out of the line -> the restore opens plain.
+    await page.locator('#mech [data-marks="all"]').click();
+    await page.waitForTimeout(250);
     // The fold state names the chart as it is, and puts it back on a fresh page.
     await page.locator("#helpbtn").click();
     await page.locator("#help button", { hasText: "About Ipsissima" }).click();
     await page.waitForTimeout(200);
     const line = await page.locator("#foldstateid").innerText();
-    check(/\bview=mech\b/.test(line) && /\bmmore=b\b/.test(line) && /\bzoom=1\.2\b/.test(line),
-          "the fold state names the Mechanism chart, the opened box and the zoom", line);
+    check(/\bview=mech\b/.test(line) && /\bmmore=b\b/.test(line) && /\bzoom=1\.2\b/.test(line) && /\bmmarks=all\b/.test(line),
+          "the fold state names the Mechanism chart, the opened box, the zoom and the marks", line);
     await page.goto("file://" + longHtml);
     await page.waitForTimeout(600);
     await page.locator("#helpbtn").click();
@@ -2204,8 +2329,9 @@ mechanism:
     await page.waitForTimeout(500);
     check(await page.locator("#mech").isVisible() &&
           (await page.locator('#mech .st[data-state="b"] .more').textContent()).includes("less") &&
-          (await page.locator('#mech [data-zoom="1"]').innerText()) === "120%",
-          "and Restore on a fresh page puts the chart back: the arrangement, the opened box and the zoom",
+          (await page.locator('#mech [data-zoom="1"]').innerText()) === "120%" &&
+          (await page.locator('#mech [data-marks="all"]').getAttribute("class")) === "on",
+          "and Restore on a fresh page puts the chart back: the arrangement, the opened box, the zoom and the marks",
           await page.locator("#foldstateerr").innerText().catch(() => ""));
 
     // WHAT THE LEVELS ARE, ON THE PAGE (profile 1.10). Mutations: nest from the list whatever
@@ -2312,6 +2438,54 @@ mechanism:
     await page.locator("#mech select[data-chain]").selectOption("c");
     await page.waitForTimeout(400);
     check(await page.locator("#mech svg line.piece-rule").count() === 1, "a chain in two pieces is drawn with a rule between them");
+
+    // WHAT FOLLOWS, AND THE READER'S EXPERIMENT, ON SCREEN (17 Oct 2026). Mutations: drop the data-find
+    // handler -> the finding is not shown; drop the `cut` class -> nothing fades; drop the banner's clear
+    // -> it stays; drop openHTML -> no questions.
+    const blkHtml = path.join(tmp, "blockers.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), BLOCKF, "-o", blkHtml], { stdio: "pipe" });
+    await page.goto("file://" + blkHtml);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    const side0 = await page.locator(".amech-side").innerText();
+    check(/What follows from the steps/i.test(side0) && /“Safety audits” → “Harm to patients”/.test(side0) &&
+          /Its one route lowers it, through “Defences hold”/.test(side0),
+          "the panel opens on what follows from the text's steps", side0.slice(0, 300));
+    await page.locator(".amech-side .amech-find").first().click();
+    await page.waitForTimeout(200);
+    const litStates = await page.evaluate(() => [...document.querySelectorAll("#mech svg .st:not(.dim)")].map(g => g.getAttribute("data-state")).sort());
+    check(same(litStates, ["audit", "defence", "harm"]) && /The steps it rests on/i.test(await page.locator(".amech-side").innerText()),
+          "a click on a finding lights the states it rests on and lists their steps", JSON.stringify(litStates));
+    await page.locator(".amech-side button[data-back]").click();
+    await page.waitForTimeout(150);
+    await page.locator('#mech .st[data-state="defence"]').click();
+    await page.waitForTimeout(150);
+    await page.locator('.amech-side button[data-exp-hold="defence"]').click();
+    await page.waitForTimeout(250);
+    const blocked = await page.evaluate(() => [...document.querySelectorAll('#mech svg g[data-edge="hazard>harm"]:not(.chip)')].map(g => g.classList.contains("cut")));
+    const expSide = await page.locator(".amech-side").innerText();
+    check(await page.locator("#mech .amech-expbanner").isVisible() && /Your experiment/i.test(expSide) &&
+          /“Safety audits” no longer reaches “Harm to patients”/.test(expSide) && blocked.includes(true) && blocked.includes(false),
+          "suppose the defences hold: the banner says it is the reader's, the blocked arrow fades and the other step on the pair stays",
+          JSON.stringify(blocked) + " " + expSide.slice(0, 200));
+    await page.locator('#mech .amech-expbanner button[data-exp-clear]').click();
+    await page.waitForTimeout(200);
+    check(await page.locator("#mech .amech-expbanner").isHidden() && await page.locator("#mech svg .cut").count() === 0,
+          "and Clear puts the chart back");
+    // An arrow's panel asks how it might work, where the text does not say. A real click on the line.
+    const at = await page.evaluate(() => {
+      const p = document.querySelector('#mech svg g[data-edge="audit>defence"]:not(.chip) path.ed');
+      const pt = p.getPointAtLength(p.getTotalLength() / 2), m = p.getScreenCTM();
+      return { x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f };
+    });
+    await page.mouse.click(at.x, at.y);
+    await page.waitForTimeout(200);
+    await page.locator(".amech-side details.amech-open summary").click();
+    const qs = await page.locator(".amech-side details.amech-open").innerText();
+    check(/The text does not say/.test(qs) && /A step between wholes: through whom does it run\?/.test(qs) &&
+          await page.locator('.amech-side button[data-exp-off]').count() === 1,
+          "an arrow's panel asks how the step might work -- between two organisation-level states, through whom -- and offers to suppose it does not run", qs.slice(0, 200));
 
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {

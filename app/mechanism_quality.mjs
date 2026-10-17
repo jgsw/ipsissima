@@ -60,21 +60,25 @@ function pictures(FULL) {
     for (const boxes of hasWholes ? [true, false] : [false]) {
       // The text's own boxes are compartments (9 Oct 2026): the parts drawn inside their wholes.
       const M = base;
-      const spec = MV.markSpec(FULL, M), marks = spec.marks, centres = spec.centres, compartments = boxes;
+      // THE PLAIN MARKS ARE WHAT THE VIEW OPENS ON (17 Oct 2026), so every picture below is audited
+      // with them; "all marks" is audited as one picture more.
+      const spec = MV.markSpec(FULL, M, "plain"), marks = spec.marks, centres = spec.centres, compartments = boxes, tier = "plain";
       const tag = [cname, boxes ? "boxes" : ""].filter(Boolean).join(", ");
-      out.push([tag || "the chain", M, { marks, centres, compartments }]);
+      out.push([tag || "the chain", M, { marks, centres, compartments, tier }]);
+      const specAll = MV.markSpec(FULL, M, "all");
+      out.push([(tag ? tag + ", " : "") + "all marks", M, { marks: specAll.marks, centres: specAll.centres, compartments, tier: "all" }]);
       const toEnds = MV.foldable(M, "text");
       const hasEnds = M.ids.some(v => /intervention|condition/.test(JSON.stringify(M.states[v].role || ""))) &&
                       M.ids.some(v => /outcome/.test(JSON.stringify(M.states[v].role || "")));
       if (toEnds.length && hasEnds)
-        out.push([(tag ? tag + ", " : "") + "to its ends", M, { marks, centres, compartments, ends: true, folded: Object.fromEntries(toEnds.map(v => [v, true])) }]);
+        out.push([(tag ? tag + ", " : "") + "to its ends", M, { marks, centres, compartments, tier, ends: true, folded: Object.fromEntries(toEnds.map(v => [v, true])) }]);
       // Nested as the map declares (its `within:` tree), or as a chain where it declares nothing.
       const NS = MV.nestingOf(M.ordering);
-      if (M.levels.length > 1 && NS.offer) out.push([(tag ? tag + ", " : "") + "levels nested", M, { marks, centres, compartments, nest: NS.spec }]);
-      const G0 = MV.layout(M, { marks, centres, compartments });
+      if (M.levels.length > 1 && NS.offer) out.push([(tag ? tag + ", " : "") + "levels nested", M, { marks, centres, compartments, tier, nest: NS.spec }]);
+      const G0 = MV.layout(M, { marks, centres, compartments, tier });
       const cut = Object.keys(G0.nodes).filter(v => G0.nodes[v].more);
-      if (cut.length) out.push([(tag ? tag + ", " : "") + "labels opened", M, { marks, centres, compartments, open: Object.fromEntries(cut.map(v => [v, true])) }]);
-      if (cut.length || G0.edges.some(e => e.chip.whole)) out.push([(tag ? tag + ", " : "") + "labels full", M, { marks, centres, compartments, full: true }]);
+      if (cut.length) out.push([(tag ? tag + ", " : "") + "labels opened", M, { marks, centres, compartments, tier, open: Object.fromEntries(cut.map(v => [v, true])) }]);
+      if (cut.length || G0.edges.some(e => e.chip.whole)) out.push([(tag ? tag + ", " : "") + "labels full", M, { marks, centres, compartments, tier, full: true }]);
     }
   }
   return out;

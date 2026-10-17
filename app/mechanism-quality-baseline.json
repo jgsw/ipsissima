@@ -5,13 +5,13 @@
   "detours": 0
  },
  "chain": {
-  "chipCrossings": 16,
-  "crossings": 56,
+  "chipCrossings": 19,
+  "crossings": 66,
   "detours": 0
  },
  "chains": {
   "chipCrossings": 0,
-  "crossings": 3,
+  "crossings": 4,
   "detours": 0
  },
  "generals": {
@@ -35,38 +35,38 @@
   "detours": 0
  },
  "regimes": {
-  "chipCrossings": 13,
-  "crossings": 56,
+  "chipCrossings": 17,
+  "crossings": 66,
   "detours": 0
  },
  "sizes": {
   "chipCrossings": 4,
-  "crossings": 74,
+  "crossings": 93,
   "detours": 0
  },
  "stories": {
-  "chipCrossings": 3,
-  "crossings": 9,
+  "chipCrossings": 4,
+  "crossings": 12,
   "detours": 0
  },
  "system": {
   "chipCrossings": 4,
-  "crossings": 69,
+  "crossings": 74,
   "detours": 0
  },
  "times": {
-  "chipCrossings": 17,
-  "crossings": 76,
+  "chipCrossings": 26,
+  "crossings": 95,
   "detours": 0
  },
  "via": {
-  "chipCrossings": 3,
-  "crossings": 59,
+  "chipCrossings": 2,
+  "crossings": 73,
   "detours": 0
  },
  "bates-2012-price-is-wrong": {
-  "chipCrossings": 102,
-  "crossings": 480,
+  "chipCrossings": 121,
+  "crossings": 642,
   "detours": 0
  },
  "bridges": {
@@ -76,12 +76,12 @@
  },
  "process": {
   "chipCrossings": 0,
-  "crossings": 2,
+  "crossings": 3,
   "detours": 0
  },
  "reasoning": {
   "chipCrossings": 0,
-  "crossings": 3,
+  "crossings": 4,
   "detours": 0
  },
  "relations": {
@@ -100,13 +100,33 @@
   "detours": 0
  },
  "wilson-2023-health-system-good": {
-  "chipCrossings": 114,
-  "crossings": 1152,
+  "chipCrossings": 102,
+  "crossings": 1512,
   "detours": 0
  },
  "meet": {
   "chipCrossings": 0,
   "crossings": 0,
+  "detours": 0
+ },
+ "boat-parts": {
+  "chipCrossings": 4,
+  "crossings": 9,
+  "detours": 0
+ },
+ "boat": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "bridge-questions": {
+  "chipCrossings": 0,
+  "crossings": 0,
+  "detours": 0
+ },
+ "chain-node": {
+  "chipCrossings": 4,
+  "crossings": 4,
   "detours": 0
  }
 }

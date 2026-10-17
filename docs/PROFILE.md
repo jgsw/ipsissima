@@ -691,6 +691,12 @@ direct causal relationship (Banitz et al. 2022, Fig. 2A). The chart maps what a 
 silence is the text's. A finding of no effect is a `"0"` step, drawn as its own line. The Legend
 says so.
 
+**Recorded is not drawn (17 Oct 2026).** A key records what the text says whether or not the chart
+draws a mark for it. The Mechanism view opens on plain marks, those a reader can follow without the
+Legend, and says the rest in each panel in words; *Marks: All* draws every mark
+(`docs/MECHANISM-LAYOUT.md`). No new key brings a new drawn mark until readers have been asked what
+the chart shows them.
+
 **Bridges, and the parallel method (1.15).** A text often makes its case partly *by* setting out a
 mechanism. A trial on two texts (James, *The Will to Believe*; Wilson, "What makes a health system
 good?") reconstructed each both ways: the argument first and then the mechanism, or both together.

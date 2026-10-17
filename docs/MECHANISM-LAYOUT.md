@@ -113,6 +113,38 @@ baseline, which a change may not make materially worse.
   and the columns its members left empty close up. (Its parts come before it in the order, so the
   boat paper's B stood four columns from A, and when sent back to its first member's column, under A.)
 
+## The marks, and what each can be misread as (17 Oct 2026)
+
+A drawing can say more than its text: a bounded label makes a vague notion look like a discrete
+factor, an arrow turns a contested relation into a force, and a reader takes a position for rank or a
+dashed line for a weaker causal claim (Lynch 1991; Brett and Silver 2025, p. 466). The view opens on
+**plain marks**, the ones a reader can follow without the Legend; **Marks: All** adds the rest. What
+plain leaves out stays in each panel, in words.
+
+**A moratorium on new marks** (James, 17 Oct 2026): no new drawn mark until readers have been asked
+what the chart shows them. A new key may still be recorded and counted, and said in a panel in words.
+
+| mark | says | can be misread as | tier |
+|---|---|---|---|
+| box, band, role shading, double border | a state, its level, where the chain starts, what it is for | band order as rank where the levels are `systems` or `sequence` (the caption names the ordering) | plain |
+| arrow; head, T-bar, hollow circle | raises, lowers, no effect found | left to right as time (the caption says sequence, cycle, or order of explanation) | plain |
+| line weight | what the text offers for the step | a thin pale line as weakly claimed rather than unsupported (untested) | plain |
+| colour of voice: text, rival, appraisal; headless brown, teal | whose step; an association; a selection link | -- | plain |
+| R / B at a loop's centre; ⟳ for a system | a loop the steps close and its polarity | -- | plain |
+| AND gate; stem to a bar; dotted stem to a ring; dashed stem to a square | a joint cause; a blocker; a moderator; the measure the evidence is read from | -- | plain (each keeps a drawn state joined to its step) |
+| ⇄ | the state is also in another chain (a control) | -- | plain |
+| compartment | the text's own whole round its parts | -- | plain |
+| hollow italic box; muted box | not (yet) actual; a dead end | -- | plain (◌ … ⊘ badges withdrawn: they said it twice) |
+| line pattern | how close the claim stands to the words | a weaker causal claim | **all** |
+| channel colour | the text's own kind of link | a second colour code beside voice | **all** |
+| pipe, valve, stock box, cloud | a flow into a stock; where the system stops | -- (plain says "flows into" on the arrow) | **all** |
+| round-ended box | an activity or a development | -- | **all** |
+| ≈ ≙ ⊂ ⊃ ✱, behaviour sketch, condition frame | kind, measure, constitution, unobserved, behaviour over time, held fixed | each needs the Legend | **all** |
+
+`markSpec(FULL, M, tier)` and `layout(M, {tier})` take the tier; both default to `"all"`, as every
+caller had them before, and the view passes `"plain"` unless the reader chooses All. The layout audit
+(`app/mechanism_quality.mjs`) audits both.
+
 ## Where it stands (30 Sep 2026)
 
 On the 280 pictures of the fixtures, the public samples and the private research corpus:
