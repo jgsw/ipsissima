@@ -391,12 +391,38 @@ def test_server(d):
     asyncio.run(_session(series, env={"IPSISSIMA_MECHANISM_METHOD": "series"}))
 
 
+def test_page_images_dir(tmp):
+    """page_images never writes into Zotero's storage tree (Dewey *Logic* run, 17 Oct 2026)."""
+    print("\npage_images: where the renders go")
+    try:
+        from ipsissima_mcp.server import _page_images_dir
+    except ImportError as exc:
+        print(f"   skip the server will not import here ({exc.__class__.__name__})")
+        return
+    data = Path(tmp) / "Zotero"
+    att = data / "storage" / "DRERN8S4"
+    att.mkdir(parents=True)
+    (data / "zotero.sqlite").write_bytes(b"")
+    pdf = att / "Dewey - 1938 - Logic.pdf"
+    got = _page_images_dir(pdf)
+    check("a Zotero attachment's renders go outside its storage folder",
+          str(got).startswith(str(data)), False)
+    check("  to a folder named for the attachment", got.name, "DRERN8S4")
+    work = Path(tmp) / "my-map" / "source"
+    check("a PDF in a working folder still gets page-images/ beside it",
+          _page_images_dir(work / "paper.pdf"), work / "page-images")
+    no_db = Path(tmp) / "Looks" / "storage" / "ABCD1234" / "x.pdf"
+    check("  as does a folder only shaped like storage, with no zotero.sqlite beside it",
+          _page_images_dir(no_db), no_db.parent / "page-images")
+
+
 def main():
     print("== the MCP server and how it reads a request")
     tmp = tempfile.mkdtemp(prefix="ipsissima-server-test-")
     try:
         d = build(tmp)
         test_sources(d)
+        test_page_images_dir(tmp)
         test_server(d)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

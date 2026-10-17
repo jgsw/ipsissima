@@ -648,6 +648,28 @@ check("a paper with no abstract gets none",
 check("  nor does a heading with nothing under it",
       find_abstract([frow("Abstract"), frow("1 Introduction")], 2, [10.0, 10.0], 10.0), None)
 
+# THE WORD IN A SENTENCE IS NOT THE HEAD. A book has no article start, so the scan ran its
+# whole length and a prose line opening "abstract possibility ..." became the front matter's
+# abstract (Dewey's Logic, 17 Oct 2026; Koopman 2010 and Reichling 1993 in the golden set too).
+PROSE = [frow("abstract universals are not the same as generic propositions, and the whole "
+              "of the present argument turns on keeping the two apart from one another."),
+         frow("The difference is one of logical function rather than of subject-matter, as "
+              "the next chapter will show at length with examples from physics.")]
+check("a line opening on the word as prose is not an abstract",
+      find_abstract(PROSE, 0, [10.0, 10.0], 10.0), None)
+LATE = [(p, 30.0, 0.0, 10.0, t, 0, False) for p, t in
+        [(1, "Chapter One"), (2, "The argument runs on."), (3, "The argument runs on."),
+         (4, "Abstract: " + BODY), (4, "We provide a complete formal treatment of the design.")]]
+check("  nor is a head found past the first two pages",
+      find_abstract(LATE, 0, [10.0] * len(LATE), 10.0), None)
+OUP = [frow("Self-Fulfilling Prophecies"), frow("Abstract and Keywords"),
+       frow("This article examines self-fulfilling prophecies and the conditions under which "
+            "a false belief comes true because it is held by enough of the people it concerns."),
+       frow("Keywords: prophecy, expectations"), frow("Introduction")]
+got = find_abstract(OUP, 4, [10.0] * len(OUP), 10.0)
+check("Oxford Handbooks' 'Abstract and Keywords' head still opens one, without the label",
+      got is not None and got.startswith("This article examines"), True)
+
 # AN ABSTRACT SET SMALLER THAN THE BODY, which is how CUP's Philosophy (and most journals)
 # print it: every line of the Wilson's was apparatus-sized, the old "small means not the
 # abstract" test skipped them all, and the paper's own statement of its thesis was lost.

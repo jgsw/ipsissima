@@ -694,6 +694,12 @@ def from_html(path):
         md, notes = from_pandoc(path, ".html")
         notes.append(f"! {rep['why']} -- the whole saved page was converted; read the result")
         return md, notes
+    if rep.get("plain_text"):
+        return md, [f"plain-text page (one <pre>, as archive.org's 'Full text of' and "
+                    f"Gutenberg's text views are): {rep['words']} words, lines joined into "
+                    f"paragraphs; a word broken at a line end is rejoined without its hyphen "
+                    f"only where the text spells it whole elsewhere. Usually OCR with no "
+                    f"page numbers -- pair it with the scan through add_page_numbers"]
     return md, [f"article found by text density: {rep['words']} words; the rest of the "
                 f"saved page (nav, ads, related stories) was not the article and was "
                 f"never written"]

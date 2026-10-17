@@ -1323,9 +1323,29 @@ def find_abstract(rows, first, sizes, body_size):
     def shape(i, small):
         return (round(sizes[i] * 2) / 2 if i < len(sizes) else None, bool(small))
 
+    # THE FIRST TWO PAGES, AND THE WORD AS A LABEL. A book has no detected article start, so the
+    # scan used to run its whole length, and any line opening on the word itself -- "abstract
+    # possibility ...", Dewey's *Logic* uses it hundreds of times -- was taken for the head. The
+    # front matter recorded two hundred words of chapter VII interleaved with the next column
+    # (17 Oct 2026). An abstract is printed on the paper's first pages, and its head is the word
+    # alone, or the word followed by a stop, a colon, a dash or a capital -- never by lowercase prose.
+    pages = []
+    for row in rows:
+        if row[0] not in pages:
+            pages.append(row[0])
+        if len(pages) > 2:
+            break
     for i, (_p, _x, _y, _h, text, _c, small) in enumerate(rows[:first or len(rows)]):
+        if _p not in pages[:2]:
+            break
         mo = ABSTRACT_HEAD.match(text.strip())
+        if mo and re.match(r"^\W{0,3}[Aa][Bb][Ss][Tt][Rr][Aa][Cc][Tt]\s+[a-z]", text.strip()) \
+                and not re.match(r"^\W{0,3}abstract\s+and\s+keywords\b", text.strip(), re.I):
+            continue                         # "abstract universals ...": the word in a sentence
         if mo:
+            # Oxford Handbooks Online heads it "Abstract and Keywords" (Biggs 2011).
+            mo = ABSTRACT_HEAD.match(re.sub(r"(?i)^(\W{0,3}abstract)\s+and\s+keywords\b",
+                                            r"\1", text.strip()))
             start = i + 1
             if mo.group(1).strip():          # "Abstract: <the abstract begins here>"
                 out.append(mo.group(1).strip())

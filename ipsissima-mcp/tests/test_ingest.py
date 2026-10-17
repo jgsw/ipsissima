@@ -288,6 +288,24 @@ else:
         check("a passthrough .md still gets its assets blanked, counted and said",
               (BLOB in md3, any("blanked at ingest" in n for n in notes3)), (False, True))
 
+        # A "Full text of" page: the whole book in one <pre>, no <p> anywhere. It scored 0
+        # by density and was flattened into one paragraph (Dewey, Logic, 17 Oct 2026).
+        LINE = "a careful reader of the argument will find its modification of the premises\n"
+        BOOK = ("THE ARGUMENT\n\n" + LINE * 3 + "and the subject-matter of logic is modi-\n"
+                "fication by inquiry, not its subject-\nmatter as given.\n\n") * 200
+        ia = os.path.join(td, "Full text of the book.html")
+        Path(ia).write_text(f"<html><body><nav><a href='/'>See other formats</a></nav>"
+                            f"<div id='maincontent'><pre>{BOOK}</pre></div></body></html>",
+                            encoding="utf-8")
+        md4, notes4 = ingest_one(ia)
+        check("a plain-text page keeps its paragraphs and drops the chrome",
+              (md4.count("\n\n") >= 399, "See other formats" in md4), (True, False))
+        check("  a word broken at a line end is rejoined where the text spells it whole",
+              "is modification by inquiry" in md4, True)
+        check("  and a compound broken at its hyphen keeps the hyphen",
+              "not its subject-matter as given" in md4, True)
+        check("  the note names the route", any("plain-text page" in n for n in notes4), True)
+
         small = os.path.join(td, "landing.html")
         Path(small).write_text("<html><body><p>Buy access to this article.</p></body></html>",
                                encoding="utf-8")

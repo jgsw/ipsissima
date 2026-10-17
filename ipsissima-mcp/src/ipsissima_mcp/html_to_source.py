@@ -92,6 +92,51 @@ def find_article(soup):
     return best[2], best[0]
 
 
+def find_plain_text(soup):
+    """A `<pre>` holding the page's text, or None.
+
+    THE FULL-TEXT PAGES HAVE NO PARAGRAPHS. archive.org's "Full text of ..." page (the OCR'd
+    djvu.txt) and Gutenberg's plain-text views put the whole book in one `<pre>`, so the density
+    finder, which counts `<p>` text, scored a 207,000-word Dewey at 0 characters and called it
+    a landing page. The whole page then went through pandoc, which kept the archive.org chrome
+    around the book and ran its 20,000 lines into one paragraph (Dewey, *Logic*, 17 Oct 2026).
+    """
+    best = max(soup.find_all("pre"), key=lambda p: len(p.get_text()), default=None)
+    if best is None or len(best.get_text().split()) < 1500:
+        return None
+    return best.get_text()
+
+
+def plain_text_markdown(text):
+    """Plain text with hard-wrapped lines as markdown paragraphs. Nothing reworded.
+
+    Paragraphs are the blank-line-separated blocks; each block's lines are joined. A word broken
+    over a line end is rejoined without its hyphen only where the same document spells it whole
+    somewhere else ("modi-/fication" when "modification" occurs); otherwise the hyphen stays
+    ("subject-/matter"). Guessing from a dictionary would turn the author's compounds into
+    words they did not write.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    whole = set(re.findall(r"(?<![\w-])([a-z]+)(?![\w-])", text.lower()))
+    paras = []
+    for block in re.split(r"\n\s*\n", text):
+        lines = [ln.strip() for ln in block.split("\n") if ln.strip()]
+        if not lines:
+            continue
+        out = lines[0]
+        for ln in lines[1:]:
+            m = re.search(r"([A-Za-z]+)-$", out)
+            n = re.match(r"([a-z]+)", ln)
+            if m and n and (m.group(1) + n.group(1)).lower() in whole:
+                out = out[:-1] + ln
+            elif m:
+                out = out + ln
+            else:
+                out = out + " " + ln
+        paras.append(re.sub(r"[ \t]{2,}", " ", out))
+    return "\n\n".join(paras) + "\n"
+
+
 def cut_back_matter(soup):
     """Drop everything from the references heading on. Returns how many elements went."""
     heads = soup.find_all(["h1", "h2", "h3", "h4"])
@@ -135,7 +180,14 @@ def convert(path, cut_back_matter_too=False):
     elif soup.title:
         title = soup.title.get_text(" ", strip=True)
 
+    plain = find_plain_text(soup)
     body, score = find_article(soup)
+    if plain is not None and (body is None or len(plain) > 2 * score):
+        md = plain_text_markdown(plain)
+        if title and not md.lstrip().startswith("#"):
+            md = f"# {title}\n\n{md}"
+        return md, {"title": title, "chars": len(plain), "back_matter_elements_cut": 0,
+                    "words": len(md.split()), "plain_text": True}
     if body is None or score < 1500:
         return None, {"why": f"no element on this page holds enough article text "
                              f"(best was {score} characters) -- the snapshot is probably a "

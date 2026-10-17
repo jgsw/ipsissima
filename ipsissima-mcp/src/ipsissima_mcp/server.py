@@ -720,6 +720,25 @@ def _open_access_routes(doi):
 INLINE_IMAGE_CAP = 200_000
 
 
+def _page_images_dir(pdf: Path) -> Path:
+    """Where page_images writes when no `out_dir` is given.
+
+    NEVER INSIDE ZOTERO'S STORAGE. Beside the PDF is right for a working folder, but most PDFs
+    this server reads are Zotero attachments, and "beside" was `storage/<KEY>/page-images/`:
+    a folder Zotero did not make, inside a tree Ipsissima promises to leave untouched
+    (zotero_lookup is read-only for that reason), syncing up with the attachment if file sync
+    is on. Found on the Dewey *Logic* run, 17 Oct 2026. A storage folder is recognised by its
+    shape -- an eight-character key folder under `storage/`, beside `zotero.sqlite` -- so it is
+    caught wherever the data directory lives. Those renders go to the temp folder instead.
+    """
+    key, storage = pdf.parent, pdf.parent.parent
+    if (re.fullmatch(r"[A-Z0-9]{8}", key.name) and storage.name == "storage"
+            and (storage.parent / "zotero.sqlite").exists()):
+        import tempfile
+        return Path(tempfile.gettempdir()) / "ipsissima-page-images" / key.name
+    return pdf.parent / "page-images"
+
+
 @server.tool(
     structured_output=False,
     title="Page images",
@@ -741,7 +760,7 @@ def page_images(path: str, pages: list[int], out_dir: str | None = None,
     Args:
         path: the PDF.
         pages: 1-based page numbers. Keep this list short.
-        out_dir: where to write the PNGs (default: alongside the PDF, in `page-images/`).
+        out_dir: where to write the PNGs (default: alongside the PDF, in `page-images/` -- or the temp folder for a Zotero attachment, never its storage folder).
         dpi: render resolution. 200 is enough to read; 300 for small print.
         clip: [x0, y0, x1, y1] as fractions of the page, to crop rather than render it whole.
     """
@@ -753,7 +772,7 @@ def page_images(path: str, pages: list[int], out_dir: str | None = None,
     if len(pages) > 12:
         return dict(ok=False, error=f"{len(pages)} pages asked for. Render the damaged pages, "
                                     f"not the document — see the tool description.")
-    target = Path(out_dir) if out_dir else p.parent / "page-images"
+    target = Path(out_dir) if out_dir else _page_images_dir(p)
     target.mkdir(parents=True, exist_ok=True)
     written, inline = [], []
     with pymupdf.open(str(p)) as doc:
