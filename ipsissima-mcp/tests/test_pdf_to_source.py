@@ -544,6 +544,49 @@ far = [line("3", 40.0, 500.0, 6.3, width=3.5), line("A second-column line", 320.
 check("a number a column away is left alone",
       [l["text"] for l in join_note_numbers(far)], ["3", "A second-column line"])
 
+# DROP CAPITALS. A born-digital layer gives the letter as a line of its own, four times the body
+# size; it became a paragraph `T` and the lines it indents a quotation, `> he promise of...`
+# (Shipan and Volden 2008, whose geometry this is; the words are invented). An OCR layer gives
+# `V ARIOUS` at body size (Gettier 1963), which a fresh OCR cannot mend: it misses the letter.
+print("join_drop_caps (a drop capital back on its word)")
+from pdf_to_source import join_drop_caps                                     # noqa: E402
+
+cap = [line("T", 62.0, 272.1, 50.3, width=30.5),
+       line("he first line of the opening paragraph runs", 94.5, 274.9, 10.5, width=203.6),
+       line("past the letter, and the second, and the", 94.5, 287.8, 10.5, width=203.6),
+       line("third, which the letter also indents,", 94.5, 300.8, 10.5, width=203.6),
+       line("before the paragraph returns to its margin.", 62.0, 313.7, 10.5, width=236.1),
+       line("A line in the other column on that row", 316.1, 274.9, 10.5, width=236.1)]
+got = join_drop_caps(cap)
+check("the letter is written onto its word",
+      [l["text"] for l in got][:2], ["The first line of the opening paragraph runs",
+                                     "past the letter, and the second, and the"])
+check("  and its own line is gone", len(got), 5)
+check("  every line it indents takes its left edge", [l["x0"] for l in got[:4]], [62.0] * 4)
+# The bands still count the lines beside the letter where they are printed: a recto/verso tie
+# (Cribb et al. 4,965 lines at one margin, 4,963 at the other) must not be tipped by them.
+check("  and those beside it keep how far in they are printed, for the bands",
+      [l.get("printed_dx") for l in got[:4]], [None, 32.5, 32.5, None])
+check("  the other column is untouched", (got[4]["x0"], got[4]["text"][:6]), (316.1, "A line"))
+# A capital at body size in a table's first column is a label, not a drop cap.
+table = [line("N", 85.9, 621.1, 10.0, width=7.3), line("34,415", 267.4, 621.1, 10.0)]
+check("a body-sized lone capital is left alone",
+      [l["text"] for l in join_drop_caps(table)], ["N", "34,415"])
+split = [line("V ARIOUS attempts have been made in recent years", 67.0, 171.7, 10.1, width=316.4),
+         line("and sufficient conditions for someone's knowing", 85.2, 182.0, 7.7, width=239.8),
+         line("The attempts have often been such that they", 67.1, 193.3, 8.0, width=248.9)]
+check("an OCR layer's split initial is joined where the next line clears the letter",
+      join_drop_caps(split)[0]["text"], "VARIOUS attempts have been made in recent years")
+# Without that indent a lone capital before capitals is a variable or an article.
+flush = [line("S AND T ARE DISJOINT, AS THE FIRST LEMMA", 67.0, 171.7, 10.0, width=300.0),
+         line("shows; the second follows at once.", 67.0, 183.7, 10.0, width=200.0)]
+check("a lone capital with no drop-cap indent under it is left alone",
+      join_drop_caps(flush)[0]["text"], "S AND T ARE DISJOINT, AS THE FIRST LEMMA")
+hanging = [line("J PUBLIC HEALTH. 2011;101(8):1481-1494. A reference", 67.0, 171.7, 10.0, width=300.0),
+           line("Two Authors. A second reference set the same way.", 85.0, 183.7, 10.0, width=280.0)]
+check("  nor before a hanging indent whose next line opens with a capital",
+      join_drop_caps(hanging)[0]["text"][:10], "J PUBLIC H")
+
 # THE LICENCE BLOCK, AND THE DOI ON THE OPENER'S OWN BASELINE. CUP prints `doi:…` to the LEFT
 # of `© The Author(s)` on the same line, so it precedes the opener in reading order and a
 # forward-only latch never saw it; it became the first line of the notes paragraph.
@@ -1235,6 +1278,26 @@ check("the p.2 marker comes before the words printed on p.2",
       body.index("p.2 begins here") < body.index("the sentence ends at last"), True)
 check("  and after the words printed on p.1", body.index("into the next sheet where") <
       body.index("p.2 begins here"), True)
+
+
+print("a drop capital, converted whole")
+# Mutation: return `lines` unchanged from join_drop_caps -> a paragraph `T` and `> he opening`.
+doc = pymupdf.open()
+pg = doc.new_page(width=595, height=842)
+pg.insert_text((62, 190), "T", fontsize=50)
+rest = wrap(("he opening paragraph of the chapter starts beside a large initial letter, and its "
+             "first three lines stand in from the margin to clear it. ") + PROSE * 3, 70)
+for k, text in enumerate(rest):
+    pg.insert_text((100 if k < 3 else 62, 160 + 13 * k), text, fontsize=10)
+with tempfile.TemporaryDirectory() as tmp:
+    pdf = Path(tmp) / "cap.pdf"
+    doc.save(pdf)
+    convert(Config(pdf=pdf, out=Path(tmp) / "source" / "cap.md"))
+    written = (Path(tmp) / "source" / "cap.md").read_text(encoding="utf-8")
+paras = [p for p in written[written.index("p.1 begins here"):].split("\n\n")[1:] if p.strip()]
+check("the paragraph opens with its whole first word", paras[0][:16], "The opening para")
+check("  and reads as one paragraph, not a letter and a quotation",
+      (len(paras), any(p.startswith(">") for p in paras)), (1, False))
 
 
 print("\nthe Sewell fixes (AJS 1992 through JSTOR, 2 Oct 2026)")

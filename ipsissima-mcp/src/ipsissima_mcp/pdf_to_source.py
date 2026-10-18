@@ -403,6 +403,7 @@ def sheet_lines(page, mark_footnotes=True):
                             **face_of(spans)))
     if mark_footnotes:
         out = join_note_numbers(out)
+    out = join_drop_caps(out)
     return split_figures(page, sorted(out, key=lambda l: l["y0"]))
 
 
@@ -450,6 +451,74 @@ def join_note_numbers(lines):
             best[1]["text"] = f"{n['text']} {best[1]['text']}"
             used.add(id(n))
     return [l for l in lines if id(l) not in used]
+
+
+#: A capital set apart from the rest of its word by an OCR layer: `V ARIOUS attempts`.
+SPLIT_INITIAL = re.compile(r"^([A-Z]) (?=[A-Z]{2,}\b)")
+
+
+def join_drop_caps(lines):
+    """Put a drop capital back on its word, in the two shapes a text layer gives it.
+
+    A LINE OF ITS OWN. A born-digital layer hands the big letter back as a line by itself, set
+    four or five times the body's size, with the paragraph's first line starting at its right
+    edge on the letter's top line. Read as it was, the letter became a paragraph of its own and
+    the lines it indents a displayed quotation: `T`, then `> he promise of state and local
+    policymaking` (Shipan and Volden 2008; Cribb et al. 2026, three chapters). The letter is
+    written onto that first line, and every line it indents -- those beside it, down its depth --
+    takes the letter's left edge: moving the first line alone left the next two standing in from
+    the margin, and they were still read as a quotation. The lines beside the letter keep where
+    they are PRINTED (`printed_dx`, how far in) for the bands alone, which count the edges the page uses: a
+    book set recto and verso has two margins in a near tie -- Cribb et al. 4,965 lines at 60 and
+    4,963 at 43 -- and a dozen lines counted at 60 moved the document's margin and every caps
+    heading with it. The first line is no such risk: it takes the place the letter's own line
+    had.
+
+    A WORD SPLIT IN TWO. An OCR layer reads the letter at body size, a space before the rest:
+    `V ARIOUS attempts` (Gettier 1963), and a fresh OCR misses the letter outright, so the vote
+    cannot mend it. It is joined only where the page shows a drop capital: the next line indented
+    by one to four of the line's sizes, to clear the letter, and running on in lower case. A
+    capital standing before a word of capitals is otherwise a variable or an article (`A NATO
+    report`, `S AND T`), and a lone capital before a lower-case word nearly always is (`S and T
+    are disjoint`, `P on this occasion`), so neither is touched without that indent.
+    """
+    used = set()
+    for c in lines:
+        if not re.fullmatch(r"[A-Z]", c["text"]):
+            continue
+        best = None
+        for t in lines:
+            size = t.get("size") or 0
+            if t is c or not size or c.get("size", 0) < 2.5 * size or not t["text"][:1].isalpha():
+                continue
+            gap = t["x0"] - c["x1"]
+            if -1 <= gap <= 2 * size and c["y0"] - size <= t["y0"] <= c["y0"] + 1.5 * size:
+                if best is None or t["y0"] < best["y0"]:
+                    best = t
+        if best is not None:
+            best["text"] = c["text"] + best["text"]
+            x0 = best["x0"]
+            for t in lines:
+                if t is best or (t is not c and abs(t["x0"] - x0) <= 2
+                                 and best["y0"] < t["y0"] < c["y0"] + c["size"]):
+                    if t is not best:
+                        t["printed_dx"] = t["x0"] - c["x0"]
+                    t["x0"] = c["x0"]
+                    t["width"] = t["x1"] - t["x0"]
+            used.add(id(c))
+    lines = [l for l in lines if id(l) not in used]
+    for l in lines:
+        size = l.get("size") or 0
+        if not size or not SPLIT_INITIAL.match(l["text"]):
+            continue
+        below = [n for n in lines if l["y0"] < n["y0"] <= l["y0"] + 2 * size
+                 and n["x0"] < l["x1"] and n["x1"] > l["x0"]]
+        if not below:
+            continue
+        n = min(below, key=lambda n: n["y0"])
+        if size <= n["x0"] - l["x0"] <= 4 * size and n["text"][:1].islower():
+            l["text"] = SPLIT_INITIAL.sub(r"\1", l["text"], count=1)
+    return lines
 
 
 # --------------------------------------------------------------------------- detection
@@ -2676,6 +2745,11 @@ def convert(cfg):
     if cover:
         dropped["repository cover sheet"] = 1
     body_sizes = []                     # the size of each row, parallel to `body`
+    # Where a line beside a drop capital is PRINTED, for the bands alone: see `join_drop_caps`.
+    printed_at = {}
+
+    def edges(rows):
+        return [dict(x0=x0 + printed_at.get((p, y, t), 0), text=t) for p, x0, y, _h, t, _c, _s in rows]
     # THE BODY SIZE, MEASURED OVER THE WHOLE ARTICLE AND NOT PER PAGE. Size is the only signal a
     # paper like the Horton carries for its footnotes: they sit at x0 96, LEFT of the display
     # band at 116, so the indent rule can never see them, and all 27 went into the committed
@@ -2723,6 +2797,8 @@ def convert(cfg):
                 continue
             body.append((printed, l["x0"], l["y0"], height, l["text"], l.get("col", 0),
                          bool(doc_size) and round(l["size"], 1) < doc_size - 0.6))
+            if "printed_dx" in l:
+                printed_at[(printed, l["y0"], l["text"])] = l["printed_dx"]
             body_sizes.append(Face(round(l["size"], 1), l.get("bold", 0) >= 0.95,
                                    l.get("italic", 0) >= 0.95))
             if cfg.end_marker and cfg.end_marker in l["text"]:
@@ -2743,7 +2819,7 @@ def convert(cfg):
     #
     # The margin is read first, from everything, because it is the one measurement a bibliography
     # cannot distort: it is the commonest left edge on the page and the body supplies most of it.
-    provisional = detect_bands([dict(x0=x0, text=t) for _p, x0, _y, _h, t, _c, _s in body])
+    provisional = detect_bands(edges(body))
     bands = provisional
 
     # BOUNDARIES: the paper's own, unless the config names them. A declared marker always wins --
@@ -2791,7 +2867,7 @@ def convert(cfg):
 
     # NOW the bands, on the article alone. The margin is kept from the provisional pass, where it
     # was measured over the whole document: a cut that went wrong should not be able to move it.
-    bands = detect_bands([dict(x0=x0, text=t) for _p, x0, _y, _h, t, _c, _s in body])
+    bands = detect_bands(edges(body))
     bands["margin"] = provisional["margin"]
     bands.update({k: v for k, v in (cfg.bands or {}).items()})
     # More than two levels and no config: choose, and say so, rather than decline the paper.

@@ -102,7 +102,10 @@ neither engine may be right and the page needs transcribing rather than choosing
 * Pages missing from a scan are found from the printed folios and reported (tested on a
   synthetic scan; none of these nine has a gap), but the page markers still number by one
   offset, so pinpoints after a gap are off until the converter learns per-run offsets.
-* A drop capital the layer did not read stays apart from its word (`V ARIOUS`).
+* ~~A drop capital stays apart from its word (`V ARIOUS`).~~ Fixed 18 Oct 2026 in the
+  converter (`pdf_to_source.join_drop_caps`), since tesseract misses the letter outright and no
+  vote can mend it: an OCR layer's split initial is joined where the next line is indented to
+  clear the letter, and a born-digital layer's letter-as-its-own-line goes back on its word.
 
 ## Made the default, 18 Oct 2026 — and why sound layers are now kept
 
@@ -135,4 +138,5 @@ tesseract (CI) converts as before, and its differences are printed, not failed.
 
 The Gettier's labelled repairs on this design: 5 of 8 (the layer's two `sufficient`s, both lost
 half-lines, the lost note number 1); the other three are the layer's own spacing -- `V ARIOUS`,
-`follows :3`, `of' justified'` -- which a kept layer keeps.
+`follows :3`, `of' justified'` -- which a kept layer keeps. With the drop capital joined in the
+converter (above), **6 of 8**.
