@@ -21,6 +21,12 @@ right-click a state or an arrow to suppose it does not happen. Tick **Guess firs
 mark what you expect to stop before you see. The **Reasons** view holds each chain's lesson, and the
 **Questions to try** panel asks about the fork's association and the back door's direct step.
 
+**What the starting states do.** On the collider and the joint cause, the Mechanism panel's *What the
+starting states do* sets the two side by side in one line each: fame comes from either talent or
+looks alone; the fire needs the spark and oxygen together. Untick a starting state to suppose it does
+not happen. The chain through a mediator is one short line, so it opens in words: press **Draw it**
+to suppose something of it.
+
 **What supposing shows, and what it does not.** "Suppose this does not happen" is an
 *intervention* — Pearl's *do(X)*: it removes X and works forward along the arrows, and never
 changes anything upstream. That is the right test for the chain, the fork, the back door and the

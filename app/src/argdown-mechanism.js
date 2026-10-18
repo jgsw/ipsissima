@@ -3882,6 +3882,119 @@ function suppose(M, exp) {
            outcomes: outcomes, any: !!(Object.keys(fail).length + Object.keys(off).length + Object.keys(hold).length) };
 }
 
+/** SUPPOSE AN ACTOR DOES NOTHING (James's go, 18 Oct 2026): Coleman's question of any arrow -- which
+ *  people carry it? -- made into an experiment. What fails: every state the actor alone carries, and
+ *  every step the text says the actor takes (`how.actor`). A state the actor carries with others is
+ *  left standing and named (`shared`): whether it happens without this actor, the text does not say.
+ *  Returns { fail: [state], off: [from\u0000to], shared: [state] }. */
+function actorOff(M, actors) {
+  var A = {}; (actors || []).forEach(function (a) { A[a] = true; });
+  var out = { fail: [], off: [], shared: [] };
+  if (!Object.keys(A).length) return out;
+  M.ids.forEach(function (v) {
+    var ac = asList(obj(M.states[v]).actor);
+    if (!ac.some(function (a) { return A[a]; })) return;
+    if (ac.every(function (a) { return A[a]; })) out.fail.push(v); else out.shared.push(v);
+  });
+  M.steps.forEach(function (st) {
+    var a = st.how && st.how.actor, k = st.from + "\u0000" + st.to;
+    if (a && A[a] && out.off.indexOf(k) < 0) out.off.push(k);
+  });
+  return out;
+}
+/** The actors a chain's states are carried by, where there are two or more to tell apart. */
+function chainActors(M) {
+  var seen = {};
+  M.ids.forEach(function (v) { asList(obj(M.states[v]).actor).forEach(function (a) { if (has(M.actors, a)) seen[a] = true; }); });
+  var ids = Object.keys(seen);
+  return ids.length > 1 ? ids : [];
+}
+
+/** WHAT THE STARTING STATES DO: CONDITIONS AGAINST OUTCOMES (James's go, 18 Oct 2026; the follow-up to
+ *  the think piece, "structures to do things with"). For a chain that starts from two to four states,
+ *  every combination of them happening or not, and for each, which outcomes the text's own steps still
+ *  lead to: the supposition walk run over every row at once, a truth table in QCA's sense. From it, what
+ *  each outcome needs: the least sets of starting states that still lead to it (any one of several;
+ *  two together), and those it can do without. Read off the text's steps, which raise and lower: a row
+ *  says the steps still LEAD to an outcome, not that it happens. `trivial` where every outcome is
+ *  reached from any one start, and the table would say nothing a sentence does not. Returns null where
+ *  there are fewer than two starts or more than four, or no outcome the steps reach. */
+var COND_MAX = 4;
+function conditionsTable(M) {
+  var text = textSteps(M);
+  if (!text.length) return null;
+  var from = {}, into = {};
+  text.forEach(function (s) {
+    from[s.from] = true; into[s.to] = true;
+    (s.jointly || []).forEach(function (j) { if (has(M.states, j) && j !== s.to) from[j] = true; });
+  });
+  var starts = M.ids.filter(function (v) { return from[v] && !into[v]; });
+  if (starts.length < 2 || starts.length > COND_MAX) return null;
+  var outs = M.ids.filter(function (v) { return into[v] && hasRole(M.states[v], "outcome"); });
+  if (!outs.length) outs = M.ids.filter(function (v) { return into[v] && !from[v]; });
+  var n = starts.length, rows = [];
+  for (var m = 0; m < (1 << n); m++) {
+    var fail = starts.filter(function (v, i) { return !(m >> i & 1); });
+    var R = suppose(M, { fail: fail });
+    var lost = {}; R.lost.forEach(function (v) { lost[v] = true; });
+    rows.push({ held: starts.filter(function (v, i) { return m >> i & 1; }), mask: m, leads: outs.filter(function (o) { return !lost[o]; }) });
+  }
+  // An outcome the steps do not reach even with every start is not the table's to show.
+  var all = rows[(1 << n) - 1];
+  outs = outs.filter(function (o) { return all.leads.indexOf(o) >= 0; });
+  if (!outs.length) return null;
+  rows.forEach(function (r) { r.leads = r.leads.filter(function (o) { return outs.indexOf(o) >= 0; }); });
+  var needs = {}, trivial = true;
+  outs.forEach(function (o) {
+    var suff = rows.filter(function (r) { return r.mask && r.leads.indexOf(o) >= 0; }).map(function (r) { return r.mask; });
+    var minimal = suff.filter(function (k) { return !suff.some(function (j) { return j !== k && (j & k) === j; }); });
+    var sets = minimal.map(function (k) { return starts.filter(function (v, i) { return k >> i & 1; }); });
+    var used = {}; sets.forEach(function (st) { st.forEach(function (v) { used[v] = true; }); });
+    needs[o] = { sets: sets, necessary: starts.filter(function (v) { return sets.length && sets.every(function (st) { return st.indexOf(v) >= 0; }); }),
+                 idle: starts.filter(function (v) { return !used[v]; }) };
+    if (!(sets.length === n && sets.every(function (st) { return st.length === 1; }))) trivial = false;
+  });
+  return { starts: starts, outcomes: outs, rows: rows, needs: needs, trivial: trivial };
+}
+
+/** NOTHING TO DRAW (the think piece's "Stage 1", James's go 18 Oct 2026). A chain that is one short line
+ *  -- each state led to by one step at most and leading on by one at most, co-causes counted -- and whose
+ *  steps add up to nothing they do not say one by one (`follows` finds nothing) is a picture of what one
+ *  few sentences say: Lynch's "picture of nothing". It is set out in words, and drawn on request. Only the
+ *  text's own steps, and only where the chain has nothing else to show: a rival's step, an appraisal, a
+ *  null finding, an association or a selection link each is something to see. Returns the steps in order
+ *  along the line, or null. */
+var PLAIN_LINE_MAX = 6;
+function plainChain(M, F) {
+  // A line's only composed route is the line read end to end, which the words below say.
+  if (!M || !F || F.items.some(function (it) { return it.kind !== "composed"; }) || M.core || M.panels || M.compartmented || M.collapsed) return null;
+  var text = textSteps(M);
+  if (!text.length || M.steps.some(function (s) { return text.indexOf(s) < 0; })) return null;
+  var edges = edgesWithCoCauses(text, M.states);
+  if (edges.length > PLAIN_LINE_MAX) return null;
+  var ins = {}, outs = {};
+  edges.forEach(function (e) { ins[e[1]] = (ins[e[1]] || 0) + 1; outs[e[0]] = (outs[e[0]] || 0) + 1; });
+  if (Object.keys(ins).some(function (k) { return ins[k] > 1; }) || Object.keys(outs).some(function (k) { return outs[k] > 1; })) return null;
+  var heads = edges.filter(function (e) { return !ins[e[0]]; });
+  if (heads.length !== 1) return null;
+  var order = [], at = heads[0][0], guard = 0;
+  while (outs[at] && guard++ <= edges.length) {
+    var e = edges.filter(function (x) { return x[0] === at; })[0];
+    text.forEach(function (s) { if (s.from === e[0] && s.to === e[1] && order.indexOf(s) < 0) order.push(s); });
+    at = e[1];
+  }
+  if (order.length !== text.length) return null;
+  // EVERY STATE ON THE LINE: a moderator, a blocker, a measure or a state no step reaches is drawn, and
+  // is something to see beside the line.
+  var on = {}; order.forEach(function (s) { on[s.from] = on[s.to] = true; });
+  if (M.ids.some(function (v) { return !on[v]; }) || order.some(function (s) { return (s.modifies || []).length || (s.unless || []).length || (s.rests || []).length; })) return null;
+  // A LINE ACROSS LEVELS is a boat, not a sentence: the bands say where each state sits, which a list
+  // of steps does not (Coleman's diagram is exactly such a line).
+  var L = M.levels || [], lv = {};
+  if (L.length > 1) order.forEach(function (s) { [s.from, s.to].forEach(function (v) { levelsOf(M.states[v], M.actors, L).forEach(function (l) { lv[l] = true; }); }); });
+  return Object.keys(lv).length > 1 ? null : order;
+}
+
 /** WHAT A STEP LEAVES UNSAID, AS QUESTIONS (James's go, 17 Oct 2026). Where the text does not open a
  *  step (no `how`, no route), the kinds of transition the literature tells apart are offered as
  *  questions to put to the text: Coleman's boat read as Swedberg reads it (2016, p. 260), Hedström and
@@ -4560,6 +4673,12 @@ function injectStyle() {
     ".amech-sum{border-left:3px solid var(--line,#ddd);padding:3px 0 3px 9px;margin:6px 0;cursor:default}.amech-sum:hover,.amech-sum:focus{border-left-color:var(--mv-text,#223)}",
     ".amech-sum>.m{color:var(--muted,#666);font-size:.92em}.amech-shared{display:inline}.amech-shared>summary{display:inline;cursor:pointer;text-decoration:underline dotted}",
     ".amech-route>.t{font-weight:600}.amech-fold{display:flex;flex-wrap:wrap;gap:4px;align-items:center}",
+    ".amech-starts{display:flex;flex-wrap:wrap;gap:4px 12px;margin:4px 0 8px;font-size:12.5px}.amech-starts label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}",
+    ".amech-ctab{border-collapse:collapse;font-size:12px;margin:6px 0}.amech-ctab th,.amech-ctab td{border:1px solid var(--line,#ddd);padding:2px 6px;text-align:center}",
+    ".amech-ctab th{font-weight:600;max-width:9em;vertical-align:bottom}.amech-ctab .o{border-left:2px solid var(--text,#333)}",
+    ".amech-words{flex:1;min-width:0;padding:18px 22px;overflow:auto;font-size:14px;line-height:1.5;max-width:46em}",
+    ".amech-words ol{margin:8px 0 14px;padding-left:22px}.amech-words li{margin:4px 0}",
+    ".amech-claimlink{font:inherit;font-size:12px;background:none;border:none;color:var(--muted,#666);cursor:pointer;padding:0 2px;text-decoration:underline dotted}",
     ".amech-fold button,.amech-state-act button{font:inherit;font-size:12px;background:none;border:1px solid var(--line,#ddd);",
     "  border-radius:5px;padding:1px 7px;cursor:pointer;color:var(--fg,#1a1a1a)}",
     ".amech-tog select{font:inherit;font-size:11px;border:0;background:none;color:inherit}",
@@ -4976,7 +5095,7 @@ function create(container, graph, opts) {
                // mount, so switching Marks, the chain or the boxes dropped them without a word. Kept
                // here by state id and step key, as the reader's choices are. A host that keeps one
                // record for every arrangement hands its version in with `setExperiment`.
-               exp: { fail: {}, off: {}, hold: {} }, waiting: [],
+               exp: { fail: {}, off: {}, hold: {}, actor: {} }, waiting: [],
                // Whether the Display menu is open, so a redraw from inside it leaves it open.
                display: false,
                // Whether "About this chain" is open in the panel, so it stays as the reader left it.
@@ -4984,7 +5103,11 @@ function create(container, graph, opts) {
                // The reader's guesses and the answer beside them, by state id: guess | hit | miss | unexpected.
                guess: {},
                // Whether the reader is guessing what a supposition costs: only the supposed is drawn.
-               quiet: false };
+               quiet: false,
+               // Chains the reader asked to see drawn though they are one short line (see plainChain).
+               drawn: {},
+               // Chains whose "what each outcome needs" the reader has opened (see conditionsTable).
+               condShown: {} };
   // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
   // which chains each is in, read off the whole file whatever is being shown.
   var KINDS = FULL.profile.kinds || [];
@@ -5075,7 +5198,7 @@ function create(container, graph, opts) {
     setExperiment: function (x) {
       x = x || {};
       var set = function (xs) { var o = {}; (xs || []).forEach(function (k) { o[k] = true; }); return o; };
-      keep.exp = { fail: set(x.fail), off: set(x.off), hold: set(x.hold) };
+      keep.exp = { fail: set(x.fail), off: set(x.off), hold: set(x.hold), actor: set(x.actor) };
       keep.waiting = (x.waiting || []).slice();
       // Quiet: the reader is guessing, so only what they supposed is drawn (see applyFocus).
       keep.quiet = !!x.quiet;
@@ -5084,7 +5207,7 @@ function create(container, graph, opts) {
     /** The reader's guesses and the answer beside them, { state: "guess"|"hit"|"miss"|"unexpected" }. */
     setGuesses: function (x) { keep.guess = Object.assign({}, x || {}); cur.redrawGuesses(); },
     getExperiment: function () {
-      return { fail: Object.keys(keep.exp.fail), off: Object.keys(keep.exp.off), hold: Object.keys(keep.exp.hold) };
+      return { fail: Object.keys(keep.exp.fail), off: Object.keys(keep.exp.off), hold: Object.keys(keep.exp.hold), actor: Object.keys(keep.exp.actor || {}) };
     },
     /** Open on the steps these claims state: the chain that holds the first of them, and its arrow
      *  selected. Where a bridge's figure in Reasons leads. */
@@ -5154,15 +5277,26 @@ function create(container, graph, opts) {
   /** The reader's suppositions, changed: through the host where it keeps the record for every
    *  arrangement (so a step supposed here is supposed in Reasons too), else here. */
   function expToggle(kind, key) {
+    if (!exp[kind]) exp[kind] = {};
     if (opts.onSuppose) { opts.onSuppose({ kind: kind, key: key, on: !exp[kind][key] }); return; }
     if (exp[kind][key]) delete exp[kind][key]; else exp[kind][key] = true;
     runExp();
   }
   function expClear() {
     if (opts.onSupposeClear) { opts.onSupposeClear(); return; }
-    keep.exp = exp = { fail: {}, off: {}, hold: {} }; keep.waiting = [];
+    keep.exp = exp = { fail: {}, off: {}, hold: {}, actor: {} }; keep.waiting = [];
     runExp();
   }
+  /** The experiment as walked: the reader's states and steps, and those an actor supposed to do
+   *  nothing takes with it (see actorOff). */
+  function effExp() {
+    var ax = actorOff(M, Object.keys(exp.actor || {}));
+    var f = Object.keys(exp.fail), o = Object.keys(exp.off);
+    ax.fail.forEach(function (v) { if (f.indexOf(v) < 0) f.push(v); });
+    ax.off.forEach(function (k) { if (o.indexOf(k) < 0) o.push(k); });
+    return { fail: f, off: o, hold: Object.keys(exp.hold), shared: ax.shared };
+  }
+  var COND = FIG ? null : conditionsTable(M), ACTORS = FIG ? [] : chainActors(M);
   var NEST = nestingOf(M.ordering);
   if (!NEST.offer) keep.nest = null;
   var nestSpec = function () { return keep.nest ? NEST.spec : null; };
@@ -5305,6 +5439,32 @@ function create(container, graph, opts) {
   var side = document.createElement("div"); side.className = "amech-side";
   body.appendChild(stage); body.appendChild(side); container.appendChild(body);
   container.appendChild(bar);
+  // NOTHING TO DRAW: one short line whose steps add up to nothing they do not say one by one is set
+  // out in words first, and drawn when the reader asks -- or as soon as something is supposed of it,
+  // since a supposition is made and read on the drawing.
+  var lineKey = String(keep.chain || ""), supposedHere = Object.keys(keep.exp.fail).length + Object.keys(keep.exp.off).length + Object.keys(keep.exp.hold).length + Object.keys(keep.exp.actor || {}).length;
+  var LINE = !FIG && !keep.drawn[lineKey] && !supposedHere ? plainChain(M, FOLLOWS) : null;
+  if (LINE) {
+    var words = document.createElement("div"); words.className = "amech-words";
+    var nmW = function (v) { return "\u201c" + esc(obj(M.states[v]).label || v) + "\u201d"; };
+    var verbW = function (s) { return s.sign === "+" ? "raises" : s.sign === "-" ? "lowers" : "brings about"; };
+    var first = LINE[0].from;
+    words.innerHTML = '<p>This chain is one line of ' + LINE.length + ' step' + (LINE.length === 1 ? '' : 's') + ': no branch, no loop, no second route. ' +
+      'Read in order, the steps say all a drawing would, so here they are in words.</p><ol>' +
+      LINE.map(function (s) { return '<li>' + nmW(s.from) + ' ' + verbW(s) + ' ' + nmW(s.to) +
+        (s.claim && s.claim.title ? ' <button type="button" class="amech-claimlink" data-claim="' + esc(s.claim.title) + '" title="Show the claim that states it">\u2039' + esc(s.claim.title) + '\u203a</button>' : '') + '</li>'; }).join('') +
+      // WHAT THE LINE COMES TO END TO END is left to the panel's question, to be guessed before it is shown.
+      '</ol>' + (LINE.length > 1 ? '<p class="amech-q">Where does the line take ' + nmW(first) + '? The panel asks; guess before you look.</p>' : '') +
+      '<div class="amech-state-act"><button type="button" data-draw-line="1">Draw it</button> <span class="amech-q">to suppose something of it, draw it, then right-click a state or an arrow</span></div>';
+    words.addEventListener("click", function (ev) {
+      var t = /** @type {Element} */ (ev.target);
+      if (t.getAttribute && t.getAttribute("data-draw-line")) { keep.drawn[lineKey] = true; remount(); return; }
+      var title = t.getAttribute && t.getAttribute("data-claim");
+      if (title && opts.onClaim) { var hit = null; M.steps.forEach(function (x) { if (x.claim.title === title) hit = x.claim; }); if (hit) opts.onClaim(hit); }
+    });
+    body.insertBefore(words, stage);
+    stage.hidden = true;
+  }
 
   var svg = el("svg", { width: G.width, height: G.height, viewBox: "0 0 " + G.width + " " + G.height,
                         role: "img", "aria-label": "The mechanism the text asserts" }, stage);
@@ -5755,9 +5915,9 @@ function create(container, graph, opts) {
     var stopped = {}, lostS = {}, offK = {};
     // WHILE THE READER GUESSES, only what they supposed greys, as the claim they supposed false greys in
     // Reasons -- so they can see what they supposed, and not yet what follows (James, 18 Oct 2026).
-    if (EXPR && keep.quiet) { Object.keys(exp.fail).forEach(function (v) { lostS[v] = true; }); Object.keys(exp.off).forEach(function (k) { offK[k] = true; }); }
+    if (EXPR && keep.quiet) { var EQ = effExp(); EQ.fail.forEach(function (v) { lostS[v] = true; }); EQ.off.forEach(function (k) { offK[k] = true; }); }
     else if (EXPR) { EXPR.stoppedSteps.forEach(function (k) { stopped[k] = true; });
-      EXPR.lostStates.forEach(function (v) { lostS[v] = true; }); Object.keys(exp.fail).forEach(function (v) { lostS[v] = true; }); }
+      EXPR.lostStates.forEach(function (v) { lostS[v] = true; }); effExp().fail.forEach(function (v) { lostS[v] = true; }); }
     // An arrow fades where every step it draws has stopped (a folded route, where every part of it has).
     var stepStopped = function (x) { return x.parts ? x.parts.some(stepStopped) : !!stopped[x.id]; };
     drawnEdges.forEach(function (d) {
@@ -5984,6 +6144,7 @@ function create(container, graph, opts) {
   function expWords() {
     var nm = function (v) { return '\u201c' + esc(obj(M.states[v]).label || v) + '\u201d'; };
     var out = [];
+    Object.keys(exp.actor || {}).forEach(function (a) { out.push('\u201c' + esc(obj(M.actors[a]).label || a) + '\u201d does nothing'); });
     Object.keys(exp.fail).forEach(function (v) { out.push(nm(v) + ' does not happen'); });
     Object.keys(exp.hold).forEach(function (v) { out.push(nm(v) + ' holds'); });
     Object.keys(exp.off).forEach(function (k) { var e = k.split("\u0000"); out.push('the step ' + nm(e[0]) + ' \u2192 ' + nm(e[1]) + ' does not run'); });
@@ -6015,6 +6176,8 @@ function create(container, graph, opts) {
         (c.before ? '; it ' + dirW[c.before] + ' it before' : '') + '.</li>'); });
     R.broken.forEach(function (l) { rows.push('<li>The loop ' + l.states.concat([l.states[0]]).map(nm).join(' \u2192 ') + ' is broken.</li>'); });
     R.notes.forEach(function (n) { rows.push('<li>' + nm(n.state) + ' ' + esc(EFFECT_WORD[n.effect] || n.effect) + ': the step ' + nm(n.from) + ' \u2192 ' + nm(n.to) + '.</li>'); });
+    // A STATE CARRIED WITH OTHERS is left standing, and said: the text does not say it needs this actor.
+    (R.shared || []).forEach(function (v) { rows.push('<li>' + nm(v) + ' is carried with others too, so it is left standing: the text does not say whether it happens without them.</li>'); });
     var stop = R.lostStates.length;
     return '<h3>Your suppositions</h3>' + waitHTML + '<div class="amech-focus">Suppose ' + expWords().join('; and ') + '. ' +
       (rows.length ? 'By the text\u2019s own steps:' : 'Nothing the text\u2019s steps bring about is lost: other routes still reach ' +
@@ -6023,10 +6186,46 @@ function create(container, graph, opts) {
       (rows.length ? '<ul class="amech-handed">' + rows.join('') + '</ul>' : '') +
       '<div class="amech-state-act"><button type="button" data-exp-clear="1">Clear</button> <span class="amech-q">yours, not the text\u2019s; never saved into the map</span></div>';
   }
-  function expAny() { return Object.keys(exp.fail).length + Object.keys(exp.off).length + Object.keys(exp.hold).length + (keep.waiting || []).length > 0; }
+  /** WHAT THE STARTING STATES DO (see conditionsTable): switch starts off, through the same record of
+   *  suppositions; then, asked for, what each outcome needs of them, and the whole table. */
+  function conditionsHTML() {
+    var T = COND;
+    if (!T) return '';
+    var nm = function (v) { return '\u201c' + esc(obj(M.states[v]).label || v) + '\u201d'; };
+    var short = function (v) { var t = String(obj(M.states[v]).label || v), c = t.search(/[:;\u2014(]/);
+      if (c > 12) t = t.slice(0, c).trim(); if (t.length > 32) t = t.slice(0, 31).replace(/\s+\S*$/, "") + "\u2026"; return t; };
+    var h = '<h3>What the starting states do</h3>';
+    if (T.trivial) return h + '<div class="amech-q">The chain starts from ' + T.starts.map(nm).join(' and ') + '. By the text\u2019s steps, ' +
+      (T.outcomes.length === 1 ? 'its outcome is' : 'each outcome is') + ' reached from any one of them alone.</div>';
+    var key = String(keep.chain || "");
+    h += '<div class="amech-q">The chain starts from ' + T.starts.length + ' states. Switch one off to see what the text\u2019s steps still lead to.</div>' +
+      '<div class="amech-starts">' + T.starts.map(function (v) {
+        return '<label title="' + esc(String(obj(M.states[v]).label || v)) + '"><input type="checkbox" data-cond-start="' + esc(v) + '"' + (exp.fail[v] ? '' : ' checked') + '> ' + esc(short(v)) + '</label>'; }).join('') + '</div>';
+    if (!keep.condShown[key]) return h + '<div class="amech-try"><span>What does ' + (T.outcomes.length === 1 ? nm(T.outcomes[0]) : 'each outcome') +
+      ' need of them: any one, two together, or one it cannot do without?</span> <button type="button" class="amech-find" data-cond-show="1" title="Guess first, then see what the text\u2019s steps say">Show</button></div>';
+    var needW = function (o) {
+      var N = T.needs[o], sets = N.sets;
+      var w = sets.length === 1 && sets[0].length === 1 ? 'needs ' + nm(sets[0][0]) + ', and it is enough'
+        : sets.length === 1 ? 'needs ' + sets[0].map(nm).join(' and ') + ', together'
+        : sets.every(function (st) { return st.length === 1; }) ? 'any one of ' + sets.map(function (st) { return nm(st[0]); }).join(', ')
+        : sets.map(function (st) { return st.map(nm).join(' with '); }).join('; or ');
+      return '<li>' + nm(o) + ': ' + w + '.' + (N.necessary.length && sets.length > 1 ? ' It cannot do without ' + N.necessary.map(nm).join(' or ') + '.' : '') +
+        (N.idle.length ? ' ' + N.idle.map(nm).join(' and ') + ' make' + (N.idle.length === 1 ? 's' : '') + ' no difference to it.' : '') + '</li>';
+    };
+    var cols = T.starts.concat(T.outcomes);
+    return h + '<div class="amech-q">By the text\u2019s own steps:</div><ul class="amech-handed">' + T.outcomes.map(needW).join('') + '</ul>' +
+      '<details class="amech-cond"><summary>Every combination (' + T.rows.length + ' rows)</summary><table class="amech-ctab"><thead><tr>' +
+      cols.map(function (v, i) { return '<th title="' + esc(String(obj(M.states[v]).label || v)) + '"' + (i === T.starts.length ? ' class="o"' : '') + '>' + esc(short(v)) + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + T.rows.slice().reverse().map(function (r) {
+        return '<tr>' + T.starts.map(function (v) { return '<td>' + (r.held.indexOf(v) >= 0 ? '\u2713' : '') + '</td>'; }).join('') +
+          T.outcomes.map(function (o, i) { return '<td' + (i === 0 ? ' class="o"' : '') + '>' + (r.leads.indexOf(o) >= 0 ? '\u2713' : '\u2013') + '</td>'; }).join('') + '</tr>'; }).join('') +
+      '</tbody></table><div class="amech-q">A tick under a starting state: it happens. Under an outcome: the text\u2019s steps still lead to it; a dash, they do not.</div></details>';
+  }
+  function expAny() { return Object.keys(exp.fail).length + Object.keys(exp.off).length + Object.keys(exp.hold).length + Object.keys(exp.actor || {}).length + (keep.waiting || []).length > 0; }
   function runExp() {
-    var any = Object.keys(exp.fail).length + Object.keys(exp.off).length + Object.keys(exp.hold).length;
-    EXPR = any ? suppose(M, { fail: Object.keys(exp.fail), off: Object.keys(exp.off), hold: Object.keys(exp.hold) }) : null;
+    var E = effExp(), any = E.fail.length + E.off.length + E.hold.length + Object.keys(exp.actor || {}).length;
+    EXPR = any ? suppose(M, { fail: E.fail, off: E.off, hold: E.hold }) : null;
+    if (EXPR) EXPR.shared = E.shared;
     // A HOST THAT KEEPS ONE RECORD draws one banner over every arrangement; this one is for a chart
     // mounted on its own.
     expBanner.hidden = !EXPR || !!opts.onSuppose;
@@ -6090,7 +6289,7 @@ function create(container, graph, opts) {
       (P.apart ? ' The text keeps it apart: ' + esc(P.apart) : '') + '</div>' : '';
     // ABOUT THIS CHAIN, folded until asked for: its counts, gaps, light and shadow and legend were the
     // panel's whole length under the findings. They answer questions a reader brings, so a press away.
-    return expHTML() + followsHTML() + chainNote + boxesNote + foldedHTML() + summariesHTML() +
+    return expHTML() + followsHTML() + conditionsHTML() + chainNote + boxesNote + foldedHTML() + summariesHTML() +
       '<details class="amech-about"' + (keep.about ? ' open' : '') + '><summary>About this chain: its steps, gaps and legend</summary><h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       (P.levels.length > 1 ? '<div class="amech-row"><span class="k">levels are</span><span>' + esc(orderingWords(P.ordering).replace(/^levels: /, "")) +
@@ -6414,6 +6613,13 @@ function create(container, graph, opts) {
       if (stateBlocks(v)) items.push({ act: "hold", label: exp.hold[v] ? "Undo: it need not hold" : "Suppose this holds",
                    hint: exp.hold[v] ? "Take back the supposition" : "It blocks or moderates a step: see what then changes",
                    run: function () { expToggle("hold", v); } });
+      // WHO CARRIES IT: where the chain has two actors or more, each of this state's may be supposed idle.
+      asList(obj(M.states[v]).actor).filter(function (a) { return ACTORS.indexOf(a) >= 0; }).forEach(function (a) {
+        var an = String(obj(M.actors[a]).label || a), on = !!(exp.actor || {})[a];
+        items.push({ act: "actor", label: on ? "Undo: let \u201c" + an + "\u201d act" : "Suppose \u201c" + an + "\u201d does nothing",
+                     hint: on ? "Take back the supposition" : "Every state this actor alone carries does not happen, and every step it takes does not run",
+                     run: function () { expToggle("actor", a); } });
+      });
       items.push(null);
     }
     items.push({ label: "Show only the paths through this", run: function () { select({ state: v }); } });
@@ -6512,6 +6718,9 @@ function create(container, graph, opts) {
     if (eh) { expToggle("hold", eh); return; }
     if (eo != null && G.edges[+eo]) { expToggle("off", G.edges[+eo].from + "\u0000" + G.edges[+eo].to); return; }
     if (t.getAttribute && t.getAttribute("data-exp-clear")) { expClear(); return; }
+    var cs = t.getAttribute && t.getAttribute("data-cond-start");
+    if (cs) { expToggle("fail", cs); return; }
+    if (t.getAttribute && t.getAttribute("data-cond-show")) { keep.condShown[String(keep.chain || "")] = true; renderSide(); return; }
     if (t.getAttribute && t.getAttribute("data-exp-choose") && opts.onSuppose) {
       opts.onSuppose({ kind: "choose", key: t.getAttribute("data-from") + "\u0000" + t.getAttribute("data-to"), claim: t.getAttribute("data-claim-key") }); return; }
     var es = t.getAttribute && t.getAttribute("data-exp-show");
@@ -6726,7 +6935,7 @@ function create(container, graph, opts) {
 var API = { model: model, layout: layout, markSpec: markSpec, audit: audit, nestTree: nestTree, nestingOf: nestingOf, pathPts: pathPts, pathAt: pathAt, create: create, foldable: foldable, collapseModel: collapseModel, chainModel: chainModel, chainGroups: chainGroups, groupModel: groupModel, corePath: corePath, coreModel: coreModel, coreByDefault: coreByDefault, multiplesOf: multiplesOf, multiplesModel: multiplesModel, TIERS: TIERS, BASES: BASES,
             FIDELITY: FIDELITY, FIDELITY_DASH: FIDELITY_DASH, BRIDGES: BRIDGES, bridgeScheme: bridgeScheme,
             readback: readback, verbOf: verbOf, stepsModel: stepsModel, bridgeQuestions: bridgeQuestions,
-            follows: follows, suppose: suppose, openQuestions: openQuestions };
+            follows: follows, suppose: suppose, openQuestions: openQuestions, plainChain: plainChain, actorOff: actorOff, chainActors: chainActors, conditionsTable: conditionsTable };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 if (global) /** @type {any} */ (global).ArgdownMechanism = API;
 })(typeof window !== "undefined" ? window : (typeof globalThis !== "undefined" ? globalThis : this));

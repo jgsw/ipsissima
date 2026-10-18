@@ -312,6 +312,7 @@ main.swapped{flex-direction:row-reverse}
 #studybody{max-height:58vh;overflow:auto}
 #studycard .studybtns{display:flex;flex-wrap:wrap;gap:.35rem;margin:.4rem 0 .2rem}
 #studycard .studybtns button{font:inherit;font-size:12px;padding:.1rem .55rem}
+#studycard .studybtns.studycol{flex-direction:column;align-items:flex-start}
 #studycard .studybtns button.plain{border:0;background:none;color:var(--fg-dim);text-decoration:underline;cursor:pointer;padding:.1rem .2rem}
 #studycard .studylist{margin:.2rem 0 .3rem 1rem;padding:0}
 #studycard .studylist li{margin:.15rem 0}
@@ -730,6 +731,28 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #supp .leaf button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 #supp .verdict{margin:.25rem 0 .1rem;padding:.25rem .4rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #supp .go{cursor:pointer;text-decoration:underline dotted}
+#weigh{position:fixed;z-index:35;left:14px;top:96px;width:26rem;max-width:calc(100vw - 28px);max-height:66vh;
+  overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
+  box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
+#weigh[hidden]{display:none}
+#weigh header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
+#weigh header b{font-size:13px}
+#weigh header .grow{flex:1}
+#weigh header button.plain{font-size:14px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
+#weigh .q{color:var(--fg-dim)}
+#weigh button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .1rem}
+#weigh select{font:inherit;font-size:12px;max-width:100%;margin:.1rem 0 .35rem}
+#weigh .accts div{margin:.1rem 0}
+#weigh .go{cursor:pointer;text-decoration:underline dotted}
+#weigh table{border-collapse:collapse;width:100%;margin:.35rem 0}
+#weigh th,#weigh td{border-bottom:1px solid var(--line,#ddd);padding:.2rem .3rem;text-align:left;vertical-align:top}
+#weigh th.c,#weigh td.c{text-align:center;width:3.6em}
+#weigh tr.pick td{background:var(--accent-wash,rgba(58,123,213,.1))}
+#weigh tr[data-weigh-row]{cursor:pointer}
+#weigh td.k{color:var(--fg-dim);font-size:11.5px;white-space:nowrap}
+#weigh td.k b{color:var(--fg);font-weight:600}
+#weigh .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
+#weigh .verdict button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 #ctx button.ctxon:hover .tick{color:var(--on-accent)}
 #ctx button.ctxsub{font-size:11.5px;color:var(--fg-dim)}
 #ctx .hint{display:block;margin-left:1.1em;color:var(--fg-dim);font-size:11px}
@@ -1430,6 +1453,8 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
   <!-- THE READER'S SUPPOSITIONS in Reasons (17 Oct 2026): what each costs, and for a denied
        conclusion, what must give. Filled by suppRender; see argdown-suppose.js. -->
   <aside id="supp" hidden aria-label="Your suppositions"></aside>
+  <!-- WEIGH: accounts against evidence, or claims that cannot all hold (18 Oct 2026). Filled by weighRender. -->
+  <aside id="weigh" hidden aria-label="Weigh"></aside>
 
   <!-- A BRIDGE'S STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). Clicking a causal scheme's
        name on an inference bar in Reasons: the steps its premises state, drawn as the Mechanism
@@ -4291,6 +4316,7 @@ function endStudy(restore){
   if (!STUDY) return;
   var was = STUDY.was, untouched = !STUDY.touched;
   STUDY = null;
+  if (WEIGH && WEIGH.study) weighClose();
   $("studycard").hidden = true;
   document.removeEventListener("keydown", studyKey, true);
   if (LIVE) {
@@ -4370,7 +4396,7 @@ function studyOnState(){
   STUDY.touched = true;
   // ON MY OWN follows its cards, not the folds: a reveal unfolds the map, and redrawing the card on
   // that change would only light the same claims again.
-  if (STUDY.mode !== "own" && STUDY.mode !== "cost") studySync();
+  if (STUDY.mode !== "own" && STUDY.mode !== "cost" && STUDY.mode !== "accounts") studySync();
 }
 
 /* TWO WAYS TO STUDY (James, 18 Oct 2026). Asked of the main claim, "what holds this up?" is a request
@@ -4392,6 +4418,7 @@ function studySync(){
   if (!STUDY.mode) return studyOpening();
   if (STUDY.mode === "own") return studyOwn();
   if (STUDY.mode === "cost") return studyCost();
+  if (STUDY.mode === "accounts") return studyAccounts();
   studySyncOthers();
 }
 function studyCard(){
@@ -4428,8 +4455,10 @@ function studyOpening(){
   c.p("What do you already think about it, and why? Hold your answer in mind: the map will test it.");
   c.btns([["On my own", "own", "One argument at a time, from the ground up: given its premises, guess where they lead. Hints when you want them."],
           ["With others", "others", "From the main claim down: what holds each claim up? Open-ended, and best talked through together."],
-          ["Which claim would cost the most?", "cost", "A challenge: guess which one claim, supposed false, would leave the most of the argument without support"]]);
-  c.p("On my own: one argument at a time. With others: from the main claim down, to talk through. Which would cost the most: a guess, then the map\u2019s answer.", "crux");
+          ["Which claim would cost the most?", "cost", "A challenge: guess which one claim, supposed false, would leave the most of the argument without support"],
+          weighSets("accounts").length ? ["Weigh the accounts", "accounts", "The text sets its account against a rival: which reasons tell them apart, and where is the text silent?"] : null]);
+  c.p("On my own: one argument at a time. With others: from the main claim down, to talk through. Which would cost the most: a guess, then the map\u2019s answer." +
+      (weighSets("accounts").length ? " Weigh the accounts: the text\u2019s account beside the rival it reports, and the reasons for each." : ""), "crux");
   // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting.
   var n = studyUnits(CURRENT_GRAPH || {}, null).length;
   if (n > 20) c.p("This map has " + n + " arguments and objections to work through. To take one part, right-click a claim and choose Study from here.", "crux");
@@ -4569,7 +4598,8 @@ function studyClosing(){
  * Worked out by supposing each in turn (argdown-suppose.js), so it is the map's own measure, relative
  * to the map (a framed question, in Henne's sense): it says where the argument is most exposed, never
  * which claim is false. The reader's guess is set beside the answer and ranked, not scored. */
-function studyCostRank(){
+/** The map's main claims: its contentions, and every statement that has support and supports nothing. */
+function suppMains(){
   var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
   var byId = {}; nodes.forEach(function(n){ byId[n.id] = n; });
   var outSup = {}, inSup = {};
@@ -4580,12 +4610,21 @@ function studyCostRank(){
   var mains = {};
   nodes.forEach(function(n){ if (n.kind === "statement" && inSup[n.id] && !outSup[n.id]) mains[n.id] = true; });
   (g.contentions || []).forEach(function(id){ if (id) mains[id] = true; });
+  return mains;
+}
+/** What supposing one statement false costs: how many claims lose the map's support, main claims among them. */
+function claimCost(n, mains){
+  var r = ArgdownSuppose.suppose(CURRENT_GRAPH || {}, { "false": [n.id], holds: [], cut: [], choice: {}, keep: [] }, { appraisal: APPRAISAL_ON });
+  var lost = r.lost.filter(function(x){ return x.indexOf("#") < 0; });
+  return { id: n.id, label: n.label, lost: lost.length, mains: lost.filter(function(x){ return mains[x]; }).length, lostIds: lost };
+}
+function studyCostRank(){
+  var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
+  var mains = suppMains();
   var out = [];
   nodes.forEach(function(n){
     if (n.kind !== "statement" || mains[n.id]) return;
-    var r = ArgdownSuppose.suppose(g, { "false": [n.id], holds: [], cut: [], choice: {}, keep: [] }, { appraisal: APPRAISAL_ON });
-    var lost = r.lost.filter(function(x){ return x.indexOf("#") < 0; });
-    out.push({ id: n.id, label: n.label, lost: lost.length, mains: lost.filter(function(x){ return mains[x]; }).length });
+    out.push(claimCost(n, mains));
   });
   out.sort(function(a, b){ return b.mains - a.mains || b.lost - a.lost || a.label.localeCompare(b.label); });
   return out;
@@ -4635,6 +4674,51 @@ function studyCost(){
           ["Guess again", "cost-again", "", "plain"], ["End study", "end", "", "plain"]]);
   if (LIVE) LIVE.markClaims(top.map(function(x){ return x.id; }).concat(C.pick ? [C.pick.id] : []));
 }
+/* WEIGH THE ACCOUNTS, AS A WAY INTO STUDY (James, 18 Oct 2026: "both a panel and a fourth way into
+ * Study"). Lang's order: commit first (which account do you lean to?), predict (which reasons tell them
+ * apart?), see, then reflect -- on a blank cell, on what kind of test a reason is, and on whether the
+ * first leaning survived. The table is the panel's; the card walks the reader through it. */
+function studyAccounts(){
+  var c = studyCard(), A = STUDY.acc || (STUDY.acc = { i: null, lean: null, opened: false, done: false });
+  var sets = weighSets("accounts"), L = "ABCDEFGH";
+  $("studyhint").textContent = "weigh the accounts";
+  if (!sets.length) { c.p("This map sets no account of the text\u2019s against a rival it reports."); c.btns([["End study", "end"]]); return; }
+  if (A.i == null && sets.length === 1) A.i = 0;
+  if (A.i == null) {
+    c.p("The text sets " + sets.length + " of its claims against rival accounts it reports. Which will you weigh?");
+    var d = c.btns(sets.slice(0, 8).map(function(x, k){ var t = "\u2039" + x.accounts[0].label + "\u203a"; return [t.length > 60 ? t.slice(0, 59) + "\u2026" : t, "acc-set:" + k]; }));
+    d.className += " studycol";
+    c.btns([["End study", "end", "", "plain"]]);
+    return;
+  }
+  var S = sets[A.i];
+  if (!S) { A.i = null; return studyAccounts(); }
+  if (A.lean == null) {
+    c.p(S.accounts.length === 2 ? "Two accounts of the same thing:" : S.accounts.length + " accounts of the same thing:");
+    c.list(S.accounts.map(function(a, k){ return [L[k] + (a.own ? " (the text\u2019s own)" : " (a view the text reports)"), a.label]; }));
+    c.p("Before you look at the reasons: which do you lean to, and why?");
+    c.btns(S.accounts.map(function(a, k){ return [L[k], "acc-lean:" + k]; }).concat([["Neither yet", "acc-lean:-1", "", "plain"]]));
+    if (LIVE) LIVE.markClaims(S.accounts.map(function(a){ return a.id; }));
+    return;
+  }
+  if (!A.opened || !WEIGH || WEIGH.mode !== "accounts") { A.opened = true; weighOpen("accounts", A.i, true); }
+  if (!WEIGH.shown) {
+    c.p("In the panel: click the reasons you think tell the accounts apart, then press Show.");
+    c.p("A reason tells them apart where it bears on one account and not the same way on the other.", "hint");
+    c.btns([["End study", "end", "", "plain"]]);
+    return;
+  }
+  if (!A.done) {
+    c.p("Now pick a row the text leaves blank for one account. What would that account make of the reason?");
+    c.p("Then try one: suppose a reason false, or press Test? to ask what kind of test it is.", "hint");
+    c.btns([["I\u2019ve weighed them", "acc-done"], ["End study", "end", "", "plain"]]);
+    return;
+  }
+  c.p(A.lean >= 0 ? "At the start you leaned to " + L[A.lean] + ", \u2039" + S.accounts[A.lean].label + "\u203a. Having weighed the reasons, do you still?"
+                  : "At the start you leaned to neither. Do you now?");
+  c.p("The map does not say which account is better. It shows which reasons bear on which, and where the text is silent.", "hint");
+  c.btns([sets.length > 1 ? ["Weigh another pair", "acc-again"] : null, ["Which claim would cost the most?", "cost"], ["End study", "end", "", "plain"]]);
+}
 /** A claim clicked while the reader is guessing which would cost the most: their guess. */
 function studyCostPick(n){
   if (!STUDY || STUDY.mode !== "cost" || !STUDY.cost || STUDY.cost.ranked || !n || n.kind !== "statement") return false;
@@ -4652,7 +4736,12 @@ $("studybody").addEventListener("click", function(ev){
   if (a === "finish") { STUDY.i = (STUDY.units || []).length; studySync(); return; }
   if (a === "end") { endStudy(); return; }
   if (a === "fork-reply") { STUDY.reply = true; studySync(); return; }
-  if (a === "cost") { STUDY.mode = "cost"; STUDY.cost = null; studySync(); return; }
+  if (a === "cost") { if (WEIGH && WEIGH.study) weighClose(); STUDY.mode = "cost"; STUDY.cost = null; studySync(); return; }
+  if (a === "accounts") { STUDY.mode = "accounts"; STUDY.acc = null; studySync(); return; }
+  if (a.indexOf("acc-set:") === 0) { STUDY.acc.i = +a.slice(8); studySync(); return; }
+  if (a.indexOf("acc-lean:") === 0) { STUDY.acc.lean = +a.slice(9); studySync(); return; }
+  if (a === "acc-done") { STUDY.acc.done = true; studySync(); return; }
+  if (a === "acc-again") { if (WEIGH && WEIGH.study) weighClose(); STUDY.acc = { i: null, lean: null, opened: false, done: false }; studySync(); return; }
   if (a === "cost-show") { STUDY.cost.ranked = studyCostRank(); studySync(); return; }
   if (a === "cost-again") { STUDY.cost = { pick: null, ranked: null, depthSet: true }; studySync(); return; }
   if (a === "cost-suppose-top" || a === "cost-suppose-pick") {
@@ -8407,7 +8496,8 @@ function explExportPNG(){
  * Reasons view, and contraposition"). Kept by LABEL, not id, so an edit that renumbers the nodes
  * does not move them: "s:" a statement, "a:" an argument, "a:Name#n" a line drawn only inside its
  * argument. Never saved into the map, never in the fold state: the reader's, not the text's. */
-var SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }, SUPP_KEEP = [];
+function suppEmpty(){ return { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {}, mactor: [] }; }
+var SUPP = suppEmpty(), SUPP_KEEP = [];
 /* ONE RECORD FOR BOTH ARRANGEMENTS (James, 18 Oct 2026: "a supposition should carry between the
  * Reasons and Mechanism views ... the user should be able to see this"). The claim-level lists
  * above are Reasons'; `mfail`, `mhold` and `moff` are the Mechanism view's own, by state id and by
@@ -8526,16 +8616,17 @@ function suppIds(){
 }
 /** A new file: every supposition, keep and guess goes, without redrawing a map about to be replaced. */
 function suppReset(){
-  SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }; SUPP_KEEP = [];
+  SUPP = suppEmpty(); SUPP_KEEP = [];
   SUPP_PREV = 0; SUPP_LAST = null; SUPP_DETAIL = true;
   GUESS.phase = null; GUESS.picks = []; GUESS.answer = null;
   if (LIVE && LIVE.setGuesses) LIVE.setGuesses({});
   if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
   $("supp").hidden = true; $("supp").innerHTML = "";
+  weighClose();
   suppBar();
 }
-function suppClear(){ SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }; SUPP_KEEP = []; suppApply(); }
-function suppCount(){ return SUPP.false.length + SUPP.holds.length + SUPP.cut.length + SUPP.mfail.length + SUPP.mhold.length + SUPP.moff.length; }
+function suppClear(){ SUPP = suppEmpty(); SUPP_KEEP = []; suppApply(); }
+function suppCount(){ return SUPP.false.length + SUPP.holds.length + SUPP.cut.length + SUPP.mfail.length + SUPP.mhold.length + SUPP.moff.length + SUPP.mactor.length; }
 var SUPP_LAST = null, SUPP_DETAIL = true, SUPP_PREV = 0;
 function suppApply(){
   var box = $("supp");
@@ -8547,7 +8638,9 @@ function suppApply(){
   SUPP_PREV = n;
   if (!n || !CURRENT_GRAPH) {
     SUPP_LAST = null; box.hidden = true; box.innerHTML = ""; if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
-    suppBar(); suppMechSync(null); return;
+    suppBar(); suppMechSync(null);
+    if (WEIGH) { var wb0 = $("weigh"); if (wb0) wb0.hidden = ARRANGEMENT === "mechanism"; }
+    return;
   }
   var I = suppIds(), r = null, guessing = GUESS.phase === "guessing";
   if (I["false"].length + I.holds.length + I.cut.length) {
@@ -8566,6 +8659,7 @@ function suppApply(){
   suppBar();
   if (guessing && MECH && MECH.setExperiment) MECH.setExperiment(Object.assign(suppMechInput(r), { waiting: [], quiet: true }));
   else suppMechSync(r);
+  if (WEIGH) { var wb = $("weigh"); if (wb) wb.hidden = ARRANGEMENT === "mechanism"; }
 }
 
 /* GUESS FIRST, THEN SEE (James, 18 Oct 2026: "it's okay to draw the map's answer beside the reader's
@@ -8617,9 +8711,10 @@ function guessPick(id){
 function guessAnswer(){
   if (GUESS.view === "mech") {
     if (!MECH || !window.ArgdownMechanism) return [];
-    var inp = suppMechInput(SUPP_LAST);
-    var R = ArgdownMechanism.suppose(MECH.model, { fail: inp.fail, off: inp.off, hold: inp.hold });
-    return R.lostStates.filter(function(v){ return inp.fail.indexOf(v) < 0; });
+    var inp = suppMechInput(SUPP_LAST), ax = ArgdownMechanism.actorOff(MECH.model, inp.actor);
+    var F = inp.fail.concat(ax.fail), O = inp.off.concat(ax.off);
+    var R = ArgdownMechanism.suppose(MECH.model, { fail: F, off: O, hold: inp.hold });
+    return R.lostStates.filter(function(v){ return F.indexOf(v) < 0; });
   }
   var r = SUPP_LAST;
   if (!r) return [];
@@ -8647,7 +8742,7 @@ function guessSummary(){
 /** The Mechanism view's half of the record: its own suppositions, and the steps the claims supposed
  *  false in Reasons state -- each claim the map then denies, the reader's or one denied in turn. */
 function suppMechInput(r){
-  var out = { fail: SUPP.mfail.slice(), hold: SUPP.mhold.slice(), off: SUPP.moff.slice(), waiting: [] };
+  var out = { fail: SUPP.mfail.slice(), hold: SUPP.mhold.slice(), off: SUPP.moff.slice(), actor: SUPP.mactor.slice(), waiting: [] };
   if (!suppModel()) return out;
   var ids = r ? r.denied.filter(function(x){ return x.indexOf("#") < 0; }) : [];
   var keys = [];
@@ -8665,7 +8760,7 @@ function suppMechSync(r){ if (MECH && MECH.setExperiment) MECH.setExperiment(sup
 /** From the Mechanism view: a state, a step, or which of a claim's steps does not run. */
 function suppFromMech(a){
   if (a.kind === "choose") { SUPP.mchoice[a.claim] = a.key; suppApply(); return; }
-  var list = { fail: SUPP.mfail, hold: SUPP.mhold, off: SUPP.moff }[a.kind];
+  var list = { fail: SUPP.mfail, hold: SUPP.mhold, off: SUPP.moff, actor: SUPP.mactor }[a.kind];
   if (!list) return;
   if (a.kind === "off" && !a.on && list.indexOf(a.key) < 0) {
     // A STEP STOPPED BY A CLAIM SUPPOSED FALSE in Reasons: taking it back takes that claim back,
@@ -8708,6 +8803,8 @@ function suppBar(){
   });
   SUPP.mfail.forEach(function(v){ items.push(item('\u201c' + esc(suppStateLabel(v)) + '\u201d does not happen', "mfail", v, where("in Mechanism only"))); });
   SUPP.mhold.forEach(function(v){ items.push(item('\u201c' + esc(suppStateLabel(v)) + '\u201d holds', "mhold", v, where("in Mechanism only"))); });
+  SUPP.mactor.forEach(function(a){ var A = MM && MM.actors && MM.actors[a];
+    items.push(item('\u201c' + esc(A && A.label || a) + '\u201d does nothing', "mactor", a, where("in Mechanism only"))); });
   var guessRow = "";
   if (GUESS.phase === "guessing") guessRow = '<div class="guessrow"><b>Before you look:</b> click the ' +
     (GUESS.view === "mech" ? 'states you expect the text\u2019s steps will no longer bring about' : 'claims you expect to lose the map\u2019s support') +
@@ -8824,12 +8921,185 @@ function whatIfShow(n){
 $("whatif").onclick = function(){
   var n = WHATIF_N;
   if (!n) return;
-  ctxMenu(n.label || "What if\u2026?", suppMenu(n).concat([null, guessMenuItem()]), $("whatif"));
+  var wm = weighMenu(n);
+  ctxMenu(n.label || "What if\u2026?", suppMenu(n).concat(wm.length ? [null].concat(wm) : [], [null, guessMenuItem()]), $("whatif"));
 };
 document.addEventListener("pointerdown", function(e){
   if (WHATIF_N && !(e.target.closest && e.target.closest("#whatif, #ctx"))) whatIfHide();
 }, true);
 document.addEventListener("wheel", function(){ if (WHATIF_N) whatIfHide(); }, { capture: true, passive: true });
+
+/* WEIGH THE ACCOUNTS, AND WHICH WOULD YOU GIVE UP? (James's go, 18 Oct 2026; the follow-up to the
+ * Mechanism think piece, "structures to do things with", which made the table the next form). Two
+ * structures the map already records, set out so a reader can ask of them and check (argdown-accounts.js):
+ *  - ACCOUNTS AGAINST EVIDENCE: the text's account and the rivals it reports, the reasons for and
+ *    against each as rows. The reader guesses which rows tell the accounts apart, then sees; an empty
+ *    cell is where the text says nothing of what that account would make of the reason, and is theirs
+ *    to ask. "What kind of test?" puts Van Evera's four tests (straw in the wind, hoop, smoking gun,
+ *    doubly decisive; Collier 2011) as two plain questions, in words that serve a cause and a reason
+ *    alike (James: users "will probably not be aware of the terminology"): a pointer, a test to pass,
+ *    a clincher, decisive. The reader's reading; the map says only what it records.
+ *  - A SET THAT CANNOT ALL HOLD: which one would you give up, and what would each cost the rest?
+ * Never a verdict on which account is better, or which claim should go: report, not evaluate. */
+var WEIGH = null;
+var WEIGH_TESTS = {
+  pointer:  ["a pointer", "it leans one way, but neither settles anything"],
+  hoop:     ["a test to pass", "it must hold for the account to stay in the running, but holding does not rule the rival out"],
+  clincher: ["a clincher", "if it holds, the rival is out; if it fails, the account still stands"],
+  decisive: ["decisive", "it settles it either way"]
+};
+function weighSets(mode){
+  var g = CURRENT_GRAPH;
+  if (!g || !window.ArgdownAccounts) return [];
+  return mode === "accounts" ? ArgdownAccounts.accountSets(g, { appraisal: APPRAISAL_ON })
+                             : ArgdownAccounts.inconsistentSets(g, { appraisal: APPRAISAL_ON });
+}
+/** What the right-click menu offers on a claim that is in an account set or a set that cannot all hold. */
+function weighMenu(n){
+  var out = [];
+  if (!n || !window.ArgdownAccounts) return out;
+  var A = ArgdownAccounts.containing(weighSets("accounts"), n.id, "accounts");
+  if (A.length) out.push({ act: "weigh", label: "Weigh the accounts", hint: "The text’s account and the rival it reports, with the reasons for and against each: which tell them apart?",
+                           run: function(){ weighOpen("accounts", A[0]); } });
+  var I = ArgdownAccounts.containing(weighSets("giveup"), n.id, "giveup");
+  if (I.length) out.push({ act: "giveup", label: "These cannot all hold: which would you give up?", hint: "See what giving up each would cost the rest of the argument",
+                           run: function(){ weighOpen("giveup", I[0]); } });
+  return out;
+}
+function weighOpen(mode, i, study){
+  WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, study: !!study };
+  whatIfHide(); ctxHide();
+  weighRender();
+}
+function weighClose(){
+  WEIGH = null;
+  var box = $("weigh"); if (box) { box.hidden = true; box.innerHTML = ""; }
+}
+function weighLabel(id){ var n = suppNodeById(id); return n ? n.label : id; }
+function weighRender(){
+  var box = $("weigh");
+  if (!box) return;
+  if (!WEIGH || !CURRENT_GRAPH) { box.hidden = true; box.innerHTML = ""; return; }
+  var sets = weighSets(WEIGH.mode), S = sets[WEIGH.i];
+  if (!S) { weighClose(); return; }
+  var esc = ArgdownStaircase.esc, q = function(id){ return '‹' + esc(weighLabel(id)) + '›'; };
+  var go = function(id){ return '<span class="go" data-weigh-go="' + esc(id) + '">' + q(id) + '</span>'; };
+  var h = '<header><b>' + (WEIGH.mode === "accounts" ? "Weigh the accounts" : "These cannot all hold") + '</b><span class="grow"></span>' +
+    '<button type="button" class="plain" data-weigh-close="1" title="Close" aria-label="Close">×</button></header>';
+  if (sets.length > 1) h += '<select data-weigh-set aria-label="Which set">' + sets.map(function(x, k){
+    var t = WEIGH.mode === "accounts" ? weighLabel(x.id) + " and " + (x.accounts.length - 1 === 1 ? "its rival" : "its " + (x.accounts.length - 1) + " rivals")
+                                      : x.name || x.members.map(weighLabel).join(" / ");
+    return '<option value="' + k + '"' + (k === WEIGH.i ? ' selected' : '') + '>' + esc(t.length > 70 ? t.slice(0, 69) + "…" : t) + '</option>'; }).join("") + '</select>';
+  box.innerHTML = h + (WEIGH.mode === "accounts" ? weighAccountsHTML(S, q, go) : weighGiveUpHTML(S, q, go));
+  box.hidden = ARRANGEMENT === "mechanism";
+  if (LIVE) LIVE.markClaims(WEIGH.mode === "accounts" ? S.accounts.map(function(a){ return a.id; }) : S.members);
+}
+function weighAccountsHTML(S, q, go){
+  var esc = ArgdownStaircase.esc, L = "ABCDEFGH", acc = S.accounts;
+  var letter = function(id){ var k = acc.map(function(a){ return a.id; }).indexOf(id); return k >= 0 ? L[k] : "?"; };
+  var h = '<div class="accts">' + acc.map(function(a, k){
+    return '<div><b>' + L[k] + '</b> ' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>';
+  if (S.between && S.between.length) h += '<div class="q">' + S.between.map(function(e){ return letter(e.from) + ' ' + (e.type === "undercut" ? "undercuts" : e.type === "attack" ? "objects to" : "cannot hold with") + ' ' + letter(e.to); })
+    .filter(function(x, k, all){ return all.indexOf(x) === k; }).join("; ") + '.</div>';
+  if (!S.rows.length) return h + '<div class="q">The map gives no reason directly for or against these accounts.</div>';
+  var shown = WEIGH.shown;
+  if (!shown) h += '<div style="margin:.35rem 0 .1rem">Which of these reasons tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
+  var word = { "for": "for", against: "against", both: "both" };
+  var kindW = { apart: "<b>tells them apart</b>", alike: "bears on both alike", one: "on one only" };
+  h += '<table><thead><tr><th>reason</th>' + acc.map(function(a, k){ return '<th class="c" title="' + esc(a.label) + '">' + L[k] + '</th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    S.rows.map(function(r){
+      var picked = WEIGH.picks.indexOf(r.id) >= 0;
+      return '<tr data-weigh-row="' + esc(r.id) + '"' + (picked ? ' class="pick"' : '') + '><td>' + (picked ? '✓ ' : '') + (shown ? go(r.id) : q(r.id)) + '</td>' +
+        acc.map(function(a){ var v = r.cells[a.id]; return '<td class="c"' + (shown && !v ? ' title="The text does not say what this account would make of it"' : '') + '>' + (shown ? (v ? word[v] : '') : '·') + '</td>'; }).join("") +
+        (shown ? '<td class="k">' + kindW[r.kind] + '<br><button type="button" data-weigh-false="' + esc(r.id) + '" title="Suppose this reason false, and see what then loses its support">Suppose false</button>' +
+          '<button type="button" data-weigh-test="' + esc(r.id) + '" title="Ask what kind of test this reason is"' + (WEIGH.test && WEIGH.test.row === r.id ? ' class="on"' : '') + '>Test?</button></td>' : '') + '</tr>';
+    }).join("") + '</tbody></table>';
+  if (!shown) return h + '<div>Marked: ' + WEIGH.picks.length + '. <button type="button" data-weigh-show="1">Show</button></div>';
+  var apart = S.rows.filter(function(r){ return r.kind === "apart"; }), one = S.rows.filter(function(r){ return r.kind === "one"; });
+  var summary = (apart.length ? apart.length + ' of the ' + S.rows.length + ' reasons ' + (apart.length === 1 ? 'tells' : 'tell') + ' the accounts apart: ' + (apart.length === 1 ? 'it bears' : 'each bears') + ' on two of them differently.'
+                              : 'None of the ' + S.rows.length + ' reasons tells the accounts apart by the map: none bears on two of them differently.');
+  if (WEIGH.picks.length) {
+    var hit = WEIGH.picks.filter(function(id){ return apart.some(function(r){ return r.id === id; }); }).length;
+    var missed = apart.filter(function(r){ return WEIGH.picks.indexOf(r.id) < 0; }).length;
+    summary = 'You marked ' + WEIGH.picks.length + '; ' + hit + ' of them ' + (hit === 1 ? 'does' : 'do') + '. ' + summary + (missed ? ' You did not mark ' + missed + '.' : '');
+  }
+  h += '<div class="verdict">' + esc(summary) + (one.length ? ' In ' + one.length + ' row' + (one.length === 1 ? '' : 's') + ' the text says nothing about one account: what would it make of that reason?' : '') + '</div>';
+  if (WEIGH.test) h += weighTestHTML(S, q);
+  return h + '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
+}
+/** WHAT KIND OF TEST: two questions of the reader's, and what the map records beside them. */
+function weighTestHTML(S, q){
+  var T = WEIGH.test, r = S.rows.filter(function(x){ return x.id === T.row; })[0];
+  if (!r) return "";
+  var acc = S.accounts, fav = acc.filter(function(a){ return r.cells[a.id] === "for"; })[0] || acc.filter(function(a){ return !r.cells[a.id]; })[0] || acc[0];
+  var others = acc.filter(function(a){ return a.id !== fav.id; });
+  var rival = others.length === 1 ? q(others[0].id) : "the others";
+  var yn = function(which){ return ['yes', 'no'].map(function(v){ return '<button type="button" data-weigh-answer="' + which + ':' + v + '"' + (T[which] === v ? ' class="on" aria-pressed="true"' : '') + '>' + (v === "yes" ? "Yes" : "No") + '</button>'; }).join(""); };
+  var h = '<div class="verdict"><b>What kind of test is ' + q(r.id) + '?</b>' +
+    '<div>If it were not so, would ' + q(fav.id) + ' be in trouble? ' + yn("needed") + '</div>' +
+    '<div>If it is so, ' + (others.length === 1 ? 'is ' + rival : 'are ' + rival) + ' ruled out? ' + yn("enough") + '</div>';
+  if (T.needed && T.enough) {
+    var k = T.needed === "yes" ? (T.enough === "yes" ? "decisive" : "hoop") : (T.enough === "yes" ? "clincher" : "pointer");
+    h += '<div>On your reading, <b>' + WEIGH_TESTS[k][0] + '</b>: ' + WEIGH_TESTS[k][1] + '.</div>';
+  }
+  // WHAT THE MAP RECORDS, beside the reader's reading and never in place of it.
+  var lost = ArgdownSuppose.suppose(CURRENT_GRAPH, { "false": [r.id], holds: [], cut: [], choice: {}, keep: [] }, { appraisal: APPRAISAL_ON }).lost;
+  var facts = [];
+  if (r.cells[fav.id] === "for") facts.push(lost.indexOf(fav.id) >= 0 ? 'without it, ' + q(fav.id) + ' loses the support the map gives it' : 'without it, ' + q(fav.id) + ' keeps other support');
+  others.forEach(function(a){ facts.push(r.cells[a.id] === "against" ? 'it is recorded against ' + q(a.id) : r.cells[a.id] === "for" ? 'it is recorded for ' + q(a.id) + ' too' : 'it records nothing of it against ' + q(a.id)); });
+  return h + '<div class="q">The map: ' + facts.join('; ') + '. Which kind of test it is turns on how you read it.</div></div>';
+}
+function weighGiveUpHTML(S, q, go){
+  var esc = ArgdownStaircase.esc;
+  var h = S.declared ? '<div>The map marks ' + S.members.length + ' claims that cannot all hold' + (S.name ? ': <i>' + esc(S.name) + '</i>' : '') + '.</div>'
+                     : '<div>' + q(S.members[0]) + ' and ' + q(S.members[1]) + (S.type === "contradictory" ? ' contradict each other: one is true and the other false.' : ' cannot both be true.') + '</div>';
+  var shown = WEIGH.shown, mains = suppMains();
+  var costs = S.members.map(function(id){ var n = suppNodeById(id); return n ? claimCost(n, mains) : { id: id, lost: 0, mains: 0 }; });
+  var least = costs.slice().sort(function(a, b){ return a.mains - b.mains || a.lost - b.lost; })[0];
+  if (!shown) h += '<div style="margin:.35rem 0 .1rem">Which one would you give up, at the least cost to the rest of the argument? Click your guess, then press <b>Show</b>.</div>';
+  h += '<table><tbody>' + costs.map(function(c){
+    var picked = WEIGH.picks.indexOf(c.id) >= 0;
+    return '<tr data-weigh-row="' + esc(c.id) + '"' + (picked ? ' class="pick"' : '') + '><td>' + (picked ? '✓ ' : '') + (shown ? go(c.id) : q(c.id)) + '</td>' +
+      (shown ? '<td class="k">' + (c.lost ? c.lost + ' claim' + (c.lost === 1 ? '' : 's') + ' lose' + (c.lost === 1 ? 's' : '') + ' support' + (c.mains ? ', ' + c.mains + ' main' : '') : 'nothing else loses support') +
+        '<br><button type="button" data-weigh-false="' + esc(c.id) + '" title="Suppose it false, and see what follows">Give it up</button></td>' : '') + '</tr>';
+  }).join("") + '</tbody></table>';
+  if (!shown) return h + '<div><button type="button" data-weigh-show="1">Show</button></div>';
+  var tie = costs.filter(function(c){ return c.mains === least.mains && c.lost === least.lost; }).length > 1;
+  var mine = WEIGH.picks[0] ? costs.filter(function(c){ return c.id === WEIGH.picks[0]; })[0] : null;
+  h += '<div class="verdict">' + (tie ? 'Giving up any of the least costly costs the same.' : 'Least costly to give up, by the map: ' + q(least.id) + '.') +
+    (mine ? ' Your guess, ' + q(mine.id) + (mine.id === least.id || (mine.mains === least.mains && mine.lost === least.lost) ? ', costs as little as any.' : ', costs more.') : '') + '</div>';
+  return h + '<div class="q">Which should go is yours to judge: the map says only what giving up each would cost the rest of the argument.</div>';
+}
+$("weigh").addEventListener("click", function(ev){
+  var t = ev.target;
+  if (!t || !t.getAttribute || !WEIGH) return;
+  if (t.getAttribute("data-weigh-close")) { var st = WEIGH.study; weighClose(); if (LIVE) LIVE.markClaims([]); if (st && STUDY) studySync(); return; }
+  if (t.getAttribute("data-weigh-show")) { WEIGH.shown = true; weighRender(); if (WEIGH.study && STUDY) studySync(); return; }
+  var ans = t.getAttribute("data-weigh-answer");
+  if (ans) { var p = ans.split(":"); WEIGH.test[p[0]] = p[1]; weighRender(); return; }
+  var tr = t.getAttribute("data-weigh-test");
+  if (tr) { WEIGH.test = WEIGH.test && WEIGH.test.row === tr ? null : { row: tr, needed: null, enough: null }; weighRender(); return; }
+  var fl = t.getAttribute("data-weigh-false");
+  if (fl) { var n = suppNodeById(fl); if (n && n.kind === "statement" && !suppIsFalse(suppKey(n))) { SUPP.false.push(suppKey(n)); suppApply(); }
+            else if (n && n.kind === "argument") { suppDenyArgument(n); } return; }
+  var g = t.closest ? t.closest("[data-weigh-go]") : null;
+  if (g && WEIGH.shown) { if (LIVE) LIVE.markClaims([g.getAttribute("data-weigh-go")], { centreAlways: true }); return; }
+  var row = t.closest ? t.closest("[data-weigh-row]") : null;
+  if (row && !WEIGH.shown) {
+    var id = row.getAttribute("data-weigh-row"), k = WEIGH.picks.indexOf(id);
+    if (WEIGH.mode === "giveup") WEIGH.picks = k >= 0 ? [] : [id];
+    else if (k >= 0) WEIGH.picks.splice(k, 1); else WEIGH.picks.push(id);
+    weighRender();
+  }
+});
+$("weigh").addEventListener("change", function(ev){
+  var t = ev.target;
+  if (t && t.getAttribute && t.getAttribute("data-weigh-set") != null && WEIGH) {
+    WEIGH.i = +t.value; WEIGH.picks = []; WEIGH.test = null; WEIGH.shown = !(GUESS.on || STUDY);
+    if (STUDY && STUDY.acc && WEIGH.study) { STUDY.acc.i = WEIGH.i; }
+    weighRender(); if (WEIGH.study && STUDY) studySync();
+  }
+});
 
 function ctxShow(n, ev){
   var m = $("ctx");
@@ -8907,6 +9177,14 @@ function ctxShow(n, ev){
       if (it.act === "guessfirst") sb.className = "ctxsub" + (it.on ? " ctxon" : "");
       sb.onclick = function(){ ctxHide(); it.run(); };
       m.appendChild(sb);
+    });
+    // WEIGH (18 Oct 2026): on a claim in an account set, or in a set that cannot all hold.
+    weighMenu(n).forEach(function(it){
+      var wb = document.createElement("button");
+      wb.type = "button"; wb.textContent = it.label; wb.title = it.hint;
+      wb.setAttribute("data-weigh-menu", it.act);
+      wb.onclick = function(){ ctxHide(); it.run(); };
+      m.appendChild(wb);
     });
   }
   // THE KEY, from the moment of puzzlement: somebody staring at a border, a coloured line or

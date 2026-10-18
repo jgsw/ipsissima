@@ -93,6 +93,41 @@ Feedback should come fast, and reflection should follow.
   association and said not to be computed; the README says so plainly. Each lesson is held by
   `test_mechanism_view.mjs`.
 
+## The third round: the table as the next form (18 Oct)
+
+After the follow-up to the Mechanism think piece ("Think piece follow-up — structures to do things
+with", kept with the think piece outside the repository), which judged new structures by what a
+reader can do with them: a framed question the map answers, an answer worked out rather than read
+off, something the reader can change, a framing question left over, a move that transfers. The
+author accepted the table as the next form, and the order; ruled that accounts against evidence be
+both a panel and a fourth way into Study; asked for the process-tracing tests in words that serve a
+cause and a reason alike, since readers "will probably not be aware of the terminology"; and gave
+the go to the two small items and to "nothing to draw".
+
+- **Weigh the accounts** (`src/argdown-accounts.js`, the page's `#weigh`). The text's account and
+  each rival it reports (`#reported`, `#contested`) that is set against it, with the reasons the map
+  gives for or against each as rows. A row tells them apart where it bears on two accounts
+  differently, bears on both alike, or on one only — where the text says nothing of what the other
+  would make of it. From a claim's right-click menu or What if…?, and as the fourth way into Study
+  (lean first, guess, Show, reflect on a blank cell, ask again at the end). **Test?** asks two
+  questions and names the answer: a pointer, a test to pass, a clincher, decisive (Van Evera's straw
+  in the wind, hoop, smoking gun, doubly decisive, as Collier 2011 sets them out). The reader's
+  reading; the panel adds what the map records.
+- **These cannot all hold.** `inconsistent: <name>` on each claim of a set the text says cannot all
+  hold (carried by `toGraph`, known to the checker, documented in the MCP's reference), and every
+  contradictory or contrary pair: which would you give up, guessed, then what giving up each costs.
+- **What the starting states do.** For a chain with two to four starting states, every combination
+  walked (`conditionsTable`): what each outcome needs (any one, two together, one it cannot do
+  without), with the whole table on request; each start can be switched off as a supposition.
+- **Suppose an actor does nothing** (`actorOff`), on a state's menu where two actors or more carry the
+  chain: what the actor alone carries stops; a state it shares is named and left standing.
+- **Nothing to draw** (`plainChain`). A chain that is one short line, within one level, opens in
+  words (what it comes to end to end stays the panel's question); **Draw it**, or any supposition, draws it. Fourteen of the
+  corpus's 231 chains open so on 18 Oct.
+
+Not built: the `cases:` block (typology, definition and counterexample, comparison of cases), which
+waits until these tables have been used.
+
 ## Not built, and why
 
 - **Conditioning** — what selecting on a state (a collider, above all) does to the associations

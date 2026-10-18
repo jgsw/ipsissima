@@ -778,9 +778,28 @@ the text, never verdicts on it. Where nothing follows, the panel says so: the dr
 the text. The chain's counts, gaps, loops and legend are under **About this chain**, at the foot of
 the panel.
 
+**Nothing to draw.** A chain that is one short line — each state led to by one step and leading on
+by one, no loop, no branch, no second route — is set out in words first: its steps in order (what they come to end to end is the panel's question,
+to guess before you look). A drawing would only repeat them. **Draw it** draws it, and so does
+supposing anything of it. A line that crosses levels is drawn as usual: the bands say something the
+words do not.
+
+**What the starting states do.** Where a chain starts from two to four states, the panel lists them,
+each with a tick: untick one to suppose it does not happen (the same supposition as the right-click,
+in the same banner). Then ask what each outcome needs of them — any one alone, two together, or one
+it cannot do without — and press **Show** for what the text's steps say, with **Every combination**
+for the whole table. A tick under a starting state means it happens; under an outcome, that the
+text's steps still lead to it. The steps raise and lower things: a row says the steps still lead
+somewhere, not that it happens. Where every outcome is reached from any one start, the panel says so
+in a line.
+
 **Supposing.** **Right-click a state** (or select it, or press the context-menu key on it) for
 **Suppose this does not happen**, and, where the state blocks or moderates a step, **Suppose this
-holds**; right-click an arrow for **Suppose this step does not run**. The chart then fades every
+holds**; right-click an arrow for **Suppose this step does not run**. Where two actors or more
+carry the chain, a state's menu also offers **Suppose “…” does nothing** for each of its actors: every
+state that actor alone carries does not happen, and every step the text says it takes does not run.
+A state it carries with others is left standing, and the panel says so: whether it happens without
+them, the text does not say. The chart then fades every
 state and step the text's steps no longer bring about, and the panel says what changed: an outcome
 no longer reached, a direction turned, a loop broken. Supposing that a blocker holds can withdraw an
 outcome: adding a fact takes a conclusion away. Suppositions combine, survive a change of chain or
@@ -944,6 +963,32 @@ the marks show only where you and it part. **Done** takes the marks away and kee
 supposition. The choice is remembered; in Study it is always on. Opening another file starts
 afresh: every supposition, and any guess in progress, goes with the map it was made on.
 
+**Weigh the accounts.** Where the text reports a rival account and sets it against one of its own,
+**right-click** either (or use **What if…?**) and choose **Weigh the accounts**. A panel lists the
+accounts — **A** the text's own, **B** the rival — and the reasons the map gives for or against
+each, one row a reason. A row **tells them apart** where it bears on two accounts differently (for
+one, against the other); it **bears on both alike** where it bears the same way on each; and **on
+one only** where the text says nothing of what the other account would make of it. That blank is
+the question to ask: what would the rival say about this reason? With **Guess first** on, the cells
+are hidden until you have marked the rows you think tell the accounts apart. **Suppose false** on a
+row is an ordinary supposition. **Test?** asks what kind of test a reason is, in two questions —
+*if it were not so, would the account be in trouble?* and *if it is so, is the rival ruled out?* —
+and names your answer: **a pointer** (neither: it leans one way), **a test to pass** (the account
+needs it, but it does not rule the rival out), **a clincher** (it rules the rival out, but the
+account could do without it), or **decisive** (both). Process tracers know these as straw in the
+wind, the hoop test, the smoking gun and the doubly decisive test (Van Evera; Collier 2011). The
+answer is your reading; beside it, the panel says what the map records: whether the account keeps
+other support without the reason, and whether the reason is recorded against the rival. Which
+account is better, the panel never says.
+
+**These cannot all hold.** Where the map marks claims that cannot all be true together — a trilemma,
+a dilemma, a trade-off — or draws two claims as contradicting each other, the menu on any of them
+offers **These cannot all hold: which would you give up?** Guess which one you could give up at the
+least cost to the rest of the argument, then **Show**: what giving up each would cost (how many
+claims lose the map's support, and main claims among them), and the least. **Give it up** supposes
+it false. Which should go is yours to judge. (A reconstruction marks such a set by giving each claim
+the same `inconsistent:` name.)
+
 **Deny the conclusion.** Where you deny a claim the map supports, the panel walks back through
 each argument for it to the premises it rests on: for the claim to be false, every reason for it
 must fail. Mark the premises you **keep**. Where every step claims to be deductive (it names a rule
@@ -984,6 +1029,11 @@ answering — the map's own, where it names one — and what you already think a
   argument is most exposed, never which claim is false. Where no single claim takes a main claim's
   support, the card says so: each rests on more than one line of reasons. It is offered again when
   either other way ends.
+- **Weigh the accounts**, where the text sets its account against a rival it reports: say which you
+  lean to before you look, then guess, in the panel, which reasons tell the accounts apart, and
+  **Show**. The card then asks what an account would make of a reason the text leaves blank for it,
+  invites you to suppose a reason false or ask what kind of test it is, and ends by asking whether
+  your first leaning survived. The map never says which account is better.
 
 **Study from here**, in a claim's right-click menu, works through only the arguments beneath that
 claim, on your own: the way to take one part of a long map at a sitting.

@@ -219,6 +219,9 @@ function liveMapDeps() {
          // The reader's suppositions in Reasons, and contraposition (17 Oct 2026): pure, read off
          // the graph, after the validity checker whose decision procedure it borrows.
          wrap("argdown-suppose.js", readScript("argdown-suppose.js"), "LIVEMAP_DEPS") +
+         // Accounts against evidence, and sets that cannot all hold (18 Oct 2026): pure, read off
+         // the graph; the page asks argdown-suppose.js what each costs.
+         wrap("argdown-accounts.js", readScript("argdown-accounts.js"), "LIVEMAP_DEPS") +
          wrap("argdown-host.js", readScript("argdown-host.js"), "LIVEMAP_DEPS") +
          markdownBundle();
 }

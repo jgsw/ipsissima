@@ -1,0 +1,33 @@
+// Planted fixture for app/test_suppose.mjs (18 Oct 2026), in the fixture-maker's own words. Three claims
+// the text says cannot all hold, marked `inconsistent:`, each costing the rest something different:
+// giving up the first takes a main claim's only support; the second, a claim and the main claim it
+// holds up; the third, nothing, since what it supports has another reason.
+===
+title: "Planted -- a trilemma"
+reconstruction:
+    generated: true
+===
+
+[Keep the levy]: The levy should stay.
+
+[The levy is high]: The levy is set high enough to change what people buy.
+    {inconsistent: "the levy trilemma"}
+    +> [Keep the levy]
+
+[Voters accept it]: Voters will accept the levy.
+
+[It is fair]: The levy is fair.
+    +> [Voters accept it]
+
+[The poor are spared]: The levy costs poorer households little.
+    {inconsistent: "the levy trilemma"}
+    +> [It is fair]
+
+[Services gain]: Public services gain from the levy.
+
+[The yield is large]: The levy raises a great deal of money.
+    {inconsistent: "the levy trilemma"}
+    +> [Services gain]
+
+[Growth helps services]: Growth will pay for the services anyway.
+    +> [Services gain]

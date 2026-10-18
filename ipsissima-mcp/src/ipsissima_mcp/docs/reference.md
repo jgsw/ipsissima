@@ -210,6 +210,27 @@ referenced before it is defined — which silently unplaced several well-connect
 book map, `iteration` (7 edges, `#core`) among them, and made them look like reconstruction gaps
 when the metadata was there all along. VERIFIED.
 
+### A set that cannot all hold
+
+Where the text says that several claims cannot all be true together — a trilemma, a dilemma, an
+aporia, a trade-off it names — give each claim the same `inconsistent:` name:
+
+```argdown
+[The levy is high]: The levy is set high enough to change what people buy.
+    {inconsistent: "the levy trilemma"}
+[The poor are spared]: The levy costs poorer households little.
+    {inconsistent: "the levy trilemma"}
+[The yield is large]: The levy raises a great deal of money.
+    {inconsistent: "the levy trilemma"}
+```
+
+A claim in more than one such set takes a list of names. Mark only a set the text itself says cannot
+all hold, never one the reconstruction finds: the mark is the text's claim, and the reader is then
+asked which they would give up, and shown what giving up each would cost the rest of the argument.
+Two claims that contradict each other need no mark: draw the contradiction (`><`), and the page
+treats the pair as a set of two. Each claim must be on the map (related to something), as any claim
+must be to be drawn.
+
 ---
 
 ## The project file — optional

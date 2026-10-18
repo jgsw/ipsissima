@@ -21,6 +21,12 @@ const S = require("./src/argdown-suppose.js");
 const PLANTED = path.join(REPO, "fixtures", "suppose", "planted.argdown");
 const MOOREAN = path.join(REPO, "fixtures", "suppose", "moorean.argdown");
 const SEVERAL = path.join(REPO, "fixtures", "suppose", "several.argdown");
+const ACCOUNTS = path.join(REPO, "fixtures", "suppose", "accounts.argdown");
+const TRILEMMA = path.join(REPO, "fixtures", "suppose", "trilemma.argdown");
+const ACTORS = path.join(REPO, "fixtures", "suppose", "actors.argdown");
+const TEACHING = path.join(REPO, "teaching", "causal-junctions.argdown");
+const A = require("./src/argdown-accounts.js");
+const MV = require("./src/argdown-mechanism.js");
 
 let fails = 0, checks = 0;
 function check(ok, what, detail) {
@@ -114,6 +120,52 @@ check(same(D.reasons[0].forced.map(x => x.title), ["Here are two hands"]), "deny
 r = S.suppose(m, { holds: [mid("Knowledge without proof")] });
 check(r.denied.includes(mid("No proof, no knowledge")) && r.lost.includes(mid("The proof proves nothing")),
       "suppose Moore's answer holds: the sceptic's premise is denied, and the sceptic's conclusion loses its support");
+
+/* THE TABLE AS THE NEXT FORM (James's go, 18 Oct 2026; the think piece's follow-up, "structures to do
+ * things with"): accounts against evidence, sets that cannot all hold, and in the Mechanism view what
+ * the starting states do, who carries the chain, and a chain with nothing to draw. */
+console.log("\naccounts against evidence, and what cannot all hold");
+{
+  const ga = graphOf(ACCOUNTS);
+  const sets = A.accountSets(ga);
+  // Mutation: let a reason that attacks the rival pair with it as an account -> three sets.
+  check(sets.length === 1 && same(sets[0].accounts.map(x => x.label), ["Price explains the fall", "Habit explains the fall"]),
+        "the text's account and the rival it reports make one set; a reason against the rival is a row, not an account", JSON.stringify(sets.map(x => x.accounts.map(y => y.label))));
+  const kind = l => (sets[0].rows.find(x => x.label === l) || {}).kind;
+  // Mutation: count any reason bearing on two accounts as telling them apart -> "alike" becomes "apart".
+  check(kind("Sales fell where prices rose") === "apart" && kind("Sales fell after the levy") === "alike" &&
+        kind("A trial found prices rose") === "one" && kind("Surveys show no change of taste") === "one",
+        "a row tells the accounts apart only where it bears on two differently; alike where the same; one only where the text is silent on the other",
+        JSON.stringify(sets[0].rows.map(x => [x.label, x.kind])));
+  const gt = graphOf(TRILEMMA);
+  const inc = A.inconsistentSets(gt);
+  // Mutation: drop `inconsistentOf` from toGraph -> no set.
+  check(inc.length === 1 && inc[0].name === "the levy trilemma" && inc[0].members.length === 3,
+        "claims marked `inconsistent:` with one name make one set that cannot all hold", JSON.stringify(inc));
+  const pairs = A.inconsistentSets(g).filter(x => !x.declared);
+  check(pairs.length >= 1 && pairs.every(x => x.members.length === 2), "a contradictory pair the map draws is a set of two, without any mark");
+}
+console.log("\nthe Mechanism view: nothing to draw, the starting states, who carries the chain");
+{
+  const MJ = MV.model(graphOf(TEACHING));
+  const chain = id => MV.chainModel(MJ, id);
+  // Mutation: let `plainChain` refuse any chain with a finding -> the line's own composed route stops it.
+  check(!!MV.plainChain(chain("mediation"), MV.follows(chain("mediation"))), "a chain that is one short line is set out in words");
+  check(!MV.plainChain(chain("joint"), MV.follows(chain("joint"))) && !MV.plainChain(chain("fork"), MV.follows(chain("fork"))),
+        "a joint cause or a fork is not a line, and is drawn");
+  const J = MV.conditionsTable(chain("joint")), C = MV.conditionsTable(chain("collider"));
+  // Mutation: keep every sufficient set, not the least -> spark+oxygen and more; or drop `jointly` from the starts -> null.
+  check(J && same(J.needs.fire.sets, [["spark", "oxygen"]]) && !J.trivial, "the joint cause: the fire needs the spark and oxygen together", JSON.stringify(J && J.needs));
+  check(C && C.trivial && same(C.needs.fame.sets, [["talent"], ["looks"]]), "the collider: either cause alone brings fame, and the table says so in a line");
+  const MA = MV.model(graphOf(ACTORS));
+  const ax = MV.actorOff(MA, ["heads"]);
+  // Mutation: fail a state any of whose actors is idle -> the shared agreement fails too.
+  check(same(ax.fail.sort(), ["hire", "smaller"]) && same(ax.shared, ["deal"]),
+        "an actor doing nothing stops what it alone carries, and leaves a state it shares standing", JSON.stringify(ax));
+  check(MV.suppose(MA, { fail: ax.fail }).lost.includes("smaller"), "and the outcome it carries is no longer brought about");
+  check(same(MV.chainActors(MA).sort(), ["heads", "ministry", "unions"]) && MV.chainActors(MJ).length === 0,
+        "the actor supposition is offered only where two actors or more carry the chain");
+}
 
 /* ------------------------------------------------------------ the page, under real clicks */
 let chromium = null;
@@ -386,6 +438,101 @@ if (chromium) {
           "opening another file clears every supposition and any guess in progress", "marks before: " + midGuess);
     await box("Moore's proof").click({ button: "right" });
     await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
+
+    // WEIGH THE ACCOUNTS, A PANEL AND A FOURTH WAY INTO STUDY (James, 18 Oct 2026).
+    const build = (src, name) => { const out = path.join(tmp, name); execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), src, "-o", out], { stdio: "pipe" }); return out; };
+    await page.goto("file://" + build(ACCOUNTS, "accounts.html"));
+    await page.waitForTimeout(800);
+    // Mutation: drop weighMenu from ctxShow -> the item is not offered.
+    await box("Price explains the fall").click({ button: "right" });
+    check(await page.locator('#ctx [data-weigh-menu="weigh"]').count() === 1, "right-click on an account offers Weigh the accounts");
+    await page.locator('#ctx [data-weigh-menu="weigh"]').click();
+    await page.waitForTimeout(200);
+    if (await page.locator("#weigh [data-weigh-show]").count()) { await page.locator("#weigh [data-weigh-show]").click(); await page.waitForTimeout(150); }
+    const wt = await page.locator("#weigh").innerText();
+    check(/1 of the 4 reasons tells the accounts apart/.test(wt) && /In 2 rows the text says nothing about one account/.test(wt),
+          "the panel says which reasons tell the accounts apart, and where the text is silent on one", wt.slice(0, 300));
+    const row = await page.evaluate(() => [...document.querySelectorAll("#weigh tr[data-weigh-row]")].find(r => /where prices rose/.test(r.textContent)).getAttribute("data-weigh-row"));
+    await page.locator(`#weigh [data-weigh-test="${row}"]`).click();
+    await page.locator('#weigh [data-weigh-answer="needed:no"]').click();
+    await page.locator('#weigh [data-weigh-answer="enough:yes"]').click();
+    await page.waitForTimeout(100);
+    const tv = await page.locator("#weigh .verdict").last().innerText();
+    // Mutation: swap the two questions in the naming -> "a test to pass".
+    check(/On your reading, a clincher/.test(tv) && /recorded against ‹Habit explains the fall›/.test(tv),
+          "What kind of test? names the reader's reading in plain words, beside what the map records", tv);
+    await page.locator(`#weigh [data-weigh-false="${row}"]`).click();
+    await page.waitForTimeout(250);
+    check(/Sales fell where prices rose› is false/.test(await page.locator("#suppbar").innerText()), "Suppose false from a row is an ordinary supposition, in the banner");
+    await page.locator("#suppbar [data-supp-clear]").click();
+    await page.locator("#weigh [data-weigh-close]").click();
+    await page.waitForTimeout(150);
+    await page.locator('#map [data-act="study"]').click();
+    await page.waitForTimeout(250);
+    // Mutation: drop the fourth button from studyOpening -> it is missing.
+    check(await page.locator('#studybody [data-study="accounts"]').count() === 1, "Study offers Weigh the accounts as a fourth way in, where the map has accounts");
+    await page.locator('#studybody [data-study="accounts"]').click();
+    await page.locator('#studybody [data-study="acc-lean:1"]').click();
+    await page.waitForTimeout(250);
+    check(await page.locator("#weigh [data-weigh-show]").count() === 1 && /·/.test(await page.locator("#weigh table").innerText()),
+          "after the reader leans one way, the panel opens with its cells hidden, for a guess first");
+    await page.locator("#weigh tr[data-weigh-row]").filter({ hasText: "where prices rose" }).click();
+    await page.locator("#weigh [data-weigh-show]").click();
+    await page.waitForTimeout(150);
+    check(/You marked 1; 1 of them does/.test(await page.locator("#weigh .verdict").first().innerText()) &&
+          /blank for one account/.test(await page.locator("#studybody").innerText()), "Show sets the guess beside the map's answer, and the card moves on to the blank cells");
+    await page.locator('#studybody [data-study="acc-done"]').click();
+    check(/At the start you leaned to B/.test(await page.locator("#studybody").innerText()), "and closes by asking whether the first leaning survived");
+    await page.locator('#studybody [data-study="end"]').click();
+    await page.waitForTimeout(100);
+    check(await page.locator("#weigh").isHidden(), "ending Study closes the panel it opened");
+
+    // WHICH WOULD YOU GIVE UP?
+    await page.goto("file://" + build(TRILEMMA, "trilemma.html"));
+    await page.waitForTimeout(800);
+    await box("The levy is high").click();
+    await page.waitForTimeout(150);
+    await page.locator("#whatif").click();
+    await page.locator("#ctx button", { hasText: "cannot all hold" }).click();
+    await page.waitForTimeout(200);
+    if (await page.locator("#weigh [data-weigh-show]").count()) { await page.locator("#weigh [data-weigh-show]").click(); await page.waitForTimeout(150); }
+    const gv = await page.locator("#weigh").innerText();
+    // Mutation: sort by claims lost before main claims -> still the yield; sort descending -> the levy.
+    check(/Least costly to give up, by the map: ‹The yield is large›/.test(gv) && /2 claims lose support, 1 main/.test(gv),
+          "a set that cannot all hold, from What if…?: what giving up each costs, and the least", gv.slice(0, 300));
+
+    // THE MECHANISM VIEW.
+    await page.goto("file://" + build(TEACHING, "teaching.html"));
+    await page.waitForTimeout(800);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(300);
+    await page.locator("#mech select[data-chain]").selectOption("mediation");
+    await page.waitForTimeout(250);
+    // Mutation: drop `stage.hidden = true` -> the chart is drawn as well.
+    check(await page.locator(".amech-words").isVisible() && await page.locator("#mech .amech-stage").isHidden() &&
+          /raises “Lung cancer”/.test(await page.locator(".amech-words").innerText()), "a chain that is one short line opens in words, step by step");
+    await page.locator("[data-draw-line]").click();
+    await page.waitForTimeout(250);
+    check(await page.locator(".amech-words").count() === 0 && await page.locator("#mech .amech-stage").isVisible(), "Draw it draws it");
+    await page.locator("#mech select[data-chain]").selectOption("joint");
+    await page.waitForTimeout(250);
+    await page.locator("[data-cond-show]").click();
+    await page.waitForTimeout(150);
+    check(/needs “A spark” and “Oxygen is present”, together/.test(await page.locator(".amech-side").innerText()), "the panel says what the outcome needs of the starting states");
+    await page.locator('[data-cond-start="oxygen"]').click();
+    await page.waitForTimeout(250);
+    check(/Oxygen is present” does not happen/.test(await page.locator("#suppbar").innerText()), "switching a start off is a supposition, in the one banner");
+    await page.locator("#suppbar [data-supp-clear]").click();
+    await page.goto("file://" + build(ACTORS, "actors.html"));
+    await page.waitForTimeout(800);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(300);
+    await page.locator('#mech .st[data-state="hire"]').click({ button: "right" });
+    await page.locator('#ctx [data-supp-menu="actor"]').click();
+    await page.waitForTimeout(250);
+    const aside = await page.locator(".amech-side").innerText();
+    check(/Head teachers” does nothing/.test(await page.locator("#suppbar").innerText()) && /Classes are smaller” is no longer brought about/.test(aside) &&
+          /staffing agreement” is carried with others too/.test(aside), "suppose an actor does nothing: what it alone carries stops, a shared state stands and is named", aside.slice(0, 300));
 
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {

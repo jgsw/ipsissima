@@ -1,0 +1,31 @@
+// Planted fixture for app/test_suppose.mjs (18 Oct 2026), in the fixture-maker's own words. Three
+// actors carry a chain, one state is carried by two of them, and the outcome needs two starting
+// states together: so "suppose this actor does nothing" stops what that actor alone carries and
+// leaves the shared state standing, and "what the starting states do" finds a conjunction.
+===
+title: "Planted -- who carries the chain"
+reconstruction:
+    generated: true
+mechanism:
+    question: "What brings smaller classes about?"
+    levels: [system, school]
+    actors:
+        ministry: {label: "The ministry", level: system}
+        heads:    {label: "Head teachers", level: school}
+        unions:   {label: "The unions", level: school}
+    states:
+        money:    {label: "The ministry funds more posts", actor: ministry, role: condition}
+        deal:     {label: "A staffing agreement", actor: [heads, unions], role: condition}
+        hire:     {label: "Schools hire teachers", actor: heads}
+        smaller:  {label: "Classes are smaller", actor: heads, role: outcome}
+===
+
+[Classes will shrink]: Classes will become smaller.
+
+[Funded posts get filled]: Where the ministry funds posts and a staffing agreement is in place, schools hire.
+    {fidelity: "compression", causes: {from: money, to: hire, sign: "+", basis: asserted, jointly: [deal]}}
+    +> [Classes will shrink]
+
+[Hiring shrinks classes]: More teachers make classes smaller.
+    {fidelity: "compression", causes: {from: hire, to: smaller, sign: "+", basis: asserted}}
+    +> [Classes will shrink]

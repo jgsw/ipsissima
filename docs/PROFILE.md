@@ -124,6 +124,7 @@ On any claim or argument, in its `{data}` block:
 | `causes` | map, or list of maps | The causal step or steps the claim states: §5. |
 | `mechanism` | a chain id, or `true` | The claim states a declared chain as a whole and stands for it in the argument, as one node: §5, *A chain as one node* (*added in 1.20*). |
 | `question` | `{id, move, into}`, or a list | What the claim does to a declared question. `move` is `answers`, `reframes`, `splits` or `dissolves`; `into` names the question(s) that take its place, and a reframing or a split needs one. The census lists each question with the moves on it, and the page lists them from a pill in the orientation strip (*added in 1.17*). |
+| `inconsistent` | string, or a list | The claim is one of a set the **text says cannot all hold** — a trilemma, a dilemma, a trade-off it names — and every member carries the same name. Only a set the text itself states, never one the reconstruction finds. The Reasons view asks which the reader would give up, and shows what giving up each would cost the rest of the argument; a contradictory pair (`><`) needs no mark (*added 18 October 2026*). |
 
 ### The fidelity ladder
 

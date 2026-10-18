@@ -1,0 +1,30 @@
+// Planted fixture for app/test_suppose.mjs (18 Oct 2026), in the fixture-maker's own words. The text's
+// account of a fall in sales is set against a rival it reports, with four reasons: one tells them apart
+// (for the one, against the other), one bears on both alike, and two bear on one account only.
+===
+title: "Planted -- two accounts of a fall in sales"
+reconstruction:
+    generated: true
+===
+
+[The levy worked]: The levy cut sugary drink sales.
+
+[Price explains the fall]: Sales fell because the levy made the drinks dearer.
+    +> [The levy worked]
+
+[Habit explains the fall]: Sales fell because tastes were already turning away from sugar. #reported
+    - [Price explains the fall]
+
+[Sales fell after the levy]: Sales fell in the year after the levy came in.
+    +> [Price explains the fall]
+    +> [Habit explains the fall]
+
+[Sales fell where prices rose]: Sales fell only in the shops where prices actually rose.
+    +> [Price explains the fall]
+    -> [Habit explains the fall]
+
+[A trial found prices rose]: A trial found that shelf prices rose after the levy.
+    +> [Price explains the fall]
+
+[Surveys show no change of taste]: Surveys show no change in what shoppers say they like.
+    -> [Habit explains the fall]

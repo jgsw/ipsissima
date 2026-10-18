@@ -47,7 +47,8 @@
     "causes": {"type": "map or list of maps", "summary": "The causal step(s) the claim states.", "keys": "causes"},
     "question": {"type": "{id, move, into} or a list of them", "values": ["answers", "reframes", "splits", "dissolves"], "summary": "What the claim does to a declared question: answers it; reframes it, or splits it, `into` the question(s) that take its place; or dissolves it, showing it has no answer to give. A reframing is a move on a question, not a reason (since 1.17)."},
     "mechanism": {"type": "a chain id, or true", "summary": "The claim states a declared chain as a whole -- the account the text gives -- and stands for it in the argument: supported as one account, attacked by a rival, a premise of a bridge, where its steps count as the premise's. `true` stands for the whole mechanism of a map with no chains (since 1.20)."},
-    "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"}
+    "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"},
+    "inconsistent": {"type": "string or list", "summary": "The claim is one of a set the text says cannot all hold (a trilemma, a dilemma, a trade-off): every member carries the same name. The reader is asked which they would give up, and shown what each would cost (since 18 Oct 2026)."}
   },
 
   "pcs_data": {

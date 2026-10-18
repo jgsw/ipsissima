@@ -606,6 +606,22 @@ export function toGraph(res) {
     return d && typeof d.warrant === "string" && d.warrant.trim() ? d.warrant.trim() : null;
   };
 
+  /* A JOINTLY INCONSISTENT SET (18 Oct 2026): `inconsistent: <name>` (or a list of names) on each claim
+   * of a set the text says cannot all hold -- a trilemma, an aporia, a trade-off. Carried only where
+   * set, so no other node changes shape; read by the page's "which would you give up?". */
+  const inconsistentOf = title => {
+    const rec = (res.statements && res.statements[title]);
+    const names = [];
+    const take = d => {
+      const v = d && d.inconsistent;
+      (Array.isArray(v) ? v : v == null ? [] : [v]).forEach(x => {
+        const t = String(x).trim(); if (t && !names.includes(t)) names.push(t); });
+    };
+    for (const m of (rec && rec.members) || []) take(m.data);
+    take(rec && rec.data);
+    return names.length ? { inconsistent: names } : {};
+  };
+
   const fidelityOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -768,6 +784,7 @@ export function toGraph(res) {
           color: n.color || null,
           fidelity: fidelityOf(n.title),
           warrant: warrantOf(n.title),
+          ...inconsistentOf(n.title),
           ...marginOf(n.title),
           docLine: lineOf(n.title),
           ...provenanceOf(n.title),

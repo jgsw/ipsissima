@@ -518,7 +518,7 @@ PROFILE_VERSION = _profile_version()
 #: premise-conclusion lines;
 #: `isGroup` on headings.
 EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes",
-                   "question", "mechanism")
+                   "question", "mechanism", "inconsistent")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
