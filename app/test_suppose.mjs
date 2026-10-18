@@ -131,6 +131,10 @@ if (chromium) {
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), MOOREAN, "-o", mhtml], { stdio: "pipe" });
   const shtml = path.join(tmp, "several.html");
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), SEVERAL, "-o", shtml], { stdio: "pipe" });
+  // The Reader is built here, not taken from the repository root: that copy is gitignored, so
+  // CI has none, and a local one may be older than the code under test.
+  const reader = path.join(tmp, "reader.html");
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), "--standalone", "-o", reader], { stdio: "pipe" });
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
@@ -368,7 +372,7 @@ if (chromium) {
     };
     // The Reader offers its tour to a first-time reader: marked seen, as for a returning one.
     await page.addInitScript(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) {} });
-    await page.goto("file://" + path.join(REPO, "Ipsissima Reader.html"));
+    await page.goto("file://" + reader);
     await page.waitForTimeout(800);
     await dropFile(PLANTED);
     await box("Main").click({ button: "right" });
