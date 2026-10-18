@@ -32,10 +32,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Pandoc, and librsvg for the export checks
+      - name: Pandoc, librsvg for the export checks, and a word list for collation
         # librsvg is deliberately NOT the engine that writes the SVG. An export checked only by
-        # the browser that produced it passed while being malformed XML.
-        run: sudo apt-get update && sudo apt-get install -y pandoc librsvg2-bin
+        # the browser that produced it passed while being malformed XML. wamerican gives the
+        # runner the /usr/share/dict/words that macOS has, so the collation lexicon's word-list
+        # test runs here too rather than skipping.
+        run: sudo apt-get update && sudo apt-get install -y pandoc librsvg2-bin wamerican
 
       - name: Install
         run: |

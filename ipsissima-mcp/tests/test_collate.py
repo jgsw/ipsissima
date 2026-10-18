@@ -64,6 +64,10 @@ check("small capitals half read are damage", lex.bad(T("ANaLysis")) >= 2, True)
 
 # ---- the vote ------------------------------------------------------------------------ #
 print("the vote")
+# Where the platform has no word list (GitHub's Ubuntu runners), the lexicon is what the
+# witnesses agree on over a whole document, as collate() builds it. These tests give it that
+# document's vocabulary, so they decide alike with a word list and without one.
+doc = c.Lexicon(["gettier"] + "the stated in first case are true".split())
 check("two witnesses against one is a majority",
       c.decide({"C": T("tbe"), "A": T("the"), "B": T("the")}, lex)[:2], ("A", "majority"))
 if c.system_words():
@@ -74,7 +78,7 @@ else:
 check("spacing alone is settled by the cleaner spacing",
       c.decide({"C": T("1Plato"), "B": T("1 Plato")}, lex)[:2], ("B", "spacing"))
 check("absence is not a reading: a clean clause beats two letters",
-      c.decide({"C": T("stated in the first case are true"), "B": T("st")}, lex)[:2],
+      c.decide({"C": T("stated in the first case are true"), "B": T("st")}, doc)[:2],
       ("C", "absence"))
 check("two clean words that differ are a dispute",
       c.decide({"C": T("form"), "B": T("from")}, lex)[1], "dispute")
@@ -83,7 +87,7 @@ check("two clean words that differ are a dispute",
 C = T("Smith has strong evidence for tbe proposition that Jones owns a Ford and form a view")
 B = T("Smith has strong evidence for the proposition that Jones owns a Ford and from a view")
 wit = c.Witness("B", B, [i if C[i] == B[i] else -1 for i in range(len(C))])
-events, wins = c.vote(C, [wit], lex, ident=lambda s: f"x.{s}")
+events, wins = c.vote(C, [wit], doc, ident=lambda s: f"x.{s}")
 check("two regions found", len(events), 2)
 check("  the misread word goes to the layer by the lexicon",
       (events[0]["chose"], events[0]["why"]), ("B", "lexicon"))
