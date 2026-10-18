@@ -439,16 +439,19 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     let (att_key, made) = match existing.clone() {
         Some((k, _)) => (k, false),
         None => {
-            let body = serde_json::json!([{
-                "itemType": "attachment", "linkMode": "imported_file",
-                "parentItem": parent, "title": filename,
-                "filename": filename, "contentType": "text/plain", "charset": "utf-8"}]);
+            let body = [ZoteroAttachment::new(&parent, &filename)];
             let r = zwrite!(http.post(format!("{base}/api/users/0/items")).json(&body));
             if !r.status().is_success() {
                 return Err(format!("Zotero declined the attachment write ({}).",
                                    r.status()));
             }
             let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
+            // A refusal comes back as 200 with the reason under `failed`: say it, rather
+            // than reporting only that no key came back (seen 18 Oct).
+            if let Some(why) = v["failed"]["0"]["message"].as_str() {
+                return Err(format!("Zotero refused to create the attachment: {why}. \
+                                    Nothing was written."));
+            }
             let k = v["success"]["0"].as_str()
                 .or_else(|| v["successful"]["0"]["key"].as_str())
                 .ok_or("Zotero accepted the attachment but did not say what it stored it as.")?
@@ -511,6 +514,40 @@ async fn zotero_store_bundle(key: String, filename: String, bundle: String)
     Ok(format!("{} {filename} under the item its source belongs to. The copy travels \
                 with Zotero's own sync from here; nothing else was contacted.",
                if made { "Stored" } else { "Refreshed" }))
+}
+
+/// The bundle's attachment item, as Zotero's local API wants it created.
+///
+/// A STRUCT, NOT `json!`, FOR THE SAME REASON AS `ZoteroHighlight` BELOW. Zotero sets an
+/// item's fields in the order they arrive, and refuses an attachment's file fields before
+/// its link mode ("Link mode must be set before setting attachment path", 400, inside a 200
+/// reply). `json!` sorted `charset`, `contentType` and `filename` ahead of `itemType` and
+/// `linkMode`, so every first store was refused (18 Oct) while a refresh of an attachment
+/// the MCP had made still worked. Declaration order is the guarantee; the test holds it.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ZoteroAttachment<'a> {
+    item_type: &'static str,
+    link_mode: &'static str,
+    parent_item: &'a str,
+    title: &'a str,
+    filename: &'a str,
+    content_type: &'static str,
+    charset: &'static str,
+}
+
+impl<'a> ZoteroAttachment<'a> {
+    fn new(parent: &'a str, filename: &'a str) -> Self {
+        ZoteroAttachment {
+            item_type: "attachment",
+            link_mode: "imported_file",
+            parent_item: parent,
+            title: filename,
+            filename,
+            content_type: "text/plain",
+            charset: "utf-8",
+        }
+    }
 }
 
 /// One highlight, as Zotero's local API wants it written.
@@ -604,6 +641,18 @@ mod zotero_highlight_order {
         assert!(wire.contains(r#"\"pageIndex\":21"#), "{wire}");
     }
 
+    /// The attachment: item type, then link mode, before any field about the file.
+    #[test]
+    fn link_mode_precedes_the_file_fields() {
+        let a = super::ZoteroAttachment::new("ABCD1234", "nagel-1970-death.argdown");
+        let wire = serde_json::to_string(&[a]).unwrap();
+        let ks = keys(&wire);
+        assert_eq!(&ks[..2], &["itemType", "linkMode"], "{wire}");
+        for f in ["filename", "contentType", "charset", "title", "parentItem"] {
+            assert!(ks.iter().position(|k| k == f).unwrap() > 1, "{f} too early in {wire}");
+        }
+    }
+
     /// The instrument shown able to fail: the same fields through `json!` come out sorted,
     /// and the check above would have caught exactly that.
     #[test]
@@ -677,9 +726,11 @@ async fn zotero_create_highlight(key: String, text: String, page_label: String,
             s if r.status().is_success() => {
                 let v: serde_json::Value = r.json().await.map_err(|e| e.to_string())?;
                 if !v["failed"].as_object().map(|m| m.is_empty()).unwrap_or(true) {
+                    // Zotero's own sentence where it gives one, the raw reply only if not.
+                    let why = v["failed"]["0"]["message"].as_str().map(String::from)
+                        .unwrap_or_else(|| v["failed"].to_string());
                     return Err(format!("Zotero rejected the highlight: {}",
-                                       v["failed"].to_string()
-                                        .chars().take(200).collect::<String>()));
+                                       why.chars().take(200).collect::<String>()));
                 }
                 let _ = s;
                 return Ok(format!("Highlighted in Zotero, on p. {page_label} of the PDF \
