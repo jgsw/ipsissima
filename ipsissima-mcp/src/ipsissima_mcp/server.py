@@ -351,7 +351,8 @@ probe or scratch files left beside them.
 )
 def extract_text(sources: list[str], out: str, grouping: str | None = None,
                  title: str | None = None, allow_ocr: bool = True,
-                 dry_run: bool = False) -> dict[str, Any]:
+                 dry_run: bool = False, collate: bool | None = None,
+                 witness: str | None = None) -> dict[str, Any]:
     """
     Args:
         sources: the files to convert (resolved paths from argdown_plan).
@@ -360,6 +361,8 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         title: title for the project file, when one is written.
         allow_ocr: allow OCR when a PDF's text layer looks damaged.
         dry_run: report what would happen and write nothing.
+        collate: read a scan's page images again and vote the reading against its text layer. Left unset, this happens when the layer looks damaged and tesseract is installed; true does it for any scan (an old OCR layer can be wrong without looking garbled); false never.
+        witness: another OCR text of the same work -- a .txt, or a saved HTML page such as archive.org's "Full text of" -- to vote with. One PDF source only.
     """
     from ipsissima_mcp import ingest, sources as srcmod
 
@@ -378,11 +381,23 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
                     why="chapters of one work belong in one map; separate articles belong in "
                         "separate maps, and nothing in the files settles which this is")
 
+    if witness:
+        pdfs = [f for f in files if Path(f).suffix.lower() == ".pdf"]
+        if len(pdfs) != 1:
+            return dict(ok=False, error=f"a witness belongs to one scan; {len(pdfs)} PDF(s) were "
+                                        f"given. Extract that one PDF on its own with the witness.")
+        if not Path(witness).expanduser().exists():
+            return dict(ok=False, error=f"no such witness file: {witness}")
+
     results, failures = [], []
     for p in files:
         try:
             extras = {}
-            md, notes = ingest.ingest_one(p, allow_ocr=allow_ocr, extras=extras)
+            is_pdf = Path(p).suffix.lower() == ".pdf"
+            md, notes = ingest.ingest_one(p, allow_ocr=allow_ocr, extras=extras,
+                                          collate=collate if is_pdf else None,
+                                          witness=str(Path(witness).expanduser())
+                                          if witness and is_pdf else None)
         except SystemExit as e:                    # ingest refuses tracked changes this way
             failures.append(dict(path=p, refused=str(e)))
             continue
@@ -467,12 +482,19 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
             d["extras"] = {k: v for k, v in d["extras"].items() if k != "geometry"}
         return d
 
+    # A COLLATION THAT LEFT DISPUTES IS NOT FINISHED. They are few and small, and settled before
+    # anything quotes the text they sit in.
+    disputed = [(r["src"], r["extras"]["collation"]["disputes"]) for r in results
+                if r.get("extras", {}).get("collation", {}).get("disputes")]
+    settle_first = "".join(
+        f"FIRST, {n} collation dispute(s) in {os.path.basename(src)}: call collation_disputes "
+        f"on that PDF, read the lines it shows, and settle_disputes. " for src, n in disputed)
     return dict(
         ok=True, dry_run=dry_run, grouping=grouping, out=str(out), written=written,
         sources=[_reply(r) for r in results],
         failures=failures, unreadable=unreadable, skipped=skipped,
         conventions=CONVENTIONS_DIGEST,
-        next=("nothing written (dry run)" if dry_run else
+        next=("nothing written (dry run)" if dry_run else settle_first +
               "the text is on disk at `written`; `head` is its first few lines and nothing more. "
               "OPEN THOSE FILES and reconstruct from them. If the paths do not resolve for you, "
               "this server is running on a different machine from you: say so and ask for the "
@@ -613,10 +635,12 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         return dict(ok=False, error=f"no such file: {p}")
 
     import pymupdf
+    from ipsissima_mcp import collate
     with pymupdf.open(str(p)) as doc:
         pages = doc.page_count
         meta = doc.metadata or {}
         head = "\n".join(doc[i].get_text() for i in range(min(3, pages)))
+        scanned = sum(1 for page in doc if collate.is_scanned(page))
 
     layer = ingest.plain_text(str(p))
     words = len(layer.split())
@@ -657,9 +681,24 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         note += (f"; {ligatures} typographic ligature(s) (fi, fl, ...) in the text layer -- "
                  f"extract_text will expand them to plain letters so quotations match")
 
+    # A SCAN IS READ AGAIN WHERE IT CAN BE. A damaged layer is collated automatically; a scan
+    # whose layer merely looks clean can be too, on request, and an old layer is often wrong
+    # without being garbled (the Gettier: `siftcient`, a half-line lost at the page edge, and
+    # "easy, 0 garbled").
+    can_collate = bool(scanned and collate.tesseract())
+    if scanned and difficulty == "easy" and can_collate:
+        note += (f"; {scanned} of {pages} sheet(s) are page images under an OCR layer -- "
+                 f"extract_text with collate=true reads them again and votes the readings, "
+                 f"which mends what an old layer got wrong without garbling it")
+    elif scanned and difficulty != "easy":
+        note += ("; extract_text will read the page images again and vote the readings "
+                 "against the layer (collation)" if can_collate else
+                 "; installing tesseract would let extract_text read the page images again "
+                 "and vote the readings against the layer")
     out = dict(ok=True, path=str(p), pages=pages, words_in_text_layer=words,
                words_per_page=round(per_page, 1), garbled_passages=soup,
                page_edge_suspects=len(suspects), ligatures=ligatures,
+               scanned_pages=scanned, collation_available=can_collate,
                difficulty=difficulty, note=note,
                metadata={k: v for k, v in meta.items() if k in ("title", "author", "creator")})
 
@@ -678,6 +717,9 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         "ocr": "call extract_text; read its notes to see which route won",
         "hard": "call page_images and transcribe the pages yourself, then repair_source",
     }[difficulty]
+    if difficulty != "easy" and can_collate:
+        out["next"] = ("call extract_text -- the scan will be read again and collated; then "
+                       "settle what is left with collation_disputes and settle_disputes")
     return out
 
 
@@ -857,6 +899,116 @@ def repair_source(path: str, repairs: list[dict[str, Any]], dry_run: bool = Fals
         p.write_text(text, encoding="utf-8")
     return dict(ok=not refused, applied=applied, refused=refused, dry_run=dry_run,
                 wrote=str(p) if applied and not dry_run else None)
+
+
+def _collation_cache(pdf: Path):
+    from ipsissima_mcp import collate
+    cache = collate.cache_dir(pdf)
+    return collate, cache, collate.load_disputes(cache)
+
+
+@server.tool(
+    structured_output=False,
+    title="Collation disputes",
+    description=(
+        "The places where the independent readings of a scan disagreed and no vote could settle "
+        "it -- left by extract_text's collated route, which reads a damaged scan's page images "
+        "again and votes that reading against the PDF's own text layer (and any witness "
+        "given). Each dispute comes with every witness's reading (C: the fresh OCR; B: the "
+        "PDF's text layer; A: the witness), the one that now stands in the text, and its "
+        "neighbours; the printed lines they sit on come back as images, many to an image, the "
+        "disputed words boxed in red and numbered.\n\n"
+        "READ EACH LINE IN THE IMAGE and decide what the page prints, then call "
+        "settle_disputes with the decisions. Work in batches (`count` of 8 to 12 keeps each "
+        "image small enough to come back inline). A dispute already settled is not shown again."),
+)
+def collation_disputes(path: str, first: int = 1, count: int = 8,
+                       kind: str | None = None) -> Any:
+    """
+    Args:
+        path: the PDF that was extracted.
+        first: the first dispute number to show (1-based).
+        count: how many to show, at most 16.
+        kind: "word" or "formula" to show only that kind; a formula dispute is symbols and lone letters, where neither reading may be right.
+    """
+    from mcp.server.mcpserver.utilities.types import Image
+    p = Path(path).expanduser()
+    if not p.exists():
+        return dict(ok=False, error=f"no such file: {p}")
+    collate, cache, data = _collation_cache(p)
+    if not data:
+        return dict(ok=False, error="this PDF has not been through the collated route: call "
+                                    "extract_text on it first (with collate=true for a scan "
+                                    "whose layer looks clean)")
+    open_ = [d for d in data["disputes"] if not d.get("settled")
+             and (kind is None or d.get("kind", "word") == kind)]
+    batch = [d for d in open_ if d["n"] >= first][:max(1, min(count, 16))]
+    if not batch:
+        return dict(ok=True, total=len(data["disputes"]), open=len(open_), disputes=[],
+                    next="no open disputes from there on" + (
+                        f"; the first open one is #{open_[0]['n']}" if open_ else ""))
+    paths = collate.dispute_strips(p, batch, cache / "strips")
+    inline = [Image(path=str(f)) for f in paths if f.stat().st_size <= INLINE_IMAGE_CAP]
+    rest = [d for d in open_ if d["n"] > batch[-1]["n"]]
+    result = dict(
+        ok=True, total=len(data["disputes"]), open=len(open_),
+        disputes=[dict(n=d["n"], sheet=d["sheet"], kind=d.get("kind", "word"),
+                       readings=d["readings"], stands=d["text"],
+                       before=d["before"], after=d["after"]) for d in batch],
+        images=[str(f) for f in paths], inlined=len(inline) == len(paths),
+        missing_pages=data["report"].get("missing_pages"),
+        next=("read the boxed words in the image(s) and call settle_disputes with "
+              "{n: \"A\"|\"B\"|\"C\"|the text the page prints}; an empty string deletes. "
+              + (f"Then call this again with first={rest[0]['n']}"
+                 + (f", kind={kind!r}" if kind else "") + f" ({len(rest)} more)."
+                 if rest else "That is the last batch.")))
+    return [result, *inline] if inline else result
+
+
+@server.tool(
+    structured_output=True,
+    title="Settle collation disputes",
+    description=(
+        "Apply what the page images say to the disputes collation_disputes showed. Each "
+        "decision names a dispute by number and gives either a witness (\"A\", \"B\", \"C\") "
+        "or the text the page prints. The extracted Markdown is edited where that dispute's "
+        "reading stands -- found between its neighbours, so a decision never lands in the "
+        "wrong place; one that cannot be found exactly once is refused with what to give "
+        "repair_source instead. Decisions are also kept with the scan's collation, so a later "
+        "extract_text of the same PDF applies them before anything else."),
+)
+def settle_disputes(markdown_path: str, pdf_path: str, decisions: dict[str, str],
+                    dry_run: bool = False) -> dict[str, Any]:
+    """
+    Args:
+        markdown_path: the extracted Markdown (in source/).
+        pdf_path: the PDF it was extracted from.
+        decisions: {dispute number: "A" | "B" | "C" | the printed text}.
+        dry_run: report what would change and write nothing.
+    """
+    md_p, pdf_p = Path(markdown_path).expanduser(), Path(pdf_path).expanduser()
+    for f in (md_p, pdf_p):
+        if not f.exists():
+            return dict(ok=False, error=f"no such file: {f}")
+    collate, cache, data = _collation_cache(pdf_p)
+    if not data:
+        return dict(ok=False, error="no collation recorded for this PDF")
+    md = md_p.read_text(encoding="utf-8")
+    new, applied, refused, record = collate.settle(md, data["disputes"], decisions)
+    if not dry_run:
+        if new != md:
+            md_p.write_text(new, encoding="utf-8")
+        collate.record_decisions(cache, record)
+        settled = {a["dispute"] for a in applied}
+        for d in data["disputes"]:
+            if d["n"] in settled:
+                d["settled"] = record.get(d["id"], d["text"])
+                d["text"] = d["settled"]
+        (cache / "disputes.json").write_text(json.dumps(data, indent=1, ensure_ascii=False),
+                                             encoding="utf-8")
+    left = sum(1 for d in data["disputes"] if not d.get("settled"))
+    return dict(ok=not refused, applied=applied, refused=refused, dry_run=dry_run,
+                open=left, wrote=str(md_p) if new != md and not dry_run else None)
 
 
 @server.tool(

@@ -266,8 +266,8 @@ a client that finds no tools will usually say nothing about why. This asks it di
 EOF
 ```
 
-One line of JSON comes back naming the server and its version. **A working install answers 12
-tools (10 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
+One line of JSON comes back naming the server and its version. **A working install answers 14
+tools (12 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
 is lower than that, the client is not the problem. (That sentence is held against the live
 server by the test suite, so it cannot quietly drift the way it did twice: it said 9 for five
 days after `check_for_updates` made it 10, and the corrected 10 then promised the Zotero tool
@@ -441,6 +441,41 @@ carefully:
   says so, renders the damaged passages as images, and asks the assistant to read them. You get
   a usable result either way; what changes is how much it costs.
 
+### A damaged scan is read again, and the readings are voted
+
+An old scan's text layer is one OCR engine's reading of the page images, made once, and every
+word it got wrong is a word a quotation will fail against. Where **tesseract** is installed
+(`brew install tesseract`, or your system's package), a scan whose layer looks damaged is read
+again, page by page at 300 dpi, and the two readings are **collated** like a textual critic's
+witnesses: aligned word by word, and wherever they disagree,
+
+1. a majority settles it, when there is a third reading to make one;
+2. otherwise a word list settles it (the system's, plus every word the readings agree on
+   elsewhere in the document), where one reading is a word and the other is not;
+3. otherwise it is a **dispute**: the reading of whichever engine has proved more reliable on
+   this document stands, and the place is logged.
+
+A third reading is worth having when you have one: give `extract_text` a `witness` -- another
+OCR text of the same work, such as archive.org's "Full text of" page saved as HTML. The fresh
+reading keeps the page geometry, so the result goes through the same structured converter as a
+clean PDF (headings, footnote zones, page markers, the Zotero highlight sidecar), and the old
+layer still supplies what only it knows, which words are *italic*. A text layer that lost
+words at a page edge loses nothing by this: a clean longer reading wins over a fragment.
+
+The disputes are what is left for the assistant, and they are small: `collation_disputes`
+returns them with every reading and the printed lines they sit on, many to an image with the
+disputed words boxed, and `settle_disputes` applies what the images say -- to the Markdown,
+and to the scan's record, so a later conversion of the same PDF applies them first. Pages
+missing from the scan (the printed page numbers jump) are reported. Measured on a 1963
+journal scan of three pages: 1,143 words, 96% agreement, 16 places mended by the word list
+and two half-lines the layer had lost restored, 13 disputes left -- and 2 with a third
+reading; see `eval/COLLATION-FINDINGS.md` for larger scans.
+
+`collate: true` reads any scan this way, including one whose layer passes as clean (an old
+OCR layer can be wrong without being garbled); `collate: false` never does. The OCR is kept in
+your user cache folder, keyed by the file's contents, so a second conversion takes seconds; it
+is never written beside a Zotero attachment.
+
 **Age is a good predictor.** A PDF made in the last decade is usually fine. One from twenty-odd
 years ago, or a scan of a photocopy, is where the difficult cases live.
 
@@ -494,6 +529,8 @@ Both are CC BY 4.0, whatever the licence of the package the registry travels in.
 | `assess_pdf` | how hard is this PDF, and does a machine-readable version exist? |
 | `page_images` | crops of damaged passages, for the cases a converter cannot do |
 | `repair_source` | apply corrections read off those crops |
+| `collation_disputes` | where a re-read scan's readings disagreed: every reading, and the printed lines as images |
+| `settle_disputes` | apply what those images say, to the text and to the scan's record |
 | `add_page_numbers` | the PDF's pagination onto text taken from the snapshot |
 | `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report |
 | `split_manuscript` | a one-file book into chapters plus a project file |
@@ -529,6 +566,7 @@ the short one is 221 words and 2.4.
 | `server.py` | the MCP server |
 | `sources.py` | what a source is, which route it takes, and what is ambiguous about a request |
 | `ingest.py` | the front door: any supported document to a source folder |
+| `collate.py` | a damaged scan read again by tesseract and voted against its text layer (and any other OCR text of it), the disputes logged with their geometry |
 | `pdf_to_source.py` | a printed article to Markdown — ligatures, de-hyphenation, paragraphs from the printed indent, journal furniture, footnotes, page numbers |
 | `structured_source.py` | the inversion: when the publisher's own HTML or EPUB is available, take the structure rather than recovering it from ink positions |
 | `epub_to_source.py`, `html_to_source.py` | those two routes |

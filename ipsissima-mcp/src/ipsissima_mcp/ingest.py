@@ -556,7 +556,55 @@ def from_pdf_structured(path, extras=None):
     return body, notes
 
 
-def from_pdf(path, allow_ocr=True, extras=None):
+def from_pdf_collated(path, extras=None, witness=None):
+    """The scan read again and voted against its own text layer (and any other OCR text of it
+    the user has): see collate.py. The collated copy is an ordinary PDF with a better invisible
+    layer at the same coordinates, so it goes through the structured converter like any other,
+    and the geometry sidecar still points at the original's words.
+
+    Returns (body, notes), or (None, why) when there is nothing to read again, tesseract is
+    missing, or the collated copy does not read back what was written into it or is more garbled
+    than the layer it set out to mend -- guards against a failure inside the collation, not
+    judgements of it. A word count against the old layer would be no guard: a letter-spaced
+    layer counts `W H A T` as four words (Levinson 1980: 12,547 "words" for 10,780)."""
+    try:
+        from . import collate
+    except ImportError:
+        import collate
+    try:
+        dst, col = collate.collated_pdf(path, witness=witness)
+    except Exception as e:                                   # noqa: BLE001 -- the fallback
+        return None, f"collation failed ({e.__class__.__name__}: {str(e)[:120]})"
+    if dst is None:
+        return None, col
+    layer, mended = plain_text(path), plain_text(str(dst))
+    written = sum(len(w["out"].split()) for w in col.words if w["out"])
+    garble = lambda t: len(SOUP.findall(re.sub(r"\s+", " ", t)))         # noqa: E731
+    if len(mended.split()) < 0.7 * written:
+        return None, (f"the collated copy read back {len(mended.split())} words of the {written} "
+                      f"written into it, so it was not used")
+    if garble(mended) > max(garble(layer), 0) + 5:
+        return None, (f"the collated text has {garble(mended)} garbled passage(s) against the "
+                      f"layer's {garble(layer)}, so it was not used")
+    got = extras if extras is not None else {}
+    notes = collate.notes_for(col, path)
+    body, s_notes = from_pdf_structured(str(dst), got)
+    if body is not None and len(body.split()) + got.get("figure_words", 0) >= 0.85 * len(mended.split()):
+        notes += s_notes
+    else:
+        notes.append("! structured route " + (f"kept only {len(body.split())} of the collated "
+                                              f"layer's {len(mended.split())} words"
+                                              if body is not None else f"declined ({s_notes})")
+                     + "; the plain route is used")
+        body = mended
+        got.pop("geometry", None)
+    got["collation"] = dict(cache=str(col.cache), disputes=len(col.disputes),
+                            missing_pages=col.missing, agreement=col.agreement,
+                            settled=dict(col.stats))
+    return body, notes
+
+
+def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
     """The text layer first; OCR only if the text layer is bad, and only if it beats it.
 
     THIS IS NOT WHAT THE FIRST VERSION DID, and the correction matters. pymupdf4llm was chosen
@@ -574,9 +622,21 @@ def from_pdf(path, allow_ocr=True, extras=None):
     that wins everywhere -- on the Gettier, whose layer really is damaged, pymupdf4llm recovers
     five of eight known errors and ocrmypdf two, while on the Carroll both make things worse.
     Every route tried is reported with its score so the choice is visible and reversible.
+
+    COLLATION COMES FIRST ON A DAMAGED SCAN (17 Oct 2026): where tesseract is installed, the page
+    images are read again and voted against the layer (collate.py) before either whole-route
+    OCR is tried -- they replace one reading with another, where collation keeps what each gets
+    right. `collate=True` collates a scan whose layer passes as clean too (an old OCR layer can
+    be wrong without being garbled); `collate=False` never collates. `witness` is any other OCR
+    text of the same work, a third voice in the vote.
     """
     notes = []
     best_name, best = "text layer", plain_text(path)
+    if allow_ocr and (collate is True or witness):
+        body, c_notes = from_pdf_collated(path, extras, witness)
+        if body is not None:
+            return body, c_notes
+        notes.append(f"  collation not used: {c_notes}")
     if quality(best) >= len(best.split()) and len(best.split()) > 200:
         # A CLEAN LAYER GOES TO THE STRUCTURED CONVERTER FIRST -- its geometry machinery
         # assumes trustworthy sizes and edges, which is exactly what a clean layer has and a
@@ -607,6 +667,12 @@ def from_pdf(path, allow_ocr=True, extras=None):
     if not allow_ocr:
         notes.append("  --no-ocr given, keeping the text layer as it is")
         return best, notes
+    if collate is None:
+        body, c_notes = from_pdf_collated(path, extras, witness)
+        if body is not None:
+            return body, notes + c_notes
+        if "page image" not in c_notes:            # a born-digital PDF: nothing to say
+            notes.append(f"  collation not used: {c_notes}")
 
     tried = {"text layer": quality(best)}
     try:
@@ -750,10 +816,11 @@ def from_tei(path):
     return "\n\n".join(parts), notes
 
 
-def ingest_one(path, allow_ocr=True, extras=None):
+def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".pdf":
-        md, notes = from_pdf(path, allow_ocr=allow_ocr, extras=extras)
+        md, notes = from_pdf(path, allow_ocr=allow_ocr, extras=extras,
+                             collate=collate if allow_ocr else False, witness=witness)
     # BEFORE the pandoc branch, and by content rather than extension. pandoc 3.10 writes TEI and
     # does not read it, so a TEI book had no route in at all and the only way was its PDF --
     # which is exactly the inversion `structured_source.py` exists to complain about.
@@ -937,6 +1004,12 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-ocr", action="store_true",
                     help="never OCR, even if the text layer looks damaged")
+    ap.add_argument("--collate", action=argparse.BooleanOptionalAction, default=None,
+                    help="read a scan's page images again and vote against its text layer: by "
+                         "default only when the layer looks damaged; --collate for any scan, "
+                         "--no-collate never")
+    ap.add_argument("--witness", help="another OCR text of the same work (.txt, or an HTML "
+                                      "page such as archive.org's 'Full text of'), for the vote")
     ap.add_argument("--figures", choices=["section", "omit"],
                     help="a figure's caption: gathered under '# Figures' (the default), or left out "
                          "altogether, for a reconstruction made without the figures")
@@ -949,7 +1022,8 @@ def main():
         if not os.path.exists(path):
             raise SystemExit(f"no such file: {path}")
         extras = {}
-        md, notes = ingest_one(path, allow_ocr=not a.no_ocr, extras=extras)
+        md, notes = ingest_one(path, allow_ocr=not a.no_ocr, extras=extras, collate=a.collate,
+                               witness=a.witness)
         name = slug(os.path.splitext(os.path.basename(path))[0]) + ".md"
         trimmed, cut = extract_for_prompt(md)
         results.append(dict(src=path, name=name, md=md, notes=notes, extras=extras,
