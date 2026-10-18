@@ -5,13 +5,15 @@
      the publisher's access stamps, where there were any, are blanked and the
      lines they sat on are kept so nothing below them moves.
      Back matter is kept here and trimmed only when text is sent to a model.
+     collated route: the page images read again by tesseract and voted against the text layer (17 sheet(s), 6024 words; token agreement C~B 91.8%; 128 by lexicon, 1 by spacing; 2s)
+     ! 144 disagreement(s) no vote could settle -- the more reliable witness's reading stands in each; settle them from the page images with collation_disputes, then settle_disputes (37 in formulas or symbols, where neither reading may be right: transcribe those only where the map needs them)
      structured route (pdf_to_source): 2 heading(s), 6 displayed quotation(s) as blockquotes, 1 footnote(s) under `# Notes`
      dropped: page number (9), running head (32)
      ! heading numbering skips [1, 2, 3, 4, 5, 6] -- read the flow there before trusting the sections
      ! 17 line(s) look stretched -- possible dropped words; the converter's report names them
-     (the raw text layer held 6124 words; this keeps 6081, the difference measured furniture and front matter) -->
+     17 sheet(s) kept their own layer (a sound reading of the page); the vote's corrections to them were made in the text: 66 placed, 25 not found exactly once and left as the layer had them -->
 
-<!-- p.543 begins here -->
+<!-- p.543 begins here _— SE» FF eS TS -->
 
 A MATHEMATICAL THEORY OF SAVING I
 
@@ -39,15 +41,15 @@ Lastly, we have to assume that the community will always be governed by the same
 
 Let us then denote by x(t) and a(t) the total rates of consumption and labour of our community, and by c(é) its capital at time ¢t.
 
-Its income is taken to be a general function of the amounts of labour and capital, and will be called f(a,c); we then have, since savings plus consumption must equal income, . em Pass: hice «6 kof)
+Its income is taken to be a general function of the amounts of labour and capital, and will be called f(a,c); we then have, since savings plus consumption must equal income, = SEG) ieee ceereipete (1)
 
-Now let us denote by U(z) the total rate of utility of a rate of consumption x, and by V(a) the total rate of disutility of a rate of labour a; and the corresponding marginal rates we will call u(~) and v(a) ; so that u(x) = wish dx __ aV(a) v(a) == “da =F
+Now let us denote by U(z) the total rate of utility of a rate of consumption x, and by V(a) the total rate of disutility of a rate of labour a; and the corresponding marginal rates we will call u(x) and v(a) ; — U(x) so that u(x) = wish dx __ aV(a) v(a) == “da =F
 
 We suppose, as usual, that w(x) is never increasing and v(a) never decreasing. va ry | a —~i Be or
 
 We have now to introduce a concept of great importance in our argument.
 
-Suppose we have a given capital c, and are going neither to increase nor decrease it. Then U(x) — V(a) denotes our net enjoyment per unit of time, and we shall make this a maximum, subject to the condition that our expenditure x is equal to what we can produce with labour a and capital c. The resulting rate of enjoyment U(x) — V(a) will be a function of c, and will, up to a point, increase as ¢ increases, since with more capital we can obtain more enjoyment. ea TP Fe ™
+Suppose we have a given capital c, and are going neither to increase nor decrease it. Then U(x) — V(a) denotes our net enjoyment per unit of time, and we shall make this a maximum, subject to the condition that our expenditure x is equal to what we can produce with labour a and capital c. The resulting rate of enjoyment U(x) — V(a) will be a function of c, and will, up to a point, increase as c increases, since with more capital we can obtain more enjoyment. ea TP Fe ™
 
 This increase of the rate of enjoyment with the amount of capital may, however, stop for either of two reasons. It might, in the first place, happen that a further increment of capital would not enable us to increase either our income or our leisure ; or, secondly, we might have reached the maximum conceivable rate of enjoyment, and so have no use for more income or leisure.
 
@@ -57,7 +59,7 @@ In either case a certain finite capital would give us the greatest
 
 1928] rate of enjoyment economically obtainable, whether or not this was the greatest rate conceivable.
 
-On the other hand, the rate of enjoyment may never stop increasing as capital increases. There are then two logical possibilities : either the rate of enjoyment will increase to infinity, or it will approach asympiotically to a certain finite limit. The first of these we shall dismiss on the ground that economic causes alone could never give us more than a certain finite rate of enjoyment
+On the other hand, the rate of enjoyment may never stop increasing as capital increases. There are then two logical possibilities : either the rate of enjoyment will increase to infinity, or it will approach asymptotically to a certain finite limit. The first of these we shall dismiss on the ground that economic causes alone could never give us more than a certain finite rate of enjoyment
 
 (called above the maximum conceivable rate). There remains the second case, in which the rate of enjoyment approaches a finite limit, which may or may not be equal to the maximum conceivable rate.
 
@@ -79,13 +81,13 @@ But before explaining his argument it will be best to develop equations which ca
 
 546 The first of these comes from equating the marginal disutility of labour at any time to the product of the marginal efficiency of labour by the marginal utility of consumption at that time, of
 
-1.€. v(a) = ag (*) >> Ww er ME Sapien a
+1.f Se 00 0 i.e, v(a) = ag t (*) >> Ww er ME Sapien a
 
 The second equates the advantage derived from an increment
 
-Ax of consumption at time ¢, to that derived by postponing it for an infinitesimal period 4t, which will increase its amount to
+Ax of consumption at time t, to that derived by postponing it for an infinitesimal period 4, which will increase its amount to
 
-Ax( + of At), since of gives the rate of interest earned by dc oc waiting.
+Ax( + of At), since of gives the rate of interest earned by  waiting.
 
 This gives ufx(t)} = {1 + of At} ufo + At)} or in the limit qr) ar d of oe
 
@@ -97,13 +99,13 @@ Equations (1), (2) and (3) are sufficient to solve our problem provided we know 
 
 To solve the equations we proceed as follows : noticing that x, a and c are all functions of one independent variable, the time, we have d du of da Of de dt
 
-Tg He) - fa.c)} = Ge -F(ase) + Ua)ar a + U®) a a te
+Tg He) - fa.acy = Ge -F(ase) + ula & + w(x) a a te
 
 = fac) + vas — “p(a,0) — 9%
 
 = oe »f v(a)g. (Using (2), (3) and (1).)
 
-Consequently, integrating by parts u(x) . f(a,c) = xu(x) — U(x) + V(a) + a constant K, or o = fae) — [^2] = = — Oe) — Ma} - (4) t w(2)
+Consequently, integrating by parts u(x) . f(a,c) = wu(x) — U(x) + V(a) + a constant K, or o = fae) — [^2] = = — Oe) — Ma} - (4) t w(2)
 
 <!-- p.547 begins here -->
 
@@ -111,19 +113,19 @@ Consequently, integrating by parts u(x) . f(a,c) = xu(x) — U(x) + V(a) + a con
 
 We have now to identify K with what we called B, or bliss. This is most easily done by starting in a different way.
 
-| (B — U(x) + V(a))dt represents the amount by which enjoyment falls short of bliss integrated throughout time; this is (or can be made) finite, and our problem is to minimise it. If we apply the calculus of variations straight away, using equation (1), we get equations (2) and (3) again; but if, instead of this, we first change the independent variable to c, we get a great simplification.
+ (B — U(x) + V(a))dt represents the amount by which enjoyment falls short of bliss integrated throughout time; this is (or can be made) finite, and our problem is to minimise it. If we apply the calculus of variations straight away, using equation (1), we get equations (2) and (3) again; but if, instead of this, we first change the independent variable to c, we get a great simplification.
 
 Our integral becomes fase eke. PSR FM
 
 : dc/dt ae ie
 
-Now in this x and a are entirely arbitrary functions of c, and to minimise the integral we have simply to minimise the integrand by equating to zero its partial derivatives. Taking the derivative with respect to « we obtain : f(a,¢) a
+Now in this x and a are entirely arbitrary functions of c, and to minimise the integral we have simply to minimise the integrand by equating to zero its partial derivatives. Taking the derivative with respect to « we obtain : — u(x) _, B— U(x) + Via) 9. f(a,c) a
 
 {f(a,c) a ay? sae consequently =
 
-= f(a.) —#= aaa — ~ «+
+= f(a.) —x#= B—
 
-(5) or, as we stated at the beginning, rate of saving multiplied by marginal utility of consumption should always equal bliss minus actual rate of utility enjoyed.
+(5) ) 5 nl oO ~— or, as we stated at the beginning, rate of saving multiplied by marginal utility of consumption should always equal bliss minus actual rate of utility enjoyed.
 
 Mr. Keynes, to whom I am indebted for several other suggestions, has shown me that this result can also be obtained by the following simple reasoning.
 
@@ -145,7 +147,7 @@ P
 
 : of a year less bliss and : of a year more at our present rate.
 
-The sacrifice is, therefore, [^1] {B — (U(x) — V(a)}.
+The sacrifice is, therefore, [^1] AB — (U(x) — V(a)}.
 
 Equating this to u(x), we get equation (5) again, if we replace z by >
 
@@ -165,17 +167,17 @@ The rate of saving which the rule requires is greatly in excess of that which an
 
 £200
 
-£300 : ° * , ;
+£300 . . . . .
 
 £500 ° ‘ é
 
 3 ‘
 
-£1000 : ° . , ‘
+£1000  . , ‘
 
 £2000
 
-£5000 8= Bliss.
+ 8= Bliss.
 
 If we neglect variations in the amount of labour, the amount that should be saved out of a family income of £500 would be about £300.
 
@@ -191,7 +193,7 @@ Savings = £300 and marginal utility of consumption at
 
 £200 = about g_q- (From £150 to £300 U(x) = 3.5 — [^3] — 13a
 
-™ a? se \v . 15,000’ approximating by fitting a parabola, so that u(x) = ee
+™ a? se \v . 15,000’ approximating by fitting a parabola, so that u(x) = 355
 
 > x aS
 
@@ -217,7 +219,7 @@ Wy) = fwly)dy = [(u(x)da — v(a)da) = U(x) — V(a).
 
 W(y) may be called the total and w(y) the marginal utility of unearned income, since they are the total and marginal utilities arising from the possession of an unearned income y available for consumption.
 
-Equation (5) now gives reo — y = flac) —x# = core aes or — Wy) = a — 9); which means that the point (rc, B) lies on the tangent at y to the curve z = W(y).
+Equation (5) now gives B— Wy) re — y = f(a,c) —x = core aes or B — Wy) = a — 9); which means that the point (rc, B) lies on the tangent at y to the curve z = W(y).
 
 Figure (1) shows the curve z = W(y), which either attains the value B at a finite value y, (the case shown in the figure) or else approaches it asymptotically as y>o.
 
@@ -225,7 +227,7 @@ In order to determine how much of a given unearned income rc should be saved, we
 
 Of course y may be negative, which would mean that not only would the whole unearned income be saved, but part of the earned income also.
 
-It is easy to see that there must always be such a tangent, because the curve z = W(y) will have a tangent or asymptote y = — 7, Where 7 is the greatest excess of earnings over consumption compatible with continued existence.
+It is easy to see that there must always be such a tangent, because the curve z = W(y) will have a tangent or asymptote y = — 7, where 7 is the greatest excess of earnings over consumption compatible with continued existence.
 
 This rule determines how much of a given income should be spent, but it does not tell us what our income will amount to
 
@@ -235,13 +237,13 @@ This rule determines how much of a given income should be spent, but it does not
 
 This is obtained from equation (3), = which now gives us d
 
-Hew) = — rw(y) or
+Hew) = — roy) or
 
 Gehwaferr
 
 2. et ce o
 
-Here A = w(y,), where yp is the value of y for ¢ = o determined as the abscissa of Q, where P is (rey, B).
+Here A = w(y,), where yp is the value of y for t = o determined as the abscissa of Q, where P is (re, B).
 
 Supposing, then, we want to find the time taken in accumulating a capital c from an initial capital cy), we take P to be the
 
@@ -255,7 +257,7 @@ Q <7
 
 Save sid 4,
 
-Fia. 1. point (rc, B) and Py, to be (rcy, B). w/(y) is then the slope of the tangent from P, and w(y9) the slope of the tangent from Po, so that the time in question
+Fia. 1. point (rc, B) and Py, to be (reg, B). w/(y) is then the slope of the tangent from P, and w(y9) the slope of the tangent from Po, so that the time in question
 
 [^1] = w(yYo)
 
@@ -281,7 +283,7 @@ K — Wy) or me— y= wy) o
 
 In order to find it we must know how much capital our man feels it necessary to leave his heirs; let us call this cg.
 
-Equation (8) means, as before, that y can be found as the ok es abscissa of the point of contact Q of a tangent drawn from (rc, K) or P to the curve. P always lies on z = K, and its abscissa begins by being rcy and ends by being rcz. K we can take as being less than B, since a man who lives only a finite time will save less than one who lives an infinite time, and the greater K is, the greater will be the rate of saving. Consequently z = K will meet the curve, say at P,.
+Equation (8) means, as before, that y can be found as the ok es abscissa of the point of contact Q of a tangent drawn from (rc, K) or P to the curve. P always lies on z = K, and its abscissa begins by being rc, and ends by being rcz. K we can take as being less than B, since a man who lives only a finite time will save less than one who lives an infinite time, and the greater K is, the greater will be the rate of saving. Consequently z = K will meet the curve, say at P,.
 
 |
 
@@ -289,7 +291,7 @@ Equation (8) means, as before, that y can be found as the ok es abscissa of the 
 
 [2 Fia. 2.
 
-From both P, and P; there will be two tangents to the curve, of which either the upper or the lower can, for all we know, be taken as determining y, and y;. If, however, c;> Cp» as in
+From both P, and P; there will be two tangents to the curve, of which either the upper or the lower can, for all we know, be taken as determining y, and y;. If, however, c;> ¢y) as in
 
 Fig. 2, we can only take the lower tangent from P,, since the upper tangent gives a value of y, greater than cither of the values of y;, which is impossible, as y continually increases. Taking, then, Q, as the point of contact of the lower tangent from Pp, there are two possible cases, according as we take as giving y3 either Q;, the lower, or Q,’, the upper value. If we take Q,,
 
@@ -301,15 +303,15 @@ P, moves straight to P;, and there is saving all the time; this happens when 7�
 
 In order to determine which tangents to take and also the value of K we must use the condition derived from equation (7)
 
-slope of tangent taken from Py — w(¥Yo) _ slope of tangent taken from P, = w(y3) rT
+slope of tangent taken from Py — w(yo)  slope of tangent taken from P, = w(y3) rT
 
-This, together with the fact that the abscissae of P, and P, are Co, Cz, and that they have the same ordinate K, suffices to fix both K and the tangents to be taken.
+This, together with the fact that the abscissae of P, and P, are Cy, C3, and that they have the same ordinate K, suffices to fix both K and the tangents to be taken.
 
 (c) We have now to see how our results must be modified when we no longer reckon future utilities and disutilities as equal to present ones, but discount them at a constant rate p.
 
-This rate of discounting future wtilities must, of course, be distinguished from the rate of discounting future sums of money. If I can borrow or lend at a rate r I must necessarily be equally pleased with an extra £1 now and an extra £(1 + 1) in a year’s time, since I could always exchange the one for the other. My marginal rate of discount for moncy is, therefore, necessarily r, but my rate of discount for utility may be quite different, since the marginal utility of money to me may be varying by my increasing or decreasing my expenditure as time goes on.
+This rate of discounting future wtilities must, of course, be distinguished from the rate of discounting future sums of money. If I can borrow or lend at a rate r I must necessarily be equally pleased with an extra £1 now and an extra £(1 + 1) in a year’s time, since I could always exchange the one for the other. My marginal rate of discount for money is, therefore, necessarily r, but my rate of discount for utility may be quite different, since the marginal utility of money to me may be varying by my increasing or decreasing my expenditure as time goes on.
 
-In assuming the rate of discount constant, I do not mean that it is the same for all individuals, since we are at present only concerned with one individual or community, but that the present value of an enjoyment at any future date is to be obtained by discounting it at the rate p. Thus, taking it to be about 2 per cent., utility at any time would be regarded as twice as desirable as that a hundred years later, four times as valuable as that two hundred years later and so on at a compound rate. This is the only assumption we can make, without contradicting our fundamental hypothesis that successive generations are actuated by the same system of preferences. For if we had a varying rate of discount—say a higher one for the first fifty years—our preference for enjoyments in 2000 a.D. over those in 2050 A.D. would be calculated at the lower rate, but that of the people alive in 2000 a.p. would be at the higher.
+In assuming the rate of discount constant, I do not mean that it is the same for all individuals, since we are at present only concerned with one individual or community, but that the present value of an enjoyment at any future date is to be obtained by discounting it at the rate p. Thus, taking it to be about 2 per cent., utility at any time would be regarded as twice as desirable as that a hundred years later, four times as valuable as that two hundred years later and so on at a compound rate. This is the only assumption we can make, without contradicting our fundamental hypothesis that successive generations are actuated by the same system of preferences. For if we had a varying rate of discount—say a higher one for the first fifty years—our preference for enjoyments in 2000 a.D. over those in 2050 a.D. would be calculated at the lower rate, but that of the people alive in 2000 a.p. would be at the higher.
 
 Let us suppose first that the rate of discount for utility p is less than the rate of interest r.
 
@@ -317,19 +319,19 @@ Then equations (1) and (2) are unchanged, but equation (3) becomes
 
 <!-- p.554 begins here -->
 
-Gau(z) = — u(x){Z — p} =—wuaz(r—p)... . .« (9) as we are now assuming rs constant and equal to r; consequently w= we) = Aer
+Gau(z) = — u(x){Z — p} =—wuaz(r—p)... . .« (9) as we are now assuming a6 constant and equal to r; consequently w= we) = Aer
 
 2. sl. Oe)
 
 > and rc —
 
-a a _de De in wl a ec de a de ann ae dw‘ (r—p)w (r— p)w’ phe) [Ra 4 B where cwr'/"- | ary dw + :
+a a _de De in wl a ec de a de ann ae dw dt Od de te) y - dw * (© —p)w = pyw ‘ pl(r— r where = ew'/r-?) — / ale aly 2 r—p r 1 Lp K = “aytr—p) — = (r—p)w (r— p)w’ phe) [Ra 4 B where cwr'/"- | ary dw + :
 
 1 K = 1 elias - = | eo-Py)dy +f t
 
 (K, 6 constants.) her — | y wl?-p) and
 
-: =rte—y= . (10) wlr—P)(y)
+: =rt—y= . (10) wlr—P)(y)
 
 This equation is the same as (8) except that instead of w(y) and W(y), which is /w(y)dy, we have w'/’-9)(y) and /w'!’-) (y)dy.
 
@@ -337,11 +339,11 @@ The method of solution both for a community and for an individual is therefore t
 
 The rate at which this is done is governed solely by the ratio of p to r, so that if p is [^0] it is independent of the value of r, provided this is not also 0. The main conclusion of section I is thus confirmed.
 
-There is, however, a slight difficulty, because we have not really shown yet that if we are considering an infinite time, the constant K is to be interpreted as what might be called “‘ modified bliss,” 7.e. the maximum value of | jwrit-P(y)dy. This modified bliss would require the same income as bliss does, the modification being solely in the value set on it. This result can, however, be deduced at once from equation (9a), which shows that y
+There is, however, a slight difficulty, because we have not really shown yet that if we are considering an infinite time, the constant K is to be interpreted as what might be called “‘ modified bliss,” 7.e. the maximum value of jwle-P(y)dy. This modified bliss would require the same income as bliss does, the modification being solely in the value set on it. This result can, however, be deduced at once from equation (9a), which shows that y
 
 :
 
-, rae dc increases until bliss is reached, so that qj C#m never become
+, rae dc increases until bliss is reached, so that qj con never become
 
 <!-- p.555 begins here -->
 
@@ -351,9 +353,9 @@ Hence K must be as smail as possible de (provided it is not so small as to make 
 
 As in (6), we can adapt our solution to the case of an individual with only a finite time to live, in this case drawing tangents to the modified utility curve.
 
-An interesting special case is that of a community for which wy) = Dy (a > 1) we shall have w’!-?)(y) = Ey-8, [^8] = me E = Dil-) Ey'-8 iin}. ee. oe Rk <i .*
+An interesting special case is that of a community for which wy) = Dy (a > 1) we shall have w’!-?)(y) = Ey-8, [^8] = me E = p Ey'-8 iin}. ee. oe Rk <i .*
 
-> BS = wit—(y)dy
+> BS = wit—B K — fo'lt-\y)dy
 
 Ey?
 
@@ -361,11 +363,11 @@ It is clear that corresponding to K = B in the case when gu [^8] we have here
 
 K = &, and savings eee a :
 
-: r—p : 4.€., a constant iii proportion ————_—— of unearned income should r(a—1) +p be saved, which if p = [^0] is ee and independent of r.
+: r—p : 4.€., a constant iii proportion —Has ej [ of unearned income should r(a—1) +p be saved, which if p = [^0] is + and independent of r.
 
 If the rate of interest is less than the rate of discounting utility, we shall have similar equations, leading to a very different result.
 
-The marginal utility of consumption will rise at a rate p — 7’, and consumption will fall towards the barest subsistence level at which its marginal utility may be taken as infinite, if we disregard the possibility of suicide. During this process all capital will be exhausted and debts incurred to the extent to which credit can be obtained, the simplest assumption on this point being that it will be possible to borrow a sum such that it is just possible to keep alive after paying the interest on it. III
+The marginal utility of consumption will rise at a rate p — 7’, and consumption will fall towards the barest subsistence level at which its marginal utility may be taken as infinite, if we disregard the possibility of suicide. During this process all capital will be exhausted and debts incurred to the extent to which credit can be obtained, the simplest assumption on this point being that it will be possible to borrow a sum such that it is just possible to keep alive after paying the interest on it. Til
 
 Let us next consider the problem of the determination of the
 
@@ -373,11 +375,11 @@ Let us next consider the problem of the determination of the
 
 556 (x) In the first place we will suppose that everyone discounts future utility for himself or his heirs, at the same rate p.
 
-Then in a state of equilibrium there will be no saving and dx dc di a” so that we have x = f(a,c) Q v(a) = Fux) ae «4 — _ three equations to determine 2, a and c.
+Then in a state of equilibrium there will be no saving and dx dc di a” so that we have x = f(a,c) Q v(a) = aa) ae «4 — _ three equations to determine 2, a and c.
 
-The last equation tells us that the rate of interest as determined by the marginal productivity of capital of » Ae? must be equal to the rate of discounting p.1
+The last equation tells us that the rate of interest as determined by the marginal productivity of capital , ow must be equal to the rate of discounting p.1
 
-But suppose that at a given time, say the present, Md >».
+But suppose that at a given time, say the present, ao Bs
 
 Then there will not be equilibrium, but saving, and since a great deal cannot be saved in a short time, it may be centuries before equilibrium is reached, or it may never be reached, but only approached asymptotically; and the question arises as to how, in the meantime, the rate of interest is determined, since it cannot be by the ordinary equilibrium equation of supply and demand.
 
@@ -413,7 +415,7 @@ Suppose that the rate of interest is constant and equal to
 
 558 [DEC. r, and that the rate of discount for a given individual is p. Then if r>p, he will save when he is young, not only to provide for f( loss of earning power in old age, but also because he can get more pounds to spend at a later date for those he forgoes spending bli now.
 
-If we neglect variations in his earning power, his action to can be calculated by modifying the equations of IIc to apply in to a finite life as in IIb. He will for a time accumulate capital, nv} and then spend it before he dies. Besides this man, we must le’ suppose there to be in our community other men, exactly like se him except for being born at different times. The total capital possessed by [^7] men of this sort whose birthdays are spread evenly through the period of a lifetime will be n times the average capital possessed by each in the course of his life. The class of W. men of this sort will, therefore, possess a constant capital dependin ing on the rate of interest, and this will be the amount of capital supplied by them at that price. (If p>vr, it may be negative, SO as they may borrow when young and pay back when old.) We can then obtain the total supply curve of capital by adding together the supplies provided at a given price by each class of individual.
+If we neglect variations in his earning power, his action to can be calculated by modifying the equations of IIc to apply in to a finite life as in IIb. He will for a time accumulate capital, nv} and then spend it before he dies. Besides this man, we must le’ suppose there to be in our community other men, exactly like se him except for being born at different times. The total capital possessed by [^7] men of this sort whose birthdays are spread evenly through the period of a lifetime will be n times the average capital possessed by each in the course of his life. The class of W. men of this sort will, therefore, possess a constant capital dependin ing on the rate of interest, and this will be the amount of capital supplied by them at that price. (If p>r, it may be negative, SO as they may borrow when young and pay back when old.) We can then obtain the total supply curve of capital by adding together the supplies provided at a given price by each class of individual.
 
 If, then, we neglect men’s interest in their heirs, we see that capital has a definite supply price to be equated to its demand price.
 
@@ -423,9 +425,9 @@ This supply price depends on people’s rates of discount for utility, and it ca
 
 (except to provide for old age).
 
-But the situation is different from the ordinary supply problem, in that those beyond this ‘‘ margin” do not simply provide nothing, but provide a negative supply by borrowing when young against their future earnings, and so being on the average in debt.
+But the situation is different from the ordinary supply problem, in that those beyond this ‘‘ margin” margin’ do not simply provide nothing, but provide a negative supply by borrowing when young against their future earnings, and so being on the average in debt.
 
-(y) Let us now go back to case («) by supposing men, or rather families, to live for ever, and discount future utility at a constant rate, but let us try this time to take account of variations in the rate of discount from family to family.
+(y) Let us now go back to case (x) by supposing men, or rather families, to live for ever, and discount future utility at a constant rate, but let us try this time to take account of variations in the rate of discount from family to family.
 
 For simplicity let us suppose that the amount of labour is constant, so that the total income of the country can be regarded as a function f(c) of the capital only. The rate of interest will then be f’(c).
 
@@ -439,16 +441,16 @@ Now suppose equilibrium ! is obtained with capital c, income f(c) and rate of in
 
 Consequently they have between them an income m(r).2,.
 
-The other families, » — m(r) in number (where n is the total number of families), must be down to the subsistence level, or they would still be decreasing their expenditure. Consequently they have between them a total income {n — m/(r)}2z, whence f(c) = m(r)x, + {n — m(r)}x,
+The other families, » — m(r) in number (where n is the total number of families), must be down to the subsistence level, or they would still be decreasing their expenditure. Consequently they have between them a total income {n — m/(r)}z., whence f(c) = m(r)x, + {n — m(r)}x,
 
-= N.% + mr){x, — x}, which, together with r = f’(c), determines r andc. m/(r) being an increasing function of r, it is easy to see, by drawing graphs of r against f(c), that the two equations have in general a unique solution.”
+= n.% + mr){x, — x}, which, together with r = f’(c), determines r andc. m/(r) being an increasing function of r, it is easy to see, by drawing graphs of r against f(c), that the two equations have in general a unique solution.”
 
-In such a case, therefore, equilibrium would be attained by a division of society into two classes, the thrifty enjoying bliss and the improvident at the subsistence level. F. P. RaMsEy King’s College, Cambridge. [^1] We suppose each family in equilibrium, which is the only way in which that state could be maintained, since otherwise, although the savings of some might at any moment balance the borrowings of others, they would not continue to do so except by an extraordinary accident. [^2] We have neglected in this the negligible number of families for which p is exactly equal to r.
+In such a case, therefore, equilibrium would be attained by a division of society into two classes, the thrifty enjoying bliss and the improvident at the subsistence level. F. P. Ramszy King’s College, Cambridge. [^1] We suppose each family in equilibrium, which is the only way in which that state could be maintained, since otherwise, although the savings of some might at any moment balance the borrowings of others, they would not continue to do so except by an extraordinary accident. [^2] We have neglected in this the negligible number of families for which p is exactly equal to r.
 
-No. 152.—vou. XxXxXvIil.
+No. 152.—vou. XxXxXvIil. PP
 
 # Notes
 
 <!-- Footnotes, printed at the foot of p. 543, p. 545, p. 546, p. 547, p. 549, p. 555, p. 556. Lifted here because they fall inside a sentence that runs across the page break. -->
 
-[^1]: I.e. they must be such as would not occur without a certain degree of accumulation, but could be foreseen given that degree. No. 152.—vouL. XXXVIII. [^1] As it stands this argument is incomplete, since in the last case considered above bliss was the limiting value, as capital tends to infinity, of the enjoyment obtainable by spending our whole income, and so making no provision for increasing capital further. The lacuna can easily be filled by remarking that to save gt in the nth year would be sufficient to increase capital to infinity (since z is divergent), and that the loss of income (<') would then decrease to zero, so that the limiting values of income and expenditure would be the same. . [^1] The upper limit will not be «, but the least capital with which bliss can be obtained, if this is finite. c steadily increases with ¢, at any rate until the integrand vanishes, so that the transformation is permissible. rate. [^1] It is worth noting that in most of (a) we only require independence of returns, and not constancy, and that nowhere do we really require wages to be constant, but these assumptions are made throughout to simplify the statement. They are less absurd if the state is one among others which are only advancing slowly, so that the rates of interest and wages are largely independent of what our particular state saves and earns. rate of interest. [^1] Equilibrium could, however, also be obtained either at bliss with p < or at the subsistence level with p> of Cf. (y) below.
+[^1]: I.e. they must be such as would not occur without a certain degree of accumulation, but could be foreseen given that degree. No. 152.—vou. XXXVIII. [^1] As it stands this argument is incomplete, since in the last case considered above bliss was the limiting value, as capital tends to infinity, of the enjoyment obtainable by spending our whole income, and so making no provision for increasing capital further. The lacuna can easily be filled by remarking that to save st in the nth year would be sufficient to increase capital to infinity (since z is divergent), and that the loss of income (e') would then decrease to zero, so that the limiting values of income and expenditure would be the same. . [^1] The upper limit will not be «, but the least capital with which bliss can be obtained, if this is finite. c steadily increases with t, at any rate until the integrand vanishes, so that the transformation is permissible. rate. [^1] It is worth noting that in most of (a) we only require independence of returns, and not constancy, and that nowhere do we really require wages to be constant, but these assumptions are made throughout to simplify the statement. They are less absurd if the state is one among others which are only advancing slowly, so that the rates of interest and wages are largely independent of what our particular state saves and earns. rate of interest. [^1] Equilibrium could, however, also be obtained either at bliss with p <2 or at the subsistence level with p> of Cf. (y) below.

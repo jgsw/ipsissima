@@ -361,7 +361,7 @@ def extract_text(sources: list[str], out: str, grouping: str | None = None,
         title: title for the project file, when one is written.
         allow_ocr: allow OCR when a PDF's text layer looks damaged.
         dry_run: report what would happen and write nothing.
-        collate: read a scan's page images again and vote the reading against its text layer. Left unset, this happens when the layer looks damaged and tesseract is installed; true does it for any scan (an old OCR layer can be wrong without looking garbled); false never.
+        collate: read a scan's page images again and vote the reading against its text layer. Left unset (or true), this happens for every scan where tesseract is installed -- an old OCR layer is often wrong without looking garbled; false never.
         witness: another OCR text of the same work -- a .txt, or a saved HTML page such as archive.org's "Full text of" -- to vote with. One PDF source only.
     """
     from ipsissima_mcp import ingest, sources as srcmod
@@ -681,20 +681,17 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         note += (f"; {ligatures} typographic ligature(s) (fi, fl, ...) in the text layer -- "
                  f"extract_text will expand them to plain letters so quotations match")
 
-    # A SCAN IS READ AGAIN WHERE IT CAN BE. A damaged layer is collated automatically; a scan
-    # whose layer merely looks clean can be too, on request, and an old layer is often wrong
-    # without being garbled (the Gettier: `siftcient`, a half-line lost at the page edge, and
-    # "easy, 0 garbled").
+    # A SCAN IS READ AGAIN WHERE IT CAN BE, whatever its layer looks like: an old layer is often
+    # wrong without being garbled (the Gettier: `siftcient`, a half-line lost at the page edge,
+    # and "easy, 0 garbled").
     can_collate = bool(scanned and collate.tesseract())
-    if scanned and difficulty == "easy" and can_collate:
-        note += (f"; {scanned} of {pages} sheet(s) are page images under an OCR layer -- "
-                 f"extract_text with collate=true reads them again and votes the readings, "
-                 f"which mends what an old layer got wrong without garbling it")
-    elif scanned and difficulty != "easy":
-        note += ("; extract_text will read the page images again and vote the readings "
-                 "against the layer (collation)" if can_collate else
-                 "; installing tesseract would let extract_text read the page images again "
-                 "and vote the readings against the layer")
+    if scanned:
+        note += (f"; {scanned} of {pages} sheet(s) are page images -- extract_text will read "
+                 f"them again and vote the readings against the layer (collation)"
+                 if can_collate else
+                 f"; {scanned} of {pages} sheet(s) are page images -- installing tesseract "
+                 f"would let extract_text read them again and vote the readings against the "
+                 f"layer")
     out = dict(ok=True, path=str(p), pages=pages, words_in_text_layer=words,
                words_per_page=round(per_page, 1), garbled_passages=soup,
                page_edge_suspects=len(suspects), ligatures=ligatures,
@@ -717,7 +714,7 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
         "ocr": "call extract_text; read its notes to see which route won",
         "hard": "call page_images and transcribe the pages yourself, then repair_source",
     }[difficulty]
-    if difficulty != "easy" and can_collate:
+    if can_collate:
         out["next"] = ("call extract_text -- the scan will be read again and collated; then "
                        "settle what is left with collation_disputes and settle_disputes")
     return out
@@ -1004,8 +1001,8 @@ def settle_disputes(markdown_path: str, pdf_path: str, decisions: dict[str, str]
             if d["n"] in settled:
                 d["settled"] = record.get(d["id"], d["text"])
                 d["text"] = d["settled"]
-        (cache / "disputes.json").write_text(json.dumps(data, indent=1, ensure_ascii=False),
-                                             encoding="utf-8")
+        collate._atomic_text(cache / "disputes.json",
+                             json.dumps(data, indent=1, ensure_ascii=False))
     left = sum(1 for d in data["disputes"] if not d.get("settled"))
     return dict(ok=not refused, applied=applied, refused=refused, dry_run=dry_run,
                 open=left, wrote=str(md_p) if new != md and not dry_run else None)

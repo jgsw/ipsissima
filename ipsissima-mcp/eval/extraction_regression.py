@@ -54,9 +54,15 @@ has none, from today's output, to be read against the paper before it is trusted
 
 `--public` is the check the test suite runs: the public fixtures only, against the approved
 outputs and the expectations committed beside them. Approved outputs are exact, and exactness
-belongs to one version of PyMuPDF: where the version running is not the one that approved them,
-the differences are printed and not failed, and the expectations -- which a new version has no
-business changing -- carry the verdict alone.
+belongs to one version of PyMuPDF and one of tesseract (a scan is read again and collated, 18 Oct
+2026, and without tesseract it converts as it did before): where either running is not the one
+that approved them, the differences are printed and not failed, and the expectations -- which a
+new version has no business changing -- carry the verdict alone.
+
+COLLATION RUNS, WHOLE-ROUTE OCR DOES NOT. Conversions take `--no-ocr` (rapidocr and ocrmypdf are
+slow and were never part of this) and `--collate` where the converter knows it. Collation keeps
+its OCR in a cache of its own under this tool's cache, never the user's: decisions a reader
+settled for a scan live in the user's, and would make an output depend on whose machine ran it.
 
 THE BASELINE is the converter at a git commit, unpacked with `git archive` into a cache keyed by
 the commit, and its outputs are cached there too (keyed by the PDF's path, size and mtime), so a
@@ -134,6 +140,17 @@ def expectation_dirs(args):
                                 [args.expect, os.environ.get("IPSISSIMA_EXPECTATIONS")])
 
 
+def tesseract_version():
+    """The tesseract collation would use, or None where there is none (CI)."""
+    sys.path.insert(0, str(MCP / "src"))
+    try:
+        from ipsissima_mcp import collate
+        exe = collate.tesseract()
+        return collate.tesseract_version(exe) if exe else None
+    except ImportError:
+        return None
+
+
 def pymupdf_version():
     try:
         import pymupdf
@@ -167,8 +184,11 @@ def convert(pdf, pkg_dir, out_dir):
         if out_dir.exists():
             shutil.rmtree(out_dir)
         out_dir.mkdir(parents=True)
-        r = subprocess.run([sys.executable, str(Path(pkg_dir) / "ipsissima_mcp" / "ingest.py"), pdf,
-                            "--out", str(out_dir), "--no-ocr"], capture_output=True, text=True)
+        ingest = Path(pkg_dir) / "ipsissima_mcp" / "ingest.py"
+        collates = "--collate" in ingest.read_text(encoding="utf-8")
+        r = subprocess.run([sys.executable, str(ingest), pdf, "--out", str(out_dir), "--no-ocr"]
+                           + (["--collate"] if collates else []), capture_output=True, text=True,
+                           env={**os.environ, "IPSISSIMA_CACHE": str(CACHE / "ocr")})
         # The output folder is a temporary one, and named in the log it made every approved log
         # differ from every other.
         log.write_text((r.stdout + r.stderr).replace(str(out_dir), "<out>"), encoding="utf-8")
@@ -458,7 +478,8 @@ def main():
         if args.save_golden:
             dest = Path(args.save_golden)
             dest.mkdir(parents=True, exist_ok=True)
-            index = {"pymupdf": pymupdf_version(), "outputs": {}}
+            index = {"pymupdf": pymupdf_version(), "tesseract": tesseract_version(),
+                     "outputs": {}}
             for p, (md, log) in zip(pdfs, new):
                 k = golden_name(p)
                 (dest / f"{k}.md").write_text(md or "", encoding="utf-8")
@@ -476,13 +497,16 @@ def main():
                     (g / f"{golden_name(p)}.log").read_text(encoding="utf-8") if (g / f"{golden_name(p)}.log").exists() else "")
                    for p in pdfs]
             try:
-                approved_with = json.loads((g / "index.json").read_text(encoding="utf-8")).get("pymupdf")
+                idx = json.loads((g / "index.json").read_text(encoding="utf-8"))
+                approved_with, approved_ocr = idx.get("pymupdf"), idx.get("tesseract", "unrecorded")
             except (OSError, ValueError, AttributeError):
-                approved_with = None
-            exact = approved_with in (None, pymupdf_version())
+                approved_with, approved_ocr = None, "unrecorded"
+            exact = (approved_with in (None, pymupdf_version())
+                     and approved_ocr in ("unrecorded", tesseract_version()))
             print(f"against the approved outputs in {g}, {len(pdfs)} PDF(s):\n")
             if not exact:
-                print(f"  (approved with PyMuPDF {approved_with}, running {pymupdf_version()}: differences are\n"
+                print(f"  (approved with PyMuPDF {approved_with} and tesseract {approved_ocr}, running "
+                      f"{pymupdf_version()} and {tesseract_version()}: differences are\n"
                       f"   printed, not failed; the expectations decide)\n")
         else:
             sha, pkg = package_at(args.base)

@@ -1,62 +1,3 @@
----
-abstract: >-
-  principles (Anderson 1999; Nussbaum 2006b; Claassen 2016) or at an applied theoretical
-  level, which is useful for practical assessments of unjust inequalities (e.g. Robeyns 2003;
-  Wolff and De-Shalit 2007). Fourth, a capability theory of justice may need to engage in a
-  comparison with other ‘metrics of justice’. In the literature on social justice there are
-  several terms used to indicate what precisely we are assessing or measuring: the metric of
-  advantage, the currency of justice, or the informational basis for the interpersonal
-  comparisons for the purpose of justice. Within theories of justice, the main arguments are
-  with Rawlsian resourcists[^24] and with defenders of Dworkinian resourcism.[^25] Other
-  possible metrics are basic needs or the many different types of subjective welfare or
-  preference satisfaction. A full capability theory of justice would need to show why it
-  serves better as a metric of justice than these other metrics. Fifth, a capability theory of
-  justice needs to take a position on the “distributive rule” (Anderson 2010, 81) that it will
-  endorse: will it argue for plain equality, or for sufficiency, or for prioritarianism, or
-  for some other (mixed) distributive rule? Both Martha Nussbaum’s and Elizabeth Anderson’s
-  theories are sufficiency accounts, but from this it does not follow, as one sometimes reads
-  in the secondary literature, that the capability approach entails a sufficiency rule. Sen
-  may have given the (wrong) impression of defending straight equality as a distributive rule,
-  by asking the question “Equality of what?” (Sen 1980), though a careful reading shows that
-  he was merely asking the question “If we want to be defending equality of something, then
-  what would that be?” In fact, Sen has remained uncommitted to one single distributive rule,
-  which probably can be explained by the fact that he is averse to building a well-defined
-  theory of justice but rather prefers to investigate how real-life unjust situations can be
-  turned into more just situations, even if perfect justice is unattainable (Sen 2006, 2009c).
-  The capability approach clearly plays a role in Sen’s work on justice, since when assessing
-  a situation, he will investigate inequalities in people’s capabilities and analyse the
-  processes that led to those inequalities. Yet Sen has an eclectic approach to theorizing,
-  and hence other notions and theories (such as human rights or more formal discussions on
-  freedoms from social choice theory) also play a role in his work on justice. The presence
-  and importance of the capability approach in Sen’s work is thus undeniable, but should not
-  be seen as the only defining feature. Sixth, a capability theory of justice needs to specify
-  where the line between individual and collective responsibility is drawn, or how this will
-  be decided, and by whom. There is a remarkable absence of any discussion about issues of
-  responsibility in the capability literature, in sharp contrast to political philosophy and
-  welfare economics where this is one of the most important lines of debate, certainly since
-  the publication of Dworkin’s (1981, 2000) work on justice and equality which led to what
-  Anderson (1999) has called “luck-egalitarianism”. Nevertheless, whether one wants to discuss
-  it explicitly or not, any concrete capability policy proposal can be analysed in terms of
-  the division between personal and collective responsibility, but this terminology is largely
-  absent from the capability literature. In part, this might be explained by the fact that
-  much of the work on capabilities deals with global poverty, where issues of individual
-  responsibility seem to be less relevant since it would seem outrageous to suggest that the
-  world’s most destitute people are personally responsible for the situation they are in. That
-  doesn’t mean that the responsibility question is not important: it is indeed of utmost
-  importance to ask who is responsible for global poverty reduction or the fulfilling of
-  international development targets, such as the Sustainable Development Goals on which
-  political philosophers have written a great deal (Singer 2004, 2010; Pogge 2008). The point
-  is rather that philosophical puzzles, such as the issue of expensive tastes (for expensive
-  wine, caviar, fast cars, or you name it), are simply beyond the radar of the child labourer
-  or the poor peasant. However, while this may perhaps justify the absence of any discussion
-  about personal responsibility among capability scholars concerned with poverty, it does not
-  absolve theorists of justice who deal with justice in affluent societies (or affluent
-  sections of poor societies) from discussing the just division between personal and
-  collective responsibility (Pierik and Robeyns 2007, 148–49). This brings us to a related
-  issue: a theory of justice generally specifies rights, but also duties. However, capability
-  theorists have remained
----
-
 <!-- CONVERTED TEXT - NOT THE PUBLISHED DOCUMENT.
      Made by ingest.py from robeyns-2017-wellbeing-freedom-social-justice.pdf.
      No heading was inserted; any `#` below is the document's own, or was
@@ -64,13 +5,13 @@ abstract: >-
      the publisher's access stamps, where there were any, are blanked and the
      lines they sat on are kept so nothing below them moves.
      Back matter is kept here and trimmed only when text is sent to a model.
+     collated route: the page images read again by tesseract and voted against the text layer (1 sheet(s), 10 words; token agreement C~B 84.6%; nothing to settle; 1s)
+     ! 1 disagreement(s) no vote could settle -- the more reliable witness's reading stands in each; settle them from the page images with collation_disputes, then settle_disputes
      structured route (pdf_to_source): 103 heading(s), 21 displayed quotation(s) as blockquotes, 1 footnote(s) under `# Notes`
      dropped: journal licence (29), page number (66), running head (189)
      back matter kept for the reader (References, References, References, References, References, References, References, References, References, References, References, References, References, References, References, References, References) -- in the file, trimmed from the extraction prompt
-     abstract kept (760 words) -- in the file's front matter, which the app shows on the orientation panel and a claim may quote; it is never trimmed from the extraction prompt
      headings from the PDF's own outline (103 of its 105 entries found in the text)
-     ! 6 line(s) look stretched -- possible dropped words; the converter's report names them
-     (the raw text layer held 95478 words; this keeps 95016, the difference measured furniture and front matter) -->
+     ! 6 line(s) look stretched -- possible dropped words; the converter's report names them -->
 
 <!-- p.-10 begins here -->
 

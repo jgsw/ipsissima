@@ -441,12 +441,12 @@ carefully:
   says so, renders the damaged passages as images, and asks the assistant to read them. You get
   a usable result either way; what changes is how much it costs.
 
-### A damaged scan is read again, and the readings are voted
+### A scan is read again, and the readings are voted
 
 An old scan's text layer is one OCR engine's reading of the page images, made once, and every
-word it got wrong is a word a quotation will fail against. Where **tesseract** is installed
-(`brew install tesseract`, or your system's package), a scan whose layer looks damaged is read
-again, page by page at 300 dpi, and the two readings are **collated** like a textual critic's
+word it got wrong is a word a quotation will fail against -- often without looking damaged at
+all. Where **tesseract** is installed (`brew install tesseract`, or your system's package),
+every scan is read again, page by page at 300 dpi, and the two readings are **collated** like a textual critic's
 witnesses: aligned word by word, and wherever they disagree,
 
 1. a majority settles it, when there is a third reading to make one;
@@ -456,23 +456,30 @@ witnesses: aligned word by word, and wherever they disagree,
    this document stands, and the place is logged.
 
 A third reading is worth having when you have one: give `extract_text` a `witness` -- another
-OCR text of the same work, such as archive.org's "Full text of" page saved as HTML. The fresh
-reading keeps the page geometry, so the result goes through the same structured converter as a
-clean PDF (headings, footnote zones, page markers, the Zotero highlight sidecar), and the old
-layer still supplies what only it knows, which words are *italic*. A text layer that lost
-words at a page edge loses nothing by this: a clean longer reading wins over a fragment.
+OCR text of the same work, such as archive.org's "Full text of" page saved as HTML.
+
+**A sound layer is kept, and corrected in place.** Where a page's old layer is a reading of the
+page, the converter reads it exactly as before -- its type sizes, note numbers and lines are what
+the heading and footnote rules were tuned on -- and the vote's corrections are made in the
+converted text, each found between its neighbours: a word misread (`siftcient`), a line cut off at
+the page edge, a lost note number. Only a page with no layer, or one that is no reading of it
+(letter-spaced, a database header over an image), gets a new layer written from the fresh reading,
+keeping the old layer's sizes and *italics* where it had any. Either way every word keeps the
+scan's coordinates, so page markers and Zotero highlights still land.
 
 The disputes are what is left for the assistant, and they are small: `collation_disputes`
 returns them with every reading and the printed lines they sit on, many to an image with the
 disputed words boxed, and `settle_disputes` applies what the images say -- to the Markdown,
 and to the scan's record, so a later conversion of the same PDF applies them first. Pages
-missing from the scan (the printed page numbers jump) are reported. Measured on a 1963
-journal scan of three pages: 1,143 words, 96% agreement, 16 places mended by the word list
-and two half-lines the layer had lost restored, 13 disputes left -- and 2 with a third
-reading; see `eval/COLLATION-FINDINGS.md` for larger scans.
+missing from the scan (the printed page numbers jump) are reported. On the 1963
+Gettier scan the layer's own `siftcient` and `suffiient`, two half-lines lost at the page edge,
+and three lost words are put back, with 13 small disputes left (2 with a third reading); on
+older JSTOR scans whose layers were cut off at the right edge of every line, whole paragraphs
+come back. See `eval/COLLATION-FINDINGS.md`.
 
-`collate: true` reads any scan this way, including one whose layer passes as clean (an old
-OCR layer can be wrong without being garbled); `collate: false` never does. The OCR is kept in
+`collate: false` turns this off; a born-digital PDF has no page images and is untouched by it.
+Without tesseract, a scan converts as it always did, and the conversion's notes say what
+installing it would add. The OCR is kept in
 your user cache folder, keyed by the file's contents, so a second conversion takes seconds; it
 is never written beside a Zotero attachment.
 

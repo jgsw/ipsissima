@@ -103,7 +103,36 @@ neither engine may be right and the page needs transcribing rather than choosing
   synthetic scan; none of these nine has a gap), but the page markers still number by one
   offset, so pinpoints after a gap are off until the converter learns per-run offsets.
 * A drop capital the layer did not read stays apart from its word (`V ARIOUS`).
-* The regression list holds no damaged scan, so `extraction_regression.py` cannot see this
-  route; a "# Damaged scans" section (these nine) would let it.
-* Whether every scan, not only a damaged one, should be collated by default: the Gettier is
-  rated `easy` and gains the most.
+
+## Made the default, 18 Oct 2026 — and why sound layers are now kept
+
+Ruled 18 Oct 2026: collation is the DEFAULT for every scan, not only one whose layer looks
+damaged, and the seven private scans here joined the regression list under "# Damaged scans"
+(the two public ones were already in it).
+
+Making it the default put the regression list's ordinary JSTOR scans through it, and the first
+design -- rewrite every sheet's layer from the fresh reading -- broke what the converter had right
+on them: 30 of 82 documents changed, and the expectations reported footnotes lost (9 to 0),
+running heads and table rows read as headings, section headings missing. The text was better
+and the structure worse, because pdf_to_source finds headings, note zones and note numbers by
+type sizes the layer's own engine wrote. Imitating those sizes recovered much of it but not all.
+
+So the design changed: **a sheet whose layer is a reading of it keeps it**, and the vote's
+corrections are made in the converted text (`collate.patch`), each found between its neighbours
+and never across a line break; only a sheet with no layer, a letter-spaced one, or one far more
+non-words than the fresh reading is rewritten. The route (structured or plain) is chosen as it
+always was, by the layer the converter reads. On a kept sheet a dispute leaves the layer's
+reading standing unless the layer has nothing there; marks (quotes, dashes) are the layer's.
+
+The regression list then: every expectation that held before still holds (0 broke); 9 known
+defects fixed -- among them Wolff's two section titles the layer had cut short ("3 Themes f",
+"3.3 A Princ"), which the page images print whole, and Ó Gráda's and Wolff's lines cut off at the
+right edge of nearly every line, now whole; the maps lose one quotation, a map that quotes the
+layer's misspelling `suffiient` (its own note says the page prints `sufficient`). Expectation
+files whose recorded text was the damaged text were updated to the page's. Approved outputs were
+re-saved, and the index now records the tesseract version beside PyMuPDF's: a machine without
+tesseract (CI) converts as before, and its differences are printed, not failed.
+
+The Gettier's labelled repairs on this design: 5 of 8 (the layer's two `sufficient`s, both lost
+half-lines, the lost note number 1); the other three are the layer's own spacing -- `V ARIOUS`,
+`follows :3`, `of' justified'` -- which a kept layer keeps.

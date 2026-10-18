@@ -44,10 +44,14 @@ there the words tesseract was unsure of and no word list knows are the disputes.
 the layer saw goes where the layer put it; visible text set over a scan -- a publisher's access
 stamp -- is kept as it is, for ingest's stamp-blanking to find.
 
-WHAT COMES OUT is a copy of the PDF whose invisible text layer is the collated reading, word by
-word at C's boxes. The rest of the pipeline -- pdf_to_source's headings, footnote zones,
-furniture, page markers and the geometry sidecar -- then runs on that copy unchanged, which is
-why the coordinates of every word still match the original scan exactly.
+WHAT COMES OUT depends on the layer. A SOUND LAYER IS KEPT: where a sheet's layer is a reading of
+it, the converter reads it exactly as before -- its sizes, its note numbers, its line structure,
+everything pdf_to_source's heading and note rules were tuned on -- and the vote's corrections are
+made in the converted text, each found between its neighbours (`patch`). A sheet with no layer, or
+one that is no reading of it (letter-spaced, a database's header over an image), is REWRITTEN: a
+copy of the PDF carries the collated reading as its invisible layer there, word by word at C's
+boxes, sized by the old layer where it had any. Either way the coordinates of every word still
+match the original scan, so the geometry sidecar and the page markers hold.
 
 WHERE IT KEEPS ITS WORK: a cache folder per PDF (by content hash), never beside a Zotero
 attachment -- see `cache_dir`. The OCR is kept there, so a second run costs seconds.
@@ -95,7 +99,10 @@ GAP_LIMIT = 3000
 
 def tesseract():
     """The tesseract executable, or None. Looked for beyond PATH: an app launched from the Dock
-    -- Claude Desktop starting this server -- inherits a PATH without Homebrew's folders."""
+    -- Claude Desktop starting this server -- inherits a PATH without Homebrew's folders.
+    IPSISSIMA_NO_TESSERACT=1 hides it, as on a machine without it (CI does not have it)."""
+    if os.environ.get("IPSISSIMA_NO_TESSERACT"):
+        return None
     found = shutil.which("tesseract")
     if found:
         return found
@@ -212,7 +219,7 @@ def text_of(seg):
 MARKS = re.compile(r"['\"`‘’“”‚„′″—–‒\-?]*")
 
 WORD_LISTS = ("/usr/share/dict/words", "/usr/dict/words", "/usr/share/dict/web2")
-WEIRD = set("~^°¢§«»|{}\\_¬•■®©¥€£<>@#=+*")
+WEIRD = set("~^°¢§«»|{}\\_¬•■®©¥€£<>@#*")
 _DICT = [None]
 
 
@@ -261,9 +268,13 @@ class Lexicon:
                 continue
             if any(c in WEIRD for c in t):
                 b += 2
-            elif re.search(r"\d", t) and re.search(r"[A-Za-z]", t) and not re.fullmatch(
-                    r"\d+(?:st|nd|rd|th|d)|\d{2,}s", t):
-                b += 2                      # `7s` for `is`, but `1970s` and `2nd` stand
+            elif re.search(r"\d", t) and re.search(r"[A-Za-z]", t) and not (
+                    re.fullmatch(r"\d+(?:st|nd|rd|th|d)|\d{2,}s|[A-Za-z]\d{1,2}", t)
+                    or (re.fullmatch(r"([A-Za-z]{3,})\d{1,3}", t)
+                        and self.known(re.match(r"[A-Za-z]+", t).group()))):
+                # `7s` for `is` and `1Plato` are damage; `1970s`, `2nd`, a variable's subscript
+                # (`C1`, Waldron) and a layer's note number on its word (`competence42`) are not.
+                b += 2
             elif t.isalpha() and (re.search(r"[a-z][A-Z]|[A-Z]{2}[a-z]{2}", t)) and not (
                     re.fullmatch(r"(?:Mc|Mac)[A-Z][a-z]+", t)):
                 b += 2                      # `INus`, `DirricuLties`: small capitals half read
@@ -381,7 +392,7 @@ def run_ocr(pdf, sheets, cache, lang="eng", jobs=None, log=None):
         except (ValueError, OSError):
             shutil.rmtree(ocr, ignore_errors=True)
     ocr.mkdir(parents=True, exist_ok=True)
-    meta.write_text(json.dumps(want))
+    _atomic_text(meta, json.dumps(want))
     todo = [s for s in sheets if not (ocr / f"s{s + 1:04d}.tsv").exists()]
     if not todo:
         return ocr, 0
@@ -397,7 +408,9 @@ def run_ocr(pdf, sheets, cache, lang="eng", jobs=None, log=None):
         out = Path(str(base) + ".tsv")
         if r.returncode != 0 or not out.exists():
             raise RuntimeError(f"tesseract failed on sheet {s + 1}: {(r.stderr or '')[-200:]}")
-        shutil.move(str(out), str(ocr / out.name))
+        part = ocr / f"{out.name}.{os.getpid()}.tmp"
+        shutil.move(str(out), str(part))
+        os.replace(part, ocr / out.name)
 
     t0 = time.time()
     try:
@@ -429,8 +442,12 @@ def read_tsv(path, sheet):
     order = []
     with open(path, newline="", encoding="utf-8", errors="replace") as fh:
         for row in csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE):
-            if row.get("level") != "5" or not (row.get("text") or "").strip():
+            # Tesseract writes `_` for some gaps between words (`about_the`) and reads a rule or a
+            # stain as `|`: neither is a character of the text.
+            text = re.sub(r"(?<=\w)_+(?=\w)", " ", (row.get("text") or "")).strip()
+            if row.get("level") != "5" or not text or re.fullmatch(r"[|_~¬•■]+", text):
                 continue
+            row["text"] = text
             k = (int(row["block_num"]), int(row["par_num"]), int(row["line_num"]))
             if k not in lines:
                 lines[k] = []
@@ -521,7 +538,7 @@ def layer_words(page, skip=()):
                     x0, y0, x1, y1 = ch["bbox"]
                     if cur is None:
                         cur = dict(t="", x0=x0, y0=y0, x1=x1, y1=y1, it=it, bo=bo,
-                                   size=s.get("size", 0))
+                                   size=s.get("size", 0), base=ch["origin"][1])
                     cur["t"] += c
                     cur["x0"], cur["y0"] = min(cur["x0"], x0), min(cur["y0"], y0)
                     cur["x1"], cur["y1"] = max(cur["x1"], x1), max(cur["y1"], y1)
@@ -631,8 +648,20 @@ def decide(reads, lexicon):
     ranked = sorted(groups.values(), key=len, reverse=True)
     cleanest = lambda ws: min(ws, key=lambda w: (lexicon.bad(reads[w]), w != "C"))  # noqa: E731
     if len(groups) == 1:
-        # The same letters, spaced differently: `inthe` against `in the`.
-        return cleanest(list(reads)), "spacing", list(reads)
+        # The same letters, spaced differently: `inthe` against `in the`, `Band Cand` against
+        # `B and C and` (Carroll 1895 -- the word list knows `cand`). The cleaner reading wins;
+        # level, the one with more word boundaries, since an engine runs words together oftener
+        # than it splits a word into words -- unless its extra boundaries are letter-spacing,
+        # three single letters in a row (`W H A T`).
+        def spaced(seg):
+            run, pen = 0, 0
+            for t, _ in seg:
+                run = run + 1 if len(t) == 1 and t.isalpha() else 0
+                pen += run >= 3
+            return pen
+        pick = min(reads, key=lambda w: (lexicon.bad(reads[w]) + spaced(reads[w]),
+                                         -len(reads[w]), w != "C"))
+        return pick, "spacing", list(reads)
     if len(ranked[0]) >= 2 and len(ranked[0]) > len(ranked[1]):
         return cleanest(ranked[0]), "majority", ranked[0]
     # CAPITALS ALONE: the same letters, cased differently -- small capitals read as capitals by
@@ -643,9 +672,12 @@ def decide(reads, lexicon):
     # QUOTE MARKS AND DASHES are not worth a reader's look. Which quote a page prints, or which
     # dash, does not survive quotation-matching anyway (the normaliser folds them), and a layer
     # that encodes a dash or a curly quote as "?" is not reading it at all: on Mackie (1965) such
-    # pairs were 300 of 460 disputes. The fresh reading's mark stands; where it saw none and
-    # another witness did, that one's.
+    # pairs were 300 of 460 disputes. The layer's mark stands, as it stood before collation.
     if all(MARKS.fullmatch(key(seg) or "") for seg in reads.values()):
+        # The layer's marks stand -- including none, where a speck gave tesseract a quote mark
+        # (Sewell 1992) -- unless the layer wrote "?" for a glyph it could not encode.
+        if "B" in reads and "?" not in key(reads["B"]):
+            return "B", "marks", ["B"]
         full = [w for w in reads if key(reads[w]) and "?" not in key(reads[w])]
         pick = "C" if "C" in full else (full[0] if full else "C")
         return pick, "marks", [pick]
@@ -662,6 +694,13 @@ def decide(reads, lexicon):
                     if key(reads[w]) != key(reads[longest]))
             and lexicon.bad(reads[longest]) <= content[longest] / 3):
         return longest, "absence", [w for w in reads if key(reads[w]) == key(reads[longest])]
+    # A READING CUT OFF is the start of the whole one: `Collo` for `Collopy); Parliamentary
+    # Debates` at the edge of Ó Gráda's page, too few words for the count above to see.
+    whole = max(reads, key=lambda w: len(key(reads[w])))
+    if (lexicon.bad(reads[whole]) <= content[whole] / 3 and content[whole] >= 1
+            and all(key(reads[whole]).startswith(key(reads[w])) and len(key(reads[w])) >= 2
+                    for w in reads if key(reads[w]) != key(reads[whole]))):
+        return whole, "absence", [w for w in reads if key(reads[w]) == key(reads[whole])]
     # THE LEXICON COMPARES LIKE WITH LIKE: readings of about the same length, where fewer
     # unknown words means a better reading and not merely a shorter one.
     lo, hi = min(content.values()), max(content.values())
@@ -745,9 +784,11 @@ def vote(C, witnesses, lexicon, decided=None, ident=None):
         if ev["why"] == "dispute":
             # Words over no words: an engine that saw nothing where another saw a footnote
             # number has not disagreed about it.
-            full = [w for w in rank if w in ev["reads"] and ev["reads"][w]]
-            ev["chose"] = full[0] if full and len(full) < len(ev["reads"]) else next(
-                w for w in rank if w in ev["reads"])
+            # And more letters over fewer: an engine loses ink into marks far oftener than it
+            # invents letters -- `‘a` where the page has a small-capital THERE (Simon 1954).
+            body = {w: sum(len(t) for t, _ in seg if re.search(r"\w", t))
+                    for w, seg in ev["reads"].items()}
+            ev["chose"] = min(ev["reads"], key=lambda w: (-body[w], rank.index(w)))
             ev["support"] = [w for w in ev["reads"]
                              if key(ev["reads"][w]) == key(ev["reads"][ev["chose"]])]
     return events, wins
@@ -833,6 +874,8 @@ class Collation:
         self.overlays = {}
         self.layer = {}
         self.heights = {}
+        self.rewrite = set()
+        self.patches = []
         self.stats = Counter()
         self.agreement = {}
         self.wins = Counter()
@@ -842,6 +885,8 @@ class Collation:
 
     def report(self):
         return dict(sheets_read=len(self.scanned), sheets_kept=self.skipped,
+                    layer_rewritten=sorted(s + 1 for s in self.rewrite),
+                    corrections=len(self.patches),
                     words=len(self.words), agreement=self.agreement, settled=dict(self.stats),
                     reliability=dict(self.wins), disputes=len(self.disputes),
                     missing_pages=self.missing, seconds=round(self.seconds, 1),
@@ -941,8 +986,41 @@ def collate(pdf, witness=None, cache=None, lang="eng", jobs=None, log=None, deci
         w = col.words[owner[min(S, len(owner) - 1)]]
         return f"{w['sheet'] + 1}.{w['line']['index']}.{w['index']}"
 
+    # Judged by the layer's own words, not by agreement: agreement also falls where the two
+    # engines ordered a table or a mirrored page differently, and a layer rewritten for that lost
+    # Ó Gráda's and Wolff's section headings. A layer is no reading of its sheet when it is
+    # letter-spaced (`W H A T`), or far more of its words are no words than the fresh reading's.
+    def unread(sh):
+        bt = [t for w in bwords.get(sh, []) for t, _ in toks(w["t"]) if t.isalpha()]
+        ct = [t for w in col.words if w["sheet"] == sh for t, _ in toks(w["t"]) if t.isalpha()]
+        if not bt or not ct:
+            return True
+        single = sum(1 for t in bt if len(t) == 1 and t not in "aAI") / len(bt)
+        miss = lambda ts: sum(1 for t in ts if len(t) > 1 and not lexicon.known(t)) / len(ts)  # noqa: E731
+        return single > 0.3 or miss(bt) > miss(ct) + 0.2
+    col.rewrite = {sh for sh in col.scanned if unread(sh)}
     col.events, col.wins = vote(C, witnesses, lexicon, decided=decisions, ident=ident)
+    # ON A KEPT SHEET A DISPUTE LEAVES THE LAYER'S READING STANDING, unless the layer has no
+    # letter or figure there at all -- a lost note number, a lost word -- and the reader of the
+    # page image decides. A vote that could not decide has no business changing a sound layer
+    # (Wolff: `capability.` made `capability,`; Gettier: `accepts (e)` made `accepts (ce)`).
+    for ev in col.events:
+        S, E = ev["s"], ev["e"]
+        sheets = {col.words[owner[k]]["sheet"] for k in range(max(0, S - 1), min(len(C), E + 1))}
+        if ev["why"] == "dispute" and "B" in ev["reads"] and not (sheets & col.rewrite):
+            body = {w: sum(len(t) for t, _ in seg if re.search(r"\w", t))
+                    for w, seg in ev["reads"].items()}
+            ev["chose"] = ("B" if body["B"] or not any(body.values())
+                           else max(ev["reads"], key=lambda w: body[w]))
+            ev["support"] = [w for w in ev["reads"]
+                             if key(ev["reads"][w]) == key(ev["reads"][ev["chose"]])]
     out = [[t] for t in C]
+    # WHERE C AND THE LAYER AGREE BUT FOR THE STYLE OF A QUOTE OR DASH, the layer's stands: it is
+    # what the text said before collation, what maps already quote, and what the expectations
+    # were written from; tesseract prints typographic quotes the layer had as straight ones.
+    for i, j in enumerate(eqB):
+        if j >= 0 and Bt[j][0] != C[i][0]:
+            out[i] = [Tok((Bt[j][0], C[i][1]))]
     extra = []
     boxes = {}
     for w in col.words:
@@ -964,15 +1042,117 @@ def collate(pdf, witness=None, cache=None, lang="eng", jobs=None, log=None, deci
         chosen = typed(ev["decided"]) if ev["why"] == "decided" else ev["reads"][ev["chose"]]
         ev["text"] = text_of(chosen)
         if chosen != C[ev["s"]:ev["e"]]:
-            project(out, C, ev["s"], ev["e"], chosen, extra, free)
+            # A word only the layer read is set where the layer put it only on a sheet being
+            # rewritten; on a kept sheet the layer already has it, where it is.
+            on = {col.words[owner[k]]["sheet"]
+                  for k in range(max(0, ev["s"] - 1), min(len(C), ev["e"] + 1))}
+            project(out, C, ev["s"], ev["e"], chosen, extra if on & col.rewrite else None, free)
     inv = {j: i for i, j in enumerate(eqB) if j >= 0}
     place_extra(col, extra, Bt, inv, owner)
+    # ---- which sheets are rewritten, and which keep their layer and take corrections
+    # A SOUND LAYER IS KEPT. Rewriting a sheet's layer from the fresh reading mends its words but
+    # not its typography: the converter finds headings, note zones, note numbers and running heads
+    # by sizes the layer's own engine wrote, and a rewritten layer -- however carefully sized --
+    # lost footnotes and gained headings on scans whose layers were sound (18 Oct 2026, the
+    # regression list). So a sheet whose layer agrees with the fresh reading on most of its words
+    # keeps it, and the vote's corrections are made in the converted text instead, each found
+    # between its neighbours (`patch`). Only a sheet with no layer, or a layer that is not a
+    # reading of it (letter-spaced, a header over an image), is rewritten.
+
+    n = len(C)
+    for ev in col.events:
+        S, E = ev["s"], ev["e"]
+        sheets = {col.words[owner[k]]["sheet"] for k in range(max(0, S - 1), min(n, E + 1))}
+        ev["kept"] = not (sheets & col.rewrite)
+        if "B" in ev["reads"]:
+            left = eqB[S - 1] if S > 0 else -1
+            right = eqB[E] if E < n else len(Bt)
+            ev["b_before"] = text_of(Bt[max(0, left - 4):left + 1]) if left >= 0 else ""
+            ev["b_after"] = text_of(Bt[right:right + 5])
+    # THE CORRECTIONS ARE WHERE THE COLLATED READING DIFFERS FROM THE LAYER -- not where some
+    # vote was held: with a witness the vote is between tesseract and the witness, and a word
+    # both read right and the layer read wrong (`siftcient`) is no region of it at all.
+    def as_layer(k):
+        return eqB[k] >= 0 and [t for t, _ in out[k]] == [Bt[eqB[k]][0]]
+    at = {}
+    for ev in col.events:
+        at.setdefault(ev["s"], ev)
+    fixes = []
+    k = 0
+    while k < n:
+        if as_layer(k) and not (k + 1 < n and eqB[k + 1] > eqB[k] + 1 and as_layer(k + 1)):
+            k += 1
+            continue
+        S = k if not as_layer(k) else k + 1
+        E = S
+        while E < n and not as_layer(E):
+            E += 1
+        k = max(E, k + 1)
+        sheet = col.words[owner[min(S, n - 1)]]["sheet"]
+        if sheet in col.rewrite or {col.words[owner[j]]["sheet"]
+                                    for j in range(max(0, S - 1), min(n, E + 1))} & col.rewrite:
+            continue
+        left = eqB[S - 1] if S > 0 else -1
+        right = eqB[E] if E < n else len(Bt)
+        if (S > 0 and left < 0) or (E < n and right < 0) or right <= left:
+            continue
+        was = list(Bt[left + 1:right])
+        chosen = [t for j in range(S, E) for t in out[j]]
+        if text_of(chosen) == text_of(was):
+            continue
+        if [t for t, _ in chosen if t != "-"] == [t for t, _ in was if t != "-"]:
+            continue        # a hyphen at a line's end, which the converter joins its own way
+        said = lambda seg: sum(1 for t, _ in seg if re.search(r"\w", t))  # noqa: E731
+        if said(was) > said(chosen) + 3:
+            continue        # words the layer has that tesseract did not read: kept, never cut
+        if len(was) > 8 and len(chosen) > 8 and difflib.SequenceMatcher(
+                None, [ak(t) for t, _ in was], [ak(t) for t, _ in chosen]).ratio() < 0.6:
+            continue        # two long readings unlike each other: an order, not a word (Carroll)
+        first = col.words[owner[min(S, n - 1)]]
+        line, h = first["line"], col.heights.get(first["sheet"], 792)
+        if furniture_line(line, h):
+            continue        # a running head or folio: furniture, and a folio glued into a head
+        ev = at.get(S) or dict(why="vote", id=None)
+        ev = dict(ev, b_before=text_of(Bt[max(0, left - 4):left + 1]) if left >= 0 else "",
+                  b_after=text_of(Bt[right:right + 5]))
+        fixes.append([S, E, chosen, ev])
+    # CORRECTIONS A WORD OR TWO APART ARE ONE: made one after the other, the first changes the
+    # neighbours the second is found by (Dewey 1896: `unity` put in, then `tmity-o-f` not found).
+    merged = []
+    for fx in fixes:
+        same_line = merged and col.words[owner[min(fx[0], n - 1)]]["line"] is \
+            col.words[owner[min(max(merged[-1][1] - 1, 0), n - 1)]]["line"]
+        if same_line and fx[0] - merged[-1][1] <= 2 and all(eqB[k] >= 0 for k in
+                                                            range(merged[-1][1], fx[0])):
+            between = [Tok((Bt[eqB[k]][0], C[k][1])) for k in range(merged[-1][1], fx[0])]
+            merged[-1][1] = fx[1]
+            merged[-1][2] = merged[-1][2] + between + fx[2]
+            merged[-1][3] = merged[-1][3] + [fx[3]]
+        else:
+            merged.append([fx[0], fx[1], fx[2], [fx[3]]])
+    for S, E, chosen, evs in merged:
+        left = eqB[S - 1] if S > 0 else -1
+        right = eqB[E] if E < n else len(Bt)
+        if (S > 0 and left < 0) or (E < n and right < 0) or right <= left:
+            continue
+        # Words the layer lacked go with the neighbour tesseract saw them on a line with: a
+        # paragraph's lost first line after the heading above it would join the heading (Wolff).
+        opens = S > 0 and S < n and col.words[owner[S]]["line"] is not col.words[owner[S - 1]]["line"]
+        # The left context as the text will stand when this correction is made -- the ones
+        # before it made already -- and the right as the layer has it, not yet corrected.
+        done = [t for k in range(max(0, S - 8), S) for t in out[k]][-5:]
+        col.patches.append(dict(id=evs[0].get("id"), why="+".join(e["why"] for e in evs),
+                                text=text_of(Bt[left + 1:right]), new=text_of(chosen),
+                                before=text_of(done), after=evs[-1]["b_after"],
+                                b_before=evs[0]["b_before"],
+                                side="after" if opens else "before"))
     # ---- the collated text of each of C's words
     texts = [[] for _ in col.words]
     for i, o in enumerate(owner):
         texts[o] += out[i]
     for w, seg in zip(col.words, texts):
         w["out"] = text_of(seg).strip()
+    layer_typography(col)
     # ---- the disputes, with what a reader of the page image needs
     found = []
 
@@ -980,7 +1160,7 @@ def collate(pdf, witness=None, cache=None, lang="eng", jobs=None, log=None, deci
         first = col.words[ws[0]]
         line = first["line"]
         h = col.heights.get(first["sheet"], 792)
-        if (line["y1"] < 0.1 * h or line["y0"] > 0.9 * h) and len(line["words"]) <= 8:
+        if furniture_line(line, h):
             # A running head or a folio: the converter drops it as furniture, and its page
             # number is read for the page markers from the sheet itself. Not worth a look.
             col.stats["furniture, not asked"] += 1
@@ -1001,6 +1181,9 @@ def collate(pdf, witness=None, cache=None, lang="eng", jobs=None, log=None, deci
         ws = sorted({owner[i] for i in range(S, E)} or {owner[min(S, len(owner) - 1)]})
         dispute(S, E, ws, {w: text_of(seg) for w, seg in ev["reads"].items()}, ev["chose"],
                 ev["text"], ev["id"])
+        if ev.get("kept") and "b_after" in ev and found and found[-1][0] == S:
+            # On a kept sheet the text around the dispute is the layer's.
+            found[-1][1].update(before=ev["b_before"], after=ev["b_after"])
     # A SHEET NO OTHER WITNESS READ -- an image-only scan, with no witness given -- has nothing
     # to vote against, so what the one reading was unsure of is the dispute: a word tesseract
     # gave low confidence that is no word anyone knows.
@@ -1032,6 +1215,16 @@ def collate(pdf, witness=None, cache=None, lang="eng", jobs=None, log=None, deci
     return col, None
 
 
+def furniture_line(line, h):
+    """A running head or folio: in the top or bottom tenth of the sheet, and a few words or all
+    capitals. A footnote there has words to it, and is the author's (Ó Gráda's note 34)."""
+    if not (line["y1"] < 0.1 * h or line["y0"] > 0.9 * h):
+        return False
+    text = " ".join(w["t"] for w in line["words"])
+    letters = re.sub(r"[^A-Za-z]", "", text)
+    return len(line["words"]) <= 4 or (len(letters) > 3 and letters.isupper())
+
+
 def kind_of(readings):
     """"word", or "formula" where EVERY reading is symbols and lone letters -- mathematics or
     logic, where each engine reads garbage and the page image is needed for a transcription,
@@ -1044,6 +1237,91 @@ def kind_of(readings):
         return bool(symbols) or singles / len(ts) >= 0.5
     said = [r for r in readings.values() if r and toks(r)]
     return "formula" if said and all(formulaic(r) for r in said) else "word"
+
+
+def layer_typography(col):
+    """The old layer's TYPOGRAPHY, kept where it has any: each line's size, and the note numbers
+    it set small and raised.
+
+    THE CONVERTER IS TUNED ON OCR LAYERS AS THEIR ENGINES WROTE THEM. pdf_to_source finds note
+    zones, headings and footnote markers by size -- a note number is a span smaller than its
+    line -- and an estimate from tesseract's ink, however even, is not what it was tuned on:
+    collated with sizes of its own, nine scans of the regression list lost every footnote and
+    gained author names and running heads as headings (18 Oct 2026). So a line's size is the
+    old layer's size there, a line the layer has no words on gets C's estimate scaled to the
+    layer's measure, and a note number the layer set small is written small and raised again.
+    A sheet with no layer gets C's estimates, and a number tesseract boxed small and high."""
+    by_sheet = {}
+    for line in col.lines:
+        by_sheet.setdefault(line["sheet"], []).append(line)
+    ratios = []
+    for sheet, lines in by_sheet.items():
+        bws = col.layer.get(sheet) or []
+        for line in lines:
+            inside = [b for b in bws if b.get("size") and line["y0"] - 1 <= (b["y0"] + b["y1"]) / 2
+                      <= line["y1"] + 1 and b["x1"] > line["x0"] - 2 and b["x0"] < line["x1"] + 2]
+            body = [b for b in inside if not re.fullmatch(r"\d{1,3}", b["t"])] or inside
+            if body:
+                sizes = sorted((b["size"], len(b["t"])) for b in body)
+                half, acc = sum(n for _, n in sizes) / 2, 0
+                for sz, n in sizes:
+                    acc += n
+                    if acc >= half:
+                        line["bsize"] = round(sz, 1)
+                        break
+                ratios.append(line["bsize"] / line["size"])
+                # The converter's own test for a note number (join_spans): a span of one to three
+                # digits smaller than its line's largest by half a point, and not lowered.
+                top = max(b["size"] for b in body)
+                bases = sorted(b["base"] for b in body)
+                lbase = bases[len(bases) // 2]
+                for b in inside:
+                    if (re.fullmatch(r"\d{1,3}", b["t"]) and b["size"] < top - 0.5
+                            and b["base"] <= lbase + 0.1 * line["bsize"]):
+                        _mark_note(line, b["t"], b["x0"], b["x1"], b["size"],
+                                   max(0.15 * line["bsize"], lbase - b["base"]))
+            elif not bws:
+                # No layer on this sheet: a number tesseract boxed small and high.
+                hs = sorted(w["y1"] - w["y0"] for w in line["words"])
+                hm = hs[len(hs) // 2] if hs else 0
+                for w in line["words"]:
+                    if (re.fullmatch(r"\d{1,3}", w["out"] or "") and len(line["words"]) > 2
+                            and w["y1"] - w["y0"] < 0.7 * hm
+                            and w["y1"] < line["base"] - 0.12 * line["size"]):
+                        _mark_note(line, w["out"], w["x0"], w["x1"], 0.7 * line["size"],
+                                   line["base"] - w["y1"])
+    # A SHORT LINE THE LAYER NEVER SAW, on a sheet it otherwise covers, is a figure's: a label
+    # inside a diagram, which the layer's engine left alone and tesseract reads (Machamer et al.
+    # 2000: "Reuptake", "PK" promoted to headings). A long one is kept -- that is text the layer
+    # lost, which is what collation is for.
+    for sheet, lines in by_sheet.items():
+        seen = [l for l in lines if l.get("bsize")]
+        if col.layer.get(sheet) and len(seen) >= 0.8 * len(lines):
+            for l in lines:
+                if not l.get("bsize") and len(l["words"]) <= 4:
+                    for w in l["words"]:
+                        w["out"] = ""
+                    col.stats["figure words left out"] += len(l["words"])
+    ratio = sorted(ratios)[len(ratios) // 2] if ratios else 1.0
+    for line in col.lines:
+        line["size"] = round(line.get("bsize") or line["size"] * ratio, 1)
+        for w in line["words"]:
+            if w.get("sup") and w["sup"]["size"] >= line["size"] - 0.6:
+                w["sup"]["size"] = round(min(0.85 * line["size"], line["size"] - 0.6), 1)
+
+
+def _mark_note(line, digits, x0, x1, size, rise):
+    """A note number at [x0, x1] on this line: the C word it falls in, split there."""
+    for w in line["words"]:
+        if not w.get("out") or w.get("sup") or not (w["x0"] - 2 <= x0 and x1 <= w["x1"] + 2):
+            continue
+        m = re.search(rf"(?<!\d){re.escape(digits)}(\W*)$", w["out"])
+        if not m:
+            continue
+        w["sup"] = dict(before=w["out"][:m.start()], digits=digits, after=m.group(1),
+                        x0=max(x0, w["x0"]), x1=min(max(x1, x0 + 0.5), w["x1"]),
+                        size=size, rise=rise)
+        return
 
 
 def place_extra(col, extra, Bt=(), inv=None, owner=()):
@@ -1138,26 +1416,54 @@ CLOSING = re.compile(r"[,.;:?!)\]’”%…]+\S*|['\"][,.;:?!)]*")
 OPENING = re.compile(r"[(\[‘“]+")
 
 
+def runs_of(w):
+    """A word as the runs it is written in: itself, or -- where it carries a note number set
+    small and raised -- the text before the number, the number, and any mark after it."""
+    base = dict(it=w["it"], bo=w["bo"], size=None, rise=0.0, glue=False)
+    sup = w.get("sup")
+    if not sup:
+        return [dict(base, text=w["out"], x0=w["x0"], x1=w["x1"])]
+    rs = []
+    if sup["before"]:
+        rs.append(dict(base, text=sup["before"], x0=w["x0"], x1=max(w["x0"] + 0.5, sup["x0"])))
+    rs.append(dict(base, text=sup["digits"], x0=sup["x0"], x1=sup["x1"], size=sup["size"],
+                   rise=sup["rise"], glue=bool(sup["before"])))
+    if sup["after"]:
+        rs.append(dict(base, text=sup["after"], x0=sup["x1"],
+                       x1=max(w["x1"], sup["x1"] + 0.5), glue=True))
+    return rs
+
+
 def pieces(line):
-    """The words of a line as they will be written: the collated text at C's boxes, with a mark
+    """The runs of a line as they will be written: the collated text at C's boxes, with a mark
     printed apart from its word put back on it. Tesseract gives a thin-spaced `:1` or `‘` a box of
     its own, and written as its own word it reads back `following :1` and `‘ has` -- spacing no
-    one would type when quoting, so a quotation would miss on it."""
+    one would type when quoting, so a quotation would miss on it. A run with `glue` is written
+    with no space before it; one with a `size` is a note number, small and raised by `rise`."""
     out = []
     for w in line["words"]:
         if not w["out"]:
             continue
-        p = dict(text=w["out"], x0=w["x0"], x1=w["x1"], it=w["it"], bo=w["bo"])
-        if out and CLOSING.fullmatch(p["text"]) and not OPENING.fullmatch(out[-1]["text"]):
-            out[-1]["text"] += p["text"]
-            out[-1]["x1"] = p["x1"]
+        rs = runs_of(w)
+        first = rs[0]
+        if (out and first["size"] is None and CLOSING.fullmatch(first["text"])
+                and not OPENING.fullmatch(out[-1]["text"])):
+            if out[-1]["size"] is None:
+                out[-1]["text"] += first["text"]
+                out[-1]["x1"] = first["x1"]
+            else:
+                first["glue"] = True
+                out.append(first)
+            out += rs[1:]
             continue
-        if out and OPENING.fullmatch(out[-1]["text"]):
-            p["text"] = out[-1]["text"] + p["text"]
-            p["x0"] = out[-1]["x0"]
-            out[-1] = p
+        if (out and out[-1]["size"] is None and first["size"] is None
+                and OPENING.fullmatch(out[-1]["text"])):
+            first["text"] = out[-1]["text"] + first["text"]
+            first["x0"], first["glue"] = out[-1]["x0"], out[-1]["glue"]
+            out[-1] = first
+            out += rs[1:]
             continue
-        out.append(p)
+        out += rs
     return out
 
 
@@ -1236,7 +1542,7 @@ def write_layer(src, dst, col):
     for line in col.lines:
         by_sheet.setdefault(line["sheet"], []).append(line)
     with pymupdf.open(str(src)) as doc:
-        for s in col.scanned:
+        for s in sorted(col.rewrite):
             page = doc[s]
             over = col.overlays.get(s)
             if over:
@@ -1274,18 +1580,24 @@ def write_layer(src, dst, col):
                 return name, font
 
             def put(text, x0, x1, base, size, name, font, measure=None):
-                # sx is the sideways stretch, and the word is set at size / sqrt(sx) so that it
-                # reads back at `size`. A word squeezed hard would be set LARGE -- 0.25 doubles
-                # it -- and its box would rise above the line: the line's top then sat above the
-                # line before, and pdf_to_source put the two in the wrong order (Gettier p. 121).
-                # So the squeeze stops at 0.83, never more than 1.1 times the size; the few words
-                # narrower than that run a little past their box.
+                # EXACTLY THE BOX'S WIDTH, AT THE LINE'S SIZE, NO TALLER THAN IT. MuPDF reports a
+                # glyph run's size as the square root of the scales it was set at, so with G the
+                # width-per-point the box needs, a run reads back at size R with height E only
+                # where R * R = G * E. A word wider than Times sets it short, and fine; a word
+                # narrower (letter-spaced capitals, a scan's tight face) would rise above its line
+                # -- which put two lines out of order (Gettier p. 121) -- or overrun the next word
+                # and break the line (Ó Gráda's running heads). So height is held to 1.1 of the
+                # size, and the size gives way by at most 0.4 point, below what reads as a note
+                # number; past that the run grows taller, and only then.
                 unit = font.text_length(measure or text, fontsize=1) or 1
-                sx = min(max((max(x1 - x0, 0.5) / unit / size) ** 2, 0.83),
-                         1e6 if measure == " " else 4.0)
+                g = max(x1 - x0, 0.5) / unit
+                r = size
+                if r * r / g > 1.1 * size:
+                    r = max(size - 0.4, (g * 1.1 * size) ** 0.5)
+                e = r * r / g
                 pt = pymupdf.Point(x0, base)
-                shape.insert_text(pt, text, fontname=name, fontsize=size / sx ** 0.5,
-                                  render_mode=3, morph=(pt, pymupdf.Matrix(sx, 1)))
+                shape.insert_text(pt, text, fontname=name, fontsize=r, render_mode=3,
+                                  morph=(pt, pymupdf.Matrix(g / r, e / r)))
 
             for line in by_sheet.get(s, []):
                 if line.get("joined"):
@@ -1296,16 +1608,18 @@ def write_layer(src, dst, col):
                 size, base = line["size"], line["base"]
                 words = [w for frag in chain for w in pieces(frag)]
                 for k, w in enumerate(words):
-                    name, font = face_font((w["it"], w["bo"]), w["text"])
-                    put(w["text"], w["x0"], w["x1"], base, size, name, font)
-                    if k < len(words) - 1:
-                        # The space to the next word is a glyph of its own, stretched across the
+                    if k and not w["glue"]:
+                        # The space to this word is a glyph of its own, stretched across the
                         # whole gap: MuPDF ends a line at a gap wider than a space, and the
-                        # page's wide gaps -- a running head, a table's columns -- are inside one
-                        # printed line.
+                        # page's wide gaps -- a running head, a table's columns -- are inside
+                        # one printed line.
+                        prev = words[k - 1]
                         name, font = face_font((False, False), " ")
-                        put(" ", w["x1"], max(words[k + 1]["x0"], w["x1"] + 0.5), base, size,
+                        put(" ", prev["x1"], max(w["x0"], prev["x1"] + 0.5), base, size,
                             name, font, measure=" ")
+                    name, font = face_font((w["it"], w["bo"]), w["text"])
+                    put(w["text"], w["x0"], w["x1"], base - w["rise"], w["size"] or size,
+                        name, font)
             shape.commit()
         doc.save(str(dst), garbage=3, deflate=True)
     return dst
@@ -1313,10 +1627,19 @@ def write_layer(src, dst, col):
 
 # --------------------------------------------------------------------------- disputes on disk
 
+def _atomic_text(path, text):
+    """Write by rename: two conversions of one file -- the same PDF at two paths, converted in
+    parallel -- share a cache folder, and one must never read what the other is half-way
+    through writing (it did, once, in the regression run of 18 Oct 2026)."""
+    tmp = Path(f"{path}.{os.getpid()}.tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def save_disputes(col):
-    (col.cache / "disputes.json").write_text(json.dumps(dict(
-        report=col.report(), disputes=col.disputes), indent=1, ensure_ascii=False),
-        encoding="utf-8")
+    _atomic_text(col.cache / "disputes.json", json.dumps(dict(
+        report=col.report(), disputes=col.disputes,
+        unplaced=getattr(col, "unplaced", [])), indent=1, ensure_ascii=False))
 
 
 def load_disputes(cache):
@@ -1334,8 +1657,7 @@ def record_decisions(cache, decided):
     before anything else: the decision outlives the Markdown it was first applied to."""
     have = load_decisions(cache)
     have.update(decided)
-    (Path(cache) / "decisions.json").write_text(json.dumps(have, indent=1, ensure_ascii=False),
-                                                encoding="utf-8")
+    _atomic_text(Path(cache) / "decisions.json", json.dumps(have, indent=1, ensure_ascii=False))
     return have
 
 
@@ -1387,36 +1709,82 @@ def dispute_strips(pdf, disputes, out_dir, per_image=8, dpi=200, width_px=1400):
 # --------------------------------------------------------------------------- settling disputes
 
 def _pattern(seg, literal):
-    """A regex for tokens as the converter may have written them: spaces, line joins, hyphens
-    and Markdown emphasis between them, quotes either way. In the context either side
-    (`literal` false) a mark is optional -- the converter may have moved or merged it -- and
-    in the reading itself every mark counts."""
+    """A regex for tokens as the converter may have written them: spaces, line joins, hyphens,
+    Markdown emphasis and note references between them, quotes either way. In the context either
+    side (`literal` false) a mark or a bare number is optional -- the converter may have moved,
+    merged or turned it into a note reference -- and in the reading itself every mark counts but
+    a hyphen, which a line join takes away."""
     parts = []
     for t, _sp in seg:
         p = re.escape(t)
         p = re.sub(r"\\?['’]", "['’‘]", p)
         p = re.sub(r'\\?["“”]', '["“”]', p)
-        if not literal and not re.search(r"\w", t):
+        if t == "-" or (not literal and (not re.search(r"\w", t) or t.isdigit())):
             p = f"(?:{p})?"
         parts.append(p)
     return SEP.join(parts)
 
 
-SEP = r"[\s*_\-\u00ad]*"
+SEP = r"(?:[\s*_\-\u00ad#>]|\[\^\d+\])*"
 
 
-def locate(md, dispute, words=5):
-    """Where a dispute's current reading stands in the converted Markdown: (start, end) of the
-    reading, found between its neighbours, or None when that is not exactly one place."""
+def locate(md, dispute, words=5, mid=None):
+    """Where a reading stands in the converted Markdown: (start, end) of it, found between its
+    neighbours, or None when that is not exactly one place."""
     before = typed(dispute["before"])[-words:]
     after = typed(dispute["after"])[:words]
-    mid = typed(dispute["text"])
-    pat = (_pattern(before, False) + SEP + "(" + _pattern(mid, True) + ")" + SEP
-           + _pattern(after, False))
+    mid = typed(dispute["text"] if mid is None else mid)
+    # An insertion (no reading) sits hard against one neighbour -- the one before it unless it
+    # opened a printed line -- not across the paragraph break the converter may have put there.
+    after_side = not mid and dispute.get("side") == "after"
+    pat = (_pattern(before, False) + ("" if not mid and not after_side else SEP) + "("
+           + _pattern(mid, True) + ")" + ("" if after_side else SEP) + _pattern(after, False))
     hits = [m for m in re.finditer(pat, md)]
     if len(hits) != 1:
         return None
     return hits[0].span(1)
+
+
+def _find(md, d, mids):
+    for mid in mids:
+        for words in (5, 9, 3, 2):
+            span = locate(md, d, words=words, mid=mid)
+            if span is not None:
+                return span
+    return None
+
+
+def _put(md, span, new):
+    a, b = span
+    if a == b:                                   # an insertion: words the layer lacked
+        glued = re.fullmatch(r"\d{1,3}|[,.;:?!)\]’”]+", new)    # a note number, a closing mark
+        lead = "" if glued or a == 0 or md[a - 1].isspace() else " "
+        tail = "" if b < len(md) and md[b].isspace() else " "
+        return md[:a] + lead + new + tail + md[b:]
+    if re.search(r"[A-Za-z]-$", new) and re.match(r" [a-z]", md[b:b + 2]):
+        new, b = new[:-1], b + 1                 # `proper-` before `ties`: one word, joined
+    return md[:a] + new + md[b:]
+
+
+def patch(md, patches):
+    """The vote's corrections, made in the converted text of a sheet that kept its layer: each
+    the layer's reading replaced by the chosen one where it stands between the layer's own
+    neighbours. Returns (md, applied, unplaced); one not found exactly once is left as the layer
+    had it and returned, never guessed."""
+    applied, unplaced = 0, []
+    for p in patches:
+        span = _find(md, p, [p["text"]])
+        if span is None and p.get("b_before"):
+            # The corrected left context failed -- something before it did not land where the
+            # page has it; the layer's own context may still find it.
+            span = _find(md, dict(p, before=p["b_before"]), [p["text"]])
+        if span is None or "\n" in md[span[0]:span[1]]:
+            # Never across a line break: a heading and its paragraph are two things.
+            unplaced.append(p)
+            continue
+        md = _put(md, span, p["new"])
+        applied += 1
+    return md, applied, unplaced
 
 
 def settle(md, disputes, decisions):
@@ -1439,7 +1807,8 @@ def settle(md, disputes, decisions):
         if text == d["text"]:
             applied.append(dict(dispute=d["n"], text=text, change="none (already so)"))
             continue
-        span = locate(md, d) or locate(md, d, words=9) or locate(md, d, words=2)
+        span = _find(md, d, [d["text"]] + [r for r in d["readings"].values()
+                                           if r != d["text"]])
         if span is None:
             refused.append(dict(dispute=d["n"], why="its reading could not be found in the text "
                                 "exactly once (the converter may have moved it, as it moves "
@@ -1448,9 +1817,9 @@ def settle(md, disputes, decisions):
                                 current=d["text"], wanted=text, before=d["before"],
                                 after=d["after"]))
             continue
-        a, b = span
-        md = md[:a] + text + md[b:]
-        applied.append(dict(dispute=d["n"], was=d["text"], now=text))
+        was = md[span[0]:span[1]]
+        md = _put(md, span, text)
+        applied.append(dict(dispute=d["n"], was=was, now=text))
     return md, applied, refused, record
 
 
@@ -1462,9 +1831,13 @@ def collated_pdf(pdf, witness=None, lang="eng", log=None):
     col, why = collate(pdf, witness=witness, lang=lang, log=log)
     if col is None:
         return None, why
+    if not col.rewrite:
+        return Path(pdf), col                    # every sheet keeps its layer: patches only
     tag = "cba" if witness else "cb"
     dst = col.cache / f"collated-{tag}.pdf"
-    write_layer(pdf, dst, col)
+    tmp = col.cache / f"collated-{tag}.{os.getpid()}.tmp.pdf"
+    write_layer(pdf, tmp, col)
+    os.replace(tmp, dst)
     return dst, col
 
 
@@ -1483,8 +1856,9 @@ def notes_for(col, pdf):
     formulas = sum(1 for d in col.disputes if d.get("kind") == "formula")
     if len(col.disputes) > alone:
         notes.append(f"! {len(col.disputes) - alone} disagreement(s) no vote could settle -- the "
-                     f"more reliable witness's reading stands in each; settle them from the page "
-                     f"images with collation_disputes, then settle_disputes"
+                     f"layer's reading stands in each where it has one, else the more reliable "
+                     f"witness's; settle them from the page images with collation_disputes, then "
+                     f"settle_disputes"
                      + (f" ({formulas} in formulas or symbols, where neither reading may be "
                         f"right: transcribe those only where the map needs them)"
                         if formulas else ""))

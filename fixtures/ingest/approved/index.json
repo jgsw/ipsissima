@@ -1,5 +1,6 @@
 {
  "pymupdf": "1.28.2",
+ "tesseract": "5.5.3",
  "outputs": {
   "dewey-1896-reflex-arc-25482ce9": "fixtures/ingest/dewey-1896-reflex-arc.pdf",
   "etievant-2026-sccs-causal-framework-4944be38": "fixtures/ingest/etievant-2026-sccs-causal-framework.pdf",

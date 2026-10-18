@@ -2,9 +2,11 @@
 
    dewey-1896-reflex-arc.pdf
       -> source/dewey-1896-reflex-arc.md   5735 words
+      collated route: the page images read again by tesseract and voted against the text layer (14 sheet(s), 5658 words; token agreement C~B 98.0%; 49 by lexicon, 10 by spacing; 2s)
+      ! 56 disagreement(s) no vote could settle -- the more reliable witness's reading stands in each; settle them from the page images with collation_disputes, then settle_disputes (5 in formulas or symbols, where neither reading may be right: transcribe those only where the map needs them)
       structured route (pdf_to_source): 0 heading(s), 32 displayed quotation(s) as blockquotes, 3 footnote(s) under `# Notes`
       dropped: running head (21), page number (3)
-      (the raw text layer held 5702 words; this keeps 5735, the difference measured furniture and front matter)
+      14 sheet(s) kept their own layer (a sound reading of the page); the vote's corrections to them were made in the text: 18 placed, 5 not found exactly once and left as the layer had them
       1 heading(s), 92 line(s) long enough to locate a claim
       no back matter found; the prompt gets all 5735 words
 

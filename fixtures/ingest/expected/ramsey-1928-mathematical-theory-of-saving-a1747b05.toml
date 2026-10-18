@@ -39,7 +39,3 @@ extra_heading = "# 0 Spend"
 [[defect]]
 what = "footnotes in the OCR: one of the four is recovered"
 notes = 1
-
-[[defect]]
-what = "a formula's superscript read as a note reference"
-shows = "[^1] = w(yYo)"

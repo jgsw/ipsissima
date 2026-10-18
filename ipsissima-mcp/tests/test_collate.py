@@ -117,6 +117,21 @@ line = dict(words=[dict(out=o, x0=i * 10.0, x1=i * 10.0 + 8, it=False, bo=False)
 check("a mark printed apart is put back on its word",
       [p["text"] for p in c.pieces(line)], ["the", "following:1", "‘has", "for’"])
 
+# ---- corrections into a kept layer's text --------------------------------------------- #
+print("patching")
+md = "The converter keeps the layer, in which the conditions st though it is at the same time.\n"
+new, n, missed = c.patch(md, [dict(before="layer, in which the conditions", text="st",
+                                   after="though it is at the", new="stated in (a) are true,")])
+check("a lost clause is put back between its neighbours",
+      "the conditions stated in (a) are true, though it is" in new, True)
+new, n, missed = c.patch("for knowledge:[^2] (b) S knows that",
+                         [dict(before="for knowledge :", text="", after="(b) S knows that",
+                               new="—")])
+check("context may carry a note reference the converter made", n, 1)
+new, n, missed = c.patch(md + md, [dict(before="in which the conditions", text="st",
+                                        after="though it is", new="x")])
+check("a correction found twice is left alone", (n, len(missed)), (0, 1))
+
 # ---- settling disputes in the Markdown ------------------------------------------------ #
 print("settling")
 md = ("For example, Chisholm has held that the following gives the necessary and "
@@ -155,7 +170,7 @@ DAMAGE = [(0, "careful", "carefu1"), (0, "mistake", "rnistake"), (1, "evidence",
 ITALIC = "collation,"
 
 
-def make_scan(path, folios=(11, 12)):
+def make_scan(path, folios=(11, 12), layer=True):
     """Two pages set in type, rendered to images, and laid on a fresh document with a damaged
     invisible layer at the words' own positions -- what a scanned PDF is."""
     import pymupdf
@@ -180,7 +195,7 @@ def make_scan(path, folios=(11, 12)):
         pg = scan.new_page(width=src.rect.width, height=src.rect.height)
         pg.insert_image(pg.rect, pixmap=pix)
         damage = {(p, w): bad for p, w, bad in DAMAGE if p == n}
-        for x0, y0, x1, y1, w, *_ in src.get_text("words"):
+        for x0, y0, x1, y1, w, *_ in (src.get_text("words") if layer else []):
             w = damage.get((n, w), w)
             if not w:
                 continue
@@ -209,6 +224,10 @@ else:
         check("  the C~B agreement is measured", 0.8 < col.agreement["C~B"] < 1.0, True)
         italic = [w["out"] for w in col.words if w["it"]]
         check("  the layer's italic is carried onto the word", italic, [ITALIC])
+        check("a sheet whose layer is sound keeps it; the corrections are patches",
+              (col.rewrite, len(col.patches) >= 3), (set(), True))
+        # The writer, forced, as for a sheet with no sound layer.
+        col.rewrite = set(col.scanned)
         dst = Path(td) / "collated.pdf"
         c.write_layer(pdf, dst, col)
         with pymupdf.open(str(dst)) as d:
@@ -264,8 +283,19 @@ else:
               [(m["after_sheet"], m["before_sheet"], m["missing"]) for m in colg.missing],
               [(2, 3, 2)])
 
-        # The route ingest takes: the collated copy through the structured converter.
         from ipsissima_mcp import ingest
+        # An image-only scan: nothing to vote with, so its sheets are rewritten from the fresh
+        # reading, and what tesseract was unsure of is what is asked about.
+        bare = Path(td) / "bare.pdf"
+        make_scan(bare, layer=False)
+        colb, _ = c.collate(bare)
+        check("a sheet with no layer is rewritten from the fresh reading",
+              colb.rewrite, {0, 1})
+        _, notesb = ingest.ingest_one(str(bare))
+        check("  and converts through the collated copy",
+              any(n.startswith("collated route") for n in notesb), True)
+
+        # The route ingest takes: the collated copy through the structured converter.
         extras = {}
         md, notes = ingest.ingest_one(str(pdf), collate=True, extras=extras)
         check("ingest's collated route names itself in the notes",
@@ -273,6 +303,11 @@ else:
         check("  and the converted text carries the mended words",
               all(w in md for w in ("careful", "evidence", "entirely")), True)
         check("  and records the collation for the reply", "collation" in extras, True)
+        check("  the corrections are made in the kept layer's text",
+              any("corrections to them were made in the text" in n for n in notes), True)
+        _md, notes1 = ingest.ingest_one(str(pdf))
+        check("collation is the default for a scan, damaged or not",
+              any(n.startswith("collated route") for n in notes1), True)
         md2, notes2 = ingest.ingest_one(str(pdf), collate=False)
         check("collate=False keeps the old route", any("collated" in n for n in notes2), False)
 

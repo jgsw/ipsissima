@@ -5,15 +5,17 @@
      the publisher's access stamps, where there were any, are blanked and the
      lines they sat on are kept so nothing below them moves.
      Back matter is kept here and trimmed only when text is sent to a model.
+     collated route: the page images read again by tesseract and voted against the text layer (14 sheet(s), 5658 words; token agreement C~B 98.0%; 49 by lexicon, 10 by spacing; 2s)
+     ! 56 disagreement(s) no vote could settle -- the more reliable witness's reading stands in each; settle them from the page images with collation_disputes, then settle_disputes (5 in formulas or symbols, where neither reading may be right: transcribe those only where the map needs them)
      structured route (pdf_to_source): 0 heading(s), 32 displayed quotation(s) as blockquotes, 3 footnote(s) under `# Notes`
      dropped: running head (21), page number (3)
-     (the raw text layer held 5702 words; this keeps 5735, the difference measured furniture and front matter) -->
+     14 sheet(s) kept their own layer (a sound reading of the page); the vote's corrections to them were made in the text: 18 placed, 5 not found exactly once and left as the layer had them -->
 
 <!-- p.357 begins here -->
 
 VOL. III.
 
-No. 4. JULY,
+No. 4. JULy,
 
 THE PSYCHOLOGICAL REVIEW. THE REFLEX ARC CONCEPT IN PSYCHOLOGY.
 
@@ -109,7 +111,7 @@ It is no longer mere seeing it is seeing-of-a ; The ordinary light-that-means-pa
 
 substitution of a burn sensation for a light sensation through the intervention of motion. The fact is that the sole meaning of the intervening movement is to maintain, reinforce or transform (as the case may be) the original quale ; that we do not have the replacing of one sort of experience by another, but the development (or as it seems convenient to term the mediation of an The in a it) experience. seeing, word, remains to control the reaching, and is, in turn, interpreted by the burning.
 
-The discusssion up to this point may be summarized by__say^ jng that the reflex arc idea, as commonly employed, is defective in that it assumes sensory stimulus and motor response as_ distinct psychical existences, while in realiiy they are always inside a coordination and have their significance purely from, the part played in maintaining nr rer.nnptii-nti.npr the coordination ; and (secondly) in assuming that the quale of experience which the
+The discusssion up to this point may be summarized bysay- ing that the reflex arc idea, as commonly employed, is defective in that it assumes sensory stimulus and motor response as_ distinct psychical existences, while in reality they are always inside a coordination and have their significance purely from, the part played in maintaining nr rer.nnptii-nti.npr the coordination ; and (secondly) in assuming that the quale of experience which the
 
 * motor
 
@@ -119,7 +121,7 @@ The result is that the reflex arc idea leaves us
 
 > with a disjointed
 
-psychology, whether viewed from the standpoint of development in the individual or in the race, or from that of the analysis of the mature consciousness. As to the former, in its failure to see that the arc of which it talks is virtually a circuit, a continual reconstitution, it breaks continuity and leaves us nothing but a series of jerks, the origin of each jerk to be sought outside the process of experience itself, in either an external pressure of * environment,' or else in an unaccountable spontaneous variation from within the
+psychology, whether viewed from the standpoint of development in the individual or in the race, or from that of the analysis of the mature consciousness. As to the former, in its failure to see that the arc of which it talks is virtually a circuit, a continual reconstitution, it breaks continuity and leaves us nothing but a series of jerks, the origin of each jerk to be sought outside the process of experience itself, in either an external pressure of ‘ environment,' or else in an unaccountable spontaneous variation from within the
 
 <!-- p.361 begins here -->
 
@@ -145,13 +147,13 @@ Of course, if this status is irrelevant to what happens afterwards, such ignorin
 
 ;
 
-' is proceeds/ the a whole act, a sensori-motor coordination. /What is more to the the * stimulus' emerges point, out of mis coordination it is born from it as its matrix it rep-
+' is proceeds/ the a whole act, a sensori-motor coordination. /What is more to the the ‘ stimulus' emerges point, out of this codrdination it is born from it as its matrix it rep-
 
 ; ; resents
 
 > as it were an escape from
 
-it. I might here fall back upon authority, and refer to the widely accepted sensation continuum theory, according to which the sound cannot be absolutely ex abru-pto from the outside, but is simply a shifting arises from beginning with stimulus or response instead of with the coSrdination with reference to which stimulus and response are functional divisions of labor.
+it. I might here fall back upon authority, and refer to the widely accepted sensation continuum theory, according to which the sound cannot be absolutely ex abrupio from the outside, but is simply a shifting arises from beginning with stimulus or response instead of with the codrdination with reference to which stimulus and response are functional divisions of labor.
 
 The same may be
 
@@ -175,7 +177,7 @@ Furthermore, the sound is not a mere stimulus, or mere sensation it again is an 
 
 certain definite set of the motor apparatus involved in hearing just as much as there is in subsequent running away.
 
-The movement and posture of the head, the tension of the ear muscles, are required for the * reception ' of the sound.
+The movement and posture of the head, the tension of the ear muscles, are required for the ‘ reception ' of the sound.
 
 > It is
 
@@ -211,7 +213,7 @@ or attention which constitutes that, which finally becomes the stimulus to anoth
 
 sensori-motor, having its sensory value and its muscular mechanism.
 
-It is also a coordination. And, finally, this sensori-motor coordination is not a new act, supervening upon what preceded. as the * response ' is necessary
+It is also a coordination. And, finally, this sensori-motor coordination is not a new act, supervening upon what preceded. as the ‘ response ' is necessary
 
 Just to constitute the stimulus, to determine it as sound and as this kind of sound, of wild beast or robber, so the sound experience must persist as a value in the running, to keep it up, to control
 
@@ -223,7 +225,7 @@ The whatever it may be, get it. resulting quale, has its meaning wholly determin
 
 It is that experience mediated.
 
-1 What we have is a circuit, not an arc or broken segment of a circle. This circuit is more truly termed organic than reflex, because the motor response determines the stimulus, just as truly as sensory stimulus determines movement. Indeed, the movement is only for the sake of determining the stimulus, of fixing what kind of a stimulus it is, of interpreting it.
+1 What we have is a Circuit, not an arc or broken segment of a circle. This circuit is more truly termed organic than reflex, because the motor response determines the stimulus, just as truly as sensory stimulus determines movement. Indeed, the movement is only for the sake of determining the stimulus, of fixing what kind of a stimulus it is, of interpreting it.
 
 > I hope it will not appear that
 
@@ -239,11 +241,11 @@ It is not a question of making the account of the process more complicated, thou
 
 ; and that because of this functional distinction and relationship, the supposed problem of the adjustment of one to the other, whether by superior force in the stimulus or an agency ad hoc in the center or the soul, is a purely selfcreated problem.
 
-We may see the disjointed character of the present theory, by calling to mind that it is impossible to apply the phrase * sensori-motor
+We may see the disjointed character of the present theory, by calling to mind that it is impossible to apply the phrase ‘ sensori-motor
 
 ' to the occurrence as a simple phrase of description it has validity only as a term of interpretation, only, that
 
-; is, as defining various functions exercised. In terms of description, the whole process may be sensory or it may be motor, but it cannot be sensori-motor. / The * stimulus,' the excitation of the nerve ending and of the sensory nerve, the central change, are just as much, or just as little, motion as the events taking place in the motor nerve and the muscles. It is one uninterrupted, continuous redistribution of mass in motion. /And there is nothing in the process, from the standpoint of description, which entitles us to call this reflex. It is redistribution pure and simple as much so as the burning of a log, or the falling of a
+; is, as defining various functions exercised. In terms of description, the whole process may be sensory or it may be motor, but it cannot be sensori-motor. / The ‘ stimulus,' the excitation of the nerve ending and of the sensory nerve, the central change, are just as much, or just as little, motion as the events taking place in the motor nerve and the muscles. It is one uninterrupted, continuous redistribution of mass in motion. /And there is nothing in the process, from the standpoint of description, which entitles us to call this reflex. It is redistribution pure and simple as much so as the burning of a log, or the falling of a
 
 ; house or the movement of the wind. In the physical process, as physical, there is nothing which can be set off as stimulus, nothing which reacts, nothing which is response. There is just a change in the system of tensions.
 
@@ -259,7 +261,7 @@ If we symbolize the original visual quale by v,
 
 <!-- p.365 begins here -->
 
-the temperature by h, the accompanying muscular sensation by m, the whole experience may be stated as \\im-v\un-vhm' ; m being the quale of withdrawing, m [^1] the sense of the status after the withdrawal.
+the temperature by h, the accompanying muscular sensation by m, the whole experience may be stated as vhm-vhm-vhm' ; m being the quale of withdrawing, m [^1] the sense of the status after the withdrawal.
 
 The motion is not a certain kind of existence ; it is a sort of sensory experience interpreted, just as is candle flame, or burn from candle flame. All are on a par.
 
@@ -355,7 +357,7 @@ Just as the discovery of the sensation marks the establishing of the problem, so
 
 > solution of
 
-this problem. At one time, attention, fixing holding the eye fixed, upon the seeing and thus bringing out a certain quale of light is the response, because that is the particular act called for just then at another time, the movement of the arm away from the light is the response. ; There is nothing in itself which may be labelled response. That one certain set of sensory quales should be marked off by themselves as * motion
+this problem. At one time, attention, fixing holding the eye fixed, upon the seeing and thus bringing out a certain quale of light is the response, because that is the particular act called for just then at another time, the movement of the arm away from the light is the response. ; There is nothing in itself which may be labelled response. That one certain set of sensory quales should be marked off by themselves as ‘ motion
 
 ' and put in antithesis to such sensory quales as those of color, sound and contact, as legitimate claimants to the title of sensation, is wholly inexplicable unless we keep the difference
 
@@ -363,7 +365,7 @@ this problem. At one time, attention, fixing holding the eye fixed, upon the see
 
 in view. It is the eye and ear sensations which fix for us the problem ; which report to us the conditions which have to be met if the coordination is to be successfully completed ; and just the moment we need to know about our movements to get an adequate report, just that moment, motion miraculously (from the ordinary standpoint) ceases to be motion and become
 
-* muscular sensation. ' On the other hand, take the change in values of experience, the transformation of sensory quales.
+‘ muscular sensation. ' On the other hand, take the change in values of experience, the transformation of sensory quales.
 
 Whether this change will or will not be interpreted as movement, whether or not any consciousness of movement will arise, will depend upon whether this change is satisfactory, whether or not it is regarded as a harmonious development of a coordination, or whether the change is regarded as simply a means in solving a problem, an instrument in reaching a more satisfactory coordination. So long as our experience runs smoothly we are no more conscious of motion as motion than we are of this or that color or sound by itself.
 
@@ -385,7 +387,7 @@ The circle is a coordination, some of whose members have come into conflict with
 
 ; coordination which gives the key to meeting these conditions, which serves as instrument in effecting the successful coordination.
 
-T^ey are therefore strictly correlative and contemporaneous. /The stimulus is something to be discovered ; to be made out/ if the activity affords its own adequate stimulation, there is no 'stimulus save in the objective sense already referred to. As soon
+They are therefore strictly correlative and contemporaneous. /The stimulus is something to be discovered ; to be made out/ if the activity affords its own adequate stimulation, there is no 'stimulus save in the objective sense already referred to. As soon
 
 > as it is adequately determined, then and then only is
 
@@ -407,7 +409,7 @@ its application ; but the application of it to the question of the nature of psy
 
 <!-- Footnotes, printed at the foot of p. 357, p. 358, p. 359, p. 360, p. 361, p. 362, p. 363, p. 365, p. 366, p. 368. Lifted here because they fall inside a sentence that runs across the page break. -->
 
-soul finds a distinct ; is statement and illustration, by Messrs. Angell and Moore, of this mutuality of stimulation. * soul ' or the ' organism.' 2 As to the latter, failing to see the -tmity-o-f activity,
+soul finds a distinct ; is statement and illustration, by Messrs. Angell and Moore, of this mutuality of stimulation. * soul ' or the ' organism.' 2 As to the latter, failing to see the -unity-of activity,
 
 [^1]: See, for a further statement of mediation, my Syllabus of Ethics, p. 15.
 

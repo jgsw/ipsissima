@@ -588,16 +588,37 @@ def from_pdf_collated(path, extras=None, witness=None):
                       f"layer's {garble(layer)}, so it was not used")
     got = extras if extras is not None else {}
     notes = collate.notes_for(col, path)
-    body, s_notes = from_pdf_structured(str(dst), got)
-    if body is not None and len(body.split()) + got.get("figure_words", 0) >= 0.85 * len(mended.split()):
-        notes += s_notes
+    # THE ROUTE IS CHOSEN AS IT ALWAYS IS, by the layer the converter will read: the structured
+    # converter for a clean one, the plain route for one that still carries garble. A sheet that
+    # kept its layer keeps its garble until the corrections are made in the text, and the
+    # structured converter on such a layer interleaved Mackie's columns where the plain route,
+    # which it always took, did not (18 Oct 2026).
+    if quality(mended) >= len(mended.split()) and len(mended.split()) > 200:
+        body, s_notes = from_pdf_structured(str(dst), got)
+        if body is not None and len(body.split()) + got.get("figure_words", 0) >= 0.85 * len(mended.split()):
+            notes += s_notes
+        else:
+            notes.append("! structured route " + (f"kept only {len(body.split())} of the collated "
+                                                  f"layer's {len(mended.split())} words"
+                                                  if body is not None else f"declined ({s_notes})")
+                         + "; the plain route is used")
+            body = mended
+            got.pop("geometry", None)
     else:
-        notes.append("! structured route " + (f"kept only {len(body.split())} of the collated "
-                                              f"layer's {len(mended.split())} words"
-                                              if body is not None else f"declined ({s_notes})")
-                     + "; the plain route is used")
+        notes.append(f"the layer the converter reads still carries {garble(mended)} garbled "
+                     f"passage(s) on the sheets that kept it, so the plain route is used, as for "
+                     f"any damaged layer; the corrections follow")
         body = mended
         got.pop("geometry", None)
+    if col.patches:
+        body, applied, unplaced = collate.patch(body, col.patches)
+        kept = len(set(col.scanned) - col.rewrite)
+        notes.append(f"{kept} sheet(s) kept their own layer (a sound reading of the page); "
+                     f"the vote's corrections to them were made in the text: {applied} placed"
+                     + (f", {len(unplaced)} not found exactly once and left as the layer had "
+                        f"them" if unplaced else ""))
+        col.unplaced = unplaced
+        collate.save_disputes(col)
     got["collation"] = dict(cache=str(col.cache), disputes=len(col.disputes),
                             missing_pages=col.missing, agreement=col.agreement,
                             settled=dict(col.stats))
@@ -623,20 +644,23 @@ def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
     five of eight known errors and ocrmypdf two, while on the Carroll both make things worse.
     Every route tried is reported with its score so the choice is visible and reversible.
 
-    COLLATION COMES FIRST ON A DAMAGED SCAN (17 Oct 2026): where tesseract is installed, the page
-    images are read again and voted against the layer (collate.py) before either whole-route
-    OCR is tried -- they replace one reading with another, where collation keeps what each gets
-    right. `collate=True` collates a scan whose layer passes as clean too (an old OCR layer can
-    be wrong without being garbled); `collate=False` never collates. `witness` is any other OCR
-    text of the same work, a third voice in the vote.
+    COLLATION COMES FIRST ON EVERY SCAN (18 Oct 2026): where tesseract is installed and any sheet
+    is a page image, the images are read again and voted against the layer (collate.py) before
+    anything else -- whether or not the layer looks damaged, because an old OCR layer is often
+    wrong without being garbled (the Gettier, rated clean: `siftcient`, two half-lines lost at
+    the page edge; 0 of its 8 labelled repairs by the layer, 6 collated). The whole-route OCR
+    below replaces one reading with another; collation keeps what each gets right.
+    `collate=False` never collates; `witness` is any other OCR text of the same work, a third
+    voice in the vote. A born-digital PDF has no page image and goes on as before.
     """
     notes = []
     best_name, best = "text layer", plain_text(path)
-    if allow_ocr and (collate is True or witness):
+    if collate is True or (allow_ocr and collate is not False):
         body, c_notes = from_pdf_collated(path, extras, witness)
         if body is not None:
             return body, c_notes
-        notes.append(f"  collation not used: {c_notes}")
+        if "page image" not in c_notes:            # a born-digital PDF: nothing to say
+            notes.append(f"  collation not used: {c_notes}")
     if quality(best) >= len(best.split()) and len(best.split()) > 200:
         # A CLEAN LAYER GOES TO THE STRUCTURED CONVERTER FIRST -- its geometry machinery
         # assumes trustworthy sizes and edges, which is exactly what a clean layer has and a
@@ -667,12 +691,6 @@ def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
     if not allow_ocr:
         notes.append("  --no-ocr given, keeping the text layer as it is")
         return best, notes
-    if collate is None:
-        body, c_notes = from_pdf_collated(path, extras, witness)
-        if body is not None:
-            return body, notes + c_notes
-        if "page image" not in c_notes:            # a born-digital PDF: nothing to say
-            notes.append(f"  collation not used: {c_notes}")
 
     tried = {"text layer": quality(best)}
     try:
@@ -820,7 +838,8 @@ def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".pdf":
         md, notes = from_pdf(path, allow_ocr=allow_ocr, extras=extras,
-                             collate=collate if allow_ocr else False, witness=witness)
+                             collate=collate if allow_ocr or collate is True else False,
+                             witness=witness)
     # BEFORE the pandoc branch, and by content rather than extension. pandoc 3.10 writes TEI and
     # does not read it, so a TEI book had no route in at all and the only way was its PDF --
     # which is exactly the inversion `structured_source.py` exists to complain about.
@@ -1003,10 +1022,11 @@ def main():
     ap.add_argument("--title")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-ocr", action="store_true",
-                    help="never OCR, even if the text layer looks damaged")
+                    help="never OCR, even if the text layer looks damaged (collation too, "
+                         "unless --collate is also given)")
     ap.add_argument("--collate", action=argparse.BooleanOptionalAction, default=None,
-                    help="read a scan's page images again and vote against its text layer: by "
-                         "default only when the layer looks damaged; --collate for any scan, "
+                    help="read a scan's page images again and vote against its text layer "
+                         "(the default for any scan, where tesseract is installed); "
                          "--no-collate never")
     ap.add_argument("--witness", help="another OCR text of the same work (.txt, or an HTML "
                                       "page such as archive.org's 'Full text of'), for the vote")
