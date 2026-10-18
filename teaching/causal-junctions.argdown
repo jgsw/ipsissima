@@ -1,0 +1,134 @@
+// A TEACHING MAP: CAUSAL DIAGRAMS IN JUDEA PEARL'S STYLE (18 Oct 2026), in the map-maker's own words.
+// Five small chains, one for each junction a causal diagram is built from: a chain through a mediator,
+// a fork (a common cause), a back door, a collider, and a joint cause. Open it, choose a chain in the
+// Mechanism view, and suppose something does not happen -- right-click a state or an arrow -- to see
+// what the steps still bring about. Turn on Guess first, in the banner, to predict before you look.
+//
+// WHAT SUPPOSING SHOWS, AND WHAT IT DOES NOT. "Suppose this does not happen" is an intervention, in
+// Pearl's terms do(X): it removes X and works forward along the arrows. It never changes anything
+// upstream of X. That is the right test for a mediator, a fork, a back door and a joint cause. It is
+// NOT the test for a collider's trap, which comes from SELECTING on the collider -- looking only at
+// the cases where it happened -- and selecting is conditioning, not intervening. Ipsissima does not
+// compute what conditioning does; the map states the association selection produces, as an
+// association, so that the contrast can be seen and talked about. Kept by app/test_mechanism_view.mjs.
+===
+title: "Teaching -- causal junctions after Pearl"
+mechanism:
+    question: "What does a causal diagram let us say about intervening, that an association alone does not?"
+    account: [manipulability, counterfactual]
+    levels: [world]
+    actors:
+        world: {label: "The world", level: world}
+    states:
+        smoke:    {label: "A person smokes", actor: world, role: condition}
+        tar:      {label: "Tar builds up in the lungs", actor: world}
+        cancer:   {label: "Lung cancer", actor: world, role: outcome}
+        heat:     {label: "A hot summer", actor: world, role: condition}
+        icecream: {label: "Ice cream sales rise", actor: world, role: outcome}
+        drown:    {label: "More drownings", actor: world, role: outcome}
+        wealth:   {label: "A wealthy family", actor: world, role: condition}
+        tutor:    {label: "Private tutoring", actor: world}
+        admit:    {label: "Admitted to a selective university", actor: world, role: outcome}
+        talent:   {label: "An actor is talented", actor: world, role: condition}
+        looks:    {label: "An actor is good-looking", actor: world, role: condition}
+        fame:     {label: "The actor becomes famous", actor: world, role: outcome}
+        spark:    {label: "A spark", actor: world, role: condition}
+        oxygen:   {label: "Oxygen is present", actor: world, role: condition}
+        fire:     {label: "A fire starts", actor: world, role: outcome}
+    chains:
+        mediation:
+            label: "A chain: smoking, tar, cancer"
+            question: "If tar did not build up, would smoking still bring cancer about?"
+            apart: "a separate example of one junction"
+        fork:
+            label: "A fork: summer, ice cream, drownings"
+            question: "Ice cream sales and drownings rise together. Does one bring the other about?"
+            apart: "a separate example of one junction"
+        backdoor:
+            label: "A back door: wealth, tutoring, admission"
+            question: "Admitted students were often tutored. Would stopping tutoring stop the admissions?"
+            apart: "a separate example of one junction"
+        collider:
+            label: "A collider: talent, looks, fame"
+            question: "Talent and looks each bring fame. What happens if we look only at the famous?"
+            apart: "a separate example of one junction"
+        joint:
+            label: "A joint cause: spark, oxygen, fire"
+            question: "A fire needs a spark and oxygen. Remove either: what follows?"
+            apart: "a separate example of one junction"
+===
+
+[Seeing is not doing]: What would follow from intervening on a cause cannot be read off how things go together; it takes the causal structure.
+
+# A chain through a mediator {isGroup: true}
+
+[Smoking deposits tar]: Smoking deposits tar in the lungs.
+    {causes: {from: smoke, to: tar, sign: "+", basis: asserted, chain: mediation}}
+    +> [Block the mediator]
+
+[Tar causes cancer]: Tar in the lungs brings about lung cancer.
+    {causes: {from: tar, to: cancer, sign: "+", basis: asserted, chain: mediation}}
+    +> [Block the mediator]
+
+[Block the mediator]: Where an effect runs only through a mediator, stopping the mediator stops the effect: suppose the tar does not build up, and smoking no longer brings cancer about.
+    +> [Seeing is not doing]
+
+# A fork: one cause, two effects {isGroup: true}
+
+[Heat sells ice cream]: A hot summer raises ice cream sales.
+    {causes: {from: heat, to: icecream, sign: "+", basis: asserted, chain: fork}}
+    +> [Common causes mimic causes]
+
+[Heat brings drownings]: A hot summer brings more drownings, as more people swim.
+    {causes: {from: heat, to: drown, sign: "+", basis: asserted, chain: fork}}
+    +> [Common causes mimic causes]
+
+[Ice cream and drownings go together]: Across summers, ice cream sales and drownings rise and fall together.
+    {causes: {from: icecream, to: drown, sign: "+", basis: statistics, association: true, chain: fork}}
+    +> [Common causes mimic causes]
+
+[Common causes mimic causes]: Two effects of one cause go together though neither brings the other about: suppose ice cream sales do not rise, and the drownings still come; suppose the hot summer does not happen, and both go.
+    +> [Seeing is not doing]
+
+# A back door {isGroup: true}
+
+[Wealth buys tutoring]: A wealthy family pays for private tutoring.
+    {causes: {from: wealth, to: tutor, sign: "+", basis: asserted, chain: backdoor}}
+    +> [Back doors stay open]
+
+[Tutoring helps admission]: Private tutoring helps a student be admitted.
+    {causes: {from: tutor, to: admit, sign: "+", basis: asserted, chain: backdoor}}
+    +> [Back doors stay open]
+
+[Wealth helps admission]: A wealthy family helps a student be admitted by other routes too.
+    {causes: {from: wealth, to: admit, sign: "+", basis: asserted, chain: backdoor}}
+    +> [Back doors stay open]
+
+[Back doors stay open]: Where a cause and its effect share a cause of their own, the effect can come by the back door: suppose the tutoring does not happen, and wealth still brings admission. To learn what tutoring does, compare students alike in wealth -- close the back door.
+    +> [Seeing is not doing]
+
+# A collider {isGroup: true}
+
+[Talent brings fame]: A talented actor tends to become famous.
+    {causes: {from: talent, to: fame, sign: "+", basis: asserted, chain: collider}}
+    +> [Colliders mislead when selected on]
+
+[Looks bring fame]: A good-looking actor tends to become famous.
+    {causes: {from: looks, to: fame, sign: "+", basis: asserted, chain: collider}}
+    +> [Colliders mislead when selected on]
+
+[Among the famous, talent and looks part]: Among famous actors, the more talented tend to be the less good-looking.
+    {causes: {from: talent, to: looks, sign: "-", basis: statistics, association: true, given: ["among famous actors only"], chain: collider}}
+    +> [Colliders mislead when selected on]
+
+[Colliders mislead when selected on]: Two causes of one effect stay unrelated until we look only at the cases where the effect happened: then they seem to trade off, though neither touches the other. Suppose the actor is not talented, and fame can still come by looks; suppose fame does not happen, and nothing above it changes. The trade-off comes from selecting on fame, which is conditioning, not intervening.
+    +> [Seeing is not doing]
+
+# A joint cause {isGroup: true}
+
+[A spark with oxygen starts a fire]: A spark starts a fire, but only where there is oxygen.
+    {causes: {from: spark, to: fire, sign: "+", basis: asserted, jointly: [oxygen], chain: joint}}
+    +> [Joint causes need each other]
+
+[Joint causes need each other]: Where two causes bring an effect about only together, stopping either stops it: suppose there is no oxygen, and the spark starts nothing. Compare the collider, where either cause alone will do.
+    +> [Seeing is not doing]

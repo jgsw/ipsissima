@@ -207,6 +207,33 @@ if (chromium) {
     await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
 
+    // WHICH CLAIM WOULD COST THE MOST? (James, 18 Oct 2026): a guess, then the map's own answer, by
+    // supposing each claim false in turn. On the planted map Rule and Fact each take four claims' support,
+    // a main claim (Wrong) among them; P1 takes Linked's only. Mutations: rank by claims lost alone ->
+    // the same here, so also: drop the main-claim tier -> Rule and Fact still lead, but sort by label
+    // the other way -> the order changes; drop studyCostPick -> no guess is recorded.
+    await page.locator('#map [data-act="study"]').click();
+    await page.waitForTimeout(250);
+    await page.locator('#studybody button[data-study="cost"]').click();
+    await page.waitForTimeout(500);
+    await box("P1").click();
+    await page.waitForTimeout(150);
+    check(/Your guess: ‹P1›/.test(await page.locator("#studybody").innerText()), "the challenge takes a click on a claim as the guess");
+    await page.locator('#studybody button[data-study="cost-show"]').click();
+    await page.waitForTimeout(250);
+    const costT = await page.locator("#studybody").innerText();
+    const order = [...costT.matchAll(/^‹([^›]+)›: \d+ claims? loses?/gm)].map(m => m[1]);
+    check(same(order, ["Fact", "Rule", "A"]) && /‹Fact›: 4 claims lose the map’s support, a main claim among them/.test(costT) &&
+          /Your guess, ‹P1›: 1 claim loses the map’s support — \d+ of \d+\./.test(costT),
+          "Show ranks the claims by what supposing each false costs, and sets the guess beside them", costT);
+    await page.locator('#studybody button[data-study="cost-suppose-top"]').click();
+    await page.waitForTimeout(250);
+    check(/‹Fact› is false/.test(await page.locator("#suppbar").innerText()), "and offers to suppose the costliest false");
+    await page.locator("#suppbar button[data-guess-skip]").click().catch(() => {});
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.locator('#studybody button[data-study="end"]').first().click();
+    await page.waitForTimeout(200);
+
     // The attack on a whole argument asks which part. Mutation: drop the choice handler -> nothing fades.
     await menu("Whole", "holds");
     await page.locator('#supp button[data-supp-choice="step"]').click();
@@ -325,6 +352,36 @@ if (chromium) {
       check(await page.locator("#expl").isHidden() && /For ‹External things exist› to be false/i.test(await page.locator("#supp").innerText()),
             "the staircase's Deny the conclusion closes it and opens what must give");
     } else check(false, "the staircase opener is found on Moore's proof");
+
+    // A NEW FILE STARTS WITH NOTHING SUPPOSED (James, 18 Oct 2026: the list carried over into the next
+    // file). In the Reader, where a second file is opened by dropping it, a supposition is made and a
+    // guess left half done; then a file is dropped. Mutation: drop suppReset from render -> the banner
+    // and the marks survive.
+    const dropFile = async (file) => {
+      await page.evaluate(([t, n]) => {
+        const dt = new DataTransfer();
+        dt.items.add(new File([t], n));
+        document.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt }));
+      }, [fs.readFileSync(file, "utf8"), path.basename(file)]);
+      await page.waitForFunction(n => document.getElementById("fname").dataset.file === n, path.basename(file), { timeout: 20000 });
+      await page.waitForTimeout(1200);
+    };
+    // The Reader offers its tour to a first-time reader: marked seen, as for a returning one.
+    await page.addInitScript(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) {} });
+    await page.goto("file://" + path.join(REPO, "Ipsissima Reader.html"));
+    await page.waitForTimeout(800);
+    await dropFile(PLANTED);
+    await box("Main").click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
+    await menu("Main", "false");
+    await box("Wrong").click();
+    await page.waitForTimeout(150);
+    const midGuess = await page.locator("#map g.alm-n .alm-guess").count();
+    await dropFile(MOOREAN);
+    check(midGuess === 1 && await page.locator("#suppbar").isHidden() && (await faded()).length === 0 && await page.locator("#map g.alm-n .alm-guess").count() === 0,
+          "opening another file clears every supposition and any guess in progress", "marks before: " + midGuess);
+    await box("Moore's proof").click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
 
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {

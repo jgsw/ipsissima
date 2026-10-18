@@ -4982,7 +4982,9 @@ function create(container, graph, opts) {
                // Whether "About this chain" is open in the panel, so it stays as the reader left it.
                about: false,
                // The reader's guesses and the answer beside them, by state id: guess | hit | miss | unexpected.
-               guess: {} };
+               guess: {},
+               // Whether the reader is guessing what a supposition costs: only the supposed is drawn.
+               quiet: false };
   // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
   // which chains each is in, read off the whole file whatever is being shown.
   var KINDS = FULL.profile.kinds || [];
@@ -5075,6 +5077,8 @@ function create(container, graph, opts) {
       var set = function (xs) { var o = {}; (xs || []).forEach(function (k) { o[k] = true; }); return o; };
       keep.exp = { fail: set(x.fail), off: set(x.off), hold: set(x.hold) };
       keep.waiting = (x.waiting || []).slice();
+      // Quiet: the reader is guessing, so only what they supposed is drawn (see applyFocus).
+      keep.quiet = !!x.quiet;
       cur.refreshExperiment();
     },
     /** The reader's guesses and the answer beside them, { state: "guess"|"hit"|"miss"|"unexpected" }. */
@@ -5748,14 +5752,18 @@ function create(container, graph, opts) {
       if (on) { lit[d.e.from] = lit[d.e.to] = true; d.e.jointly.concat(d.e.blockers, modStates(d.e)).forEach(function (j) { lit[j] = true; }); }
     });
     // THE EXPERIMENT FADES WHAT STOPS: each state no longer reached and each hop that no longer runs.
-    var stopped = {}, lostS = {};
-    if (EXPR) { EXPR.stoppedSteps.forEach(function (k) { stopped[k] = true; });
+    var stopped = {}, lostS = {}, offK = {};
+    // WHILE THE READER GUESSES, only what they supposed greys, as the claim they supposed false greys in
+    // Reasons -- so they can see what they supposed, and not yet what follows (James, 18 Oct 2026).
+    if (EXPR && keep.quiet) { Object.keys(exp.fail).forEach(function (v) { lostS[v] = true; }); Object.keys(exp.off).forEach(function (k) { offK[k] = true; }); }
+    else if (EXPR) { EXPR.stoppedSteps.forEach(function (k) { stopped[k] = true; });
       EXPR.lostStates.forEach(function (v) { lostS[v] = true; }); Object.keys(exp.fail).forEach(function (v) { lostS[v] = true; }); }
     // An arrow fades where every step it draws has stopped (a folded route, where every part of it has).
     var stepStopped = function (x) { return x.parts ? x.parts.some(stepStopped) : !!stopped[x.id]; };
     drawnEdges.forEach(function (d) {
       var causal = d.e.steps.filter(function (x) { return !x.isNull && !x.selects && !x.assoc; });
-      var cut = !!EXPR && d.e.layer === "text" && (!!lostS[d.e.from] || (causal.length > 0 && causal.every(stepStopped)));
+      var cut = !!EXPR && d.e.layer === "text" && (!!lostS[d.e.from] || !!offK[d.e.from + "\u0000" + d.e.to] ||
+        (!keep.quiet && causal.length > 0 && causal.every(stepStopped)));
       d.g.classList.toggle("cut", cut); if (d.chip) d.chip.classList.toggle("cut", cut);
     });
     Object.keys(drawnNodes).forEach(function (v) {
@@ -5984,6 +5992,8 @@ function create(container, graph, opts) {
   function expHTML() {
     var W = keep.waiting || [];
     if (!EXPR && !W.length) return '';
+    if (keep.quiet && EXPR) return '<h3>Your suppositions</h3><div class="amech-focus">Suppose ' + expWords().join('; and ') + '. ' +
+      'Before you look: click the states you expect the text\u2019s steps will no longer bring about, then press <b>Show</b> in the banner.</div>';
     // A CLAIM SUPPOSED FALSE THAT STATES SEVERAL STEPS: at least one of them does not run, and which
     // is the reader's to say, as Reasons asks which part an objection to a whole argument denies.
     var waitHTML = W.map(function (w) {

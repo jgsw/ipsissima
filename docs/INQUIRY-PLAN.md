@@ -77,10 +77,26 @@ Feedback should come fast, and reflection should follow.
    in the right-click menu takes one part of a long map. With others: the descent from the main
    claim, as before, ending on a supposition.
 
+## The second round (18 Oct, after the author had used it)
+
+- **A new file starts afresh.** Suppositions are kept by label, so they followed the reader into the
+  next file; opening one (`render`) now clears them, and any guess in progress (`suppReset`).
+- **While guessing in Mechanism, what was supposed is greyed**, as in Reasons, and nothing that
+  follows from it is (`keep.quiet`): "too easy to forget which element you've supposed".
+- **Which claim would cost the most?** — a third way into Study, offered again when either other
+  way ends. The reader clicks a guess; Show ranks every claim beneath a main claim by what supposing
+  it false costs (main claims losing support first, then claims losing it), and sets the guess
+  beside the three costliest. Where no single claim takes a main claim's support, the card says so.
+- **A teaching map of causal junctions** after Pearl (`teaching/causal-junctions.argdown`): a chain
+  through a mediator, a fork, a back door, a collider and a joint cause, each with its lesson in
+  Reasons. Supposing is an intervention (*do*), so the collider's selection trap is stated as an
+  association and said not to be computed; the README says so plainly. Each lesson is held by
+  `test_mechanism_view.mjs`.
+
 ## Not built, and why
 
-- **"Which claim would cost the most?"** — guess, then rank by the load-bearing measure. A natural
-  next step; left for the author's word after he has used Guess first.
+- **Conditioning** — what selecting on a state (a collider, above all) does to the associations
+  among its causes. It would need d-separation over the chain, not the forward walk supposing uses.
 - **Multiple choice** — ruled out (2).
 - **A typed note** — still ruled out (Study plan, 14 Sep).
 

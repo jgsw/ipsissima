@@ -1839,6 +1839,9 @@ function render(name, source, graph){
   // And a study run: its frontier belongs to the map that was open, and its saved fold state
   // must not be put back over a different file's map.
   if (STUDY) endStudy(false);
+  // And the reader's suppositions, and any guess in progress: they were about the map that was open,
+  // and kept by label they would land on a new file's claims of the same name (James, 18 Oct 2026).
+  suppReset();
   // And a comparison: the other reading was another reading of the file that was open.
   endCompare();
   // And the highlights, whose chapter went with the file.
@@ -4367,7 +4370,7 @@ function studyOnState(){
   STUDY.touched = true;
   // ON MY OWN follows its cards, not the folds: a reveal unfolds the map, and redrawing the card on
   // that change would only light the same claims again.
-  if (STUDY.mode !== "own") studySync();
+  if (STUDY.mode !== "own" && STUDY.mode !== "cost") studySync();
 }
 
 /* TWO WAYS TO STUDY (James, 18 Oct 2026). Asked of the main claim, "what holds this up?" is a request
@@ -4388,6 +4391,7 @@ function studySync(){
   if (!STUDY) return;
   if (!STUDY.mode) return studyOpening();
   if (STUDY.mode === "own") return studyOwn();
+  if (STUDY.mode === "cost") return studyCost();
   studySyncOthers();
 }
 function studyCard(){
@@ -4423,8 +4427,9 @@ function studyOpening(){
   c.p(q ? "This text asks: \u201c" + q + "\u201d" : "Before you start: what question do you think this text is trying to answer?");
   c.p("What do you already think about it, and why? Hold your answer in mind: the map will test it.");
   c.btns([["On my own", "own", "One argument at a time, from the ground up: given its premises, guess where they lead. Hints when you want them."],
-          ["With others", "others", "From the main claim down: what holds each claim up? Open-ended, and best talked through together."]]);
-  c.p("On my own: one argument at a time. With others: from the main claim down, to talk through.", "crux");
+          ["With others", "others", "From the main claim down: what holds each claim up? Open-ended, and best talked through together."],
+          ["Which claim would cost the most?", "cost", "A challenge: guess which one claim, supposed false, would leave the most of the argument without support"]]);
+  c.p("On my own: one argument at a time. With others: from the main claim down, to talk through. Which would cost the most: a guess, then the map\u2019s answer.", "crux");
   // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting.
   var n = studyUnits(CURRENT_GRAPH || {}, null).length;
   if (n > 20) c.p("This map has " + n + " arguments and objections to work through. To take one part, right-click a claim and choose Study from here.", "crux");
@@ -4554,8 +4559,88 @@ function studyClosing(){
   c.p(STUDY.from ? "That is every argument beneath \u2039" + ((suppNodeById(STUDY.from) || {}).label || "it") + "\u203a." : "That is every argument on this map.");
   c.p("Now test it: which claim would you most want to deny? Click it and press What if\u2026?, or right-click it, and suppose it false. In Study you mark what you expect to fall before you see.");
   c.p("Then go back to what you thought at the start. Has the map changed it?");
-  c.btns([["End study", "end"]]);
+  c.btns([["Which claim would cost the most?", "cost", "Guess which one claim, supposed false, would leave the most of the argument without support"], ["End study", "end"]]);
   if (LIVE) LIVE.markClaims([]);
+}
+
+/* WHICH CLAIM WOULD COST THE MOST? (James, 18 Oct 2026). A guess, then the map's answer: of every claim
+ * the argument rests on, which one, supposed false, leaves the most claims without the support the
+ * map gives them -- the main claims first, since losing one of them is what costs the argument.
+ * Worked out by supposing each in turn (argdown-suppose.js), so it is the map's own measure, relative
+ * to the map (a framed question, in Henne's sense): it says where the argument is most exposed, never
+ * which claim is false. The reader's guess is set beside the answer and ranked, not scored. */
+function studyCostRank(){
+  var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
+  var byId = {}; nodes.forEach(function(n){ byId[n.id] = n; });
+  var outSup = {}, inSup = {};
+  (g.edges || []).forEach(function(e){
+    if (e.type !== "support" || !byId[e.from] || !byId[e.to]) return;
+    outSup[e.from] = true; inSup[e.to] = true;
+  });
+  var mains = {};
+  nodes.forEach(function(n){ if (n.kind === "statement" && inSup[n.id] && !outSup[n.id]) mains[n.id] = true; });
+  (g.contentions || []).forEach(function(id){ if (id) mains[id] = true; });
+  var out = [];
+  nodes.forEach(function(n){
+    if (n.kind !== "statement" || mains[n.id]) return;
+    var r = ArgdownSuppose.suppose(g, { "false": [n.id], holds: [], cut: [], choice: {}, keep: [] }, { appraisal: APPRAISAL_ON });
+    var lost = r.lost.filter(function(x){ return x.indexOf("#") < 0; });
+    out.push({ id: n.id, label: n.label, lost: lost.length, mains: lost.filter(function(x){ return mains[x]; }).length });
+  });
+  out.sort(function(a, b){ return b.mains - a.mains || b.lost - a.lost || a.label.localeCompare(b.label); });
+  return out;
+}
+function studyCostWords(x){
+  return x.lost + " claim" + (x.lost === 1 ? "" : "s") + " lose" + (x.lost === 1 ? "s" : "") + " the map\u2019s support" +
+    (x.mains ? ", " + (x.mains === 1 ? "a main claim" : x.mains + " main claims") + " among them" : "");
+}
+function studyCost(){
+  var c = studyCard(), C = STUDY.cost || (STUDY.cost = { pick: null, ranked: null, depthSet: false });
+  // Every claim drawn, so a guess can be any of them. Done once: after that the folds are the reader's.
+  if (!C.depthSet && LIVE) { C.depthSet = true; LIVE.setState({ depth: null, collapsedGroups: [], collapsedLanes: [] }, true); }
+  $("studyhint").textContent = "which would cost the most?";
+  if (!C.ranked) {
+    c.p("Which one claim, supposed false, would cost the argument most \u2014 leave the most claims without the support the map gives them?");
+    c.p("Not a main claim itself: denying a conclusion costs nothing beneath it. Look for what the rest rests on.", "hint");
+    if (C.pick) {
+      c.p("Your guess: \u2039" + C.pick.label + "\u203a. Click another claim to change it.");
+      c.btns([["Show", "cost-show", "See the map\u2019s answer beside your guess"], ["End study", "end", "", "plain"]]);
+      if (LIVE) LIVE.markClaims([C.pick.id]);
+    } else {
+      c.p("Click your guess on the map.");
+      c.btns([["End study", "end", "", "plain"]]);
+    }
+    return;
+  }
+  var R = C.ranked, top = R.slice(0, 3);
+  if (!R.length) { c.p("This map has no claim beneath a main claim to suppose false."); c.btns([["End study", "end"]]); return; }
+  c.p("By the map, the costliest:");
+  var ol = document.createElement("ol"); ol.className = "studylist";
+  top.forEach(function(x){ var li = document.createElement("li"); var b = document.createElement("b"); b.textContent = "\u2039" + x.label + "\u203a";
+    li.appendChild(b); li.appendChild(document.createTextNode(": " + studyCostWords(x))); ol.appendChild(li); });
+  $("studybody").appendChild(ol);
+  if (C.pick) {
+    var k = 0; R.forEach(function(x, i){ if (x.id === C.pick.id) k = i + 1; });
+    var mine = R[k - 1];
+    c.p(k === 1 ? "Your guess, \u2039" + C.pick.label + "\u203a, is the costliest." :
+        mine && !mine.lost ? "Your guess, \u2039" + C.pick.label + "\u203a: nothing else loses the map\u2019s support \u2014 other reasons back up whatever it supports." :
+        mine ? "Your guess, \u2039" + C.pick.label + "\u203a: " + studyCostWords(mine) + " \u2014 " + k + " of " + R.length + "." :
+        "Your guess, \u2039" + C.pick.label + "\u203a, is a main claim, or nothing rests on it.", "answer");
+  }
+  // AN ARGUMENT WITH NO SINGLE POINT OF FAILURE says so: that is itself the finding.
+  if (!top[0].mains) c.p("No one claim, supposed false, takes the support from a main claim: each main claim rests on more than one line of reasons.");
+  c.p("Why does the first cost so much? Is it one premise everything rests on, or a reason no other reason backs up?");
+  c.btns([["Suppose \u2039" + top[0].label + "\u203a false", "cost-suppose-top", "See what it costs, guessing first"],
+          C.pick && C.pick.id !== top[0].id ? ["Suppose your guess false", "cost-suppose-pick"] : null,
+          ["Guess again", "cost-again", "", "plain"], ["End study", "end", "", "plain"]]);
+  if (LIVE) LIVE.markClaims(top.map(function(x){ return x.id; }).concat(C.pick ? [C.pick.id] : []));
+}
+/** A claim clicked while the reader is guessing which would cost the most: their guess. */
+function studyCostPick(n){
+  if (!STUDY || STUDY.mode !== "cost" || !STUDY.cost || STUDY.cost.ranked || !n || n.kind !== "statement") return false;
+  STUDY.cost.pick = { id: n.id, label: n.label };
+  studySync();
+  return true;
 }
 $("studybody").addEventListener("click", function(ev){
   var t = ev.target, a = t && t.getAttribute ? t.getAttribute("data-study") : null;
@@ -4567,6 +4652,14 @@ $("studybody").addEventListener("click", function(ev){
   if (a === "finish") { STUDY.i = (STUDY.units || []).length; studySync(); return; }
   if (a === "end") { endStudy(); return; }
   if (a === "fork-reply") { STUDY.reply = true; studySync(); return; }
+  if (a === "cost") { STUDY.mode = "cost"; STUDY.cost = null; studySync(); return; }
+  if (a === "cost-show") { STUDY.cost.ranked = studyCostRank(); studySync(); return; }
+  if (a === "cost-again") { STUDY.cost = { pick: null, ranked: null, depthSet: true }; studySync(); return; }
+  if (a === "cost-suppose-top" || a === "cost-suppose-pick") {
+    var cid = a === "cost-suppose-top" ? STUDY.cost.ranked[0].id : STUDY.cost.pick.id, cn = suppNodeById(cid);
+    if (cn && !suppIsFalse(suppKey(cn))) { SUPP.false.push(suppKey(cn)); suppApply(); }
+    return;
+  }
   if (a === "fork-suppose") {
     var u = STUDY.units[STUDY.i], n = suppNodeById(u.from);
     if (n && !suppHas(SUPP.holds, suppKey(n))) { SUPP.holds.push(suppKey(n)); suppApply(); }
@@ -4593,6 +4686,9 @@ function studySyncOthers(){
     // AND THEN A SUPPOSITION (18 Oct 2026): the walk ends where inquiry goes on.
     p("Now test it: which claim would you most want to deny? Click it and press What if\u2026?, " +
       "or right-click it, and suppose it false.");
+    var cb = document.createElement("button"); cb.type = "button"; cb.textContent = "Which claim would cost the most?";
+    cb.setAttribute("data-study", "cost");
+    var cw = document.createElement("div"); cw.className = "studybtns"; cw.appendChild(cb); body.appendChild(cw);
     if (LIVE) LIVE.markClaims([]);
     return;
   }
@@ -8428,6 +8524,16 @@ function suppIds(){
   });
   return { "false": map(SUPP.false.concat(suppCarried())), holds: map(SUPP.holds), cut: map(SUPP.cut), choice: choice, keep: map(SUPP_KEEP) };
 }
+/** A new file: every supposition, keep and guess goes, without redrawing a map about to be replaced. */
+function suppReset(){
+  SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }; SUPP_KEEP = [];
+  SUPP_PREV = 0; SUPP_LAST = null; SUPP_DETAIL = true;
+  GUESS.phase = null; GUESS.picks = []; GUESS.answer = null;
+  if (LIVE && LIVE.setGuesses) LIVE.setGuesses({});
+  if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
+  $("supp").hidden = true; $("supp").innerHTML = "";
+  suppBar();
+}
 function suppClear(){ SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }; SUPP_KEEP = []; suppApply(); }
 function suppCount(){ return SUPP.false.length + SUPP.holds.length + SUPP.cut.length + SUPP.mfail.length + SUPP.mhold.length + SUPP.moff.length; }
 var SUPP_LAST = null, SUPP_DETAIL = true, SUPP_PREV = 0;
@@ -8458,7 +8564,7 @@ function suppApply(){
   SUPP_LAST = r;
   box.hidden = ARRANGEMENT === "mechanism" || !SUPP_DETAIL || guessing;
   suppBar();
-  if (guessing && MECH && MECH.setExperiment) MECH.setExperiment({});
+  if (guessing && MECH && MECH.setExperiment) MECH.setExperiment(Object.assign(suppMechInput(r), { waiting: [], quiet: true }));
   else suppMechSync(r);
 }
 
@@ -8703,6 +8809,7 @@ var WHATIF_N = null;
 function whatIfHide(){ WHATIF_N = null; var b = $("whatif"); if (b) b.hidden = true; }
 function whatIfShow(n){
   if (n && guessPick(n.id)) { whatIfHide(); return; }
+  if (n && studyCostPick(n)) { whatIfHide(); return; }
   var b = $("whatif");
   if (!b || !n || (n.kind !== "statement" && n.kind !== "argument") || !window.ArgdownSuppose || ARRANGEMENT === "mechanism") { whatIfHide(); return; }
   var box = null;

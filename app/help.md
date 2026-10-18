@@ -936,11 +936,13 @@ costs.
 **Guess first.** Tick **Guess first** in the banner, or **Guess before seeing what follows** in the
 menu, and a new supposition does not show its cost at once. The banner asks you to click the claims
 you expect to lose the map's support (in the Mechanism view, the states you expect the text's steps
-will no longer bring about); **Show** then draws the map's answer beside your marks — *guessed · the
+will no longer bring about) — what you supposed is greyed meanwhile, so you can see it, and nothing
+that follows from it is; **Show** then draws the map's answer beside your marks — *guessed · the
 map agrees*, *guessed · the map keeps it*, *not guessed · the map loses it* — with a line saying
 how many. It is not a score: the answer is the map's, worked out from the map's own support, and
 the marks show only where you and it part. **Done** takes the marks away and keeps the
-supposition. The choice is remembered; in Study it is always on.
+supposition. The choice is remembered; in Study it is always on. Opening another file starts
+afresh: every supposition, and any guess in progress, goes with the map it was made on.
 
 **Deny the conclusion.** Where you deny a claim the map supports, the panel walks back through
 each argument for it to the premises it rests on: for the claim to be false, every reason for it
@@ -974,6 +976,14 @@ answering — the map's own, where it names one — and what you already think a
   counts what is folded there — and compare what you expected with what the map says. Asked of a
   main claim, this is a question about the whole argument: good for talking through with someone,
   hard to guess alone.
+
+- **Which claim would cost the most?**: a challenge. Every claim is drawn; click the one you think,
+  supposed false, would leave the most of the argument without the map's support. **Show** ranks the
+  claims by what supposing each false costs — main claims losing their support first, then how many
+  claims do — and sets your guess beside the three costliest. It is the map's own measure: where the
+  argument is most exposed, never which claim is false. Where no single claim takes a main claim's
+  support, the card says so: each rests on more than one line of reasons. It is offered again when
+  either other way ends.
 
 **Study from here**, in a claim's right-click menu, works through only the arguments beneath that
 claim, on your own: the way to take one part of a long map at a sitting.

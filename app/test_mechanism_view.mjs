@@ -1855,6 +1855,25 @@ ${steps.map((s, i) => `[S${i}]: Step ${i}. {causes: ${s}}\n    +> [Aim]\n`).join
         JSON.stringify(["down", "up", "across"].map((k, i) => [k, [q("doctrine", "values"), q("orientation", "capitalism"), q("values", "orientation")][i]])));
 }
 
+// THE TEACHING MAP OF CAUSAL JUNCTIONS (teaching/causal-junctions.argdown; James, 18 Oct 2026): each
+// lesson the map states is what supposing shows. Supposing is an intervention, so the collider's
+// selection trap is stated as an association, never computed. Mutations: let a jointly step fire on
+// one cause -> no oxygen still starts the fire; walk associations -> ice cream brings drownings.
+console.log("\nthe teaching map of causal junctions");
+{
+  const MJ = MV.model(graphOf(path.join(REPO, "teaching", "causal-junctions.argdown")));
+  const S = (fail) => MV.suppose(MJ, { fail });
+  check(same(S(["tar"]).lost, ["cancer"]), "a chain: no tar, no cancer from smoking");
+  check(!S(["icecream"]).lostStates.includes("drown") && same(S(["heat"]).lost.sort(), ["drown", "icecream"]),
+        "a fork: no ice cream, and the drownings still come; no hot summer, and both go");
+  check(!S(["tutor"]).lost.includes("admit"), "a back door: no tutoring, and wealth still brings admission");
+  check(!S(["talent"]).lost.includes("fame") && same(S(["fame"]).lostStates, ["fame"]),
+        "a collider: no talent, and looks still bring fame; no fame, and nothing above it changes");
+  check(S(["oxygen"]).lost.includes("fire") && S(["spark"]).lost.includes("fire"), "a joint cause: remove either cause and there is no fire");
+  check(MV.follows(MJ).items.some(i => i.kind === "common" && /Ice cream sales rise/.test(i.question)),
+        "and the fork's association is asked about as a common cause");
+}
+
 /* ------------------------------------------------------------ the page, under real clicks */
 let chromium = null;
 try { ({ chromium } = await import("playwright")); await chromium.executablePath(); }
@@ -2547,8 +2566,10 @@ mechanism:
     await page.locator('#mech .st[data-state="audit"]').click({ button: "right" });
     await page.locator('#ctx button[data-supp-menu="fail"]').click();
     await page.waitForTimeout(250);
-    check(/Before you look: click the states/.test(await page.locator("#suppbar").innerText()) && await page.locator('#mech svg .st[data-state="defence"].cut').count() === 0,
-          "with Guess first on, the chart asks for a guess before fading anything");
+    // Mutation: drop keep.quiet's branch in applyFocus -> the defences fade before Show, or the audits do not.
+    check(/Before you look: click the states/.test(await page.locator("#suppbar").innerText()) &&
+          await page.locator('#mech svg .st[data-state="defence"].cut').count() === 0 && await page.locator('#mech svg .st[data-state="audit"].cut').count() === 1,
+          "with Guess first on, the chart greys what was supposed, and nothing that follows from it, until Show");
     await page.locator('#mech .st[data-state="harm"]').click();
     await page.waitForTimeout(150);
     await page.locator("#suppbar button[data-guess-show]").click();
