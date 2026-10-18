@@ -769,22 +769,23 @@ timing with its own step. The **Legend** beside the chain shows each kind of lin
 
 ### Studying the chain
 
-**What follows from the steps.** The panel opens on what the text's own steps add up to, which no
-one of them says: a route from where the chain starts to an outcome that no one step states; an
-outcome some routes raise and others lower, so that which wins turns on sizes the text may not give;
-a step the text only asserts that every route passes, where the rest is backed better; a step the
-text states that other routes agree with; a loop the steps close, and whether it reinforces or
-balances itself; two accounts the argument sets against each other. These are findings about the
-text, never verdicts on it. Click one to light what it rests on and list its steps. Where nothing
-follows, the panel says so: the drawing then restates the text.
+**Questions to try.** The panel opens on questions about what the text's own steps add up to, which
+no one of them says. Does a cause reach an outcome that no one step links it to, and which way? Do
+some routes raise an outcome and others lower it? Which step does every route pass that the text
+backs least? Does a loop the steps close reinforce itself, or balance itself? Guess first, then
+press **Show**: the answer, lit on the chart, with the steps it rests on. These are findings about
+the text, never verdicts on it. Where nothing follows, the panel says so: the drawing then restates
+the text. The chain's counts, gaps, loops and legend are under **About this chain**, at the foot of
+the panel.
 
-**Your experiments.** A state's panel offers **Suppose this does not happen**, and, where the state
-blocks or moderates a step, **Suppose this holds**; an arrow's offers **Suppose this step does not
-run**. The chart then fades every state and step the text's steps no longer bring about, and the
-panel says what changed: an outcome no longer reached, a direction turned, a loop broken. Supposing
-that a blocker holds can withdraw an outcome: adding a fact takes a conclusion away. Experiments
-combine; a banner says they are yours, not the text's, and **Clear** ends them. They are never
-saved into the map.
+**Supposing.** **Right-click a state** (or select it, or press the context-menu key on it) for
+**Suppose this does not happen**, and, where the state blocks or moderates a step, **Suppose this
+holds**; right-click an arrow for **Suppose this step does not run**. The chart then fades every
+state and step the text's steps no longer bring about, and the panel says what changed: an outcome
+no longer reached, a direction turned, a loop broken. Supposing that a blocker holds can withdraw an
+outcome: adding a fact takes a conclusion away. Suppositions combine, survive a change of chain or
+marks, and carry to the Reasons view (see <a data-help="Supposing, and denying a conclusion">Supposing,
+and denying a conclusion</a>). They are never saved into the map.
 
 **How might this step work?** Where the text does not say how a step works, its panel offers
 questions to put to it, by the kind of step: down a level, how the cause reaches people (by force,
@@ -832,6 +833,11 @@ text sets out, not (or not yet) actual, hollow and in italic; hover either for w
 time the text gives the state (growing, oscillating, levelling off); and a square frame round a state
 says the text's analysis holds it fixed, one round two that they cannot be held fixed apart.
 
+**Display.** How the chain is drawn — its labels, its marks, the text's own boxes, nested levels,
+zoom and fit — is under **Display** in the bar, one press away, so the bar keeps to what changes
+what you are looking at. The menu stays open while you try its settings; a press elsewhere or
+<kbd>Esc</kbd> closes it.
+
 **Marks: Plain | All.** The chain opens on its **plain** marks: boxes, arrows with their heads and
 weights, loops, AND gates and blockers, the marks a reader can follow without the Legend. Every
 line is solid, since a dashed arrow reads as a weaker causal claim, and a dash here meant only that
@@ -848,7 +854,7 @@ by side with a thin rule between them, so you can see they meet at no state.
 
 A state's name is cut at three lines; **▼ more** on the foot of its box shows the whole of it, and
 the rows below move down to make room. **▲ less** puts it back. A long label on an arrow is cut
-too, and says itself whole when you hover on it. **Labels: Full**, in the bar, shows every state's
+too, and says itself whole when you hover on it. **Labels: Full**, under **Display** in the bar, shows every state's
 and every arrow's label whole at once, as **Claims: Full** does in Reasons; **Short** cuts them
 again.
 
@@ -899,7 +905,8 @@ saw.
 <p class="also" hidden>suppose, what if, objection holds, deny the conclusion, contraposition, modus tollens, non-monotonic</p>
 
 The map reports and does not judge: it never says which side of a dispute wins. You can ask what
-would follow if one side did. **Right-click a claim** (or an argument) and choose:
+would follow if one side did. **Click a claim** (or an argument) and press **What if…?** beside it,
+or **right-click** it, and choose:
 
 - **Suppose this is false**: the claim is denied.
 - **Suppose this objection holds**, on a claim that objects to something: what it attacks or
@@ -915,7 +922,25 @@ a claim supported; an argument whose premises work together needs every one of t
 a claim with nothing supporting it stands unless you deny it. Objections do nothing until you
 suppose them, and where the text answers an objection you have granted, the panel names the
 answer and leaves the choice to you. Suppositions combine, and adding one can take a conclusion
-away. They are yours, never the text's, and never saved into the map; **Clear** ends them.
+away. They are yours, never the text's, and never saved into the map.
+
+**The banner.** While you suppose anything, a banner across the top of the map says what, each with
+its own **×** to take it back, and **Clear** to take them all back. It is the same banner in the
+Mechanism view, and a supposition **carries** between the two: a claim supposed false stops the
+step of the chain it states, and a step supposed not to run makes the claim stating it false. Beside
+each, the banner says how it shows in the other view, or that it shows in one only (a state of the
+chain is not a claim). Where a claim states several steps, the Mechanism panel asks which of them
+you suppose does not run. **What follows** opens or folds the card that says what each supposition
+costs.
+
+**Guess first.** Tick **Guess first** in the banner, or **Guess before seeing what follows** in the
+menu, and a new supposition does not show its cost at once. The banner asks you to click the claims
+you expect to lose the map's support (in the Mechanism view, the states you expect the text's steps
+will no longer bring about); **Show** then draws the map's answer beside your marks — *guessed · the
+map agrees*, *guessed · the map keeps it*, *not guessed · the map loses it* — with a line saying
+how many. It is not a score: the answer is the map's, worked out from the map's own support, and
+the marks show only where you and it part. **Done** takes the marks away and keeps the
+supposition. The choice is remembered; in Study it is always on.
 
 **Deny the conclusion.** Where you deny a claim the map supports, the panel walks back through
 each argument for it to the premises it rests on: for the claim to be false, every reason for it
@@ -933,10 +958,25 @@ formalized step is invalid, denying its conclusion forces nothing.
 
 Unfolding a map shows you the argument; **study mode** makes you reach for it first. Start it
 from **Study** at the head of the map's control bar, or from **Study this map** at the top of
-this panel. The map folds to its main claim, and a small card asks one question of the topmost
-claim that still has reasons folded beneath it: *what do you think holds this up — and would
-anything speak against it?* Answer in your own head, then press the badge under it — the **+3**
-that counts what is folded there — and compare what you expected with what the map says.
+this panel. The map folds to its main claim, and a small card asks what question the text is
+answering — the map's own, where it names one — and what you already think about it. Then choose:
+
+- **On my own**: one argument at a time, from the ground up. The card gives an argument's premises
+  and asks where you think they lead. **Hint** brings you one step closer each time you press it —
+  first what the conclusion goes on to support and how the step works, then the conclusion's name —
+  and **Show** gives the map's conclusion and lights it. Where an objection bears on what you have
+  reached, the card stops at it: does it succeed? **Try it: suppose it holds** supposes so, with a
+  guess first; **How does the text answer it?** names the reply the map records. **Finish** ends on
+  a supposition to try, and on what you thought at the start.
+- **With others**: from the main claim down. The card asks one question of the topmost claim that
+  still has reasons folded beneath it: *what do you think holds this up — and would anything speak
+  against it?* Answer in your own head, or aloud, then press the badge under it — the **+3** that
+  counts what is folded there — and compare what you expected with what the map says. Asked of a
+  main claim, this is a question about the whole argument: good for talking through with someone,
+  hard to guess alone.
+
+**Study from here**, in a claim's right-click menu, works through only the arguments beneath that
+claim, on your own: the way to take one part of a long map at a sitting.
 
 The card never asks you to type, never scores you, and never records your answer: whether your
 expectation and the map agree is your judgement to make, not the tool's.
@@ -945,15 +985,17 @@ Where the reconstructor has marked a claim's reading as a **crux** (`#crux`) —
 live alternatives — the card says so at that step, and the claim's note names the readings not
 taken.
 
-The mode follows you rather than steering you: unfold any badge, in any order, and the card
+With others, the mode follows you rather than steering you: unfold any badge, in any order, and the card
 moves on. **Study** again, <kbd>Esc</kbd> or the **×** ends it at any time, and the map stays
 folded exactly as you left it — your unfolds are the study. The one exception: ending the mode
 before you have unfolded anything puts the map back as it was, so pressing the wrong button costs
 nothing.
 
 *Why reach before looking:* recalling an argument beats re-reading it, and predicting a reason
-beats being handed one. On a contested text a machine grading your answer would be grading you
-against one reading among several, which is why nothing here does.
+beats being handed one — but only where you have something to predict with: a guess with nothing
+behind it teaches little, which is why, on your own, the card asks the narrower question and offers
+hints rather than asking for the whole argument at once. On a contested text a machine grading your
+answer would be grading you against one reading among several, which is why nothing here does.
 
 # Whose words, whose view
 

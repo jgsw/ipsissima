@@ -62,6 +62,12 @@ different routes, deliberately.
   for interpretive plurality. `FORMATION.md` is the record; the downstream queue proceeds
   in its §6 order, wave 1 (the `#crux` convention) landed the same day.
 
+- **The Inquiry episode — opened and ruled 18 Oct.** The author's proposal that the App
+  explicitly adopt an inquiry-based approach to learning, after supposing and denying a conclusion
+  landed: B10 admitted, and its first enactments built the same day — one record of suppositions
+  across Reasons and Mechanism, *Guess first*, Study for a reader on their own, and a Mechanism
+  panel that asks before it tells. `docs/INQUIRY-PLAN.md` is the record.
+
 ## Whose values are these
 
 A question the checkpoints answered about the framework itself, in both directions:

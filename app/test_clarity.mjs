@@ -316,7 +316,9 @@ if (chromium) {
       const page = await open(miller);
       const btn = page.locator('#map [data-act="study"]');
       await btn.click();
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(300);
+      await page.locator('#studybody button[data-study="others"]').click();
+      await page.waitForTimeout(500);
       const s = await page.evaluate(() => {
         const el = document.querySelector("#map .alm-toggle.is-closed text");
         return { body: document.getElementById("studybody").innerText,

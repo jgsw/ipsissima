@@ -309,6 +309,14 @@ main.swapped{flex-direction:row-reverse}
 #studycard header button.plain:hover{color:var(--fg)}
 #studycard.min #studybody{display:none}
 #studycard p{margin:.25rem 0}
+#studybody{max-height:58vh;overflow:auto}
+#studycard .studybtns{display:flex;flex-wrap:wrap;gap:.35rem;margin:.4rem 0 .2rem}
+#studycard .studybtns button{font:inherit;font-size:12px;padding:.1rem .55rem}
+#studycard .studybtns button.plain{border:0;background:none;color:var(--fg-dim);text-decoration:underline;cursor:pointer;padding:.1rem .2rem}
+#studycard .studylist{margin:.2rem 0 .3rem 1rem;padding:0}
+#studycard .studylist li{margin:.15rem 0}
+#studycard .hint{color:var(--fg-dim);border-left:2px solid var(--accent);padding-left:.4rem}
+#studycard .answer{border-left:3px solid var(--accent);padding:.15rem .45rem;background:var(--accent-wash,rgba(58,123,213,.07))}
 #studycard .crux{font-style:italic;color:var(--fg-dim)}
 
 #keycard{position:relative;max-width:270px;
@@ -679,7 +687,34 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #ctx .tick{display:inline-block;width:1.1em;color:var(--accent)}
 /* THE READER'S SUPPOSITIONS (17 Oct 2026): a card over the map's right edge, below the bar. Never
    the text's, and said so; nothing in it is saved into the map. */
-#supp{position:fixed;z-index:35;right:14px;top:96px;width:23rem;max-width:calc(100vw - 28px);max-height:62vh;
+/* THE BANNER over both arrangements (18 Oct 2026): what is supposed, and where each shows. While it
+   stands, the map and the chart start below it rather than under it. */
+#suppbar{position:absolute;left:0;right:0;top:0;z-index:30;display:flex;align-items:baseline;gap:.5rem;
+  padding:.4rem .75rem;font-size:12.5px;line-height:1.5;background:var(--panel,var(--bg));
+  border-bottom:1px solid var(--accent,#3a7bd5);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#suppbar[hidden]{display:none}
+#suppbar .items{flex:1;min-width:0}
+#suppbar .acts{display:flex;gap:.35rem;flex:0 0 auto}
+#suppbar .it{white-space:normal}
+#suppbar .guessrow{margin-top:.2rem;padding:.2rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
+#suppbar .guessrow button.plain{border:0;background:none;color:var(--fg-dim);text-decoration:underline;cursor:pointer}
+#suppbar .gtog{display:inline-flex;align-items:center;gap:.25rem;font-size:11.5px;color:var(--fg-dim);white-space:nowrap}
+#suppbar .where{color:var(--fg-dim);font-size:11px;font-style:italic}
+#suppbar .sep{color:var(--fg-dim)}
+#suppbar button{font:inherit;font-size:11.5px;padding:.05rem .45rem}
+#suppbar button.undo{padding:0 .3rem;line-height:1.2;color:var(--fg-dim)}
+#suppbar button.undo:hover{color:var(--fg)}
+/* !important: each arrangement sets its own height inline, which would hold it at the full stage. */
+#stage.supposing > #map,#stage.supposing > #mech{top:var(--suppbar-h,34px);height:auto!important}
+/* WHAT IF...? beside the claim in hand: the door to supposing for a reader who would never think to
+   right-click. Small, in the accent's outline, gone at the next press anywhere else. */
+#whatif{position:absolute;z-index:31;font:inherit;font-size:11.5px;padding:.1rem .5rem;border-radius:999px;
+  border:1px solid var(--accent,#3a7bd5);background:var(--panel,var(--bg));color:var(--accent,#3a7bd5);cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.1)}
+#whatif[hidden]{display:none}
+#whatif:hover{background:var(--accent-fill);color:var(--on-accent)}
+#supp header button.plain{font-size:12px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
+#supp{position:fixed;z-index:35;right:14px;top:96px;width:21rem;max-width:calc(100vw - 28px);max-height:62vh;
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
   box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
 #supp[hidden]{display:none}
@@ -696,6 +731,7 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #supp .verdict{margin:.25rem 0 .1rem;padding:.25rem .4rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #supp .go{cursor:pointer;text-decoration:underline dotted}
 #ctx button.ctxon:hover .tick{color:var(--on-accent)}
+#ctx button.ctxsub{font-size:11.5px;color:var(--fg-dim)}
 #ctx .hint{display:block;margin-left:1.1em;color:var(--fg-dim);font-size:11px}
 #ctx button.hasicon{display:grid;grid-template-columns:26px 1fr;align-items:center;
   column-gap:.15rem;padding:.34rem .5rem}
@@ -1161,6 +1197,10 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
        sits BESIDE it rather than replacing it, because the whole point is to see a claim and
        the passage it came from at the same time. -->
   <div id="stage">
+  <!-- THE READER'S SUPPOSITIONS, one banner over both arrangements (18 Oct 2026; see suppBar). -->
+  <div id="suppbar" hidden role="status" aria-label="Your suppositions"></div>
+  <!-- "WHAT IF...?" beside the claim in hand (18 Oct 2026; see whatIfShow). -->
+  <button type="button" id="whatif" hidden title="Suppose this is false, or that its step fails, and see what follows">What if&hellip;?</button>
   <div id="map"></div>
   <div id="mech" hidden></div>
   <!-- THE KEY. Offered once, in the workbench only, on a map that uses several encodings at
@@ -1985,7 +2025,7 @@ function openingDepth(graph){
     // wide fits at the zoom floor. Only here, on a map being opened -- a rebuild after an edit
     // hands the reader's own rung back and must keep it.
     readableScale: READABLE_SCALE,
-    onLocate: msLocate,
+    onLocate: msLocate, onSelect: whatIfShow,
     onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
     onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
@@ -3253,6 +3293,11 @@ function setArrangement(v, showMap){
   var mech = v === "mechanism";
   $("map").hidden = mech;
   $("mech").hidden = !mech;
+  // The banner names where each supposition shows from where the reader now stands, and Reasons'
+  // card stands down while the Mechanism panel says what follows. A guess made in one arrangement
+  // ends when the reader leaves it: its marks belong to the drawing they were made on.
+  if (GUESS.phase && GUESS.view !== (mech ? "mech" : "reasons")) guessEnd(false);
+  suppApply();
   if (mech) {
     mechEnsure();
     if (MECH) MECH.setLayer("appraisal", APPRAISAL_ON);
@@ -3274,7 +3319,18 @@ function mechEnsure(){
   MECH_GRAPH = CURRENT_GRAPH;
   MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH,
     { onClaim: mechShowClaim, appraisal: APPRAISAL_ON, helpLinks: true,
-      onLayers: function(l){ setAppraisalOn(l.appraisal); } });
+      onLayers: function(l){ setAppraisalOn(l.appraisal); },
+      // THE READER'S SUPPOSITIONS ARE ONE RECORD (see SUPP), and the chart's right-click draws the
+      // page's own menu, so the gesture and its look are the same in both arrangements.
+      onSuppose: suppFromMech, onSupposeClear: suppClear,
+      onPick: function(v){ return GUESS.view === "mech" && guessPick(v); },
+      onMenu: function(spec, ev){
+        ctxHide();
+        var items = spec.items.slice();
+        if (items.some(function(it){ return it && it.act; })) items.push(guessMenuItem());
+        ctxMenu(spec.title, items, ev);
+      } });
+  suppApply();
   // A rebuild after an edit keeps the reader's layer choices; a new file starts with the defaults
   // (rival views on, appraisal off), because that is where every reader of a new map should start.
   if (MECH && layers && MECH_GRAPH && MECH_KEEP_LAYERS) {
@@ -4188,7 +4244,7 @@ function maybeStartWalkthrough(){
  */
 var STUDY = null;
 
-function startStudy(){
+function startStudy(from){
   if (STUDY) return;
   if (!LIVE) {
     showNote("Study mode works on an open map, and none is open yet. " + openOrStartHow() +
@@ -4198,7 +4254,9 @@ function startStudy(){
   if (WALK) abandonWalkthrough();
   if (GUIDE) guideEnd();
   clearErr(); setHelp(false); ctxHide();
-  STUDY = { was: LIVE.getState(), touched: false };
+  // MODE: null until the reader chooses (the opening card), "own" or "others". `from`: a claim the
+  // reader asked to study from, whose reasons alone are worked through (Study from here).
+  STUDY = { was: LIVE.getState(), touched: false, mode: from ? "own" : null, from: from || null, units: null, i: 0, hint: 0, shown: false, reply: false };
   // The Reasons view, folded to its bottom rung: the contention alone, everything beneath
   // it a badge. setState fires studyOnState synchronously, which marks the run touched —
   // so `touched` is put back after, and only the READER's own changes count from here on.
@@ -4290,6 +4348,7 @@ function syncDock(){
 }
 window.addEventListener("resize", function(){ syncDock(); });
 function onMapState(st){
+  whatIfHide();
   studyOnState(st);
   syncStudyButton();
   syncDock();
@@ -4306,10 +4365,216 @@ function onMapState(st){
 function studyOnState(){
   if (!STUDY) return;
   STUDY.touched = true;
-  studySync();
+  // ON MY OWN follows its cards, not the folds: a reveal unfolds the map, and redrawing the card on
+  // that change would only light the same claims again.
+  if (STUDY.mode !== "own") studySync();
 }
 
+/* TWO WAYS TO STUDY (James, 18 Oct 2026). Asked of the main claim, "what holds this up?" is a request
+ * for the whole argument of the paper, which a lone reader cannot guess and should not be expected
+ * to: "a bit challenging for an individual to undertake on their own", though it suits a pair or a
+ * seminar, where the point is open exploration. Lang's chapter on predicting says why: a prediction
+ * helps only where the reader can bring what they know to it ("stay conceptual"), and a guess with
+ * nothing behind it is not a prediction. So the card opens by asking what the reader already thinks
+ * (prior knowledge, activated), and offers two ways on:
+ *   - ON MY OWN: one argument at a time, from the ground up. Its premises are given and the reader
+ *     guesses where they lead -- a narrower question than what leads to a claim -- with hints the
+ *     reader asks for, a step at a time, so the difficulty is theirs to set. Where an objection
+ *     bears on what they have reached, the card stops at the fork (Dewey's forked road, where
+ *     reflection starts) and invites a supposition, with a guess first.
+ *   - WITH OTHERS: the descent from the main claim, as before.
+ * No choices to pick from (James: "I'd veer towards no"), no typing, no score. */
 function studySync(){
+  if (!STUDY) return;
+  if (!STUDY.mode) return studyOpening();
+  if (STUDY.mode === "own") return studyOwn();
+  studySyncOthers();
+}
+function studyCard(){
+  var body = $("studybody");
+  body.textContent = "";
+  return {
+    p: function(text, cls){ var el = document.createElement("p"); if (cls) el.className = cls; el.textContent = text; body.appendChild(el); return el; },
+    btns: function(list){
+      var d = document.createElement("div"); d.className = "studybtns";
+      list.forEach(function(b){ if (!b) return; var x = document.createElement("button"); x.type = "button"; x.textContent = b[0];
+        x.setAttribute("data-study", b[1]); if (b[2]) x.title = b[2]; if (b[3]) x.className = b[3]; d.appendChild(x); });
+      body.appendChild(d); return d;
+    },
+    list: function(items){
+      var ul = document.createElement("ul"); ul.className = "studylist";
+      items.forEach(function(t){ var li = document.createElement("li"); var b = document.createElement("b"); b.textContent = t[0];
+        li.appendChild(b); if (t[1]) li.appendChild(document.createTextNode(": " + studyShort(t[1]))); ul.appendChild(li); });
+      body.appendChild(ul); return ul;
+    }
+  };
+}
+function studyShort(t){ t = String(t || "").replace(/\s+/g, " ").trim(); return t.length > 200 ? t.slice(0, 199).replace(/\s+\S*$/, "") + "\u2026" : t; }
+/** The question the text answers, where the map declares one: its own question layer, or its chain's. */
+function studyQuestion(){
+  var g = CURRENT_GRAPH || {}, q = (g.questions || []).filter(function(x){ return x.text; })[0];
+  if (q) return q.text;
+  var m = g.mechanism && g.mechanism.block;
+  return m && m.question ? String(m.question) : "";
+}
+function studyOpening(){
+  var c = studyCard(), q = studyQuestion();
+  $("studyhint").textContent = "before you start";
+  c.p(q ? "This text asks: \u201c" + q + "\u201d" : "Before you start: what question do you think this text is trying to answer?");
+  c.p("What do you already think about it, and why? Hold your answer in mind: the map will test it.");
+  c.btns([["On my own", "own", "One argument at a time, from the ground up: given its premises, guess where they lead. Hints when you want them."],
+          ["With others", "others", "From the main claim down: what holds each claim up? Open-ended, and best talked through together."]]);
+  c.p("On my own: one argument at a time. With others: from the main claim down, to talk through.", "crux");
+  // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting.
+  var n = studyUnits(CURRENT_GRAPH || {}, null).length;
+  if (n > 20) c.p("This map has " + n + " arguments and objections to work through. To take one part, right-click a claim and choose Study from here.", "crux");
+  if (LIVE) LIVE.markClaims([]);
+}
+
+/** THE UNITS OF "ON MY OWN": each argument (its premises and where they lead), each claim with reasons
+ *  drawn straight into it, and each objection, from the ground up. */
+function studyUnits(g, fromId){
+  var nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
+  var byId = {}; nodes.forEach(function(n){ byId[n.id] = n; });
+  var into = {}, attacksOn = {};
+  (g.edges || []).forEach(function(e){
+    if (!byId[e.from] || !byId[e.to]) return;
+    if (e.type === "support") (into[e.to] = into[e.to] || []).push(e.from);
+    else if (["attack", "undercut", "contrary", "contradictory"].indexOf(e.type) >= 0) (attacksOn[e.to] = attacksOn[e.to] || []).push(e.from);
+  });
+  var memo = {};
+  var height = function(id, seen){
+    if (memo[id] != null) return memo[id];
+    if (seen[id]) return 0;
+    seen[id] = true;
+    var xs = into[id] || [], v = xs.length ? 1 + Math.max.apply(null, xs.map(function(x){ return height(x, seen); })) : 0;
+    seen[id] = false;
+    return (memo[id] = v);
+  };
+  var scope = null;
+  if (fromId) {
+    scope = {};
+    var stack = [fromId];
+    while (stack.length) { var x = stack.pop(); if (scope[x]) continue; scope[x] = true; (into[x] || []).forEach(function(y){ stack.push(y); }); }
+  }
+  var stmtByLabel = {}; nodes.forEach(function(n){ if (n.kind === "statement") stmtByLabel[n.label] = n.id; });
+  // WHAT A CONCLUSION GOES ON TO SUPPORT: the first hint points upward, which narrows the guess
+  // without giving it away.
+  var outOf = {};
+  (g.edges || []).forEach(function(e){ if (e.type === "support" && byId[e.from] && byId[e.to]) (outOf[e.from] = outOf[e.from] || []).push(byId[e.to].label); });
+  var contention = function(id){ return id && (g.contentions || []).indexOf(id) >= 0; };
+  var units = [];
+  nodes.forEach(function(n){
+    if (scope && !scope[n.id]) return;
+    if (n.kind === "argument") {
+      var pcs = n.pcs || [], prem = pcs.filter(function(l){ return l.role === "premise"; });
+      var main = pcs.filter(function(l){ return l.role === "main-conclusion"; })[0] || pcs[pcs.length - 1];
+      if (!prem.length || !main || main.role === "premise") return;
+      var cid = stmtByLabel[main.title] || null;
+      units.push({ kind: "arg", id: n.id, cid: cid, label: n.label, h: height(n.id, {}), order: n.docLine || 0,
+        premises: prem.map(function(l){ return [l.title || ("(" + l.n + ")"), l.text]; }),
+        concl: [main.title || n.label, main.text], rule: main.rule || null, steps: n.steps || 1,
+        up: (outOf[cid] || outOf[n.id] || [])[0] || null, top: contention(cid),
+        crux: cid && (byId[cid].tags || []).indexOf("crux") >= 0, light: cid ? [n.id, cid] : [n.id] });
+    } else if (n.kind === "statement") {
+      var rs = (into[n.id] || []).map(function(x){ return byId[x]; }).filter(function(x){ return x && x.kind === "statement"; });
+      if (!rs.length) return;
+      units.push({ kind: "claim", id: n.id, cid: n.id, label: n.label, h: height(n.id, {}), order: n.docLine || 0,
+        premises: rs.map(function(r){ return [r.label, r.detail]; }), concl: [n.label, n.detail],
+        up: (outOf[n.id] || [])[0] || null, top: contention(n.id),
+        others: (into[n.id] || []).filter(function(x){ return byId[x] && byId[x].kind === "argument"; }).length,
+        crux: (n.tags || []).indexOf("crux") >= 0, light: [n.id] });
+    }
+  });
+  units.sort(function(a, b){ return a.h - b.h || a.order - b.order; });
+  // THE FORKS: each objection, placed after the first unit in which the reader meets what it speaks
+  // against -- as its conclusion or among its premises -- so the fork comes where the road has been
+  // walked to it. One the units never meet comes at the end.
+  var placed = {}, out = [], forks = [];
+  Object.keys(attacksOn).forEach(function(t){
+    attacksOn[t].forEach(function(f){
+      if (scope && !scope[t] && !scope[f]) return;
+      forks.push({ kind: "fork", from: f, to: t, fromLabel: byId[f].label, toLabel: byId[t].label, text: byId[f].detail,
+                   replies: (attacksOn[f] || []).map(function(r){ return byId[r].label; }), light: [f, t] });
+    });
+  });
+  var reachedBy = function(u, f){ return f.to === u.id || f.to === u.cid || u.premises.some(function(p){ return p[0] === f.toLabel; }); };
+  units.forEach(function(u){
+    out.push(u);
+    forks.forEach(function(f, i){ if (!placed[i] && reachedBy(u, f)) { out.push(f); placed[i] = true; } });
+  });
+  forks.forEach(function(f, i){ if (!placed[i]) out.push(f); });
+  return out;
+}
+function studyOwn(){
+  var c = studyCard();
+  if (!STUDY.units) STUDY.units = studyUnits(CURRENT_GRAPH || {}, STUDY.from);
+  var U = STUDY.units, u = U[STUDY.i];
+  if (!u) return studyClosing();
+  $("studyhint").textContent = (STUDY.i + 1) + " of " + U.length;
+  if (u.kind === "fork") {
+    c.p("\u2039" + u.fromLabel + "\u203a speaks against \u2039" + u.toLabel + "\u203a.");
+    if (u.text) c.p(studyShort(u.text));
+    c.p("Does it succeed? If it did, what else would fall?");
+    c.btns([["Try it: suppose it holds", "fork-suppose", "Suppose the objection holds. In Study you mark what you expect to fall before you see."],
+            [STUDY.reply ? "" : "How does the text answer it?", STUDY.reply ? "" : "fork-reply"]].filter(function(b){ return b[0]; }));
+    if (STUDY.reply) c.p(u.replies.length ? "The text answers it with " + u.replies.map(function(r){ return "\u2039" + r + "\u203a"; }).join(" and ") + "."
+                                          : "The map records no reply to it: the objection is left standing, or answered somewhere the map does not draw.");
+    c.btns([["Next \u2192", "next"], ["Finish", "finish", "", "plain"]]);
+    if (LIVE) LIVE.markClaims(u.light);
+    return;
+  }
+  if (STUDY.shown) c.p("The map: \u2039" + u.concl[0] + "\u203a" + (u.concl[1] ? ": " + studyShort(u.concl[1]) : ""), "answer");
+  c.p(u.kind === "arg" ? (STUDY.shown ? "From:" : "\u2039" + u.label + "\u203a starts from:") : (STUDY.shown ? "From these reasons:" : "These claims are offered as reasons for one claim:"));
+  c.list(u.premises);
+  if (!STUDY.shown) {
+    c.p("Before you look: what do you think " + (u.premises.length === 1 ? "it leads" : "they lead") + " to?");
+    // HINTS THE READER ASKS FOR, one step closer each (Lang: the reader sets the difficulty, and does
+    // not give up). First where it goes next, and how the step works; then its name.
+    if (STUDY.hint >= 1) c.p("Hint: " + (u.top ? "it is one of the map\u2019s main claims" : u.up ? "it is in turn a reason for \u2039" + u.up + "\u203a" : "nothing on the map rests on it in turn") + "; " +
+      (u.kind === "arg"
+        ? (u.rule ? "the step is " + u.rule : u.premises.length > 1 ? "the premises work together, each needed" : "one premise, and a step from it") + (u.steps > 1 ? ", in " + u.steps + " steps" : "")
+        : (u.premises.length > 1 ? "each of these is a reason for it on its own" : "this is a reason for it on its own") + (u.others ? ", and the map gives it " + u.others + " more argument" + (u.others === 1 ? "" : "s") : "")) + ".", "hint");
+    if (STUDY.hint >= 2) c.p("Hint: the map calls it \u2039" + u.concl[0] + "\u203a.", "hint");
+    c.btns([STUDY.hint < 2 ? ["Hint", "hint", "One step closer, when you want it"] : null, ["Show", "show", "See where the map says they lead"],
+            ["Skip", "next", "", "plain"]]);
+    if (LIVE) LIVE.markClaims([]);
+  } else {
+    c.p("Was that where you were heading? If not, which premise took it somewhere else?");
+    if (u.crux) c.p("The reconstructor marks this claim's reading as one among live alternatives (#crux): its note names the road not taken.", "crux");
+    c.btns([["Next \u2192", "next"], ["Finish", "finish", "", "plain"]]);
+    // Lit, and brought on screen only where it is off it: the camera does not jump on every card.
+    if (LIVE) LIVE.markClaims(u.light);
+  }
+}
+/** THE CLOSE (Dewey's final survey; Lang's reflection): what would the reader deny, now -- a supposition. */
+function studyClosing(){
+  var c = studyCard();
+  $("studyhint").textContent = "now test it";
+  c.p(STUDY.from ? "That is every argument beneath \u2039" + ((suppNodeById(STUDY.from) || {}).label || "it") + "\u203a." : "That is every argument on this map.");
+  c.p("Now test it: which claim would you most want to deny? Click it and press What if\u2026?, or right-click it, and suppose it false. In Study you mark what you expect to fall before you see.");
+  c.p("Then go back to what you thought at the start. Has the map changed it?");
+  c.btns([["End study", "end"]]);
+  if (LIVE) LIVE.markClaims([]);
+}
+$("studybody").addEventListener("click", function(ev){
+  var t = ev.target, a = t && t.getAttribute ? t.getAttribute("data-study") : null;
+  if (!a || !STUDY) return;
+  if (a === "own" || a === "others") { STUDY.mode = a; studySync(); return; }
+  if (a === "hint") { STUDY.hint++; studySync(); return; }
+  if (a === "show") { STUDY.shown = true; studySync(); return; }
+  if (a === "next") { STUDY.i++; STUDY.hint = 0; STUDY.shown = false; STUDY.reply = false; studySync(); return; }
+  if (a === "finish") { STUDY.i = (STUDY.units || []).length; studySync(); return; }
+  if (a === "end") { endStudy(); return; }
+  if (a === "fork-reply") { STUDY.reply = true; studySync(); return; }
+  if (a === "fork-suppose") {
+    var u = STUDY.units[STUDY.i], n = suppNodeById(u.from);
+    if (n && !suppHas(SUPP.holds, suppKey(n))) { SUPP.holds.push(suppKey(n)); suppApply(); }
+    return;
+  }
+});
+
+function studySyncOthers(){
   if (!STUDY) return;
   var body = $("studybody");
   body.textContent = "";
@@ -4325,6 +4590,9 @@ function studySync(){
     $("studyhint").textContent = "walked to the end";
     p("Nothing is left folded: you have walked the whole argument, prediction by " +
       "prediction. The map stays as you leave it.");
+    // AND THEN A SUPPOSITION (18 Oct 2026): the walk ends where inquiry goes on.
+    p("Now test it: which claim would you most want to deny? Click it and press What if\u2026?, " +
+      "or right-click it, and suppose it false.");
     if (LIVE) LIVE.markClaims([]);
     return;
   }
@@ -8043,7 +8311,63 @@ function explExportPNG(){
  * Reasons view, and contraposition"). Kept by LABEL, not id, so an edit that renumbers the nodes
  * does not move them: "s:" a statement, "a:" an argument, "a:Name#n" a line drawn only inside its
  * argument. Never saved into the map, never in the fold state: the reader's, not the text's. */
-var SUPP = { false: [], holds: [], cut: [], choice: {} }, SUPP_KEEP = [];
+var SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }, SUPP_KEEP = [];
+/* ONE RECORD FOR BOTH ARRANGEMENTS (James, 18 Oct 2026: "a supposition should carry between the
+ * Reasons and Mechanism views ... the user should be able to see this"). The claim-level lists
+ * above are Reasons'; `mfail`, `mhold` and `moff` are the Mechanism view's own, by state id and by
+ * "from\u0000to". They meet at the claims that state the chain's steps: a step that does not run makes
+ * the claim stating it false, and a claim supposed false stops its step -- or, where it states
+ * several, at least one of them, and the reader says which (`mchoice`). A state that does not
+ * happen, or holds, is the Mechanism view's alone: no claim states a state by itself. */
+var SUPP_MM = null, SUPP_MM_GRAPH = null;
+function suppModel(){
+  var g = CURRENT_GRAPH;
+  if (!g || !g.mechanism || !window.ArgdownMechanism) return null;
+  if (SUPP_MM_GRAPH !== g) { SUPP_MM_GRAPH = g; try { SUPP_MM = ArgdownMechanism.model(g); } catch (e) { SUPP_MM = null; } }
+  return SUPP_MM;
+}
+function suppNodeById(id){ return ((CURRENT_GRAPH && CURRENT_GRAPH.nodes) || []).filter(function(x){ return x.id === id; })[0] || null; }
+/** The chain's steps a claim states, as "from\u0000to": the text's own steps that the experiment walks. */
+function suppStepsOf(key){
+  var MM = suppModel(), out = [];
+  if (!MM) return out;
+  MM.steps.forEach(function(st){
+    if (st.layer !== "text" || st.isNull || st.selects || st.assoc || st.from === st.to || !st.claim || st.claim.id == null) return;
+    var n = suppNodeById(st.claim.id), k = st.from + "\u0000" + st.to;
+    if (n && suppKey(n) === key && out.indexOf(k) < 0) out.push(k);
+  });
+  return out;
+}
+/** The claims that state a step, as keys. */
+function suppClaimsOfStep(k){
+  var MM = suppModel(), out = [];
+  if (!MM) return out;
+  MM.steps.forEach(function(st){
+    if (st.layer !== "text" || !st.claim || st.claim.id == null || st.from + "\u0000" + st.to !== k) return;
+    var n = suppNodeById(st.claim.id);
+    if (n && out.indexOf(suppKey(n)) < 0) out.push(suppKey(n));
+  });
+  return out;
+}
+function suppStateLabel(v){ var MM = suppModel(); return MM && MM.states[v] && MM.states[v].label || v; }
+function suppStepLabel(k){ var e = String(k).split("\u0000"); return "\u201c" + suppStateLabel(e[0]) + "\u201d \u2192 \u201c" + suppStateLabel(e[1]) + "\u201d"; }
+/** Every claim key supposed false: the reader's own, and those a step supposed not to run makes false. */
+function suppCarried(){
+  var out = [];
+  SUPP.moff.forEach(function(k){ suppClaimsOfStep(k).forEach(function(c){ if (SUPP.false.indexOf(c) < 0 && out.indexOf(c) < 0) out.push(c); }); });
+  return out;
+}
+function suppIsFalse(key){ return SUPP.false.indexOf(key) >= 0 || suppCarried().indexOf(key) >= 0; }
+/** Supposing a claim false, or taking it back -- including one made false by a step supposed in Mechanism. */
+function suppToggleFalse(key){
+  var i = SUPP.false.indexOf(key);
+  if (i >= 0) { SUPP.false.splice(i, 1); delete SUPP.mchoice[key]; suppApply(); return; }
+  if (suppCarried().indexOf(key) >= 0) {
+    SUPP.moff = SUPP.moff.filter(function(k){ return suppClaimsOfStep(k).indexOf(key) < 0; });
+    suppApply(); return;
+  }
+  SUPP.false.push(key); suppApply();
+}
 function suppKey(n){ return (n.kind === "argument" ? "a:" : "s:") + n.label; }
 function suppIdOf(key){
   var g = CURRENT_GRAPH, m = /^([sa]):(.*?)(#\d+)?$/.exec(key || "");
@@ -8077,14 +8401,14 @@ function suppLastStep(n){ var pcs = n.pcs || []; return pcs.reduce(function(k, l
 function suppMenu(n){
   var out = [], key = suppKey(n);
   if (n.kind === "statement") {
-    out.push(suppHas(SUPP.false, key)
-      ? { act: "false", label: "Undo: let it stand", hint: "Take back the supposition that this is false", run: function(){ suppToggle(SUPP.false, key); } }
-      : { act: "false", label: "Suppose this is false", hint: "See what then loses the support the map gives it, and, where it is a conclusion, what must give for it to be false", run: function(){ suppToggle(SUPP.false, key); } });
+    out.push(suppIsFalse(key)
+      ? { act: "false", label: "Undo: let it stand", hint: "Take back the supposition that this is false", run: function(){ suppToggleFalse(key); } }
+      : { act: "false", label: "Suppose this is false", hint: "See what then loses the support the map gives it, and, where it is a conclusion, what must give for it to be false", run: function(){ suppToggleFalse(key); } });
   } else {
     var ck = suppConclusionKey(n), cut = "a:" + n.label + "#" + suppLastStep(n);
-    if (ck) out.push(suppHas(SUPP.false, ck)
-      ? { act: "deny", label: "Undo: let its conclusion stand", hint: "Take back the denial of this argument's conclusion", run: function(){ suppToggle(SUPP.false, ck); } }
-      : { act: "deny", label: "Deny its conclusion", hint: "Suppose its conclusion is false, and see what must give: the premises it rests on, or a step", run: function(){ suppToggle(SUPP.false, ck); } });
+    if (ck) out.push(suppIsFalse(ck)
+      ? { act: "deny", label: "Undo: let its conclusion stand", hint: "Take back the denial of this argument's conclusion", run: function(){ suppToggleFalse(ck); } }
+      : { act: "deny", label: "Deny its conclusion", hint: "Suppose its conclusion is false, and see what must give: the premises it rests on, or a step", run: function(){ suppToggleFalse(ck); } });
     out.push(suppHas(SUPP.cut, cut)
       ? { act: "cut", label: "Undo: let its step go through", hint: "Take back the supposition that this step fails", run: function(){ suppToggle(SUPP.cut, cut); } }
       : { act: "cut", label: "Suppose its step fails", hint: "Its premises stand; see what loses the support this step gave", run: function(){ suppToggle(SUPP.cut, cut); } });
@@ -8094,7 +8418,7 @@ function suppMenu(n){
     : { act: "holds", label: "Suppose this objection holds", hint: "Deny what it attacks or contradicts, or cut the step it undercuts, and see what that costs", run: function(){ suppToggle(SUPP.holds, key); } });
   return out;
 }
-function suppDenyArgument(n){ var ck = suppConclusionKey(n); if (ck && !suppHas(SUPP.false, ck)) { SUPP.false.push(ck); suppApply(); } }
+function suppDenyArgument(n){ var ck = suppConclusionKey(n); if (ck && !suppIsFalse(ck)) { SUPP.false.push(ck); suppApply(); } }
 function suppIds(){
   var map = function(list){ return list.map(suppIdOf).filter(Boolean); };
   var choice = {};
@@ -8102,33 +8426,204 @@ function suppIds(){
     var p = k.split(">"), a = suppIdOf(p[0]), b = suppIdOf(p[1]);
     if (a && b) choice[a + ">" + b] = SUPP.choice[k];
   });
-  return { "false": map(SUPP.false), holds: map(SUPP.holds), cut: map(SUPP.cut), choice: choice, keep: map(SUPP_KEEP) };
+  return { "false": map(SUPP.false.concat(suppCarried())), holds: map(SUPP.holds), cut: map(SUPP.cut), choice: choice, keep: map(SUPP_KEEP) };
 }
-function suppClear(){ SUPP = { false: [], holds: [], cut: [], choice: {} }; SUPP_KEEP = []; suppApply(); }
-var SUPP_LAST = null;
+function suppClear(){ SUPP = { false: [], holds: [], cut: [], choice: {}, mfail: [], mhold: [], moff: [], mchoice: {} }; SUPP_KEEP = []; suppApply(); }
+function suppCount(){ return SUPP.false.length + SUPP.holds.length + SUPP.cut.length + SUPP.mfail.length + SUPP.mhold.length + SUPP.moff.length; }
+var SUPP_LAST = null, SUPP_DETAIL = true, SUPP_PREV = 0;
 function suppApply(){
   var box = $("supp");
   if (!box || !window.ArgdownSuppose) return;
-  if (!(SUPP.false.length + SUPP.holds.length + SUPP.cut.length) || !CURRENT_GRAPH) {
-    SUPP_LAST = null; box.hidden = true; box.innerHTML = ""; if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]); return;
+  var n = suppCount();
+  // A SUPPOSITION ADDED, with guessing asked for, opens a guess before the answer (see GUESS).
+  if (n > SUPP_PREV && (GUESS.on || STUDY) && CURRENT_GRAPH) guessStart();
+  else if (n !== SUPP_PREV && GUESS.phase) guessEnd(false);
+  SUPP_PREV = n;
+  if (!n || !CURRENT_GRAPH) {
+    SUPP_LAST = null; box.hidden = true; box.innerHTML = ""; if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
+    suppBar(); suppMechSync(null); return;
   }
-  var I = suppIds();
-  var r = ArgdownSuppose.suppose(CURRENT_GRAPH, I, { appraisal: APPRAISAL_ON });
+  var I = suppIds(), r = null, guessing = GUESS.phase === "guessing";
+  if (I["false"].length + I.holds.length + I.cut.length) {
+    r = ArgdownSuppose.suppose(CURRENT_GRAPH, I, { appraisal: APPRAISAL_ON });
+    // WHILE THE READER GUESSES, only what they themselves supposed fades: the rest is the answer.
+    if (LIVE && LIVE.setSupposition) LIVE.setSupposition(guessing
+      ? r.denied.filter(function(x){ return x.indexOf("#") < 0 && r.why[x] && r.why[x].by === "you"; })
+      : r.lost.concat(r.denied.filter(function(x){ return x.indexOf("#") < 0; })));
+    box.innerHTML = suppHTML(r, I);
+  } else {
+    if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
+    box.innerHTML = '<div class="q">What you suppose of the chain\u2019s states is the Mechanism view\u2019s: no claim on this map states a state by itself.</div>';
+  }
   SUPP_LAST = r;
-  if (LIVE && LIVE.setSupposition) LIVE.setSupposition(r.lost.concat(r.denied.filter(function(x){ return x.indexOf("#") < 0; })));
-  box.innerHTML = suppHTML(r, I);
-  box.hidden = false;
+  box.hidden = ARRANGEMENT === "mechanism" || !SUPP_DETAIL || guessing;
+  suppBar();
+  if (guessing && MECH && MECH.setExperiment) MECH.setExperiment({});
+  else suppMechSync(r);
+}
+
+/* GUESS FIRST, THEN SEE (James, 18 Oct 2026: "it's okay to draw the map's answer beside the reader's
+ * marked guesses"). Lang's pause, predict, ponder, on Dewey's testing of a supposition in imagination:
+ * with guessing on, a new supposition does not show what it costs at once. The banner asks the reader
+ * to mark what they expect -- the claims that will lose the map's support, or the states the text's
+ * steps will no longer bring about -- and Show then draws the map's answer beside their marks: the
+ * ones it agrees with, the ones it keeps, and what it takes that they did not mark. Never a score:
+ * the answer is the map's, relative to the map (Henne's framed inquiry), and the marks say only where
+ * the reader and the map part. Remembered as a standing choice; on in Study whatever it is set to. */
+var GUESS_STORE = makeChoiceStore("ipsissima.guessfirst.v1");
+var GUESS = { on: GUESS_STORE.ok ? GUESS_STORE.get() === "on" : false, phase: null, view: null, picks: [], answer: null };
+function guessSetOn(on){ GUESS.on = !!on; if (GUESS_STORE.ok) GUESS_STORE.set(GUESS.on ? "on" : "off"); suppBar(); }
+/** The menu's switch for it, offered wherever a supposition is. */
+function guessMenuItem(){
+  return { act: "guessfirst", label: "Guess before seeing what follows", on: GUESS.on || !!STUDY,
+           hint: STUDY ? "Always on in Study" : "Mark what you expect first, then compare it with the map",
+           run: function(){ if (!STUDY) guessSetOn(!GUESS.on); } };
+}
+function guessStart(){
+  GUESS.phase = "guessing"; GUESS.view = ARRANGEMENT === "mechanism" ? "mech" : "reasons"; GUESS.picks = []; GUESS.answer = null;
+  guessMarks();
+}
+function guessEnd(redraw){
+  GUESS.phase = null; GUESS.picks = []; GUESS.answer = null;
+  guessMarks();
+  if (redraw !== false) suppApply();
+}
+function guessMarks(){
+  var marks = {};
+  if (GUESS.phase === "guessing") GUESS.picks.forEach(function(id){ marks[id] = "guess"; });
+  else if (GUESS.phase === "shown" && GUESS.answer) {
+    var ans = GUESS.answer;
+    GUESS.picks.forEach(function(id){ marks[id] = ans.indexOf(id) >= 0 ? "hit" : "miss"; });
+    ans.forEach(function(id){ if (!marks[id]) marks[id] = "unexpected"; });
+  }
+  if (LIVE && LIVE.setGuesses) LIVE.setGuesses(GUESS.view === "reasons" ? marks : {});
+  if (MECH && MECH.setGuesses) MECH.setGuesses(GUESS.view === "mech" ? marks : {});
+}
+/** A press on a claim or a state while the reader is guessing marks it, and does nothing else. */
+function guessPick(id){
+  if (GUESS.phase !== "guessing") return false;
+  var i = GUESS.picks.indexOf(id);
+  if (i >= 0) GUESS.picks.splice(i, 1); else GUESS.picks.push(id);
+  guessMarks(); suppBar();
+  return true;
+}
+/** The map's answer: what loses its support, or what the text's steps no longer bring about. */
+function guessAnswer(){
+  if (GUESS.view === "mech") {
+    if (!MECH || !window.ArgdownMechanism) return [];
+    var inp = suppMechInput(SUPP_LAST);
+    var R = ArgdownMechanism.suppose(MECH.model, { fail: inp.fail, off: inp.off, hold: inp.hold });
+    return R.lostStates.filter(function(v){ return inp.fail.indexOf(v) < 0; });
+  }
+  var r = SUPP_LAST;
+  if (!r) return [];
+  return r.lost.concat(r.denied.filter(function(x){ return x.indexOf("#") < 0 && r.why[x] && r.why[x].by !== "you"; }));
+}
+function guessShow(){
+  GUESS.answer = guessAnswer();
+  GUESS.phase = "shown";
+  guessMarks();
+  suppApply();
+}
+function guessSummary(){
+  var ans = GUESS.answer || [], picks = GUESS.picks;
+  var hit = picks.filter(function(id){ return ans.indexOf(id) >= 0; }).length;
+  var unexpected = ans.filter(function(id){ return picks.indexOf(id) < 0; }).length;
+  var drawnIds = {};
+  if (GUESS.view === "reasons") walkBoxes(".alm-n").forEach(function(e){ if (e.dataset) drawnIds[e.dataset.id] = true; });
+  var hiddenN = GUESS.view === "reasons" ? ans.filter(function(id){ return !drawnIds[id]; }).length : 0;
+  var what = GUESS.view === "mech" ? "no longer brought about" : "lose the map\u2019s support";
+  return 'You marked ' + picks.length + '. ' +
+    (picks.length ? hit + ' of them ' + (hit === 1 ? (GUESS.view === "mech" ? "is" : "loses") : (GUESS.view === "mech" ? "are" : "lose")) + (GUESS.view === "mech" ? " " + what : " the map\u2019s support") + '. ' : '') +
+    (unexpected ? unexpected + ' you did not mark ' + (GUESS.view === "mech" ? (unexpected === 1 ? "is" : "are") + " " + what : (unexpected === 1 ? "loses" : "lose") + " it too") +
+      (hiddenN ? ' (' + hiddenN + ' inside folded sections)' : '') + '.' : (ans.length ? 'Nothing else ' + (GUESS.view === "mech" ? "stops" : "loses it") + '.' : 'By the map, nothing ' + (GUESS.view === "mech" ? "stops" : "loses its support") + '.'));
+}
+/** The Mechanism view's half of the record: its own suppositions, and the steps the claims supposed
+ *  false in Reasons state -- each claim the map then denies, the reader's or one denied in turn. */
+function suppMechInput(r){
+  var out = { fail: SUPP.mfail.slice(), hold: SUPP.mhold.slice(), off: SUPP.moff.slice(), waiting: [] };
+  if (!suppModel()) return out;
+  var ids = r ? r.denied.filter(function(x){ return x.indexOf("#") < 0; }) : [];
+  var keys = [];
+  ids.forEach(function(id){ var n = suppNodeById(id); if (n && keys.indexOf(suppKey(n)) < 0) keys.push(suppKey(n)); });
+  keys.forEach(function(k){
+    var pairs = suppStepsOf(k);
+    if (!pairs.length || pairs.some(function(x){ return out.off.indexOf(x) >= 0; })) return;
+    if (pairs.length === 1) { out.off.push(pairs[0]); return; }
+    if (SUPP.mchoice[k] && pairs.indexOf(SUPP.mchoice[k]) >= 0) { out.off.push(SUPP.mchoice[k]); return; }
+    out.waiting.push({ claim: suppLabel(suppIdOf(k)) || k.slice(2), key: k, steps: pairs });
+  });
+  return out;
+}
+function suppMechSync(r){ if (MECH && MECH.setExperiment) MECH.setExperiment(suppMechInput(r)); }
+/** From the Mechanism view: a state, a step, or which of a claim's steps does not run. */
+function suppFromMech(a){
+  if (a.kind === "choose") { SUPP.mchoice[a.claim] = a.key; suppApply(); return; }
+  var list = { fail: SUPP.mfail, hold: SUPP.mhold, off: SUPP.moff }[a.kind];
+  if (!list) return;
+  if (a.kind === "off" && !a.on && list.indexOf(a.key) < 0) {
+    // A STEP STOPPED BY A CLAIM SUPPOSED FALSE in Reasons: taking it back takes that claim back,
+    // where the reader supposed it; a claim denied in turn by something else cannot be, and says so.
+    var mine = suppClaimsOfStep(a.key).filter(function(c){ return SUPP.false.indexOf(c) >= 0; });
+    if (mine.length) { mine.forEach(function(c){ SUPP.false.splice(SUPP.false.indexOf(c), 1); delete SUPP.mchoice[c]; }); suppApply(); return; }
+    showNote("This step stops because of what you supposed in Reasons: a claim stating it is denied in turn. Take that supposition back to let it run.", 8000);
+    return;
+  }
+  suppToggle(list, a.key);
+}
+/* THE BANNER, ONE FOR BOTH ARRANGEMENTS (18 Oct 2026): what the reader supposes, in plain words,
+ * each with its own Undo, and for each, where it shows -- so nothing carried from one view to the
+ * other arrives as a surprise. Reasons' card and the Mechanism panel say what follows; this says
+ * what is supposed. */
+function suppBar(){
+  var bar = $("suppbar");
+  if (!bar) return;
+  var n = suppCount();
+  $("stage").classList.toggle("supposing", !!n);
+  if (!n) { bar.hidden = true; bar.innerHTML = ""; return; }
+  var esc = ArgdownStaircase.esc, MM = suppModel(), mech = ARRANGEMENT === "mechanism";
+  var q = function(k){ return "\u2039" + esc(suppLabel(suppIdOf(k)) || k.slice(2)) + "\u203a"; };
+  var where = function(t){ return MM ? ' <span class="where">' + t + '</span>' : ''; };
+  var item = function(words, kind, key, note){
+    return '<span class="it">' + words + note + ' <button type="button" class="undo" data-supp-undo="' + kind + '" data-key="' + esc(key) + '" title="Take this back" aria-label="Take this back">\u00d7</button></span>';
+  };
+  var items = [];
+  SUPP.false.forEach(function(k){
+    var st = suppStepsOf(k);
+    items.push(item(q(k) + ' is false', "false", k,
+      st.length ? where("in Mechanism, " + (st.length === 1 ? "its step does not run" : SUPP.mchoice[k] ? "the step you chose does not run" : "one of its " + st.length + " steps does not run")) : where("in Reasons only")));
+  });
+  SUPP.holds.forEach(function(k){ items.push(item(q(k) + ' holds, as an objection', "holds", k, where("in Reasons; what it denies carries"))); });
+  SUPP.cut.forEach(function(k){ items.push(item('the step of ' + q(k.split("#")[0]) + ' fails', "cut", k, where("in Reasons only"))); });
+  SUPP.moff.forEach(function(k){
+    var cs = suppClaimsOfStep(k);
+    items.push(item('the step ' + esc(suppStepLabel(k)) + ' does not run', "moff", k,
+      cs.length ? where("in Reasons, " + cs.map(q).join(" and ") + (cs.length === 1 ? " is false" : " are false")) : where("in Mechanism only")));
+  });
+  SUPP.mfail.forEach(function(v){ items.push(item('\u201c' + esc(suppStateLabel(v)) + '\u201d does not happen', "mfail", v, where("in Mechanism only"))); });
+  SUPP.mhold.forEach(function(v){ items.push(item('\u201c' + esc(suppStateLabel(v)) + '\u201d holds', "mhold", v, where("in Mechanism only"))); });
+  var guessRow = "";
+  if (GUESS.phase === "guessing") guessRow = '<div class="guessrow"><b>Before you look:</b> click the ' +
+    (GUESS.view === "mech" ? 'states you expect the text\u2019s steps will no longer bring about' : 'claims you expect to lose the map\u2019s support') +
+    '. Marked: ' + GUESS.picks.length + '. <button type="button" data-guess-show="1">Show</button> <button type="button" class="plain" data-guess-skip="1">Skip</button></div>';
+  else if (GUESS.phase === "shown") guessRow = '<div class="guessrow">' + esc(guessSummary()) + ' <button type="button" data-guess-done="1" title="Take the marks away; the supposition stays">Done</button></div>';
+  bar.innerHTML = '<b title="Yours, not the text\u2019s, and never saved into the map">Supposing</b><span class="items">' +
+    items.join('<span class="sep"> \u00b7 </span>') + guessRow + '</span><span class="acts">' +
+    '<label class="gtog" title="Mark what you expect before seeing what follows; remembered"><input type="checkbox" data-guess-on="1"' + (GUESS.on || STUDY ? ' checked' : '') + (STUDY ? ' disabled' : '') + '> Guess first</label>' +
+    (!mech && SUPP_LAST && GUESS.phase !== "guessing" ? '<button type="button" data-supp-detail="1" aria-expanded="' + (SUPP_DETAIL ? "true" : "false") + '">' + (SUPP_DETAIL ? "Hide what follows" : "What follows") + '</button>' : '') +
+    '<button type="button" data-supp-clear="1" title="Take every supposition back">Clear</button></span>';
+  bar.hidden = false;
+  var h = bar.offsetHeight;
+  $("stage").style.setProperty("--suppbar-h", h + "px");
+  // The card that says what follows starts below the banner however many lines it wraps to.
+  $("supp").style.top = Math.max(96, Math.round(bar.getBoundingClientRect().bottom) + 10) + "px";
 }
 function suppHTML(r, I){
   var esc = ArgdownStaircase.esc, q = function(id){ return "‹" + esc(suppLabel(id)) + "›"; };
   var go = function(id){ return id.indexOf("#") < 0 ? '<span class="go" data-supp-go="' + esc(id) + '">' + q(id) + '</span>' : q(id); };
-  var mine = [];
-  I["false"].forEach(function(id, i){ mine.push([q(id) + " is false", "false", SUPP.false[i]]); });
-  I.holds.forEach(function(id, i){ mine.push([q(id) + " holds, as an objection", "holds", SUPP.holds[i]]); });
-  I.cut.forEach(function(id, i){ mine.push(["the step of " + q(id.split("#")[0]) + " fails", "cut", SUPP.cut[i]]); });
-  var h = '<header><b>Your suppositions</b><span class="grow"></span><button type="button" data-supp-clear="1" title="Take every supposition back">Clear</button></header>' +
-    '<div class="q">Yours, not the text’s, and never saved into the map. What follows is read off the map’s own support: a claim that loses it is not thereby false.</div>' +
-    '<ul>' + mine.map(function(m){ return '<li>Suppose ' + m[0] + ' <button type="button" data-supp-undo="' + m[1] + '" data-key="' + esc(m[2]) + '" title="Take this back">Undo</button></li>'; }).join("") + '</ul>';
+  var mine = I["false"].length + I.holds.length + I.cut.length;
+  var h = '<header><b>What follows</b><span class="grow"></span><button type="button" class="plain" data-supp-detail="1" title="Fold this card away; the banner keeps your suppositions">\u2013</button></header>' +
+    '<div class="q">Read off the map’s own support: a claim that loses it is not thereby false.</div>';
   // ATTACKS ON A WHOLE ARGUMENT, waiting for the reader to say which part they deny.
   r.waiting.forEach(function(w){
     var a = r.index.args[w.to];
@@ -8145,7 +8640,7 @@ function suppHTML(r, I){
   h += '<h4>Lose the support the map gives them' + (r.lost.length ? ' (' + r.lost.length + ')' : '') + '</h4>' +
     (r.lost.length ? '<ul>' + r.lost.map(function(id){
       var ow = (r.owing[id] || []);
-      return '<li>' + go(id) + (ow.length && mine.length > 1 ? ' <span class="q">(because of ' + ow.map(q).join(" or ") + ')</span>' : '') + '</li>'; }).join("") + '</ul>'
+      return '<li>' + go(id) + (ow.length && mine > 1 ? ' <span class="q">(because of ' + ow.map(q).join(" or ") + ')</span>' : '') + '</li>'; }).join("") + '</ul>'
       : '<div class="q">Nothing: every claim that had support keeps some line of it.</div>');
   // DENY THE CONCLUSION: for each claim the reader supposes false that the map supports, what must give.
   I["false"].forEach(function(id){
@@ -8179,10 +8674,14 @@ function suppHTML(r, I){
   });
   return h;
 }
-$("supp").addEventListener("click", function(ev){
+function suppClick(ev){
   var t = ev.target;
   if (!t || !t.getAttribute) return;
   if (t.getAttribute("data-supp-clear")) { suppClear(); return; }
+  if (t.getAttribute("data-supp-detail")) { SUPP_DETAIL = !SUPP_DETAIL; suppApply(); return; }
+  if (t.getAttribute("data-guess-show")) { guessShow(); return; }
+  if (t.getAttribute("data-guess-skip") || t.getAttribute("data-guess-done")) { guessEnd(); return; }
+  if (t.getAttribute("data-guess-on")) { guessSetOn(t.checked); return; }
   var u = t.getAttribute("data-supp-undo");
   if (u) { var list = SUPP[u], k = t.getAttribute("data-key"), i = list.indexOf(k); if (i >= 0) list.splice(i, 1); suppApply(); return; }
   var c = t.getAttribute("data-supp-choice");
@@ -8191,7 +8690,39 @@ $("supp").addEventListener("click", function(ev){
   if (kp) { suppToggle(SUPP_KEEP, kp); return; }
   var g = t.closest ? t.closest("[data-supp-go]") : null;
   if (g && LIVE) LIVE.markClaims([g.getAttribute("data-supp-go")], { centreAlways: true });
-});
+}
+$("supp").addEventListener("click", suppClick);
+$("suppbar").addEventListener("click", suppClick);
+
+/* "WHAT IF...?" BESIDE THE CLAIM IN HAND (18 Oct 2026). Supposing was reached by right-click alone,
+ * which a reader new to the app has no reason to try; the plan's finding was that every presentation
+ * control was on show and every inquiry control hidden. A click on a claim or an argument -- the
+ * ordinary "this one" -- now offers the question beside it, and the menu it opens is right-click's
+ * own suppositions. Not standing chrome (F4): it comes with the reader's own click and goes at the next. */
+var WHATIF_N = null;
+function whatIfHide(){ WHATIF_N = null; var b = $("whatif"); if (b) b.hidden = true; }
+function whatIfShow(n){
+  if (n && guessPick(n.id)) { whatIfHide(); return; }
+  var b = $("whatif");
+  if (!b || !n || (n.kind !== "statement" && n.kind !== "argument") || !window.ArgdownSuppose || ARRANGEMENT === "mechanism") { whatIfHide(); return; }
+  var box = null;
+  walkBoxes(".alm-n").forEach(function(e){ if (e.dataset && e.dataset.id === n.id) box = e; });
+  if (!box) { whatIfHide(); return; }
+  var r = box.getBoundingClientRect(), st = $("stage").getBoundingClientRect();
+  WHATIF_N = n;
+  b.hidden = false;
+  b.style.left = Math.max(4, Math.min(r.right - st.left - b.offsetWidth, st.width - b.offsetWidth - 8)) + "px";
+  b.style.top = Math.max(4, r.top - st.top - b.offsetHeight - 4) + "px";
+}
+$("whatif").onclick = function(){
+  var n = WHATIF_N;
+  if (!n) return;
+  ctxMenu(n.label || "What if\u2026?", suppMenu(n).concat([null, guessMenuItem()]), $("whatif"));
+};
+document.addEventListener("pointerdown", function(e){
+  if (WHATIF_N && !(e.target.closest && e.target.closest("#whatif, #ctx"))) whatIfHide();
+}, true);
+document.addEventListener("wheel", function(){ if (WHATIF_N) whatIfHide(); }, { capture: true, passive: true });
 
 function ctxShow(n, ev){
   var m = $("ctx");
@@ -8249,14 +8780,24 @@ function ctxShow(n, ev){
       m.appendChild(del);
     }
   }
+  // STUDY FROM HERE (18 Oct 2026): the arguments beneath this claim, one at a time, on the reader's own.
+  if ((n.kind === "statement" || n.kind === "argument") && LIVE) {
+    var sf = document.createElement("button");
+    sf.type = "button"; sf.textContent = "Study from here";
+    sf.title = "Work through the arguments beneath this claim one at a time: guess where each leads before you look";
+    sf.setAttribute("data-study-from", "1");
+    sf.onclick = function(){ ctxHide(); if (STUDY) endStudy(false); startStudy(n.id); };
+    m.appendChild(sf);
+  }
   // THE READER'S SUPPOSITIONS (17 Oct 2026): suppose a claim false, an objection true, a step
   // failing. Offered on a claim or an argument, never on a section.
   if ((n.kind === "statement" || n.kind === "argument") && window.ArgdownSuppose && LIVE) {
     m.appendChild(document.createElement("hr"));
-    suppMenu(n).forEach(function(it){
+    suppMenu(n).concat([guessMenuItem()]).forEach(function(it){
       var sb = document.createElement("button");
-      sb.type = "button"; sb.textContent = it.label; sb.title = it.hint;
+      sb.type = "button"; sb.textContent = (it.act === "guessfirst" ? (it.on ? "\u2713 " : "") : "") + it.label; sb.title = it.hint;
       sb.setAttribute("data-supp-menu", it.act);
+      if (it.act === "guessfirst") sb.className = "ctxsub" + (it.on ? " ctxon" : "");
       sb.onclick = function(){ ctxHide(); it.run(); };
       m.appendChild(sb);
     });
@@ -8354,12 +8895,16 @@ function ctxMenu(title, items, anchor){
       h.textContent = it.hint;
       b.appendChild(h);
     }
+    if (it.act) b.setAttribute("data-supp-menu", it.act);
     b.onclick = function(){ ctxHide(); it.run(); };
     m.appendChild(b);
   });
-  var r = anchor.getBoundingClientRect();
-  m.hidden = false;
-  ctxPlace(r.left, r.bottom + 4);
+  // AT AN ELEMENT, or at a point: the Mechanism view's right-click hands a point, as Reasons' does.
+  if (anchor && anchor.getBoundingClientRect) {
+    var r = anchor.getBoundingClientRect();
+    m.hidden = false;
+    ctxPlace(r.left, r.bottom + 4);
+  } else ctxPlace(anchor.clientX, anchor.clientY);
 }
 document.addEventListener("pointerdown", function(e){
   if (!$("ctx").hidden && !e.target.closest("#ctx")) ctxHide();

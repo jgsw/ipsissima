@@ -1,0 +1,23 @@
+// Planted fixture for app/test_suppose.mjs (18 Oct 2026): one claim states two steps of the chain,
+// so supposing it false in Reasons stops at least one of them in the Mechanism view, and the
+// reader says which.
+===
+title: "Planted -- one claim, two steps"
+reconstruction:
+    generated: true
+mechanism:
+    question: "What does a shortage bring about?"
+    levels: [system]
+    actors:
+        sys: {label: "The system", level: system}
+    states:
+        gap:     {label: "Shortage", actor: sys, role: condition}
+        queue:   {label: "Queues", actor: sys, role: outcome}
+        private: {label: "Private care", actor: sys, role: outcome}
+===
+
+[Act on shortages]: Shortages should be met, not managed by waiting.
+
+[Two effects]: A shortage brings both queues and private care.
+    {fidelity: "compression", causes: [{from: gap, to: queue, sign: "+", basis: asserted}, {from: gap, to: private, sign: "+", basis: asserted}]}
+    +> [Act on shortages]

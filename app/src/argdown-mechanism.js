@@ -3647,6 +3647,15 @@ function netWord(net) {
  *  Returns { items: [{ kind, title, lines, nodes, hops }], steps } with the most telling first. */
 function follows(M) {
   var label = function (v) { return "“" + String(obj(M.states[v]).label || v) + "”"; };
+  // A STATE NAMED SHORT IN A QUESTION: its first clause, cut at a word near 44 characters. A question
+  // is read before it is answered, and "No one step says that ... affects ..." with two whole
+  // labels ran to six lines in the panel (18 Oct 2026). The answer names each state whole.
+  var sh = function (v) {
+    var t = String(obj(M.states[v]).label || v), c = t.search(/[:;\u2014(]/);
+    if (c > 12) t = t.slice(0, c).trim();
+    if (t.length > 44) { t = t.slice(0, 44); t = t.slice(0, Math.max(t.lastIndexOf(" "), 24)) + "\u2026"; }
+    return "“" + t + "”";
+  };
   var P = M.profile || {};
   var text = textSteps(M);
   var edges = edgesWithCoCauses(text, M.states), regimes = regimesOf(text, M.states);
@@ -3681,7 +3690,11 @@ function follows(M) {
     var nodes = {}; Object.keys(all).forEach(function (k) { var e = k.split("\u0000"); nodes[e[0]] = nodes[e[1]] = true; });
     var title = label(r.start) + " \u2192 " + label(r.outcome);
     // ROUTES BOTH WAYS: which way the start moves the outcome turns on sizes.
-    if (word === "both") items.push({ kind: "both", title: title, weight: 5 - rankOf(r.start) * 0.2,
+    // EACH FINDING CARRIES ITS QUESTION (James, 18 Oct 2026: open the panel "on the chain's questions
+    // with the finds as things to try"). Asked so that it can be guessed at before it is answered:
+    // nothing in the question gives the answer away.
+    var which = "Which way does " + sh(r.start) + " move " + sh(r.outcome) + ": up, down, or both?";
+    if (word === "both") items.push({ kind: "both", title: title, weight: 5 - rankOf(r.start) * 0.2, question: which,
       lines: ["Some routes raise it and some lower it. Which wins turns on how strong each is" +
               (Object.keys(all).some(function (k) { return sized[k]; }) ? "; the text gives a size for some of the steps." : ", and the text gives no sizes.")],
       nodes: Object.keys(nodes), hops: Object.keys(all) });
@@ -3698,6 +3711,7 @@ function follows(M) {
     // SAID IN ONE STEP, AND BY OTHER ROUTES TOO, all the same way: the claim does not rest on that step alone.
     if (own && (word === "raises" || word === "lowers") && said[r.start + "\u0000" + r.outcome] && runs.length > 1)
       items.push({ kind: "agree", title: title, weight: 1.2 - rankOf(r.start) * 0.3,
+        question: "The text says in one step that " + sh(r.start) + " " + word + " " + sh(r.outcome) + ". Does the claim rest on that step alone?",
         lines: ["The text says so in one step, and its other steps give " + (runs.length - 1 >= FOLLOWS_CAP - 1 ? "many more routes" :
                 (runs.length - 1) + " more route" + (runs.length === 2 ? "" : "s")) + ", which " + (runs.length === 2 ? word.replace(/s$/, "s") : "all " + word.replace(/s$/, "")) +
                 " it too: the claim does not rest on that one step."],
@@ -3705,6 +3719,7 @@ function follows(M) {
     // NOT SAID IN ONE STEP, from the text's own starting points to what the chain is for.
     if (own && word !== "both" && !said[r.start + "\u0000" + r.outcome] && shortest.length > 2)
       items.push({ kind: "composed", title: title, weight: 1.6 - rankOf(r.start) * 0.3,
+        question: "No one step says that " + sh(r.start) + " affects " + sh(r.outcome) + ". Does it, by the text\u2019s own steps, and which way?",
         lines: ["No one step states this. " + (word !== "raises" && word !== "lowers" ? "It follows" : runs.length === 1 ? "Its one route " + word + " it" :
                 "Every route " + word + " it") +
                 (runs.length > 1 ? ", along " + (runs.length >= FOLLOWS_CAP ? FOLLOWS_CAP + " or more" : runs.length) + " routes, the shortest" : ",") +
@@ -3715,6 +3730,7 @@ function follows(M) {
     var w = weakBy[k], e = k.split("\u0000"), pr = w.pairs;
     var said2 = pr.slice(0, 2).map(function (x) { return label(x[0]) + " to " + label(x[1]); }).join(", and from ");
     items.push({ kind: "weak", title: label(e[0]) + " \u2192 " + label(e[1]) + ", which the text only " + (tierOf[k] === "imputed" ? "has from the reconstructor" : "asserts"),
+      question: "Every route from " + sh(pr[0][0]) + " to " + sh(pr[0][1]) + " passes one step the text backs least. Which?",
       weight: 3 + Math.min(pr.length, 9) * 0.1,
       lines: ["Every route from " + said2 + (pr.length > 2 ? ", and " + (pr.length - 2) + " more such pair" + (pr.length === 3 ? "" : "s") + "," : "") +
               " passes this step, while other steps on " + (pr.length > 1 ? "those routes" : "the way") + " are backed better."],
@@ -3728,6 +3744,7 @@ function follows(M) {
     var run = l.states.concat([l.states[0]]);
     var sustaining = (P.sustaining || []).some(function (x) { return x.join("\u0000") === l.states.join("\u0000"); });
     items.push({ kind: "loop", title: "A loop: " + run.map(label).join(" → "),
+                 question: "The steps close a loop through " + sh(l.states[0]) + ". Does it reinforce itself, or balance itself?",
                  weight: 2.5,
                  lines: [(l.polarity === "reinforcing" ? "It reinforces itself: more of any state brings more of it again, round the loop."
                         : l.polarity === "balancing" ? "It balances itself: more of any state brings less of it again, round the loop."
@@ -3742,6 +3759,7 @@ function follows(M) {
   big.forEach(function (f) {
     var inF = {}; f.states.forEach(function (v) { inF[v] = true; });
     items.push({ kind: "system", title: "A feedback system of " + f.states.length + " states",
+                 question: "Some states here are each reached from every other. Which, and what follows for a change anywhere among them?",
                  weight: 2.4,
                  lines: ["Each of its states is reached from every other, along " + f.loops + (f.capped ? " or more" : "") +
                          " loops: too many to follow one by one. Change anywhere in it comes back round."],
@@ -3749,22 +3767,26 @@ function follows(M) {
   });
   (P.common_causes || []).forEach(function (c) {
     items.push({ kind: "common", title: label(c[0]) + " and " + label(c[1]), weight: 2,
+                 question: "The text reports that " + sh(c[0]) + " and " + sh(c[1]) + " go together. What, by its own steps, might bring about both?",
                  lines: ["The text reports that they go together. By its own steps, " + c[2].map(label).join(" and ") +
                          " brings about both, which may be why."],
                  nodes: [c[0], c[1]].concat(c[2]), hops: [].concat.apply([], c[2].map(function (z) { return [z + "\u0000" + c[0], z + "\u0000" + c[1]]; })) });
   });
   (P.disputed || []).forEach(function (d) {
     items.push({ kind: "disputed", title: label(d[0]) + " → " + label(d[1]), weight: 1.8,
+                 question: "Is the step " + sh(d[0]) + " → " + sh(d[1]) + " told one way only?",
                  lines: ["Two accounts of this step, which the argument sets against each other: [" + d[2].join("] and [") + "]. They cannot both hold."],
                  nodes: [d[0], d[1]], hops: [d[0] + "\u0000" + d[1]] });
   });
   (P.one_case || []).forEach(function (o) {
     items.push({ kind: "one-case", title: label(o[0]) + " → " + label(o[1]), weight: 1.5,
+                 question: "The step " + sh(o[0]) + " → " + sh(o[1]) + " is stated as general. How much does the map show of it?",
                  lines: ["Stated as general, and the map shows one case of it: [" + o[2] + "]."],
                  nodes: [o[0], o[1]], hops: [o[0] + "\u0000" + o[1]] });
   });
   if ((P.pieces || []).length > 1)
     items.push({ kind: "pieces", title: "Steps in " + P.pieces.length + " pieces", weight: 1,
+                 question: "Do all the steps join up into one chain?",
                  lines: ["The steps fall into " + P.pieces.length + " pieces that meet at no state" +
                          (P.apart ? ". The text keeps them apart: " + P.apart : ": nothing the text says joins them.")],
                  nodes: [], hops: [] });
@@ -4424,6 +4446,16 @@ function injectStyle() {
     "  margin:0 8px 8px;padding:.35rem .5rem;max-width:calc(100% - 16px);",
     "  font:11px system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--alm-bar-bg,rgba(255,255,255,.94));",
     "  border:1px solid var(--alm-group-line,#ddd);border-radius:7px}",
+    // THE DISPLAY MENU opens upward from the bar, which sits at the foot of the pane.
+    ".amech-display{position:relative;display:inline-flex}",
+    ".amech svg .guess rect{fill:var(--mv-evidence,#203a6a);stroke:none}.amech svg .guess text{fill:#fff;font:600 10px system-ui,sans-serif;pointer-events:none}",
+    ".amech svg .guess-miss rect{fill:var(--bg,#fff);stroke:var(--mv-evidence,#203a6a);stroke-width:1.5}.amech svg .guess-miss text{fill:var(--mv-evidence,#203a6a)}",
+    ".amech svg .guess-unexpected rect{fill:#b8452f}",
+    ".amech-dpop{position:absolute;left:0;bottom:calc(100% + 6px);z-index:5;display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;",
+    "  width:max-content;max-width:min(30rem,80vw);padding:.45rem .55rem;background:var(--alm-bar-bg,rgba(255,255,255,.98));",
+    "  border:1px solid var(--alm-group-line,#ccc);border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.12)}",
+    ".amech-dpop[hidden]{display:none}",
+    ".amech-tog.disp[aria-expanded=true]{background:var(--alm-accent,#3a7bd5);color:#fff;border-color:transparent}",
     ".amech-tog{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--alm-group-line,#ccc);",
     "  border-radius:5px;padding:.15rem .45rem;background:transparent;cursor:pointer;font-size:11px;user-select:none;",
     // The ink too: a <button> with this class drew the browser's black on the dark panel (1.3:1).
@@ -4510,12 +4542,16 @@ function injectStyle() {
     ".amech .sel{stroke:var(--mv-sel)!important;stroke-width:4!important}",
     ".amech .dim{opacity:.1}.amech .faint{opacity:.35}",
     // THE READER'S EXPERIMENT fades what stops, more lightly than a focus fades what is off it.
-    ".amech .cut{opacity:.22}",
+    // A FADED STATE KEEPS ITS GUESS TAG LEGIBLE: the box and words fade, not the group (18 Oct 2026).
+    ".amech .cut{opacity:.22}.amech svg .st.cut:has(> .guess){opacity:1}.amech svg .st.cut:has(> .guess) > :not(.guess){opacity:.22}",
     ".amech-expbanner{margin:8px 12px 0;padding:7px 11px;border-radius:7px;font-size:13px;border:1px solid var(--mv-evidence,#203a6a);color:inherit}",
     ".amech-expbanner[hidden]{display:none}.amech-expbanner button{font:inherit;font-size:12px;margin-left:6px}",
-    ".amech-find{display:block;width:100%;text-align:left;font:inherit;font-size:13px;color:inherit;background:none;border:1px solid var(--line,#ddd);border-radius:6px;padding:6px 8px;margin:0 0 6px;cursor:pointer}",
-    ".amech-find:hover,.amech-find:focus-visible{border-color:var(--mv-evidence,#203a6a)}.amech-find b{display:block;font-weight:600;margin-bottom:2px}",
-    ".amech-find span{display:block;color:var(--fg-dim,#666);font-size:12.5px}",
+    // A QUESTION TO TRY: one line, and Show beside it (18 Oct 2026).
+    ".amech-try{display:flex;gap:8px;align-items:baseline;justify-content:space-between;font-size:13px;line-height:1.4;padding:5px 0;border-bottom:1px solid var(--line,#e4e4e4)}",
+    ".amech-find{flex:0 0 auto;font:inherit;font-size:11.5px;color:inherit;background:none;border:1px solid var(--line,#ccc);border-radius:5px;padding:1px 7px;cursor:pointer}",
+    ".amech-find:hover,.amech-find:focus-visible{border-color:var(--mv-evidence,#203a6a)}",
+    ".amech-trysupp{margin-top:8px}.amech-asked{font-style:italic;margin:0 0 2px}",
+    ".amech-about{margin-top:12px}.amech-about>summary{cursor:pointer;font-size:12px;color:var(--fg-dim,#666);padding:4px 0}",
     ".amech-more-finds summary,.amech-open summary{cursor:pointer;color:var(--fg-dim,#666);font-size:12.5px;margin:2px 0 6px}",
     ".amech-open{margin:8px 0}.amech-open ul{margin:4px 0 0 18px;padding:0;font-size:13px}",
     ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
@@ -4879,6 +4915,7 @@ function groupModel(M, gids) {
 
 /** Draw the chain into `container`. `opts.onClaim(claim)` is called when the reader asks to see
  *  a claim -- the host takes it to the claim's passage. Returns a small controller. */
+var GUESS_WORDS = { guess: "your guess", hit: "guessed \u00b7 the steps agree", miss: "guessed \u00b7 still brought about", unexpected: "not guessed \u00b7 no longer brought about" };
 function create(container, graph, opts) {
   opts = opts || {};
   // CONSIDERED, NOT MAPPED (1.17): under the parallel method every text's mechanism is considered,
@@ -4934,7 +4971,18 @@ function create(container, graph, opts) {
                // texts' levels are not wholes containing parts (James, 30 Sep 2026).
                nest: opts.nest || null,
                // "Marks: Plain | All" (17 Oct 2026): plain unless the host says otherwise. See markSpec.
-               marks: opts.marks === "all" ? "all" : "plain" };
+               marks: opts.marks === "all" ? "all" : "plain",
+               // THE READER'S SUPPOSITIONS outlive a redraw (18 Oct 2026): they were held inside each
+               // mount, so switching Marks, the chain or the boxes dropped them without a word. Kept
+               // here by state id and step key, as the reader's choices are. A host that keeps one
+               // record for every arrangement hands its version in with `setExperiment`.
+               exp: { fail: {}, off: {}, hold: {} }, waiting: [],
+               // Whether the Display menu is open, so a redraw from inside it leaves it open.
+               display: false,
+               // Whether "About this chain" is open in the panel, so it stays as the reader left it.
+               about: false,
+               // The reader's guesses and the answer beside them, by state id: guess | hit | miss | unexpected.
+               guess: {} };
   // THE SAME KIND ACROSS CASES (profile 1.6): each state's kin -- other states of its kind -- and
   // which chains each is in, read off the whole file whatever is being shown.
   var KINDS = FULL.profile.kinds || [];
@@ -5018,6 +5066,22 @@ function create(container, graph, opts) {
     getChain: function () { return keep.chain; },
     zoomBy: function (f) { cur.zoomBy(f); },
     fit: function () { cur.fit(); },
+    /** The reader's suppositions, as the host keeps them: { fail: [state], off: [from\u0000to],
+     *  hold: [state], waiting: [{ claim, key, steps: [key] }] } -- `waiting`, a claim supposed false
+     *  elsewhere that states several of these steps, so at least one does not run, and the reader
+     *  has not said which. Never written into the map. */
+    setExperiment: function (x) {
+      x = x || {};
+      var set = function (xs) { var o = {}; (xs || []).forEach(function (k) { o[k] = true; }); return o; };
+      keep.exp = { fail: set(x.fail), off: set(x.off), hold: set(x.hold) };
+      keep.waiting = (x.waiting || []).slice();
+      cur.refreshExperiment();
+    },
+    /** The reader's guesses and the answer beside them, { state: "guess"|"hit"|"miss"|"unexpected" }. */
+    setGuesses: function (x) { keep.guess = Object.assign({}, x || {}); cur.redrawGuesses(); },
+    getExperiment: function () {
+      return { fail: Object.keys(keep.exp.fail), off: Object.keys(keep.exp.off), hold: Object.keys(keep.exp.hold) };
+    },
     /** Open on the steps these claims state: the chain that holds the first of them, and its arrow
      *  selected. Where a bridge's figure in Reasons leads. */
     showSteps: function (titles) {
@@ -5082,7 +5146,19 @@ function create(container, graph, opts) {
   // WHAT FOLLOWS FROM THE TEXT'S OWN STEPS, and THE READER'S EXPERIMENT (17 Oct 2026). See `follows`
   // and `suppose`. The experiment is the reader's, never the map's, and goes with the drawing.
   var FOLLOWS = FIG ? { items: [], steps: 0 } : follows(M);
-  var exp = { fail: {}, off: {}, hold: {} }, EXPR = null;
+  var exp = keep.exp, EXPR = null;
+  /** The reader's suppositions, changed: through the host where it keeps the record for every
+   *  arrangement (so a step supposed here is supposed in Reasons too), else here. */
+  function expToggle(kind, key) {
+    if (opts.onSuppose) { opts.onSuppose({ kind: kind, key: key, on: !exp[kind][key] }); return; }
+    if (exp[kind][key]) delete exp[kind][key]; else exp[kind][key] = true;
+    runExp();
+  }
+  function expClear() {
+    if (opts.onSupposeClear) { opts.onSupposeClear(); return; }
+    keep.exp = exp = { fail: {}, off: {}, hold: {} }; keep.waiting = [];
+    runExp();
+  }
   var NEST = nestingOf(M.ordering);
   if (!NEST.offer) keep.nest = null;
   var nestSpec = function () { return keep.nest ? NEST.spec : null; };
@@ -5144,6 +5220,31 @@ function create(container, graph, opts) {
              : GROUPS.map(function (g) { var v = "together:" + g[0], t = "Together: " + g.map(chainLabel).join(" · ");
                  return '<option value="' + esc(v) + '"' + (keep.chain === v ? ' selected' : '') + ' title="' + esc(t) + '">' +
                    esc(t.length > 90 ? t.slice(0, 89) + "…" : t) + '</option>'; }).join("")) + '</select></label>' : '') +
+    // Every control says what it does on hover (F8, clarity audit 27 Sep 2026): these three were
+    // the chain's switches with nothing to say.
+    (M.profile.rival_steps ? '<label class="amech-tog rival" title="The steps rival views claim, as the text reports them; switch off to see only what the text itself asserts"><input type="checkbox" data-layer="rival" checked>' +
+      '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
+    (M.appraisalClaims ? '<label class="amech-tog appr" title="The reconstructor’s own reading of the text against the world, off until asked for; never something the text says"><input type="checkbox" data-layer="appraisal">' +
+      '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
+    (anyUntested || hasCore || multi ? '<label class="amech-tog" title="What to draw: every step, the core path to the outcome, one panel per condition, or only what the text tested">Show <select data-show><option value="all">every step</option>' +
+      (hasCore ? '<option value="core">the core path</option>' : '') +
+      (multi ? '<option value="panels">one panel per ' + esc(multiName.length > 40 ? multiName.slice(0, 39) + "…" : multiName) + '</option>' : '') +
+      (anyUntested ? '<option value="tested">only what the text tested</option>' : '') + '</select></label>' : '') +
+    // Offered only where there is something to fold (F2: a control is a promise).
+    // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
+    // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
+    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from where the chain starts to its outcomes: the states between are folded, and what lies off that line is set aside">' + endsLabel + '</button>' : '') +
+    // A GUIDE TO THIS DRAWING'S MARKS (James's verdict: a reader who has not read the conventions
+    // sees "raises" and "no effect" on one pair and is lost). It walks the marks this chain uses,
+    // lighting one example of each.
+    '<button type="button" class="amech-tog guide" data-guide-go="0" title="Step through what each mark on this drawing means, one example at a time">Read this drawing</button>' +
+    // HOW IT IS DRAWN, ONE PRESS AWAY (18 Oct 2026). The bar showed every presentation control and no
+    // way to ask a question of the chart; labels, marks, boxes, nesting and zoom change how the chain
+    // looks and never what it says, so they share one menu, which stays open across a redraw until
+    // the reader closes it. Zoom keeps its keys (⌘= ⌘− and a pinch) whether or not the menu is open.
+    '<span class="amech-display"><button type="button" class="amech-tog disp" data-display aria-haspopup="true" aria-expanded="' + (keep.display ? 'true' : 'false') +
+      '" title="How the chain is drawn: labels, marks, boxes, levels, zoom">Display \u25be</button>' +
+      '<span class="amech-dpop" role="group" aria-label="How the chain is drawn"' + (keep.display ? '' : ' hidden') + '>' +
     // HOW MUCH OF EACH LABEL, the Reasons bar's "claims: Short | Full" in the same shape: one setting
     // with two values, drawn as one sunken control (James, 8 Oct 2026). Here it governs the
     // states' words and the arrows' alike.
@@ -5159,20 +5260,6 @@ function create(container, graph, opts) {
       ' title="Boxes, arrows, their weight and heads, loops, AND gates and blockers: what reads without the legend. What else the text says is in each panel, in words">Plain</button>' +
       '<button type="button" data-marks="all"' + (PLAIN ? '' : ' class="on" aria-pressed="true"') +
       ' title="Every mark: line patterns for how close each claim stands to the words, \u2248 \u2259 \u2282 \u2283, pipes and clouds, channel colours, round-ended activities">All</button></span>') +
-    // Every control says what it does on hover (F8, clarity audit 27 Sep 2026): these three were
-    // the chain's switches with nothing to say.
-    (M.profile.rival_steps ? '<label class="amech-tog rival" title="The steps rival views claim, as the text reports them; switch off to see only what the text itself asserts"><input type="checkbox" data-layer="rival" checked>' +
-      '<span class="sw"></span><span>Rival views</span><span class="aside">as the text reports them</span></label>' : '') +
-    (M.appraisalClaims ? '<label class="amech-tog appr" title="The reconstructor’s own reading of the text against the world, off until asked for; never something the text says"><input type="checkbox" data-layer="appraisal">' +
-      '<span class="sw"></span><span>Reconstructor’s appraisal</span><span class="aside amech-acount"></span></label>' : '') +
-    (anyUntested || hasCore || multi ? '<label class="amech-tog" title="What to draw: every step, the core path to the outcome, one panel per condition, or only what the text tested">Show <select data-show><option value="all">every step</option>' +
-      (hasCore ? '<option value="core">the core path</option>' : '') +
-      (multi ? '<option value="panels">one panel per ' + esc(multiName.length > 40 ? multiName.slice(0, 39) + "…" : multiName) + '</option>' : '') +
-      (anyUntested ? '<option value="tested">only what the text tested</option>' : '') + '</select></label>' : '') +
-    // Offered only where there is something to fold (F2: a control is a promise).
-    // NAMED FOR WHAT THE READER GETS, not for the operation: "Fold to the ends" described the
-    // mechanics, and the author could not tell from it what the button would show (26 Sep 2026).
-    (toEnds.length ? '<button type="button" class="amech-tog fold" data-foldall title="Show only the routes from where the chain starts to its outcomes: the states between are folded, and what lies off that line is set aside">' + endsLabel + '</button>' : '') +
     // Offered only where the map declares wholes (F2). Named for what a click will show.
     (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
       (keep.boxes ? "Show every state" : "The text’s own boxes") + '</button>' : '') +
@@ -5187,10 +5274,7 @@ function create(container, graph, opts) {
     '<button type="button" class="amech-tog zm pct" data-zoom="1" title="The size the chain is drawn at; press for its actual size">100%</button>' +
     '<button type="button" class="amech-tog zm" data-zoom="in" title="Zoom in (⌘= or Ctrl =)">+</button></span>' +
     '<button type="button" class="amech-tog fit" data-fit title="Scale the chain to the width of the pane; press again for its actual size">Fit to width</button>' +
-    // A GUIDE TO THIS DRAWING'S MARKS (James's verdict: a reader who has not read the conventions
-    // sees "raises" and "no effect" on one pair and is lost). It walks the marks this chain uses,
-    // lighting one example of each.
-    '<button type="button" class="amech-tog guide" data-guide-go="0" title="Step through what each mark on this drawing means, one example at a time">Read this drawing</button>';
+    '</span></span>';
   var banner = document.createElement("div"); banner.className = "amech-banner"; banner.hidden = true;
   // THE SAME SENTENCE AS THE ARGUMENT MAP'S BANNER, word for word: one switch, one state, one
   // announcement (sweep D, 27 Sep 2026: the two had drifted into different wordings).
@@ -5210,7 +5294,7 @@ function create(container, graph, opts) {
   container.appendChild(expBanner);
   expBanner.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
-    if (t.getAttribute && t.getAttribute("data-exp-clear")) { exp = { fail: {}, off: {}, hold: {} }; runExp(); }
+    if (t.getAttribute && t.getAttribute("data-exp-clear")) expClear();
   });
   var body = document.createElement("div"); body.className = "amech-body";
   var stage = document.createElement("div"); stage.className = "amech-stage";
@@ -5402,6 +5486,9 @@ function create(container, graph, opts) {
       var pick = function (ev) { ev.stopPropagation(); select({ edge: e, path: p }); };
       g.addEventListener("click", pick);
       if (chip) chip.addEventListener("click", pick);
+      // RIGHT-CLICK OFFERS WHAT REASONS' RIGHT-CLICK OFFERS (18 Oct 2026): the same gesture asks
+      // "what if?" in both arrangements. A key too, on the chip, which is the arrow's button.
+      [g, chip].filter(Boolean).forEach(function (x) { menuOn(x, function () { return edgeMenu(e, p); }); });
       if (chip) chip.setAttribute("cursor", "pointer");
       drawnEdges.push({ e: e, p: p, g: g, chip: chip });
       if (selected && selected.edge && selected.edge.key === e.key) { p.classList.add("sel"); selected.path = p; }
@@ -5525,7 +5612,26 @@ function create(container, graph, opts) {
           mk.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
         }
       });
-      g.addEventListener("click", function (ev) { ev.stopPropagation(); select({ state: v }); });
+      g.addEventListener("click", function (ev) { ev.stopPropagation(); if (opts.onPick && opts.onPick(v)) return; select({ state: v }); });
+      // THE READER'S GUESS, AND THE ANSWER BESIDE IT (18 Oct 2026): a tag over the box, never a border,
+      // since a border's pattern is fidelity here as on every box (F5).
+      var gk = keep.guess && keep.guess[v];
+      if (gk) {
+        var gw = GUESS_WORDS[gk] || gk, tw = Math.max(54, gw.length * 5.6 + 14);
+        var gt = el("g", { "class": "guess guess-" + gk }, g);
+        el("rect", { x: p.w - tw + 6, y: -11, width: tw, height: 18, rx: 9 }, gt);
+        el("text", { x: p.w - tw / 2 + 6, y: 2, "text-anchor": "middle" }, gt).textContent = gw;
+      }
+      // A STATE IS A BUTTON, as a claim in Reasons is: Enter shows it, the context-menu key asks
+      // what if, as right-click does. Until now the chart could not be reached from the keyboard.
+      if (!FIG) {
+        g.setAttribute("tabindex", "0"); g.setAttribute("role", "button");
+        g.setAttribute("aria-label", String(obj(M.states[v]).label || v));
+        g.addEventListener("keydown", function (/** @type {KeyboardEvent} */ ev) {
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); if (opts.onPick && opts.onPick(v)) return; select({ state: v }); }
+        });
+      }
+      menuOn(g, function () { return stateMenu(v); });
     });
     // CONDITIONED ON (1.19): a square frame round each state the chain's analysis holds fixed, one round
     // two the text says cannot be held apart -- Knight and Winship's boxes and tall box.
@@ -5846,20 +5952,25 @@ function create(container, graph, opts) {
           (s.claim ? '<div class="m">' + esc(s.claim.title) + (opts.onClaim && s.claim.id != null ? ' <button type="button" data-claim="' + esc(s.claim.title) + '">Show in the text</button>' : '') + '</div>' : '') + '</div>';
       }).join("");
   }
-  /** WHAT FOLLOWS, at the head of the panel: what the drawing shows that no one claim says. */
-  var FOLLOWS_SHOWN = 5;
+  /** QUESTIONS TO TRY, at the head of the panel (James, 18 Oct 2026). What the drawing shows that no
+   *  one claim says, put as questions to answer before looking: guess, then Show. The answers were
+   *  the panel's opening, and a reader met paragraphs of them before asking anything -- "too much
+   *  detail ... easily overwhelmed". A question is one line; its answer, and what it rests on, come
+   *  with Show. */
+  var FOLLOWS_SHOWN = 4;
   function followsHTML() {
     var F = FOLLOWS.items;
-    var head = '<h3>What follows from the steps</h3>';
-    if (!F.length) return head + '<div class="amech-q">Nothing here that the text does not say step by step: no loop, no route that ' +
-      'no one step states, no route running both ways. The drawing restates its ' + FOLLOWS.steps + ' step' + (FOLLOWS.steps === 1 ? '' : 's') + '.</div>';
+    var head = '<h3>Questions to try</h3>';
+    if (!F.length) return head + '<div class="amech-q">The text\u2019s steps add up to nothing they do not say one by one: no loop, no route that ' +
+      'no one step states, no route running both ways. Try supposing instead: right-click a state or an arrow.</div>';
     var one = function (it, i) {
-      return '<button type="button" class="amech-find" data-find="' + i + '" title="Show what this rests on"><b>' + esc(it.title) + '</b>' +
-        it.lines.map(function (l) { return '<span>' + esc(l) + '</span>'; }).join("") + '</button>'; };
-    return head + '<div class="amech-q" style="margin:0 0 6px">What the text\u2019s own steps add up to, which no one of them says. Click one to see what it rests on.</div>' +
+      return '<div class="amech-try"><span>' + esc(it.question || it.title) + '</span> <button type="button" class="amech-find" data-find="' + i +
+        '" title="Show the answer, and the steps it rests on">Show</button></div>'; };
+    return head + '<div class="amech-q" style="margin:0 0 6px">What the text\u2019s own steps add up to. Guess first, then press Show.</div>' +
       F.slice(0, FOLLOWS_SHOWN).map(one).join("") +
       (F.length > FOLLOWS_SHOWN ? '<details class="amech-more-finds"><summary>' + (F.length - FOLLOWS_SHOWN) + ' more</summary>' +
-        F.slice(FOLLOWS_SHOWN).map(function (it, j) { return one(it, j + FOLLOWS_SHOWN); }).join("") + '</details>' : '');
+        F.slice(FOLLOWS_SHOWN).map(function (it, j) { return one(it, j + FOLLOWS_SHOWN); }).join("") + '</details>' : '') +
+      '<div class="amech-q amech-trysupp">Or suppose something: right-click a state or an arrow, and before you look, guess which outcomes the text\u2019s steps would still bring about.</div>';
   }
   /** THE READER'S EXPERIMENT, what it changes, in words. */
   function expWords() {
@@ -5871,7 +5982,20 @@ function create(container, graph, opts) {
     return out;
   }
   function expHTML() {
-    if (!EXPR) return '';
+    var W = keep.waiting || [];
+    if (!EXPR && !W.length) return '';
+    // A CLAIM SUPPOSED FALSE THAT STATES SEVERAL STEPS: at least one of them does not run, and which
+    // is the reader's to say, as Reasons asks which part an objection to a whole argument denies.
+    var waitHTML = W.map(function (w) {
+      var nmw = function (v) { return '\u201c' + esc(obj(M.states[v]).label || v) + '\u201d'; };
+      return '<div class="amech-focus">\u2039' + esc(w.claim) + '\u203a is supposed false. It states ' + w.steps.length +
+        ' of these steps, so at least one does not run. Which do you suppose?<div class="amech-state-act">' +
+        w.steps.map(function (k) { var e = k.split("\u0000");
+          return '<button type="button" data-exp-choose="1" data-claim-key="' + esc(w.key) + '" data-from="' + esc(e[0]) + '" data-to="' + esc(e[1]) + '">' +
+            nmw(e[0]) + ' \u2192 ' + nmw(e[1]) + '</button>'; }).join(' ') + '</div></div>';
+    }).join('');
+    if (!EXPR) return '<h3>Your suppositions</h3>' + waitHTML +
+      '<div class="amech-state-act"><button type="button" data-exp-clear="1">Clear</button> <span class="amech-q">yours, not the text\u2019s; never saved into the map</span></div>';
     var R = EXPR, nm = function (v) { return '\u201c' + esc(obj(M.states[v]).label || v) + '\u201d'; };
     var dirW = { raises: "raises", lowers: "lowers", both: "both raises and lowers", affects: "affects", "": "no longer reaches" };
     var rows = [];
@@ -5882,18 +6006,21 @@ function create(container, graph, opts) {
     R.broken.forEach(function (l) { rows.push('<li>The loop ' + l.states.concat([l.states[0]]).map(nm).join(' \u2192 ') + ' is broken.</li>'); });
     R.notes.forEach(function (n) { rows.push('<li>' + nm(n.state) + ' ' + esc(EFFECT_WORD[n.effect] || n.effect) + ': the step ' + nm(n.from) + ' \u2192 ' + nm(n.to) + '.</li>'); });
     var stop = R.lostStates.length;
-    return '<h3>Your experiment</h3><div class="amech-focus">Suppose ' + expWords().join('; and ') + '. ' +
+    return '<h3>Your suppositions</h3>' + waitHTML + '<div class="amech-focus">Suppose ' + expWords().join('; and ') + '. ' +
       (rows.length ? 'By the text\u2019s own steps:' : 'Nothing the text\u2019s steps bring about is lost: other routes still reach ' +
         (R.outcomes.length === 1 ? 'its outcome' : 'every outcome they reached') + '.') +
       (stop ? ' ' + stop + ' state' + (stop === 1 ? '' : 's') + ' and the steps from ' + (stop === 1 ? 'it' : 'them') + ' fade on the chart.' : '') + '</div>' +
       (rows.length ? '<ul class="amech-handed">' + rows.join('') + '</ul>' : '') +
-      '<div class="amech-state-act"><button type="button" data-exp-clear="1">Clear the experiment</button> <span class="amech-q">yours, not the text\u2019s; never saved into the map</span></div>';
+      '<div class="amech-state-act"><button type="button" data-exp-clear="1">Clear</button> <span class="amech-q">yours, not the text\u2019s; never saved into the map</span></div>';
   }
+  function expAny() { return Object.keys(exp.fail).length + Object.keys(exp.off).length + Object.keys(exp.hold).length + (keep.waiting || []).length > 0; }
   function runExp() {
     var any = Object.keys(exp.fail).length + Object.keys(exp.off).length + Object.keys(exp.hold).length;
     EXPR = any ? suppose(M, { fail: Object.keys(exp.fail), off: Object.keys(exp.off), hold: Object.keys(exp.hold) }) : null;
-    expBanner.hidden = !EXPR;
-    expBanner.innerHTML = EXPR ? '<b>Your experiment, not the text.</b> Suppose ' + expWords().join('; and ') + '. ' +
+    // A HOST THAT KEEPS ONE RECORD draws one banner over every arrangement; this one is for a chart
+    // mounted on its own.
+    expBanner.hidden = !EXPR || !!opts.onSuppose;
+    expBanner.innerHTML = EXPR && !opts.onSuppose ? '<b>Your suppositions, not the text\u2019s.</b> Suppose ' + expWords().join('; and ') + '. ' +
       '<button type="button" data-exp-clear="1">Clear</button>' : '';
     selected = null;
     renderSide(); applyFocus();
@@ -5951,7 +6078,10 @@ function create(container, graph, opts) {
       : M.chain ? '<div class="amech-focus">One of the text’s ' + CHAINS.length + ' chains: <b>' + esc(M.chain.label) + '</b>.' +
       (Object.keys(M.chain.shared).length ? sharedNote(M.chain.shared) : ' It shares no state with another chain.') +
       (P.apart ? ' The text keeps it apart: ' + esc(P.apart) : '') + '</div>' : '';
-    return expHTML() + followsHTML() + chainNote + boxesNote + foldedHTML() + summariesHTML() + '<h3>The chain</h3>' +
+    // ABOUT THIS CHAIN, folded until asked for: its counts, gaps, light and shadow and legend were the
+    // panel's whole length under the findings. They answer questions a reader brings, so a press away.
+    return expHTML() + followsHTML() + chainNote + boxesNote + foldedHTML() + summariesHTML() +
+      '<details class="amech-about"' + (keep.about ? ' open' : '') + '><summary>About this chain: its steps, gaps and legend</summary><h3>The chain</h3>' +
       '<div class="amech-row"><span class="k">steps</span><span>' + P.steps + ' distinct, asserted by ' + P.claims + ' claim' + (P.claims === 1 ? '' : 's') + '</span></div>' +
       (P.levels.length > 1 ? '<div class="amech-row"><span class="k">levels are</span><span>' + esc(orderingWords(P.ordering).replace(/^levels: /, "")) +
         (P.ordering && P.ordering.within && P.ordering.within.length ? '; ' + esc(P.ordering.within.map(function (q) { return q[0] + " within " + q[1]; }).join(", ")) : '') + '</span></div>' : '') +
@@ -6019,7 +6149,8 @@ function create(container, graph, opts) {
       // system, where no arrow says no direct relation (Banitz et al. 2022, Fig. 2A).
       'No arrow between two states means the text does not say; it does not mean there is no effect. The text says so only where a “no effect” line is drawn. ' +
       'Click a state to see only the paths through it, or to fold it into its arrows.</div>' +
-      (M.dropped ? '<div class="amech-q" style="color:var(--mv-gap)">' + M.dropped + ' step(s) name an undeclared state and are not drawn; the checker names them.</div>' : '');
+      (M.dropped ? '<div class="amech-q" style="color:var(--mv-gap)">' + M.dropped + ' step(s) name an undeclared state and are not drawn; the checker names them.</div>' : '') +
+      '</details>';
   }
   /** The guide's steps: only the marks this drawing has, each with one example to light. */
   function guideSteps() {
@@ -6088,7 +6219,8 @@ function create(container, graph, opts) {
       (FI.hops || []).forEach(function (k) { hp[k] = true; });
       var rests = M.steps.filter(function (x) { return x.layer === "text" && !x.isNull && !x.selects && !x.assoc && (hp[x.from + "\u0000" + x.to] ||
         (x.jointly || []).some(function (j) { return hp[j + "\u0000" + x.to]; })); });
-      side.innerHTML = '<h3>' + esc(FI.title) + '</h3><div class="amech-focus">' + FI.lines.map(esc).join(' ') + '</div>' +
+      side.innerHTML = (FI.question ? '<div class="amech-q amech-asked">' + esc(FI.question) + '</div>' : '') +
+        '<h3>' + esc(FI.title) + '</h3><div class="amech-focus">' + FI.lines.map(esc).join(' ') + '</div>' +
         (rests.length ? '<h3>The steps it rests on</h3>' + rests.slice(0, 12).map(claimHTML).join("") +
           (rests.length > 12 ? '<div class="amech-q">and ' + (rests.length - 12) + ' more, lit on the chart</div>' : '') : '') +
         '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
@@ -6113,7 +6245,7 @@ function create(container, graph, opts) {
         (e.layer === "text" && e.kind === "step" && !e.route && !FIG ? (function () {
           var k = e.from + "\u0000" + e.to, on = !!exp.off[k];
           return '<div class="amech-state-act"><button type="button" data-exp-off="' + G.edges.indexOf(e) + '">' +
-            (on ? 'Undo: let this step run' : 'Suppose this step does not run') + '</button> <span class="amech-q">your experiment: what the text\u2019s other steps still bring about</span></div>';
+            (on ? 'Undo: let this step run' : 'Suppose this step does not run') + '</button> <span class="amech-q">a supposition of yours: what the text\u2019s other steps still bring about</span></div>';
         })() : '') +
         openHTML(e) +
         '<h3>&nbsp;</h3><button type="button" data-back="1" title="Leave this view and see every state again (Esc)">Back to the whole chain</button>';
@@ -6245,16 +6377,61 @@ function create(container, graph, opts) {
       side.innerHTML = profileHTML();
     }
   }
+  /** Whether a state blocks or moderates one of the text's steps, so that supposing it holds means something. */
+  function stateBlocks(v) {
+    return M.steps.some(function (x) { return x.layer === "text" && ((x.unless || []).indexOf(v) >= 0 ||
+      (x.modifies || []).some(function (m) { return m.by === v; })); });
+  }
+  /** THE MENU ON A STATE AND ON AN ARROW (18 Oct 2026): the suppositions first, in the words their
+   *  panel buttons use, then the ordinary ways in. Handed to the host, which draws it as it draws
+   *  Reasons' menu; with no host, nothing is offered and the browser's own menu stands. */
+  function menuOn(x, build) {
+    if (FIG || !opts.onMenu) return;
+    x.addEventListener("contextmenu", function (ev) { ev.preventDefault(); ev.stopPropagation(); opts.onMenu(build(), ev); });
+    x.addEventListener("keydown", function (/** @type {KeyboardEvent} */ ev) {
+      if (!(ev.key === "ContextMenu" || (ev.key === "F10" && ev.shiftKey))) return;
+      ev.preventDefault(); ev.stopPropagation();
+      var r = x.getBoundingClientRect();
+      opts.onMenu(build(), { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, preventDefault: function () {}, stopPropagation: function () {} });
+    });
+  }
+  function stateMenu(v) {
+    var items = [];
+    if (!obj(M.states[v]).appraisal) {
+      items.push({ act: "fail", label: exp.fail[v] ? "Undo: let it happen" : "Suppose this does not happen",
+                   hint: exp.fail[v] ? "Take back the supposition" : "See what the text\u2019s steps then still bring about",
+                   run: function () { expToggle("fail", v); } });
+      if (stateBlocks(v)) items.push({ act: "hold", label: exp.hold[v] ? "Undo: it need not hold" : "Suppose this holds",
+                   hint: exp.hold[v] ? "Take back the supposition" : "It blocks or moderates a step: see what then changes",
+                   run: function () { expToggle("hold", v); } });
+      items.push(null);
+    }
+    items.push({ label: "Show only the paths through this", run: function () { select({ state: v }); } });
+    return { title: String(obj(M.states[v]).label || v), items: items };
+  }
+  function edgeMenu(e, p) {
+    var items = [], k = e.from + "\u0000" + e.to;
+    if (e.layer === "text" && e.kind === "step" && !e.route) {
+      items.push({ act: "off", label: exp.off[k] ? "Undo: let this step run" : "Suppose this step does not run",
+                   hint: exp.off[k] ? "Take back the supposition" : "See what the text\u2019s other steps still bring about",
+                   run: function () { expToggle("off", k); } });
+      items.push(null);
+    }
+    items.push({ label: "Show its claims", run: function () { select({ edge: e, path: p }); } });
+    var c = (e.steps[0] || {}).claim;
+    if (c && c.id != null && opts.onClaim) items.push({ label: "Show in the text", run: function () { opts.onClaim(c); } });
+    var nm = function (v) { return obj(M.states[v]).label || v; };
+    return { title: nm(e.from) + " \u2192 " + nm(e.to), items: items };
+  }
   /** The experiment's buttons on a state's panel: that it does not happen, and, where it blocks or
    *  moderates a step, that it holds. */
   function expButtons(v) {
     if (FIG || obj(M.states[v]).appraisal) return '';
-    var blocks = M.steps.some(function (x) { return x.layer === "text" && ((x.unless || []).indexOf(v) >= 0 ||
-      (x.modifies || []).some(function (m) { return m.by === v; })); });
+    var blocks = stateBlocks(v);
     return '<div class="amech-state-act"><button type="button" data-exp-fail="' + esc(v) + '">' +
       (exp.fail[v] ? 'Undo: let it happen' : 'Suppose this does not happen') + '</button>' +
       (blocks ? ' <button type="button" data-exp-hold="' + esc(v) + '">' + (exp.hold[v] ? 'Undo: it need not hold' : 'Suppose this holds') + '</button>' : '') +
-      ' <span class="amech-q">your experiment: what the text\u2019s steps still bring about</span></div>';
+      ' <span class="amech-q">a supposition of yours: what the text\u2019s steps still bring about</span></div>';
   }
   /** The questions a step the text does not open leaves (see `openQuestions`). */
   function openHTML(e) {
@@ -6296,6 +6473,11 @@ function create(container, graph, opts) {
     var tg = /** @type {Element} */ (ev.target), row = tg && tg.closest ? tg.closest("[data-route]") : null; if (row) routeHot(row, true); }); });
   ["mouseout", "focusout"].forEach(function (evn) { side.addEventListener(evn, function (ev) {
     var tg = /** @type {Element} */ (ev.target), row = tg && tg.closest ? tg.closest("[data-route]") : null; if (row) routeHot(row, false); }); });
+  // "About this chain" stays as the reader left it, across a redraw of the panel.
+  side.addEventListener("toggle", function (ev) {
+    var d = /** @type {HTMLDetailsElement} */ (ev.target);
+    if (d && d.classList && d.classList.contains("amech-about")) keep.about = d.open;
+  }, true);
   side.addEventListener("click", function (ev) {
     var t = /** @type {Element} */ (ev.target);
     if (t.getAttribute && t.getAttribute("data-back")) { select(null); return; }
@@ -6316,11 +6498,12 @@ function create(container, graph, opts) {
     if (fd) { select({ finding: +fd.getAttribute("data-find") }); return; }
     var ef = t.getAttribute && t.getAttribute("data-exp-fail"), eh = t.getAttribute && t.getAttribute("data-exp-hold"),
         eo = t.getAttribute && t.getAttribute("data-exp-off");
-    if (ef) { if (exp.fail[ef]) delete exp.fail[ef]; else exp.fail[ef] = true; runExp(); return; }
-    if (eh) { if (exp.hold[eh]) delete exp.hold[eh]; else exp.hold[eh] = true; runExp(); return; }
-    if (eo != null && G.edges[+eo]) { var ek = G.edges[+eo].from + "\u0000" + G.edges[+eo].to;
-      if (exp.off[ek]) delete exp.off[ek]; else exp.off[ek] = true; runExp(); return; }
-    if (t.getAttribute && t.getAttribute("data-exp-clear")) { exp = { fail: {}, off: {}, hold: {} }; runExp(); return; }
+    if (ef) { expToggle("fail", ef); return; }
+    if (eh) { expToggle("hold", eh); return; }
+    if (eo != null && G.edges[+eo]) { expToggle("off", G.edges[+eo].from + "\u0000" + G.edges[+eo].to); return; }
+    if (t.getAttribute && t.getAttribute("data-exp-clear")) { expClear(); return; }
+    if (t.getAttribute && t.getAttribute("data-exp-choose") && opts.onSuppose) {
+      opts.onSuppose({ kind: "choose", key: t.getAttribute("data-from") + "\u0000" + t.getAttribute("data-to"), claim: t.getAttribute("data-claim-key") }); return; }
     var es = t.getAttribute && t.getAttribute("data-exp-show");
     if (es && G.nodes[es]) { select({ state: es }); return; }
     var xv = t.getAttribute && t.getAttribute("data-expand"), cv = t.getAttribute && t.getAttribute("data-collapse");
@@ -6388,6 +6571,23 @@ function create(container, graph, opts) {
   });
   var guideBtn = /** @type {HTMLElement|null} */ (bar.querySelector("[data-guide-go]"));
   if (guideBtn) guideBtn.addEventListener("click", function () { guideGo(0); });
+  var dispBtn = bar.querySelector("[data-display]"), dispPop = /** @type {HTMLElement|null} */ (bar.querySelector(".amech-dpop"));
+  function setDisplay(on) {
+    keep.display = !!on;
+    if (dispPop) dispPop.hidden = !keep.display;
+    if (dispBtn) dispBtn.setAttribute("aria-expanded", keep.display ? "true" : "false");
+  }
+  if (dispBtn) dispBtn.addEventListener("click", function () { setDisplay(!keep.display); });
+  // Shut by a press anywhere outside it, or Esc; a choice inside leaves it open, so several can be made.
+  var dispDoc = container.ownerDocument;
+  dispDoc.addEventListener("pointerdown", function (ev) {
+    if (!keep.display || !container.isConnected || !dispBtn || !dispBtn.isConnected) return;
+    var t = /** @type {Element} */ (ev.target);
+    if (!(t && t.closest && t.closest(".amech-display"))) setDisplay(false);
+  }, true);
+  bar.addEventListener("keydown", function (/** @type {KeyboardEvent} */ ev) {
+    if (ev.key === "Escape" && keep.display) { ev.preventDefault(); ev.stopPropagation(); setDisplay(false); if (dispBtn) /** @type {HTMLElement} */ (dispBtn).focus(); }
+  });
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
@@ -6466,6 +6666,8 @@ function create(container, graph, opts) {
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(function () { if (fit) sizeSvg(); }).observe(stage);
   apply();
   if (keep.zoom) { if (keep.zoom === "fit") setFit(true); else setZoom(keep.zoom); }
+  // Suppositions made before this mount -- on another chain, at the other marks -- draw at once.
+  if (!FIG && expAny()) runExp();
 
   return {
     model: M,
@@ -6494,6 +6696,8 @@ function create(container, graph, opts) {
     },
     zoomBy: function (f) { zoomBy(f); },
     fit: function () { setFit(true); },
+    refreshExperiment: function () { exp = keep.exp; if (!FIG) runExp(); },
+    redrawGuesses: function () { drawNodes(); applyFocus(); },
     getView: function () { return { show: show, ends: ends, folded: Object.keys(folded).sort(), expanded: Object.keys(expanded).sort(),
                                     zoom: fit ? "fit" : zk }; },
     setView: function (v) {

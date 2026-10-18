@@ -4056,6 +4056,7 @@ function createLiveMap(container, graph, options) {
     drawCards(expo ? g : null);
     drawNodes(g, vis, sizes);
     applySupposed();
+    applyGuesses();
 
     const gl = g.graph();
     // WHERE THE APEX SITS, so a map too big to fit can be anchored on its contention rather
@@ -5063,6 +5064,34 @@ function createLiveMap(container, graph, options) {
     for (const [key, path] of drawnEdge) path.classList.toggle("is-supposed-out", supposedOut.has(key.split(" ")[0]));
   }
   function setSupposition(ids) { supposedOut = new Set(ids || []); applySupposed(); }
+  /* THE READER'S GUESS, BESIDE THE MAP'S ANSWER (James, 18 Oct 2026: "it's okay to draw the map's
+   * answer beside the reader's marked guesses"). The host says, of each claim, "guess" (marked, not
+   * yet answered), "hit" (guessed, and the map agrees), "miss" (guessed, and the map keeps its
+   * support) or "unexpected" (not guessed, and the map takes its support). Drawn as a mark on the
+   * box, never a score. */
+  let guesses = new Map();
+  // A TAG, NOT A BORDER: a border's pattern already says how close a claim stands to the words (F5).
+  const GUESS_WORDS = { guess: "your guess", hit: "guessed \u00b7 the map agrees", miss: "guessed \u00b7 the map keeps it", unexpected: "not guessed \u00b7 the map loses it" };
+  function applyGuesses() {
+    for (const [id, box] of drawn) {
+      const k = guesses.get(id);
+      const old = box.querySelector(":scope > .alm-guess");
+      if (old) old.remove();
+      box.classList.toggle("is-guessed", !!k);
+      if (!k) continue;
+      const rect = box.querySelector(":scope > .alm-box");
+      const w = rect ? +rect.getAttribute("width") || 120 : 120;
+      const g = el("g", { class: "alm-guess alm-guess-" + k });
+      const words = GUESS_WORDS[k] || k;
+      const tw = Math.max(54, words.length * 5.6 + 14);
+      g.appendChild(el("rect", { x: w - tw + 6, y: -11, width: tw, height: 18, rx: 9, ry: 9 }));
+      const t = el("text", { x: w - tw / 2 + 6, y: 2, "text-anchor": "middle" });
+      t.textContent = words;
+      g.appendChild(t);
+      box.appendChild(g);
+    }
+  }
+  function setGuesses(obj) { guesses = new Map(Object.entries(obj || {})); applyGuesses(); }
 
   /** Work out which edges belong to a linked inference step, and where each bar goes.
    *
@@ -6760,7 +6789,7 @@ function createLiveMap(container, graph, options) {
   }
 
   return {
-    setSupposition,
+    setSupposition, setGuesses,
     setState, getState, toggleGroup, toggleNode,
     markClaims, spotlight,
     // Fit also undoes a re-cut of the pages for a zoom: the column goes back to the pages it
@@ -7110,6 +7139,15 @@ function injectStyle() {
 .alm-n.is-lit .alm-box{stroke:var(--alm-accent,#3a7bd5)}
 /* The reader's suppositions: what is supposed false, or has lost its support, fades. */
 .alm-n.is-supposed-out > *{opacity:.3}
+/* The reader's guesses, and the map's answer beside them: a ring in the accent for a guess, then a
+   tick for one the map agrees with, an open ring for one it does not, and a dashed ring for what the
+   map took that was not guessed. Outlines, so the fade underneath still reads. */
+.alm-guess rect{fill:var(--alm-accent,#3a7bd5);stroke:none}
+.alm-guess text{fill:#fff;font:600 10px system-ui,sans-serif;pointer-events:none}
+.alm-guess-miss rect{fill:var(--alm-node-bg,#fff);stroke:var(--alm-accent,#3a7bd5);stroke-width:1.5}
+.alm-guess-miss text{fill:var(--alm-accent,#3a7bd5)}
+.alm-guess-unexpected rect{fill:#b8452f}
+.alm-n.is-guessed.is-supposed-out > .alm-guess{opacity:1}
 .alm-e.is-supposed-out{stroke-opacity:.2}
 .alm-n.is-lit{filter:drop-shadow(0 0 6px rgba(58,123,213,.45))}
 /* The box a hovered reference row names. Same voice as is-lit -- both mean "this one, here" --

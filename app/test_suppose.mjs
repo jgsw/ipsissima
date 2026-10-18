@@ -20,6 +20,7 @@ const { toGraph, RUN } = await import("./argdown-graph.mjs");
 const S = require("./src/argdown-suppose.js");
 const PLANTED = path.join(REPO, "fixtures", "suppose", "planted.argdown");
 const MOOREAN = path.join(REPO, "fixtures", "suppose", "moorean.argdown");
+const SEVERAL = path.join(REPO, "fixtures", "suppose", "several.argdown");
 
 let fails = 0, checks = 0;
 function check(ok, what, detail) {
@@ -128,6 +129,8 @@ if (chromium) {
   const html = path.join(tmp, "planted.html"), mhtml = path.join(tmp, "moorean.html");
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), PLANTED, "-o", html], { stdio: "pipe" });
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), MOOREAN, "-o", mhtml], { stdio: "pipe" });
+  const shtml = path.join(tmp, "several.html");
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), SEVERAL, "-o", shtml], { stdio: "pipe" });
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
@@ -147,21 +150,153 @@ if (chromium) {
     await menu("Obj", "holds");
     const side = await page.locator("#supp").innerText();
     const out = await faded();
-    check(await page.locator("#supp").isVisible() && /Your suppositions/.test(side) && /‹P1› is false: rebutted by ‹Obj›/.test(side) &&
+    const bannerT = await page.locator("#suppbar").innerText();
+    check(await page.locator("#supp").isVisible() && /What follows/.test(side) && /Supposing/.test(bannerT) && /‹Obj› holds, as an objection/.test(bannerT) &&
+          /‹P1› is false: rebutted by ‹Obj›/.test(side) &&
           /The text answers ‹Obj› with ‹Reply›/.test(side) && out.includes(id("P1")) && out.includes(id("Linked")) && !out.includes(id("Main")),
           "a right-click supposes the objection holds: the panel says what it costs, and what lost its support fades", JSON.stringify(out) + " " + side.slice(0, 300));
 
-    // Undo from the panel. Mutation: drop the undo handler -> it stays.
-    await page.locator('#supp button[data-supp-undo="holds"]').click();
+    // Undo from the banner. Mutation: drop the undo handler -> it stays.
+    await page.locator('#suppbar button[data-supp-undo="holds"]').click();
     await page.waitForTimeout(200);
-    check(await page.locator("#supp").isHidden() && (await faded()).length === 0, "Undo takes it back, and the map is whole again");
+    check(await page.locator("#supp").isHidden() && await page.locator("#suppbar").isHidden() && (await faded()).length === 0, "Undo takes it back, and the map is whole again");
+
+    // WHAT IF...? BESIDE THE CLAIM IN HAND (18 Oct 2026): a plain click offers the suppositions a reader
+    // would otherwise need right-click to find. Mutation: drop onSelect -> the button never shows.
+    await box("P2").click();
+    await page.waitForTimeout(150);
+    check(await page.locator("#whatif").isVisible(), "a click on a claim offers What if…? beside it");
+    await page.locator("#whatif").click();
+    await page.locator('#ctx button[data-supp-menu="false"]').click();
+    await page.waitForTimeout(250);
+    check((await faded()).includes(id("P2")) && /‹P2› is false/.test(await page.locator("#suppbar").innerText()),
+          "and its menu supposes the claim false, as right-click does");
+    await page.mouse.click(5, 300);
+    await page.waitForTimeout(100);
+    check(await page.locator("#whatif").isHidden(), "the button goes at the next press elsewhere");
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
+
+    // GUESS FIRST, THEN SEE (James, 18 Oct 2026: the map's answer drawn beside the reader's marks).
+    // Mutations: show the whole fade while guessing -> Linked fades before Show; drop guessPick from
+    // whatIfShow -> nothing is marked; mark hits as misses -> the tags disagree.
+    await box("P1").click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
+    await menu("P1", "false");
+    const g0 = await faded();
+    check(/Before you look/.test(await page.locator("#suppbar").innerText()) && g0.includes(id("P1")) && !g0.includes(id("Linked")) &&
+          await page.locator("#supp").isHidden(),
+          "with Guess first on, a supposition asks for a guess and shows only what was supposed", JSON.stringify(g0));
+    await box("Linked").click();
+    await box("Main").click();
+    await page.waitForTimeout(150);
+    check(/Marked: 2/.test(await page.locator("#suppbar").innerText()) && await page.locator("#map g.alm-n .alm-guess-guess").count() === 2,
+          "a click on a claim marks it as a guess, and does nothing else");
+    await page.locator("#suppbar button[data-guess-show]").click();
+    await page.waitForTimeout(250);
+    const tagOf = label => box(label).locator(".alm-guess").getAttribute("class");
+    const sumT = await page.locator("#suppbar").innerText();
+    check(/alm-guess-hit/.test(await tagOf("Linked")) && /alm-guess-miss/.test(await tagOf("Main")) && (await faded()).includes(id("Linked")) &&
+          /You marked 2\. 1 of them loses the map’s support/.test(sumT),
+          "Show draws the map's answer beside the marks: the one it agrees with, the one it keeps", sumT);
+    await page.locator("#suppbar button[data-guess-done]").click();
+    await page.waitForTimeout(150);
+    check(await page.locator("#map g.alm-n .alm-guess").count() === 0 && (await faded()).includes(id("Linked")),
+          "Done takes the marks away and the supposition stays");
+    await page.locator("#suppbar input[data-guess-on]").click();
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
 
     // The attack on a whole argument asks which part. Mutation: drop the choice handler -> nothing fades.
     await menu("Whole", "holds");
     await page.locator('#supp button[data-supp-choice="step"]').click();
     await page.waitForTimeout(200);
     check((await faded()).includes(id("Linked")) && !(await faded()).includes(id("P1")), "an attack on a whole argument asks which part it denies, and cutting the step fades the argument");
-    await page.locator('#supp button[data-supp-clear]').click();
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
+
+    // STUDY ON MY OWN (James, 18 Oct 2026; Lang's Predicting): the card opens on what the reader
+    // already thinks, then one argument at a time -- its premises given, where they lead held back --
+    // with hints asked for and the answer on Show; an objection is met as a fork, tried by supposing
+    // it holds, with a guess first. Mutations: show the conclusion before Show -> the first check
+    // fails; drop the hint ladder -> no hint; drop the fork -> no supposition is offered.
+    await page.goto("file://" + mhtml);
+    await page.waitForTimeout(800);
+    await page.locator('#map [data-act="study"]').click();
+    await page.waitForTimeout(300);
+    const open0 = await page.locator("#studybody").innerText();
+    check(/What do you already think about it/.test(open0) && await page.locator('#studybody button[data-study="own"]').count() === 1 &&
+          await page.locator('#studybody button[data-study="others"]').count() === 1,
+          "Study opens by asking what the reader already thinks, and offers On my own and With others", open0.slice(0, 200));
+    await page.locator('#studybody button[data-study="own"]').click();
+    await page.waitForTimeout(250);
+    const u1 = await page.locator("#studybody").innerText();
+    check(/starts from:|offered as reasons/.test(u1) && /Before you look: what do you think/.test(u1) && !/The map:/.test(u1),
+          "on my own, a card gives an argument's premises and asks where they lead, without saying", u1.slice(0, 300));
+    await page.locator('#studybody button[data-study="hint"]').click();
+    await page.waitForTimeout(100);
+    await page.locator('#studybody button[data-study="hint"]').click();
+    await page.waitForTimeout(100);
+    const u1h = await page.locator("#studybody").innerText();
+    check((u1h.match(/Hint:/g) || []).length === 2 && /the map calls it ‹/.test(u1h) && await page.locator('#studybody button[data-study="hint"]').count() === 0,
+          "hints come one at a time, as asked for, the second naming the conclusion", u1h.slice(-300));
+    await page.locator('#studybody button[data-study="show"]').click();
+    await page.waitForTimeout(300);
+    const u1s = await page.locator("#studybody").innerText();
+    const litNow = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit .alm-title")].map(t => t.textContent));
+    check(/^The map: ‹/m.test(u1s) && litNow.length > 0, "Show gives the map's conclusion and lights it", JSON.stringify(litNow));
+    // On to the fork: Moore's map has an objection.
+    let sawFork = false;
+    for (let k = 0; k < 12 && !sawFork; k++) {
+      await page.locator('#studybody button[data-study="next"]').first().click();
+      await page.waitForTimeout(200);
+      sawFork = await page.locator('#studybody button[data-study="fork-suppose"]').count() > 0;
+    }
+    check(sawFork && /speaks against/.test(await page.locator("#studybody").innerText()), "an objection is met as a fork, with a supposition to try");
+    if (sawFork) {
+      await page.locator('#studybody button[data-study="fork-suppose"]').click();
+      await page.waitForTimeout(250);
+      check(/Before you look/.test(await page.locator("#suppbar").innerText()) && /holds, as an objection/.test(await page.locator("#suppbar").innerText()),
+            "trying it supposes the objection holds, and in Study the reader guesses first");
+      await page.locator("#suppbar button[data-guess-skip]").click();
+      await page.locator('#suppbar button[data-supp-clear]').click();
+      await page.waitForTimeout(150);
+    }
+    await page.locator('#studybody button[data-study="finish"]').first().click();
+    await page.waitForTimeout(150);
+    check(/which claim would you most want to deny/i.test(await page.locator("#studybody").innerText()),
+          "finishing ends on a supposition to try, and on what the reader thought at the start");
+    await page.locator('#studybody button[data-study="end"]').click();
+    await page.waitForTimeout(150);
+    // Study from here: the arguments beneath one claim only.
+    await box("The proof proves nothing").click({ button: "right" });
+    await page.locator('#ctx button[data-study-from]').click();
+    await page.waitForTimeout(250);
+    const fromT = await page.locator("#studyhint").innerText();
+    check(await page.locator("#studycard").isVisible() && /^1 of \d+$/.test(fromT) && +fromT.split(" of ")[1] < 6,
+          "Study from here works through only the arguments beneath that claim", fromT);
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+
+    // A CLAIM THAT STATES TWO STEPS, supposed false in Reasons: at least one step does not run, and the
+    // Mechanism panel asks which (18 Oct 2026). Mutations: push every step of the claim -> both arrows
+    // fade and no question is asked; drop the choice handler -> nothing fades.
+    await page.goto("file://" + shtml);
+    await page.waitForTimeout(800);
+    await menu("Two effects", "false");
+    check(/in Mechanism, one of its 2 steps does not run/.test(await page.locator("#suppbar").innerText()),
+          "the banner says one of the claim's two steps stops, not which", await page.locator("#suppbar").innerText());
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(500);
+    const cutOf = k => page.locator(`#mech svg g[data-edge="${k}"]:not(.chip).cut`).count();
+    check(/Which do you suppose\?/.test(await page.locator("#mech .amech-side").innerText()) &&
+          await page.locator("#mech .amech-side button[data-exp-choose]").count() === 2 && await cutOf("gap>queue") === 0 && await cutOf("gap>private") === 0,
+          "the Mechanism panel asks which of the two steps does not run, and fades neither until told");
+    await page.locator('#mech .amech-side button[data-exp-choose][data-to="queue"]').click();
+    await page.waitForTimeout(300);
+    check(await cutOf("gap>queue") > 0 && await cutOf("gap>private") === 0 && /the step you chose does not run/.test(await page.locator("#suppbar").innerText()),
+          "the chosen step fades, the other runs, and the banner says it is the one chosen");
+    await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
 
     // DENY THE CONCLUSION from the staircase, and keep a premise. Mutation: drop the keep handler -> nothing is forced.
@@ -178,7 +313,7 @@ if (chromium) {
     check(/For ‹The proof proves nothing› to be false/i.test(deny) && /commits you to denying \(1\) ‹No proof, no knowledge›/.test(deny) &&
           /Decided from the formalizations/.test(deny),
           "deny the sceptic's conclusion, keep what Moore grants: the panel forces the first premise, decided from the formalizations", deny.slice(-500));
-    await page.locator('#supp button[data-supp-clear]').click();
+    await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
     // The staircase's own button. Mutation: drop #xdeny's handler -> no panel.
     const opener = box("Moore's proof").locator(".alm-explode").first();

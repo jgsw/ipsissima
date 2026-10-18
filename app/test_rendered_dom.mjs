@@ -2031,6 +2031,8 @@ async function studyChecks(browser) {
   // In by the reader's route: the bar's own button.
   await page.click('#map [data-act="study"]');
   await page.waitForSelector("#studycard:not([hidden])", { timeout: 10000 });
+  // The card opens by asking what the reader already thinks, and how they will study (18 Oct 2026).
+  await page.click('#studybody button[data-study="others"]');
   await page.waitForTimeout(400);
   const entered = await page.evaluate(() => ({
     drawn: document.querySelectorAll("#map .alm-n").length,
@@ -2056,6 +2058,8 @@ async function studyChecks(browser) {
   // click until the card reaches the contested claim, whose crux line must be on the card.
   await page.click('#map [data-act="study"]');
   await page.waitForSelector("#studycard:not([hidden])", { timeout: 10000 });
+  // The card opens by asking what the reader already thinks, and how they will study (18 Oct 2026).
+  await page.click('#studybody button[data-study="others"]');
   let sawCrux = false, steps = 0;
   for (; steps < 8; steps++) {
     const done = await page.evaluate(() =>

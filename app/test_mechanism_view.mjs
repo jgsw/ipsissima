@@ -30,6 +30,20 @@ import { toGraph, RUN } from "./argdown-graph.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
 const require = createRequire(import.meta.url);
+
+/** THE DISPLAY MENU (18 Oct 2026): labels, marks, boxes, nesting and zoom sit behind one press on the
+ *  Mechanism bar. Opened here, as a reader would, before any of them is used; it stays open across a
+ *  redraw, so opening it again is only needed when it was shut. */
+/** "About this chain" (18 Oct 2026): the chain's counts, loops, gaps and legend, folded in the panel. */
+async function openAbout(page) {
+  const d = page.locator(".amech-side details.amech-about");
+  if (await d.count() && !(await d.evaluate(e => e.open))) await d.locator("summary").click();
+}
+async function openDisplay(page) {
+  const pop = page.locator("#mech .amech-dpop");
+  if (await pop.count() && await pop.isHidden()) await page.locator("#mech [data-display]").click();
+}
+
 const MV = require("./src/argdown-mechanism.js");
 const FIXTURE = path.join(REPO, "ipsissima-mcp", "tests", "mechanism");
 const CHAIN = path.join(FIXTURE, "chain.argdown");
@@ -1992,12 +2006,12 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const plainDash = await dashes();
     check(plainDash.length > 0 && plainDash.every(([, d]) => d === "") && plainDash.some(([f]) => f !== "quotation"),
           "under the plain marks the view opens on, every arrow is solid, whatever its fidelity", JSON.stringify(plainDash.slice(0, 6)));
-    await page.locator('#mech [data-marks="all"]').click();
+    await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
     await page.waitForTimeout(250);
     const drawnDash = await dashes();
     check(drawnDash.length > 0 && drawnDash.every(([f, d]) => d === ladder[f]) && drawnDash.some(([f]) => f !== "quotation"),
           "under all marks every arrow is drawn in its claims' fidelity pattern, as their boxes are", JSON.stringify(drawnDash.slice(0, 6)));
-    await page.locator('#mech [data-marks="plain"]').click();
+    await openDisplay(page); await page.locator('#mech [data-marks="plain"]').click();
     await page.waitForTimeout(250);
 
     // FOLDING, DRIVEN. Mutation: drop the data-fold handler -> the state stays drawn.
@@ -2050,6 +2064,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
           "and the panel names it, and says it is reflexive");
     await page.locator(".amech-side button[data-back]").click();
     await page.waitForTimeout(200);
+    await openAbout(page);
     await page.locator(".amech-side button.amech-loop").first().click();
     await page.waitForTimeout(200);
     check(await page.evaluate(() => document.querySelectorAll("#mech svg g[data-edge].dim:not(.chip)").length) > 0,
@@ -2079,7 +2094,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     });
     check(comp.frame && comp.part && comp.inside,
           "a map that declares wholes opens at the text's own boxes: each part drawn inside its whole's frame", JSON.stringify(comp));
-    await page.locator("#mech [data-boxes]").click();
+    await openDisplay(page); await page.locator("#mech [data-boxes]").click();
     await page.waitForTimeout(400);
     check(await page.locator('#mech .st[data-state="expand"]').count() === 1 && await page.locator("#mech rect.comp").count() === 0 &&
           await page.locator("#mech [data-boxes]").innerText() === "The text’s own boxes",
@@ -2094,6 +2109,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(/Feedback system A/i.test(await page.locator(".amech-side").innerText()) &&
           /\b17 loops run through them/.test(await page.locator(".amech-side").innerText()),
           "and it shows the system, naming it and how many loops run through it");
+    await openAbout(page);
     await page.locator(".amech-side button[data-short]").first().click();
     await page.waitForTimeout(200);
     const litS = await page.evaluate(() => [...document.querySelectorAll("#mech svg g[data-edge]:not(.chip)")]
@@ -2238,7 +2254,7 @@ mechanism:
     await page.waitForTimeout(400);
     // ≈ is a mark of "marks: All" since 17 Oct 2026; under the plain marks the state's panel names its kind.
     check(await page.locator("#mech .kin").count() === 0, "under the plain marks no state carries ≈");
-    await page.locator('#mech [data-marks="all"]').click();
+    await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
     await page.waitForTimeout(300);
     const kinMarked = await page.evaluate(() => [...document.querySelectorAll("#mech .kin")].map(m => m.closest(".st").getAttribute("data-state")).sort());
     check(same(kinMarked, ["forest", "migr"]), "≈ marks each state whose kind another state shares, in whatever chain", JSON.stringify(kinMarked));
@@ -2261,7 +2277,7 @@ mechanism:
     await page.waitForTimeout(600);
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(400);
-    await page.locator('#mech [data-marks="all"]').click();
+    await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
     await page.waitForTimeout(300);
     await page.locator('#mech .st[data-state="migr"] .kin').click();
     await page.waitForTimeout(200);
@@ -2297,7 +2313,7 @@ mechanism:
     check((await boxOf(lowName)).y > low0.y, "and the box below makes room");
     const svgW = () => page.evaluate(() => document.querySelector("#mech svg").getBoundingClientRect().width);
     const w0 = await svgW();
-    await page.locator('#mech [data-zoom="in"]').click();
+    await openDisplay(page); await page.locator('#mech [data-zoom="in"]').click();
     await page.waitForTimeout(150);
     const w1 = await svgW();
     check(Math.abs(w1 / w0 - 1.2) < 0.02 && (await page.locator('#mech [data-zoom="1"]').innerText()) === "120%",
@@ -2310,7 +2326,7 @@ mechanism:
     await page.keyboard.press("Control+Minus");
     await page.waitForTimeout(150);
     // THE MARKS TOO (17 Oct 2026). Mutation: leave `mmarks` out of the line -> the restore opens plain.
-    await page.locator('#mech [data-marks="all"]').click();
+    await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
     await page.waitForTimeout(250);
     // The fold state names the chart as it is, and puts it back on a fresh page.
     await page.locator("#helpbtn").click();
@@ -2354,13 +2370,13 @@ mechanism:
     await page.waitForTimeout(400);
     const capOf = () => page.locator("#mech svg text.caption").textContent();
     check(/does not say what ordering/.test(await capOf()), "a map that does not say what its levels are is said not to, on the drawing");
-    await page.locator("#mech [data-nest]").click();
+    await openDisplay(page); await page.locator("#mech [data-nest]").click();
     await page.waitForTimeout(300);
     check(await page.locator("#mech .amech-nestbanner").isVisible() && await page.locator("#mech rect.frame").count() === 3,
           "nesting it draws frames, under a banner saying they are an assumption");
     await levelsPage("    ordering: composition\n    within: {meso: macro, micro: macro}", "tree");
     check(/parts within wholes, as the reconstructor reads them/.test(await capOf()), "a declared ordering is said in words");
-    await page.locator("#mech [data-nest]").click();
+    await openDisplay(page); await page.locator("#mech [data-nest]").click();
     await page.waitForTimeout(300);
     const fr = await page.evaluate(() => [...document.querySelectorAll("#mech rect.frame")].map(r => [r.getAttribute("data-level"), +r.getAttribute("x")]));
     const xOf = lv => (fr.find(f => f[0] === lv) || [])[1];
@@ -2401,7 +2417,7 @@ mechanism:
     // part of the view a fold state identifier records. Mutation: drop the button's handler -> the
     // pills stay.
     const pills0 = await page.locator("#mech g.more").count();
-    await page.locator('#mech [data-labels="full"]').click();
+    await openDisplay(page); await page.locator('#mech [data-labels="full"]').click();
     await page.waitForTimeout(300);
     const afterFull = await page.evaluate(() => ({
       pills: document.querySelectorAll("#mech g.more").length,
@@ -2409,7 +2425,7 @@ mechanism:
       on: document.querySelector('#mech [data-labels="full"]').classList.contains("on") }));
     check(afterFull.pills === 0 && afterFull.cut === 0 && afterFull.on,
           "\u201clabels: Full\u201d shows every label whole, with no \u201cmore\u201d left to press", JSON.stringify({ pills0, ...afterFull }));
-    await page.locator('#mech [data-labels="short"]').click();
+    await openDisplay(page); await page.locator('#mech [data-labels="short"]').click();
     await page.waitForTimeout(300);
     check(await page.locator("#mech g.more").count() === pills0, "and Short puts the first lines back");
     const est = MV.layout(MV.model(G), { marks: MV.markSpec(MV.model(G), MV.model(G)).marks }).lanes.filter(l => !l.hidden).map(l => l.head.w - 8);
@@ -2449,14 +2465,19 @@ mechanism:
     await page.locator("#mechbtn").click();
     await page.waitForTimeout(400);
     const side0 = await page.locator(".amech-side").innerText();
-    check(/What follows from the steps/i.test(side0) && /“Safety audits” → “Harm to patients”/.test(side0) &&
-          /Its one route lowers it, through “Defences hold”/.test(side0),
-          "the panel opens on what follows from the text's steps", side0.slice(0, 300));
+    // QUESTIONS TO TRY (James, 18 Oct 2026): the panel opens on the findings as questions, each answered
+    // only on Show, and the chain's details folded under "About this chain". Mutations: print it.lines in
+    // the question row -> the answer shows unasked; drop the details wrapper -> the legend is on show.
+    check(/Questions to try/i.test(side0) && /No one step says that “Safety audits” affects “Harm to patients”/.test(side0) &&
+          !/Its one route lowers it, through “Defences hold”/.test(side0) && !/Light and shadow/.test(side0) &&
+          /About this chain/.test(side0),
+          "the panel opens on questions to try, with no answer given before it is asked for", side0.slice(0, 300));
     await page.locator(".amech-side .amech-find").first().click();
     await page.waitForTimeout(200);
     const litStates = await page.evaluate(() => [...document.querySelectorAll("#mech svg .st:not(.dim)")].map(g => g.getAttribute("data-state")).sort());
-    check(same(litStates, ["audit", "defence", "harm"]) && /The steps it rests on/i.test(await page.locator(".amech-side").innerText()),
-          "a click on a finding lights the states it rests on and lists their steps", JSON.stringify(litStates));
+    const shown = await page.locator(".amech-side").innerText();
+    check(same(litStates, ["audit", "defence", "harm"]) && /The steps it rests on/i.test(shown) && /Its one route lowers it, through “Defences hold”/.test(shown),
+          "Show gives the answer, lights the states it rests on and lists their steps", JSON.stringify(litStates));
     await page.locator(".amech-side button[data-back]").click();
     await page.waitForTimeout(150);
     await page.locator('#mech .st[data-state="defence"]').click();
@@ -2465,14 +2486,79 @@ mechanism:
     await page.waitForTimeout(250);
     const blocked = await page.evaluate(() => [...document.querySelectorAll('#mech svg g[data-edge="hazard>harm"]:not(.chip)')].map(g => g.classList.contains("cut")));
     const expSide = await page.locator(".amech-side").innerText();
-    check(await page.locator("#mech .amech-expbanner").isVisible() && /Your experiment/i.test(expSide) &&
+    const bannerT = await page.locator("#suppbar").innerText();
+    check(await page.locator("#suppbar").isVisible() && /Supposing/.test(bannerT) && /“Defences hold” holds/.test(bannerT) && /in Mechanism only/.test(bannerT) &&
+          /Your suppositions/i.test(expSide) &&
           /“Safety audits” no longer reaches “Harm to patients”/.test(expSide) && blocked.includes(true) && blocked.includes(false),
-          "suppose the defences hold: the banner says it is the reader's, the blocked arrow fades and the other step on the pair stays",
-          JSON.stringify(blocked) + " " + expSide.slice(0, 200));
-    await page.locator('#mech .amech-expbanner button[data-exp-clear]').click();
+          "suppose the defences hold: the page's banner says what is supposed and where it shows, the blocked arrow fades and the other step on the pair stays",
+          JSON.stringify(blocked) + " " + bannerT + " " + expSide.slice(0, 200));
+    // A SUPPOSITION OUTLIVES A REDRAW (18 Oct 2026: switching Marks dropped it without a word). Mutation:
+    // put `exp` back inside the mount -> the fade is gone after the switch.
+    await openDisplay(page); await page.locator('#mech button[data-marks="all"]').click();
+    await page.waitForTimeout(300);
+    check(await page.locator("#mech svg .cut").count() > 0 && await page.locator("#suppbar").isVisible(),
+          "switching Marks keeps the supposition: the chart redraws with the blocked arrow still faded");
+    await openDisplay(page); await page.locator('#mech button[data-marks="plain"]').click();
+    await page.waitForTimeout(300);
+    await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
-    check(await page.locator("#mech .amech-expbanner").isHidden() && await page.locator("#mech svg .cut").count() === 0,
+    check(await page.locator("#suppbar").isHidden() && await page.locator("#mech svg .cut").count() === 0,
           "and Clear puts the chart back");
+    // RIGHT-CLICK ASKS WHAT IF, AS IN REASONS, AND THE SUPPOSITION CARRIES (James, 18 Oct 2026). A real
+    // right-click on the arrow; then Reasons shows the claim stating that step as false. Mutations:
+    // drop menuOn -> no menu; drop suppCarried -> the claim does not fade in Reasons.
+    const at2 = await page.evaluate(() => {
+      const p = document.querySelector('#mech svg g[data-edge="audit>defence"]:not(.chip) path.ed');
+      const pt = p.getPointAtLength(p.getTotalLength() / 2), m = p.getScreenCTM();
+      return { x: m.a * pt.x + m.c * pt.y + m.e, y: m.b * pt.x + m.d * pt.y + m.f };
+    });
+    await page.mouse.click(at2.x, at2.y, { button: "right" });
+    await page.waitForTimeout(150);
+    await page.locator('#ctx button[data-supp-menu="off"]').click();
+    await page.waitForTimeout(250);
+    const carried = await page.locator("#suppbar").innerText();
+    check(/the step “Safety audits” → “Defences hold” does not run/.test(carried) && /in Reasons, ‹Audits strengthen defences› is false/.test(carried) &&
+          await page.locator('#mech svg g[data-edge="audit>defence"].cut').count() > 0,
+          "a right-click on an arrow supposes the step does not run, and the banner says Reasons will show its claim false", carried);
+    await page.locator('#view button[data-v="reasons"]').click();
+    await page.waitForTimeout(500);
+    const fadedR = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-supposed-out .alm-title")].map(t => t.textContent));
+    check(fadedR.includes("Audits strengthen defences") && await page.locator("#suppbar").isVisible(),
+          "and in Reasons that claim is supposed false, under the same banner", JSON.stringify(fadedR));
+    // The other way: a claim supposed false in Reasons stops the step it states. Mutation: drop
+    // suppMechSync -> the arrow does not fade.
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
+    await page.locator("#map g.alm-n").filter({ has: page.locator(".alm-title", { hasText: /^Audits strengthen defences$/ }) }).first().click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="false"]').click();
+    await page.waitForTimeout(250);
+    check(/in Mechanism, its step does not run/.test(await page.locator("#suppbar").innerText()), "a claim supposed false in Reasons says where it shows in Mechanism");
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    check(await page.locator('#mech svg g[data-edge="audit>defence"].cut').count() > 0, "and the Mechanism view stops the step it states");
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
+    // GUESS FIRST IN THE CHART TOO: mark the states you expect the steps will no longer bring about, then
+    // Show. Suppose the audits do not happen: the defences go, and harm is still brought about by the
+    // hazard. Mutations: drop onPick -> the click selects instead of marking; answer from the wrong set
+    // -> the tags differ.
+    await page.locator('#mech .st[data-state="audit"]').click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
+    await page.locator('#mech .st[data-state="audit"]').click({ button: "right" });
+    await page.locator('#ctx button[data-supp-menu="fail"]').click();
+    await page.waitForTimeout(250);
+    check(/Before you look: click the states/.test(await page.locator("#suppbar").innerText()) && await page.locator('#mech svg .st[data-state="defence"].cut').count() === 0,
+          "with Guess first on, the chart asks for a guess before fading anything");
+    await page.locator('#mech .st[data-state="harm"]').click();
+    await page.waitForTimeout(150);
+    await page.locator("#suppbar button[data-guess-show]").click();
+    await page.waitForTimeout(250);
+    const tags = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#mech svg .st .guess")].map(g => [g.parentNode.getAttribute("data-state"), g.getAttribute("class")])));
+    check(/guess-miss/.test(tags.harm || "") && /guess-unexpected/.test(tags.defence || "") && /You marked 1\. 0 of them are no longer brought about\. 1 you did not mark is no longer brought about/.test(await page.locator("#suppbar").innerText()),
+          "Show tags the guess the steps do not bear out, and the state they stop that was not guessed", JSON.stringify(tags));
+    await page.locator("#suppbar input[data-guess-on]").click();
+    await page.locator('#suppbar button[data-supp-clear]').click();
+    await page.waitForTimeout(200);
     // An arrow's panel asks how it might work, where the text does not say. A real click on the line.
     const at = await page.evaluate(() => {
       const p = document.querySelector('#mech svg g[data-edge="audit>defence"]:not(.chip) path.ed');

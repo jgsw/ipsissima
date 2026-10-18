@@ -25,6 +25,10 @@ way into the text, displacement-relative) admitted to the mission cluster — th
 formation joins the mission's measure — and two case-law rows written (T2, T4).
 `FORMATION.md` is the episode record; the diff is the record of what moved.*
 
+*Revised again on 18 Oct, on the author's instruction: B10 (the reader inquires — the App a place
+to entertain and test hypotheses about an argument, Dewey's inquiry in action) admitted to the
+mission cluster beside B2 and B8. `docs/INQUIRY-PLAN.md` is the episode record.*
+
 *Revised again at the Clarity checkpoint (27 Sep), after the author's ruling on the clarity
 audit: F8 (designed against the misreading) admitted to the App's display ethic, specialising
 P2 and P6 together, with its weight left open to be read off its collisions. The audit report

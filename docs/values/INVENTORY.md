@@ -523,6 +523,46 @@ the tool protects the road, never prescribes the journey. Its named candidate co
 (instrument vs terminus in the self-description; text-first vs map-first defaults) await
 the queue's later waves (`FORMATION.md` §6).
 
+### B10. The reader inquires: the App is a place to entertain and test hypotheses
+
+**It says.** Ipsissima explicitly adopts an inquiry-based approach to learning. Seeing an argument
+is not yet inquiring into it: the reader must be able to entertain a hypothesis about it — that this
+premise is false, that this objection holds, that this step does not run — and test it against the
+map, seeing what follows by the map's own lights. Interacting with a map is therefore more than
+choosing how much of it to show; and where the App asks a reader to reach before looking, the
+question is one they can bring what they know to, at a difficulty they set. What the App tests
+against is always the map — a framed inquiry, in Henne's sense (2023), with an answer relative to
+the reconstruction — so it may say where the reader and the map part without grading the reader's
+reading; whether the map's own framing is right stays the reader's question.
+
+**Seen in.** The suppositions in Reasons and in the Mechanism view, one record carried between
+them, with a banner saying what is supposed and where it shows; **Guess first**, which draws the
+map's answer beside the reader's marked expectations; Study's *On my own*, which asks where an
+argument's premises lead, with hints the reader asks for, and stops at each objection as a fork to
+try; the Mechanism panel opening on questions to try rather than findings handed over
+(`docs/INQUIRY-PLAN.md`).
+
+**Provenance.** **compression** — origin: author, 18 Oct (the private record): "What I am about to
+say may count as a values improvement: namely that Ipsissima (the app) explicitly adopts an inquiry
+based approach to learning"; until then "the ability to interact with the argdown was mostly
+confined to choices about *how much* of the graph to show", which "did not allow the user to
+entertain and to test hypotheses: this is core to inquiry, and to the ability to learn by doing.
+This is basically Dewey's conception of Inquiry in action." The warrant he named: Dewey, *How We
+Think* (1933), on reflective thought as the testing of a suggestion by imagined action; Henne,
+"Framed and framing inquiry" (2023); Lang, *Small Teaching* (2021), ch. 1, on predicting. Admitted
+on the author's instruction the same day ("add it as a new B principle"); the wording above was
+assembled from his message by the assistant and is his to settle (D7).
+
+**Generality.** The App: every reader-facing surface where a map can be questioned. It specialises
+B2 (the reader's own pace becomes the reader's own questions) and sits beside B8 (the staged
+difficulty is the inquiry's, not the tool's).
+
+**Weight.** New, and enacted the day it was admitted. Its first case law is T2's ruling carried
+forward: the effortful option offered, never imposed — *Guess first* is off until chosen, and Study
+asks how the reader will study before it begins. Its nearest candidate collision is F4: inquiry
+controls add to what is visible, which is why the presentation controls they compete with were
+folded into one menu the same day.
+
 ---
 
 ## C. Trust: the reader's machine, and the author's files
