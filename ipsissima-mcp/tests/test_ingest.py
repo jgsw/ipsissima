@@ -314,6 +314,38 @@ else:
               ("Buy access" in md2,
                any("whole saved page was converted" in n for n in notes2)), (True, True))
 
+# ---- tables the text names that did not survive -------------------------------------- #
+print("tables the text names")
+from ingest import lost_tables                                                # noqa: E402
+FLAT = "\n".join([
+    "<!-- p.2 begins here -->",
+    "Four surveys are compared. table 1: the surveys year region sample 1998 north 400",
+    "As Table 1 shows, the northern sample is the smallest.",
+])
+check("a table run into a paragraph is named, with its line and page",
+      lost_tables(FLAT), [("Table 1", 2, "2")])
+KEPT = "\n".join([
+    "Table 2. The surveys",
+    "",
+    "| survey | year |",
+    "|---|---|",
+    "| north | 1998 |",
+    "",
+    "Table 2 sets them side by side.",
+])
+check("a table that came through as one is not named", lost_tables(KEPT), [])
+check("a grid table counts as kept too",
+      lost_tables("TABLE IV\n+-----+-----+\n| a   | b   |\n+-----+-----+"), [])
+check("a numbered sub-table keeps its number", lost_tables("See Table 14.1 for the cases."),
+      [("Table 14.1", 1, None)])
+check("a table of contents is not a table", lost_tables("Table of contents\nTable of Contents"), [])
+with tempfile.TemporaryDirectory() as td:
+    flat = os.path.join(td, "flat.md")
+    Path(flat).write_text(FLAT, encoding="utf-8")
+    check("ingest says so in its notes, and says what to do",
+          any(n.startswith("! 1 table(s)") and "page_images" in n and "repair_source" in n
+              for n in ingest_one(flat)[1]), True)
+
 print()
 if fails:
     print(f"{fails} FAILED")

@@ -4456,9 +4456,9 @@ function studyOpening(){
   c.btns([["On my own", "own", "One argument at a time, from the ground up: given its premises, guess where they lead. Hints when you want them."],
           ["With others", "others", "From the main claim down: what holds each claim up? Open-ended, and best talked through together."],
           ["Which claim would cost the most?", "cost", "A challenge: guess which one claim, supposed false, would leave the most of the argument without support"],
-          weighSets("accounts").length ? ["Weigh the accounts", "accounts", "The text sets its account against a rival: which reasons tell them apart, and where is the text silent?"] : null]);
+          studyAccountSets().length ? ["Weigh the accounts", "accounts", "The text sets its account against a rival: which reasons tell them apart, and where is the text silent?"] : null]);
   c.p("On my own: one argument at a time. With others: from the main claim down, to talk through. Which would cost the most: a guess, then the map\u2019s answer." +
-      (weighSets("accounts").length ? " Weigh the accounts: the text\u2019s account beside the rival it reports, and the reasons for each." : ""), "crux");
+      (studyAccountSets().length ? " Weigh the accounts: the text\u2019s account beside the rival it reports, and the reasons for each." : ""), "crux");
   // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting.
   var n = studyUnits(CURRENT_GRAPH || {}, null).length;
   if (n > 20) c.p("This map has " + n + " arguments and objections to work through. To take one part, right-click a claim and choose Study from here.", "crux");
@@ -4680,7 +4680,7 @@ function studyCost(){
  * first leaning survived. The table is the panel's; the card walks the reader through it. */
 function studyAccounts(){
   var c = studyCard(), A = STUDY.acc || (STUDY.acc = { i: null, lean: null, opened: false, done: false });
-  var sets = weighSets("accounts"), L = "ABCDEFGH";
+  var sets = studyAccountSets(), L = "ABCDEFGH";
   $("studyhint").textContent = "weigh the accounts";
   if (!sets.length) { c.p("This map sets no account of the text\u2019s against a rival it reports."); c.btns([["End study", "end"]]); return; }
   if (A.i == null && sets.length === 1) A.i = 0;
@@ -4701,7 +4701,8 @@ function studyAccounts(){
     if (LIVE) LIVE.markClaims(S.accounts.map(function(a){ return a.id; }));
     return;
   }
-  if (!A.opened || !WEIGH || WEIGH.mode !== "accounts") { A.opened = true; weighOpen("accounts", A.i, true); }
+  if (!A.opened || !WEIGH || WEIGH.mode !== "accounts") { A.opened = true;
+    weighOpen("accounts", weighSets("accounts").map(function(x){ return x.id; }).indexOf(S.id), true); }
   if (!WEIGH.shown) {
     c.p("In the panel: click the reasons you think tell the accounts apart, then press Show.");
     c.p("A reason tells them apart where it bears on one account and not the same way on the other.", "hint");
@@ -8948,6 +8949,8 @@ var WEIGH_TESTS = {
   clincher: ["a clincher", "if it holds, the rival is out; if it fails, the account still stands"],
   decisive: ["decisive", "it settles it either way"]
 };
+/** The sets Study offers: those with a rival that is more than a denial, so the reasons have something to tell apart. */
+function studyAccountSets(){ return weighSets("accounts").filter(function(S){ return !S.allDenials; }); }
 function weighSets(mode){
   var g = CURRENT_GRAPH;
   if (!g || !window.ArgdownAccounts) return [];
@@ -9001,7 +9004,19 @@ function weighAccountsHTML(S, q, go){
     return '<div><b>' + L[k] + '</b> ' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>';
   if (S.between && S.between.length) h += '<div class="q">' + S.between.map(function(e){ return letter(e.from) + ' ' + (e.type === "undercut" ? "undercuts" : e.type === "attack" ? "objects to" : "cannot hold with") + ' ' + letter(e.to); })
     .filter(function(x, k, all){ return all.indexOf(x) === k; }).join("; ") + '.</div>';
+  // A DENIAL IS SAID, NOT WEIGHED (argdown-accounts.js): a reason for the one is a reason against the other.
+  var denied = acc.filter(function(a){ return a.denial; });
+  if (denied.length) h += '<div class="verdict">' + denied.map(function(a){ return '<b>A</b> reads as the denial of <b>' + letter(a.id) + '</b>'; }).join('; ') +
+    '. Against a denial, a reason for the one is a reason against the other, so ' + (S.allDenials ? 'every reason below' : 'each reason below') +
+    ' bears on ' + (denied.length === 1 && acc.length === 2 ? 'both' : 'those') + ', whether or not the map draws it. ' +
+    (S.allDenials ? 'There is nothing here for the reasons to tell apart.' : 'Read the other columns for what tells the accounts apart.') + '</div>';
   if (!S.rows.length) return h + '<div class="q">The map gives no reason directly for or against these accounts.</div>';
+  if (S.allDenials) return h + '<details class="weigh-anyway"><summary>Set out the reasons anyway</summary>' + weighTableHTML(S, q, go, letter) + '</details>';
+  return h + weighTableHTML(S, q, go, letter);
+}
+/** The reasons against the accounts, as a table: guessed first, then shown. */
+function weighTableHTML(S, q, go, letter){
+  var esc = ArgdownStaircase.esc, L = "ABCDEFGH", acc = S.accounts, h = "";
   var shown = WEIGH.shown;
   if (!shown) h += '<div style="margin:.35rem 0 .1rem">Which of these reasons tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
   var word = { "for": "for", against: "against", both: "both" };
@@ -9023,7 +9038,7 @@ function weighAccountsHTML(S, q, go){
     var missed = apart.filter(function(r){ return WEIGH.picks.indexOf(r.id) < 0; }).length;
     summary = 'You marked ' + WEIGH.picks.length + '; ' + hit + ' of them ' + (hit === 1 ? 'does' : 'do') + '. ' + summary + (missed ? ' You did not mark ' + missed + '.' : '');
   }
-  h += '<div class="verdict">' + esc(summary) + (one.length ? ' In ' + one.length + ' row' + (one.length === 1 ? '' : 's') + ' the text says nothing about one account: what would it make of that reason?' : '') + '</div>';
+  h += '<div class="verdict">' + esc(summary) + (one.length && !S.allDenials ? ' In ' + one.length + ' row' + (one.length === 1 ? '' : 's') + ' the text says nothing about one account: what would it make of that reason?' : '') + '</div>';
   if (WEIGH.test) h += weighTestHTML(S, q);
   return h + '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
 }

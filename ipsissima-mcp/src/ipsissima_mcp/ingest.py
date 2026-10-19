@@ -356,6 +356,41 @@ def page_edge_suspects(text):
     return out
 
 
+#: A table the text names: "Table 1", "TABLE 2", "table 3:", "Table IV". Not "table of contents".
+TABLE_LABEL = re.compile(r"\b(?:TABLE|Table|table)\s+((?:\d{1,2}|[IVX]{1,4})(?:\.\d+)?)\b")
+#: A line of a table that survived as one: a pipe row, a grid rule, or raw HTML.
+TABLE_LINE = re.compile(r"^\s*(?:\|.*\||\+[-=:+]{3,}|<table\b)")
+PAGE_MARK = re.compile(r"<!-- .*?p\.\s*(\d+) begins here -->")
+
+
+def lost_tables(text, near=40):
+    """Tables the text names that did not come through as tables. Returns [(label, line_no, page)].
+
+    THE AUTHOR'S OWN TABLE IS THE AUTHOR'S OWN FRAME: the studies set against the questions they
+    answer, the types against their dimensions. A text layer keeps a table's words and loses its
+    shape, so Bates 2011's Table 1 arrived as "table 1: featured evaluations product researchers
+    location ..." run into a paragraph, and of 18 texts in the corpus that cite a table of their
+    own, 3 kept one, each rebuilt by hand ("Tables by design", 19 Oct 2026). A label counts as
+    kept when a table line sits within `near` lines of any place it is named. A label naming
+    another work's table ("Table 2 in Smith") is a false alarm the reader dismisses at a glance;
+    the cost of the miss is a reconstruction that cannot see the frame the text works in."""
+    lines = text.splitlines()
+    tables = [i for i, ln in enumerate(lines) if TABLE_LINE.match(ln)]
+    seen, page, out = {}, None, []
+    for i, ln in enumerate(lines):
+        m = PAGE_MARK.search(ln)
+        if m:
+            page = m.group(1)
+        for t in TABLE_LABEL.finditer(ln):
+            seen.setdefault(t.group(1), []).append((i, page))
+    for label, places in seen.items():
+        if any(abs(i - j) <= near for i, _ in places for j in tables):
+            continue
+        i, pg = places[0]
+        out.append((f"Table {label}", i + 1, pg))
+    return out
+
+
 def strip_access_stamps(md):
     """Blank the publisher's access stamps. Returns (text, [what was removed]).
 
@@ -914,6 +949,15 @@ def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
                      f"(first: line {suspects[0][0]}) -- possible page-edge truncation in the "
                      f"text layer: characters missing with nothing garbled. Render the page top "
                      f"with page_images, read what is missing, and repair_source it")
+    lost = lost_tables(md)
+    if lost:
+        where = "; ".join(f"{lab} (line {ln}{f', p.{pg}' if pg else ''})" for lab, ln, pg in lost[:6])
+        notes.append(f"! {len(lost)} table(s) the text names did not come through as a table: "
+                     f"{where}{' ...' if len(lost) > 6 else ''}. A table is often the author's "
+                     f"own frame (studies against questions, types against dimensions). Render "
+                     f"its page with page_images, rebuild it as a Markdown table read off the "
+                     f"page, cells in the text's own words, and put it in with repair_source "
+                     f"where the caption stands")
     bylines = [(i, ln.strip()) for i, ln in enumerate(md.splitlines(), 1)
                if BYLINE.match(ln)]
     if len(bylines) >= 2:

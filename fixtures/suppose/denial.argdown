@@ -1,0 +1,14 @@
+// Planted fixture for app/test_suppose.mjs (19 Oct 2026), in the fixture-maker's own words. The
+// "rival" the text reports is only the denial of its own claim, so a reason for the one is a
+// reason against the other and there is nothing for the reasons to tell apart: the weigh panel
+// says so, folds the table, and Study does not offer it as accounts to weigh.
+===
+title: "Planted -- a rival that is only a denial"
+reconstruction:
+    generated: true
+===
+
+[Fees do not raise use]: Charging for bednets does not make people use them more.
+    <+ [Free nets were used as much]: Households given nets free used them as often as households that paid.
+    <+ [Paying added no commitment]: Buyers offered a refund after paying used their nets no less.
+    <- [Fees raise use]: Paying for a net makes people use it more. #reported

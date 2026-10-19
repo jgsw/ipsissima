@@ -22,6 +22,7 @@ const PLANTED = path.join(REPO, "fixtures", "suppose", "planted.argdown");
 const MOOREAN = path.join(REPO, "fixtures", "suppose", "moorean.argdown");
 const SEVERAL = path.join(REPO, "fixtures", "suppose", "several.argdown");
 const ACCOUNTS = path.join(REPO, "fixtures", "suppose", "accounts.argdown");
+const DENIAL = path.join(REPO, "fixtures", "suppose", "denial.argdown");
 const TRILEMMA = path.join(REPO, "fixtures", "suppose", "trilemma.argdown");
 const ACTORS = path.join(REPO, "fixtures", "suppose", "actors.argdown");
 const TEACHING = path.join(REPO, "teaching", "causal-junctions.argdown");
@@ -137,6 +138,15 @@ console.log("\naccounts against evidence, and what cannot all hold");
         kind("A trial found prices rose") === "one" && kind("Surveys show no change of taste") === "one",
         "a row tells the accounts apart only where it bears on two differently; alike where the same; one only where the text is silent on the other",
         JSON.stringify(sets[0].rows.map(x => [x.label, x.kind])));
+  // A RIVAL THAT IS ONLY A DENIAL (19 Oct 2026). Mutation: make denies() always false -> no denial found.
+  const gd = A.accountSets(graphOf(DENIAL));
+  check(gd.length === 1 && gd[0].allDenials && gd[0].accounts[1].denial && !sets[0].allDenials && !sets[0].accounts[1].denial,
+        "a rival that only denies the text's claim is marked a denial; a rival account is not", JSON.stringify(gd.map(x => x.accounts)));
+  // Mutation: drop the shared-word condition -> "Strikebreakers..." pairs with any negated title.
+  check(A.denies("Competition theory fails", "Competition theory") && A.denies("The proof was perfectly rigorous", "The proof was not conclusive") &&
+        !A.denies("Strikebreakers because excluded", "Excluded because strikebreakers") && !A.denies("Education is not enough", "Prices explain the fall") &&
+        !A.denies("Fees do not raise use", "Free nets were not used less"),
+        "a denial is one title negated and a content word shared; two accounts, or two unrelated claims, are not");
   const gt = graphOf(TRILEMMA);
   const inc = A.inconsistentSets(gt);
   // Mutation: drop `inconsistentOf` from toGraph -> no set.
@@ -486,6 +496,26 @@ if (chromium) {
     await page.locator('#studybody [data-study="end"]').click();
     await page.waitForTimeout(100);
     check(await page.locator("#weigh").isHidden(), "ending Study closes the panel it opened");
+
+    // A DENIAL IS SAID, AND THE TABLE FOLDED (19 Oct 2026).
+    await page.goto("file://" + build(DENIAL, "denial.html"));
+    await page.waitForTimeout(800);
+    await box("Fees do not raise use").click({ button: "right" });
+    await page.locator('#ctx [data-weigh-menu="weigh"]').click();
+    await page.waitForTimeout(200);
+    const dv = await page.locator("#weigh").innerText();
+    // Mutation: drop the denial line from weighAccountsHTML -> no "reads as the denial".
+    check(/A reads as the denial of B/.test(dv) && /nothing here for the reasons to tell apart/.test(dv) &&
+          await page.locator("#weigh details.weigh-anyway").count() === 1 && !(await page.locator("#weigh table").isVisible()),
+          "where the rival is only a denial, the panel says so and folds the table", dv.slice(0, 300));
+    await page.locator("#weigh details.weigh-anyway summary").click();
+    check(await page.locator("#weigh table").isVisible(), "and the reasons can still be set out on request");
+    await page.locator("#weigh [data-weigh-close]").click();
+    await page.locator('#map [data-act="study"]').click();
+    await page.waitForTimeout(250);
+    // Mutation: use weighSets in studyOpening -> the button is offered.
+    check(await page.locator('#studybody [data-study="accounts"]').count() === 0, "and Study does not offer a bare denial as accounts to weigh");
+    await page.locator('#studybody [data-study="end"]').first().click().catch(() => {});
 
     // WHICH WOULD YOU GIVE UP?
     await page.goto("file://" + build(TRILEMMA, "trilemma.html"));

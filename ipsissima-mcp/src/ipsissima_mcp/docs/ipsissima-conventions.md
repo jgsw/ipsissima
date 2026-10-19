@@ -49,6 +49,17 @@ Repair-then-quote applies to these exactly as to OCR damage. And whitespace is n
 checking, so a quotation may run across the converter's line and paragraph breaks — quote the
 sentence as prose, even where the converter split it.
 
+**Rebuild a table the text names but the conversion lost.** A text layer keeps a table's words and
+loses its shape, and the extraction notes name each table that did not come through ("! 1 table(s)
+the text names did not come through as a table"). Rebuild it before reconstructing: a table is
+often the author's own frame — the studies set against the questions they answer, the types
+against the dimensions that make them — and a map read from the flattened words cannot see it.
+Render its page with `page_images`, write the table in Markdown under its caption, cells in the
+text's own words, and with `repair_source` put it where the scattered cells stood, so the cells
+leave the prose they were run into. Say in the source's header note which tables were rebuilt and
+from which page (Clemson 2026's source is the model). A note naming a table from another work
+("Table 2 in Smith 1998") is a false alarm: leave it.
+
 **If a claim joins two passages that sit far apart, say so** — in the claim text with an elision
 (`'…one half… the other half'`) or in its `note:`. Compressing distant material is legitimate and
 often captures the meaning better than either passage alone; what it must not do is leave a reader

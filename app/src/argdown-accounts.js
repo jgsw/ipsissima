@@ -11,6 +11,15 @@
  *    one only, the text does not say what the other would make of it -- which is the reader's to
  *    ask (Henne's framing question), and the commonest case: of 98 such pairs across the corpus on
  *    18 Oct 2026, 15 shared any reason. Direct reasons only: a reason for a reason is not a row.
+ *    A RIVAL THAT IS ONLY A DENIAL is said, not tabulated as if it were weighed (19 Oct 2026). Of 187
+ *    pairs in the corpus most were not two accounts of one thing: Gettier's "Definition a" beside
+ *    "Definition a is not sufficient", Moore's "rigorous" beside "not conclusive", Bates's "Fees
+ *    screen out those unlikely to use" beside "Fees do not substantially promote use". Against a
+ *    denial a reason for one is a reason against the other, so every row "bears on one only" and
+ *    the panel's question -- what would the rival make of this? -- has a trivial answer. `denies`
+ *    reads that off the two titles (one negated, a content word shared), which found 37 pairs and
+ *    missed denials worded apart ("Hostility no more inborn than panic" / "Rooted in human
+ *    nature"): the cheap direction to err in, since a missed denial is only the old table.
  *  - A SET THAT CANNOT ALL HOLD. Claims the map marks `inconsistent: <name>` (a trilemma, an aporia,
  *    a trade-off), and each contradictory or contrary pair the map draws. Which to give up is the
  *    reader's; what each costs the rest of the argument the page works out with argdown-suppose.js.
@@ -35,6 +44,24 @@ function nodesOf(graph, opts) {
     byId[n.id] = n;
   });
   return byId;
+}
+
+var NEG = /\b(?:not|no|never|cannot|neither|nor|without|none|fails?|failed|insufficient|lacks?)\b|n't\b|-independent\b/i;
+var STOP = {};
+"the a an of to in on for and or is are was were be been it its this that these those as by with from at than more less can could would should may might will which who what".split(" ")
+  .forEach(function (w) { STOP[w] = true; });
+function contentWords(s) {
+  return String(s || "").toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/[\s-]+/)
+    .filter(function (w) { return w.length > 2 && !STOP[w] && !NEG.test(w); })
+    .map(function (w) { return w.replace(/(?:ies|es|s|ed|ing|ly)$/, ""); });
+}
+/** Whether one title reads as the denial of the other: exactly one of them negated, and a content
+ *  word in common ("Competition theory fails" / "Competition theory"). Titles only: a claim's full
+ *  text negates something in passing far too often to be read this way. */
+function denies(a, b) {
+  if (NEG.test(a) === NEG.test(b)) return false;
+  var wa = contentWords(a);
+  return contentWords(b).some(function (w) { return wa.indexOf(w) >= 0; });
 }
 
 /** The accounts the text sets against each other, with the reasons that bear on them. Returns
@@ -80,8 +107,10 @@ function accountSets(graph, opts) {
       var kind = vals.length < 2 ? "one" : vals.every(function (v) { return v === vals[0] && v !== "both"; }) ? "alike" : "apart";
       return { id: x, label: byId[x].label, cells: cells[x], kind: kind };
     });
-    return { id: own, accounts: accs.map(function (a) { return { id: a, label: byId[a].label, own: a === own }; }),
-             rows: rows, between: between[own] };
+    var accounts = accs.map(function (a) {
+      return { id: a, label: byId[a].label, own: a === own, denial: a !== own && denies(byId[own].label, byId[a].label) }; });
+    return { id: own, accounts: accounts, rows: rows, between: between[own],
+             allDenials: accounts.every(function (a) { return a.own || a.denial; }) };
   });
 }
 
@@ -121,7 +150,7 @@ function containing(list, id, key) {
   return out;
 }
 
-var API = { accountSets: accountSets, inconsistentSets: inconsistentSets, containing: containing };
+var API = { accountSets: accountSets, denies: denies, inconsistentSets: inconsistentSets, containing: containing };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownAccounts = API;
 

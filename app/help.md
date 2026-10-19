@@ -981,6 +981,13 @@ answer is your reading; beside it, the panel says what the map records: whether 
 other support without the reason, and whether the reason is recorded against the rival. Which
 account is better, the panel never says.
 
+Not every rival is a second account of the same thing. Often it is simply the claim the text
+denies: *Definition a* beside *Definition a is not sufficient*. Against a denial, a reason for the
+one is a reason against the other, so there is nothing for the reasons to tell apart. Where the
+titles read that way (one negated, and the same subject), the panel says so and folds the table,
+which **Set out the reasons anyway** opens. Study does not offer such a pair as accounts to weigh.
+The reading is taken from the wording alone, so it can miss a denial put in other words.
+
 **These cannot all hold.** Where the map marks claims that cannot all be true together — a trilemma,
 a dilemma, a trade-off — or draws two claims as contradicting each other, the menu on any of them
 offers **These cannot all hold: which would you give up?** Guess which one you could give up at the

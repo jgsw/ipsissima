@@ -405,6 +405,22 @@ objection answers tells you whether it is an attack or an undercut. An objection
 explanation was overlooked does not deny any premise of an IBE; it denies that the premises
 license the conclusion.
 
+**Where the text says a finding tells between rival accounts, draw its relation to each.** An
+inference to the best explanation, or a study designed to separate two hypotheses, rests on
+evidence that bears on the rivals *differently*: it is for one and against the other. Drawing only
+its support for the text's account is faithful to the argument and silent about the comparison,
+which is the thing the text did. In Bates et al. 2011, two evaluations "tried to distinguish" the
+screening effect of a fee from the psychological effect of paying, and in Kenya found neither;
+that finding attacks each reported effect as well as supporting the bulletin's conclusion. Draw only what the text says. Where it never says what the rival would make of a
+finding, leave that relation out: the empty cell is the reader's question, not yours to fill.
+
+**Two accounts of one thing, or a claim and its denial?** A `#reported` rival may be a different
+explanation of the same thing ("excluded because strikebreakers" against "strikebreakers because
+excluded"), or simply the claim the text denies ("Definition a" against "Definition a is not
+sufficient"). Both are drawn the same way, as an attack. The viewer tells them apart by the
+titles, reading a title that negates the other's subject as a denial. So title a rival account as
+the account it is, and a refutation's failure claim as the failure it states.
+
 ---
 
 ## 4. Conductive arguments deserve their own note
