@@ -1,9 +1,9 @@
 # Ipsissima
 
-**Making complex reasoning intelligible through maps you can check at every step.**
+**Making complex reasoning clear through maps you can check and question.**
 
-Explore an argument as an interactive map — and, when the map was drawn from a text, read each
-claim beside the passage it came from.
+The argument and its reasons, the order the text tells them in, what it says happens, and the
+tables of what it compares — each one a way into the text.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write **these words**, or is this a faithful report of what they meant? Every
@@ -12,10 +12,23 @@ whenever quotation marks are at stake. Wherever a claim has a source to stand at
 from, Ipsissima keeps the distinction, on every claim.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
-Christian Voigt and maintained by the Argdown team —
-and shows an argument three ways at once: the map, the passage each claim was drawn from when
-there is one, and the marks a reader writes in the margin. It runs entirely on your own
-machine.
+Christian Voigt and maintained by the Argdown team. A map is one ordinary Argdown file, and
+Ipsissima opens several ways into it:
+
+- the argument's reasons (**Reasons**);
+- the order the text tells them in (**Exposition**);
+- what the text says happens (**Mechanism**);
+- the comparisons it draws (**Tables**).
+
+Each way in can be questioned, not only looked at. You can:
+
+- suppose a claim false and see what loses its support;
+- guess before you look;
+- weigh rival accounts against the evidence;
+- study a map on your own or with others.
+
+Beside the map sit the passage each claim was drawn from, when there is one, and the marks a
+reader writes in the margin. It runs entirely on your own machine.
 
 **`Ipsissima.html` makes no network request of any kind**, ever, under any circumstances — it is
 one file that works with the network cable out. **The desktop application speaks beyond your
@@ -44,9 +57,10 @@ checking the finished reconstruction against its sources word for word. It does 
 arguments itself; that judgement belongs to the model, and the instructions for it are served as
 a prompt read off disk. The command line is still there for a one-off.
 
-**`samples/`** — ten worked reconstructions of real arguments, each with the text it was drawn
-from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, James's "The
-Will to Believe", Swift's satire, and five journal articles. **Five are on the website ready to
+**`samples/`** — eleven worked reconstructions of real arguments, each with the text it was
+drawn from: a paragraph of Darwin, Carroll's regress, the Supreme Court on prorogation, James's
+"The Will to Believe", Swift's satire, and six papers, two of them with a mechanism read with the
+argument. **Five are on the website ready to
 open, with the manuscript already in the page** —
 [Darwin](https://jgsw.github.io/ipsissima/try/darwin.html),
 [Carroll](https://jgsw.github.io/ipsissima/try/carroll.html),
@@ -125,6 +139,26 @@ Everything else, including installing from source and the command line tools, is
 
 ## What it does that other Argdown tools do not
 
+- **Ask what follows.** Click a claim and press **What if…?** to suppose it false, suppose an
+  objection holds, or suppose a step fails. What then loses the map's support fades, and a panel
+  says why. Supposing works the same way in the causal chain, and a supposition carries between
+  the two. With **Guess first** on, you mark what you expect to lose support before the map shows
+  you.
+- **Study rather than read off.** Study opens on the question the text answers and what you
+  already think. You can then:
+  - work up an argument from its premises on your own;
+  - talk the argument down from its main claim with others;
+  - find which claim would cost the most to give up.
+
+  Hints come only when you ask for them, and nothing is scored.
+- **Rival accounts weighed against the evidence.** Where a text sets accounts against each other,
+  the weigh panel lines up each reason the map gives and what it does to each account. **Test?**
+  asks what kind of test that reason is: a pointer, a test to pass, a clincher, or decisive.
+- **The text's own tables.** Where a text compares cases, options or studies, the **Tables** panel
+  sets the comparison out, with the claim behind each cell. It names what the table lets you see:
+  - an empty cell where the text says nothing;
+  - two cases that differ in one respect;
+  - a case set against the text's own rule.
 - **The claim and the passage it came from, side by side.** Every claim can record which file and
   which words it was drawn from; the map and the manuscript are linked in both directions.
 - **Whose words are these.** Each claim is marked for how far it stands from its source —
@@ -147,8 +181,9 @@ Everything else, including installing from source and the command line tools, is
   short names. A single-step argument opens too, squared up rather than stepped, which is where
   its premises can be read in full rather than clipped to a line. Either can be saved as PNG or
   SVG.
-- **Three arrangements of the same claims.** By the order of reasons, by the order of
-  exposition, and — where a map declares one — by the causal chain the text sets out.
+- **Several ways into one file.** The same claims arranged by the order of reasons, by the order
+  of exposition, by the causal chain the text sets out, and by the comparisons it draws. All of it
+  is held in one ordinary Argdown file.
 - **Where the reasons fall.** In the exposition arrangement, with **shape** switched on, a
   sparkline on every band and one for the whole piece: below the line, claims asserted here
   whose reasons come later; above, claims their reasons have already earned.

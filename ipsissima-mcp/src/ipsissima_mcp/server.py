@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ipsissima-MCP — the tools an assistant needs to turn a document into a reconstruction.
+"""Ipsissima-MCP — the tools an assistant needs to turn a document into a map that cites it.
 
     ipsissima-mcp                 # stdio, which is what an MCP client launches
 
@@ -50,8 +50,16 @@ DOCS = HERE / "docs"
 sys.path.insert(0, str(HERE))
 
 INSTRUCTIONS = """\
-Ipsissima-MCP turns documents into Argdown argument reconstructions that cite the text they are
-readings of, and checks finished reconstructions against their sources.
+Ipsissima-MCP turns documents into Argdown maps that cite the text they read, and checks finished
+maps against their sources.
+
+WHAT THE MAP IS FOR. A map is one ordinary Argdown file holding several structures of a text: the
+argument and its reasons, the order the text tells them in, the causal chain it says happens, the
+questions it asks, and (on request) the comparisons it draws, as tables. The reader opens it in
+Ipsissima to question it, not only to look at it: they suppose a claim false and see what loses
+its support, weigh rival accounts reason by reason, and study the argument before seeing the map's
+answer. Record what makes those questions answerable. Draw a finding's relation to each account it
+bears on, and leave an absence as an absence; the method documents say how.
 
 WHAT USERS CALL THIS. "Make an Argdown", "make an Ipsissima diagram", "map the argument",
 "reconstruct this paper", "make an argument map" are all the same request. Treat them as such.
@@ -74,6 +82,12 @@ THE ORDER OF WORK
      formula against the claim and found it fair — you cannot do that reading for them, and a
      value invented here would vouch for an agreement nobody made. They run
      `check_argdown.py <file> --stamp` when they are satisfied.
+
+THE TEXT'S OWN TABLES ARE OFFERED, NOT RUN. When the map checks ok and the text compares things
+-- cases against a definition, options against criteria, studies against questions, rival
+accounts against findings -- tell the user that those comparisons can be set out as tables, and
+read `argdown_method("tabulation")` only if they want it. Extraction notes a table the text cites
+but the conversion lost; say so when it does.
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
@@ -1398,8 +1412,9 @@ def _doc(name):
 @server.prompt(
     title="Reconstruct an argument as Argdown",
     description="The full instructions for turning a source text into a checkable .argdown "
-                "reconstruction: how to find the form, what fidelity levels mean, how to "
-                "record provenance, and the traps that do not announce themselves.",
+                "map -- its argument, and the causal chain read with it: how to find the form, "
+                "what fidelity levels mean, how to record provenance, and the traps that do not "
+                "announce themselves.",
 )
 def reconstruct_argument(source_path: str = "", out_path: str = "") -> str:
     tail = ""

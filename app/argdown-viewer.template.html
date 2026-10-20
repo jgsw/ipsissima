@@ -1278,7 +1278,7 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
        the key sat over the hashtags and the study card over the key). -->
   <div id="dockr">
   <div id="studycard" hidden role="note" aria-label="Study mode">
-    <header><b>Study</b><span id="studyhint">predict, then unfold</span>
+    <header><b>Study</b><span id="studyhint">before you start</span>
       <button class="plain" id="studymin" title="Fold the card to its header">&#8211;</button>
       <button class="plain" id="studyclose"
               title="End study mode. The map stays folded as you left it; the mode is under How to use and on the map bar.">&#215;</button></header>
@@ -2342,6 +2342,14 @@ var SCREEN_DRAW = {
     '<line x1="2" y1="15" x2="20" y2="15" stroke="#3a9d5d" stroke-width="1.8"/>' +
     '<line x1="20" y1="15" x2="44" y2="15" stroke="#3a9d5d" stroke-width="1.8" stroke-dasharray="3 3"/>' +
     '<line x1="44" y1="15" x2="62" y2="15" stroke="#3a9d5d" stroke-width="1.8"/>'; },
+  whatif: function(){ return '<rect x="2" y="7" width="27" height="16" rx="3" class="sd-box"/>' +
+    '<rect x="32" y="9" width="30" height="12" rx="6" class="sd-chip"/>' +
+    '<text x="47" y="17.5" class="sd-ts">What if\u2026?</text>'; },
+  ways: function(){ return '<rect x="2" y="9" width="60" height="13" rx="4" class="sd-box"/>' +
+    '<rect x="5" y="11.5" width="24" height="8" rx="2" class="sd-chip"/>' +
+    '<text x="17" y="17.8" class="sd-ts">Study</text>' +
+    '<rect x="32" y="11.5" width="26" height="8" rx="2" class="sd-chip"/>' +
+    '<text x="45" y="17.8" class="sd-ts">Tables</text>'; },
   strip: function(){ return '<rect x="2" y="9" width="24" height="12" rx="6" class="sd-chip"/>' +
     '<rect x="29" y="9" width="33" height="12" rx="6" class="sd-chip"/>' +
     '<text x="14" y="17.5" class="sd-ts">Abstract</text><text x="45.5" y="17.5" class="sd-ts">map read</text>'; },
@@ -3448,7 +3456,8 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-close]"), function
  * leaves out is already written down under "How to use", one button away.
  *
  * LENGTH IS THE CONSTRAINT, not coverage. Ten steps and a sign-off where there is a manuscript
- * to point at, eight without — 411 words, which is about two minutes read at a normal pace.
+ * to point at, eight without — 410 words (re-counted 20 Oct 2026, when "What if it were false?"
+ * took the place of "The margins"), which is about two minutes read at a normal pace.
  * Counted rather than guessed, because a tour nobody finishes teaches nothing, and every
  * addition to this list has to displace something already in it.
  *
@@ -3631,8 +3640,8 @@ function walkSteps(){
   // whenever" line for the whole tour, which is why the step after it no longer says so too.
   steps.push({
     title: "Ipsissima in two minutes",
-    body: "<p>Ipsissima helps you understand and analyse your own, and other people's, " +
-          "arguments by visualising them.</p>" +
+    body: "<p>Ipsissima makes complex reasoning clear through maps you can check and " +
+          "question — your own arguments, and other people's.</p>" +
           "<p class='wsub'>This tour takes a couple of minutes — leave whenever you've seen " +
           "enough.</p>",
     before: function(){ if (LIVE) LIVE.fit(); }
@@ -3748,6 +3757,50 @@ function walkSteps(){
     }
   });
 
+  // ASKING, NOT ONLY LOOKING (the Purpose episode, 20 Oct 2026: docs/values/PURPOSE.md, B10). Every
+  // step before this one shows the map; this one puts a question to it, and performs the answer as
+  // the fold step performs a fold. It took the place of "The margins", so the tour's two minutes
+  // stay true: margins are one right-click away and under How to use. The claim is the one whose
+  // falsity costs the most, so something visibly fades; a map where nothing would is skipped. The
+  // supposition is the tour's, and goes when the reader leaves the step (`walkUnsuppose`).
+  var supposed = null;
+  if (CURRENT_GRAPH && window.ArgdownSuppose) steps.push({
+    before: function(){
+      supposed = null;
+      try { var top = studyCostRank()[0]; if (top && top.lost) supposed = top; } catch (e) {}
+    },
+    title: "What if it were false?",
+    body: function(){
+      return "<p>You can question a map, not only read it. Click a claim and press " +
+             "<b>What if…?</b> to suppose it false: whatever then loses the map's support " +
+             "fades.</p>" +
+             (supposed ? "<p>Here, \u201c" + ArgdownStaircase.esc(supposed.label) + "\u201d is supposed false. " +
+                         "<b>Study</b>, on the controls, offers more ways in.</p>"
+                       : "<p><b>Study</b>, on the controls, offers more ways in.</p>");
+    },
+    target: function(){
+      if (!supposed) return null;
+      // The claim and the first thing it costs, which is usually what it supports directly: the
+      // fade is the demonstration, and three far-flung losses framed together pulled the whole
+      // map open (86 boxes on the Wilson sample) and put the card over all of them.
+      var id = supposed.id, ids = [id].concat(supposed.lostIds.slice(0, 1));
+      return { map: ids, pad: 80, find: function(){ return walkElById(id); } };
+    },
+    act: function(){
+      var n = supposed && walkNodeById(supposed.id);
+      if (!n) return;
+      var key = suppKey(n);
+      if (suppIsFalse(key)) return;
+      if (!WALK.supp) { WALK.supp = JSON.parse(JSON.stringify(SUPP)); WALK.suppDetail = SUPP_DETAIL; }
+      // No guess asked for: the tour demonstrates, and Guess first is the reader's to choose. And
+      // the What follows card stays folded: it opened over the map the tour is pointing at, and
+      // the banner already says what is supposed.
+      var g = GUESS.on; GUESS.on = false; SUPP_DETAIL = false;
+      SUPP.false.push(key); suppApply();
+      GUESS.on = g;
+    }
+  });
+
   // Offered only where the claims can actually be placed in the text. `textbtn` already answers
   // that question for the toolbar, and asking it the same way keeps the two from disagreeing.
   if (!$("textbtn").hidden && !$("textbtn").disabled) {
@@ -3829,29 +3882,6 @@ function walkSteps(){
       }
     });
   }
-
-  steps.push({
-    title: "The margins",
-    body: "<p>A folded corner on a claim is a mark in the margin: <b>left</b>, the " +
-          "reconstructor's aside about why the claim was read that way; <b>right</b>, " +
-          "someone's comment on it.</p>" +
-          (ED ? "<p><b>Right-click</b> a claim to write a comment. The <b>Notes</b> pane lists " +
-                "every mark, and comments can be edited or deleted there.</p>"
-              : "<p>The <b>Notes</b> pane lists every mark in one place. Writing comments " +
-                "needs the full Ipsissima; this build reads them.</p>"),
-    // MAP AND NOTES, and the manuscript put away. Three panes at once is the layout the reader
-    // would choose for a job, not the one to meet a pane in.
-    before: function(){ setPane("text", false); setPane("argdown", false); setPane("notes", true); },
-    target: function(){
-      // A CLAIM THAT ACTUALLY CARRIES A CORNER. "Appears on the map" is the whole sentence, and
-      // a ring round the pane instead points at the list rather than at the mark — at this zoom
-      // the corner is a few pixels and nobody would ever find it unaided.
-      var el = walkBoxes(".alm-n").filter(function(e){ return e.querySelector(".alm-margin"); })[0];
-      if (!el) return { el: $("notes") };
-      var id = el.dataset.id;
-      return { map: [id], pad: 70, find: function(){ return walkElById(id); } };
-    }
-  });
 
   steps.push({
     title: "The Argdown",
@@ -3943,6 +3973,7 @@ function walkGo(i){
   WALK.at = Date.now();
   var st = WALK.steps[i];
   WALK.find = null;
+  walkUnsuppose();
   if (st.before) { try { st.before(); } catch (e) {} }
   // AFTER `before`, NOT BEFORE IT. The marks from a previous step's demonstration are that
   // step's, not this one's — but `before` can make marks of its own: opening a section to have
@@ -4181,7 +4212,14 @@ function walkFarewell(){
  *  panned somewhere interesting and then took the tour from the Help loses that pan, which is
  *  worth one line of note and not a change to the renderer's state contract.
  */
+/** The supposition the tour made, taken back: the reader's own, if any, are put back as they were. */
+function walkUnsuppose(){
+  if (!WALK || !WALK.supp) return;
+  SUPP = WALK.supp; WALK.supp = null; SUPP_DETAIL = WALK.suppDetail !== false;
+  suppApply();
+}
 function walkRestore(){
+  walkUnsuppose();
   if (!WALK || !WALK.was) return;
   var was = WALK.was;
   for (var k in was.panes) PANES[k] = was.panes[k];
@@ -4349,8 +4387,8 @@ function syncStudyButton(){
   b.classList.toggle("on", !!STUDY);
   b.setAttribute("aria-pressed", STUDY ? "true" : "false");
   b.title = STUDY ? "End study mode (Esc). The map stays folded as you left it."
-                  : "Study this map: say what you think holds each claim up before " +
-                    "unfolding it";
+                  : "Study this map: start from the question the text answers, and work " +
+                    "the argument out before the map shows it";
 }
 function toggleStudy(){ if (STUDY) endStudy(); else startStudy(); }
 

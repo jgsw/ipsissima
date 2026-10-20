@@ -76,6 +76,18 @@
       ],
       "use": "flow",
       "why": "'Layout' is the title bar's pane menu; one word named two controls (ruled D6)"
+    },
+    {
+      "pattern": "three arrangements of the same claims",
+      "flags": "i",
+      "use": "Ways into a map",
+      "why": "the help topic named three views when a map has six ways in (Purpose episode, 20 Oct 2026)"
+    },
+    {
+      "pattern": "complex reasoning intelligible",
+      "flags": "i",
+      "use": "complex reasoning clear through maps you can check and question",
+      "why": "the mission was restated at the Purpose checkpoint (docs/values/PURPOSE.md, 20 Oct 2026)"
     }
   ]
 }

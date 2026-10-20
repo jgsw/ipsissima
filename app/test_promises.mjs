@@ -151,5 +151,38 @@ console.log("\nthe menus ring doorbells the page has");
   ok("  the exception list names only real menu ids", rotted.length === 0, rotted.join(", "));
 }
 
+/* ---- the mission says the same thing everywhere it is said ------------------------------
+ * The mission sentence was restated at the Purpose checkpoint (docs/values/PURPOSE.md, 20 Oct
+ * 2026), and the audit found it copied into nine files with nothing holding the copies together
+ * (E10). Every surface that states the mission states this sentence; the four that introduce
+ * Ipsissima at length carry the line beneath it too; and the retired sentence survives only in
+ * the records that tell its history (the values documents, brand/README.md, docs/NOTES.md).
+ * Whitespace and case are folded, because the sentence is wrapped in prose and begins one
+ * file's sentence mid-way ("Ipsissima makes complex reasoning clear…"). SHOWN ABLE TO FAIL,
+ * 20 Oct 2026: putting the retired sentence back in app/about.md fails the first and third rows. */
+console.log("\nthe mission, said once");
+{
+  const fold = t => t.replace(/\s+/g, " ").toLowerCase();
+  const MISSION = "complex reasoning clear through maps you can check and question";
+  const BENEATH = "the argument and its reasons, the order the text tells them in, what it says " +
+                  "happens, and the tables of what it compares — each one a way into the text";
+  const RETIRED = "complex reasoning intelligible through maps";
+  const STATES = ["README.md", "site/index.md", "site/_config.yml", "app/package.json",
+                  "app/help.md", "app/about.md", "app/desktop/src-tauri/tauri.conf.json",
+                  "brand/README.md", "docs/NOTES.md", "docs/values/THEORY.md",
+                  "ipsissima-mcp/README.md"];
+  const INTRODUCES = ["README.md", "site/index.md", "app/help.md", "app/about.md"];
+  const HISTORY = new Set(["brand/README.md", "docs/NOTES.md", "docs/values/THEORY.md"]);
+  const missing = STATES.filter(f => !fold(read(f)).includes(MISSION));
+  ok("every surface that states the mission states this sentence", missing.length === 0,
+     missing.join(", "));
+  const noLine = INTRODUCES.filter(f => !fold(read(f)).includes(BENEATH));
+  ok("  and the four introductions carry the line beneath it", noLine.length === 0,
+     noLine.join(", "));
+  const stale = STATES.filter(f => !HISTORY.has(f) && fold(read(f)).includes(RETIRED));
+  ok("  the retired sentence survives only where its history is told", stale.length === 0,
+     stale.join(", "));
+}
+
 console.log(`\n${fail ? "FAILED" : "all promises hold"} — ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

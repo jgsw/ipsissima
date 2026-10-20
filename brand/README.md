@@ -9,10 +9,13 @@ claim, and the open question of how solid it is. Nothing in the identity may col
 fidelity; solidity means closeness to the words, everywhere, always.
 
 The strapline is **"The very words, and how far a reading stands from them."** The descriptive
-line — "Making complex reasoning intelligible through maps you can check at every step" — is
-not a rival and stays as the subtitle everywhere. (It replaced "Read an argument reconstruction
-beside the text itself" at the Second Thoughts checkpoint, 5 Sep 2026: the old line describes
-one genre of map, so it no longer stands for the whole.) The history behind the name is in the
+line — "Making complex reasoning clear through maps you can check and question" — is
+not a rival and stays as the subtitle everywhere. (It was restated at the Purpose checkpoint,
+20 Oct 2026, from "Making complex reasoning intelligible through maps you can check at every
+step", because Ipsissima's maps now hold several structures of a text and are there to be
+questioned as well as read: `docs/values/PURPOSE.md`. That line had replaced "Read an argument
+reconstruction beside the text itself" at the Second Thoughts checkpoint, 5 Sep 2026, because the
+older line described one genre of map.) The history behind the name is in the
 About window, under *The name*.
 
 ## Files

@@ -315,6 +315,13 @@ conclusion" (5 Sep, the private record). The mission was restated the same day i
 author's settled words, above — the draft form in "Second thoughts" was his to settle (D7),
 and was settled at the checkpoint. B7 says how trust is carried where no text anchors it.
 
+*Addendum (20 Oct, ruled at the Purpose checkpoint).* The mission was restated, in the author's
+settled words: **"Making complex reasoning clear through maps you can check and question."** The line beneath it says what a map holds: "The argument and its reasons, the order the text tells them in, what it says happens, and the tables of what it compares — each one a way into the text." The author may revisit the
+sentence once the alignment waves are done. "Map" is kept, rather than "visualisations" or
+"charts", because it is the word the App and its users already use (B5), and the breadth goes in
+the line beneath. "Clear" replaces "intelligible", and "check and question" carries both halves of
+the mission: the reading answers for its distance (P1), and the reader inquires (B10). "For everyone, the novice first" is unchanged.
+
 ### B2. The reader explores at their own pace
 
 **It says.** The map's job is to let someone see the main points at a glance or descend into
@@ -334,7 +341,9 @@ zoom in with more detail where you want — all without becoming overwhelmed by 
 
 **Weight.** Constitutive for the App — folding is the feature the project was founded on, and
 the fold-correctness campaign (FOLDING.md) is costed to it. Untested against other apex
-principles; it has only ever been on the winning side.
+principles; it has only ever been on the winning side. Since the Purpose episode (20 Oct), folding is one way
+into a map among several, and no longer the core interaction. The pace B2 protects is the pace of
+the reader's own inquiry (B10).
 
 ### B3. The tool must be tolerant of mess
 
@@ -523,7 +532,7 @@ the tool protects the road, never prescribes the journey. Its named candidate co
 (instrument vs terminus in the self-description; text-first vs map-first defaults) await
 the queue's later waves (`FORMATION.md` §6).
 
-### B10. The reader inquires: the App is a place to entertain and test hypotheses
+### B10. The reader inquires: a place to entertain and test hypotheses about a text
 
 **It says.** Ipsissima explicitly adopts an inquiry-based approach to learning. Seeing an argument
 is not yet inquiring into it: the reader must be able to entertain a hypothesis about it — that this
@@ -553,15 +562,75 @@ Think* (1933), on reflective thought as the testing of a suggestion by imagined 
 on the author's instruction the same day ("add it as a new B principle"); the wording above was
 assembled from his message by the assistant and is his to settle (D7).
 
-**Generality.** The App: every reader-facing surface where a map can be questioned. It specialises
-B2 (the reader's own pace becomes the reader's own questions) and sits beside B8 (the staged
-difficulty is the inquiry's, not the tool's).
+**Generality.** The whole project, since the Purpose episode (20 Oct; below). For the App it
+governs interaction design; for the MCP, what a map records (B11's third duty is this principle
+applied at extraction). Admitted on 18 Oct for the App alone, as a specialisation of B2; it now
+states what B2 serves, the reader's own pace being the pace of the reader's own inquiry. It sits
+beside B8: the staged difficulty is the inquiry's, not the tool's.
 
 **Weight.** New, and enacted the day it was admitted. Its first case law is T2's ruling carried
 forward: the effortful option offered, never imposed — *Guess first* is off until chosen, and Study
 asks how the reader will study before it begins. Its nearest candidate collision is F4: inquiry
 controls add to what is visible, which is why the presentation controls they compete with were
 folded into one menu the same day.
+
+*Respecified at the Purpose checkpoint (20 Oct), on the author's ruling.* The author's message of that
+day put inquiry at the centre of what the App offers: "I've clarified the centrality of something
+like Dewey's account of inquiry (and constructivist approaches to learning) in the kinds of tools and
+approaches that the App offers the user for grappling with, interpreting and interrogating a text."
+Four clauses join the statement above:
+
+1. **Inquiry begins from a difficulty** (Dewey, *How We Think*: without one, "confusion remains mere
+   confusion"). A way in starts from a question, the text's own or the reader's, before it shows the
+   answer. The picture is where an inquiry is tested, not where it begins.
+2. **The reader builds; the App supplies material and fast feedback** (the constructivist clause).
+   Making a map is inquiry too, so the guided mode and the editor are inquiry tools. The App never
+   supplies the conclusion of the reader's inquiry, only the map's answer to a framed question.
+3. **Every way in closes on reflection** (Lang; Dewey's testing in imagined action). An inquiry tool
+   ends by asking what changed. Study and the weigh panel already do; supposing and the tables did
+   not at the time of ruling.
+4. **The text's absences are the inquiry's best questions.** An empty cell stays empty, a denial is
+   not a rival account, and a chain with nothing to draw is said in words. What the text does not
+   say is put to the reader as a question, and never filled in by the machine.
+
+`PURPOSE.md` is the episode record; its §3.3 has the reasoning.
+
+### B11. Several structures, one file, many ways in
+
+**It says.** An argumentative text does more than argue. It asks, says what happens, sorts its
+cases, sets accounts against each other, and divides its readers. Ipsissima records each of these as
+a layer of one ordinary Argdown file, written to the profile, and the reader reaches each layer by a
+way in that names the question it answers. Three duties:
+
+1. **Every layer answers for its distance from the text** (P1 extended). A mechanism, a frame, a
+   question or an account is a claim about the text, so it is carried on claims that bear fidelity
+   marks and pinpoints. What the reconstructor adds is marked as theirs: a frame's label, a
+   dimension the text does not name, a question the text only implies.
+2. **A layer records only what the text supplies.** The text's own tables, not the reconstructor's.
+   An absence is drawn as an absence (B10, clause 4).
+3. **A layer earns its place by what a reader can do with it.** It must offer one of: a framed
+   question the map can answer, an answer worked out rather than read off, something the reader can
+   change, a framing question left over, or a move that transfers. This is the admission test for
+   new layers and new marks, and it replaces the moratorium on new marks (17 Oct) with a criterion.
+
+**Seen in.** `frames:` and the Tables panel; the question layer and Study's opening; `inconsistent:`
+and "these cannot all hold"; declared accounts and the weigh panel; the mechanism, with suppositions
+carried between it and Reasons (`docs/INQUIRY-PLAN.md`).
+
+**Provenance.** **compression** — origin: author, 20 Oct (the private record): "Ipsissima analyses
+an argumentative text, and extracts a variety of information from it in addition to argumentative
+structure. The resulting rich argdown file allows the user several different ways of interacting
+with, exploring, and questioning, what an argumentative text says." The three duties were assembled
+by the assistant from the rulings of 17–20 Oct: the empty cell, "nothing to draw", the denial line,
+and the follow-up to the Mechanism think piece. They were admitted as worded at the Purpose
+checkpoint the same day (`PURPOSE.md` §3.4, §6).
+
+**Generality.** The whole project. For the MCP it governs what a map records and how the method asks
+for it; for the App, what a way in may claim.
+
+**Weight.** Untested as a principle, though duty 2 was enacted as case law before it was stated (the
+empty cell, the denial line). Its collision with B4, cost, was ruled on 20 Oct: a layer becomes a default only on
+measurement, and stays on request until then (`PURPOSE.md` §3.6; `THEORY.md` §5).
 
 ---
 

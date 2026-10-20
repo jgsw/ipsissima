@@ -1,6 +1,6 @@
 ---
 name: argdown
-description: Write, edit and validate Argdown (.argdown) files in this repository — argument reconstruction from prose into premises and conclusions. Use whenever creating or editing a .argdown file, building an argument map, or when the author mentions Argdown, argument maps, argument reconstruction, or Ipsissima. ALWAYS validate with check_argdown.py before reporting the work as done.
+description: Write, edit and validate Argdown (.argdown) files in this repository — maps read from prose, holding a text's argument (premises and conclusions), the causal chain it sets out, and the comparisons it draws. Use whenever creating or editing a .argdown file, building an argument map, or when the author mentions Argdown, argument maps, argument reconstruction, or Ipsissima. ALWAYS validate with check_argdown.py before reporting the work as done.
 ---
 
 # Argdown, in this repository

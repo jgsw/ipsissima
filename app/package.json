@@ -2,7 +2,7 @@
   "name": "ipsissima",
   "version": "0.1.0",
   "private": true,
-  "description": "Ipsissima — making complex reasoning intelligible through maps you can check at every step. Builds the self-contained viewer and editor.",
+  "description": "Ipsissima — making complex reasoning clear through maps you can check and question. Builds the self-contained viewer and editor.",
   "license": "MIT",
   "author": "James Wilson",
   "type": "commonjs",

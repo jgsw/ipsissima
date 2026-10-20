@@ -42,9 +42,11 @@ that way: the history is a chorus, and no single tradition is the frame.
 
 **The strapline is "The very words, and how far a reading stands from them."** It translates the
 name and states the product in the copy's own recurring measure ("how far it stands from its
-source"). The descriptive line — "Making complex reasoning intelligible through maps you can
-check at every step" — is not a rival; it stays as the subtitle everywhere. (This is the mission
-line in the author's settled words from the Second Thoughts checkpoint, 5 Sep 2026. It replaced
+source"). The descriptive line — "Making complex reasoning clear through maps you can check and question" — is not a
+rival; it stays as the subtitle everywhere. (This is the mission line in the author's words from
+the Purpose checkpoint, 20 Oct 2026, with a line beneath it naming what a map holds:
+`docs/values/PURPOSE.md`. It restated the Second Thoughts line of 5 Sep 2026, "Making complex
+reasoning intelligible through maps you can check at every step", which had replaced
 "Read an argument reconstruction beside the text itself" — itself reworded 28 Aug 2026 from
 "…the text it is a reading of" — because the old line describes one genre of map, so it no
 longer stands for the whole.)

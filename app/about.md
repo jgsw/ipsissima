@@ -13,11 +13,15 @@
 
 ## Ipsissima
 
-*Making complex reasoning intelligible through maps you can check at every step.*
+*Making complex reasoning clear through maps you can check and question.*
 
-**Ipsissima** opens an argument as an interactive map — a reading of one text, a survey of a
-whole debate, or an argument of your own — with the passage each claim came from beside it
-when the map was drawn from a text, and the marks a reader writes in the margin.
+The argument and its reasons, the order the text tells them in, what it says happens, and the
+tables of what it compares — each one a way into the text.
+
+**Ipsissima** opens a map of a text, a survey of a whole debate, or an argument of your own. You
+can question it as well as read it: suppose a claim false and see what follows, guess before you
+look, weigh rival accounts, or study it on your own. When the map was drawn from a text, the
+passage each claim came from sits beside it, and the marks a reader writes are in the margin.
 
 *ipsissima verba* — the very words themselves, as against *ipsissima vox*, the authentic voice:
 did the author write *these words*, or is this a faithful report of what they meant? Every

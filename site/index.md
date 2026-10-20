@@ -9,8 +9,8 @@ title: Ipsissima
      own `# Ipsissima`. `default` renders the content and nothing else.
      `title:` stays, because the <title> tag is built from it.
 
-     THE PAGE STILL NEEDS ONE H1, so the mission sentence is it — settled in the author's own
-     words at the Second Thoughts checkpoint (docs/values/SECOND-THOUGHTS.md, 5 Sep 2026). The
+     THE PAGE STILL NEEDS ONE H1, so the mission sentence is it — in the author's own words,
+     restated at the Purpose checkpoint (docs/values/PURPOSE.md, 20 Oct 2026). The
      verba/vox paragraph stays close beneath: it is the name and the distinctive half, but it
      describes one genre of map, so it no longer stands for the whole.
 
@@ -18,18 +18,32 @@ title: Ipsissima
      announcement drafts (11 Sep 2026): the page led with the format before a first-time
      visitor knew what the program did for them. -->
 
-# Making complex reasoning intelligible through maps you can check at every step
+# Making complex reasoning clear through maps you can check and question
 
-Ipsissima is for understanding writing that reasons to a conclusion — a philosophical argument,
-a legal judgment, a policy report. It breaks the argument down into individual steps, so you can
-see the conclusion you are being asked to accept, and the structure of the reasoning that
-supports it.
+The argument and its reasons, the order the text tells them in, what it says happens, and the
+tables of what it compares — each one a way into the text.
+
+Ipsissima is for working through writing that reasons to a conclusion: a philosophical argument,
+a legal judgment, a policy report. A map of such a text holds several of its structures:
+
+- the argument, step by step, from the conclusion you are being asked to accept to the reasoning
+  that supports it;
+- the order the text tells it in;
+- what the text says happens, cause by cause;
+- the comparisons it draws, set out as tables.
+
+Each of them can be questioned, not only looked at. You can:
+
+- suppose a claim false and see what loses its support;
+- guess before you look;
+- weigh rival accounts against the evidence;
+- study an argument on your own.
 
 Ipsissima reads [Argdown](https://argdown.org) — the argumentation markup language created by
-Christian Voigt and maintained by the Argdown team — and opens an argument as an interactive
-map: the main claims at a glance, the detail where you choose to look, the marks a reader
-writes in the margin, and, when the map was drawn from a text, the passage each claim came
-from beside the claim that reports it. **It runs entirely in your browser and makes no network
+Christian Voigt and maintained by the Argdown team. A map is one ordinary Argdown file. On
+screen you see the main claims at a glance, the detail where you choose to look, and the marks a
+reader writes in the margin. When the map was drawn from a text, the passage each claim came
+from sits beside the claim that reports it. **It runs entirely in your browser and makes no network
 requests of any kind.** (The downloadable application speaks beyond your machine only when you
 choose Help ▸ Check for Updates…, and can converse with Zotero on your own computer — showing
 your highlights, and storing the reconstruction under its source's item with your permission
@@ -92,6 +106,27 @@ claims: the structure of **justification**, in which everything is rearranged to
 supports the conclusion, and the structure of **exposition**, which shows the claims in the
 order the text presents them. Switching between the two shows the rhetoric of a piece as well
 as its logic — how far the order of telling departs from the order of proving.
+
+A text does more than argue, and a map can record more than the argument:
+
+- **What the text says happens.** A policy report or a social theory says that one thing brings
+  about another. The **Mechanism** view draws that causal chain, from the action the text
+  recommends to the outcomes it is for.
+- **How the text sorts its evidence.** A paper may set cases against the conditions of a
+  definition, or studies against the questions they answer. The **Tables** panel sets that
+  comparison out, with the claim behind each cell. An empty cell stays empty: what the text would
+  say there is a question for you.
+
+**Questions you can put to it.** A map reports a text's argument and does not judge it, but you
+can test it:
+
+- **Suppose** a claim false, an objection successful, or a step broken, and see what then loses
+  the map's support. If you like, **guess first**, before the map shows you.
+- **Weigh** the rival accounts a text sets against each other, reason by reason.
+- **Study** the argument: say what question the text is answering and what you think, then work
+  up from the premises on your own, or down from the main claim with others.
+
+Nothing scores you. The map gives its answer, and the judgement stays yours.
 
 **A map of a debate.** Some arguments belong to no single text: the case for and against
 censorship, or a drug law, is a pattern of public argument, not a document. Ipsissima opens

@@ -11,7 +11,7 @@ tell a good reading of an argument from a bad one. Every case where a map passes
 is still a misreading is evidence about what a better check would have to notice — and there is
 an issue template for exactly this.
 
-**A sample.** `samples/` has five reconstructions and wants more. The constraint is the whole
+**A sample.** `samples/` has eleven reconstructions and wants more. The constraint is the whole
 difficulty: openly licensed *and* machine-readable *and* worth reconstructing. See
 [samples/README.md](samples/README.md) for what a folder needs. `test_fold_invariants.mjs` walks
 that directory rather than naming files, so **adding a sample strengthens the test suite by
@@ -26,9 +26,10 @@ papers. Fifty is not many, and the failures that matter are the quiet ones.
 node app/run_all_tests.mjs
 ```
 
-Twenty suites: the renderer's fold logic and layout geometry, the exposition arrangement, the
-one-file bundle, the desktop host adapter, the converters, the provenance rules in both
-languages, and a typecheck. It takes about two minutes.
+Over sixty suites: the renderer's fold logic and layout geometry, the exposition arrangement,
+the mechanism view, supposing and study, the text's tables, the one-file bundle, the desktop
+host adapter, the converters, the provenance rules in both languages, and a typecheck. It takes
+about a quarter of an hour.
 
 **Everything is expected to pass**, locally and on CI, and CI allows no failures through. It
 was not always so: for a while `fold invariants (state space)` reported a real defect and was

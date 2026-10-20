@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "ipsissima-mcp"
 version = "0.3.2"
-description = "Turn a document into a source an Argdown reconstruction can cite, and check the reconstruction against it."
+description = "Turn a document into an Argdown map that cites it — its argument, the causal chain it sets out, the comparisons it draws — and check the map against the text."
 readme = "README.md"
 # 3.11, NOT 3.10, and the reason is onnxruntime rather than anything in this code. Current
 # onnxruntime publishes wheels for cp311 upwards only, so on 3.10 the install fails outright --

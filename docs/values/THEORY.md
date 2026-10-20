@@ -34,6 +34,14 @@ audit: F8 (designed against the misreading) admitted to the App's display ethic,
 P2 and P6 together, with its weight left open to be read off its collisions. The audit report
 and its sweeps are in the private record; the diff is the record of what moved.*
 
+*Revised again at the Purpose checkpoint (20 Oct), after the author's rulings. The mission was
+restated as "Making complex reasoning clear through maps you can check and question", with a line
+beneath it naming what a map holds. P2 was restated in two halves, what
+Ipsissima makes and what it is for. B10 was respecified for the whole project, and B11 (several
+structures, one file, many ways in) admitted. The seam in §3 was restated: the MCP gathers the
+layers, the App opens the ways into them. `PURPOSE.md` is the episode record; the diff is the record
+of what moved.*
+
 ---
 
 ## 1. The keystone
@@ -93,24 +101,51 @@ principle in the inventory specialises one of them (or sits where two meet).
 **P1 — The fidelity ethic** (the keystone, §1). Specialised by: A1–A5, A8 (what a
 reconstruction must answer for); F1–F2 (what a picture must answer for); C5, D4–D6 (what the
 project must answer for); E3's negative form — a silent failure is an unanswered
-representation left standing; E6 (what a test result must answer for). The A-cluster's scope
+representation left standing; E6 (what a test result must answer for); B11's first duty (what each layer of a map must answer
+for, 20 Oct). The A-cluster's scope
 is the reading genre (5 Sep): where a map has no source text, A2–A8 do not apply for want of
 a subject matter, and B7 says what carries trust instead. A scope condition, not a demotion.
 
-**P2 — The mission: making complex reasoning intelligible** (B1). In the author's settled
-words (5 Sep): **"Making complex reasoning intelligible through maps you can check at every
-step"** — not philosophical argumentation only, but complex reasoning wherever someone wants
-to assess reasons for and against a conclusion; and the sentence names its own trust
-mechanism, as this project's sentences about trust do. Specialised by: B2 (the reader's own
-pace), B4 (cost as hindrance), B5 (the user's own words), B7 (how trust is carried where no
-text anchors it), the novice-first rulings, and F8 (designed against the misreading, 27 Sep):
-a map cannot be made intelligible through an instrument that is not. The mission is why fidelity is *drawn* rather
-than merely recorded — a border legible at a glance is the ladder made available to someone
-who will never read a conventions file. The person who *builds* a map is opened to reasoning
-at least as much as the person who reads one, so authoring support is mission work, not a
-side door. B6 — the author's values are not automatically the project's; the touchstone is
-the user — is the mission's second-order guardian, and governs how every apex below is
+**P2 — The mission: making complex reasoning clear through maps you can check and question**
+(B1). In the author's words (20 Oct): **"Making complex reasoning clear through maps you can check
+and question."** The line beneath it says what a map holds: "The argument and its reasons, the
+order the text tells them in, what it says happens, and the tables of what it compares — each one a
+way into the text." It replaced the 5 Sep sentence, "Making complex reasoning intelligible through
+maps you can check at every step", which measured
+what the map delivers. The mission has two halves, and each binds the other:
+
+- **What Ipsissima makes:** a map — one ordinary Argdown file, holding the several
+  structures the text has (its reasons, the order it tells them in, what it says happens, how it
+  sorts its cases and evidence, what it asks), each checkable at every step (B11);
+- **What it is for:** the reader's inquiry. The ways into that file let a reader frame a question,
+  test a guess against the map, and reflect on what changed (B10).
+
+Not philosophical argumentation only, but complex reasoning wherever someone wants to assess reasons
+for and against a conclusion. The sentence keeps naming its own trust mechanism, as this project's
+sentences about trust do. Specialised by:
+
+- B1 (everyone, the novice first);
+- B2 (the reader's own pace, now the pace of their inquiry);
+- B4 (cost as hindrance);
+- B5 (the user's own words);
+- B7 (how trust is carried where no text anchors it);
+- B10 (the reader inquires);
+- B11 (what earns a place in the file);
+- the novice-first rulings;
+- F8 (designed against the misreading, 27 Sep): a map cannot be made intelligible through an
+  instrument that is not.
+
+The mission is why fidelity is *drawn* rather than merely recorded: a border legible at a glance is
+the ladder made available to someone who will never read a conventions file. The person who
+*builds* a map is opened to reasoning at least as much as the person who reads one, so authoring
+support is mission work, not a side door; on the constructivist reading (B10, clause 2) building a
+map is itself a way in. B6 (the author's values are not automatically the project's; the touchstone
+is the user) is the mission's second-order guardian, and governs how every apex below is
 interpreted.
+
+*Not a seventh apex.* The Purpose checkpoint considered making inquiry an apex of its own and ruled
+against it. Apexes are not derivable from one another, and an inquiry apex could never collide with
+the mission: it would be the mission.
 
 The mission sentence measures the map; the Formation episode (14 Sep) added the reader's
 side of the measurement. Intelligibility *delivered* and understanding *formed* can come
@@ -162,8 +197,12 @@ six cite nothing above themselves.
 
 The project splits along one seam, stated in both READMEs: **the mechanical half is the
 tool's; the judgement half is the model's, and behind the model the person's** (G3). The App
-and the MCP sit on either side of a second seam: the App faces the *reader* of a
-reconstruction; the MCP faces its *sources* and its *checking*. Each half's local principles
+and the MCP sit on either side of a second seam, restated at the Purpose checkpoint (20 Oct):
+**the MCP gathers a map's layers — the text, and the several structures drawn from it —
+under a method it serves and a checker it runs; the App opens the ways into them.** The
+judgement seam runs through both unchanged: the machine gathers and checks, the model reads, the
+person judges, and the reader inquires. (Until 20 Oct the second seam read: the App faces the
+*reader* of a reconstruction; the MCP faces its *sources* and its *checking*.) Each half's local principles
 are the apex commitments specialised for its seam. The App faces the *writer* of a map as
 well (5 Sep): the hand-author is P3's reconstructor at the keyboard, and the editor's support
 for them — completion, indentation, errors a novice can act on — is B1 carried out, with no
@@ -177,7 +216,7 @@ new sovereign party needed.
      ┌───────────────────────────────┼──────────────────────────────────┐
      │                               │                                  │
    the App                    shared boundary                        the MCP
-   (the reader's half)        principles                             (the source's half)
+   (the ways in)              principles                             (the layers gathered)
      │                               │                                  │
    F1 picture ≤ file          A9/E2 the language is                  G1 extraction = source
    F2 control = promise            someone else's: official          G2 gold/silver/bronze
@@ -189,6 +228,7 @@ new sovereign party needed.
      (P6, App-local)
    F8 designed against the
      misreading (P2 + P6)
+   B10 the reader inquires                                           B11 what a layer records
    C2 one self-contained file
 ```
 
@@ -296,6 +336,8 @@ precedent a future decision can cite or distinguish.
 | novice legibility vs formative staging | the legible default, the effortful option kept — staging offered on the walkthrough's pattern, never imposed | FORMATION T2, ruled 14 Sep |
 | one reading presented as *the* reading | plurality over hedging — cruxes noted and tagged in the map, rival readings as sibling files, comparison first-class | FORMATION T4, ruled 14 Sep |
 | a text whose value is not its argument | declared once, whole, where the reader orients — `voice:` on the panel, ahead of the abstract; the tags keep carrying it claim by claim | FORMATION §6 item 8, ruled 14 Sep |
+| more layers vs cost per map (B11 vs B4) | measurement — a layer stays on request until a trial shows readers use it and its cost is measured; the plan offers it rather than running it unasked | PURPOSE §3.6, ruled 20 Oct |
+| inquiry controls vs display controls on the visible bar (B10 vs P6) | inquiry visible, display gathered behind one **Display** button, as in the Mechanism view | PURPOSE §3.6, ruled 20 Oct |
 
 Two meta-principles govern the table itself, and they are the project's native mode of doing
 values-improvement:

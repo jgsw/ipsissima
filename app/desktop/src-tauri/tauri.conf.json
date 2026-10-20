@@ -43,8 +43,8 @@
       "icons/icon.ico"
     ],
     "category": "Education",
-    "shortDescription": "Argument reconstruction, against the text it is of.",
-    "longDescription": "Ipsissima reads an Argdown reconstruction beside the manuscript itself: the argument as a map, the passage each claim was drawn from, and the marks a reader writes in the margin.",
+    "shortDescription": "Making complex reasoning clear through maps you can check and question.",
+    "longDescription": "Ipsissima opens an Argdown map of a text beside the text itself: the argument and its reasons, the order the text tells them in, what it says happens, and the tables of what it compares. Each is a way in to question it: suppose a claim false and see what follows, guess before you look, weigh rival accounts, or study it on your own.",
     "fileAssociations": [
       {
         "ext": [

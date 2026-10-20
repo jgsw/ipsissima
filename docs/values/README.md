@@ -68,6 +68,15 @@ different routes, deliberately.
   across Reasons and Mechanism, *Guess first*, Study for a reader on their own, and a Mechanism
   panel that asks before it tells. `docs/INQUIRY-PLAN.md` is the record.
 
+- **The Purpose episode — opened and ruled 20 Oct.** The author's statement that Ipsissima's purpose
+  had been broadened (one file holding several structures of a text, with several ways in) and
+  specified (inquiry, after Dewey, and constructivist learning, at the centre of what the App
+  offers). The mission was restated in the author's words, "Making complex reasoning clear through maps you
+  can check and question"; P2 was restated in two halves; B10 was
+  respecified for the whole project; B11 was admitted; and the seam between App and MCP was restated.
+  An audit of both halves found 25 places out of line, and a plan in six waves brings them into line.
+  `PURPOSE.md` is the record.
+
 ## Whose values are these
 
 A question the checkpoints answered about the framework itself, in both directions:

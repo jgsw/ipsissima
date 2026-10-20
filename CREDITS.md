@@ -84,6 +84,58 @@ has anything to do with this program.
 
 ---
 
+## How a reader questions a map — Dewey, Henne, Lang
+
+Since October 2026 the App has been designed as a place to inquire into an argument, and not only
+to look at it: suppose a claim false and see what follows, guess before looking, weigh rival
+accounts, and study an argument from its premises up (`docs/INQUIRY-PLAN.md`;
+`docs/values/INVENTORY.md`, B10). That design is not this project's invention.
+
+- **John Dewey**, *How We Think*, rev. edn (D. C. Heath, 1933) — reflective thought as running
+  from a felt difficulty, through a suggestion, to testing it by action, overt or imagined.
+  Supposing in Ipsissima is that last step, done in software; and inquiry begins from a question,
+  which is why Study opens on the text's.
+- **Céline Henne**, "Framed and framing inquiry: a pragmatist proposal", *Synthese* (2023) — the
+  distinction between a *framed* question, which takes a framework for granted and so has an
+  answer, and a *framing* one, which puts the framework itself in question. It is why the App may
+  say where a reader and the map part without ever grading the reader's reading.
+- **James M. Lang**, *Small Teaching: Everyday Lessons from the Science of Learning*, 2nd edn
+  (Jossey-Bass, 2021), ch. 1, "Predicting" — a prediction helps where the reader can bring what
+  they know to it, feedback should come fast, and reflection should follow. **Guess first** is
+  built on it.
+- **Stephen Van Evera**, *Guide to Methods for Students of Political Science* (Cornell, 1997), and
+  **David Collier**, "Understanding process tracing", *PS: Political Science & Politics* 44 (2011)
+  — the four tests (straw in the wind, hoop, smoking gun, doubly decisive) that the weigh panel's
+  **Test?** names in plain words.
+
+## How a causal chain is drawn — the mechanists, Coleman, Ylikoski, Pearl
+
+The Mechanism view draws what a text says happens, and the profile's causal annotations record it.
+The sources of that half are listed in full at the foot of
+`ipsissima-mcp/src/ipsissima_mcp/docs/mechanism-cheatsheet.md`, and in `docs/PROFILE.md` where
+each annotation is introduced. The largest debts:
+
+- **Peter Machamer, Lindley Darden and Carl F. Craver**, "Thinking about mechanisms" (2000), and
+  **Carl F. Craver**'s later work, for what a mechanism is and when a sketch is enough.
+- **James S. Coleman**, *Foundations of Social Theory* (Belknap, 1990), for the boat, and **Petri
+  Ylikoski**, for reading it: "Understanding the Coleman boat" (2021), and, with **Rodrigo
+  Martínez-Peña**, "Coupling social and ecological mechanisms with the Coleman boat" (2024). The
+  boat is drawn the way they draw it.
+- **Lars-Göran Johansson, Thomas Banitz, Tilman Hertz, Maja Schlüter** and their colleagues in
+  social-ecological systems research. Their *A Primer to Causal Reasoning About a Complex World*
+  (2024) shaped the profile's association and scope annotations. Banitz et al., "Visualization of
+  causation in social-ecological systems" (2022), and Hertz, Mancilla García and Schlüter, "From
+  nouns to verbs" (2020), shaped how stocks, flows and processes are drawn.
+- **W. Brian Arthur**, "Economics in nouns and verbs" (2023), for amounts, levels and rates moved
+  by steps that raise or lower them.
+- **Judea Pearl**, with **Dana Mackenzie**, *The Book of Why* (Basic Books, 2018), for the
+  junctions (chain, fork, collider) that `teaching/causal-junctions.argdown` teaches. Supposing
+  there is an intervention in Pearl's sense, and the teaching map says so.
+
+None of these authors has anything to do with this program.
+
+---
+
 ## Tom Stern, and why this program checks what it checks
 
 > Stern, T. (2016) '"Some Third Thing": Nietzsche's Words and the Principle of Charity',

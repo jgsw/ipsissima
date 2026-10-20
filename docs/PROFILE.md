@@ -14,7 +14,8 @@ application, GPL-3.0-or-later for Ipsissima-MCP, in whose package the registry t
 
 [Argdown](https://argdown.org) is the notation Ipsissima reads and writes. Ipsissima needs to
 record more than Argdown's syntax carries: where a claim comes from in a text, how far its
-words stand from the author's, whose view it is, what backs a causal step. It records all of it
+words stand from the author's, whose view it is, what backs a causal step, what question the
+text asks, which claims it says cannot all hold, and how it sorts its cases into a comparison. It records all of it
 **without adding any syntax**. Every annotation in this profile sits somewhere Argdown already
 provides for data:
 

@@ -175,6 +175,10 @@ so:
 - the other documentation (README, help, the extension's descriptions);
 - the values and principles framework.
 
+*Taken up 20 Oct as the Purpose episode (`docs/values/PURPOSE.md`): the framework revised on the
+author's rulings, then the self-descriptions, the help and the walkthrough brought into line
+(waves 1–3 of its plan).*
+
 ## Not built, and why
 
 - **Conditioning** — what selecting on a state (a collider, above all) does to the associations

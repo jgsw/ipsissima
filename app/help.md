@@ -43,8 +43,10 @@
   Fenced ```argdown blocks are set in ArgVu, so the relation symbols draw as arrows.
 -->
 
-Ipsissima makes complex reasoning intelligible through maps you can check at every step — a
-reading of one text, a survey of a whole debate, or an argument of your own.
+Ipsissima makes complex reasoning clear through maps you can check and question: a map of one
+text, a survey of a whole debate, or an argument of your own. A map holds the argument and its
+reasons, the order the text tells them in, what it says happens, and the tables of what it
+compares — each one a way into the text, and each one something you can question.
 
 New to it? **Take the walkthrough**, the first entry below: two minutes, on the map you have open.
 Looking for something? Type in the box above; it reads every topic, not only their titles.
@@ -72,12 +74,47 @@ choose **What does this mean?** to come back here.
 <div class="srow" data-draw="corners"><b>A folded corner</b>: top left, the reconstructor's note; top right, a comment. <a data-help="Comments and notes">Comments and notes</a></div>
 <div class="srow" data-draw="hatch"><b>Hatched in violet</b>: the reconstructor's own appraisal, shown only while it is switched on. <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a></div>
 <div class="srow" data-draw="behind"><b>A line broken where it crosses a box</b> passes behind a claim it has nothing to do with. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
+<div class="srow" data-draw="whatif"><b>What if…?</b> appears beside a claim you click: suppose it false, or its step broken, and what then loses the map's support fades. A banner along the top lists what you have supposed. <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a></div>
+<div class="srow" data-draw="ways"><b>Study</b> and <b>Tables</b>, at the left of the controls: work an argument out before the map shows it, or set out what the text compares. <a data-help="Studying a map">Studying a map</a></div>
 <div class="srow" data-draw="strip"><b>Along the top</b>: the abstract, and what the map says about itself — who wrote it, whether a person has read it, where the reading is contested. <a data-help="What a map says about itself">What a map says about itself</a></div>
 <div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — how much of the argument is showing, and which claims. <a data-help="The controls">The controls</a></div>
 <div class="srow" data-draw="key"><b>The key</b>, floating in a corner, lists every marking, with this map's drawn bright. <a data-help="The key">The key</a></div>
 <div class="srow" data-draw="cards"><b>In Exposition</b>: a band for each section of the text, and a card for each paragraph, numbered ¶ 4. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
 <div class="srow" data-draw="chain"><b>In Mechanism</b>: the chain of states. A solid navy box is what the text recommends doing, a double border what the chain is for, R or B a loop. <a data-help="Reading a causal chain">Reading a causal chain</a></div>
 </div>
+
+## Ways into a map
+
+<p class="also" hidden>reasons, exposition, mechanism, tables, arrangement, view, main claim, ways in, what if, study, question</p>
+
+A map holds several structures of a text, and each way into it answers a question of its own:
+
+- **Reasons**: *what holds this up?* The main claim at the top, and beneath it what supports or
+  attacks it, level by level.
+- **Exposition**: *where does the reader meet it?* The same claims, placed where they occur in
+  the text: file by file, section by section, in reading order. See <a data-help="Reading in the
+  text's order">Reading in the text's order</a>
+- **Mechanism**: *what does the text say happens?* Offered only when a map declares one. It is
+  not the argument but the chain of steps the text describes, from a cause, often the action it
+  recommends, to the outcomes it is for. See <a data-help="Reading a causal chain">Reading a
+  causal chain</a>
+- **Tables**: *how does the text sort its cases?* Offered only on a map that records the
+  comparisons its text makes. See <a data-help="What does the text compare?">What does the text
+  compare?</a>
+- **What if…?**: *what follows if this is false?* On any claim you click. See <a
+  data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a>
+- **Study**: *what would I have expected?* Work an argument out before the map shows it. See <a
+  data-help="Studying a map">Studying a map</a>
+
+The first four show the map. The last two put a question to it, and the map answers by its own
+lights: it never says whether you are right.
+
+<p id="helpArrangeNote">Reasons and Exposition are the same claims twice over. <b>Exposition</b>
+answers a different question: not <em>what holds this up</em> but <em>where does the reader meet
+it</em>. A long arrow there is a claim and its support far apart in the text.</p>
+
+In the application, **View ▸ Reasons**, **Exposition** and **Mechanism** switch between them, on
+<kbd>Cmd/Ctrl-1</kbd>, <kbd>2</kbd> and <kbd>3</kbd>.
 
 ## Moving around and folding
 
@@ -217,29 +254,6 @@ document said so. A file with fewer than two headings offers no Contents at all.
 several files has a menu at the left of the header for choosing which file to show.
 
 # Reading an argument
-
-## Three arrangements of the same claims
-
-<p class="also" hidden>reasons, exposition, mechanism, arrangement, view, main claim</p>
-
-Reasons and Exposition are both the argument. What differs is what *orders* the claims — the
-order of reasons, or the order of exposition.
-
-- **Reasons** — the main claim at the top, and beneath it what supports or attacks it, level by
-  level
-- **Exposition** — the same claims, placed where they occur in the text: file by file, section by
-  section, in reading order. See <a data-help="Reading in the text's order">Reading in the text's
-  order</a>
-- **Mechanism** — offered only when a map declares one: not the argument but what the text says
-  *happens* — the chain of steps from a cause, often the action it recommends, to the outcomes it
-  is for. See <a data-help="Reading a causal chain">Reading a causal chain</a>
-
-<p id="helpArrangeNote">They are the same claims twice over. <b>Exposition</b> answers a different
-question: not <em>what holds this up</em> but <em>where does the reader meet it</em>. A long arrow
-there is a claim and its support far apart in the text.</p>
-
-In the application, **View ▸ Reasons**, **Exposition** and **Mechanism** switch between them, on
-<kbd>Cmd/Ctrl-1</kbd>, <kbd>2</kbd> and <kbd>3</kbd>.
 
 ## Reading an argument's box
 
@@ -918,6 +932,8 @@ the intervention and its outcomes, and sets aside what lies off that line — ot
 names, places its chain stops — naming them in the panel. **Unfold the chain** puts it back.
 Nothing moves when you fold: every state keeps its place, so unfolding returns exactly what you
 saw.
+
+# Questioning a map
 
 ## Supposing, and denying a conclusion
 
@@ -1819,8 +1835,8 @@ distance: how far out from the main claim a claim sits. *spine* is load: how muc
 claim five steps out that holds up twenty others is the spine of the argument and the distance
 ladder reveals it last.
 
-In the title bar: the three arrangements (<a data-help="Three arrangements of the same
-claims">Three arrangements of the same claims</a>), the four panes and **Layout** (<a
+In the title bar: the arrangements (<a data-help="Ways into a map">Ways into a map</a>), the
+four panes and **Layout** (<a
 data-help="Laying out the panes">Laying out the panes</a>), **Open…**, **Fit**, **Full screen**
 on the web, and **How to use**. When the window is narrow the buttons drop their words before
 anything drops off the screen; resting on one says what it is.

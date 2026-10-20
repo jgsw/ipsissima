@@ -5,14 +5,20 @@ reading of. Ask for a map of a debate — the arguments for and against a conclu
 to no single text — and there is nothing to cite: the assistant writes the map directly, and
 the checks still hold it to parsing and structure.
 
-Ipsissima-MCP is an [MCP](https://modelcontextprotocol.io) server. It does the mechanical half of
-building a reconstruction — getting a document into structured Markdown with its paragraphs and
-page numbers intact, and checking a finished reconstruction against its sources word for word.
-The judgement half, turning a paper into an argument, is done by the assistant you are already
-talking to; this server hands it the instructions and then checks its work.
+Ipsissima-MCP is an [MCP](https://modelcontextprotocol.io) server. It gathers what a map of a text
+needs. It gets the document into structured Markdown with its paragraphs and page numbers intact.
+It serves the method for reading the text into one Argdown file that holds several of its
+structures: the argument and its reasons, the causal chain the text says happens, the questions it
+asks, and, when you ask for them, the comparisons it draws as tables. Then it checks the finished
+map against its sources word for word. The judgement, reading a paper into a map, is done by the
+assistant you are already talking to; this server hands it the instructions and then checks its
+work.
 
-The result opens in [Ipsissima](https://github.com/jgsw/ipsissima), which shows the map, the passage each claim was
-drawn from, and how far each claim stands from the source's own words.
+The result opens in [Ipsissima](https://github.com/jgsw/ipsissima), which makes complex reasoning
+clear through maps you can check and question. It shows the map beside the passage each claim was
+drawn from, and how far each claim stands from the source's own words. It also gives you ways to
+question the map: suppose a claim false and see what follows, weigh rival accounts, or study the
+argument on your own.
 
 ---
 
