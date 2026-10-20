@@ -6162,7 +6162,11 @@ function createLiveMap(container, graph, options) {
       // switch, so drawn as a pill, lit while the mode runs.
       (opt.onStudy ? '<span class="alm-grp" data-role="study">' +
         '<button data-act="study" title="Study this map: say what you think holds each ' +
-        'claim up before unfolding it">Study</button></span>' : "") +
+        'claim up before unfolding it">Study</button>' +
+        // TABLES BESIDE IT (20 Oct 2026): the text's own comparisons, on a map that declares them
+        // (`frames:`). Drawn hidden; the page shows it when the map has a table to set out.
+        (opt.onTables ? '<button data-act="tables" hidden title="The comparisons the text ' +
+          'makes, set out as tables">Tables</button>' : "") + '</span>' : "") +
       (parts.depth ? '<span class="alm-grp" data-role="depth"></span>' : "") +
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="claims">' +
         '<b title="How much of each claim\'s own words to show">claims</b>' +
@@ -6233,6 +6237,7 @@ function createLiveMap(container, graph, options) {
       const act = b.dataset.act;
       if (act === "fold")     return setBarFolded(true, true);
       if (act === "study")    return opt.onStudy && opt.onStudy();
+      if (act === "tables")   return opt.onTables && opt.onTables();
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "layout")   return setState({ readColumn: b.dataset.col === "1" });
       if (act === "shape")    return setState({ shape: !showShape });

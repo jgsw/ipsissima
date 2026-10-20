@@ -222,6 +222,9 @@ function liveMapDeps() {
          // Accounts against evidence, and sets that cannot all hold (18 Oct 2026): pure, read off
          // the graph; the page asks argdown-suppose.js what each costs.
          wrap("argdown-accounts.js", readScript("argdown-accounts.js"), "LIVEMAP_DEPS") +
+         // The text's own comparisons as tables (step 6 of "Tables by design", 20 Oct 2026): pure,
+         // read off `graph.frames`; inert on every map that declares no frames.
+         wrap("argdown-tables.js", readScript("argdown-tables.js"), "LIVEMAP_DEPS") +
          wrap("argdown-host.js", readScript("argdown-host.js"), "LIVEMAP_DEPS") +
          markdownBundle();
 }

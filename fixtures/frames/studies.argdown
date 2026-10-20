@@ -1,0 +1,58 @@
+// Planted fixture for the Tables panel (20 Oct 2026), in the fixture-maker's own words. Two studies
+// of why a reading scheme helped, and the two accounts the text weighs. Each study's findings bear
+// one on each account: in the east both findings are for, so grouped by the study the east bears on
+// the accounts alike; in the west one is for and one against, so the west tells them apart, though
+// no single finding does. The studies crossed with the questions they answer fill three of the four
+// cells. The west report's story is told against two others, so that cell has two values. Two rivals
+// the text reports stand outside the declared accounts, so they are weighed beside them: that the
+// reports agree (three reasons bear on it) and that the east scores were a fluke (none do, so Study
+// does not offer it).
+===
+title: "Planted -- studies, accounts and a cell with two values"
+reconstruction:
+    generated: true
+frames:
+  study:
+    kind: case
+    label: "The studies"
+    pinpoint: "planted"
+    values: {east: "The east study", west: "The west study"}
+  question:
+    kind: case
+    label: "What the text asks of them"
+    pinpoint: "planted"
+    values: {gain: "Did reading improve?", why: "Why did it improve?"}
+  told:    {kind: dimension, label: "the story it tells", pinpoint: "planted", values: [practice, attention, luck]}
+  against: {kind: dimension, label: "the story it tells against", pinpoint: "planted", values: [practice, attention, luck]}
+  why:
+    kind: account
+    label: "Why the scheme helped"
+    pinpoint: "planted"
+    values:
+      practice: {claim: "More practice helped"}
+      attention: {claim: "More attention helped"}
+===
+
+[The scheme helped]: The reading scheme helped the children who took part.
+    <+ [Reading improved in the east]: Reading scores rose in the east study.
+        {about: {study: east, question: gain}}
+        <- [The east scores were a fluke]: Some said the east scores rose by chance. #reported
+    <+ [More practice helped]: The scheme helped because the children read more.
+        <+ [East children read more]: In the east study the children read more often than before.
+            {about: {study: east, question: why}}
+        <+ [West practice counted]: In the west study the children who read most gained most.
+            {about: {study: west, question: why}}
+    <+ [More attention helped]: The scheme helped because an adult listened to each child read. #reported
+        <+ [East attention mattered]: In the east study the children an adult heard most gained most.
+            {about: {study: east, question: why}}
+        <- [West attention made no difference]: In the west study the children an adult heard more gained no more.
+            {about: {study: west, question: why}}
+
+[The reports disagree]: The two reports tell different stories of the scheme.
+    <- [The reports agree]: Some said the two reports tell the same story. #reported
+    <+ [The east report tells practice]: The east report says it was practice, not attention.
+        {about: {study: east, told: practice, against: attention}}
+    <+ [The west report tells attention]: The west report says it was attention, not practice.
+        {about: {study: west, told: attention, against: practice}}
+    <+ [Nor was it luck]: The west report says it was not luck either.
+        {about: {study: west, against: luck}}

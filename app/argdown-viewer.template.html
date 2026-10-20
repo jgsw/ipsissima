@@ -753,6 +753,45 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #weigh td.k b{color:var(--fg);font-weight:600}
 #weigh .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #weigh .verdict button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
+#tables{position:fixed;z-index:35;left:14px;top:96px;width:max-content;min-width:26rem;max-width:min(62rem,calc(100vw - 28px));max-height:70vh;
+  box-sizing:border-box;
+  overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
+  box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
+#tables[hidden]{display:none}
+#tables header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
+#tables header b{font-size:13px}
+#tables header .grow{flex:1}
+#tables header button.plain{font-size:14px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
+#tables .q{color:var(--fg-dim)}
+#tables .tname{font-weight:600;margin:.1rem 0 .3rem}
+#tables .ask{margin:.35rem 0 .1rem}
+#tables button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .1rem}
+#tables select{font:inherit;font-size:12px;max-width:100%;margin:.1rem 0 .35rem}
+#tables .accts div{margin:.1rem 0}
+#tables .go{cursor:pointer;text-decoration:underline dotted}
+#tables .go.here{background:var(--accent-wash,rgba(58,123,213,.18));border-radius:3px;padding:0 .15rem}
+#tables .twrap{overflow-x:auto;margin:.35rem 0}
+#tables table{border-collapse:collapse;width:100%}
+#tables td{min-width:6.5em;max-width:16em}
+#tables td.c{min-width:0}
+#tables th,#tables td{border-bottom:1px solid var(--line,#ddd);padding:.2rem .35rem;text-align:left;vertical-align:top}
+#tables thead th{font-weight:600;font-size:11.5px;color:var(--fg-dim)}
+#tables thead th.verdict-col{color:var(--fg);border-left:2px solid var(--line,#ddd)}
+#tables tbody th{font-weight:400;cursor:pointer;min-width:8em;max-width:15em;position:sticky;left:0;background:var(--panel,var(--bg));z-index:1}
+#tables tbody th .sub{font-size:11.5px;color:var(--fg-dim);margin-top:.1rem}
+#tables td.c,#tables th.c{text-align:center;width:3.6em}
+#tables td.hid{color:var(--fg-dim);text-align:center}
+#tables td.silent{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line,#ddd) 5px 6px)}
+#tables td.two{box-shadow:inset 0 0 0 1px var(--fg-dim)}
+#tables td .sep{color:var(--fg-dim)}
+#tables td .cl + .cl{margin-top:.3rem}
+#tables tr.pick th,#tables tr.pick td{background:var(--accent-wash,rgba(58,123,213,.1))}
+#tables td.k{color:var(--fg-dim);font-size:11.5px;white-space:nowrap}
+#tables td.k b{color:var(--fg);font-weight:600}
+#tables .verdict,#tables .ask,#tables .q,#tables ul.moves{max-width:44rem}
+#tables .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
+#tables ul.moves{margin:.3rem 0 .3rem 1.1rem;padding:0}
+#tables ul.moves li{margin:.15rem 0}
 #ctx button.ctxon:hover .tick{color:var(--on-accent)}
 #ctx button.ctxsub{font-size:11.5px;color:var(--fg-dim)}
 #ctx .hint{display:block;margin-left:1.1em;color:var(--fg-dim);font-size:11px}
@@ -1455,6 +1494,8 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
   <aside id="supp" hidden aria-label="Your suppositions"></aside>
   <!-- WEIGH: accounts against evidence, or claims that cannot all hold (18 Oct 2026). Filled by weighRender. -->
   <aside id="weigh" hidden aria-label="Weigh"></aside>
+  <!-- TABLES: the text's own comparisons, declared with `frames:` (20 Oct 2026). Filled by tablesRender. -->
+  <aside id="tables" hidden aria-label="Tables"></aside>
 
   <!-- A BRIDGE'S STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). Clicking a causal scheme's
        name on an inference bar in Reasons: the steps its premises state, drawn as the Mechanism
@@ -2056,12 +2097,13 @@ function openingDepth(graph){
     onLocate: msLocate, onSelect: whatIfShow,
     onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
-    onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
+  tablesSync();
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
   // order `positions` used. Rebuilt per file loaded, and the pane starts closed: it is an answer
@@ -7102,7 +7144,8 @@ function redrawFrom(graph){
   // and the highlights after it, because the repaint clears shared hover titles.
   cmpPaint();
   zotPaint();
-  if (sig === MAP_SIG) return;            // the edit did not touch the picture
+  // A TABLE IS NOT PART OF THE PICTURE: an edit to `frames:` or an `about:` redraws the panel, not the map.
+  if (sig === MAP_SIG) { tablesSync(); return; }   // the edit did not touch the picture
   MAP_SIG = sig;
   mechOffer(graph);
   var keep = LIVE ? LIVE.getState() : null;
@@ -7110,7 +7153,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
-    onStudy: toggleStudy, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
@@ -7124,6 +7167,7 @@ function redrawFrom(graph){
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
+  tablesSync();
   buildKeys(graph);
   statsLine(graph);
   if (PANES.notes) renderNotes();
@@ -8624,6 +8668,7 @@ function suppReset(){
   if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
   $("supp").hidden = true; $("supp").innerHTML = "";
   weighClose();
+  tablesClose();
   suppBar();
 }
 function suppClear(){ SUPP = suppEmpty(); SUPP_KEEP = []; suppApply(); }
@@ -8641,6 +8686,7 @@ function suppApply(){
     SUPP_LAST = null; box.hidden = true; box.innerHTML = ""; if (LIVE && LIVE.setSupposition) LIVE.setSupposition([]);
     suppBar(); suppMechSync(null);
     if (WEIGH) { var wb0 = $("weigh"); if (wb0) wb0.hidden = ARRANGEMENT === "mechanism"; }
+    if (TABLES) { var tb0 = $("tables"); if (tb0) tb0.hidden = ARRANGEMENT === "mechanism"; }
     return;
   }
   var I = suppIds(), r = null, guessing = GUESS.phase === "guessing";
@@ -8661,6 +8707,7 @@ function suppApply(){
   if (guessing && MECH && MECH.setExperiment) MECH.setExperiment(Object.assign(suppMechInput(r), { waiting: [], quiet: true }));
   else suppMechSync(r);
   if (WEIGH) { var wb = $("weigh"); if (wb) wb.hidden = ARRANGEMENT === "mechanism"; }
+  if (TABLES) { var tb = $("tables"); if (tb) tb.hidden = ARRANGEMENT === "mechanism"; }
 }
 
 /* GUESS FIRST, THEN SEE (James, 18 Oct 2026: "it's okay to draw the map's answer beside the reader's
@@ -8922,7 +8969,7 @@ function whatIfShow(n){
 $("whatif").onclick = function(){
   var n = WHATIF_N;
   if (!n) return;
-  var wm = weighMenu(n);
+  var wm = weighMenu(n).concat(tablesMenu(n));
   ctxMenu(n.label || "What if\u2026?", suppMenu(n).concat(wm.length ? [null].concat(wm) : [], [null, guessMenuItem()]), $("whatif"));
 };
 document.addEventListener("pointerdown", function(e){
@@ -8949,8 +8996,9 @@ var WEIGH_TESTS = {
   clincher: ["a clincher", "if it holds, the rival is out; if it fails, the account still stands"],
   decisive: ["decisive", "it settles it either way"]
 };
-/** The sets Study offers: those with a rival that is more than a denial, so the reasons have something to tell apart. */
-function studyAccountSets(){ return weighSets("accounts").filter(function(S){ return !S.allDenials; }); }
+/** The sets Study offers: those with a rival that is more than a denial, and with reasons, so the reasons have
+ *  something to tell apart (a set with none -- Bates's revenue pair -- has nothing to weigh; 20 Oct 2026). */
+function studyAccountSets(){ return weighSets("accounts").filter(function(S){ return !S.allDenials && S.rows.length > 0; }); }
 function weighSets(mode){
   var g = CURRENT_GRAPH;
   if (!g || !window.ArgdownAccounts) return [];
@@ -8971,6 +9019,7 @@ function weighMenu(n){
 }
 function weighOpen(mode, i, study){
   WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, study: !!study };
+  if (TABLES) tablesClose();
   whatIfHide(); ctxHide();
   weighRender();
 }
@@ -9116,6 +9165,274 @@ $("weigh").addEventListener("change", function(ev){
   }
 });
 
+/* TABLES: THE TEXT'S OWN COMPARISONS (step 6 of "Tables by design"; James's ruling, 20 Oct 2026:
+ * tables show how a text collects and classifies its information and evidence, which the other views
+ * do not). A map declares the comparisons with `frames:` and places its claims in them with `about:`;
+ * argdown-tables.js sets them out. Three kinds:
+ *  - A CASE TABLE: the text's cases as rows, the respects it compares them in as columns, its verdict
+ *    last. With it, the moves a reader makes on a table: the cells the text leaves empty, two cases
+ *    apart in one respect only, two alike in every stated respect and given different verdicts, a
+ *    case against a stated rule, and a case worse than another on every count the text ranks.
+ *  - A CROSS TABLE, where claims name two kinds of case at once (Bates's studies against the
+ *    questions they answer).
+ *  - A DECLARED ACCOUNT SET, its reasons grouped by the case they are about: two findings of one study
+ *    are one row, which is how the text says the study tells the accounts apart.
+ * AN EMPTY CELL IS THE TEXT'S SILENCE, and is never filled; a cell given two values is shown as given,
+ * with the checker's question beside it. Guess first hides the values and the moves until Show, as in
+ * the weigh panel. Report, not evaluate: nothing is totalled and no case is ranked. */
+var TABLES = null;
+/** Every table the map declares, in the order of its frames: case tables, then cross tables, then
+ *  declared account sets. `key` keeps the reader's table across an edit. */
+function tablesList(){
+  var g = CURRENT_GRAPH;
+  if (!g || !g.frames || !window.ArgdownTables) return [];
+  var out = [];
+  ArgdownTables.caseTables(g).forEach(function(t){ out.push({ kind: "case", key: "case:" + t.frame, label: t.label, t: t }); });
+  ArgdownTables.crossTables(g).forEach(function(t){ out.push({ kind: "cross", key: "cross:" + t.rowsFrame + "|" + t.columnsFrame, label: t.label, t: t }); });
+  weighSets("accounts").forEach(function(S, i){
+    if (S.declared) out.push({ kind: "account", key: "account:" + S.frame, label: S.label, set: S, i: i, groups: ArgdownTables.accountRowsByCase(g, S) });
+  });
+  return out;
+}
+/** The claims a table holds: what a value cites, the accounts and the reasons that bear on them. */
+function tablesClaims(T){
+  var ids = [];
+  var add = function(id){ if (id != null && ids.indexOf(id) < 0) ids.push(id); };
+  if (T.kind === "case") T.t.rows.forEach(function(r){ T.t.columns.forEach(function(c){ var cell = T.t.cells[r.id][c.id]; if (cell) cell.claims.forEach(function(x){ add(x.id); }); }); });
+  else if (T.kind === "cross") Object.keys(T.t.cells).forEach(function(r){ Object.keys(T.t.cells[r]).forEach(function(c){ T.t.cells[r][c].forEach(function(x){ add(x.id); }); }); });
+  else { T.set.accounts.forEach(function(a){ add(a.id); }); T.set.rows.forEach(function(r){ add(r.id); }); }
+  return ids;
+}
+/** The tables a claim sits in, as indices into tablesList(). */
+function tablesContaining(id){
+  var out = [];
+  tablesList().forEach(function(T, i){ if (tablesClaims(T).indexOf(id) >= 0) out.push(i); });
+  return out;
+}
+function tablesMenu(n){
+  if (!n || !CURRENT_GRAPH || !CURRENT_GRAPH.frames) return [];
+  var I = tablesContaining(n.id);
+  if (!I.length) return [];
+  return [{ act: "tables", label: "Set out in a table", hint: "The comparison the text makes that this claim is part of, as a table",
+            run: function(){ tablesOpen(I[0], n.id); } }];
+}
+/** The bar's Tables button: offered on a map with a table to set out, lit while the panel is open. */
+function tablesSync(){
+  var b = document.querySelector('#map [data-act="tables"]');
+  var any = tablesList().length > 0;
+  if (b) {
+    b.hidden = !any;
+    b.classList.toggle("on", !!TABLES);
+    b.setAttribute("aria-pressed", TABLES ? "true" : "false");
+  }
+  if (TABLES) { if (any) tablesRender(); else tablesClose(); }
+}
+function tablesToggle(){ if (TABLES) tablesClose(); else tablesOpen(0); }
+function tablesOpen(i, here){
+  var L = tablesList();
+  if (!L.length) return;
+  var T = L[Math.max(0, Math.min(i || 0, L.length - 1))];
+  if (WEIGH) weighClose();
+  TABLES = { key: T.key, shown: !(GUESS.on || STUDY), picks: [], here: here || null };
+  whatIfHide(); ctxHide();
+  tablesRender();
+  tablesSync();
+}
+function tablesClose(){
+  var was = !!TABLES;
+  TABLES = null;
+  var box = $("tables"); if (box) { box.hidden = true; box.innerHTML = ""; }
+  if (was) {
+    if (LIVE) LIVE.markClaims([]);
+    var b = document.querySelector('#map [data-act="tables"]');
+    if (b) { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }
+  }
+}
+function tablesRender(){
+  var box = $("tables");
+  if (!box) return;
+  if (!TABLES || !CURRENT_GRAPH) { box.hidden = true; box.innerHTML = ""; return; }
+  var L = tablesList(), k = L.map(function(x){ return x.key; }).indexOf(TABLES.key);
+  if (k < 0) { if (!L.length) { tablesClose(); return; } k = 0; TABLES.key = L[0].key; TABLES.picks = []; }
+  var T = L[k], esc = ArgdownStaircase.esc;
+  var h = '<header><b>Tables</b><span class="q">the text’s own comparisons</span><span class="grow"></span>' +
+    '<button type="button" class="plain" data-tables-close="1" title="Close" aria-label="Close">×</button></header>';
+  if (L.length > 1) h += '<select data-tables-which aria-label="Which table">' + L.map(function(x, j){
+    var t = x.label + (x.kind === "account" ? " (accounts)" : "");
+    return '<option value="' + j + '"' + (j === k ? ' selected' : '') + '>' + esc(t.length > 80 ? t.slice(0, 79) + "…" : t) + '</option>'; }).join("") + '</select>';
+  else h += '<div class="tname">' + esc(T.label) + '</div>';
+  box.innerHTML = h + (T.kind === "case" ? tablesCaseHTML(T.t) : T.kind === "cross" ? tablesCrossHTML(T.t) : tablesAccountHTML(T));
+  box.hidden = ARRANGEMENT === "mechanism";
+}
+/** A frame's value as the text words it. */
+function tablesValueLabel(frame, v){
+  var x = frame && frame.values.filter(function(y){ return y.id === v; })[0];
+  return x ? x.label : v;
+}
+function tablesFrame(id){ var F = CURRENT_GRAPH && CURRENT_GRAPH.frames; return F ? F.frames.filter(function(f){ return f.id === id; })[0] : null; }
+/** WHAT A GUESS IS ASKED, on a case table: the strongest move the table has, as a question about its
+ *  rows. The answer is the rows the move names. */
+function tablesAsk(t){
+  var rowsOf = function(list, keys){ var out = []; list.forEach(function(m){ keys.forEach(function(k){ if (out.indexOf(m[k]) < 0) out.push(m[k]); }); }); return out; };
+  if (t.againstRule.length) return { q: "Which case goes against the rule the text states: it meets the rule’s conditions and gets another verdict, or gets the verdict without meeting them?", rows: rowsOf(t.againstRule, ["row"]), word: "goes against the rule" };
+  if (t.alike.length) return { q: "Which cases are alike in every respect the text states, yet given different verdicts?", rows: rowsOf(t.alike, ["a", "b"]), word: "is one of them" };
+  if (t.dominated.length) return { q: "Which is worse than another on every count the text ranks?", rows: rowsOf(t.dominated, ["worse"]), word: "is worse on every count" };
+  if (t.apart.length) return { q: "Which cases differ from another in one respect only?", rows: rowsOf(t.apart, ["a", "b"]), word: "is one of them" };
+  if (t.empty.length) return { q: "Where is the text silent? Mark the cases you think it says nothing of in some respect.", rows: rowsOf(t.empty, ["row"]), word: "has an empty cell" };
+  return { q: "Before you look: what do you expect the text to say of each case?", rows: null };
+}
+function tablesGo(ids, label, here){
+  var esc = ArgdownStaircase.esc, ok = ids.filter(function(x){ return x != null; });
+  return ok.length ? '<span class="go' + (here ? ' here' : '') + '" data-tables-go="' + esc(ok.join(" ")) + '">' + esc(label) + '</span>' : esc(label);
+}
+function tablesCaseHTML(t){
+  var esc = ArgdownStaircase.esc, shown = TABLES.shown, here = TABLES.here;
+  var rowLabel = function(id){ var r = t.rows.filter(function(x){ return x.id === id; })[0]; return r ? r.label : id; };
+  var colLabel = function(id){ var c = t.columns.filter(function(x){ return x.id === id; })[0]; return c ? c.label : id; };
+  var ask = tablesAsk(t), h = "";
+  if (!shown) h += '<div class="ask">' + esc(ask.q) + (ask.rows ? ' Click the cases, then press <b>Show</b>.' : ' Then press <b>Show</b>.') + '</div>';
+  var multi = [];
+  h += '<div class="twrap"><table class="ttab"><thead><tr><th></th>' + t.columns.map(function(c){
+    return '<th' + (c.kind === "verdict" ? ' class="verdict-col" title="The verdict the text gives"' : '') + '>' + esc(c.label) + '</th>'; }).join("") + '</tr></thead><tbody>' +
+    t.rows.map(function(r){
+      var picked = TABLES.picks.indexOf(r.id) >= 0;
+      return '<tr data-tables-row="' + esc(r.id) + '"' + (picked ? ' class="pick"' : '') + '><th scope="row">' + (picked ? '✓ ' : '') + esc(r.label) + '</th>' +
+        t.columns.map(function(c){
+          var cell = t.cells[r.id][c.id];
+          if (!shown) return '<td class="hid">·</td>';
+          if (!cell) return '<td class="silent" title="The text says nothing here"></td>';
+          var f = tablesFrame(c.id), mine = here != null && cell.claims.some(function(x){ return x.id === here; });
+          if (cell.values.length > 1) multi.push({ row: r.id, col: c.id, values: cell.values });
+          return '<td' + (cell.values.length > 1 ? ' class="two" title="Two values: does the text say both?"' : '') + '>' + cell.values.map(function(v){
+            var by = cell.claims.filter(function(x){ return x.value === v; });
+            return tablesGo(by.map(function(x){ return x.id; }), tablesValueLabel(f, v), mine && by.some(function(x){ return x.id === here; }));
+          }).join('<span class="sep"> / </span>') + '</td>';
+        }).join("") + '</tr>';
+    }).join("") + '</tbody></table></div>';
+  if (!shown) return h + '<div>' + (ask.rows ? 'Marked: ' + TABLES.picks.length + '. ' : '') + '<button type="button" data-tables-show="1">Show</button></div>';
+  // THE MOVES, said in the table's own words.
+  var moves = [], cells = t.rows.length * t.columns.length;
+  t.againstRule.forEach(function(m){
+    var cond = Object.keys(m.rule.when).map(function(k){ return colLabel(k) + ": " + tablesValueLabel(tablesFrame(k), m.rule.when[k]); }).join(" and ");
+    var vf = tablesFrame(m.verdict), by = m.rule.claim ? ((CURRENT_GRAPH.nodes || []).filter(function(n){ return n.label === m.rule.claim && n.kind === "statement"; })[0] || null) : null;
+    moves.push('<b>' + esc(rowLabel(m.row)) + '</b> ' + (m.meets ? 'meets the rule' : 'does not meet the rule') + (by ? ' of ' + tablesGo([by.id], '‹' + by.label + '›') : '') +
+      ' (if ' + esc(cond) + ', then ' + esc(colLabel(m.verdict)) + ': ' + esc(tablesValueLabel(vf, m.rule.then)) + ')' +
+      (m.meets ? ', and is given ' : ', and is given it all the same: ') + '<b>' + esc(tablesValueLabel(vf, m.got)) + '</b>.');
+  });
+  t.alike.forEach(function(m){
+    var vf = tablesFrame(m.verdict);
+    moves.push('<b>' + esc(rowLabel(m.a)) + '</b> and <b>' + esc(rowLabel(m.b)) + '</b> are alike in every respect the text states, and given different verdicts (' +
+      esc(tablesValueLabel(vf, m.values[0])) + ', ' + esc(tablesValueLabel(vf, m.values[1])) + '): something the columns do not state decides it.');
+  });
+  t.apart.forEach(function(m){
+    var vd = m.verdicts.map(function(v){ return v.a == null || v.b == null ? 'the text does not give both verdicts on ' + esc(colLabel(v.verdict)) : v.differ ? esc(colLabel(v.verdict)) + ' differs too' : esc(colLabel(v.verdict)) + ' is the same'; });
+    moves.push('<b>' + esc(rowLabel(m.a)) + '</b> and <b>' + esc(rowLabel(m.b)) + '</b> differ in one respect only, ' + esc(colLabel(m.dimension)) + (vd.length ? '; ' + vd.join('; ') : '') + '.');
+  });
+  t.dominated.forEach(function(m){
+    moves.push('<b>' + esc(rowLabel(m.worse)) + '</b> is no better than <b>' + esc(rowLabel(m.better)) + '</b> on any count the text ranks (' + m.on.map(function(d){ return esc(colLabel(d)); }).join(', ') +
+      '), and worse on at least one. Nothing is totalled.');
+  });
+  multi.forEach(function(m){
+    moves.push('<b>' + esc(rowLabel(m.row)) + '</b> is given ' + m.values.length + ' values for ' + esc(colLabel(m.col)) + ' (' + m.values.map(function(v){ return esc(tablesValueLabel(tablesFrame(m.col), v)); }).join(', ') +
+      '). Does the text say both? A cell with two values is shown, and left out of the comparisons.');
+  });
+  var lead = t.empty.length ? 'The text fills ' + t.filled + ' of the ' + cells + ' cells, and is silent in ' + t.empty.length + '. An empty cell is left empty: what the text would say there is yours to ask.'
+                            : 'The text fills every cell.';
+  if (ask.rows && TABLES.picks.length) {
+    var hit = TABLES.picks.filter(function(id){ return ask.rows.indexOf(id) >= 0; }).length, missed = ask.rows.filter(function(id){ return TABLES.picks.indexOf(id) < 0; }).length;
+    lead = 'You marked ' + TABLES.picks.length + '; ' + hit + ' of them ' + esc(ask.word) + (missed ? '. You did not mark ' + missed + ' that ' + (missed === 1 ? 'does' : 'do') : '') + '. ' + lead;
+  }
+  h += '<div class="verdict">' + lead + '</div>';
+  if (moves.length) h += '<ul class="moves">' + moves.map(function(m){ return '<li>' + m + '</li>'; }).join("") + '</ul>';
+  else if (cells > 1) h += '<div class="q">No two cases are set apart by one respect alone, and none goes against a stated rule.</div>';
+  return h + '<div class="q">Click a value to go to the claim that states it, or a case to see every claim about it. The table records what the text says of each case; what follows is yours to judge.</div>';
+}
+function tablesCrossHTML(t){
+  var esc = ArgdownStaircase.esc, shown = TABLES.shown, here = TABLES.here, h = "";
+  if (!shown) h += '<div class="ask">Before you look: which of these does the text say answers which? Then press <b>Show</b>.</div>';
+  h += '<div class="twrap"><table class="ttab cross"><thead><tr><th></th>' + t.columns.map(function(c){ return '<th>' + esc(c.label) + '</th>'; }).join("") + '</tr></thead><tbody>' +
+    t.rows.map(function(r){
+      return '<tr data-tables-row="' + esc(r.id) + '"><th scope="row">' + esc(r.label) + '</th>' + t.columns.map(function(c){
+        var cell = t.cells[r.id] && t.cells[r.id][c.id];
+        if (!shown) return '<td class="hid">·</td>';
+        if (!cell) return '<td class="silent" title="The text says nothing here"></td>';
+        return '<td>' + cell.map(function(x){ return '<div class="cl">' + tablesGo([x.id], x.title, here != null && x.id === here) + '</div>'; }).join('') + '</td>';
+      }).join("") + '</tr>';
+    }).join("") + '</tbody></table></div>';
+  if (!shown) return h + '<div><button type="button" data-tables-show="1">Show</button></div>';
+  return h + '<div class="verdict">The text fills ' + t.filled + ' of the ' + t.size + ' cells' + (t.filled < t.size ? '; the rest it leaves empty, and so does the table.' : '.') + '</div>' +
+    '<div class="q">Click a claim to go to it on the map.</div>';
+}
+/** A DECLARED ACCOUNT SET, its reasons grouped by the case they are about (argdown-tables.js, accountRowsByCase). */
+function tablesAccountHTML(T){
+  var esc = ArgdownStaircase.esc, S = T.set, shown = TABLES.shown, LL = "ABCDEFGH", acc = S.accounts, h = "";
+  var hasOwn = acc.some(function(a){ return a.own; });
+  h += '<div class="accts">' + acc.map(function(a, k){ return '<div><b>' + LL[k] + '</b> ' + tablesGo([a.id], '‹' + a.label + '›') + ' <span class="q">' + (a.own ? "the text’s own" : hasOwn ? "an account the text sets beside it" : "an account the text weighs") + '</span></div>'; }).join("") + '</div>';
+  if (!T.groups.length) return h + '<div class="q">The map gives no reason directly for or against these accounts.</div>';
+  if (!shown) h += '<div class="ask">Which of these tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
+  var word = { "for": "for", against: "against", both: "both" }, kindW = { apart: "<b>tells them apart</b>", alike: "bears on both alike", one: "on one only" };
+  h += '<div class="twrap"><table class="ttab acc"><thead><tr><th></th>' + acc.map(function(a, k){ return '<th class="c" title="' + esc(a.label) + '">' + LL[k] + '</th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
+    T.groups.map(function(g, gi){
+      var key = "g" + gi, picked = TABLES.picks.indexOf(key) >= 0;
+      var head = g.frame ? '<b>' + esc(g.label) + '</b>' + (shown ? '<div class="sub">' + g.rows.map(function(id){ return tablesGo([id], '‹' + weighLabel(id) + '›', id === TABLES.here); }).join('<br>') + '</div>' : '')
+                         : (shown ? tablesGo([g.rows[0]], '‹' + weighLabel(g.rows[0]) + '›', g.rows[0] === TABLES.here) : '‹' + esc(weighLabel(g.rows[0])) + '›');
+      return '<tr data-tables-row="' + key + '"' + (picked ? ' class="pick"' : '') + '><th scope="row">' + (picked ? '✓ ' : '') + head + '</th>' +
+        acc.map(function(a){ var v = g.cells[a.id]; return shown ? (v ? '<td class="c">' + word[v] + '</td>' : '<td class="c silent" title="The text does not say what this account would make of it"></td>') : '<td class="c hid">·</td>'; }).join("") +
+        (shown ? '<td class="k">' + kindW[g.kind] + '</td>' : '') + '</tr>';
+    }).join("") + '</tbody></table></div>';
+  if (!shown) return h + '<div>Marked: ' + TABLES.picks.length + '. <button type="button" data-tables-show="1">Show</button></div>';
+  var apart = T.groups.map(function(g, gi){ return g.kind === "apart" ? "g" + gi : null; }).filter(Boolean);
+  var grouped = T.groups.filter(function(g){ return g.frame && g.rows.length > 1; }).length;
+  var s = apart.length ? apart.length + ' of the ' + T.groups.length + ' rows ' + (apart.length === 1 ? 'tells' : 'tell') + ' the accounts apart.' : 'None of the ' + T.groups.length + ' rows tells the accounts apart by the map.';
+  if (TABLES.picks.length) {
+    var hit = TABLES.picks.filter(function(x){ return apart.indexOf(x) >= 0; }).length, missed = apart.filter(function(x){ return TABLES.picks.indexOf(x) < 0; }).length;
+    s = 'You marked ' + TABLES.picks.length + '; ' + hit + ' of them ' + (hit === 1 ? 'does' : 'do') + '. ' + s + (missed ? ' You did not mark ' + missed + '.' : '');
+  }
+  if (grouped) s += ' ' + grouped + ' row' + (grouped === 1 ? ' gathers' : 's gather') + ' the findings of one case: what each finding says of one account, the case says of them together.';
+  h += '<div class="verdict">' + esc(s) + '</div>';
+  return h + '<div><button type="button" data-tables-weigh="' + T.i + '" title="The same accounts in the weigh panel, one row a reason, with Suppose false and Test?">Weigh these accounts</button></div>' +
+    '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
+}
+$("tables").addEventListener("click", function(ev){
+  var t = ev.target;
+  if (!t || !t.getAttribute || !TABLES) return;
+  if (t.getAttribute("data-tables-close")) { tablesClose(); return; }
+  if (t.getAttribute("data-tables-show")) { TABLES.shown = true; tablesRender(); return; }
+  var w = t.getAttribute("data-tables-weigh");
+  if (w != null) { var wi = +w; tablesClose(); weighOpen("accounts", wi); return; }
+  var g = t.closest ? t.closest("[data-tables-go]") : null;
+  if (g && TABLES.shown) { if (LIVE) LIVE.markClaims(g.getAttribute("data-tables-go").split(" "), { centreAlways: true }); return; }
+  var row = t.closest ? t.closest("[data-tables-row]") : null;
+  if (!row) return;
+  var id = row.getAttribute("data-tables-row");
+  if (!TABLES.shown) {
+    var L = tablesList(), T = L.filter(function(x){ return x.key === TABLES.key; })[0];
+    if (!T || T.kind === "cross" || (T.kind === "case" && !tablesAsk(T.t).rows)) return;
+    var k = TABLES.picks.indexOf(id);
+    if (k >= 0) TABLES.picks.splice(k, 1); else TABLES.picks.push(id);
+    tablesRender();
+    return;
+  }
+  // A CASE, CLICKED ONCE SHOWN: every claim about it, lit on the map.
+  if (t.closest("th")) {
+    var T2 = tablesList().filter(function(x){ return x.key === TABLES.key; })[0], ids = [];
+    if (T2 && T2.kind === "case") T2.t.columns.forEach(function(c){ var cell = T2.t.cells[id][c.id]; if (cell) cell.claims.forEach(function(x){ if (x.id != null && ids.indexOf(x.id) < 0) ids.push(x.id); }); });
+    else if (T2 && T2.kind === "cross") Object.keys(T2.t.cells[id] || {}).forEach(function(c){ T2.t.cells[id][c].forEach(function(x){ if (x.id != null && ids.indexOf(x.id) < 0) ids.push(x.id); }); });
+    else if (T2 && T2.kind === "account") { var gr = T2.groups[+id.slice(1)]; if (gr) ids = gr.rows.slice(); }
+    if (ids.length && LIVE) LIVE.markClaims(ids, { centreAlways: true });
+  }
+});
+$("tables").addEventListener("change", function(ev){
+  var t = ev.target;
+  if (t && t.getAttribute && t.getAttribute("data-tables-which") != null && TABLES) {
+    var L = tablesList(), T = L[+t.value];
+    if (!T) return;
+    TABLES.key = T.key; TABLES.picks = []; TABLES.here = null; TABLES.shown = !(GUESS.on || STUDY);
+    if (LIVE) LIVE.markClaims([]);
+    tablesRender();
+  }
+});
+
 function ctxShow(n, ev){
   var m = $("ctx");
   m.textContent = "";
@@ -9200,6 +9517,14 @@ function ctxShow(n, ev){
       wb.setAttribute("data-weigh-menu", it.act);
       wb.onclick = function(){ ctxHide(); it.run(); };
       m.appendChild(wb);
+    });
+    // TABLES (20 Oct 2026): on a claim that sits in one of the text's own comparisons.
+    tablesMenu(n).forEach(function(it){
+      var tb = document.createElement("button");
+      tb.type = "button"; tb.textContent = it.label; tb.title = it.hint;
+      tb.setAttribute("data-tables-menu", it.act);
+      tb.onclick = function(){ ctxHide(); it.run(); };
+      m.appendChild(tb);
     });
   }
   // THE KEY, from the moment of puzzlement: somebody staring at a border, a coloured line or

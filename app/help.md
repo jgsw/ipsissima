@@ -985,7 +985,12 @@ Not every rival is a second account of the same thing. Often it is simply the cl
 denies: *Definition a* beside *Definition a is not sufficient*. Against a denial, a reason for the
 one is a reason against the other, so there is nothing for the reasons to tell apart. Where the
 titles read that way (one negated, and the same subject), the panel says so and folds the table,
-which **Set out the reasons anyway** opens. Study does not offer such a pair as accounts to weigh.
+which **Set out the reasons anyway** opens. Study does not offer such a pair as accounts to weigh,
+nor a pair that no reason bears on.
+
+Where the map names the rival accounts of one thing itself (an `account` frame in its `frames:`),
+those come first, as the text sets them out. The other rivals the text answers are still offered
+beside them, unless they repeat one of the named accounts.
 The reading is taken from the wording alone, so it can miss a denial put in other words.
 
 **These cannot all hold.** Where the map marks claims that cannot all be true together — a trilemma,
@@ -1005,6 +1010,45 @@ fail with every premise true, so the panel lists the step itself among what may 
 objections the map records against it. Where the steps are formalized and checked valid, the page
 works out exactly which premises your choices force false, and the least you could give up; where a
 formalized step is invalid, denying its conclusion forces nothing.
+
+## What does the text compare?
+
+<p class="also" hidden>tables, table, frames, about, cases, compare, comparison, classification, typology, empty cell, rule, counterexample, accounts by case</p>
+
+Many texts sort what they discuss: cases set against the conditions of a definition, stories
+placed in a typology, studies against the questions they answer, options against the counts they
+are judged on. Where a map records those comparisons (in its `frames:`, with `about:` on the claims
+that state each cell), **Tables** appears beside **Study** on the map's control bar. On a map that
+records none, it does not appear. **Right-click** a claim that sits in a table, or use **What
+if…?**, and **Set out in a table** opens the table it belongs to, with its cells marked.
+
+A table's rows are the text's cases and its columns the respects it compares them in, the verdict
+last. **Click a value** to go to the claim that states it; **click a case** to light every claim
+the text makes about it. Beneath the table the panel names the moves the table allows:
+
+- **an empty cell** is where the text says nothing. It stays empty: what the text would say there
+  is the question to ask, and the table never fills it.
+- **against the rule**: a case that meets the conditions the text states for a verdict and is given
+  another (Gettier's cases against the definition of knowledge).
+- **alike, and given different verdicts**: two cases the same in every stated respect, so something
+  the columns do not record decides between them.
+- **differ in one respect only**: two cases apart in a single respect, and whether their verdicts
+  differ too.
+- **no better on any count**: where the text ranks its counts, a case no better than another on
+  any of them and worse on one. Nothing is added up.
+
+A cell the map gives two values shows both, and asks whether the text says both; such a cell is
+left out of the comparisons. Where the text crosses two kinds of case (studies against the
+questions they answer), the claims sit in the cells where they meet. And where it names rival
+accounts of one thing, the table sets the reasons against the accounts as **Weigh the accounts**
+does (see <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a>),
+but gathers the findings of one case into one row: a study that found for one account and against
+the other tells them apart, though neither finding does alone. **Weigh these accounts** opens the
+same set in the weigh panel.
+
+With **Guess first** on, the values and the moves stay hidden: answer the panel's question by
+clicking the cases you expect, then **Show**. The table records what the text says of each case;
+what follows from it is yours to judge.
 
 ## Studying a map
 
@@ -1735,6 +1779,9 @@ Along the bottom of the map, left to right:
 
 - **Study** — study mode: see <a data-help="Studying a map">Studying a map</a>. Lit while it
   is on; press it again to end it.
+- **Tables**, on a map that records the comparisons its text makes — the text's own tables: see
+  <a data-help="What does the text compare?">What does the text compare?</a> Lit while the panel
+  is open; press it again to close it.
 - **how much** — a slider: how many levels of reasons are showing, from the main claim
   outwards. Its rungs are *main claim*, *+ reasons*, *+ detail* and *everything*; the name of the
   rung you are on sits beside it, with the number of boxes it puts on screen. In Exposition the

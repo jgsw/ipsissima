@@ -42,7 +42,10 @@ The pass records the text's own comparisons, and only the text's.
    - Columns are the rival accounts of one thing.
    - Rows are the evidence, and cells are the relations already drawn: support, attack.
    - The weigh panel derives these from `#reported` rivals. Declaring the accounts says which claims
-     are accounts *of the same thing*, so the panel need not guess.
+     are accounts *of the same thing*, so the panel need not guess. A declared frame does not hide
+     the map's other rivals: an objection and the text's reply to it stay in the weigh panel beside
+     the declared accounts, unless they repeat one of them. So declare only rival accounts of one
+     thing, not every objection the text answers.
 
 ## The notation
 

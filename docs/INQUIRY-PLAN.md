@@ -148,10 +148,21 @@ verified. The pass also found relations the texts state that the maps had not dr
    perspicuous (Reasons), give an analytical summary in order (Exposition), and show what the text
    says changes what (Mechanism). Tables give access to a different structure: how the text
    collects and classifies its information and evidence.
-2. **Declared accounts probably replace the derived sets.** Not settled: test it.
-3. **Several values in one cell: instinct says no**, and the interface would be hard. Look at
-   mockups, or test its use, before deciding.
+2. **Declared accounts sit beside the derived sets, without repeats** (ruled 20 Oct, after the
+   test). Replacing them lost real objection-and-reply pairs: four on Bates (resale, resentment,
+   cost recovery, revenue) and one on Valentino (failure to treat). A derived set that shares a claim
+   with a declared one is dropped, since it restates part of it. Study skips a set no reason bears on.
+3. **Several values in one cell: no** (ruled 20 Oct, after mockups). The panel shows both values as
+   given, asks "does the text say both?" as the checker does, and leaves the cell out of the
+   comparisons. One cell in four maps has two values (Stone's Nader); a tick column per value was the
+   only contender, and it finds likeness but not difference, because a blank is silence.
 4. **The four passes go back into the original maps.** Done 20 Oct, all ok and verified.
+
+**Step 6, built (20 Oct).** A **Tables** panel beside Study, on maps that declare `frames:`, and **Set
+out in a table** on the right-click menu of a claim that sits in one (`argdown-tables.js`, wired into
+the page). Case tables name their moves; cross tables; declared account sets grouped by case. Guess
+first hides values and moves until Show; an empty cell stays empty. Help topic: *What does the text
+compare?*
 
 **To do once the tables work is complete: what Ipsissima is for.** The purpose has shifted. It is
 no longer only to let a reader understand writing that reasons to a conclusion, by breaking the
@@ -173,7 +184,8 @@ so:
 
 ## Tests
 
-`app/test_suppose.mjs` (What if…?, Guess first in Reasons, Study on my own, Study from here, and
+`app/test_tables.mjs` (the tables module, and the Tables panel under real clicks on the three
+`fixtures/frames/` maps), `app/test_suppose.mjs` (What if…?, Guess first in Reasons, Study on my own, Study from here, and
 a claim stating two steps on `fixtures/suppose/several.argdown`, where the panel asks which),
 `app/test_mechanism_view.mjs` (the redraw bug, right-click, carrying both ways, Guess first in the
 chart, Questions to try, the Display menu), and the Study checks in `test_rendered_dom.mjs` and

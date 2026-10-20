@@ -71,9 +71,22 @@ function denies(a, b) {
 function accountSets(graph, opts) {
   var byId = nodesOf(graph, opts), edges = ((graph && graph.edges) || []).filter(function (e) { return byId[e.from] && byId[e.to]; });
   // DECLARED ACCOUNTS FIRST (the tabulation pass, 20 Oct 2026): where the map names the rival
-  // accounts of one thing in an `account` frame, those are the sets, and nothing is guessed.
-  var declared = declaredSets(graph, byId, edges);
-  if (declared) return declared;
+  // accounts of one thing in an `account` frame, those sets come first, and are not guessed at.
+  // BESIDE THEM, NOT INSTEAD (James's ruling, 20 Oct 2026, after a test on four maps): a declared
+  // frame says which claims are rival accounts of one thing, not that nothing else in the map is set
+  // against a rival. Replacing the derived sets lost Bates's answers to the objections to free
+  // distribution (resale, resentment, cost recovery) and Valentino's failure-to-treat pair. A derived
+  // set that shares a claim with a declared one is dropped: it restates part of that set.
+  var declared = declaredSets(graph, byId, edges) || [];
+  var inDeclared = {};
+  declared.forEach(function (s) { s.accounts.forEach(function (a) { inDeclared[a.id] = true; }); });
+  return declared.concat(derivedSets(byId, edges).filter(function (s) {
+    return !s.accounts.some(function (a) { return inDeclared[a.id]; });
+  }));
+}
+
+/** The sets read off the relations: a claim of the text's and the rivals set against it. */
+function derivedSets(byId, edges) {
   // WHICH CLAIM A RIVAL IS SET AGAINST: the one it attacks. A claim of the text's that attacks a rival
   // is the text's reason against it -- a row, not an account -- unless the rival attacks nothing of the
   // text's and that claim has reasons of its own: then it is the account the text answers it with.
