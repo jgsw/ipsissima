@@ -145,7 +145,11 @@ if (chromium) {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     const box = label => page.locator("#map g.alm-n").filter({ has: page.locator(".alm-title", { hasText: new RegExp("^" + label + "$") }) }).first();
-    const lit = () => page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit")].map(g => g.querySelector(".alm-title").textContent).sort());
+    // THE WHOLE TITLE, every line of it. A title that wraps is drawn as one .alm-title per line, and
+    // where it wraps depends on the fonts: CI's Linux fonts wrapped "West attention made no
+    // difference" after "no", and the first line alone failed a check that passed on a Mac.
+    const lit = () => page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit")]
+      .map(g => [...g.querySelectorAll(".alm-title")].map(t => t.textContent.trim()).join(" ")).sort());
     const tablesBtn = page.locator('#map [data-act="tables"]');
     const open = async file => { await page.goto("file://" + file); await page.waitForTimeout(900); };
 
@@ -284,6 +288,59 @@ if (chromium) {
     check(/sets 2 of its claims against rival accounts/.test(st) && /‹More practice helped›/.test(st) && /‹The reports disagree›/.test(st) && !/Reading improved in the east/.test(st),
           "Study offers the declared set and the derived one with reasons, and not a pair no reason bears on", st.slice(0, 400));
     await page.locator('#studybody button[data-study="end"]').first().click();
+    await page.waitForTimeout(250);
+
+    // THE BAR: WAYS TO QUESTION FIRST, DISPLAY GATHERED (the Purpose episode, ruled 20 Oct 2026).
+    const order = await page.evaluate(() => [...document.querySelectorAll(
+      '#map .alm-bar [data-act="study"], #map .alm-bar [data-act="weigh"], #map .alm-bar [data-role="depth"], ' +
+      '#map .alm-bar [data-act="display"], #map .alm-bar [data-role="claims"]')]
+      .map(e => e.dataset.act || e.dataset.role));
+    // Mutation: put the claims group back ahead of the Display button -> the order breaks.
+    check(order.join(" ") === "study weigh depth display claims",
+          "the bar runs: Study and Weigh, then how much, then Display holding the display switches", order.join(" "));
+    const pop = page.locator("#map .alm-bar .alm-dpop");
+    // Mutation: draw the menu open -> visible at load.
+    check(await pop.isHidden(), "Display opens closed: the display switches are one press away");
+    await page.locator('#map [data-act="display"]').click();
+    await page.waitForTimeout(150);
+    check(await pop.isVisible() && await page.locator('#map .alm-bar [data-act="spine"][data-on="1"]').isVisible(),
+          "pressing Display shows its switches");
+    await page.locator('#map .alm-bar [data-act="text"][data-full="1"]').click();
+    await page.waitForTimeout(250);
+    // Mutation: close the menu on any click inside the bar -> a second choice needs a second press.
+    check(await pop.isVisible(), "a choice inside Display leaves it open for the next");
+    await page.locator('#map .alm-bar [data-act="text"][data-full="0"]').click();
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(150);
+    check(await pop.isHidden(), "Esc closes it");
+    const weighBtn = page.locator('#map [data-act="weigh"]');
+    // Mutation: leave weighSync's `hidden` unset -> the button never shows.
+    check(await weighBtn.isVisible(), "Weigh is offered on a map with accounts to weigh");
+    await weighBtn.click();
+    await page.waitForTimeout(300);
+    const weighText = await page.locator("#weigh").innerText().catch(() => "");
+    check(await page.locator("#weigh").isVisible() && !/gives no reason/.test(weighText) &&
+          await weighBtn.evaluate(b => b.classList.contains("on")),
+          "Weigh opens the panel on a set a reason bears on, and is lit", weighText.slice(0, 200));
+    await weighBtn.click();
+    await page.waitForTimeout(200);
+    check(await page.locator("#weigh").isHidden() && !(await weighBtn.evaluate(b => b.classList.contains("on"))),
+          "pressed again, it closes the panel");
+
+    // ON BATES, THE FIRST SET IS ONE NO REASON BEARS ON, so opening set 0 opened on "the map gives no
+    // reason" -- found on screen, 20 Oct 2026. Mutation: open set 0 in weighToggle -> this fails
+    // (the fixture above cannot tell, its first set having reasons).
+    const batesDir = path.join(REPO, "samples", "Bates et al 2012 - The Price is Wrong");
+    const batesMap = fs.readdirSync(batesDir).find(f => f.endsWith(".argdown"));
+    const batesOut = path.join(tmp, "bates.html");
+    execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(batesDir, batesMap), "-o", batesOut], { stdio: "pipe" });
+    await open(batesOut);
+    await weighBtn.click();
+    await page.waitForTimeout(400);
+    const batesWeigh = await page.locator("#weigh").innerText().catch(() => "");
+    check(/Weigh the accounts/.test(batesWeigh) && !/gives no reason/.test(batesWeigh),
+          "on Bates too, Weigh opens on a set a reason bears on, past the first set, which has none",
+          batesWeigh.slice(0, 200));
 
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {

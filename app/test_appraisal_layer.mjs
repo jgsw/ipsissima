@@ -97,6 +97,9 @@ if (chromium) {
     await openAll();
     const drawn = () => page.locator("#map .alm-n.alm-appraisal").count();
     const aBtn = page.locator('#map .alm-bar [data-act="appraisal"]');
+    // The switch lives under Display since 20 Oct 2026 (the Purpose episode): open the menu, as a
+    // reader must, before reading or pressing it.
+    await page.click('#map .alm-bar [data-act="display"]');
 
     // Mutation: default `appraisal` true in createLiveMap's options -> fails.
     check(await drawn() === 0, "Reasons opens with no appraisal claim drawn");

@@ -75,9 +75,9 @@ choose **What does this mean?** to come back here.
 <div class="srow" data-draw="hatch"><b>Hatched in violet</b>: the reconstructor's own appraisal, shown only while it is switched on. <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a></div>
 <div class="srow" data-draw="behind"><b>A line broken where it crosses a box</b> passes behind a claim it has nothing to do with. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
 <div class="srow" data-draw="whatif"><b>What if…?</b> appears beside a claim you click: suppose it false, or its step broken, and what then loses the map's support fades. A banner along the top lists what you have supposed. <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a></div>
-<div class="srow" data-draw="ways"><b>Study</b> and <b>Tables</b>, at the left of the controls: work an argument out before the map shows it, or set out what the text compares. <a data-help="Studying a map">Studying a map</a></div>
+<div class="srow" data-draw="ways"><b>Study</b>, <b>Tables</b> and <b>Weigh</b>, at the left of the controls: work an argument out before the map shows it, set out what the text compares, or weigh rival accounts. <a data-help="Studying a map">Studying a map</a></div>
 <div class="srow" data-draw="strip"><b>Along the top</b>: the abstract, and what the map says about itself — who wrote it, whether a person has read it, where the reading is contested. <a data-help="What a map says about itself">What a map says about itself</a></div>
-<div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — how much of the argument is showing, and which claims. <a data-help="The controls">The controls</a></div>
+<div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — ways to question the map, how much of it is showing, and <b>Display</b> for how it is drawn. <a data-help="The controls">The controls</a></div>
 <div class="srow" data-draw="key"><b>The key</b>, floating in a corner, lists every marking, with this map's drawn bright. <a data-help="The key">The key</a></div>
 <div class="srow" data-draw="cards"><b>In Exposition</b>: a band for each section of the text, and a card for each paragraph, numbered ¶ 4. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
 <div class="srow" data-draw="chain"><b>In Mechanism</b>: the chain of states. A solid navy box is what the text recommends doing, a double border what the chain is for, R or B a loop. <a data-help="Reading a causal chain">Reading a causal chain</a></div>
@@ -292,7 +292,7 @@ nothing.
 
 <div class="key" id="relkey"></div>
 
-<p id="helpEdgeNote">In <b>Exposition</b>, with <b>Shape</b> switched on in the control bar, a line
+<p id="helpEdgeNote">In <b>Exposition</b>, with <b>Shape</b> switched on under <b>Display</b>, a line
 also says <em>which way it reaches</em>. Colour still means what it means above — the arrangement
 never changes what a line <em>is</em> — but the weight of the ink says when its support
 arrives:</p>
@@ -468,8 +468,8 @@ the block that stands for it, and at the précis the section's one claim stays l
 the section. Clicking a passage lights, as well, any claim the passage *announces* (see echoes,
 below), even though that claim is placed where it is argued.
 
-**Two flows.** Exposition can flow in **rows** or down a **column**. The choice is *flow* on
-the control bar.
+**Two flows.** Exposition can flow in **rows** or down a **column**. The choice is *flow*, under
+**Display** on the control bar.
 
 **Rows.** Each paragraph that has claims drawn from it is a faint **card**, with its claims top to
 bottom in the order the paragraph makes them. Its number is at the foot: **¶ 4** is the fourth
@@ -544,7 +544,7 @@ then arguing for it is ordinary practice; so is building the case first. This vi
 where each claim's support falls and how far away it sits; it does not score either habit.
 
 This is an author's question about a text more than a reader's, so it is a layer you turn on:
-**Shape**, on the control bar in Exposition. Off, the default, the lines are drawn plain and
+**Shape**, under **Display** on the control bar in Exposition. Off, the default, the lines are drawn plain and
 no sparklines are shown. On, each band carries a **sparkline**, and the whole reconstruction
 has one in the footer beside the claim count, read left to right through the text:
 
@@ -1188,8 +1188,8 @@ which the law of the land allows him* holds up the claim above it **because a co
 
 A file may use any hashtag it likes and Ipsissima will show it — these are a convention, not
 a fixed list. Miller's `#obiter`, for what the court said by the way and did not need for its
-decision, is one of a map's own. The **hashtags** switches in the control bar list whatever the
-file actually contains, and do not appear at all when it contains none. Switch one off to take
+decision, is one of a map's own. The **hashtags** switches, under **Display** on the control
+bar, list whatever the file actually contains, and do not appear at all when it contains none. Switch one off to take
 those claims off the map; the bar says how many claims the switches are hiding.
 
 ## The reconstructor's appraisal
@@ -1200,7 +1200,7 @@ The appraisal is off until you ask for it. It is the reconstructor's own reading
 against the world — a confounder the author never mentions, a step the text leaves out, a loop it
 leaves open — and never something the text says.
 
-Its switch is **Appraisal**, in the map's control bar beside the hashtags, and in Mechanism's bar
+Its switch is **Appraisal**, under **Display** on the map's control bar beside the hashtags, and in Mechanism's bar
 below the chain, and it is **one switch**: turned on in one arrangement, it is on in all three. It
 says how many additions it is hiding; switched on, a banner stays across the view and every
 addition is drawn hatched in violet, on the argument map and on the chain alike.
@@ -1789,20 +1789,32 @@ overwritten.
 
 ## The controls
 
-<p class="also" hidden>bar, controls, slider, switch, how much, spine, sections, hashtags, untagged</p>
+<p class="also" hidden>bar, controls, slider, switch, how much, spine, sections, hashtags, untagged, display, weigh</p>
 
-Along the bottom of the map, left to right:
+Along the bottom of the map, left to right: first the ways to question the map, then the ways to
+move around it, then **Display**, which holds everything that changes how it is drawn.
 
 - **Study** — study mode: see <a data-help="Studying a map">Studying a map</a>. Lit while it
   is on; press it again to end it.
 - **Tables**, on a map that records the comparisons its text makes — the text's own tables: see
   <a data-help="What does the text compare?">What does the text compare?</a> Lit while the panel
   is open; press it again to close it.
+- **Weigh**, on a map where the text sets accounts against each other — the weigh panel, opened on
+  the first set a reason bears on; the panel's list offers the others. Lit while it is open; press
+  it again to close it. Right-click a claim to weigh the set that claim is in.
 - **how much** — a slider: how many levels of reasons are showing, from the main claim
   outwards. Its rungs are *main claim*, *+ reasons*, *+ detail* and *everything*; the name of the
   rung you are on sits beside it, with the number of boxes it puts on screen. In Exposition the
   first rung is the *précis*, one claim per section, and a text in several files adds *by
   chapter*, every file shut into one block. The arrow keys step it.
+- **sections** — **Folded** shuts every section into a block, **Open** opens every one. When some
+  are folded and some open, neither is lit, and resting on *sections* says how many are folded.
+- **Display** — opens a menu of the switches below. It stays open while you make several
+  choices; a press anywhere else, or <kbd>Esc</kbd>, closes it.
+- **⌄** — folds the bar away to a small chip, which brings it back
+
+Under **Display**:
+
 - **claims** — **Short** gives the first few lines with a "more" link; **Full** gives every
   claim's whole text.
 - **flow**, in Exposition only — **Rows** lays the paragraphs side by side, wrapping like lines of
@@ -1810,8 +1822,6 @@ Along the bottom of the map, left to right:
 - **Shape**, in Exposition only — whether each claim's reasons come before it or after, and how
   far they reach: see <a data-help="Where do the reasons fall?">Where do the reasons fall?</a>
   Off until you ask for it.
-- **sections** — **Folded** shuts every section into a block, **Open** opens every one. When some
-  are folded and some open, neither is lit, and resting on *sections* says how many are folded.
 - **spine** — **All** shows every claim; **Load-bearing** shows only those the argument rests on —
   remove one and part of the argument loses its route to the main claim. The number is how many
   qualify.
@@ -1824,9 +1834,9 @@ Along the bottom of the map, left to right:
   reported views, on their own. On the Miller map that is 22 claims out of 66.
 - **Appraisal** — the reconstructor's own additions: see <a data-help="The reconstructor's
   appraisal">The reconstructor's appraisal</a>
-- **⌄** — folds the bar away to a small chip, which brings it back
 
-While switches hide claims, the bar says how many: *12 claims hidden by switches*. Switching
+While switches hide claims, the bar itself says how many, with the menu closed: *12 claims hidden
+by switches*. Switching
 everything off, hashtags and untagged alike, leaves the map empty. That is the filter doing what
 it was told rather than a fault, and the controls all read *off* so you can see why.
 

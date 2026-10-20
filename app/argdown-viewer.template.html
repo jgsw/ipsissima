@@ -2097,13 +2097,13 @@ function openingDepth(graph){
     onLocate: msLocate, onSelect: whatIfShow,
     onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
-    onStudy: toggleStudy, onTables: tablesToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
-  tablesSync();
+  tablesSync(); weighSync();
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
   // order `positions` used. Rebuilt per file loaded, and the pane starts closed: it is an answer
@@ -5014,8 +5014,8 @@ function keyContent(graph){
       out.push('<span class="kchip">#' + ArgdownStaircase.esc(f) + '</span>');
     });
     if (facets.length > 6) out.push('<span class="kchip">+' + (facets.length - 6) + ' more</span>');
-    out.push('</div><div class="kfoot" style="margin-top:.1rem">switch one off in the bar to ' +
-             'set those claims aside</div>');
+    out.push('</div><div class="kfoot" style="margin-top:.1rem">switch one off under Display, on the bar, ' +
+             'to set those claims aside</div>');
   }
 
   var sp = SHAPE_ON ? sparkFor(graph) : null;
@@ -7183,7 +7183,7 @@ function redrawFrom(graph){
   cmpPaint();
   zotPaint();
   // A TABLE IS NOT PART OF THE PICTURE: an edit to `frames:` or an `about:` redraws the panel, not the map.
-  if (sig === MAP_SIG) { tablesSync(); return; }   // the edit did not touch the picture
+  if (sig === MAP_SIG) { tablesSync(); weighSync(); return; }   // the edit did not touch the picture
   MAP_SIG = sig;
   mechOffer(graph);
   var keep = LIVE ? LIVE.getState() : null;
@@ -7191,7 +7191,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
-    onStudy: toggleStudy, onTables: tablesToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
@@ -7205,7 +7205,7 @@ function redrawFrom(graph){
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
-  tablesSync();
+  tablesSync(); weighSync();
   buildKeys(graph);
   statsLine(graph);
   if (PANES.notes) renderNotes();
@@ -9055,15 +9055,35 @@ function weighMenu(n){
                            run: function(){ weighOpen("giveup", I[0]); } });
   return out;
 }
+/** The bar's Weigh button (20 Oct 2026): offered on a map with accounts to weigh, lit while the
+ *  weigh panel is open on them. It opens the first set a reason bears on, and the panel's own list
+ *  offers the rest; the right-click menu opens the set a claim is in. */
+function weighToggle(){
+  if (WEIGH && WEIGH.mode === "accounts") { weighClose(); return; }
+  // The first set a reason bears on, as Study chooses: a set with no reasons opens on "the map
+  // gives no reason", which is no way in.
+  var first = studyAccountSets()[0];
+  if (first) weighOpen("accounts", weighSets("accounts").map(function(x){ return x.id; }).indexOf(first.id));
+}
+function weighSync(){
+  var b = document.querySelector('#map [data-act="weigh"]');
+  if (!b) return;
+  b.hidden = !studyAccountSets().length;
+  var on = !!(WEIGH && WEIGH.mode === "accounts");
+  b.classList.toggle("on", on);
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+}
 function weighOpen(mode, i, study){
   WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, study: !!study };
   if (TABLES) tablesClose();
   whatIfHide(); ctxHide();
   weighRender();
+  weighSync();
 }
 function weighClose(){
   WEIGH = null;
   var box = $("weigh"); if (box) { box.hidden = true; box.innerHTML = ""; }
+  weighSync();
 }
 function weighLabel(id){ var n = suppNodeById(id); return n ? n.label : id; }
 function weighRender(){
@@ -9274,7 +9294,7 @@ function tablesOpen(i, here){
   TABLES = { key: T.key, shown: !(GUESS.on || STUDY), picks: [], here: here || null };
   whatIfHide(); ctxHide();
   tablesRender();
-  tablesSync();
+  tablesSync(); weighSync();
 }
 function tablesClose(){
   var was = !!TABLES;

@@ -530,6 +530,7 @@ if (chromium) {
       check(!!pile && pile.stack && pile.dash === "none", "a folded section is drawn as a pile, with no dash",
             JSON.stringify(pile));
       // A SWITCH THAT HIDES CLAIMS SAYS HOW MANY (MESSAGES.md rule 12).
+      await page.click('#map .alm-bar [data-act="display"]');   // the switches live under Display
       await page.click("#map .alm-bar [data-untagged]");
       await page.waitForTimeout(800);
       const hid = await page.evaluate(() => { const e = document.querySelector("#map .alm-hid");

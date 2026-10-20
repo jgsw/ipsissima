@@ -415,8 +415,28 @@ framework's `README.md`.
 - The tour is 410 words against 411, so it keeps its two-minute promise. It was checked on screen
   with real key presses on the Wilson sample: forward, back and Escape.
 
+**Wave 4, first part — the bar** (finding 16; ruling 9). The Reasons and Exposition bar now
+runs in three parts:
+
+- **the ways to question the map:** Study, Tables, and a new **Weigh**, which opens the weigh
+  panel on the first set of accounts a reason bears on;
+- **the ways to move around it:** how much, and sections;
+- **Display ▾**, which gathers claims, flow, shape, spine, hashtags and the appraisal, as the
+  Mechanism view's Display menu does.
+
+The menu opens closed. It stays open while several choices are made, and closes on a press
+elsewhere or on Esc. "N claims hidden by switches" stays on the bar, so a switch behind a closed
+menu never hides claims silently. On a phone the menu is placed by the window, clear of the
+sideways-scrolling strip, and its hashtags wrap.
+
+The help's *The controls* and every place that sent the reader to "the bar" for a switch now say
+"under Display". `test_tables.mjs` holds the bar's order, the menu's manners and Weigh. One check
+runs on the Bates sample, where the first set has no reasons; it was found on screen, and was
+shown to fail when Weigh opens set 0.
+
 **Still to come:**
 
-- wave 4 (the interface; mockups first, and the §3.6 row on inquiry against display controls);
+- the rest of wave 4: the map's question offered first on opening, and a closing reflection for
+  supposing and the tables (mockups first);
 - wave 5 (the method; the §3.6 row on cost);
 - wave 6 (a release, asked for first).

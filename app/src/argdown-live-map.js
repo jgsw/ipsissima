@@ -3729,6 +3729,7 @@ function createLiveMap(container, graph, options) {
   let barChip = null;
   function setBarFolded(folded, tell) {
     if (!toolbar) return;
+    if (folded && /** @type {any} */ (toolbar)._setDisplayOpen) /** @type {any} */ (toolbar)._setDisplayOpen(false);
     toolbar.hidden = !!folded;
     if (barChip) barChip.hidden = !folded;
     if (tell && typeof opt.onBarFold === "function") {
@@ -6161,13 +6162,34 @@ function createLiveMap(container, graph, options) {
       // mode that works the fold badges, which "how much" beside it governs; an independent
       // switch, so drawn as a pill, lit while the mode runs.
       (opt.onStudy ? '<span class="alm-grp" data-role="study">' +
-        '<button data-act="study" title="Study this map: say what you think holds each ' +
-        'claim up before unfolding it">Study</button>' +
+        '<button data-act="study" title="Study this map: start from the question the text ' +
+        'answers, and work the argument out before the map shows it">Study</button>' +
         // TABLES BESIDE IT (20 Oct 2026): the text's own comparisons, on a map that declares them
         // (`frames:`). Drawn hidden; the page shows it when the map has a table to set out.
         (opt.onTables ? '<button data-act="tables" hidden title="The comparisons the text ' +
-          'makes, set out as tables">Tables</button>' : "") + '</span>' : "") +
+          'makes, set out as tables">Tables</button>' : "") +
+        // WEIGH BESIDE THEM (the Purpose episode, 20 Oct 2026: inquiry on the bar). The rival
+        // accounts the text sets against each other, reason by reason. Until now it was reached
+        // only from a claim's right-click menu, which a reader has to know to look in. Drawn
+        // hidden; the page shows it on a map with accounts to weigh.
+        (opt.onWeigh ? '<button data-act="weigh" hidden title="The rival accounts the text sets ' +
+          'against each other, with the reasons for and against each">Weigh</button>' : "") +
+        '</span>' : "") +
       (parts.depth ? '<span class="alm-grp" data-role="depth"></span>' : "") +
+      '<span class="alm-grp alm-seg" data-role="sections"></span>' +
+      // HOW THE MAP IS DRAWN, ONE PRESS AWAY (the Purpose episode, 20 Oct 2026; ruled the same
+      // day: "the Display elements openable via a 'Display' button as per the Mechanism view").
+      // Everything on this bar used to be presentation, and the ways to question a map sat at
+      // its edge looking like one more display switch. What changes how the map LOOKS -- how
+      // much of each claim, the flow and shape of the text's order, which claims, the appraisal
+      // -- shares one menu. What moves the reader AROUND the map stays out: how much, and the
+      // sections, are folding, which is navigation, as the Mechanism view keeps its fold on its
+      // bar. The menu stays open across a redraw until closed; "N hidden" stays on the bar,
+      // because a switch inside a closed menu must not hide claims silently.
+      '<span class="alm-display"><button data-act="display" aria-haspopup="true" ' +
+        'aria-expanded="false" title="How the map is drawn: how much of each claim, which ' +
+        'claims, and in Exposition the flow and shape of the text\u2019s order">Display ' +
+        '\u25be</button><span class="alm-dpop" role="group" aria-label="How the map is drawn" hidden>' +
       (parts.actions ? '<span class="alm-grp alm-seg" data-role="claims">' +
         '<b title="How much of each claim\'s own words to show">claims</b>' +
         '<button data-act="text" data-full="0" title="The first few lines, with a “more” link">' +
@@ -6193,7 +6215,6 @@ function createLiveMap(container, graph, options) {
         'after, near or far \u2014 in the lines\' ink and a sparkline on each section. Off until ' +
         'asked for.">Shape</button>' +
         '</span>' : "") +
-      '<span class="alm-grp alm-seg" data-role="sections"></span>' +
       // SPINE sits with "kinds" rather than with "how much", because it answers WHICH claims
       // rather than how many levels of them — a claim deep in the argument can be spine and a
       // claim beside the contention need not be.
@@ -6205,15 +6226,16 @@ function createLiveMap(container, graph, options) {
         'loses its route to the main claim">Load-bearing</button>' +
       '</span>' +
       (parts.facets ? '<span class="alm-grp" data-role="facets"></span>' : "") +
-      // Shown only while a switch is hiding something: see `filteredOut`.
-      '<span class="alm-hid" hidden title="Claims the switches in this bar are keeping off ' +
-      'the map. Switch them back on to see them."></span>' +
       // THE APPRAISAL'S OWN SWITCH, drawn unlike every other control: in the appraisal's violet, saying in words that what it holds is not in the text and how much of it there
       // is. Offered only where the map has any.
       (parts.facets && appraisalCount() ? '<span class="alm-grp" data-role="appraisal">' +
         '<button class="alm-appr" data-act="appraisal" title="The reconstructor\u2019s own ' +
         'reading of the text against the world \u2014 never a claim the text makes. Off until ' +
         'asked for.">Appraisal <span class="alm-appr-n"></span></button></span>' : "") +
+      '</span></span>' +
+      // Shown only while a switch is hiding something: see `filteredOut`.
+      '<span class="alm-hid" hidden title="Claims the switches under Display are keeping off ' +
+      'the map. Switch them back on to see them."></span>' +
       // (STUDY, a mode rather than a filter, now heads the bar -- see its note above.)
       // THE BAR CAN BE PUT AWAY. On a desktop it earns its strip; on a phone the strip is the
       // scarcest thing there is, and a reader who has set the map how they want it is done with
@@ -6238,6 +6260,8 @@ function createLiveMap(container, graph, options) {
       if (act === "fold")     return setBarFolded(true, true);
       if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "tables")   return opt.onTables && opt.onTables();
+      if (act === "weigh")    return opt.onWeigh && opt.onWeigh();
+      if (act === "display")  return setDisplayOpen(!displayOpen);
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });
       if (act === "layout")   return setState({ readColumn: b.dataset.col === "1" });
       if (act === "shape")    return setState({ shape: !showShape });
@@ -6258,6 +6282,54 @@ function createLiveMap(container, graph, options) {
         return setState({ facets: [...cur] });
       }
     });
+    // THE DISPLAY MENU. Placed by the window, not by the bar: on a phone the bar scrolls sideways
+    // (overflow-x), and an absolutely placed child of a scrolling box is clipped to it, so the
+    // menu would open inside a strip one row high. Fixed, and set just above the bar's top edge
+    // from the button's own position each time it opens, it clears the strip in both layouts.
+    let displayOpen = false;
+    const dispBtn = /** @type {HTMLElement|null} */ (bar.querySelector('[data-act="display"]'));
+    const dispPop = /** @type {HTMLElement|null} */ (bar.querySelector(".alm-dpop"));
+    // AND HELD INSIDE THE MAP'S PANE, as the bar is: beside a wide manuscript the pane can be
+    // 358px across, and a menu as wide as the window would sit over the text next door -- the
+    // fault the bar's own width cap was made for (15 Sep).
+    function placeDisplay() {
+      if (!displayOpen || !dispBtn || !dispPop) return;
+      const br = bar.getBoundingClientRect(), bb = dispBtn.getBoundingClientRect();
+      const win = bar.ownerDocument.defaultView || window;
+      const host = /** @type {HTMLElement} */ (bar.parentElement || bar);
+      const hr = host.getBoundingClientRect();
+      const lo = Math.max(8, hr.left + 8), hi = Math.min(win.innerWidth, hr.right) - 8;
+      dispPop.style.maxWidth = Math.max(160, Math.round(hi - lo)) + "px";
+      dispPop.style.bottom = Math.round(win.innerHeight - br.top + 6) + "px";
+      dispPop.style.left = Math.round(Math.max(lo, Math.min(bb.left, hi - dispPop.offsetWidth))) + "px";
+    }
+    function setDisplayOpen(/** @type {boolean} */ on) {
+      displayOpen = !!on;
+      if (dispPop) dispPop.hidden = !displayOpen;
+      if (dispBtn) dispBtn.setAttribute("aria-expanded", displayOpen ? "true" : "false");
+      placeDisplay();
+    }
+    const doc = bar.ownerDocument;
+    // Shut by a press anywhere outside it, or Esc; a choice inside leaves it open, so several
+    // can be made in a row -- the Mechanism view's manners exactly.
+    doc.addEventListener("pointerdown", ev => {
+      if (!displayOpen || !bar.isConnected) return;
+      const t = /** @type {Element} */ (ev.target);
+      if (!(t && t.closest && t.closest(".alm-display"))) setDisplayOpen(false);
+    }, true);
+    bar.addEventListener("keydown", ev => {
+      if (ev.key === "Escape" && displayOpen) {
+        ev.preventDefault(); ev.stopPropagation(); setDisplayOpen(false);
+        if (dispBtn) dispBtn.focus();
+      }
+    });
+    (doc.defaultView || window).addEventListener("resize", placeDisplay);
+    // The pane changes width without the window doing so -- the manuscript's divider dragged, a
+    // pane opened beside it -- so the menu follows the bar, not only the window.
+    const RO = (doc.defaultView || /** @type {any} */ (window)).ResizeObserver;
+    if (RO) new RO(placeDisplay).observe(bar);
+    bar.addEventListener("scroll", placeDisplay);
+    /** @type {any} */ (bar)._setDisplayOpen = setDisplayOpen;
     return bar;
   }
 
@@ -7256,6 +7328,19 @@ function injectStyle() {
   font-size:9px}
 .alm-barchip:hover{border-color:#888}
 .alm-barchip[hidden]{display:none}
+.alm-bar .alm-display{display:inline-flex;flex:0 0 auto}
+.alm-bar .alm-dpop{position:fixed;z-index:20;display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;
+  width:max-content;max-width:min(34rem,calc(100vw - 16px));padding:.45rem .55rem;
+  background:var(--alm-bar-bg,rgba(255,255,255,.98));border:1px solid var(--alm-group-line,#ccc);
+  border-radius:7px;box-shadow:0 4px 14px rgba(0,0,0,.12)}
+.alm-bar .alm-dpop[hidden]{display:none}
+/* Inside the menu the groups may shrink and the hashtags wrap, in every width: the phone rule
+   that keeps the strip one row (flex:0 0 auto, nowrap) is for the strip, and in the menu it ran
+   the hashtags off the screen's edge. */
+.alm-bar .alm-dpop .alm-grp{flex:0 1 auto;min-width:0}
+.alm-bar .alm-dpop .alm-grp[data-role="facets"]{flex-wrap:wrap}
+.alm-bar button[data-act="display"][aria-expanded="true"]{background:var(--alm-accent,#3a7bd5);
+  color:#fff;border-color:transparent}
 .alm-bar .alm-hid{color:var(--alm-fg,#1a1a1a);font-style:italic;white-space:nowrap}
 .alm-bar .alm-hid[hidden]{display:none}
 .alm-bar b{font-weight:600;opacity:.6;margin-right:.15rem;text-transform:uppercase;

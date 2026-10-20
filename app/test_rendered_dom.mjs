@@ -2814,9 +2814,12 @@ async function barChecks(browser) {
   await page.evaluate(() => {
     try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
   });
-  await page.waitForSelector("#map .alm-bar [data-role='facets'] button", { timeout: 20000 });
+  await page.waitForSelector("#map .alm-bar [data-act='display']", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
   await page.waitForSelector("#mstext .mline, #mstext [data-l]", { timeout: 10000 });
+  // The hashtags live under Display since 20 Oct 2026 (the Purpose episode). The promise is the
+  // same and now covers the menu too: opened in a squeezed pane, it stays inside the pane.
+  await page.click("#map .alm-bar [data-act='display']");
   const squeeze = async (w) => {
     // On the column, where the divider itself writes it.
     await page.evaluate((px) => {
@@ -2828,9 +2831,11 @@ async function barChecks(browser) {
       const b = document.querySelector("#map .alm-bar").getBoundingClientRect();
       const f = document.querySelector("#map .alm-bar [data-role='facets']")
                         .getBoundingClientRect();
+      const pop = document.querySelector("#map .alm-bar .alm-dpop").getBoundingClientRect();
       const chips = [...document.querySelectorAll("#map .alm-bar [data-role='facets'] button")]
         .map(c => c.getBoundingClientRect().right);
       return { map: Math.round(m.width), barRight: Math.round(b.right),
+               popLeft: Math.round(pop.left), popRight: Math.round(pop.right), mapLeft: Math.round(m.left),
                mapRight: Math.round(m.right), tags: chips.length,
                lastChip: Math.round(Math.max(...chips)), rows: Math.round(f.height) };
     });
@@ -2839,8 +2844,9 @@ async function barChecks(browser) {
   check(narrow.map < 400 && narrow.tags >= 4,
         "bar: the map pane is squeezed to the reported width with several hashtags showing",
         JSON.stringify(narrow));
-  check(narrow.barRight <= narrow.mapRight && narrow.lastChip <= narrow.mapRight,
-        "  and the control bar, chips included, stays inside the map pane",
+  check(narrow.barRight <= narrow.mapRight && narrow.lastChip <= narrow.mapRight &&
+        narrow.popRight <= narrow.mapRight && narrow.popLeft >= narrow.mapLeft,
+        "  and the control bar, and its Display menu with the chips, stay inside the map pane",
         JSON.stringify(narrow));
   check(narrow.rows > 30,
         "  because the hashtags wrap onto a second row rather than widening the bar",
@@ -3049,6 +3055,7 @@ async function pagesChecks(browser) {
         "pages: in rows, every paragraph's claims sit on a card numbered with its paragraph",
         `${cards.length} cards: ${cards.slice(0, 6).join(" | ")}`);
 
+  await page.click('#map [data-act="display"]');   // flow lives under Display (20 Oct 2026)
   await page.click('#map [data-act="layout"][data-col="1"]');
   await page.waitForTimeout(1500);
   const laid = await page.evaluate(() => ({
@@ -3149,6 +3156,7 @@ async function pagesChecks(browser) {
     document.getElementById("side").style.setProperty("--ms-w", "760px");
   });
   await narrow.page.waitForTimeout(300);
+  await narrow.page.click('#map [data-act="display"]');
   await narrow.page.click('#map [data-act="layout"][data-col="1"]');
   await narrow.page.waitForTimeout(1500);
   const one = await narrow.page.evaluate(() => ({
