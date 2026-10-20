@@ -592,8 +592,14 @@ Four clauses join the statement above:
 4. **The text's absences are the inquiry's best questions.** An empty cell stays empty, a denial is
    not a rival account, and a chain with nothing to draw is said in words. What the text does not
    say is put to the reader as a question, and never filled in by the machine.
+5. **Inquiry is invited, not exhausted** (added 20 Oct, on the author's word, after Study's *On my
+   own* offered 69 questions on one map): "The point is to get the user interested (and give them
+   the ability to continue with the questioning) rather than assume they want to be exhaustive." A
+   way in offers a few questions at a sitting, ten at most, chosen for what matters most to the
+   argument — high on the map, on its spine, costly if false — and offers more on request, never
+   repeating one already put. Wording assembled by the assistant from his message; his to settle (D7).
 
-`PURPOSE.md` is the episode record; its §3.3 has the reasoning.
+`PURPOSE.md` is the episode record; its §3.3 has the reasoning, and its §6, ruling 11, the fifth clause.
 
 ### B11. Several structures, one file, many ways in
 

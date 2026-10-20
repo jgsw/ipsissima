@@ -4518,7 +4518,7 @@ function onMapState(st){
 }
 
 function studyOnState(){
-  if (!STUDY) return;
+  if (!STUDY || STUDY.marking) return;
   STUDY.touched = true;
   // ON MY OWN follows its cards, not the folds: a reveal unfolds the map, and redrawing the card on
   // that change would only light the same claims again.
@@ -4631,9 +4631,10 @@ function studyOpening(){
           studyAccountSets().length ? ["Weigh the accounts", "accounts", "The text sets its account against a rival: which reasons tell them apart, and where is the text silent?"] : null]);
   c.p("On my own: one argument at a time. With others: from the main claim down, to talk through. Which would cost the most: a guess, then the map\u2019s answer." +
       (studyAccountSets().length ? " Weigh the accounts: the text\u2019s account beside the rival it reports, and the reasons for each." : ""), "crux");
-  // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting.
+  // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting. Ten
+  // at a time, and the ten that matter most (studyRoundOf); one part, by Study from here.
   var n = studyUnits(CURRENT_GRAPH || {}, null).length;
-  if (n > 20) c.p("This map has " + n + " arguments and objections to work through. To take one part, right-click a claim and choose Study from here.", "crux");
+  if (n > STUDY_ROUND) c.p("On my own takes ten at a time, from what the argument rests on most, with ten more when you want them. To take one part instead, right-click a claim and choose Study from here.", "crux");
   if (LIVE) LIVE.markClaims([]);
 }
 
@@ -4710,13 +4711,77 @@ function studyUnits(g, fromId){
     forks.forEach(function(f, i){ if (!placed[i] && reachedBy(u, f)) { out.push(f); placed[i] = true; } });
   });
   forks.forEach(function(f, i){ if (!placed[i]) out.push(f); });
+  out.forEach(function(u, k){ u.key = k; });
   return out;
+}
+
+/* TEN AT A TIME (James, 20 Oct 2026). On Wilson 2023, On my own offered 69 questions in one sitting: a
+ * reader asked to be exhaustive is put off, where the point is to get them interested and let them go
+ * on. So a round is ten, and the ten are the ones that matter most to the argument, each scored on three
+ * things the map already measures:
+ *   - HOW HIGH IT SITS: what the question is about is shown at the main claim (3) or "+ reasons" (2)
+ *     rung of the ladder, or at "+ detail" (1); anything deeper scores nothing.
+ *   - WHETHER IT IS ON THE SPINE: the argument rests on it, the bar's Load-bearing switch (2).
+ *   - WHAT IT WOULD COST, supposed false: up to 3, in proportion to the costliest claim on the map,
+ *     and 1 more if a main claim goes with it -- Which claim would cost the most?'s own measure.
+ * What a question is "about" is the claim it asks the reader to reach (an argument's conclusion), or
+ * the claim an objection speaks against. One question per claim, across rounds as well as within one,
+ * while others are left: an argument and a claim card can reach the same conclusion, and ten cards
+ * should not be two ways of asking the same thing. An objection is its own question, and stays
+ * beside the card that reaches what it speaks against. "Ten more" takes the next ten by the same
+ * score, never one already asked. The chosen ten keep the units' own order -- from the ground up,
+ * each objection after the card that reaches what it speaks against -- so the round still builds. */
+var STUDY_ROUND = 10;
+function studyScores(g, units){
+  var L = window.ArgdownLiveMap, ix = L.index(g);
+  var roots = ix.nodes.filter(function(n){ return ix.isContention(n.id); }).map(function(n){ return n.id; });
+  var depth = {}, q = roots.slice();
+  roots.forEach(function(id){ depth[id] = 0; });
+  while (q.length) {
+    var x = q.shift();
+    (ix.childrenOf.get(x) || []).forEach(function(c){ if (depth[c] == null) { depth[c] = depth[x] + 1; q.push(c); } });
+  }
+  var load = L.loadOf(ix), mains = suppMains(), cost = {}, most = 0;
+  var costOf = function(id){
+    if (cost[id] !== undefined) return cost[id];
+    var n = ix.byId.get(id);
+    cost[id] = n && n.kind === "statement" && !mains[id] ? claimCost(n, mains) : null;
+    if (cost[id]) most = Math.max(most, cost[id].lost);
+    return cost[id];
+  };
+  var about = function(u){ return u.kind === "fork" ? u.to : u.cid || u.id; };
+  units.forEach(function(u){ costOf(about(u)); });
+  units.forEach(function(u){
+    var id = about(u), d = depth[id], c = cost[id];
+    u.about = u.kind === "fork" ? "fork:" + u.from + ">" + u.to : id;
+    u.depth = d == null ? 99 : d;
+    u.spine = ix.isContention(id) || (load.get(id) || 0) > 0;
+    u.score = (d == null ? 0 : Math.max(0, 3 - d)) + (u.spine ? 2 : 0) +
+              (c && most ? 3 * c.lost / most : 0) + (c && c.mains ? 1 : 0);
+  });
+}
+/** The next round: up to ten not yet asked, best first, one per claim while others are left. */
+function studyRoundOf(units, asked){
+  var left = units.filter(function(u){ return !asked[u.key]; }).sort(function(a, b){
+    return b.score - a.score || a.depth - b.depth || a.key - b.key; });
+  var before = {}, pick = {}, about = {}, n = 0;
+  units.forEach(function(u){ if (asked[u.key]) before[u.about] = true; });
+  // Three passes: claims never asked about; then any not asked about in this round; then whatever is left.
+  [2, 1, 0].forEach(function(strict){
+    left.forEach(function(u){
+      if (n >= STUDY_ROUND || pick[u.key] || (strict && about[u.about]) || (strict > 1 && before[u.about])) return;
+      pick[u.key] = true; about[u.about] = true; n++;
+    });
+  });
+  return units.filter(function(u){ return pick[u.key]; });
 }
 function studyOwn(){
   var c = studyCard();
-  if (!STUDY.units) STUDY.units = studyUnits(CURRENT_GRAPH || {}, STUDY.from);
-  var U = STUDY.units, u = U[STUDY.i];
+  if (!STUDY.units) { STUDY.units = studyUnits(CURRENT_GRAPH || {}, STUDY.from); studyScores(CURRENT_GRAPH || {}, STUDY.units); STUDY.asked = {}; }
+  if (!STUDY.round) STUDY.round = studyRoundOf(STUDY.units, STUDY.asked);
+  var U = STUDY.round, u = U[STUDY.i];
   if (!u) return studyClosing();
+  STUDY.asked[u.key] = true;   // asked once it is on the card: "Ten more" never repeats it
   $("studyhint").textContent = (STUDY.i + 1) + " of " + U.length;
   if (u.kind === "fork") {
     c.p("\u2039" + u.fromLabel + "\u203a speaks against \u2039" + u.toLabel + "\u203a.");
@@ -4757,10 +4822,18 @@ function studyOwn(){
 function studyClosing(){
   var c = studyCard();
   $("studyhint").textContent = "now test it";
-  c.p(STUDY.from ? "That is every argument beneath \u2039" + ((suppNodeById(STUDY.from) || {}).label || "it") + "\u203a." : "That is every argument on this map.");
+  var all = STUDY.units || [], left = all.filter(function(u){ return !STUDY.asked[u.key]; }).length;
+  var where = STUDY.from ? "beneath \u2039" + ((suppNodeById(STUDY.from) || {}).label || "it") + "\u203a" : "on this map";
+  // MORE, NOT ALL (20 Oct 2026): the close offers the next ten, and says how many are left, so going
+  // on is the reader's choice and stopping is not leaving something unfinished.
+  c.p(!left ? "That is every argument " + where + "." :
+      "That is " + (all.length - left) + " of the " + all.length + " arguments and objections " + where +
+      ", the ones the argument rests on most. " + left + (left === 1 ? " is" : " are") + " left.");
   c.p("Now test it: which claim would you most want to deny? Click it and press What if\u2026?, or right-click it, and suppose it false. In Study you mark what you expect to fall before you see.");
   c.p("Then go back to what you thought at the start. Has the map changed it?");
-  c.btns([["Which claim would cost the most?", "cost", "Guess which one claim, supposed false, would leave the most of the argument without support"], ["End study", "end"]]);
+  c.btns([left ? [left > STUDY_ROUND ? "Ten more" : "The last " + (left === 1 ? "one" : left), "more",
+                  "The next " + Math.min(left, STUDY_ROUND) + ", by how much the argument rests on them; none you have had"] : null,
+          ["Which claim would cost the most?", "cost", "Guess which one claim, supposed false, would leave the most of the argument without support"], ["End study", "end", "", left ? "plain" : ""]]);
   if (LIVE) LIVE.markClaims([]);
 }
 
@@ -4857,10 +4930,14 @@ function studyAccounts(){
   if (!sets.length) { c.p("This map sets no account of the text\u2019s against a rival it reports."); c.btns([["End study", "end"]]); return; }
   if (A.i == null && sets.length === 1) A.i = 0;
   if (A.i == null) {
+    // FOUR AT A TIME (20 Oct 2026), as On my own takes ten: a choice of eight long names is a list to
+    // read, not a question. The rest are a press away.
+    var from = A.from || 0, shown = sets.slice(from, from + 4);
     c.p("The text sets " + sets.length + " of its claims against rival accounts it reports. Which will you weigh?");
-    var d = c.btns(sets.slice(0, 8).map(function(x, k){ var t = "\u2039" + x.accounts[0].label + "\u203a"; return [t.length > 60 ? t.slice(0, 59) + "\u2026" : t, "acc-set:" + k]; }));
+    var d = c.btns(shown.map(function(x, k){ var t = "\u2039" + x.accounts[0].label + "\u203a"; return [t.length > 60 ? t.slice(0, 59) + "\u2026" : t, "acc-set:" + (from + k)]; }));
     d.className += " studycol";
-    c.btns([["End study", "end", "", "plain"]]);
+    c.btns([sets.length > 4 ? [from + 4 < sets.length ? "Other pairs (" + (sets.length - from - 4) + ")" : "The first pairs", "acc-other", "", "plain"] : null,
+            ["End study", "end", "", "plain"]]);
     return;
   }
   var S = sets[A.i];
@@ -4906,13 +4983,16 @@ $("studybody").addEventListener("click", function(ev){
   if (a === "hint") { STUDY.hint++; studySync(); return; }
   if (a === "show") { STUDY.shown = true; studySync(); return; }
   if (a === "next") { STUDY.i++; STUDY.hint = 0; STUDY.shown = false; STUDY.reply = false; studySync(); return; }
-  if (a === "finish") { STUDY.i = (STUDY.units || []).length; studySync(); return; }
+  if (a === "finish") { STUDY.i = (STUDY.round || []).length; studySync(); return; }
+  if (a === "others-more") { STUDY.pauseAt = Object.keys(STUDY.seen || {}).length + STUDY_ROUND; studySync(); return; }
+  if (a === "more") { STUDY.mode = "own"; STUDY.round = null; STUDY.i = 0; STUDY.hint = 0; STUDY.shown = false; STUDY.reply = false; studySync(); return; }
   if (a === "end") { endStudy(); return; }
   if (a === "fork-reply") { STUDY.reply = true; studySync(); return; }
   if (a === "cost") { if (WEIGH && WEIGH.study) weighClose(); STUDY.mode = "cost"; STUDY.cost = null; studySync(); return; }
   if (a === "accounts") { STUDY.mode = "accounts"; STUDY.acc = null; studySync(); return; }
   if (a.indexOf("acc-set:") === 0) { STUDY.acc.i = +a.slice(8); studySync(); return; }
   if (a.indexOf("acc-lean:") === 0) { STUDY.acc.lean = +a.slice(9); studySync(); return; }
+  if (a === "acc-other") { var na = studyAccountSets().length, nf = (STUDY.acc.from || 0) + 4; STUDY.acc.from = nf < na ? nf : 0; studySync(); return; }
   if (a === "acc-done") { STUDY.acc.done = true; studySync(); return; }
   if (a === "acc-again") { if (WEIGH && WEIGH.study) weighClose(); STUDY.acc = { i: null, lean: null, opened: false, done: false }; studySync(); return; }
   if (a === "cost-show") { STUDY.cost.ranked = studyCostRank(); studySync(); return; }
@@ -4923,7 +5003,7 @@ $("studybody").addEventListener("click", function(ev){
     return;
   }
   if (a === "fork-suppose") {
-    var u = STUDY.units[STUDY.i], n = suppNodeById(u.from);
+    var u = STUDY.round[STUDY.i], n = suppNodeById(u.from);
     if (n && !suppHas(SUPP.holds, suppKey(n))) { SUPP.holds.push(suppKey(n)); suppApply(); }
     return;
   }
@@ -4954,6 +5034,23 @@ function studySyncOthers(){
     if (LIVE) LIVE.markClaims([]);
     return;
   }
+  // TEN, THEN A PAUSE (20 Oct 2026): the descent asks once per claim it reaches, and on a long map that
+  // is a long sitting. After ten the card stops and offers ten more, or a way to test what the reader
+  // has; the map is theirs either way, and unfolding on regardless carries on.
+  var seen = STUDY.seen || (STUDY.seen = {}), had = Object.keys(seen).length;
+  if (!seen[el.dataset.id] && had >= (STUDY.pauseAt || STUDY_ROUND)) {
+    $("studyhint").textContent = had + " so far";
+    p("That is " + had + " predictions. Ten more, or stop here and test what you have?");
+    p("To test it: which claim would you most want to deny? Click it and press What if\u2026?, or right-click it, and suppose it false.", "hint");
+    var mw = document.createElement("div"); mw.className = "studybtns";
+    [["Ten more", "others-more"], ["Which claim would cost the most?", "cost"], ["End study", "end", "plain"]].forEach(function(b){
+      var x = document.createElement("button"); x.type = "button"; x.textContent = b[0]; x.setAttribute("data-study", b[1]);
+      if (b[2]) x.className = b[2]; mw.appendChild(x); });
+    body.appendChild(mw);
+    if (LIVE) LIVE.markClaims([]);
+    return;
+  }
+  seen[el.dataset.id] = true;
   var node = walkNodeById(el.dataset.id);
   // A FOLDED SECTION IS NOT A CLAIM, and its id is not a name. The frontier is read off the
   // drawn map, so on a map that opens with its sections shut it is a section's block, whose id
@@ -4984,7 +5081,15 @@ function studySyncOthers(){
   if (node && node.tags && node.tags.indexOf("crux") >= 0)
     p("The reconstructor marks this claim's reading as one among live alternatives " +
       "(#crux) — its note names the road not taken.", "crux");
-  if (LIVE) LIVE.markClaims([el.dataset.id]);
+  // LIT WHERE IT IS DRAWN, NOTHING UNFOLDED. The frontier is read off the drawn map, so it is always
+  // on it -- but it may be a folded section's block, which is not a claim, and a plain markClaims
+  // then unfolded the whole map looking for it; the redraw called this card again, which lit it
+  // again, until the stack ran out (Miller, found 20 Oct 2026). `visibleOnly` lights what is drawn
+  // and brings it into view, and the guard stops a redraw re-entering the card.
+  if (LIVE && !STUDY.marking) {
+    STUDY.marking = true;
+    try { LIVE.markClaims([el.dataset.id], { visibleOnly: true }); } finally { if (STUDY) STUDY.marking = false; }
+  }
 }
 
 $("studyclose").onclick = function(){ endStudy(); };

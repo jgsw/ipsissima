@@ -369,6 +369,19 @@ The two case-law rows of §3.6 were left open at first, and ruled after waves 0�
 10. **A layer becomes a default only on measurement: yes.** "I agree with the need to measure
     before committing to making the tables a default part of extraction." 
 
+After wave 4 was installed, the author found Study's *On my own* offering 69 questions on the Wilson
+2023 map, and ruled:
+
+11. **Invite inquiry; do not exhaust it.** "It would be better to offer a limited number of questions
+    (ten) with the ability to try again", the ten chosen from claims "higher level within the map
+    (revealed at the reasons level, rather than detail level), and/or ones that are significant for
+    the overall argument (where significance is determined on whether they are on the spine, and how
+    costly it would be for the argument if they are false)"; another ten on request, not overlapping
+    the first. "This same principle of not overwhelming the user with the number of questions asked
+    should also apply to the other inquiry elements. The point is to get the user interested (and
+    give them the ability to continue with the questioning) rather than assume they want to be
+    exhaustive." Admitted as B10's fifth clause.
+
 ## 7. What was built (20 Oct)
 
 **Wave 0.** The rulings were carried into `INVENTORY.md` (B1's addendum, B2's weight note, B10
@@ -457,6 +470,30 @@ and he ruled the same day: "The recommended options look good; build them." Buil
 Each was checked on screen, and each check in `test_tables.mjs`, `test_suppose.mjs` and
 `test_mechanism_view.mjs` was shown to fail under its mutation. Tests that drive a map with a
 question say "Don't ask first", as they already said the walkthrough was seen.
+
+**Ten at a time** (ruling 11; B10 clause 5). Every inquiry element was surveyed for how many
+questions it puts at a sitting:
+
+- **On my own** takes a round of ten. Each question is scored by what it asks about (the conclusion
+  the reader is to reach, or the claim an objection speaks against): 3, 2 or 1 for sitting at the
+  *main claim*, *+ reasons* or *+ detail* rung; 2 for being on the spine (the Load-bearing switch's
+  own measure); up to 3 in proportion to what supposing it false costs, against the costliest claim
+  on the map, and 1 more if a main claim goes with it (Which claim would cost the most?'s measure).
+  A round takes the ten best, one per claim, across rounds as well as within one; an objection is
+  its own question. The ten keep the map's order, from the ground up. **Ten more** takes the next
+  ten, never one already put, and the close says how many are left. On the eleven samples a first
+  round is the main claims and their reasons, and an objection or two.
+- **With others** pauses after ten predictions, with **Ten more** or a way to test what the reader has.
+- **Weigh the accounts** offers four pairs at a time, with **Other pairs** (two samples had seven and
+  eight).
+- Unchanged, because each already puts one question or a short fixed list: Which claim would cost
+  the most? (three shown), Guess first and its reflection, the Tables panel's closing question, a
+  bridge's questions (at most five), the Mechanism panel's open questions (at most four).
+
+Found on the way: With others could run the page out of stack (seen on Miller, and on the committed
+code as well). Lighting the frontier, when it was a section's block, unfolded the whole
+map; the redraw asked the card again, which lit it again. The frontier is now lit where it is
+drawn, without unfolding, and a redraw from the lighting does not re-enter the card.
 
 **Still to come:**
 - wave 5 (the method; the §3.6 row on cost);

@@ -1097,12 +1097,23 @@ names its question also asks it as it opens, in a card over the map: **Study it*
   reached, the card stops at it: does it succeed? **Try it: suppose it holds** supposes so, with a
   guess first; **How does the text answer it?** names the reply the map records. **Finish** ends on
   a supposition to try, and on what you thought at the start.
+
+  **Ten at a time.** A long map can hold seventy of these, and nobody needs them all at a sitting. So
+  the card takes ten, and takes the ones that matter most to the argument: those about claims the map
+  shows high up (at *main claim* or *+ reasons* on the **how much** slider, rather than at
+  *+ detail*), claims on its spine (what **Load-bearing**, under Display, keeps), and claims that
+  would cost the argument most if they were false (as in **Which claim would cost the most?**,
+  below). No two of the ten ask about the same claim. The ten keep the map's order, from the ground
+  up, each objection after the card that reaches what it speaks against. When they are done,
+  **Ten more** takes the next ten by the same measure, never one you have had, and the card says how
+  many are left.
 - **With others**: from the main claim down. The card asks one question of the topmost claim that
   still has reasons folded beneath it: *what do you think holds this up — and would anything speak
   against it?* Answer in your own head, or aloud, then press the badge under it — the **+3** that
   counts what is folded there — and compare what you expected with what the map says. Asked of a
   main claim, this is a question about the whole argument: good for talking through with someone,
-  hard to guess alone.
+  hard to guess alone. After ten predictions the card pauses: **Ten more**, or stop there and test
+  what you have. Unfolding on regardless carries on as before.
 
 - **Which claim would cost the most?**: a challenge. Every claim is drawn; click the one you think,
   supposed false, would leave the most of the argument without the map's support. **Show** ranks the
@@ -1111,8 +1122,8 @@ names its question also asks it as it opens, in a card over the map: **Study it*
   argument is most exposed, never which claim is false. Where no single claim takes a main claim's
   support, the card says so: each rests on more than one line of reasons. It is offered again when
   either other way ends.
-- **Weigh the accounts**, where the text sets its account against a rival it reports: say which you
-  lean to before you look, then guess, in the panel, which reasons tell the accounts apart, and
+- **Weigh the accounts**, where the text sets its account against a rival it reports: choose a pair
+  (four are offered at a time, and **Other pairs** shows the rest), say which you lean to before you look, then guess, in the panel, which reasons tell the accounts apart, and
   **Show**. The card then asks what an account would make of a reason the text leaves blank for it,
   invites you to suppose a reason false or ask what kind of test it is, and ends by asking whether
   your first leaning survived. The map never says which account is better.

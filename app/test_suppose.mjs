@@ -26,6 +26,9 @@ const DENIAL = path.join(REPO, "fixtures", "suppose", "denial.argdown");
 const TRILEMMA = path.join(REPO, "fixtures", "suppose", "trilemma.argdown");
 const ACTORS = path.join(REPO, "fixtures", "suppose", "actors.argdown");
 const TEACHING = path.join(REPO, "teaching", "causal-junctions.argdown");
+const WILSON = path.join(REPO, "samples", "Wilson 2023 - What makes a health system good", "wilson-2023-health-system-good.argdown");
+const MILLER = path.join(REPO, "samples", "Miller 2019 - Prorogation of Parliament", "miller-2019-uksc-41.argdown");
+const PRESCOTT = path.join(REPO, "samples", "Prescott-Couch 2024 - The Philosopher as Reverse-Engineer", "prescott-couch-reverse-engineer.argdown");
 const A = require("./src/argdown-accounts.js");
 const MV = require("./src/argdown-mechanism.js");
 
@@ -193,6 +196,11 @@ if (chromium) {
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), MOOREAN, "-o", mhtml], { stdio: "pipe" });
   const shtml = path.join(tmp, "several.html");
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), SEVERAL, "-o", shtml], { stdio: "pipe" });
+  const whtml = path.join(tmp, "wilson.html"), mlhtml = path.join(tmp, "miller.html");
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), WILSON, "-o", whtml], { stdio: "pipe" });
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), MILLER, "-o", mlhtml], { stdio: "pipe" });
+  const phtml = path.join(tmp, "prescott.html");
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), PRESCOTT, "-o", phtml], { stdio: "pipe" });
   // The Reader is built here, not taken from the repository root: that copy is gitignored, so
   // CI has none, and a local one may be older than the code under test.
   const reader = path.join(tmp, "reader.html");
@@ -387,6 +395,119 @@ if (chromium) {
           "Study from here works through only the arguments beneath that claim", fromT);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);
+
+    const frontier = () => page.evaluate(() => { let best = null, bestY = Infinity;
+      document.querySelectorAll("#map .alm-n").forEach(e => { const t = e.querySelector(".alm-toggle.is-closed"); if (!t) return;
+        const r = e.getBoundingClientRect(), br = t.getBoundingClientRect();
+        if (r.height && br.left > 0 && br.top > 0 && br.right < innerWidth && r.top < bestY) { bestY = r.top; best = { x: br.left + br.width / 2, y: br.top + br.height / 2 }; } });
+      return best; });
+    // TEN AT A TIME (James, 20 Oct 2026: B10 clause 5). On Wilson 2023, On my own offered 69 questions
+    // at a sitting; now a round is ten, the ten that matter most -- high on the map, on its spine,
+    // costly if false -- with Ten more, never repeating one. The depths are the live map's own, read
+    // here in Node. Mutations: round size 1000 -> "1 of 10" fails; score by document order -> round
+    // one sinks below the "+ reasons" rung; drop `asked` from the next round -> round two repeats.
+    {
+      const L = require("./src/argdown-live-map.js");
+      const wg = graphOf(WILSON), ix = L.index(wg), depth = {}, q = [];
+      ix.nodes.filter(n => ix.isContention(n.id)).forEach(n => { depth[n.id] = 0; q.push(n.id); });
+      while (q.length) { const x = q.shift(); for (const c of ix.childrenOf.get(x) || []) if (depth[c] == null) { depth[c] = depth[x] + 1; q.push(c); } }
+      const load = L.loadOf(ix), stmt = label => wg.nodes.find(x => x.label === label && x.kind === "statement");
+      const depthOf = label => { const n = stmt(label); return n && depth[n.id] != null ? depth[n.id] : 99; };
+      const bearing = label => { const n = stmt(label); return !!n && (ix.isContention(n.id) || (load.get(n.id) || 0) > 0); };
+      const mean = xs => xs.reduce((a, b) => a + b, 0) / xs.length;
+      // The population: every claim the map gives reasons for, which is what a card can ask the reader to reach.
+      const reached = [...new Set(wg.edges.filter(e => e.type === "support").map(e => e.to))]
+        .map(id => wg.nodes.find(n => n.id === id)).filter(n => n && n.kind === "statement" && depth[n.id] != null);
+      const round = async () => {
+        const out = [];
+        for (let k = 0; k < 12; k++) {
+          const hint = await page.locator("#studyhint").innerText();
+          if (!/ of /.test(hint)) break;
+          const body = await page.locator("#studybody").innerText();
+          if (/speaks against/.test(body)) out.push({ hint, fork: body.split("\n")[0] });
+          else {
+            await page.locator('#studybody button[data-study="show"]').click();
+            const shown = (await page.locator("#studybody").innerText()).match(/^The map: ‹([^›]+)›/m);
+            out.push({ hint, concl: shown && shown[1] });
+          }
+          await page.locator('#studybody button[data-study="next"]').first().click();
+        }
+        return out;
+      };
+      await page.goto("file://" + whtml);
+      await page.waitForTimeout(900);
+      await page.locator('#map [data-act="study"]').click();
+      check(/ten at a time/.test(await page.locator("#studybody").innerText()), "a long map's Study says On my own takes ten at a time");
+      await page.locator('#studybody button[data-study="own"]').click();
+      const r1 = await round();
+      const close1 = await page.locator("#studybody").innerText();
+      const claims1 = r1.filter(x => x.concl).map(x => x.concl);
+      check(r1.length === 10 && r1[0].hint === "1 of 10" && /That is 10 of the (\d+) arguments/.test(close1) &&
+            await page.locator('#studybody button[data-study="more"]').innerText() === "Ten more",
+            "On my own puts ten questions, then says how many are left and offers ten more", JSON.stringify(r1.map(x => x.hint)) + " " + close1.slice(0, 120));
+      check(claims1.length >= 6 && claims1.every(c => depthOf(c) <= 1 || bearing(c)) &&
+            mean(claims1.map(depthOf)) < mean(reached.map(n => depth[n.id])),
+            "the first ten are about claims high on the map or load-bearing, and sit above the map's average",
+            JSON.stringify(claims1.map(c => c + "@" + depthOf(c) + (bearing(c) ? "*" : ""))) + " mean of all " + mean(reached.map(n => depth[n.id])).toFixed(2));
+      check(new Set(claims1).size === claims1.length, "no two of the ten ask about the same claim", JSON.stringify(claims1));
+      await page.locator('#studybody button[data-study="more"]').click();
+      const r2 = await round();
+      const claims2 = r2.filter(x => x.concl).map(x => x.concl);
+      const forks1 = r1.filter(x => x.fork).map(x => x.fork), forks2 = r2.filter(x => x.fork).map(x => x.fork);
+      check(r2.length === 10 && !claims2.some(c => claims1.includes(c)) && !forks2.some(f => forks1.includes(f)) &&
+            /That is 20 of the/.test(await page.locator("#studybody").innerText()),
+            "Ten more puts the next ten, none already put", JSON.stringify(claims2.filter(c => claims1.includes(c))));
+      await page.keyboard.press("Escape");
+
+      // WITH OTHERS PAUSES AFTER TEN, and the pair picker offers four at a time. Mutation: drop the
+      // pause -> no "Ten more" after ten unfolds; slice eight -> five pair buttons.
+      await page.locator('#map [data-act="study"]').click();
+      await page.locator('#studybody button[data-study="others"]').click();
+      await page.waitForTimeout(250);
+      let paused = false, presses = 0;
+      for (; presses < 16 && !paused; presses++) {
+        paused = /predictions\. Ten more/.test(await page.locator("#studybody").innerText());
+        if (paused) break;
+        const b = await frontier(); if (!b) break;
+        await page.mouse.click(b.x, b.y); await page.waitForTimeout(350);
+      }
+      check(paused && await page.locator('#studybody button[data-study="others-more"]').count() === 1 && /^10 so far$/.test(await page.locator("#studyhint").innerText()),
+            "With others pauses after ten predictions and offers ten more", `after ${presses} unfolds`);
+      if (paused) {
+        await page.locator('#studybody button[data-study="others-more"]').click();
+        check(/has reasons still folded|is folded/.test(await page.locator("#studybody").innerText()), "and Ten more carries on with the next prediction");
+      }
+      await page.keyboard.press("Escape");
+
+      // Four pairs to choose from, with the rest a press away. Prescott-Couch sets eight.
+      await page.goto("file://" + phtml);
+      await page.waitForTimeout(900);
+      await page.locator('#map [data-act="study"]').click();
+      await page.locator('#studybody button[data-study="accounts"]').click();
+      const firstPairs = await page.locator('#studybody button[data-study^="acc-set:"]').allInnerTexts();
+      await page.locator('#studybody button[data-study="acc-other"]').click();
+      const nextPairs = await page.locator('#studybody button[data-study^="acc-set:"]').allInnerTexts();
+      check(firstPairs.length === 4 && nextPairs.length >= 1 && !nextPairs.some(t => firstPairs.includes(t)),
+            "Weigh the accounts offers four pairs at a time, and Other pairs the rest", JSON.stringify([firstPairs.length, nextPairs.length]));
+      await page.keyboard.press("Escape");
+    }
+    // A FROZEN PAGE, NOT A SLOW ONE. With others lit its frontier with markClaims, and where that was a
+    // section's block the lighting unfolded the map, the redraw asked the card again, and the stack ran
+    // out (Miller, 20 Oct 2026). Mutation: light without visibleOnly and drop the guard -> RangeError.
+    {
+      const before = errors.length;
+      await page.goto("file://" + mlhtml);
+      await page.waitForTimeout(900);
+      await page.locator('#map [data-act="study"]').click();
+      await page.locator('#studybody button[data-study="others"]').click();
+      await page.waitForTimeout(400);
+      for (let k = 0; k < 3; k++) { const b = await frontier(); if (!b) break; await page.mouse.click(b.x, b.y); await page.waitForTimeout(350); }
+      const fresh = errors.slice(before);
+      errors.length = before;   // counted here, not again in "no page errors"
+      check(!fresh.length && /folded/.test(await page.locator("#studybody").innerText()),
+            "With others walks into a section that opens shut without running out of stack", fresh.join("; "));
+      await page.keyboard.press("Escape");
+    }
 
     // A CLAIM THAT STATES TWO STEPS, supposed false in Reasons: at least one step does not run, and the
     // Mechanism panel asks which (18 Oct 2026). Mutations: push every step of the claim -> both arrows
