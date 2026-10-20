@@ -719,6 +719,16 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
   box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
 #supp[hidden]{display:none}
+#qfirst{position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:96px;width:30rem;max-width:calc(100vw - 28px);
+  background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;box-shadow:0 6px 22px rgba(0,0,0,.16);
+  padding:.6rem .8rem .75rem;font-size:13px;line-height:1.45}
+#qfirst[hidden]{display:none}
+#orient #qchip{max-width:min(36rem,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#qfirst header{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin-bottom:.3rem}
+#qfirst header b{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-dim);font-weight:600}
+#qfirst .qtext{margin:.1rem 0 .4rem;font-size:14.5px}
+#qfirst .qsub{margin:0 0 .55rem;color:var(--fg-dim)}
+#qfirst .qbtns{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
 #supp header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
 #supp header b{font-size:13px}
 #supp header .grow{flex:1}
@@ -727,6 +737,10 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #supp li{margin:.12rem 0}
 #supp button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .15rem}
 #supp .muted,#supp .q{color:var(--fg-dim)}
+/* THE CLOSING QUESTION (B10 clause 3): set apart by a rule, in the reader's ink, after the answer. */
+#supp .reflect,#suppbar .reflect{margin-top:.45rem;padding-top:.4rem;border-top:1px dashed var(--line,#ddd);line-height:1.4}
+#supp .reflect b,#suppbar .reflect b{font-weight:600}
+#suppbar .reflect button{margin-left:.3rem}
 #supp .leaf{display:flex;gap:.35rem;align-items:baseline;margin:.12rem 0}
 #supp .leaf button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 #supp .verdict{margin:.25rem 0 .1rem;padding:.25rem .4rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
@@ -788,7 +802,9 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #tables tr.pick th,#tables tr.pick td{background:var(--accent-wash,rgba(58,123,213,.1))}
 #tables td.k{color:var(--fg-dim);font-size:11.5px;white-space:nowrap}
 #tables td.k b{color:var(--fg);font-weight:600}
-#tables .verdict,#tables .ask,#tables .q,#tables ul.moves{max-width:44rem}
+#tables .verdict,#tables .ask,#tables .q,#tables ul.moves,#tables .reflect{max-width:44rem}
+#tables .reflect{margin:.5rem 0 .2rem;padding-top:.4rem;border-top:1px dashed var(--line,#ddd);line-height:1.4}
+#tables .reflect b{font-weight:600}#tables .reflect i{font-style:normal;text-decoration:underline dotted}
 #tables .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #tables ul.moves{margin:.3rem 0 .3rem 1.1rem;padding:0}
 #tables ul.moves li{margin:.15rem 0}
@@ -1310,6 +1326,10 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
        reader that the feature is broken. -->
   <div id="abs" hidden>
     <div id="orient">
+      <!-- THE QUESTION THE TEXT WORKS ON, FIRST (the Purpose episode, 20 Oct 2026: "A3"): the question
+           itself, ahead of the abstract -- the layer's first question (profile 1.17, front matter
+           `questions:`, listed with what the claims do to each on click), else the chain's. -->
+      <button class="plain decl" id="qchip" type="button" hidden></button>
     <button class="plain icon" id="absbtn" aria-expanded="false" aria-controls="abspanel"
             title="The article's own abstract — what the paper says it argues, in its authors' words. Click again to fold it away.">
       <svg class="chev" viewBox="0 0 20 20" aria-hidden="true"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg><span id="abslabel">Abstract</span></button>
@@ -1327,10 +1347,6 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
       <!-- ONE READING AMONG READINGS: the map's own declared cruxes, counted (Formation T4). -->
       <button class="plain decl" id="cruxchip" type="button" hidden
               data-help="What a map says about itself"></button>
-      <!-- THE QUESTIONS THE TEXT WORKS ON (profile 1.17): front matter `questions:`, and what the
-           claims do to them -- answer, reframe, split or dissolve. A reframing is a move on a
-           question, not a reason, so it is listed here rather than drawn as support. -->
-      <button class="plain decl" id="qchip" type="button" hidden></button>
     </div>
     <div id="abspanel" role="note" hidden>
       <div id="abshead">
@@ -1492,6 +1508,14 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
   <!-- THE READER'S SUPPOSITIONS in Reasons (17 Oct 2026): what each costs, and for a denied
        conclusion, what must give. Filled by suppRender; see argdown-suppose.js. -->
   <aside id="supp" hidden aria-label="Your suppositions"></aside>
+  <!-- THE TEXT'S QUESTION, BEFORE THE MAP'S ANSWER (the Purpose episode, B10 clause 1; ruled 20 Oct
+       2026, "A1"). Offered once as a map opens, only where the map declares a question; see qFirst. -->
+  <aside id="qfirst" hidden role="dialog" aria-label="The question this text works on">
+    <header><b>The question this text works on</b><button type="button" class="plain x" data-qfirst="map" title="Put this away and look at the map (Esc)" aria-label="Close">&times;</button></header>
+    <p class="qtext"></p>
+    <p class="qsub">What do you think, before you look?</p>
+    <div class="qbtns"><button type="button" class="plain primary" data-qfirst="study" title="Study this map, starting from this question">Study it</button><button type="button" class="plain" data-qfirst="map">Show me the map</button><button type="button" class="plain" data-qfirst="never" title="Open maps straight onto the map from now on. How to use can turn this back on">Don&rsquo;t ask first</button></div>
+  </aside>
   <!-- WEIGH: accounts against evidence, or claims that cannot all hold (18 Oct 2026). Filled by weighRender. -->
   <aside id="weigh" hidden aria-label="Weigh"></aside>
   <!-- TABLES: the text's own comparisons, declared with `frames:` (20 Oct 2026). Filled by tablesRender. -->
@@ -1971,12 +1995,17 @@ function render(name, source, graph){
   }
   // The questions the text works on, and what its claims do to them (profile 1.17).
   QUESTIONS = (graph && graph.questions) || null;
-  var qc = $("qchip");
-  qc.hidden = !(QUESTIONS && QUESTIONS.length);
-  if (!qc.hidden) {
-    qc.textContent = QUESTIONS.length + (QUESTIONS.length === 1 ? " question" : " questions");
-    qc.title = "The questions the text works on, as the reconstructor named them, and what its " +
-      "claims do to each: answer, reframe, split or dissolve it. Click to list them.";
+  // THE QUESTION ITSELF, NOT A COUNT OF THEM (the Purpose episode; ruled 20 Oct 2026, "A3"). A chip
+  // that said "1 question" hid the question behind a click; the chip now says it, first in the
+  // strip, ahead of the abstract. The question layer's first question, else the chain's.
+  var qc = $("qchip"), qt = questionOf(graph);
+  qc.hidden = !qt;
+  if (qt) {
+    var nq = (QUESTIONS && QUESTIONS.length) || 0;
+    // Whole, cut by the stylesheet where the strip is narrow; the card and the list say it in full.
+    qc.textContent = "? " + qt + (nq > 1 ? " \u00b7 +" + (nq - 1) + " more" : "");
+    qc.title = nq ? "What the text asks. Click to list its questions and what its claims do to each."
+                  : "What the text asks. Click to study the map from it.";
   }
   syncOrient();
   showArgdown(SOURCE);
@@ -2188,6 +2217,9 @@ function openingDepth(graph){
   KEY_GRAPH = graph;
   dismissKeyCard(false);
   setTimeout(offerKeyCard, 700);
+  // THE TEXT'S QUESTION, past the walkthrough's start so WALK reads truthfully (see qFirstOffer).
+  qFirstHide();
+  setTimeout(qFirstOffer, 750);
 }
 
 /** The footer line and the debugging block. Its own function because a live edit redraws the
@@ -2555,6 +2587,18 @@ function buildHelpPages(){
   sm.textContent = "Study this map";
   sm.onclick = function(){ setHelp(false); startStudy(); };
   toc.appendChild(sm);
+  // AND THE QUESTION CARD'S SWITCH: a dismissed teacher is found again here (20 Oct 2026).
+  var qf = document.createElement("button");
+  qf.type = "button";
+  qf.id = "qfirsttoc";
+  QFIRST_TOC = qf;
+  qf.onclick = function(){
+    var on = !qFirstOn();
+    qFirstSet(on);
+    if (on) { setHelp(false); qFirstOffer(); }
+  };
+  toc.appendChild(qf);
+  qFirstTocLabel();
   var shown = null;
   pages.forEach(function(pg, i){
     // The group's label, once, above the first topic in it. Written from the page's own
@@ -3926,6 +3970,7 @@ function startWalkthrough(){
   clearErr();
   setHelp(false);
   ctxHide();
+  qFirstHide();
   // One teacher at a time, in both directions: the guide already stands the tour down, and a
   // study run in progress ends (keeping the reader's folds) before the tour takes the panes.
   if (STUDY) endStudy();
@@ -4361,6 +4406,7 @@ function startStudy(from){
   }
   if (WALK) abandonWalkthrough();
   if (GUIDE) guideEnd();
+  qFirstHide();
   clearErr(); setHelp(false); ctxHide();
   // MODE: null until the reader chooses (the opening card), "own" or "others". `from`: a claim the
   // reader asked to study from, whose reasons alone are worked through (Study from here).
@@ -4522,12 +4568,58 @@ function studyCard(){
 }
 function studyShort(t){ t = String(t || "").replace(/\s+/g, " ").trim(); return t.length > 200 ? t.slice(0, 199).replace(/\s+\S*$/, "") + "\u2026" : t; }
 /** The question the text answers, where the map declares one: its own question layer, or its chain's. */
-function studyQuestion(){
-  var g = CURRENT_GRAPH || {}, q = (g.questions || []).filter(function(x){ return x.text; })[0];
-  if (q) return q.text;
+function studyQuestion(){ return questionOf(CURRENT_GRAPH); }
+function questionOf(g){
+  g = g || {};
+  var q = (g.questions || []).filter(function(x){ return x.text; })[0];
+  if (q) return String(q.text);
   var m = g.mechanism && g.mechanism.block;
   return m && m.question ? String(m.question) : "";
 }
+
+/* THE TEXT'S QUESTION, BEFORE THE MAP'S ANSWER (the Purpose episode, B10 clause 1; ruled 20 Oct 2026,
+ * "A1"). Dewey's inquiry starts from a difficulty the reader feels; a map that opens on its finished
+ * picture starts from the answer. So, as a map opens, a card over it asks the text's question, with
+ * the map behind it: Study it, Show me the map, or Don't ask first. Offered, never imposed (T2): it
+ * comes only where the map declares a question, once per map opened, and never while the walkthrough
+ * or Study has the reader; "Don't ask first" is remembered, and How to use offers it back. */
+var QFIRST_STORE = makeChoiceStore("ipsissima.questionfirst.v1");
+function qFirstOn(){ return !(QFIRST_STORE.ok && QFIRST_STORE.get() === "off"); }
+function qFirstSet(on){ if (QFIRST_STORE.ok) QFIRST_STORE.set(on ? "on" : "off"); qFirstTocLabel(); }
+var QFIRST_TOC = null;   // How to use's switch, made with the contents (buildHelp)
+function qFirstTocLabel(){
+  var b = QFIRST_TOC;
+  if (b) b.textContent = qFirstOn() ? "Stop asking the text\u2019s question first" : "Ask me the text\u2019s question first";
+}
+function qFirstOffer(){
+  if (!qFirstOn() || WALK || STUDY || !LIVE) return;
+  var q = studyQuestion();
+  if (!q) return;
+  $("qfirst").querySelector(".qtext").textContent = "\u201c" + q + "\u201d";
+  $("qfirst").hidden = false;
+  var b = $("qfirst").querySelector('[data-qfirst="study"]');
+  if (b) b.focus();
+}
+function qFirstHide(){ $("qfirst").hidden = true; }
+$("qfirst").addEventListener("click", function(ev){
+  var t = ev.target, a = t && t.getAttribute && t.getAttribute("data-qfirst");
+  if (!a) return;
+  qFirstHide();
+  if (a === "study") startStudy();
+  if (a === "never") {
+    qFirstSet(false);
+    showNote("Maps will open straight onto the map. The question stays first in the strip; to be asked first again, open How to use and press \u201cAsk me the text\u2019s question first\u201d at the top of its list.", 9000);
+  }
+});
+$("qfirst").addEventListener("keydown", function(ev){ if (ev.key === "Escape") { ev.stopPropagation(); qFirstHide(); } });
+// A PRESS ANYWHERE ELSE IS "SHOW ME THE MAP": the reader who has gone to work on the map, the bar or
+// another arrangement has answered the card, and a card left standing over that work would be
+// clutter (P6). Nothing is remembered: the next map opened asks again.
+document.addEventListener("pointerdown", function(ev){
+  if ($("qfirst").hidden) return;
+  var t = ev.target;
+  if (!(t && t.closest && t.closest("#qfirst"))) qFirstHide();
+}, true);
 function studyOpening(){
   var c = studyCard(), q = studyQuestion();
   $("studyhint").textContent = "before you start";
@@ -6215,6 +6307,7 @@ $("absbtn").onclick = function(){
 };
 $("absclose").onclick = function(){ setAbstract(false); $("abspanel").hidden = true; };
 $("qchip").onclick = function(){
+  if (!(QUESTIONS && QUESTIONS.length)) { qFirstHide(); startStudy(); return; }
   if (!$("abspanel").hidden && PANEL_KIND === "questions") { $("abspanel").hidden = true; return; }
   showQuestions();
 };
@@ -8812,6 +8905,73 @@ function guessShow(){
   guessMarks();
   suppApply();
 }
+/* AFTER THE ANSWER, ONE QUESTION ABOUT IT (the Purpose episode, B10 clause 3; ruled 20 Oct 2026,
+ * "B1"). Feedback, then reflection on it (Lang): the banner picks the one place where the reader and
+ * the map parted -- a loss they did not expect, else a guess the map does not bear out -- and asks
+ * about that. A framed question with an answer the map holds, shown only when asked for; nothing
+ * typed, nothing scored. Where they agreed throughout, a framing question, left with them. */
+function guessReflect(){
+  var ans = GUESS.answer || [], picks = GUESS.picks, mech = GUESS.view === "mech";
+  var unexpected = ans.filter(function(id){ return picks.indexOf(id) < 0; });
+  if (!mech) {
+    var drawn = {};
+    walkBoxes(".alm-n").forEach(function(e){ if (e.dataset) drawn[e.dataset.id] = true; });
+    unexpected = unexpected.filter(function(id){ return drawn[id]; }).concat(unexpected.filter(function(id){ return !drawn[id]; }));
+  }
+  if (unexpected.length) return { kind: "unexpected", id: unexpected[0] };
+  var kept = picks.filter(function(id){ return ans.indexOf(id) < 0; });
+  if (kept.length) return { kind: "kept", id: kept[0] };
+  return picks.length ? { kind: "agreed" } : null;
+}
+function guessReflectHTML(){
+  var x = guessReflect(), esc = ArgdownStaircase.esc, mech = GUESS.view === "mech";
+  if (!x) return "";
+  var nm = function(id){ return mech ? "\u201c" + esc(suppStateLabel(id)) + "\u201d" : "\u2039" + esc(suppLabel(id)) + "\u203a"; };
+  var q, btn = "";
+  if (x.kind === "unexpected") {
+    q = mech ? 'You didn\u2019t expect ' + nm(x.id) + ' to stop. Is the step that brought it about one you missed, or one you would dispute?'
+             : 'You didn\u2019t expect ' + nm(x.id) + ' to lose its support. Is the link from what you supposed one you missed, or one you would dispute?';
+    btn = '<button type="button" data-guess-route="' + esc(x.id) + '">' + (mech ? 'Show it' : 'Show what it rests on') + '</button>';
+  } else if (x.kind === "kept") {
+    q = mech ? 'You expected ' + nm(x.id) + ' to stop, but the text\u2019s steps still bring it about. By which route?'
+             : 'You expected ' + nm(x.id) + ' to go, but the map keeps it. What still holds it up?';
+    btn = '<button type="button" data-guess-held="' + esc(x.id) + '">' + (mech ? 'Show it' : 'Show what holds it up') + '</button>';
+  } else {
+    q = 'You expected what the map takes. Is there one of them the text could defend another way, by a reason this map does not draw?';
+  }
+  return '<div class="reflect"><b>' + q + '</b> ' + btn + '</div>';
+}
+/** The route by which a supposition reaches a claim that loses its support: back from the claim
+ *  along the map's support to whatever was denied, the first route found. */
+function guessRoute(id){
+  var g = CURRENT_GRAPH || {}, r = SUPP_LAST;
+  if (!r) return [id];
+  var denied = {}; r.denied.forEach(function(x){ denied[x.split("#")[0]] = true; });
+  var into = {};
+  (g.edges || []).forEach(function(e){ if (e.type === "support") (into[e.to] = into[e.to] || []).push(e.from); });
+  var prev = {}, seen = {}, queue = [id], end = null;
+  seen[id] = true;
+  while (queue.length && end == null) {
+    var cur = queue.shift();
+    (into[cur] || []).forEach(function(f){
+      if (seen[f] || end != null) return;
+      seen[f] = true; prev[f] = cur;
+      if (denied[f]) end = f; else queue.push(f);
+    });
+  }
+  if (end == null) return [id];
+  var path = [end];
+  while (path[path.length - 1] !== id) path.push(prev[path[path.length - 1]]);
+  return path;
+}
+/** What still holds up a claim the reader expected to go: what supports it and has not lost support. */
+function guessHolders(id){
+  var g = CURRENT_GRAPH || {}, r = SUPP_LAST, gone = {};
+  if (r) r.lost.concat(r.denied).forEach(function(x){ gone[x.split("#")[0]] = true; });
+  var out = [id];
+  (g.edges || []).forEach(function(e){ if (e.type === "support" && e.to === id && !gone[e.from]) out.push(e.from); });
+  return out;
+}
 function guessSummary(){
   var ans = GUESS.answer || [], picks = GUESS.picks;
   var hit = picks.filter(function(id){ return ans.indexOf(id) >= 0; }).length;
@@ -8895,7 +9055,8 @@ function suppBar(){
   if (GUESS.phase === "guessing") guessRow = '<div class="guessrow"><b>Before you look:</b> click the ' +
     (GUESS.view === "mech" ? 'states you expect the text\u2019s steps will no longer bring about' : 'claims you expect to lose the map\u2019s support') +
     '. Marked: ' + GUESS.picks.length + '. <button type="button" data-guess-show="1">Show</button> <button type="button" class="plain" data-guess-skip="1">Skip</button></div>';
-  else if (GUESS.phase === "shown") guessRow = '<div class="guessrow">' + esc(guessSummary()) + ' <button type="button" data-guess-done="1" title="Take the marks away; the supposition stays">Done</button></div>';
+  else if (GUESS.phase === "shown") guessRow = '<div class="guessrow">' + esc(guessSummary()) + ' <button type="button" data-guess-done="1" title="Take the marks away; the supposition stays">Done</button>' +
+    guessReflectHTML() + '</div>';
   bar.innerHTML = '<b title="Yours, not the text\u2019s, and never saved into the map">Supposing</b><span class="items">' +
     items.join('<span class="sep"> \u00b7 </span>') + guessRow + '</span><span class="acts">' +
     '<label class="gtog" title="Mark what you expect before seeing what follows; remembered"><input type="checkbox" data-guess-on="1"' + (GUESS.on || STUDY ? ' checked' : '') + (STUDY ? ' disabled' : '') + '> Guess first</label>' +
@@ -8931,6 +9092,11 @@ function suppHTML(r, I){
       var ow = (r.owing[id] || []);
       return '<li>' + go(id) + (ow.length && mine > 1 ? ' <span class="q">(because of ' + ow.map(q).join(" or ") + ')</span>' : '') + '</li>'; }).join("") + '</ul>'
       : '<div class="q">Nothing: every claim that had support keeps some line of it.</div>');
+  // AND WHERE THERE WAS NO GUESS, ONE LINE THAT SENDS THE READER BACK TO THE TEXT (the Purpose
+  // episode, B10 clause 3 with B9; ruled 20 Oct 2026, "B2"). A framing question: the map cannot
+  // answer it, and does not try. After a guess, the banner asks its own question instead.
+  if (r.lost.length && GUESS.phase !== "shown")
+    h += '<div class="reflect"><b>Did any of these surprise you?</b> Pick one and ask whether the text gives it a reason this map does not draw.</div>';
   // DENY THE CONCLUSION: for each claim the reader supposes false that the map supports, what must give.
   I["false"].forEach(function(id){
     var D = ArgdownSuppose.deny(CURRENT_GRAPH, id.indexOf("#") >= 0 ? id.split("#")[0] : id, I.keep, { appraisal: APPRAISAL_ON, index: r.index });
@@ -8971,6 +9137,12 @@ function suppClick(ev){
   if (t.getAttribute("data-guess-show")) { guessShow(); return; }
   if (t.getAttribute("data-guess-skip") || t.getAttribute("data-guess-done")) { guessEnd(); return; }
   if (t.getAttribute("data-guess-on")) { guessSetOn(t.checked); return; }
+  var gr = t.getAttribute("data-guess-route") || t.getAttribute("data-guess-held");
+  if (gr) {
+    if (GUESS.view === "mech") { if (MECH && MECH.showState) MECH.showState(gr); return; }
+    if (LIVE) LIVE.markClaims(t.getAttribute("data-guess-route") ? guessRoute(gr) : guessHolders(gr), { centreAlways: true });
+    return;
+  }
   var u = t.getAttribute("data-supp-undo");
   if (u) { var list = SUPP[u], k = t.getAttribute("data-key"), i = list.indexOf(k); if (i >= 0) list.splice(i, 1); suppApply(); return; }
   var c = t.getAttribute("data-supp-choice");
@@ -9403,7 +9575,29 @@ function tablesCaseHTML(t){
   h += '<div class="verdict">' + lead + '</div>';
   if (moves.length) h += '<ul class="moves">' + moves.map(function(m){ return '<li>' + m + '</li>'; }).join("") + '</ul>';
   else if (cells > 1) h += '<div class="q">No two cases are set apart by one respect alone, and none goes against a stated rule.</div>';
+  h += tablesReflectCase(t, rowLabel, colLabel);
   return h + '<div class="q">Click a value to go to the claim that states it, or a case to see every claim about it. The table records what the text says of each case; what follows is yours to judge.</div>';
+}
+/* ONE QUESTION TO END ON, FROM THE STRONGEST MOVE THE TABLE SHOWS (the Purpose episode, B10 clause 3;
+ * ruled 20 Oct 2026, "T1"). A framing question: the table cannot answer it and does not try. In the
+ * order of how much each move puts in question -- two cases alike but for the verdict, a case
+ * against the stated rule, one respect that differs, a case beaten on every count, a silent cell --
+ * and only one, so the panel ends on a question rather than a list. */
+function tablesReflect(q){ return q ? '<div class="reflect"><b>' + q + '</b></div>' : ''; }
+function tablesReflectCase(t, rowLabel, colLabel){
+  var esc = ArgdownStaircase.esc, n = function(id){ return '<i>' + esc(rowLabel(id)) + '</i>'; };
+  if (t.alike.length) { var a = t.alike[0];
+    return tablesReflect(n(a.a) + ' and ' + n(a.b) + ' differ in nothing this table records, yet the text gives them different verdicts. What does the table leave out that the text relies on?'); }
+  if (t.againstRule.length) { var r = t.againstRule[0];
+    return tablesReflect(r.meets ? n(r.row) + ' meets the stated rule\u2019s conditions and is not given its verdict. Does it refute the rule, or should the rule be repaired?'
+                                 : n(r.row) + ' is given the rule\u2019s verdict without meeting its conditions. Is the rule too narrow, or is something else at work?'); }
+  if (t.apart.length) { var p = t.apart[0], differ = p.verdicts.some(function(v){ return v.differ; });
+    return tablesReflect(n(p.a) + ' and ' + n(p.b) + ' differ only in ' + esc(colLabel(p.dimension)) + (differ ? ', and their verdicts differ. Is that one difference enough to explain it?' : '. Does that respect matter to the verdict at all?')); }
+  if (t.dominated.length) { var d = t.dominated[0];
+    return tablesReflect(n(d.worse) + ' is no better than ' + n(d.better) + ' on any count the text ranks. Why does the text still weigh it?'); }
+  if (t.empty.length) { var e = t.empty[0];
+    return tablesReflect('The text says nothing of ' + n(e.row) + ' on ' + esc(colLabel(e.column)) + '. What would it say there, and would the verdict change?'); }
+  return '';
 }
 function tablesCrossHTML(t){
   var esc = ArgdownStaircase.esc, shown = TABLES.shown, here = TABLES.here, h = "";
@@ -9418,7 +9612,10 @@ function tablesCrossHTML(t){
       }).join("") + '</tr>';
     }).join("") + '</tbody></table></div>';
   if (!shown) return h + '<div><button type="button" data-tables-show="1">Show</button></div>';
+  var gap = null;
+  t.rows.forEach(function(r){ t.columns.forEach(function(c){ if (!gap && !(t.cells[r.id] && t.cells[r.id][c.id])) gap = { r: r, c: c }; }); });
   return h + '<div class="verdict">The text fills ' + t.filled + ' of the ' + t.size + ' cells' + (t.filled < t.size ? '; the rest it leaves empty, and so does the table.' : '.') + '</div>' +
+    (gap ? tablesReflect('The text says nothing of <i>' + esc(gap.r.label) + '</i> under <i>' + esc(gap.c.label) + '</i>. What would it say there, and how would you find out?') : '') +
     '<div class="q">Click a claim to go to it on the map.</div>';
 }
 /** A DECLARED ACCOUNT SET, its reasons grouped by the case they are about (argdown-tables.js, accountRowsByCase). */
@@ -9448,6 +9645,9 @@ function tablesAccountHTML(T){
   }
   if (grouped) s += ' ' + grouped + ' row' + (grouped === 1 ? ' gathers' : 's gather') + ' the findings of one case: what each finding says of one account, the case says of them together.';
   h += '<div class="verdict">' + esc(s) + '</div>';
+  var one = T.groups.filter(function(g){ return g.kind === "one"; })[0];
+  h += apart.length ? (one ? tablesReflect('<i>' + esc(one.frame ? one.label : weighLabel(one.rows[0])) + '</i> bears on one account only. What would the other make of it?') : '')
+                    : tablesReflect('No finding here tells the accounts apart. What finding would?');
   return h + '<div><button type="button" data-tables-weigh="' + T.i + '" title="The same accounts in the weigh panel, one row a reason, with Suppose false and Test?">Weigh these accounts</button></div>' +
     '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
 }

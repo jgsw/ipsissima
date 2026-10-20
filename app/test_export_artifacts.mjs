@@ -161,7 +161,7 @@ const margin = drawnMargin(page);
 await page.goto("file://" + viewer);
 await page.waitForSelector(".alm-n", { timeout: 20000 });
 await page.evaluate(() => {
-  try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
+  try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
 });
 
 // Force the plain download path and capture what it would have written, rather than letting a

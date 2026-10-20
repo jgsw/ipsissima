@@ -177,6 +177,12 @@ if (chromium) {
     check(/The coin guess meets the rule of ‹The definition› \(if made on evidence: yes and turned out right: yes, then a good guess: yes\), and is given no\./.test(t0) &&
           /The weather guess and The coin guess are alike in every respect the text states/.test(t0),
           "the panel names the case against the stated rule, and the two alike in all but the verdict", t0.slice(0, 600));
+    // ONE QUESTION TO END ON, FROM THE STRONGEST MOVE (the Purpose episode; ruled 20 Oct 2026, "T1"):
+    // alike but for the verdict outranks the rule. Mutations: drop tablesReflectCase -> none; ask from
+    // the rule first -> the wrong question; ask every move's question -> more than one.
+    const refl = await page.locator("#tables .reflect").allInnerTexts();
+    check(refl.length === 1 && /The weather guess and The coin guess differ in nothing this table records, yet the text gives them different verdicts\. What does the table leave out that the text relies on\?/.test(refl[0]),
+          "the panel ends on one question, from the strongest move it shows: what the table leaves out", JSON.stringify(refl));
     // CLICKING A VALUE goes to the claim that states it. Mutation: drop the data-tables-go handler -> nothing lit.
     await page.locator('#tables tr[data-tables-row="B"] td').nth(2).locator(".go").click();
     await page.waitForTimeout(300);
@@ -335,6 +341,25 @@ if (chromium) {
     const batesOut = path.join(tmp, "bates.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(batesDir, batesMap), "-o", batesOut], { stdio: "pipe" });
     await open(batesOut);
+    // THE TEXT'S QUESTION, BEFORE THE MAP'S ANSWER (the Purpose episode; ruled 20 Oct 2026, "A1" and
+    // "A3"). Bates names its chain's question. Mutations: never schedule qFirstOffer -> no card; keep
+    // the chip a count -> it does not say the question; forget "Don't ask first" -> the card returns.
+    const qcard = page.locator("#qfirst"), qchip = page.locator("#qchip");
+    check(await qcard.isVisible() && /^“How would charging small user fees, rather than giving products away/.test(await qcard.locator(".qtext").innerText()),
+          "a map that names its question asks it as the map opens, in a card over the map");
+    check(/^\? How would charging small user fees/.test(await qchip.innerText()) &&
+          await page.evaluate(() => document.getElementById("orient").firstElementChild.id === "qchip"),
+          "and the strip says the question itself, first, where it used to count questions");
+    await qcard.locator('[data-qfirst="never"]').click();
+    await open(batesOut);
+    check(await qcard.isHidden(), "Don't ask first is remembered: the next map opens straight onto the map");
+    await page.locator("#helpbtn").click();
+    await page.locator("#qfirsttoc").click();
+    await page.waitForTimeout(300);
+    check(await qcard.isVisible() && /Stop asking/.test(await page.locator("#qfirsttoc").innerText()),
+          "How to use turns it back on, and asks at once");
+    await qcard.locator('.qbtns [data-qfirst="map"]').click();
+    check(await qcard.isHidden(), "Show me the map puts the card away");
     await weighBtn.click();
     await page.waitForTimeout(400);
     const batesWeigh = await page.locator("#weigh").innerText().catch(() => "");

@@ -265,10 +265,27 @@ if (chromium) {
     check(/alm-guess-hit/.test(await tagOf("Linked")) && /alm-guess-miss/.test(await tagOf("Main")) && (await faded()).includes(id("Linked")) &&
           /You marked 2\. 1 of them loses the map’s support/.test(sumT),
           "Show draws the map's answer beside the marks: the one it agrees with, the one it keeps", sumT);
+    // AFTER THE ANSWER, ONE QUESTION ABOUT IT (the Purpose episode; ruled 20 Oct 2026, "B1"): here the
+    // reader expected Main to go and the map keeps it. Mutations: drop guessReflectHTML from the banner
+    // -> no question; light the claim alone in guessHolders -> Alone is not lit; leave the standing
+    // line on while the guess is shown -> two questions at once.
+    check(/You expected ‹Main› to go, but the map keeps it\. What still holds it up\?/.test(sumT) &&
+          !(await page.locator("#supp .reflect").count()),
+          "the banner asks about the one place the reader and the map parted, and the card's own line steps aside", sumT);
+    await page.locator("#suppbar button[data-guess-held]").click();
+    await page.waitForTimeout(300);
+    const heldLit = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit")]
+      .map(g => [...g.querySelectorAll(".alm-title")].map(t => t.textContent.trim()).join(" ")).sort());
+    check(heldLit.includes("Main") && heldLit.includes("Alone") && !heldLit.includes("Linked"),
+          "Show what holds it up lights the claim and what still supports it, not what lost its support", JSON.stringify(heldLit));
     await page.locator("#suppbar button[data-guess-done]").click();
     await page.waitForTimeout(150);
     check(await page.locator("#map g.alm-n .alm-guess").count() === 0 && (await faded()).includes(id("Linked")),
           "Done takes the marks away and the supposition stays");
+    // AND WITHOUT A GUESS, ONE STANDING LINE BACK TO THE TEXT ("B2"). Mutation: drop it -> none.
+    check(/Did any of these surprise you\? Pick one and ask whether the text gives it a reason this map does not draw\./
+            .test(await page.locator("#supp .reflect").innerText().catch(() => "")),
+          "with no guess on show, What follows ends on one question that sends the reader back to the text");
     await page.locator("#suppbar input[data-guess-on]").click();
     await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
@@ -433,7 +450,7 @@ if (chromium) {
       await page.waitForTimeout(1200);
     };
     // The Reader offers its tour to a first-time reader: marked seen, as for a returning one.
-    await page.addInitScript(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) {} });
+    await page.addInitScript(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) {} });
     await page.goto("file://" + reader);
     await page.waitForTimeout(800);
     await dropFile(PLANTED);
@@ -563,6 +580,10 @@ if (chromium) {
     const aside = await page.locator(".amech-side").innerText();
     check(/Head teachers” does nothing/.test(await page.locator("#suppbar").innerText()) && /Classes are smaller” is no longer brought about/.test(aside) &&
           /staffing agreement” is carried with others too/.test(aside), "suppose an actor does nothing: what it alone carries stops, a shared state stands and is named", aside.slice(0, 300));
+    // THE MECHANISM PANEL'S STANDING LINE (the Purpose episode; ruled 20 Oct 2026, "B2", as in Reasons).
+    // Mutation: drop it from expHTML -> none.
+    check(/Did any of these surprise you\? Pick one and ask whether the text names a route to it that this chain does not draw\./.test(aside),
+          "with no guess, the chain's panel ends on one question that sends the reader back to the text");
 
     check(errors.length === 0, "no page errors", errors.join("; "));
   } finally {

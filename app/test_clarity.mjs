@@ -131,7 +131,7 @@ if (chromium) {
                                            colorScheme: opts.scheme || "light",
                                            isMobile: !!opts.mobile, hasTouch: !!opts.mobile });
     await ctx.addInitScript(([keyNew, tour]) => {
-      try { if (!tour) localStorage.setItem("ipsissima.walkthrough.v1", "seen");
+      try { if (!tour) localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off");
             if (!keyNew) localStorage.setItem("ipsissima.key.v1", "seen"); } catch (e) { void e; }
     }, [!!opts.keyNew, !!opts.tour]);
     const page = await ctx.newPage();

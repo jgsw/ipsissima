@@ -405,7 +405,7 @@ async function settle(page) {
  *  so both flags are seeded and both overlays hidden: the invariants below are about the map. */
 async function dismissWalkthrough(page) {
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     try { localStorage.setItem("ipsissima.key.v1", "seen"); } catch (e) { void e; }
     const w = document.getElementById("walk");
     if (w && !w.hidden) w.hidden = true;
@@ -671,11 +671,11 @@ async function keyChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   // The walkthrough is settled and the key unseen — the exact state the offer waits for.
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     try { localStorage.removeItem("ipsissima.key.v1"); } catch (e) { void e; }
   });
   const drop = () => page.evaluate(({ a, aName, s, sName }) => {
@@ -845,10 +845,10 @@ async function exportChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
     delete window.showSaveFilePicker;
   });
@@ -959,7 +959,7 @@ async function mobileChecks(browser) {
   page.on("pageerror", e => pageErrors.push(String(e.message || e)));
   await page.goto("file://" + miller.html);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
     try { localStorage.removeItem("ipsissima.mapbar.v1"); } catch (e) { void e; }
   });
@@ -1138,7 +1138,7 @@ async function genTextChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   const drop = (text, name) => page.evaluate(({ t, n }) => {
     const dt = new DataTransfer();
@@ -1259,7 +1259,7 @@ async function navChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   const drop = (files) => page.evaluate((fl) => {
     const dt = new DataTransfer();
@@ -1330,7 +1330,7 @@ async function editorChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
@@ -1378,7 +1378,7 @@ async function mechanismEditorChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
-  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; } });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
   const chain = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8");
@@ -1444,7 +1444,7 @@ async function bridgePanelChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
-  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; } });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
   const text = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", "bridges.argdown"), "utf8");
@@ -1495,7 +1495,7 @@ async function cardStepsChecks(browser, built) {
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 } });
   const page = await ctx.newPage();
   await page.goto("file://" + m.html);
-  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; } });
   await page.reload();
   await page.waitForSelector("#map svg", { timeout: 15000 });
   await page.click('#view button[data-v="exposition"]');
@@ -1562,7 +1562,7 @@ async function chainNodeChecks(browser) {
   const page = await ctx.newPage();
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
-  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; } });
+  await page.evaluate(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; } });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
   const fx = n => fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", n), "utf8");
@@ -1658,7 +1658,7 @@ async function refClickChecks(browser) {
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.click("#picknew");
   await page.waitForSelector(".cm-content", { timeout: 20000 });
@@ -1764,7 +1764,7 @@ async function quoteChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.evaluate(({ a, aName, s, sName }) => {
     const dt = new DataTransfer();
@@ -1881,7 +1881,7 @@ async function guidedChecks(browser) {
   // it. (The 5 Sep CI failures were exactly this: the tour closing the Manuscript pane
   // under the paraphrase drag, later on the runner than locally.)
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.click("#picknewtext");
   await page.fill("#pastetext",
@@ -2008,7 +2008,7 @@ async function studyChecks(browser) {
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.evaluate(({ t, n }) => {
     const dt = new DataTransfer();
@@ -2181,7 +2181,7 @@ async function compareChecks(browser) {
   page.on("dialog", d => d.accept());
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
@@ -2328,7 +2328,7 @@ async function zoteroChecks(browser) {
   const webPage = await webCtx.newPage();
   await webPage.goto("file://" + out);
   await webPage.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await webPage.waitForSelector("#map .alm-n", { timeout: 20000 });
   await webPage.click('#panes [data-p="text"]');
@@ -2400,7 +2400,7 @@ async function zoteroChecks(browser) {
   });
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
@@ -2576,7 +2576,7 @@ async function voiceChecks(browser) {
   const page = await ctx.newPage();
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   const offered = await page.evaluate(() => document.getElementById("abs").hidden);
@@ -2662,7 +2662,7 @@ async function tocChecks(browser) {
   const page = await ctx.newPage();
   await page.goto("file://" + out);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
@@ -2785,7 +2785,7 @@ async function tocChecks(browser) {
     const p2 = await ctx.newPage();
     await p2.goto("file://" + out2);
     await p2.evaluate(() => {
-      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     });
     await p2.waitForSelector("#map .alm-n", { timeout: 20000 });
     await p2.click('#panes [data-p="text"]');
@@ -2812,7 +2812,7 @@ async function barChecks(browser) {
   const page = await ctx.newPage();
   await page.goto("file://" + miller.html);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-bar [data-act='display']", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
@@ -2886,7 +2886,7 @@ async function expositionChecks(browser) {
   const page = await ctx.newPage();
   await page.goto("file://" + miller.html);
   await page.evaluate(() => {
-    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
   });
   await page.waitForSelector("#map .alm-n", { timeout: 20000 });
   await page.click('#panes [data-p="text"]');
@@ -3030,7 +3030,7 @@ async function pagesChecks(browser) {
     const page = await ctx.newPage();
     await page.goto("file://" + tooming.html);
     await page.evaluate(() => {
-      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); } catch (e) { void e; }
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
     });
     await page.reload();
     await page.waitForSelector("#map .alm-n", { timeout: 20000 });

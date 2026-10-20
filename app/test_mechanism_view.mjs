@@ -1892,6 +1892,9 @@ if (chromium) {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
+    // The text's question is asked over the map as a map opens (20 Oct 2026); these checks drive the
+    // chart, so the reader here has said "Don't ask first".
+    await page.addInitScript(() => { try { localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; } });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
 
     await page.goto("file://" + without);
@@ -2577,6 +2580,20 @@ mechanism:
     const tags = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#mech svg .st .guess")].map(g => [g.parentNode.getAttribute("data-state"), g.getAttribute("class")])));
     check(/guess-miss/.test(tags.harm || "") && /guess-unexpected/.test(tags.defence || "") && /You marked 1\. 0 of them are no longer brought about\. 1 you did not mark is no longer brought about/.test(await page.locator("#suppbar").innerText()),
           "Show tags the guess the steps do not bear out, and the state they stop that was not guessed", JSON.stringify(tags));
+    // AFTER THE ANSWER, ONE QUESTION, in the banner for both views ("B1", 20 Oct 2026): the state the
+    // reader did not expect to stop, and Show it selects it; the panel's standing line steps aside.
+    // Mutations: drop guessReflectHTML -> no question; never call MECH.showState -> nothing selected.
+    const mq = await page.locator("#suppbar").innerText();
+    check(/You didn’t expect “[^”]+” to stop\. Is the step that brought it about one you missed, or one you would dispute\?/.test(mq) &&
+          !(await page.locator(".amech-reflect").count()),
+          "the banner asks about the state the reader did not expect to stop, and the panel's own line steps aside", mq);
+    const sideBefore = await page.locator(".amech-side").innerText();
+    const stateWords = (await page.locator('#mech svg .st[data-state="defence"] text').first().textContent() || "").trim().split(/\s+/).slice(0, 2).join(" ");
+    await page.locator("#suppbar button[data-guess-route]").click();
+    await page.waitForTimeout(250);
+    const sideAfter = await page.locator(".amech-side").innerText();
+    check(stateWords.length > 2 && sideAfter !== sideBefore && sideAfter.toLowerCase().includes(stateWords.toLowerCase()),
+          "Show it selects that state: the panel turns to it", stateWords + " | " + sideAfter.slice(0, 160));
     await page.locator("#suppbar input[data-guess-on]").click();
     await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);

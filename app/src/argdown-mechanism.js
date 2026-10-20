@@ -4667,6 +4667,7 @@ function injectStyle() {
     ".amech-about{margin-top:12px}.amech-about>summary{cursor:pointer;font-size:12px;color:var(--fg-dim,#666);padding:4px 0}",
     ".amech-more-finds summary,.amech-open summary{cursor:pointer;color:var(--fg-dim,#666);font-size:12.5px;margin:2px 0 6px}",
     ".amech-open{margin:8px 0}.amech-open ul{margin:4px 0 0 18px;padding:0;font-size:13px}",
+    ".amech-reflect{margin:6px 0;padding-top:6px;border-top:1px dashed var(--line,#ddd);font-size:13px;line-height:1.4}.amech-reflect b{font-weight:600}",
     ".amech-legend{display:grid;gap:3px;margin:0 0 8px}.amech-legend div{display:flex;align-items:center;gap:8px}",
     ".amech-legend .g{color:var(--fg-dim,#666);font-size:11.5px;margin-top:4px}",
     ".amech-route{border:1px solid var(--line,#ddd);border-radius:7px;padding:6px 9px;margin:6px 0}",
@@ -5206,6 +5207,8 @@ function create(container, graph, opts) {
     },
     /** The reader's guesses and the answer beside them, { state: "guess"|"hit"|"miss"|"unexpected" }. */
     setGuesses: function (x) { keep.guess = Object.assign({}, x || {}); cur.redrawGuesses(); },
+    /** Select a state, as its panel's Show it does: from the banner's question about a guess. */
+    showState: function (v) { return cur && cur.showState ? cur.showState(v) : false; },
     getExperiment: function () {
       return { fail: Object.keys(keep.exp.fail), off: Object.keys(keep.exp.off), hold: Object.keys(keep.exp.hold), actor: Object.keys(keep.exp.actor || {}) };
     },
@@ -6184,6 +6187,10 @@ function create(container, graph, opts) {
         (R.outcomes.length === 1 ? 'its outcome' : 'every outcome they reached') + '.') +
       (stop ? ' ' + stop + ' state' + (stop === 1 ? '' : 's') + ' and the steps from ' + (stop === 1 ? 'it' : 'them') + ' fade on the chart.' : '') + '</div>' +
       (rows.length ? '<ul class="amech-handed">' + rows.join('') + '</ul>' : '') +
+      // ONE LINE BACK TO THE TEXT, where there was no guess (the Purpose episode, B10 clause 3;
+      // ruled 20 Oct 2026, "B2", as in Reasons' What follows). After a guess the banner asks instead.
+      (R.lost.length && !Object.keys(keep.guess || {}).length ? '<div class="amech-reflect"><b>Did any of these surprise you?</b> ' +
+        'Pick one and ask whether the text names a route to it that this chain does not draw.</div>' : '') +
       '<div class="amech-state-act"><button type="button" data-exp-clear="1">Clear</button> <span class="amech-q">yours, not the text\u2019s; never saved into the map</span></div>';
   }
   /** WHAT THE STARTING STATES DO (see conditionsTable): switch starts off, through the same record of
@@ -6917,6 +6924,7 @@ function create(container, graph, opts) {
     fit: function () { setFit(true); },
     refreshExperiment: function () { exp = keep.exp; if (!FIG) runExp(); },
     redrawGuesses: function () { drawNodes(); applyFocus(); },
+    showState: function (v) { if (!G.nodes[v]) return false; select({ state: v }); return true; },
     getView: function () { return { show: show, ends: ends, folded: Object.keys(folded).sort(), expanded: Object.keys(expanded).sort(),
                                     zoom: fit ? "fit" : zk }; },
     setView: function (v) {

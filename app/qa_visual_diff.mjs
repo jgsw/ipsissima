@@ -128,7 +128,7 @@ for (const s of list) {
     await shots.goto("file://" + f);
     await shots.waitForSelector(".alm-n", { timeout: 20000 });
     await shots.evaluate(() => {
-      try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); } catch (e) { void e; }
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "declined"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
       const w = document.getElementById("walk"); if (w) w.hidden = true;
     });
     if (open) {

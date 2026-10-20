@@ -434,9 +434,30 @@ The help's *The controls* and every place that sent the reader to "the bar" for 
 runs on the Bates sample, where the first set has no reasons; it was found on screen, and was
 shown to fail when Weigh opens set 0.
 
-**Still to come:**
+**Wave 4, the rest — ask first, reflect after** (finding 19; B10 clauses 1 and 3). The mockups
+were put to the author on a comparison page (https://claude.ai/artifact/CyabRah5Kwc4xPN6px8EWG),
+and he ruled the same day: "The recommended options look good; build them." Built:
 
-- the rest of wave 4: the map's question offered first on opening, and a closing reflection for
-  supposing and the tables (mockups first);
+- **The question first (A1, A3).** As a map that names its question opens, a card over the map asks
+  it: **Study it**, **Show me the map**, **Don't ask first**. The card comes once per map opened,
+  never while the walkthrough or Study has the reader, and a press anywhere else puts it away.
+  "Don't ask first" is remembered, and the top
+  of How to use offers it back. The strip's chip now says the question itself, first, instead of
+  counting questions.
+- **After supposing (B1, B2).** With Guess first, the banner asks about the one place the reader
+  and the map parted: a claim, or in Mechanism a state, they did not expect to go, with **Show what
+  it rests on** (the route from the supposition) or **Show it**; else one they expected to go that
+  the map keeps, with **Show what holds it up**. The banner serves both views. Without a guess,
+  *What follows* and the chain's panel each end on one line that sends the reader back to the text.
+- **In the Tables panel (T1).** One question to end on, from the strongest move the table shows:
+  alike but for the verdict, against the rule, one respect apart, no better on any count, a silent
+  cell. Cross tables ask about their first empty cell; account tables about a finding that bears on
+  one account only, or, where none tells the accounts apart, what finding would.
+
+Each was checked on screen, and each check in `test_tables.mjs`, `test_suppose.mjs` and
+`test_mechanism_view.mjs` was shown to fail under its mutation. Tests that drive a map with a
+question say "Don't ask first", as they already said the walkthrough was seen.
+
+**Still to come:**
 - wave 5 (the method; the §3.6 row on cost);
 - wave 6 (a release, asked for first).

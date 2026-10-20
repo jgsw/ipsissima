@@ -76,7 +76,7 @@ choose **What does this mean?** to come back here.
 <div class="srow" data-draw="behind"><b>A line broken where it crosses a box</b> passes behind a claim it has nothing to do with. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
 <div class="srow" data-draw="whatif"><b>What if…?</b> appears beside a claim you click: suppose it false, or its step broken, and what then loses the map's support fades. A banner along the top lists what you have supposed. <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a></div>
 <div class="srow" data-draw="ways"><b>Study</b>, <b>Tables</b> and <b>Weigh</b>, at the left of the controls: work an argument out before the map shows it, set out what the text compares, or weigh rival accounts. <a data-help="Studying a map">Studying a map</a></div>
-<div class="srow" data-draw="strip"><b>Along the top</b>: the abstract, and what the map says about itself — who wrote it, whether a person has read it, where the reading is contested. <a data-help="What a map says about itself">What a map says about itself</a></div>
+<div class="srow" data-draw="strip"><b>Along the top</b>: the question the text works on, where the map names one; the abstract; and what the map says about itself — who wrote it, whether a person has read it, where the reading is contested. <a data-help="What a map says about itself">What a map says about itself</a></div>
 <div class="srow" data-draw="controls"><b>Along the bottom</b>: the controls — ways to question the map, how much of it is showing, and <b>Display</b> for how it is drawn. <a data-help="The controls">The controls</a></div>
 <div class="srow" data-draw="key"><b>The key</b>, floating in a corner, lists every marking, with this map's drawn bright. <a data-help="The key">The key</a></div>
 <div class="srow" data-draw="cards"><b>In Exposition</b>: a band for each section of the text, and a card for each paragraph, numbered ¶ 4. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
@@ -959,6 +959,10 @@ suppose them, and where the text answers an objection you have granted, the pane
 answer and leaves the choice to you. Suppositions combine, and adding one can take a conclusion
 away. They are yours, never the text's, and never saved into the map.
 
+Where something loses its support, the panel ends on a question for you: did any of these surprise
+you, and does the text give it a reason the map does not draw? The map cannot answer that one. It
+sends you back to the text.
+
 **The banner.** While you suppose anything, a banner across the top of the map says what, each with
 its own **×** to take it back, and **Clear** to take them all back. It is the same banner in the
 Mechanism view, and a supposition **carries** between the two: a claim supposed false stops the
@@ -975,7 +979,10 @@ will no longer bring about) — what you supposed is greyed meanwhile, so you ca
 that follows from it is; **Show** then draws the map's answer beside your marks — *guessed · the
 map agrees*, *guessed · the map keeps it*, *not guessed · the map loses it* — with a line saying
 how many. It is not a score: the answer is the map's, worked out from the map's own support, and
-the marks show only where you and it part. **Done** takes the marks away and keeps the
+the marks show only where you and it part. Beneath the count, the banner asks about one place where
+you parted: a claim you did not expect to lose, or one you expected to go that the map keeps.
+**Show what it rests on** lights the route from what you supposed to it; **Show what holds it up**
+lights what still supports it. **Done** takes the marks away and keeps the
 supposition. The choice is remembered; in Study it is always on. Opening another file starts
 afresh: every supposition, and any guess in progress, goes with the map it was made on.
 
@@ -1053,6 +1060,11 @@ the text makes about it. Beneath the table the panel names the moves the table a
 - **no better on any count**: where the text ranks its counts, a case no better than another on
   any of them and worse on one. Nothing is added up.
 
+The panel ends on one question, drawn from the strongest of these it shows: what the table leaves
+out, where two cases are alike but for the verdict; whether a case refutes the rule or the rule
+should be repaired; whether one difference explains a verdict; what the text would say in an empty
+cell. The table cannot answer it, and does not try.
+
 A cell the map gives two values shows both, and asks whether the text says both; such a cell is
 left out of the comparisons. Where the text crosses two kinds of case (studies against the
 questions they answer), the claims sit in the cells where they meet. And where it names rival
@@ -1073,7 +1085,10 @@ what follows from it is yours to judge.
 Unfolding a map shows you the argument; **study mode** makes you reach for it first. Start it
 from **Study** at the head of the map's control bar, or from **Study this map** at the top of
 this panel. The map folds to its main claim, and a small card asks what question the text is
-answering — the map's own, where it names one — and what you already think about it. Then choose:
+answering — the map's own, where it names one — and what you already think about it. A map that
+names its question also asks it as it opens, in a card over the map: **Study it** starts here,
+**Show me the map**, or a press anywhere else, puts the card away, and **Don't ask first** stops it for every map, until
+**Ask me the text's question first** at the top of this panel turns it back on. Then choose:
 
 - **On my own**: one argument at a time, from the ground up. The card gives an argument's premises
   and asks where you think they lead. **Hint** brings you one step closer each time you press it —
