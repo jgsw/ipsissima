@@ -48,6 +48,7 @@ const SUITES = [
   ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
   ["suppositions and contraposition", "node", [path.join(HERE, "test_suppose.mjs")]],
+  ["the text's comparisons as tables", "node", [path.join(HERE, "test_tables.mjs")]],
   // THE MECHANISM VOCABULARY IN THE EDITOR: its checks are mechanism.py's local rules, ported, and
   // held to the checker word for word on every fixture and sample with a mechanism.
   ["the editor checks a mechanism as the checker does", "node", [path.join(HERE, "test_mechanism_lint.mjs")]],
@@ -109,6 +110,7 @@ const SUITES = [
   ["exposition: what of the text's order is thin", PY, [path.join(PYTESTS, "test_exposition.py")]],
   ["pinpoints: the page the words are on", PY, [path.join(PYTESTS, "test_pinpoints.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
+  ["the text's comparisons: frames and about (checker)", PY, [path.join(PYTESTS, "test_frames.py")]],
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
   ["the profile holds to the code",   PY, [path.join(PYTESTS, "test_profile.py")]],
   // The same file, the same report: two hash seeds once reshuffled every tie in the census.

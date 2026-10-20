@@ -1039,6 +1039,12 @@ def _parse_frontmatter(block):
         kv = re.match(r"\s*([\w-]+)\s*:\s*(.*)$", line)
         if not kv:
             continue
+        # AN INDENTED LINE OUTSIDE ANY SECTION is the wrapped tail of a flow mapping (`product: {...,`
+        # then `values: {...}}` on the next line) or a structure this parser does not model, never a
+        # top-level key. Read as one, it set a top-level `values` to a string, and the next block
+        # `values:` header under it crashed the checker (`frames:` in the tabulation trial, 20 Oct 2026).
+        if section is None and lead > 0:
+            continue
         key, val = kv.group(1), kv.group(2).strip()
         if not val:
             section, indent = key, lead
@@ -1056,7 +1062,8 @@ def _parse_frontmatter(block):
         else:
             val = re.split(r"\s+#", val, 1)[0].strip().strip('"').strip("'")
         if section is not None and lead > indent:
-            out[section][key] = val
+            if isinstance(out.get(section), dict):
+                out[section][key] = val
         else:
             section = None
             out[key] = val

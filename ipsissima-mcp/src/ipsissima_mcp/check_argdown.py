@@ -518,7 +518,7 @@ PROFILE_VERSION = _profile_version()
 #: premise-conclusion lines;
 #: `isGroup` on headings.
 EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes",
-                   "question", "mechanism", "inconsistent")
+                   "question", "mechanism", "inconsistent", "about")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
@@ -2193,6 +2193,211 @@ def questions_report(cli, path):
             print("            ? nothing in the map moves on it")
 
 
+FRAME_KINDS = ("case", "dimension", "verdict", "account")
+FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "rule", "note")
+
+
+def frames_report(cli, path):
+    """The comparisons the text makes (front matter `frames:`), and the claims placed in them
+    (`about:`): checked, and each case table sized in the census. Silent for a map with neither.
+
+    A TRIAL (20 Oct 2026; docs/tabulation-pass.md). Twelve texts read for the census "what twelve
+    texts compare" all compared things, and a map recorded what supports what but not what each
+    claim is ABOUT -- which case, which dimension, which value -- so no table could be read off it.
+    Faults here are notation faults. An empty cell is never one: it is the text's silence, and the
+    census names it as a finding."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import argdown_provenance as prov
+        import mechanism as mech
+        import yaml
+    except ImportError:
+        return
+    raw = prov.frontmatter_block(path)
+    # YAML 1.2's BOOLEANS, AS ARGDOWN READS THEM. PyYAML follows YAML 1.1, where `yes`, `no`, `on`
+    # and `off` are booleans; Argdown's parser keeps them as words. So `values: [yes, no]` came back
+    # here as True and False while every claim's `about: {justified: yes}` arrived as "yes", and
+    # no cell matched its frame (first run of the planted fixture, 20 Oct 2026).
+    class _Yaml12(yaml.SafeLoader):
+        pass
+    _Yaml12.yaml_implicit_resolvers = {
+        k: [r for r in v if r[0] != "tag:yaml.org,2002:bool"]
+        for k, v in yaml.SafeLoader.yaml_implicit_resolvers.items()}
+    _Yaml12.add_implicit_resolver("tag:yaml.org,2002:bool",
+                                  re.compile(r"^(?:true|True|TRUE|false|False|FALSE)$"), list("tTfF"))
+    try:
+        fm = yaml.load(raw, Loader=_Yaml12) if raw else {}
+    except yaml.YAMLError:
+        return                      # the mechanism report names a front matter that is not YAML
+    decl = (fm or {}).get("frames") if isinstance(fm, dict) else None
+    doc = export_json(cli, path) or {}
+    titles = set()
+    placed = []
+    for kind in ("statements", "arguments"):
+        for title, node in (doc.get(kind) or {}).items():
+            titles.add(title)
+            a = mech._data(node).get("about")
+            for cell in (a if isinstance(a, list) else [a] if a is not None else []):
+                placed.append((title, cell))
+    if decl is None and not placed:
+        return
+    if decl is not None and not isinstance(decl, dict):
+        finding("frames", "!", "`frames:` must map ids to frames, each with its `kind` and `values`",
+                fix='frames:\n    case: {kind: case, label: "The cases", pinpoint: "p. 122", values: {I: "Case I"}}')
+        return
+    decl = decl or {}
+    frames = {}
+    for fid, f in decl.items():
+        fid = str(fid)
+        if not isinstance(f, dict):
+            finding("frames", "!", f"frame `{fid}` must be a map with `kind` and `values`")
+            continue
+        for k in f:
+            if k not in FRAME_KEYS:
+                finding("frames", "!", f"frame `{fid}`: `{k}` is not a key a frame can carry "
+                        f"({', '.join(FRAME_KEYS)})", fix="drop it, or put it in `note:`")
+        kind = str(f.get("kind") or "")
+        if kind not in FRAME_KINDS:
+            finding("frames", "!", f"frame `{fid}`: `kind: {kind or '(none)'}` is not one of "
+                    f"{', '.join(FRAME_KINDS)}")
+            continue
+        vals = f.get("values")
+        if isinstance(vals, list):
+            values = {str(v): str(v) for v in vals}
+        elif isinstance(vals, dict):
+            values = {str(k): v for k, v in vals.items()}
+        else:
+            finding("frames", "!", f"frame `{fid}` has no `values`",
+                    fix="a list of the text's words, or a map from id to label")
+            continue
+        if not values:
+            finding("frames", "!", f"frame `{fid}` declares no values")
+            continue
+        if not f.get("pinpoint"):
+            finding("frames", "?", f"frame `{fid}` has no `pinpoint`: where does the text make this comparison?",
+                    fix="a frame the text never states is not the text's frame")
+        if f.get("ordered") is not None and kind not in ("dimension", "verdict"):
+            finding("frames", "!", f"frame `{fid}`: `ordered:` belongs to a dimension, not to a {kind}")
+        if kind == "account":
+            for vid, v in values.items():
+                claim = v.get("claim") if isinstance(v, dict) else None
+                if not claim:
+                    finding("frames", "!", f"account `{vid}` of frame `{fid}` names no `claim:`",
+                            fix='{claim: "<the account\'s title>"}')
+                elif str(claim) not in titles:
+                    finding("frames", "!", f"account `{vid}` of frame `{fid}`: no claim is titled "
+                            f"\"{claim}\"", fix="name the account's claim by its title, without brackets")
+            if len(values) < 2:
+                finding("frames", "?", f"account frame `{fid}` names one account: rivals come in twos at least")
+        if f.get("rule") is not None and kind != "verdict":
+            finding("frames", "!", f"frame `{fid}`: `rule:` belongs to a verdict, not to a {kind}")
+        frames[fid] = dict(kind=kind, values=values, label=str(f.get("label") or fid), rule=f.get("rule"))
+    # A STATED RULE: the verdict a definition or a rule gives when the dimensions take these values.
+    for fid, f in frames.items():
+        r = f.get("rule")
+        if r is None or f["kind"] != "verdict":
+            continue
+        if not isinstance(r, dict) or not isinstance(r.get("when"), dict) or r.get("then") is None:
+            finding("frames", "!", f"frame `{fid}`: `rule:` must be `{{then: <value>, when: {{<frame>: <value>, ...}}, claim: \"<title>\"}}`")
+            continue
+        if str(r.get("then")) not in f["values"]:
+            finding("frames", "!", f"frame `{fid}`: `rule: {{then: {r.get('then')}}}` is not one of its values")
+        for k, v in r["when"].items():
+            g = frames.get(str(k))
+            if not g or g["kind"] != "dimension":
+                finding("frames", "!", f"frame `{fid}`: the rule's condition `{k}` is not a declared dimension")
+            elif str(v) not in g["values"]:
+                finding("frames", "!", f"frame `{fid}`: the rule's `{k}: {v}` is not one of `{k}`'s values")
+        if r.get("claim") is not None and str(r["claim"]) not in titles:
+            finding("frames", "!", f"frame `{fid}`: the rule's `claim:` names no claim titled \"{r['claim']}\"")
+    # THE CELLS.
+    cells = {}          # (case frame, case value, column frame) -> {value: [titles]}
+    crossed = {}        # (case frame, other case frame) -> count
+    used = {fid: set() for fid in frames}
+    for title, cell in placed:
+        where = {"title": title}
+        if not isinstance(cell, dict) or not cell:
+            finding("frames", "!", "`about:` must map frames to values, or be a list of such maps",
+                    fix="about: {case: I, justified: yes}", **where)
+            continue
+        ok, coords = True, {}
+        for k, v in cell.items():
+            k, v = str(k), str(v)
+            if k not in frames:
+                finding("frames", "!", f"`about: {{{k}: ...}}`: no frame `{k}` is declared under `frames:`",
+                        fix=("a frame called `true` or `false` is read as a boolean: give it another id"
+                             if k in ("True", "False") else None), **where)
+                ok = False
+            elif frames[k]["kind"] == "account":
+                finding("frames", "!", f"`about:` names the account frame `{k}`: an account's cells are the "
+                        "relations drawn to its claim, not coordinates", fix="draw the support or attack", **where)
+                ok = False
+            elif v not in frames[k]["values"]:
+                finding("frames", "!", f"`{k}: {v}` is not one of frame `{k}`'s values "
+                        f"({', '.join(list(frames[k]['values'])[:8])})",
+                        fix=("`true` and `false` are YAML's booleans, not words: use another id, "
+                             "e.g. `holds`" if v in ("True", "False") or "True" in frames[k]["values"]
+                             or "False" in frames[k]["values"] else None), **where)
+                ok = False
+            else:
+                coords[k] = v
+        if not ok:
+            continue
+        cases = [k for k in coords if frames[k]["kind"] == "case"]
+        if not cases:
+            finding("frames", "?", "`about:` gives values and no case: which row is this cell in?",
+                    fix="name the case frame too, e.g. about: {case: I, justified: yes}", **where)
+            continue
+        for k, v in coords.items():
+            used[k].add(v)
+        for c in cases:
+            for k, v in coords.items():
+                if k == c:
+                    continue
+                if frames[k]["kind"] == "case":
+                    # Once per pair, the frame declared first as the rows (as the page sets it out).
+                    if list(frames).index(c) < list(frames).index(k):
+                        crossed[(c, k)] = crossed.get((c, k), 0) + 1
+                else:
+                    cells.setdefault((c, coords[c], k), {}).setdefault(v, []).append(title)
+    for fid, f in frames.items():
+        if f["kind"] == "case":
+            unused = [v for v in f["values"] if v not in used[fid]]
+            if unused:
+                finding("frames", "?", f"case frame `{fid}`: {len(unused)} case(s) declared and no claim "
+                        f"is about them ({', '.join(unused[:6])})",
+                        fix="place the claim that states each, or drop a case the text does not discuss")
+    for (c, cv, k), vals in sorted(cells.items()):
+        if len(vals) > 1:
+            finding("frames", "?", f"`{c}: {cv}` has {len(vals)} values for `{k}` "
+                    f"({', '.join(sorted(vals))}): does the text say both?",
+                    titles=sorted(t for ts in vals.values() for t in ts)[:6])
+    # THE CENSUS: each case table's size, and how much of it the text fills.
+    out = []
+    for c, f in frames.items():
+        if f["kind"] != "case":
+            continue
+        cols = [k for k, g in frames.items() if g["kind"] in ("dimension", "verdict")
+                and any(key[0] == c and key[2] == k for key in cells)]
+        filled = sum(1 for key in cells if key[0] == c)
+        size = len(f["values"]) * len(cols)
+        out.append(dict(frame=c, rows=len(f["values"]), columns=cols, filled=filled, cells=size,
+                        crossed=[k for (a, k) in crossed if a == c]))
+    accounts = [dict(frame=fid, accounts=list(f["values"])) for fid, f in frames.items() if f["kind"] == "account"]
+    SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed))
+    print(f"\n   FRAMES ({len(frames)}): the comparisons the text makes, and {len(placed)} cell(s) placed")
+    for t in out:
+        if t["columns"]:
+            print(f"      {t['frame']}: {t['rows']} case(s) x {len(t['columns'])} column(s) "
+                  f"({', '.join(t['columns'])}) -- {t['filled']} of {t['cells']} cells stated by the text")
+        for k in t["crossed"]:
+            print(f"      {t['frame']} x {k}: {crossed[(t['frame'], k)]} claim(s) where they cross")
+        if not t["columns"] and not t["crossed"]:
+            print(f"      {t['frame']}: {t['rows']} case(s), no values placed yet")
+    for a in accounts:
+        print(f"      {a['frame']}: accounts {', '.join(a['accounts'])}")
+
+
 def mechanism_report(cli, path, source_root=None):
     """The chain the text asserts: declarations checked, gaps and loops found, light and shadow.
 
@@ -2736,6 +2941,8 @@ def _report(cli, path, a):
 
     # ---- 5d3. the questions the text works on (profile 1.17) -------------- #
     questions_report(cli, path)
+    # ---- 5d4. the comparisons the text makes (a trial, 20 Oct 2026) -------- #
+    frames_report(cli, path)
 
     # ---- 5e. the shape of the premise-conclusion structures --------------- #
     # After fidelity, because these are questions about the ARGUMENT rather than about whose

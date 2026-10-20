@@ -1,0 +1,36 @@
+// Planted fixture for the tabulation pass (20 Oct 2026), in the fixture-maker's own words. Three
+// ways to fund a library against two criteria the text ranks, so the second option is worse than
+// the first on every count; and two declared accounts of why visits fell, with a finding that
+// bears on both.
+===
+title: "Planted -- options, criteria and two accounts"
+reconstruction:
+    generated: true
+frames:
+  option:
+    kind: case
+    label: "Ways to fund the library"
+    pinpoint: "planted"
+    values: {grant: "A council grant", fee: "A membership fee", lottery: "A lottery bid"}
+  reach: {kind: dimension, label: "who it reaches", pinpoint: "planted", ordered: true, values: [everyone, members, unknown]}
+  cost:  {kind: dimension, label: "cost to the council", pinpoint: "planted", ordered: true, values: [low, high]}
+  why:
+    kind: account
+    label: "Why visits fell"
+    pinpoint: "planted"
+    values:
+      hours: {claim: "Shorter hours cut visits"}
+      online: {claim: "Reading moved online"}
+===
+
+[Fund it by grant]: The library should be funded by a council grant.
+    <+ [A grant reaches everyone]: A grant keeps the library open to everyone.
+        {about: {option: grant, reach: everyone}}
+    <+ [A grant costs little]: A grant costs the council little.
+        {about: {option: grant, cost: low}}
+    <+ [A fee reaches members only]: A fee keeps out all but members, and the council pays for collecting it.
+        {about: [{option: fee, reach: members}, {option: fee, cost: high}]}
+    <+ [Shorter hours cut visits]: Visits fell because the library opened for fewer hours.
+        <+ [Visits fell on the closed evenings]: Visits fell most on the evenings it closed early.
+    <- [Reading moved online]: Visits fell because people read online instead. #reported
+        <- [Visits fell on the closed evenings]

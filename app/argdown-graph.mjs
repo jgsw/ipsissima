@@ -403,6 +403,65 @@ export function questionsOf(res, titleToId) {
   return qs;
 }
 
+/** THE COMPARISONS A TEXT MAKES (a trial, 20 Oct 2026; ipsissima-mcp docs/tabulation-pass.md).
+ *
+ *  The front matter's `frames:` declares the text's cases, the dimensions and verdict it gives them
+ *  (each with the text's values), and the rival accounts it sets against each other; a claim's
+ *  `about:` names the cell or cells it states. Read here so a page can set them out as tables (see
+ *  src/argdown-tables.js). Null when the file declares no frames. The checker judges well-formedness;
+ *  this reads, and drops what does not resolve rather than guessing.
+ */
+export function framesOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const decl = (fm.frames && typeof fm.frames === "object" && !Array.isArray(fm.frames)) ? fm.frames : null;
+  if (!decl) return null;
+  const KINDS = ["case", "dimension", "verdict", "account"];
+  const frames = [];
+  for (const id of Object.keys(decl)) {
+    const f = decl[id];
+    if (!f || typeof f !== "object" || !KINDS.includes(f.kind)) continue;
+    const raw = f.values;
+    const values = Array.isArray(raw) ? raw.map(v => ({ id: String(v), label: String(v) }))
+      : (raw && typeof raw === "object") ? Object.keys(raw).map(k => {
+          const v = raw[k];
+          const o = (v && typeof v === "object") ? v : { label: v };
+          const claim = o.claim == null ? null : String(o.claim);
+          return { id: k, label: o.label == null ? (claim || k) : String(o.label), claim,
+                   claimId: claim != null && titleToId.has(claim) ? titleToId.get(claim) : null };
+        }) : [];
+    if (!values.length) continue;
+    frames.push({ id, kind: f.kind, label: f.label == null ? id : String(f.label),
+                  pinpoint: f.pinpoint == null ? null : String(f.pinpoint),
+                  ordered: f.ordered === true, note: f.note == null ? null : String(f.note), values,
+                  rule: (f.rule && typeof f.rule === "object") ? f.rule : null });
+  }
+  const byId = new Map(frames.map(f => [f.id, f]));
+  const cells = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.about == null) continue;
+      let text = "";
+      for (const m of (rec && rec.members) || []) if (!text && m.text) text = String(m.text);
+      for (const a of (Array.isArray(data.about) ? data.about : [data.about])) {
+        if (!a || typeof a !== "object") continue;
+        const coords = {};
+        let ok = true;
+        for (const k of Object.keys(a)) {
+          const f = byId.get(k), v = String(a[k]);
+          if (!f || f.kind === "account" || !f.values.some(x => x.id === v)) { ok = false; break; }
+          coords[k] = v;
+        }
+        if (!ok || !Object.keys(coords).some(k => byId.get(k).kind === "case")) continue;
+        cells.push({ title, id: titleToId.has(title) ? titleToId.get(title) : null, text,
+                     kind: kind === "arguments" ? "argument" : "claim", coords });
+      }
+    }
+  }
+  return { frames, cells };
+}
+
 export function mechanismOf(res, titleToId) {
   const fm = res.frontMatter || {};
   const block = (fm.mechanism && typeof fm.mechanism === "object") ? fm.mechanism : null;
@@ -1102,6 +1161,8 @@ export function toGraph(res) {
            // notation spike). Null for the great majority of maps, which declare no chain.
            mechanism: mechanismOf(res, titleToId),
            questions: questionsOf(res, titleToId),
+           // THE TEXT'S COMPARISONS (a trial, 20 Oct 2026): null unless the file declares `frames:`.
+           frames: framesOf(res, titleToId),
            // THE MAP'S OWN NAME, from its front matter, for the page's title bar. The header
            // showed the file name and nothing anywhere showed the title the reconstructor wrote
            // (clarity audit, 27 Sep 2026; ruled D2). Null when the file declares none.

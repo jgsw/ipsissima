@@ -1,0 +1,39 @@
+// Planted fixture for the tabulation pass (20 Oct 2026), in the fixture-maker's own words. A
+// definition of "a good guess" by two conditions, and three cases: one meets both conditions and
+// is a good guess, one meets both and is NOT (a contradictory row), and one is silent on a
+// condition (an empty cell). Cases A and B differ in one dimension only; so do B and C.
+===
+title: "Planted -- a definition and its counterexample"
+reconstruction:
+    generated: true
+frames:
+  case:
+    kind: case
+    label: "The cases"
+    pinpoint: "planted"
+    values:
+      A: "The weather guess"
+      B: "The coin guess"
+      C: "The card guess"
+  informed: {kind: dimension, label: "made on evidence", pinpoint: "planted", values: [yes, no]}
+  right:    {kind: dimension, label: "turned out right", pinpoint: "planted", values: [yes, no]}
+  good:     {kind: verdict,   label: "a good guess", pinpoint: "planted", values: [yes, no],
+             rule: {then: yes, when: {informed: yes, right: yes}, claim: "The definition"}}
+===
+
+[The definition fails]: A guess made on evidence that turns out right is not always a good guess.
+    <+ [The coin guess was informed]: The coin guess was made on the evidence of past tosses.
+        {about: {case: B, informed: yes}}
+    <+ [The coin guess was right]: The coin guess turned out right.
+        {about: {case: B, right: yes}}
+    <+ [The coin guess was not good]: The coin guess was not a good guess, since it was right by luck.
+        {about: {case: B, good: no}}
+    <- [The definition]: A good guess is one made on evidence that turns out right. #reported
+        <+ [The weather guess was informed]: The weather guess was made on the forecast.
+            {about: {case: A, informed: yes}}
+        <+ [The weather guess was right]: The weather guess turned out right.
+            {about: {case: A, right: yes}}
+        <+ [The weather guess was good]: The weather guess was a good one.
+            {about: {case: A, good: yes}}
+    <+ [The card guess was right]: The card guess turned out right, though nobody knows on what it rested.
+        {about: [{case: C, right: yes}, {case: C, good: no}]}

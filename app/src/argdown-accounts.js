@@ -70,6 +70,10 @@ function denies(a, b) {
  *  text's own that a rival is set against (its rivals beside it), in the order of the file. */
 function accountSets(graph, opts) {
   var byId = nodesOf(graph, opts), edges = ((graph && graph.edges) || []).filter(function (e) { return byId[e.from] && byId[e.to]; });
+  // DECLARED ACCOUNTS FIRST (the tabulation pass, 20 Oct 2026): where the map names the rival
+  // accounts of one thing in an `account` frame, those are the sets, and nothing is guessed.
+  var declared = declaredSets(graph, byId, edges);
+  if (declared) return declared;
   // WHICH CLAIM A RIVAL IS SET AGAINST: the one it attacks. A claim of the text's that attacks a rival
   // is the text's reason against it -- a row, not an account -- unless the rival attacks nothing of the
   // text's and that claim has reasons of its own: then it is the account the text answers it with.
@@ -92,25 +96,48 @@ function accountSets(graph, opts) {
   });
   return Object.keys(rivalsOf).sort(byOrder(byId)).map(function (own) {
     var accs = [own].concat(rivalsOf[own].sort(byOrder(byId)));
-    var isAcc = {}; accs.forEach(function (a) { isAcc[a] = true; });
-    var cells = {};
-    edges.forEach(function (e) {
-      if (!isAcc[e.to] || isAcc[e.from]) return;
-      var v = e.type === "support" ? "for" : ATTACKS.indexOf(e.type) >= 0 ? "against" : null;
-      if (!v) return;
-      var c = cells[e.from] = cells[e.from] || {};
-      // A reason both for and against one account (two relations drawn) is said as it is drawn.
-      c[e.to] = c[e.to] && c[e.to] !== v ? "both" : v;
-    });
-    var rows = Object.keys(cells).sort(byOrder(byId)).map(function (x) {
-      var vals = accs.filter(function (a) { return cells[x][a]; }).map(function (a) { return cells[x][a]; });
-      var kind = vals.length < 2 ? "one" : vals.every(function (v) { return v === vals[0] && v !== "both"; }) ? "alike" : "apart";
-      return { id: x, label: byId[x].label, cells: cells[x], kind: kind };
-    });
+    var rows = rowsFor(accs, edges, byId);
     var accounts = accs.map(function (a) {
       return { id: a, label: byId[a].label, own: a === own, denial: a !== own && denies(byId[own].label, byId[a].label) }; });
     return { id: own, accounts: accounts, rows: rows, between: between[own],
              allDenials: accounts.every(function (a) { return a.own || a.denial; }) };
+  });
+}
+
+/** The sets an `account` frame declares, or null where the map declares none. The text's own
+ *  account (untagged) is listed first where there is one; none is read as a denial. */
+function declaredSets(graph, byId, edges) {
+  var F = graph && graph.frames;
+  var frames = F ? F.frames.filter(function (f) { return f.kind === "account"; }) : [];
+  if (!frames.length) return null;
+  return frames.map(function (f) {
+    var accs = f.values.map(function (v) { return v.claimId; }).filter(function (id) { return id != null && byId[id]; });
+    accs.sort(function (a, b) { return (isRival(byId[a]) ? 1 : 0) - (isRival(byId[b]) ? 1 : 0); });
+    var isAcc = {}; accs.forEach(function (a) { isAcc[a] = true; });
+    var between = edges.filter(function (e) { return isAcc[e.from] && isAcc[e.to]; })
+      .map(function (e) { return { from: e.from, to: e.to, type: e.type }; });
+    return { id: accs[0], frame: f.id, label: f.label, declared: true,
+             accounts: accs.map(function (a, k) { return { id: a, label: byId[a].label, own: k === 0 && !isRival(byId[a]), denial: false }; }),
+             rows: rowsFor(accs, edges, byId), between: between, allDenials: false };
+  }).filter(function (s) { return s.accounts.length >= 2; });
+}
+
+/** The reasons bearing directly on any of the accounts, one row each. */
+function rowsFor(accs, edges, byId) {
+  var isAcc = {}; accs.forEach(function (a) { isAcc[a] = true; });
+  var cells = {};
+  edges.forEach(function (e) {
+    if (!isAcc[e.to] || isAcc[e.from]) return;
+    var v = e.type === "support" ? "for" : ATTACKS.indexOf(e.type) >= 0 ? "against" : null;
+    if (!v) return;
+    var c = cells[e.from] = cells[e.from] || {};
+    // A reason both for and against one account (two relations drawn) is said as it is drawn.
+    c[e.to] = c[e.to] && c[e.to] !== v ? "both" : v;
+  });
+  return Object.keys(cells).sort(byOrder(byId)).map(function (x) {
+    var vals = accs.filter(function (a) { return cells[x][a]; }).map(function (a) { return cells[x][a]; });
+    var kind = vals.length < 2 ? "one" : vals.every(function (v) { return v === vals[0] && v !== "both"; }) ? "alike" : "apart";
+    return { id: x, label: byId[x].label, cells: cells[x], kind: kind };
   });
 }
 

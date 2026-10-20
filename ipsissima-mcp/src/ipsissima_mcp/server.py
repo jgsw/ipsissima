@@ -545,8 +545,14 @@ METHOD_DOCS = {
                          "how to read the chain a text asserts before marking it: strength, "
                          "necessity, moderators, time and size, rival accounts -- with the pass, "
                          "only when the user has asked for the mechanism"),
+    # THE TABULATION PASS (20 Oct 2026, a trial): the comparisons a text makes, as frames a reader
+    # can work. On request only, like the mechanism: never named in the other documents' replies.
+    "tabulation": ("tabulation-pass.md",
+                   "the tabulation pass, on a FINISHED map: the text's own comparisons (cases against "
+                   "dimensions, rival accounts) declared as `frames:` and placed with `about:` -- only "
+                   "when the user has asked for it"),
 }
-_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series"}
+_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series", "tabulation"}
 
 
 @server.tool(
@@ -576,12 +582,19 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
             or "mechanism" (the method in force: under `parallel`, the default, part of every
             reconstruction; under `series`, only when asked), "mechanism-method" (how to read
             causal claims),
-            "mechanism-parallel" or "mechanism-series" (either method by name).
+            "mechanism-parallel" or "mechanism-series" (either method by name); or "tabulation"
+            (the text's comparisons as frames, on a finished map, only when asked).
     """
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
                     documents={k: v[1] for k, v in METHOD_DOCS.items()})
     fname, _ = METHOD_DOCS[document]
+    if document == "tabulation":
+        return dict(ok=True, document=document, text=_doc(fname),
+                    next=("the map must already check ok and verified; rebuild the text's own tables "
+                          "in the source first, then declare `frames:` and place claims with `about:`, "
+                          "and run argdown_check with source_root until ok and verified, reading the "
+                          "FRAMES section of the census"))
     if document in _ON_REQUEST:
         from ipsissima_mcp import mechanism
         method = mechanism.mechanism_method()
