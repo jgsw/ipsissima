@@ -128,6 +128,42 @@ the go to the two small items and to "nothing to draw".
 Not built: the `cases:` block (typology, definition and counterexample, comparison of cases), which
 waits until these tables have been used.
 
+## Tables by design: the text's own comparisons (19–20 Oct)
+
+The third round's tables were a side effect of data gathered for other purposes, so few maps
+yielded one. The answer was to record what each claim is *about*. Three steps came first:
+
+- extraction now names the tables a text cites and loses;
+- the weigh panel says when a rival is only a denial;
+- a census of twelve texts found comparisons in all of them, in two families: case tables and
+  account tables.
+
+The tabulation pass (`docs/tabulation-pass.md`; `frames:` and `about:` in the profile, a trial)
+was then tried on four maps: Gettier, Stone, Valentino and Bates. Every pass checked ok and
+verified. The pass also found relations the texts state that the maps had not drawn.
+
+**The author's rulings (20 Oct):**
+
+1. **The tables earn a panel in the app** (step 6). The views so far make the argument
+   perspicuous (Reasons), give an analytical summary in order (Exposition), and show what the text
+   says changes what (Mechanism). Tables give access to a different structure: how the text
+   collects and classifies its information and evidence.
+2. **Declared accounts probably replace the derived sets.** Not settled: test it.
+3. **Several values in one cell: instinct says no**, and the interface would be hard. Look at
+   mockups, or test its use, before deciding.
+4. **The four passes go back into the original maps.** Done 20 Oct, all ok and verified.
+
+**To do once the tables work is complete: what Ipsissima is for.** The purpose has shifted. It is
+no longer only to let a reader understand writing that reasons to a conclusion, by breaking the
+argument into steps so that the conclusion and the reasoning for it can be seen. Ipsissima now
+builds a data layer, combined in one Argdown file, that gives the reader different ways to
+interact with, explore and question what an argumentative text says. These need revising to say
+so:
+
+- the website;
+- the other documentation (README, help, the extension's descriptions);
+- the values and principles framework.
+
 ## Not built, and why
 
 - **Conditioning** — what selecting on a state (a collider, above all) does to the associations
