@@ -765,6 +765,18 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #weigh tr[data-weigh-row]{cursor:pointer}
 #weigh td.k{color:var(--fg-dim);font-size:11.5px;white-space:nowrap}
 #weigh td.k b{color:var(--fg);font-weight:600}
+#weigh table.grid{table-layout:fixed}
+#weigh table.grid thead th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-dim);font-weight:600;width:50%}
+#weigh table.grid tr.acc th{font-weight:normal;border-bottom:0;padding-top:.45rem}
+#weigh table.grid td.cell{width:50%}
+#weigh table.grid td.cell+td.cell{border-left:1px solid var(--line,#ddd)}
+#weigh table.grid td.cell ul{margin:0;padding:0;list-style:none}
+#weigh table.grid td.cell li{margin:.1rem 0;cursor:pointer}
+#weigh table.grid td.cell li.on{background:var(--accent-wash,rgba(58,123,213,.1))}
+#weigh table.grid td.cell .also{color:var(--fg-dim);font-size:11px;white-space:nowrap}
+#weigh table.grid td.none{color:var(--fg-dim);font-style:italic}
+#weigh table.grid td[data-weigh-cell]{cursor:pointer;text-align:center;color:var(--fg-dim)}
+#weigh table.grid td.pick{background:var(--accent-wash,rgba(58,123,213,.1))}
 #weigh .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #weigh .verdict button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 #tables{position:fixed;z-index:35;left:14px;top:96px;width:max-content;min-width:26rem;max-width:min(62rem,calc(100vw - 28px));max-height:70vh;
@@ -794,6 +806,8 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #tables tbody th{font-weight:400;cursor:pointer;min-width:8em;max-width:15em;position:sticky;left:0;background:var(--panel,var(--bg));z-index:1}
 #tables tbody th .sub{font-size:11.5px;color:var(--fg-dim);margin-top:.1rem}
 #tables td.c,#tables th.c{text-align:center;width:3.6em}
+#tables thead th.an{width:auto;min-width:9em;max-width:13em;font-weight:normal;color:var(--fg);vertical-align:bottom}
+#tables thead th.an .sub{font-size:10.5px;color:var(--fg-dim)}
 #tables td.hid{color:var(--fg-dim);text-align:center}
 #tables td.silent{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line,#ddd) 5px 6px)}
 #tables td.two{box-shadow:inset 0 0 0 1px var(--fg-dim)}
@@ -4957,7 +4971,7 @@ function studyCost(){
  * first leaning survived. The table is the panel's; the card walks the reader through it. */
 function studyAccounts(){
   var c = studyCard(), A = STUDY.acc || (STUDY.acc = { i: null, lean: null, opened: false, done: false });
-  var sets = studyAccountSets(), L = "ABCDEFGH";
+  var sets = studyAccountSets(), nm = function(a){ var t = "\u2039" + a.label + "\u203a"; return t.length > 60 ? t.slice(0, 59) + "\u2026" : t; };
   $("studyhint").textContent = "weigh the accounts";
   if (!sets.length) { c.p("This map sets no account of the text\u2019s against a rival it reports."); c.btns([["End study", "end"]]); return; }
   if (A.i == null && sets.length === 1) A.i = 0;
@@ -4976,27 +4990,28 @@ function studyAccounts(){
   if (!S) { A.i = null; return studyAccounts(); }
   if (A.lean == null) {
     c.p(S.accounts.length === 2 ? "Two accounts of the same thing:" : S.accounts.length + " accounts of the same thing:");
-    c.list(S.accounts.map(function(a, k){ return [L[k] + (a.own ? " (the text\u2019s own)" : " (a view the text reports)"), a.label]; }));
+    c.list(S.accounts.map(function(a){ return ["\u2039" + a.label + "\u203a", a.own ? "the text\u2019s own" : "a view the text reports"]; }));
     c.p("Before you look at the reasons: which do you lean to, and why?");
-    c.btns(S.accounts.map(function(a, k){ return [L[k], "acc-lean:" + k]; }).concat([["Neither yet", "acc-lean:-1", "", "plain"]]));
+    var lb = c.btns(S.accounts.map(function(a, k){ return [nm(a), "acc-lean:" + k]; }).concat([["Neither yet", "acc-lean:-1", "", "plain"]]));
+    lb.className += " studycol";
     if (LIVE) LIVE.markClaims(S.accounts.map(function(a){ return a.id; }));
     return;
   }
   if (!A.opened || !WEIGH || WEIGH.mode !== "accounts") { A.opened = true;
     weighOpen("accounts", weighSets("accounts").map(function(x){ return x.id; }).indexOf(S.id), true); }
   if (!WEIGH.shown) {
-    c.p("In the panel: click the reasons you think tell the accounts apart, then press Show.");
-    c.p("A reason tells them apart where it bears on one account and not the same way on the other.", "hint");
+    c.p("In the panel: each account has a cell for the reasons the text gives for it, and one for those against it. Click the cells you think the text leaves empty, then press Show.");
+    c.p("A text usually argues for its own account and against the rival. Does this one?", "hint");
     c.btns([["End study", "end", "", "plain"]]);
     return;
   }
   if (!A.done) {
-    c.p("Now pick a row the text leaves blank for one account. What would that account make of the reason?");
-    c.p("Then try one: suppose a reason false, or press Test? to ask what kind of test it is.", "hint");
+    c.p("Now pick an empty cell. What would go in it: what would count against the text\u2019s own account, or for the rival?");
+    c.p("Then try a reason: click it, and suppose it false, or ask what kind of test it is.", "hint");
     c.btns([["I\u2019ve weighed them", "acc-done"], ["End study", "end", "", "plain"]]);
     return;
   }
-  c.p(A.lean >= 0 ? "At the start you leaned to " + L[A.lean] + ", \u2039" + S.accounts[A.lean].label + "\u203a. Having weighed the reasons, do you still?"
+  c.p(A.lean >= 0 ? "At the start you leaned to \u2039" + S.accounts[A.lean].label + "\u203a. Having weighed the reasons, do you still?"
                   : "At the start you leaned to neither. Do you now?");
   c.p("The map does not say which account is better. It shows which reasons bear on which, and where the text is silent.", "hint");
   c.btns([sets.length > 1 ? ["Weigh another pair", "acc-again"] : null, ["Which claim would cost the most?", "cost"], ["End study", "end", "", "plain"]]);
@@ -9327,10 +9342,10 @@ document.addEventListener("wheel", function(){ if (WHATIF_N) whatIfHide(); }, { 
 /* WEIGH THE ACCOUNTS, AND WHICH WOULD YOU GIVE UP? (James's go, 18 Oct 2026; the follow-up to the
  * Mechanism think piece, "structures to do things with", which made the table the next form). Two
  * structures the map already records, set out so a reader can ask of them and check (argdown-accounts.js):
- *  - ACCOUNTS AGAINST EVIDENCE: the text's account and the rivals it reports, the reasons for and
- *    against each as rows. The reader guesses which rows tell the accounts apart, then sees; an empty
- *    cell is where the text says nothing of what that account would make of the reason, and is theirs
- *    to ask. "What kind of test?" puts Van Evera's four tests (straw in the wind, hoop, smoking gun,
+ *  - ACCOUNTS AGAINST EVIDENCE: the text's account and the rivals it reports, each with the reasons
+ *    the text gives for it and against it (since 21 Oct 2026; weighGridHTML says why). The reader
+ *    guesses which cells the text leaves empty, then sees; an empty cell is the text's silence, and
+ *    the reader's to ask. "What kind of test?" puts Van Evera's four tests (straw in the wind, hoop, smoking gun,
  *    doubly decisive; Collier 2011) as two plain questions, in words that serve a cause and a reason
  *    alike (James: users "will probably not be aware of the terminology"): a pointer, a test to pass,
  *    a clincher, decisive. The reader's reading; the map says only what it records.
@@ -9383,7 +9398,7 @@ function weighSync(){
   b.setAttribute("aria-pressed", on ? "true" : "false");
 }
 function weighOpen(mode, i, study){
-  WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, study: !!study };
+  WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, sel: null, study: !!study };
   if (TABLES) tablesClose();
   whatIfHide(); ctxHide();
   weighRender();
@@ -9414,49 +9429,92 @@ function weighRender(){
   if (LIVE) LIVE.markClaims(WEIGH.mode === "accounts" ? S.accounts.map(function(a){ return a.id; }) : S.members);
 }
 function weighAccountsHTML(S, q, go){
-  var esc = ArgdownStaircase.esc, L = "ABCDEFGH", acc = S.accounts;
-  var letter = function(id){ var k = acc.map(function(a){ return a.id; }).indexOf(id); return k >= 0 ? L[k] : "?"; };
-  var h = '<div class="accts">' + acc.map(function(a, k){
-    return '<div><b>' + L[k] + '</b> ' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>';
-  if (S.between && S.between.length) h += '<div class="q">' + S.between.map(function(e){ return letter(e.from) + ' ' + (e.type === "undercut" ? "undercuts" : e.type === "attack" ? "objects to" : "cannot hold with") + ' ' + letter(e.to); })
-    .filter(function(x, k, all){ return all.indexOf(x) === k; }).join("; ") + '.</div>';
+  var esc = ArgdownStaircase.esc, acc = S.accounts;
+  // NAMES, NOT LETTERS (James, 21 Oct 2026): "B undercuts A" sent the reader hunting for which was
+  // which; the claims' own short names say it at once. Throughout the panel, and in Study's card.
+  // THE ACCOUNTS ARE THE GRID'S ROWS, so they are listed here only where there is no grid to show them.
+  var h = !S.rows.length || S.allDenials ? '<div class="accts">' + acc.map(function(a){
+    return '<div>' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>' : '';
+  // GROUPED BY WHAT IS OBJECTED TO, so five rivals of one account name it once, not five times.
+  if (S.between && S.between.length) {
+    var by = {}, order = [];
+    S.between.forEach(function(e){
+      var t = e.type === "undercut" ? "undercut" : e.type === "attack" ? "object" : "clash", k = t + "|" + e.to;
+      if (!by[k]) { by[k] = { t: t, to: e.to, from: [] }; order.push(k); }
+      if (by[k].from.indexOf(e.from) < 0) by[k].from.push(e.from);
+    });
+    h += '<div class="q">' + order.map(function(k){
+      var G = by[k], many = G.from.length > 1;
+      var verb = G.t === "undercut" ? (many ? "each undercut" : "undercuts") : G.t === "object" ? (many ? "each object to" : "objects to") : "cannot hold with";
+      return weighList(G.from.map(q)) + ' ' + verb + ' ' + q(G.to); }).join("; ") + '.</div>';
+  }
   // A DENIAL IS SAID, NOT WEIGHED (argdown-accounts.js): a reason for the one is a reason against the other.
   var denied = acc.filter(function(a){ return a.denial; });
-  if (denied.length) h += '<div class="verdict">' + denied.map(function(a){ return '<b>A</b> reads as the denial of <b>' + letter(a.id) + '</b>'; }).join('; ') +
+  if (denied.length) h += '<div class="verdict">' + weighList(denied.map(function(a){ return q(a.id); })) + (denied.length > 1 ? ' each read' : ' reads') + ' as the denial of ' + q(acc[0].id) +
     '. Against a denial, a reason for the one is a reason against the other, so ' + (S.allDenials ? 'every reason below' : 'each reason below') +
     ' bears on ' + (denied.length === 1 && acc.length === 2 ? 'both' : 'those') + ', whether or not the map draws it. ' +
-    (S.allDenials ? 'There is nothing here for the reasons to tell apart.' : 'Read the other columns for what tells the accounts apart.') + '</div>';
+    (S.allDenials ? 'There is nothing here for the reasons to tell apart.' : 'The other accounts are where the text says something of its own about each.') + '</div>';
   if (!S.rows.length) return h + '<div class="q">The map gives no reason directly for or against these accounts.</div>';
-  if (S.allDenials) return h + '<details class="weigh-anyway"><summary>Set out the reasons anyway</summary>' + weighTableHTML(S, q, go, letter) + '</details>';
-  return h + weighTableHTML(S, q, go, letter);
+  if (S.allDenials) return h + '<details class="weigh-anyway"><summary>Set out the reasons anyway</summary>' + weighGridHTML(S, q, go) + '</details>';
+  return h + weighGridHTML(S, q, go);
 }
-/** The reasons against the accounts, as a table: guessed first, then shown. */
-function weighTableHTML(S, q, go, letter){
-  var esc = ArgdownStaircase.esc, L = "ABCDEFGH", acc = S.accounts, h = "";
-  var shown = WEIGH.shown;
-  if (!shown) h += '<div style="margin:.35rem 0 .1rem">Which of these reasons tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
-  var word = { "for": "for", against: "against", both: "both" };
-  var kindW = { apart: "<b>tells them apart</b>", alike: "bears on both alike", one: "on one only" };
-  h += '<table><thead><tr><th>reason</th>' + acc.map(function(a, k){ return '<th class="c" title="' + esc(a.label) + '">' + L[k] + '</th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
-    S.rows.map(function(r){
-      var picked = WEIGH.picks.indexOf(r.id) >= 0;
-      return '<tr data-weigh-row="' + esc(r.id) + '"' + (picked ? ' class="pick"' : '') + '><td>' + (picked ? '✓ ' : '') + (shown ? go(r.id) : q(r.id)) + '</td>' +
-        acc.map(function(a){ var v = r.cells[a.id]; return '<td class="c"' + (shown && !v ? ' title="The text does not say what this account would make of it"' : '') + '>' + (shown ? (v ? word[v] : '') : '·') + '</td>'; }).join("") +
-        (shown ? '<td class="k">' + kindW[r.kind] + '<br><button type="button" data-weigh-false="' + esc(r.id) + '" title="Suppose this reason false, and see what then loses its support">Suppose false</button>' +
-          '<button type="button" data-weigh-test="' + esc(r.id) + '" title="Ask what kind of test this reason is"' + (WEIGH.test && WEIGH.test.row === r.id ? ' class="on"' : '') + '>Test?</button></td>' : '') + '</tr>';
-    }).join("") + '</tbody></table>';
+/* FOR AND AGAINST, ACCOUNT BY ACCOUNT (James, 21 Oct 2026). The table had a row per reason and a column
+ * per account, and asked which reasons tell the accounts apart. But texts rarely weigh rival accounts
+ * against the same considerations: across 88 maps on 21 Oct, 598 of 623 rows bore on one account only,
+ * and 128 of 145 sets had no row bearing on two -- the answer was nearly always "none". (Where a text
+ * does compare accounts on the same counts, the tabulation pass declares the frame, and the Tables
+ * panel sets it out.) So the accounts are the rows, and each has two cells: the reasons the text gives
+ * for it, and those it gives against. The grid shows the text's usual shape -- reasons for its own
+ * account, reasons against the rival -- and its EMPTY CELLS are the questions (B10, clause 4): in 121 of
+ * 144 sets nothing was recorded against the text's own account. A reason that bears on two accounts is
+ * marked in each cell it falls in, so the rare comparison is not lost. Guessed first: which cells will
+ * the text leave empty? */
+function weighCell(S, a, side){ return S.rows.filter(function(r){ var v = r.cells[a.id]; return v === side || v === "both"; }); }
+function weighList(xs){ return xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1]; }
+function weighGridHTML(S, q, go){
+  var esc = ArgdownStaircase.esc, acc = S.accounts, shown = WEIGH.shown, SIDES = ["for", "against"];
+  var h = "";
+  if (!shown) h += '<div style="margin:.35rem 0 .1rem">Each account has a cell for the reasons the text gives for it, and one for those it gives against it. Which will the text leave empty? Click the cells you think, then press <b>Show</b>.</div>';
+  h += '<table class="grid"><thead><tr><th>for</th><th>against</th></tr></thead><tbody>' + acc.map(function(a){
+    return '<tr class="acc"><th colspan="2"><b>' + go(a.id) + '</b>' + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></th></tr><tr>' +
+      SIDES.map(function(side){
+        var K = a.id + "|" + side, picked = WEIGH.picks.indexOf(K) >= 0, rs = weighCell(S, a, side);
+        // Hidden until Show: every cell looks the same, so the guess is the reader's, not read off the grid.
+        if (!shown) return '<td class="cell' + (picked ? ' pick' : '') + '" data-weigh-cell="' + esc(K) + '" title="Click if you think the text gives no reason ' + side + ' this account">' + (picked ? '✓ empty' : '?') + '</td>';
+        if (!rs.length) return '<td class="cell none' + (picked ? ' pick' : '') + '">' + (picked ? '✓ ' : '') + 'The text gives none.</td>';
+        return '<td class="cell' + (picked ? ' pick' : '') + '"><ul>' + rs.map(function(r){
+          var also = acc.filter(function(b){ return b.id !== a.id && r.cells[b.id]; })
+            .map(function(b){ return (r.cells[b.id] === "both" ? "for and against" : r.cells[b.id]) + " " + q(b.id); });
+          return '<li data-weigh-reason="' + esc(r.id) + '"' + (WEIGH.sel === r.id ? ' class="on"' : '') + '>' + q(r.id) +
+            (also.length ? ' <span class="also">and ' + also.join(", ") + '</span>' : '') + '</li>';
+        }).join("") + '</ul></td>';
+      }).join("") + '</tr>';
+  }).join("") + '</tbody></table>';
   if (!shown) return h + '<div>Marked: ' + WEIGH.picks.length + '. <button type="button" data-weigh-show="1">Show</button></div>';
-  var apart = S.rows.filter(function(r){ return r.kind === "apart"; }), one = S.rows.filter(function(r){ return r.kind === "one"; });
-  var summary = (apart.length ? apart.length + ' of the ' + S.rows.length + ' reasons ' + (apart.length === 1 ? 'tells' : 'tell') + ' the accounts apart: ' + (apart.length === 1 ? 'it bears' : 'each bears') + ' on two of them differently.'
-                              : 'None of the ' + S.rows.length + ' reasons tells the accounts apart by the map: none bears on two of them differently.');
+  // WHAT A CLICKED REASON CAN DO: the actions the old rows carried, offered for the one the reader chose.
+  var sel = WEIGH.sel && S.rows.filter(function(r){ return r.id === WEIGH.sel; })[0];
+  h += sel ? '<div>' + q(sel.id) + ': <button type="button" data-weigh-false="' + esc(sel.id) + '" title="Suppose this reason false, and see what then loses its support">Suppose false</button>' +
+               '<button type="button" data-weigh-test="' + esc(sel.id) + '" title="Ask what kind of test this reason is"' + (WEIGH.test && WEIGH.test.row === sel.id ? ' class="on"' : '') + '>What kind of test?</button></div>'
+           : '<div class="q">Click a reason to find it on the map, suppose it false, or ask what kind of test it is.</div>';
+  var empties = [];
+  acc.forEach(function(a){ SIDES.forEach(function(side){ if (!weighCell(S, a, side).length) empties.push(a.id + "|" + side); }); });
+  var both = S.rows.filter(function(r){ return r.kind !== "one"; });
+  var v = "";
   if (WEIGH.picks.length) {
-    var hit = WEIGH.picks.filter(function(id){ return apart.some(function(r){ return r.id === id; }); }).length;
-    var missed = apart.filter(function(r){ return WEIGH.picks.indexOf(r.id) < 0; }).length;
-    summary = 'You marked ' + WEIGH.picks.length + '; ' + hit + ' of them ' + (hit === 1 ? 'does' : 'do') + '. ' + summary + (missed ? ' You did not mark ' + missed + '.' : '');
+    var hit = WEIGH.picks.filter(function(K){ return empties.indexOf(K) >= 0; }).length;
+    v += 'You marked ' + WEIGH.picks.length + ' cell' + (WEIGH.picks.length === 1 ? '' : 's') + ' as empty; ' + hit + ' of them ' + (hit === 1 ? 'is' : 'are') + '. ';
   }
-  h += '<div class="verdict">' + esc(summary) + (one.length && !S.allDenials ? ' In ' + one.length + ' row' + (one.length === 1 ? '' : 's') + ' the text says nothing about one account: what would it make of that reason?' : '') + '</div>';
+  v += 'The text leaves ' + empties.length + ' of the ' + (acc.length * 2) + ' cells empty. ';
+  v += both.length ? esc(both.length + ' of the ' + S.rows.length + ' reasons ' + (both.length === 1 ? 'bears' : 'bear') + ' on more than one account: there the text weighs them against each other.')
+                   : esc('None of the ' + S.rows.length + ' reasons bears on more than one account: the text argues for and against each on its own, and never sets them side by side.');
+  // THE QUESTION AN EMPTY CELL PUTS: against the text's own account first, the commonest silence.
+  var own = acc.filter(function(a){ return a.own; })[0];
+  var bare = acc.filter(function(a){ return !a.own && !weighCell(S, a, "for").length; })[0];
+  var ask = own && !weighCell(S, own, "against").length ? 'Nothing here counts against ' + q(own.id) + ', the text’s own account. What would?' :
+            bare ? 'Nothing here counts for ' + q(bare.id) + '. What would its defenders say?' : '';
+  h += '<div class="verdict">' + v + (ask ? '<div style="margin-top:.25rem"><b>' + ask + '</b></div>' : '') + '</div>';
   if (WEIGH.test) h += weighTestHTML(S, q);
-  return h + '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
+  return h + '<div class="q">The map records which reasons the text gives for and against each account. Which account is better it does not say.</div>';
 }
 /** WHAT KIND OF TEST: two questions of the reader's, and what the map records beside them. */
 function weighTestHTML(S, q){
@@ -9513,6 +9571,21 @@ $("weigh").addEventListener("click", function(ev){
   var fl = t.getAttribute("data-weigh-false");
   if (fl) { var n = suppNodeById(fl); if (n && n.kind === "statement" && !suppIsFalse(suppKey(n))) { SUPP.false.push(suppKey(n)); suppApply(); }
             else if (n && n.kind === "argument") { suppDenyArgument(n); } return; }
+  var cell = t.closest ? t.closest("[data-weigh-cell]") : null;
+  if (cell && !WEIGH.shown) {
+    var K = cell.getAttribute("data-weigh-cell"), j = WEIGH.picks.indexOf(K);
+    if (j >= 0) WEIGH.picks.splice(j, 1); else WEIGH.picks.push(K);
+    weighRender(); return;
+  }
+  var rsn = t.closest ? t.closest("[data-weigh-reason]") : null;
+  if (rsn && WEIGH.shown) {
+    var rid = rsn.getAttribute("data-weigh-reason");
+    WEIGH.sel = WEIGH.sel === rid ? null : rid;
+    if (WEIGH.test && WEIGH.test.row !== WEIGH.sel) WEIGH.test = null;
+    weighRender();
+    if (WEIGH.sel && LIVE) LIVE.markClaims([rid], { centreAlways: true });
+    return;
+  }
   var g = t.closest ? t.closest("[data-weigh-go]") : null;
   if (g && WEIGH.shown) { if (LIVE) LIVE.markClaims([g.getAttribute("data-weigh-go")], { centreAlways: true }); return; }
   var row = t.closest ? t.closest("[data-weigh-row]") : null;
@@ -9526,7 +9599,7 @@ $("weigh").addEventListener("click", function(ev){
 $("weigh").addEventListener("change", function(ev){
   var t = ev.target;
   if (t && t.getAttribute && t.getAttribute("data-weigh-set") != null && WEIGH) {
-    WEIGH.i = +t.value; WEIGH.picks = []; WEIGH.test = null; WEIGH.shown = !(GUESS.on || STUDY);
+    WEIGH.i = +t.value; WEIGH.picks = []; WEIGH.test = null; WEIGH.sel = null; WEIGH.shown = !(GUESS.on || STUDY);
     if (STUDY && STUDY.acc && WEIGH.study) { STUDY.acc.i = WEIGH.i; }
     weighRender(); if (WEIGH.study && STUDY) studySync();
   }
@@ -9757,13 +9830,16 @@ function tablesCrossHTML(t){
 }
 /** A DECLARED ACCOUNT SET, its reasons grouped by the case they are about (argdown-tables.js, accountRowsByCase). */
 function tablesAccountHTML(T){
-  var esc = ArgdownStaircase.esc, S = T.set, shown = TABLES.shown, LL = "ABCDEFGH", acc = S.accounts, h = "";
+  var esc = ArgdownStaircase.esc, S = T.set, shown = TABLES.shown, acc = S.accounts, h = "";
   var hasOwn = acc.some(function(a){ return a.own; });
-  h += '<div class="accts">' + acc.map(function(a, k){ return '<div><b>' + LL[k] + '</b> ' + tablesGo([a.id], '‹' + a.label + '›') + ' <span class="q">' + (a.own ? "the text’s own" : hasOwn ? "an account the text sets beside it" : "an account the text weighs") + '</span></div>'; }).join("") + '</div>';
-  if (!T.groups.length) return h + '<div class="q">The map gives no reason directly for or against these accounts.</div>';
+  var role = function(a){ return a.own ? "the text’s own" : hasOwn ? "set beside it" : "an account the text weighs"; };
+  // NAMES, NOT LETTERS (21 Oct 2026): each column is headed by its account's short name, not a letter
+  // to look up in a legend above.
+  if (!T.groups.length) return h + '<div class="accts">' + acc.map(function(a){ return '<div>' + tablesGo([a.id], '‹' + a.label + '›') + ' <span class="q">' + role(a) + '</span></div>'; }).join("") + '</div>' +
+    '<div class="q">The map gives no reason directly for or against these accounts.</div>';
   if (!shown) h += '<div class="ask">Which of these tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
   var word = { "for": "for", against: "against", both: "both" }, kindW = { apart: "<b>tells them apart</b>", alike: "bears on both alike", one: "on one only" };
-  h += '<div class="twrap"><table class="ttab acc"><thead><tr><th></th>' + acc.map(function(a, k){ return '<th class="c" title="' + esc(a.label) + '">' + LL[k] + '</th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
+  h += '<div class="twrap"><table class="ttab acc"><thead><tr><th></th>' + acc.map(function(a){ return '<th class="c an">' + tablesGo([a.id], '‹' + a.label + '›') + '<div class="sub">' + role(a) + '</div></th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
     T.groups.map(function(g, gi){
       var key = "g" + gi, picked = TABLES.picks.indexOf(key) >= 0;
       var head = g.frame ? '<b>' + esc(g.label) + '</b>' + (shown ? '<div class="sub">' + g.rows.map(function(id){ return tablesGo([id], '‹' + weighLabel(id) + '›', id === TABLES.here); }).join('<br>') + '</div>' : '')
@@ -9785,7 +9861,7 @@ function tablesAccountHTML(T){
   var one = T.groups.filter(function(g){ return g.kind === "one"; })[0];
   h += apart.length ? (one ? tablesReflect('<i>' + esc(one.frame ? one.label : weighLabel(one.rows[0])) + '</i> bears on one account only. What would the other make of it?') : '')
                     : tablesReflect('No finding here tells the accounts apart. What finding would?');
-  return h + '<div><button type="button" data-tables-weigh="' + T.i + '" title="The same accounts in the weigh panel, one row a reason, with Suppose false and Test?">Weigh these accounts</button></div>' +
+  return h + '<div><button type="button" data-tables-weigh="' + T.i + '" title="The same accounts in the weigh panel: each account with the reasons for it and against it, to suppose false or test">Weigh these accounts</button></div>' +
     '<div class="q">The map records which reasons bear on which account. Which account is better it does not say.</div>';
 }
 $("tables").addEventListener("click", function(ev){

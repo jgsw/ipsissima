@@ -507,6 +507,24 @@ be able to understand what 'cost' means in this context." Now the card states th
 before the guess. Level claims share a rank (1, 1, 1) and the card says how many are level. A guess
 that takes more claims but fewer main claims is told so, with the main claims named.
 
+**Weigh the accounts, account by account** (21 Oct; B10 clause 4, B11's third duty). Trying the
+weigh panel on several maps, the author found it unhelpful, and the tabulation pass's tables much
+clearer: "authors rarely explicitly compare two or more rival views against the same desiderata …
+nearly all of the rows of the weigh view *don't* actually provide a comparison", and where an author
+does, "this ought to be able to be picked by the tabulation pass". He proposed the accounts as rows,
+with two columns, for and against. The corpus agreed. Of 88 maps, 145 sets have reasons to show. Of
+their 623 rows, 598 bear on one account only, and 128 of the 145 sets have no row bearing on two, so
+"which reasons tell the accounts apart?" was nearly always answered "none". The grid shows a shape the
+table hid. The text's own account has reasons for it in 138 of 144 sets, but reasons against it in
+only 23; the rivals have reasons against them in 109 of 199, and reasons for them in 56. So the empty
+cells are the questions, and the panel asks the first that applies: what would count against the
+text's own account? A reason bearing on two accounts is marked in each cell it falls in. With Guess
+first, the reader marks the cells they expect to be empty. The Tables panel's account tables, from
+the tabulation pass, keep their rows. Seeing the first build, the author asked for names in place of
+letters: "B undercuts A" sent the reader hunting for which was which. Now every account is called by
+its short name, in both panels and in Study's card. Where several rivals object to one account, the
+panel names that account once.
+
 **Still to come:**
 - wave 5 (the method; the §3.6 row on cost);
 - wave 6 (a release, asked for first).

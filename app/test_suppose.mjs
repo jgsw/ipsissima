@@ -638,9 +638,24 @@ if (chromium) {
     await page.waitForTimeout(200);
     if (await page.locator("#weigh [data-weigh-show]").count()) { await page.locator("#weigh [data-weigh-show]").click(); await page.waitForTimeout(150); }
     const wt = await page.locator("#weigh").innerText();
-    check(/1 of the 4 reasons tells the accounts apart/.test(wt) && /In 2 rows the text says nothing about one account/.test(wt),
-          "the panel says which reasons tell the accounts apart, and where the text is silent on one", wt.slice(0, 300));
-    const row = await page.evaluate(() => [...document.querySelectorAll("#weigh tr[data-weigh-row]")].find(r => /where prices rose/.test(r.textContent)).getAttribute("data-weigh-row"));
+    // FOR AND AGAINST, ACCOUNT BY ACCOUNT (James, 21 Oct 2026): the accounts are the rows, each with a
+    // cell of reasons for it and a cell against; an empty cell is the question. Mutations: put the
+    // reason table back -> no grid; drop the empty-cell question -> no "What would?"; drop the "and
+    // against B" marks -> the comparison is lost.
+    const grid = await page.evaluate(() => [...document.querySelectorAll("#weigh table.grid tbody tr:not(.acc)")].map(tr => [...tr.querySelectorAll("td")].map(td => td.innerText.trim())));
+    check(grid.length === 2 && /Sales fell where prices rose›\s*and against ‹Habit explains the fall›/.test(grid[0][0]) && /A trial found prices rose/.test(grid[0][0]) &&
+          /The text gives none/.test(grid[0][1]) && /Sales fell after the levy›\s*and for ‹Price explains the fall›/.test(grid[1][0]) && /Surveys show no change of taste/.test(grid[1][1]),
+          "the panel sets out each account with the reasons for it and against it, a reason bearing on two marked in each", JSON.stringify(grid));
+    // NAMES, NOT LETTERS (James, 21 Oct 2026). Mutation: put the letters back -> "B objects to A".
+    check(/‹Price explains the fall› objects to ‹Habit explains the fall›\./.test(wt) && !/\b[AB] (objects|undercuts)\b/.test(wt) &&
+          await page.locator("#weigh table.grid tr.acc th").first().innerText().then(t => /^‹Price explains the fall›/.test(t)),
+          "the panel names the accounts by their short names, not letters to look up", wt.slice(0, 200));
+    check(/The text leaves 1 of the 4 cells empty/.test(wt) && /2 of the 4 reasons bear on more than one account/.test(wt) &&
+          /Nothing here counts against ‹Price explains the fall›, the text’s own account\. What would\?/.test(wt),
+          "and says which cells are empty, how many reasons bear on two accounts, and asks what would fill the empty one", wt.slice(0, 600));
+    await page.locator("#weigh li[data-weigh-reason]").filter({ hasText: "where prices rose" }).first().click();
+    const row = await page.locator("#weigh li[data-weigh-reason].on").first().getAttribute("data-weigh-reason");
+    check(!!row && await page.locator(`#weigh [data-weigh-test="${row}"]`).count() === 1, "clicking a reason offers Suppose false and What kind of test? for it");
     await page.locator(`#weigh [data-weigh-test="${row}"]`).click();
     await page.locator('#weigh [data-weigh-answer="needed:no"]').click();
     await page.locator('#weigh [data-weigh-answer="enough:yes"]').click();
@@ -662,15 +677,16 @@ if (chromium) {
     await page.locator('#studybody [data-study="accounts"]').click();
     await page.locator('#studybody [data-study="acc-lean:1"]').click();
     await page.waitForTimeout(250);
-    check(await page.locator("#weigh [data-weigh-show]").count() === 1 && /·/.test(await page.locator("#weigh table").innerText()),
+    check(await page.locator("#weigh [data-weigh-show]").count() === 1 && await page.locator("#weigh td[data-weigh-cell]").count() === 4 &&
+          !/Sales fell/.test(await page.locator("#weigh table").innerText()),
           "after the reader leans one way, the panel opens with its cells hidden, for a guess first");
-    await page.locator("#weigh tr[data-weigh-row]").filter({ hasText: "where prices rose" }).click();
+    await page.locator("#weigh td[data-weigh-cell]").nth(1).click();
     await page.locator("#weigh [data-weigh-show]").click();
     await page.waitForTimeout(150);
-    check(/You marked 1; 1 of them does/.test(await page.locator("#weigh .verdict").first().innerText()) &&
-          /blank for one account/.test(await page.locator("#studybody").innerText()), "Show sets the guess beside the map's answer, and the card moves on to the blank cells");
+    check(/You marked 1 cell as empty; 1 of them is/.test(await page.locator("#weigh .verdict").first().innerText()) &&
+          /pick an empty cell/.test(await page.locator("#studybody").innerText()), "Show sets the guess beside the map's answer, and the card moves on to the empty cells");
     await page.locator('#studybody [data-study="acc-done"]').click();
-    check(/At the start you leaned to B/.test(await page.locator("#studybody").innerText()), "and closes by asking whether the first leaning survived");
+    check(/At the start you leaned to ‹Habit explains the fall›\./.test(await page.locator("#studybody").innerText()), "and closes by asking whether the first leaning survived");
     await page.locator('#studybody [data-study="end"]').click();
     await page.waitForTimeout(100);
     check(await page.locator("#weigh").isHidden(), "ending Study closes the panel it opened");
@@ -683,7 +699,7 @@ if (chromium) {
     await page.waitForTimeout(200);
     const dv = await page.locator("#weigh").innerText();
     // Mutation: drop the denial line from weighAccountsHTML -> no "reads as the denial".
-    check(/A reads as the denial of B/.test(dv) && /nothing here for the reasons to tell apart/.test(dv) &&
+    check(/‹[^›]+› reads as the denial of ‹[^›]+›/.test(dv) && /nothing here for the reasons to tell apart/.test(dv) &&
           await page.locator("#weigh details.weigh-anyway").count() === 1 && !(await page.locator("#weigh table").isVisible()),
           "where the rival is only a denial, the panel says so and folds the table", dv.slice(0, 300));
     await page.locator("#weigh details.weigh-anyway summary").click();

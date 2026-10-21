@@ -987,14 +987,20 @@ supposition. The choice is remembered; in Study it is always on. Opening another
 afresh: every supposition, and any guess in progress, goes with the map it was made on.
 
 **Weigh the accounts.** Where the text reports a rival account and sets it against one of its own,
-**right-click** either (or use **What if…?**) and choose **Weigh the accounts**. A panel lists the
-accounts — **A** the text's own, **B** the rival — and the reasons the map gives for or against
-each, one row a reason. A row **tells them apart** where it bears on two accounts differently (for
-one, against the other); it **bears on both alike** where it bears the same way on each; and **on
-one only** where the text says nothing of what the other account would make of it. That blank is
-the question to ask: what would the rival say about this reason? With **Guess first** on, the cells
-are hidden until you have marked the rows you think tell the accounts apart. **Suppose false** on a
-row is an ordinary supposition. **Test?** asks what kind of test a reason is, in two questions —
+**right-click** either (or use **What if…?**) and choose **Weigh the accounts**, or press **Weigh**
+on the map's controls. A panel sets out the accounts as rows, each by its short name — the text's own first, then the
+rival — and gives each two cells: the reasons the text gives **for** it, and those it gives
+**against** it. Texts seldom weigh rival accounts against the same considerations. They argue for
+their own and against the rival, so the usual shape is reasons for the text's account and reasons against the rival, with the
+other two cells empty. **The empty cells are the questions**: what would count against the text's
+own account, and what would the rival's defenders say for it? The panel asks the first that applies.
+A reason that bears on two accounts is marked in each cell it falls in (*and against* the other
+account, named): there the text does weigh them against each other. Above the grid, the panel says
+in the same names what objects to what. Where a text compares accounts on the same counts
+throughout, its map can declare the comparison, and **Tables** sets it out case by case. With
+**Guess first** on, the cells are hidden until you have marked the ones you think the text leaves
+empty. Click a reason to find it on the map; then **Suppose false** is an ordinary supposition, and
+**What kind of test?** asks what kind of test it is, in two questions —
 *if it were not so, would the account be in trouble?* and *if it is so, is the rival ruled out?* —
 and names your answer: **a pointer** (neither: it leans one way), **a test to pass** (the account
 needs it, but it does not rule the rival out), **a clincher** (it rules the rival out, but the
@@ -1070,9 +1076,9 @@ left out of the comparisons. Where the text crosses two kinds of case (studies a
 questions they answer), the claims sit in the cells where they meet. And where it names rival
 accounts of one thing, the table sets the reasons against the accounts as **Weigh the accounts**
 does (see <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a>),
-but gathers the findings of one case into one row: a study that found for one account and against
-the other tells them apart, though neither finding does alone. **Weigh these accounts** opens the
-same set in the weigh panel.
+but one row a case, gathering the findings of one case into one row: a study that found for one
+account and against the other tells them apart, though neither finding does alone. **Weigh these
+accounts** opens the same set in the weigh panel, account by account, for and against.
 
 With **Guess first** on, the values and the moves stay hidden: answer the panel's question by
 clicking the cases you expect, then **Show**. The table records what the text says of each case;
@@ -1128,10 +1134,10 @@ names its question also asks it as it opens, in a card over the map: **Study it*
   support, the card says so: each rests on more than one line of reasons. It is offered again when
   either other way ends.
 - **Weigh the accounts**, where the text sets its account against a rival it reports: choose a pair
-  (four are offered at a time, and **Other pairs** shows the rest), say which you lean to before you look, then guess, in the panel, which reasons tell the accounts apart, and
-  **Show**. The card then asks what an account would make of a reason the text leaves blank for it,
-  invites you to suppose a reason false or ask what kind of test it is, and ends by asking whether
-  your first leaning survived. The map never says which account is better.
+  (four are offered at a time, and **Other pairs** shows the rest), say which you lean to before you look, then guess, in the panel, which cells the text leaves
+  empty, and **Show**. The card then asks what would go in an empty cell, invites you to suppose a
+  reason false or ask what kind of test it is, and ends by asking whether your first leaning
+  survived. The map never says which account is better.
 
 **Study from here**, in a claim's right-click menu, works through only the arguments beneath that
 claim, on your own: the way to take one part of a long map at a sitting.
