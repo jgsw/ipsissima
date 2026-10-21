@@ -48,7 +48,7 @@ jobs:
         with:
           node-version: 22
 
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
 
       # THE PARSER IS COMMITTED, AND IS CHECKED HERE ANYWAY. It is a build artifact living in the
       # source tree, so the one thing that can go wrong is that someone changed the shim and did
