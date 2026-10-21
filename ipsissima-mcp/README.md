@@ -537,7 +537,7 @@ Both are CC BY 4.0, whatever the licence of the package the registry travels in.
 
 | tool | |
 |---|---|
-| `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous; offers the mechanism pass for a text that sets out what brings what about |
+| `argdown_plan` | reads the request; reports the sources, the routes, the cost, and what is ambiguous; lists the layers the map will hold and the way into it each feeds; offers the tabulation pass for a text that cites tables of its own |
 | `extract_text` | documents to structured Markdown, with page markers |
 | `assess_pdf` | how hard is this PDF, and does a machine-readable version exist? |
 | `page_images` | crops of damaged passages, for the cases a converter cannot do |

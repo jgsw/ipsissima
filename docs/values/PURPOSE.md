@@ -525,6 +525,26 @@ letters: "B undercuts A" sent the reader hunting for which was which. Now every 
 its short name, in both panels and in Study's card. Where several rivals object to one account, the
 panel names that account once.
 
+**Wave 5 — the method** (findings 23 and 24; B11; ruling 10). Built 21 Oct on the author's word ("please
+move on to build Wave 5"):
+
+- **What the file is for.** `extraction-prompt.md` has a new section, placed before the reference
+  documents. A table names each layer, the way in it feeds, and what to record so that the way in's
+  questions have answers. B11's three duties follow.
+- **The layers, named.** The server INSTRUCTIONS list the layers and the way in each feeds, and say
+  that an empty cell is a question for the reader.
+- **`argdown_plan`** returns `layers`: argument and order always, the mechanism with the argument (under
+  the parallel method), and tables on request. Where a source cites tables of its own, the plan
+  offers the tables, names them, and asks before extraction, since the lost tables are cheapest to
+  rebuild from their pages then. It runs nothing. 15 of the corpus's 68 texts would draw the offer.
+- **The cost of tabulation as a default, measured** (`docs/TABULATION-COST.md`). A separate pass is
+  almost all reading: 29,000–55,000 tokens in, under 3,000 out. Folded into the reconstruction, it
+  adds about 2,400 tokens of method plus what it writes. That is 10–31% of a full paper's
+  reconstruction and most of a short text's. The thinking is unmeasured. No default was changed.
+
+Each change has checks in `test_server.py`, and each check was shown to fail under its mutation.
+
 **Still to come:**
-- wave 5 (the method; the §3.6 row on cost);
+- the author's decision on tabulation as a default: a trial of the folded form first, as the
+  parallel method had (`docs/TABULATION-COST.md`, "For the author");
 - wave 6 (a release, asked for first).

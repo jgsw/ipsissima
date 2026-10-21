@@ -8,6 +8,32 @@ output is a **scholarly claim about someone's work**, so it must be checkable, h
 is yours, and structurally correct. Those three, in that order, matter more than covering every
 sentence.
 
+## What the file is for
+
+The file is read by people who question it, not only look at it. It holds several layers of the
+text, and each feeds a way into it in Ipsissima. A choice you make here decides whether a reader's
+question there has an answer:
+
+| layer | the way in it feeds | so record |
+|---|---|---|
+| the argument: claims, reasons, objections | **What if…?** supposes a claim false and fades what loses its support; **Study** asks where premises lead; **Which claim would cost the most?** | linked and convergent as the text has them, since a supposition follows them exactly; every objection with the reply the text gives it |
+| rival accounts (`#reported`, `#contested`) | **Weigh the accounts**: each account with the reasons the text gives for it and against it | each reason's relation to *every* account it bears on, where the text states it. Nothing more: a reason the text gives only against the rival stays only against the rival |
+| the order of telling (provenance) | the **Exposition** view and the walkthrough | provenance on every claim |
+| the causal chain | the **Mechanism** view | as far as the argument relies on it (`argdown_method("mechanism")`) |
+| the text's question | the question the map opens on, and Study's first card | `questions:` in the front matter (id to `{text, pinpoint}`), in the text's words where it asks one; a claim that answers it says so with `question:` |
+| the text's comparisons, on request | the **Tables** panel | only when the user asks: `argdown_method("tabulation")` |
+
+Three duties govern every layer (B11 of the project's values):
+
+1. **Every layer answers for its distance from the text.** Fidelity and warrant apply to a step
+   in a chain or a cell in a table as they do to a claim.
+2. **A layer records only what the text supplies.** An absence stays an absence. Where the text
+   gives no reason against its own account, the grid shows an empty cell, and that empty cell is
+   the reader's best question. Do not fill it with a reason the text does not give. "Nothing to
+   draw" and `depth: none` with its reason are results, not failures.
+3. **A layer earns its place by what a reader can do with it.** Record what makes the questions
+   above answerable. Do not add structure that no way in uses.
+
 ## Read these first
 
 Three reference documents carry what you need. **Read all three before writing any node** — they

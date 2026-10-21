@@ -53,13 +53,19 @@ INSTRUCTIONS = """\
 Ipsissima-MCP turns documents into Argdown maps that cite the text they read, and checks finished
 maps against their sources.
 
-WHAT THE MAP IS FOR. A map is one ordinary Argdown file holding several structures of a text: the
-argument and its reasons, the order the text tells them in, the causal chain it says happens, the
-questions it asks, and (on request) the comparisons it draws, as tables. The reader opens it in
-Ipsissima to question it, not only to look at it: they suppose a claim false and see what loses
-its support, weigh rival accounts reason by reason, and study the argument before seeing the map's
-answer. Record what makes those questions answerable. Draw a finding's relation to each account it
-bears on, and leave an absence as an absence; the method documents say how.
+WHAT THE MAP IS FOR. A map is one ordinary Argdown file holding several layers of a text, each
+feeding a way into it in Ipsissima:
+  - the argument and its reasons: the Reasons view, What if…? (suppose a claim false and see what
+    loses its support), Study, and Weigh the accounts (each rival account, the reasons for and
+    against it);
+  - the order the text tells them in: the Exposition view;
+  - the causal chain it says happens: the Mechanism view;
+  - the questions it asks: the question the map opens on;
+  - the comparisons it draws, on request: the Tables panel.
+The reader questions the map, not only looks at it. Record what makes those questions answerable:
+draw a reason's relation to each account it bears on, and leave an absence as an absence -- an
+empty cell is a question for the reader, not a gap to fill. `argdown_plan` says which layers a
+text seems to offer; the method documents say how each is made.
 
 WHAT USERS CALL THIS. "Make an Argdown", "make an Ipsissima diagram", "map the argument",
 "reconstruct this paper", "make an argument map" are all the same request. Treat them as such.
@@ -190,7 +196,12 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "default) `mechanism` says that the text's mechanism is read with the argument, as far as "
         "the argument relies on it: tell the user in a sentence, and follow its `how`. Under the "
         "series method the mechanism is instead among the `offers` -- things to MENTION to the user, "
-        "not to do -- and runs after the map, only if the user says yes."),
+        "not to do -- and runs after the map, only if the user says yes.\n\n"
+        "`layers` lists the structures the map will hold and the way into the map each feeds: those "
+        "made always, and those made only on request. Where a source cites tables of its own, "
+        "`offers` carries `tables`: ASK the user whether they want the text's comparisons set out as "
+        "tables, because the answer changes extraction (the lost tables are rebuilt from their "
+        "pages) -- but run nothing for it until the map checks ok."),
 )
 def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
@@ -243,6 +254,7 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
         # Extraction alone is a complete request: nothing is to be mapped, so nothing is offered.
         plan["offers"] = []
         plan.pop("mechanism", None)
+        plan.pop("layers", None)
 
     plan["next"] = ("ask the user the questions above, then call extract_text with `grouping` set"
                     if plan["questions"] else "call extract_text")
@@ -251,10 +263,14 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
                          "argument (`mechanism`). Read argdown_method `mechanism` with the "
                          "reconstruction documents before writing any node, and record `depth` -- "
                          "unless the user wants the argument alone (`depth: none`)")
-    elif plan["offers"]:
+    elif any(o["id"] == "mechanism" for o in plan["offers"]):
         plan["next"] += ("; and tell the user of the mechanism pass in `offers` -- in a sentence, "
                          "without running it. If they want it, run it after the map checks ok "
                          "and verified")
+    if any(o["id"] == "tables" for o in plan["offers"]):
+        plan["next"] += ("; and ask the user whether they want the text's own tables (`offers`, "
+                         "`tables`). If yes, rebuild the tables extract_text reports lost, and run "
+                         "the tabulation pass once the map checks ok and verified; if no, go on")
     return plan
 
 

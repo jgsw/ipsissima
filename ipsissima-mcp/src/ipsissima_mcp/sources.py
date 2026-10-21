@@ -228,7 +228,7 @@ def _sample_text(path):
         return None
 
 
-def causal_signal(path):
+def causal_signal(path, text=None):
     """How much of a source's running text says that something brings something about.
 
     A SIGNAL FOR AN OFFER, NEVER A VERDICT. It decides only whether the plan mentions the mechanism
@@ -236,7 +236,7 @@ def causal_signal(path):
     coverage aid uses, over the same sentences, so the offer and the later coverage report agree
     about what causal language is."""
     from ipsissima_mcp import mechanism
-    text = _sample_text(path)
+    text = text if text is not None else _sample_text(path)
     if not text:
         return None
     sents = mechanism._sentences(text)
@@ -245,6 +245,27 @@ def causal_signal(path):
     per_kw = round(1000 * n / words, 1) if words else 0.0
     return dict(causal_sentences=n, sentences=len(sents), words_read=words, per_1000_words=per_kw,
                 looks_causal=per_kw >= CAUSAL_PER_KW and n >= CAUSAL_MIN_SENTENCES)
+
+
+def table_signal(text):
+    """The tables a source names ("Table 1", "TABLE II"), in the order it names them.
+
+    A SIGNAL FOR AN OFFER, NEVER A VERDICT (the Purpose episode, wave 5, 21 Oct 2026). A text that
+    cites tables of its own sets things out side by side -- studies against questions, cases against
+    a definition -- and those are the comparisons the tabulation pass records. Extraction loses a
+    table's shape far more often than not (10 of the 15 corpus texts that cite one lost at least one,
+    measured 21 Oct 2026), and rebuilding a table from its page is cheapest while the source is
+    being made, so the plan says so before extraction rather than after the map. Read with
+    `ingest.TABLE_LABEL`, the pattern extraction's own lost-table note uses. A label naming another
+    work's table is a false alarm the user dismisses in a sentence. 15 of the corpus's 68 texts cite
+    one."""
+    from ipsissima_mcp import ingest
+    out = []
+    for m in ingest.TABLE_LABEL.finditer(text or ""):
+        lab = "Table " + m.group(1)
+        if lab not in out:
+            out.append(lab)
+    return out
 
 
 def describe(paths, recursive=True):
@@ -259,11 +280,13 @@ def describe(paths, recursive=True):
     for p in files:
         name, spec = tier_of(p)
         n, est = _words(p)
+        sample = _sample_text(p)     # read once: both signals are taken from it
         rec = dict(path=p, name=os.path.basename(p), tier=name, metal=spec["metal"],
                    rank=spec["rank"], why=spec["why"], words=n, words_estimated=est,
                    modified=datetime.fromtimestamp(_mtime(p), timezone.utc)
                    .strftime("%Y-%m-%d"),
-                   causal=causal_signal(p))
+                   causal=causal_signal(p, sample) if sample else None,
+                   tables_cited=table_signal(sample))
         sources.append(rec)
         by_stem.setdefault(_stem_key(p), []).append(rec)
 
@@ -376,12 +399,50 @@ def describe(paths, recursive=True):
             how="only if the user says yes: argdown_method with `mechanism`, after the map "
                 "checks ok and verified"))
 
+    # ---- the text's own tables: offered, never run (B11; ruling 10, 20 Oct 2026) ---- #
+    # A LAYER BECOMES A DEFAULT ONLY ON MEASUREMENT, and tabulation has not been made one. So where a
+    # source cites tables of its own the plan says what the pass would give, and asks, before
+    # extraction: if the user wants the tables, the ones extraction loses are rebuilt from their
+    # pages while the source is made, which is the cheap moment.
+    cited = [r for r in sources if r["tables_cited"]]
+    if cited:
+        names = [r["name"] for r in cited]
+        shown = "; ".join(f"{r['name']}: {', '.join(r['tables_cited'][:5])}"
+                          f"{' ...' if len(r['tables_cited']) > 5 else ''}" for r in cited[:4])
+        offers.append(dict(
+            id="tables", sources=names,
+            message=(f"The text cites tables of its own ({shown}). A text that sets things out in "
+                     "tables compares them -- studies against questions, cases against a "
+                     "definition, options against criteria -- and Ipsissima can set those "
+                     "comparisons out as tables the reader can question (the tabulation pass, run "
+                     "after the map checks ok). Extraction usually loses a table's shape; if the "
+                     "user wants the tables, rebuild the ones extract_text reports lost from their "
+                     "pages, as it says. A label naming another work's table can be ignored."),
+            how=("ask the user. If yes: rebuild the lost tables extract_text names, with page_images "
+                 "and repair_source; after the map checks ok and verified, read "
+                 "argdown_method(\"tabulation\") and run the pass")))
+
+    # ---- WHICH LAYERS THIS TEXT SEEMS TO OFFER (B11, wave 5): each way into a map is fed by a
+    # layer of the one file, and the user is told which will be made and which can be asked for.
+    layers = [
+        dict(id="argument", status="always",
+             feeds="the Reasons view, What if…? (supposing a claim false), Study, Weigh the accounts"),
+        dict(id="order", status="always", feeds="the Exposition view and the walkthrough"),
+        dict(id="mechanism",
+             status="with the argument, as far as it relies on it" if mech_plan else
+                    ("offered" if causal else "on request"),
+             feeds="the Mechanism view, and suppositions along a causal chain"),
+        dict(id="tables", status="offered" if cited else "on request",
+             feeds="the Tables panel: the text's comparisons, case by case",
+             **({"signal": {r["name"]: r["tables_cited"] for r in cited}} if cited else {})),
+    ]
+
     total = sum(r["words"] for r in sources)
     return dict(
         sources=sorted(sources, key=lambda r: r["path"]),
         count=len(sources), total_words=total,
         unreadable=unreadable, skipped=skipped,
-        questions=questions, advice=advice, offers=offers,
+        questions=questions, advice=advice, offers=offers, layers=layers,
         **({"mechanism": mech_plan} if mech_plan else {}),
         hierarchy_note="Markdown is gold, pandoc-readable is silver, PDF is bronze. Where you "
                        "have a document in more than one format, give Ipsissima the best one.")

@@ -81,6 +81,13 @@ def build(tmp):
         "Courts should therefore prefer community orders for short terms.",
         "The government should fund probation accordingly."]) + "\n\n# References\n\n"
         + "Leads to nothing. Causes nothing. " * 20, encoding="utf-8")
+    # A TEXT THAT SETS THINGS OUT IN TABLES OF ITS OWN (wave 5, 21 Oct 2026): it earns the tables offer.
+    (d / "tabled").mkdir()
+    (d / "tabled" / "trials.md").write_text("# Ten trials\n\n" + " ".join([
+        "Table 1 sets out the ten evaluations by product and country.",
+        "As Table 2 shows, a small fee cut take-up sharply in every trial.",
+        "Free distribution did not reduce use (see Table 2).",
+        "The studies answer four questions, set out in Table 3."] * 3), encoding="utf-8")
     (d / "essay").mkdir()
     (d / "essay" / "essay.md").write_text("# On reasons\n\n" + " ".join(
         ["A reason is a consideration that counts in favour of something."] * 9 +
@@ -155,6 +162,26 @@ def test_sources(d):
     check("  but one brief alone is not", [q for q in sources.describe([str(d / "brief")])["questions"]
                                            if q["id"].startswith("same-text")], [])
     check("under parallel nothing is offered", sources.describe([str(d / "one")])["offers"], [])
+
+    # THE LAYERS, AND THE TABLES OFFER (the Purpose episode, wave 5; B11, ruling 10). Every plan lists
+    # the layers and the way in each feeds; a text citing tables of its own is offered the tables,
+    # named, and a text that cites none is not. Mutations: drop the offer -> none; offer on every
+    # text -> "one" draws it; read the labels off the wrong pattern -> no names.
+    plan = sources.describe([str(d / "tabled")])
+    tab = [o for o in plan["offers"] if o["id"] == "tables"]
+    check("a text citing its own tables is offered them", [o["sources"] for o in tab], [["trials.md"]])
+    check_true("  naming the tables it cites", tab and "Table 1, Table 2, Table 3" in tab[0]["message"],
+               tab and tab[0]["message"][:200])
+    check_true("  and saying to ask, with the rebuild before the pass",
+               tab and tab[0]["how"].startswith("ask the user") and "repair_source" in tab[0]["how"])
+    lay = {x["id"]: x for x in plan["layers"]}
+    check("the plan lists the layers", list(lay), ["argument", "order", "mechanism", "tables"])
+    check("  the tables offered, with the signal", (lay["tables"]["status"], lay["tables"].get("signal")),
+          ("offered", {"trials.md": ["Table 1", "Table 2", "Table 3"]}))
+    check("  and each says which way in it feeds", all(x.get("feeds") for x in plan["layers"]), True)
+    plan = sources.describe([str(d / "one")])
+    check("a text citing no table: the tables on request, nothing offered",
+          ({x["id"]: x["status"] for x in plan["layers"]}["tables"], plan["offers"]), ("on request", []))
 
     # A path that is not there is reported rather than treated as an empty folder.
     plan = sources.describe([str(d / "nope")])
@@ -371,6 +398,30 @@ def test_server(d):
         check("an extraction-only plan offers nothing", out.get("offers"), [])
         check("  and carries no mechanism", "mechanism" in out, False)
         check("and its `next` says nothing of it", "mechanism" in out.get("next", ""), False)
+
+        # THE TABLES ARE ASKED ABOUT, NOT RUN (wave 5). Mutation: drop the tables clause from `next` -> fails.
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "tabled")]}))
+        check_true("a plan with the tables offer says to ask, before extraction",
+                   "ask the user whether they want the text's own tables" in out.get("next", ""), out.get("next"))
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "tabled")], "intent": "extract"}))
+        check("  and an extraction-only plan neither offers nor lists layers", (out.get("offers"), "layers" in out), ([], False))
+        # WHAT THE FILE IS FOR (wave 5; B11): the method says which way in each layer feeds, and the
+        # three duties. Mutation: drop the section -> fails.
+        m = result(await s.call_tool("argdown_method", {"document": "extraction-prompt"}))
+        t = m.get("text", "")
+        check_true("the extraction prompt says what the file is for, layer by layer",
+                   "## What the file is for" in t and "Weigh the accounts" in t and "Tables" in t, t[:200])
+        check_true("  and B11's three duties", all(x in t for x in (
+            "Every layer answers for its distance from the text",
+            "A layer records only what the text supplies",
+            "A layer earns its place by what a reader can do with it")))
+
+        # THE INSTRUCTIONS NAME THE LAYERS and the way in each feeds (wave 5). Mutation: put the old
+        # paragraph back -> no Tables panel, no Exposition view.
+        from ipsissima_mcp.server import INSTRUCTIONS
+        check_true("the server instructions name each layer and the way in it feeds",
+                   all(x in " ".join(INSTRUCTIONS.split()) for x in ("the Reasons view", "the Exposition view", "the Mechanism view",
+                                                   "the Tables panel", "Weigh the accounts", "an empty cell is a question")))
 
         # A file that does not exist is an answer, not a crash.
         out = result(await s.call_tool("argdown_check", {"path": str(d / "no.argdown")}))
