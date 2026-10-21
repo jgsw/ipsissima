@@ -1,0 +1,38 @@
+# Monthly upgrade PRs, one per ecosystem: each entry's group gathers every
+# update in it into a single PR. Security fixes are separate (repo settings).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directories:
+      - /app
+      - /app/desktop
+      - /argdown-pandoc
+    schedule:
+      interval: monthly
+    groups:
+      npm:
+        patterns: ["*"]
+
+  - package-ecosystem: cargo
+    directory: /app/desktop/src-tauri
+    schedule:
+      interval: monthly
+    groups:
+      cargo:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /ipsissima-mcp
+    schedule:
+      interval: monthly
+    groups:
+      pip:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
