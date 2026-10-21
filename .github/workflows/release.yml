@@ -118,7 +118,7 @@ jobs:
       # tag, so nothing here would exercise a major bump before a real release did. Worth doing —
       # on a throwaway tag, watching all three platforms, rather than on the first one that
       # matters.
-      - uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Uncomment together with a paid Apple Developer membership:
