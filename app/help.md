@@ -1116,9 +1116,14 @@ names its question also asks it as it opens, in a card over the map: **Study it*
   what you have. Unfolding on regardless carries on as before.
 
 - **Which claim would cost the most?**: a challenge. Every claim is drawn; click the one you think,
-  supposed false, would leave the most of the argument without the map's support. **Show** ranks the
-  claims by what supposing each false costs — main claims losing their support first, then how many
-  claims do — and sets your guess beside the three costliest. It is the map's own measure: where the
+  supposed false, would leave the most of the argument without the map's support. Cost is counted in
+  two steps, and the card says so before you guess: first, how many of the map's main claims lose
+  their support; then, how many claims lose it in all. So a claim that takes a main claim with it
+  costs more than one that takes more claims but leaves every main claim standing: losing a main
+  claim is losing part of what the argument is for. **Show** ranks the claims by that measure and
+  sets your guess beside the three costliest. Claims that cost exactly the same share a rank, and the
+  card says how many are level. Where your guess takes more claims than the costliest but fewer main
+  claims, the card says so, and names the main claims your guess would take. It is the map's own measure: where the
   argument is most exposed, never which claim is false. Where no single claim takes a main claim's
   support, the card says so: each rests on more than one line of reasons. It is offered again when
   either other way ends.

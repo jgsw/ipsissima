@@ -315,8 +315,13 @@ if (chromium) {
     const costT = await page.locator("#studybody").innerText();
     const order = [...costT.matchAll(/^‹([^›]+)›: \d+ claims? loses?/gm)].map(m => m[1]);
     check(same(order, ["Fact", "Rule", "A"]) && /‹Fact›: 4 claims lose the map’s support, a main claim among them/.test(costT) &&
-          /Your guess, ‹P1›: 1 claim loses the map’s support — \d+ of \d+\./.test(costT),
+          /Your guess, ‹P1›: 1 claim loses the map’s support, not a main claim — ranked \d+ of \d+(, level with \d+ others?)?\./.test(costT),
           "Show ranks the claims by what supposing each false costs, and sets the guess beside them", costT);
+    // LEVEL CLAIMS SHARE A RANK (21 Oct 2026): Fact and Rule cost the same by both counts, so both are
+    // first and A is third. Mutation: number the list 1, 2, 3 -> fails.
+    const ranks = await page.evaluate(() => [...document.querySelectorAll("#studybody ol.studylist li")].map(li => li.value));
+    check(same(ranks, [1, 1, 3]) && /The first 2 cost exactly as much as each other/.test(costT),
+          "claims that cost the same share a rank, and the card says they are level", JSON.stringify(ranks));
     await page.locator('#studybody button[data-study="cost-suppose-top"]').click();
     await page.waitForTimeout(250);
     check(/‹Fact› is false/.test(await page.locator("#suppbar").innerText()), "and offers to suppose the costliest false");
@@ -490,6 +495,41 @@ if (chromium) {
       check(firstPairs.length === 4 && nextPairs.length >= 1 && !nextPairs.some(t => firstPairs.includes(t)),
             "Weigh the accounts offers four pairs at a time, and Other pairs the rest", JSON.stringify([firstPairs.length, nextPairs.length]));
       await page.keyboard.press("Escape");
+    }
+    // WHAT "COST" MEANS (James, 21 Oct 2026). On Akhlaghi his guess took three claims and was ranked
+    // below claims taking two, unexplained; on Darwin it cost exactly what the three named did and was
+    // ranked fourth, by its name. Mutations: drop the measure from the question -> the first check
+    // fails; rank level claims by position -> Darwin's guess is "ranked 4"; drop the more-claims
+    // sentence -> Akhlaghi's guess is not told why.
+    {
+      const guessCost = async (file, label) => {
+        await page.goto("file://" + file);
+        await page.waitForTimeout(900);
+        await page.locator('#map [data-act="study"]').click();
+        await page.locator('#studybody button[data-study="cost"]').click();
+        await page.waitForTimeout(600);
+        const ask = await page.locator("#studybody").innerText();
+        // The guessed box may lie outside the view: chosen from the keyboard, as a reader may.
+        await page.locator(`#map g.alm-n[aria-label="${label}"]`).first().focus();
+        await page.keyboard.press("Enter");
+        await page.locator('#studybody button[data-study="cost-show"]').click();
+        await page.waitForTimeout(300);
+        const shown = await page.locator("#studybody").innerText();
+        await page.keyboard.press("Escape");
+        return { ask, shown };
+      };
+      const dhtml = path.join(tmp, "darwin.html"), ahtml = path.join(tmp, "akhlaghi.html");
+      execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(REPO, "samples", "Darwin 1859 - Natural selection", "darwin-natural-selection.argdown"), "-o", dhtml], { stdio: "pipe" });
+      execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(REPO, "samples", "Akhlaghi 2023 - Transformative experience and revelatory autonomy", "akhlaghi-revelatory-autonomy.argdown"), "-o", ahtml], { stdio: "pipe" });
+      const d = await guessCost(dhtml, "Variations useful to man have occurred");
+      check(/counts cost in two steps\. First, how many of its main claims lose/.test(d.ask),
+            "the challenge says what cost means before the reader guesses", d.ask.slice(0, 300));
+      check(/is one of the 4 that cost the most/.test(d.shown) && !/ranked 4/.test(d.shown) && /4 claims cost exactly as much/.test(d.shown),
+            "a guess level with the costliest is told so, not ranked below them by name", d.shown.slice(0, 600));
+      const a = await guessCost(ahtml, "Would-be killer and self-mutilator");
+      check(/3 claims lose the map’s support, more than the costliest, but no main claim among them/.test(a.shown) &&
+            /The map counts main claims first/.test(a.shown),
+            "a guess that takes more claims but no main claim is told why it ranks lower", a.shown.slice(0, 700));
     }
     // A FROZEN PAGE, NOT A SLOW ONE. With others lit its frontier with markClaims, and where that was a
     // section's block the lighting unfolded the map, the redraw asked the card again, and the stack ran

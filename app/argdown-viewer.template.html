@@ -4861,8 +4861,20 @@ function suppMains(){
 function claimCost(n, mains){
   var r = ArgdownSuppose.suppose(CURRENT_GRAPH || {}, { "false": [n.id], holds: [], cut: [], choice: {}, keep: [] }, { appraisal: APPRAISAL_ON });
   var lost = r.lost.filter(function(x){ return x.indexOf("#") < 0; });
-  return { id: n.id, label: n.label, lost: lost.length, mains: lost.filter(function(x){ return mains[x]; }).length, lostIds: lost };
+  var lostMains = lost.filter(function(x){ return mains[x]; });
+  return { id: n.id, label: n.label, lost: lost.length, mains: lostMains.length, mainIds: lostMains, lostIds: lost };
 }
+/* WHAT "COST" MEANS, SAID WHERE IT IS ASKED (James, 21 Oct 2026). The ranking always counted main
+ * claims first and claims lost second, but the card asked only for "the most claims", so on Akhlaghi a
+ * guess that took three claims was told that one taking two cost more -- the two included a main
+ * claim, and the card never said that counted first. And on Darwin four claims cost exactly the same,
+ * and a guess among them was ranked fourth by its name. So: the card says the measure before the guess,
+ * names the main claims a supposition takes, ranks level claims level, and says why a guess that takes
+ * more claims ranks lower when it does. The two-step measure stays: losing a main claim is losing what
+ * the argument is for, which a count of claims cannot see. */
+function costCmp(a, b){ return b.mains - a.mains || b.lost - a.lost; }
+function costRankOf(R, x){ return 1 + R.filter(function(y){ return costCmp(y, x) < 0; }).length; }
+function costLevelWith(R, x){ return R.filter(function(y){ return costCmp(y, x) === 0; }).length; }
 function studyCostRank(){
   var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
   var mains = suppMains();
@@ -4874,17 +4886,24 @@ function studyCostRank(){
   out.sort(function(a, b){ return b.mains - a.mains || b.lost - a.lost || a.label.localeCompare(b.label); });
   return out;
 }
-function studyCostWords(x){
+/** What a supposition costs, in words. `named`: name the main claims it takes (two at most), for the
+ *  one sentence about the reader's own guess; the list counts them, or every row would repeat them. */
+function studyCostWords(x, named){
+  var ids = x.mainIds || [];
   return x.lost + " claim" + (x.lost === 1 ? "" : "s") + " lose" + (x.lost === 1 ? "s" : "") + " the map\u2019s support" +
-    (x.mains ? ", " + (x.mains === 1 ? "a main claim" : x.mains + " main claims") + " among them" : "");
+    (!x.mains ? (x.lost === 1 ? ", not a main claim" : ", none of them a main claim") :
+     named && ids.length <= 2 ? ", among them the main claim" + (ids.length === 1 ? " " : "s ") + costNames(ids) :
+     ", " + (x.mains === 1 ? "a main claim" : x.mains + " main claims") + " among them");
 }
+function costNames(ids){ return ids.map(function(id){ return "\u2039" + ((suppNodeById(id) || {}).label || id) + "\u203a"; }).join(" and "); }
 function studyCost(){
   var c = studyCard(), C = STUDY.cost || (STUDY.cost = { pick: null, ranked: null, depthSet: false });
   // Every claim drawn, so a guess can be any of them. Done once: after that the folds are the reader's.
   if (!C.depthSet && LIVE) { C.depthSet = true; LIVE.setState({ depth: null, collapsedGroups: [], collapsedLanes: [] }, true); }
   $("studyhint").textContent = "which would cost the most?";
   if (!C.ranked) {
-    c.p("Which one claim, supposed false, would cost the argument most \u2014 leave the most claims without the support the map gives them?");
+    c.p("Which one claim, supposed false, would cost the argument most?");
+    c.p("The map counts cost in two steps. First, how many of its main claims lose the support the map gives them; then, how many claims lose it in all. So a claim that takes a main claim with it costs more than one that takes more claims but leaves every main claim standing.", "hint");
     c.p("Not a main claim itself: denying a conclusion costs nothing beneath it. Look for what the rest rests on.", "hint");
     if (C.pick) {
       c.p("Your guess: \u2039" + C.pick.label + "\u203a. Click another claim to change it.");
@@ -4898,22 +4917,35 @@ function studyCost(){
   }
   var R = C.ranked, top = R.slice(0, 3);
   if (!R.length) { c.p("This map has no claim beneath a main claim to suppose false."); c.btns([["End study", "end"]]); return; }
+  var level = costLevelWith(R, R[0]);
   c.p("By the map, the costliest:");
+  // LEVEL CLAIMS SHARE A RANK, numbered as the list shows them (1, 1, 3), so none is placed by its name.
   var ol = document.createElement("ol"); ol.className = "studylist";
-  top.forEach(function(x){ var li = document.createElement("li"); var b = document.createElement("b"); b.textContent = "\u2039" + x.label + "\u203a";
+  top.forEach(function(x){ var li = document.createElement("li"); li.value = costRankOf(R, x);
+    var b = document.createElement("b"); b.textContent = "\u2039" + x.label + "\u203a";
     li.appendChild(b); li.appendChild(document.createTextNode(": " + studyCostWords(x))); ol.appendChild(li); });
   $("studybody").appendChild(ol);
+  if (level > 1) c.p(level > 3 ? level + " claims cost exactly as much as each other, by both counts; three are shown." :
+                     "The first " + level + " cost exactly as much as each other, by both counts.", "hint");
   if (C.pick) {
-    var k = 0; R.forEach(function(x, i){ if (x.id === C.pick.id) k = i + 1; });
-    var mine = R[k - 1];
-    c.p(k === 1 ? "Your guess, \u2039" + C.pick.label + "\u203a, is the costliest." :
-        mine && !mine.lost ? "Your guess, \u2039" + C.pick.label + "\u203a: nothing else loses the map\u2019s support \u2014 other reasons back up whatever it supports." :
-        mine ? "Your guess, \u2039" + C.pick.label + "\u203a: " + studyCostWords(mine) + " \u2014 " + k + " of " + R.length + "." :
-        "Your guess, \u2039" + C.pick.label + "\u203a, is a main claim, or nothing rests on it.", "answer");
+    var mine = R.filter(function(x){ return x.id === C.pick.id; })[0], first = R[0];
+    var you = "Your guess, \u2039" + C.pick.label + "\u203a";
+    var k = mine ? costRankOf(R, mine) : 0, with_ = mine ? costLevelWith(R, mine) - 1 : 0;
+    c.p(!mine ? you + ", is a main claim, or nothing rests on it." :
+        k === 1 ? (level > 1 ? you + ", is one of the " + level + " that cost the most: " + studyCostWords(mine, true) + "." : you + ", is the costliest.") :
+        !mine.lost ? you + ": nothing else loses the map\u2019s support \u2014 other reasons back up whatever it supports." :
+        // MORE CLAIMS, FEWER MAIN CLAIMS: the case the old card left unexplained.
+        mine.lost >= first.lost ? you + ": " + mine.lost + " claims lose the map\u2019s support, " + (mine.lost > first.lost ? "more than" : "as many as") +
+          " the costliest, but " + (mine.mains ? "only " + (mine.mains === 1 ? "one main claim" : mine.mains + " main claims") : "no main claim") + " among them, where " +
+          (level > 1 ? "each of the " + level + " costliest takes " + (first.mains === 1 ? "one" : first.mains) :
+           "the costliest takes " + (first.mainIds.length <= 2 ? costNames(first.mainIds) : first.mains + " main claims")) +
+          ". The map counts main claims first, so your guess ranks " + k + " of " + R.length + "." :
+        you + ": " + studyCostWords(mine, true) + " \u2014 ranked " + k + " of " + R.length +
+          (with_ ? ", level with " + with_ + " other" + (with_ === 1 ? "" : "s") : "") + ".", "answer");
   }
   // AN ARGUMENT WITH NO SINGLE POINT OF FAILURE says so: that is itself the finding.
   if (!top[0].mains) c.p("No one claim, supposed false, takes the support from a main claim: each main claim rests on more than one line of reasons.");
-  c.p("Why does the first cost so much? Is it one premise everything rests on, or a reason no other reason backs up?");
+  c.p((level > 1 ? "Why do these cost so much?" : "Why does the first cost so much?") + " Is it one premise everything rests on, or a reason no other reason backs up?");
   c.btns([["Suppose \u2039" + top[0].label + "\u203a false", "cost-suppose-top", "See what it costs, guessing first"],
           C.pick && C.pick.id !== top[0].id ? ["Suppose your guess false", "cost-suppose-pick"] : null,
           ["Guess again", "cost-again", "", "plain"], ["End study", "end", "", "plain"]]);

@@ -495,6 +495,18 @@ code as well). Lighting the frontier, when it was a section's block, unfolded th
 map; the redraw asked the card again, which lit it again. The frontier is now lit where it is
 drawn, without unfolding, and a redraw from the lighting does not re-enter the card.
 
+**What "cost" means, said where it is asked** (21 Oct; B10 clause 2, fast feedback the reader can
+read). Playing with *Which claim would cost the most?*, the author found two answers that looked
+wrong. On Akhlaghi his guess took three claims and was ranked fifteenth, below claims that took two;
+on Darwin his guess cost exactly what the three named as costliest cost, and was ranked fourth. The
+ranking was not at fault. It counts main claims first and claims second, and Darwin's four were
+placed by name. But the card asked only for "the most claims", so the reader could not see what was
+being measured. In his words: "the instinct that costliest isn't just a matter of the sheer number
+of claims, but of their significance, is a good one … But what this shows is that the user needs to
+be able to understand what 'cost' means in this context." Now the card states the two-step measure
+before the guess. Level claims share a rank (1, 1, 1) and the card says how many are level. A guess
+that takes more claims but fewer main claims is told so, with the main claims named.
+
 **Still to come:**
 - wave 5 (the method; the §3.6 row on cost);
 - wave 6 (a release, asked for first).
