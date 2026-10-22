@@ -138,8 +138,9 @@ yielded one. The answer was to record what each claim is *about*. Three steps ca
 - a census of twelve texts found comparisons in all of them, in two families: case tables and
   account tables.
 
-The tabulation pass (`docs/tabulation-pass.md`; `frames:` and `about:` in the profile, a trial)
-was then tried on four maps: Gettier, Stone, Valentino and Bates. Every pass checked ok and
+The tabulation pass (`docs/tabulation-pass.md`; `frames:` and `about:` in the profile, a trial;
+**part of every reconstruction since 22 Oct**, profile 1.21, after a second trial: see
+`docs/TABULATION-COST.md`) was then tried on four maps: Gettier, Stone, Valentino and Bates. Every pass checked ok and
 verified. The pass also found relations the texts state that the maps had not drawn.
 
 **The author's rulings (20 Oct):**

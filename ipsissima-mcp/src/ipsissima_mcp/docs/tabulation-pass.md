@@ -1,14 +1,20 @@
-# The tabulation pass: the comparisons a text makes, recorded so a reader can work them
+# The text's comparisons, read with the argument
 
-A TRIAL METHOD, from 20 October 2026, served only when the user asks for it. It runs on a FINISHED
-map that checks ok and verified, and adds to it. It does not rewrite it. It came out of two pieces
-of work in October 2026:
+PART OF EVERY RECONSTRUCTION since 22 October 2026 (profile 1.21), on the author's ruling after a
+trial on two texts. Tables made while reconstructing were as full as those of a separate pass over
+the finished map, the argument was unchanged, and what tabulation added that could be measured was
+about 5,000-7,000 tokens a map. Read this with the reconstruction documents, before writing any
+node, as the mechanism is read. Where the text compares nothing, the map says so: `frames: none`.
+
+It came out of three pieces of work in October 2026:
 
 - the plan "Tables by design": record coordinates, not tables;
 - a census of twelve texts. Every one of them compared things, in four ways on average, and seven
-  carried tables of their own, all of which extraction had lost.
+  carried tables of their own, all of which extraction had lost;
+- the trials of 20 and 21 October: a separate pass on four finished maps, then the same work done
+  while reconstructing, on two texts.
 
-Read the four reconstruction documents with it. This document says only what the pass adds.
+This document says only what the comparisons add to the method.
 
 ## What it is for
 
@@ -76,6 +82,10 @@ The pass records the text's own comparisons, and only the text's.
   the text states, with the claim that states it.
 - `note`: optional prose.
 
+**`frames: none`** records that you read the text for its comparisons and found none. Give the
+reason in a `//` comment under the front matter. A map with no `frames:` at all was made before the
+comparisons were part of every reconstruction.
+
 ```yaml
 frames:
   case:
@@ -104,12 +114,14 @@ That puts it in the cell where that study meets that question, which is how Bate
 are set against the questions they answer. An `account` frame is never named in `about:`. Its
 cells are the relations drawn to the accounts' claims.
 
-## The order of work
+## The order of work, inside the reconstruction's
 
-1. **Rebuild the text's own tables first.** The extraction notes name each table the text cites
-   that did not come through as one. Rebuild each from the page image into the source, as the
-   conventions say. In the census, seven texts in twelve had such a table, and it was the frame.
-2. **Find the comparisons.** Read the text for what it sets side by side:
+1. **The text's own tables are rebuilt at extraction.** The extraction notes name each table the text
+   cites that did not come through as one, and `argdown_plan` says so before extraction. Rebuild
+   each from the page image into the source, as the conventions say. In the census, seven texts in
+   twelve had such a table, and it was the frame.
+2. **While reading the source whole** (the extraction prompt's rule 2), list what the text sets side
+   by side:
    - its tables and figures;
    - its numbered studies, cases and examples;
    - "by contrast", "whereas", "unlike";
@@ -117,28 +129,35 @@ cells are the relations drawn to the accounts' claims.
    - hypotheses with predictions;
    - rival explanations of one thing.
 
-   For each, ask what the rows are, what the columns are, and what values the text uses. Name the
+   For each, note what the rows are, what the columns are, and what values the text uses. Name the
    text's verdict column if it has one.
-3. **Declare the frames.** Use the text's labels and values and give a pinpoint. Do not add a
-   dimension the text does not use, however natural it seems: that is slotting. A value the text
-   leaves unstated is left unstated. The empty cell is the reader's question.
-4. **Place the claims.** Add `about:` to each claim that states a cell. Where the text states a
-   cell and no claim on the map carries it, add the claim:
-   - at the text's own fidelity, quoting the rebuilt table where that is where it stands;
-   - attached by the relation it really has, usually as support for the claim the comparison
-     serves. A claim with no relation drops out of the map.
-5. **Declare the accounts.** Where the text sets rival accounts of one thing against each other,
-   declare an `account` frame naming their claims. Where the text says how a finding bears on each,
-   draw each relation (the cheatsheet's "draw its relation to each account").
-6. **Check.** Run `argdown_check` with the source root until it reports ok and verified. Then read
-   the FRAMES section of the census: each table's size, its empty cells, rows that contradict the
-   verdict, and pairs of rows that differ in one dimension.
+3. **With the skeleton** (the extraction prompt's step 1, and the mechanism's skeleton beside it),
+   write the `frames:` block. Use the text's labels and values and give each frame a pinpoint. Do
+   not add a dimension the text does not use, however natural it seems: that is slotting. A value
+   the text leaves unstated is left unstated. The empty cell is the reader's question.
+4. **As each claim is written**, add `about:` where it states a cell. Draw a reason's relation to
+   each rival account it bears on, where the text states it. Where the text sets rival accounts of
+   one thing against each other, declare an `account` frame naming their claims.
+5. **A cell the text states that no claim carries** is added as a claim, at the text's own fidelity,
+   attached by the relation it really has, usually as support for the claim the comparison serves.
+   A claim with no relation drops out of the map. Add nothing for a cell the text leaves empty.
+6. **The ordinary check covers it.** `argdown_check` reads the frames. Its census has a FRAMES
+   section: each table's size, its empty cells, rows that contradict the verdict, and pairs of rows
+   that differ in one dimension. Read it once the map is ok.
 
-**Record "no frame" where there is none.** Some texts compare nothing: a single proof, a
-manifesto, a satire's one persona. Say so in a `//` comment and stop. A table is worth having only
-where the text built one.
+**What decides the depth** is the same as for the mechanism. Tabulate the comparisons the text makes
+and relies on, not every list it happens to contain.
 
-## What the trial on four maps taught (20 October 2026)
+**Adding tables to a map made before.** A map with no `frames:` was made before the ruling. To give
+it tables, read the source again for its comparisons and do steps 3 to 6 on the finished map,
+without rewriting its argument. That is the separate pass the trials began with: it reads the
+method, the source and the map again, so it costs about as much reading as a reconstruction.
+
+**Record "no frame" where there is none.** Some texts compare nothing: a single proof, a manifesto,
+a satire's one persona. Write `frames: none`, say why in a `//` comment, and spend nothing more on
+it. A table is worth having only where the text built one.
+
+## What the trials taught (20 and 21 October 2026)
 
 The trial maps were Gettier 1963, Stone 1989, Valentino et al. 2018 and Bates et al. 2011.
 
@@ -156,10 +175,16 @@ The trial maps were Gettier 1963, Stone 1989, Valentino et al. 2018 and Bates et
 - **Ids that YAML reads as something else.**
   - `true`, `false` and `null` are not words in YAML: never use them as a frame's id or a value.
   - `yes` and `no` are words, as Argdown reads them, and the checker now reads them the same way.
+- **Keep a study's facts apart from its results** (21 October). A claim about study 1's result goes
+  in the cell where study 1 meets that result; the study's product and country are a cell of their
+  own (`about: [{study: s1, question: takeup}, {study: s1, product: "deworming medicine"}]`).
+  Written as one map, the product is read as a value of the result row, and the checker asks
+  whether the text gives one result four products.
+- **Give every column a pinpoint**, not only the rows: where does the text use this dimension?
 - **Give a verdict where the text gives one.** The page's move "these rows differ in one
   dimension" needs a verdict column and at least two other dimensions. Without them it is noise.
 
-## What the pass must not do
+## What tabulation must not do
 
 - **Fill a cell the text leaves empty.** Not from the reconstructor's knowledge, not by
   inference, not "obviously". The empty cell is the finding.

@@ -27,6 +27,15 @@ const graphOf = f => toGraph(argdown.run({ input: fs.readFileSync(path.join(REPO
 let fails = 0;
 const check = (ok, name, got) => { if (!ok) fails++; console.log(`  ${ok ? "ok  " : "FAIL"}  ${name}${ok || got === undefined ? "" : "\n          got " + got}`); };
 
+console.log("frames: none (profile 1.21)");
+{
+  // A TEXT THAT COMPARES NOTHING says so, and the page draws no table for it. Mutation: read any
+  // `frames:` value as a declaration in framesOf -> a crash or an empty table.
+  const res = argdown.run({ input: "===\ntitle: Nothing compared\nframes: none\n===\n\n[A]: A claim.\n    <+ [B]: A reason.\n", ...RUN });
+  const g = toGraph(res);
+  check(g.frames == null && T.caseTables(g).length === 0, "`frames: none` gives the page no frames and no table", JSON.stringify(g.frames));
+}
+
 console.log("the definition and its counterexample");
 {
   const g = graphOf("frames/definition.argdown");

@@ -61,7 +61,7 @@ feeding a way into it in Ipsissima:
   - the order the text tells them in: the Exposition view;
   - the causal chain it says happens: the Mechanism view;
   - the questions it asks: the question the map opens on;
-  - the comparisons it draws, on request: the Tables panel.
+  - the comparisons it draws: the Tables panel.
 The reader questions the map, not only looks at it. Record what makes those questions answerable:
 draw a reason's relation to each account it bears on, and leave an absence as an absence -- an
 empty cell is a question for the reader, not a gap to fill. `argdown_plan` says which layers a
@@ -89,11 +89,12 @@ THE ORDER OF WORK
      value invented here would vouch for an agreement nobody made. They run
      `check_argdown.py <file> --stamp` when they are satisfied.
 
-THE TEXT'S OWN TABLES ARE OFFERED, NOT RUN. When the map checks ok and the text compares things
--- cases against a definition, options against criteria, studies against questions, rival
-accounts against findings -- tell the user that those comparisons can be set out as tables, and
-read `argdown_method("tabulation")` only if they want it. Extraction notes a table the text cites
-but the conversion lost; say so when it does.
+THE TEXT'S COMPARISONS ARE READ WITH EVERY ARGUMENT (since 22 Oct 2026, as the mechanism is).
+Read `argdown_method("tabulation")` with the reconstruction documents, before writing any node:
+cases against a definition, options against criteria, studies against questions and rival
+accounts against findings are declared as `frames:` and claims placed in them with `about:`. Where
+the text compares nothing, write `frames: none`. Extraction notes a table the text cites but the
+conversion lost: rebuild it from its page before reconstructing, as the note says.
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
@@ -197,11 +198,9 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "the argument relies on it: tell the user in a sentence, and follow its `how`. Under the "
         "series method the mechanism is instead among the `offers` -- things to MENTION to the user, "
         "not to do -- and runs after the map, only if the user says yes.\n\n"
-        "`layers` lists the structures the map will hold and the way into the map each feeds: those "
-        "made always, and those made only on request. Where a source cites tables of its own, "
-        "`offers` carries `tables`: ASK the user whether they want the text's comparisons set out as "
-        "tables, because the answer changes extraction (the lost tables are rebuilt from their "
-        "pages) -- but run nothing for it until the map checks ok."),
+        "`layers` lists the structures the map will hold and the way into the map each feeds. Where a "
+        "source cites tables of its own, `advice` says so: the comparisons are read with every "
+        "argument, and a table the conversion loses is rebuilt from its page at extraction."),
 )
 def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
@@ -267,10 +266,13 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
         plan["next"] += ("; and tell the user of the mechanism pass in `offers` -- in a sentence, "
                          "without running it. If they want it, run it after the map checks ok "
                          "and verified")
-    if any(o["id"] == "tables" for o in plan["offers"]):
-        plan["next"] += ("; and ask the user whether they want the text's own tables (`offers`, "
-                         "`tables`). If yes, rebuild the tables extract_text reports lost, and run "
-                         "the tabulation pass once the map checks ok and verified; if no, go on")
+    if plan.get("layers"):
+        plan["next"] += ("; read argdown_method `tabulation` with the reconstruction documents too: "
+                         "the text's comparisons are read with every argument (`frames: none` where "
+                         "it compares nothing)")
+    if any(a.get("kind") == "tables-cited" for a in plan.get("advice", [])):
+        plan["next"] += ("; and rebuild from their pages the tables extract_text reports lost, before "
+                         "reconstructing (`advice`)")
     return plan
 
 
@@ -356,6 +358,11 @@ license the conclusion is an undercut, and an undercut targets an argument, not 
 A numbered argument is `<Title>: text`, premises (1)..(n), an inference line `----`, then
 the conclusion; with two or more steps every inference line declares `-- {uses: [..]} --`.
 An <Argument> takes a fidelity marker like any other node.
+
+COMPARISONS: the text's cases against a definition, options against criteria, studies against
+questions and rival accounts are declared under front-matter `frames:`, and a claim stating a cell
+carries `about: {case: I, justified: yes}`. Only the text's own frames and values; an empty cell
+stays empty. `frames: none` where the text compares nothing. argdown_method `tabulation` has it.
 
 Then run argdown_check, fix exactly what it names, and stop only when `ok` AND
 `verified` are BOTH true. Hand over a clean folder -- the .argdown and source/, with no
@@ -575,14 +582,14 @@ METHOD_DOCS = {
                          "how to read the chain a text asserts before marking it: strength, "
                          "necessity, moderators, time and size, rival accounts -- with the pass, "
                          "only when the user has asked for the mechanism"),
-    # THE TABULATION PASS (20 Oct 2026, a trial): the comparisons a text makes, as frames a reader
-    # can work. On request only, like the mechanism: never named in the other documents' replies.
+    # THE TEXT'S COMPARISONS (a trial from 20 Oct 2026; part of every reconstruction since 22 Oct,
+    # profile 1.21): declared as frames a reader can work, read with the argument as the mechanism is.
     "tabulation": ("tabulation-pass.md",
-                   "the tabulation pass, on a FINISHED map: the text's own comparisons (cases against "
-                   "dimensions, rival accounts) declared as `frames:` and placed with `about:` -- only "
-                   "when the user has asked for it"),
+                   "the text's own comparisons (cases against dimensions, options against criteria, "
+                   "rival accounts) declared as `frames:` and placed with `about:` -- read with every "
+                   "reconstruction; `frames: none` where the text compares nothing"),
 }
-_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series", "tabulation"}
+_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series"}
 
 
 @server.tool(
@@ -603,7 +610,9 @@ _ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism
         "reconstruction: the mechanism is read with the argument and mapped as far as the argument "
         "relies on it. Under the series method serve it only when the user has asked for the "
         "mechanism of a text. With it, \"mechanism-method\" says how to read a "
-        "text's causal claims, and \"mechanism-series\" gives the notation for steps."),
+        "text's causal claims, and \"mechanism-series\" gives the notation for steps. "
+        "\"tabulation\" reads the comparisons a text makes, as tables a reader can work: part of "
+        "EVERY reconstruction, read with the others before writing any node."),
 )
 def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     """
@@ -613,7 +622,7 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
             reconstruction; under `series`, only when asked), "mechanism-method" (how to read
             causal claims),
             "mechanism-parallel" or "mechanism-series" (either method by name); or "tabulation"
-            (the text's comparisons as frames, on a finished map, only when asked).
+            (the text's comparisons as frames, read with every reconstruction).
     """
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
@@ -621,10 +630,11 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     fname, _ = METHOD_DOCS[document]
     if document == "tabulation":
         return dict(ok=True, document=document, text=_doc(fname),
-                    next=("the map must already check ok and verified; rebuild the text's own tables "
-                          "in the source first, then declare `frames:` and place claims with `about:`, "
-                          "and run argdown_check with source_root until ok and verified, reading the "
-                          "FRAMES section of the census"))
+                    next=("read it with the reconstruction documents, before writing any node; rebuild "
+                          "the text's own lost tables in the source first; declare `frames:` with the "
+                          "skeleton (or `frames: none` where the text compares nothing), place claims "
+                          "with `about:` as you write them, and run argdown_check with source_root "
+                          "until ok and verified, reading the FRAMES section of the census"))
     if document in _ON_REQUEST:
         from ipsissima_mcp import mechanism
         method = mechanism.mechanism_method()
@@ -649,6 +659,7 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
     from ipsissima_mcp import mechanism
     with_mech = ("; under the parallel method, in force, read \"mechanism\" too: the mechanism is "
                  "read with every argument" if mechanism.mechanism_method() == "parallel" else "")
+    with_mech += "; and \"tabulation\": the text's comparisons are read with every argument"
     return dict(ok=True, document=document, text=_doc(fname),
                 next=(f"read it before writing any node; {others} are served here too, and "
                       "the extraction prompt says which to read and in what order" + with_mech))

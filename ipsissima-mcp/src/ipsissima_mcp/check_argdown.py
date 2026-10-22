@@ -2201,8 +2201,9 @@ def frames_report(cli, path):
     """The comparisons the text makes (front matter `frames:`), and the claims placed in them
     (`about:`): checked, and each case table sized in the census. Silent for a map with neither.
 
-    A TRIAL (20 Oct 2026; docs/tabulation-pass.md). Twelve texts read for the census "what twelve
-    texts compare" all compared things, and a map recorded what supports what but not what each
+    PART OF EVERY RECONSTRUCTION SINCE 22 OCT 2026 (profile 1.21; a trial from 20 Oct;
+    docs/tabulation-pass.md). Twelve texts read for the census "what twelve texts compare" all
+    compared things, and a map recorded what supports what but not what each
     claim is ABOUT -- which case, which dimension, which value -- so no table could be read off it.
     Faults here are notation faults. An empty cell is never one: it is the text's silence, and the
     census names it as a finding."""
@@ -2241,8 +2242,20 @@ def frames_report(cli, path):
                 placed.append((title, cell))
     if decl is None and not placed:
         return
+    # `frames: none` RECORDS A RESULT (profile 1.21, James's ruling of 22 Oct 2026): the reconstructor
+    # read the text for its comparisons and found none, as `depth: none` records a mechanism not
+    # mapped. A placement then has nowhere to go.
+    if isinstance(decl, str) and decl.strip().lower() == "none":
+        for title, cell in placed:
+            finding("frames", "!", f"`about:` places a claim in a comparison, but the front matter says "
+                    f"`frames: none`", title=title,
+                    fix="declare the frame the claim is about, or drop its `about:`")
+        SHAPE["frames"] = dict(tables=[], accounts=[], placed=len(placed), none=True)
+        print("\n   FRAMES: none -- the map records that the text compares nothing")
+        return
     if decl is not None and not isinstance(decl, dict):
-        finding("frames", "!", "`frames:` must map ids to frames, each with its `kind` and `values`",
+        finding("frames", "!", "`frames:` must map ids to frames, each with its `kind` and `values` "
+                "-- or be `none`, where the text compares nothing",
                 fix='frames:\n    case: {kind: case, label: "The cases", pinpoint: "p. 122", values: {I: "Case I"}}')
         return
     decl = decl or {}

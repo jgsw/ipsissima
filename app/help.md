@@ -1048,7 +1048,9 @@ Many texts sort what they discuss: cases set against the conditions of a definit
 placed in a typology, studies against the questions they answer, options against the counts they
 are judged on. Where a map records those comparisons (in its `frames:`, with `about:` on the claims
 that state each cell), **Tables** appears beside **Study** on the map's control bar. On a map that
-records none, it does not appear. **Right-click** a claim that sits in a table, or use **What
+records none, it does not appear. Ipsissima-MCP records them with every reconstruction since
+22 October 2026; a map made before then, or of a text that compares nothing (`frames: none`), has
+no tables. **Right-click** a claim that sits in a table, or use **What
 if…?**, and **Set out in a table** opens the table it belongs to, with its cells marked.
 
 A table's rows are the text's cases and its columns the respects it compares them in, the verdict

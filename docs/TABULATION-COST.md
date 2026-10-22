@@ -2,7 +2,8 @@
 
 21 October 2026. Wave 5 of the Purpose episode (`docs/values/PURPOSE.md`, §5). Ruling 10 says a layer
 becomes a default only once it has been measured. This is that measurement for the tabulation pass
-(`argdown_method("tabulation")`). It changes no default. The decision is the author's.
+(`argdown_method("tabulation")`). It changed no default itself; the trial it led to, and the author's
+ruling that made tabulation part of every reconstruction, are at the end.
 
 ## What was measured
 
@@ -77,3 +78,22 @@ If tabulation is to become a default, form B is cheaper than form A by an order 
 it reads. The parallel method was settled by a trial, and B should be tried the same way first: the
 same texts reconstructed with and without it, with usage figures from the runs, and you judging the
 tables. Until then the tables stay on request, and are offered where a text cites its own.
+
+## The trial, and the ruling (21–22 October)
+
+The folded form was tried on Gettier 1963 and Bates et al. 2011, each reconstructed twice from the
+source, with and without it. The figures and tables are in the private trial folder
+(`tabulation-default-trial/RESULTS.md`).
+
+- **The tables** made while reconstructing were as full as those of the separate pass on both
+  texts. Bates's grew from 9 of 14 cells and two account sets to 12 of 16 cells and four account
+  sets. No claim had to be added for a cell alone.
+- **The argument** was the same with and without it.
+- **What tabulation added that could be measured**: about 2,900 tokens of method read, 600–1,600
+  written, and one extra check round. That is roughly 5,000–7,000 tokens a map.
+- **The thinking could not be separated.** The order of the arms dominated the measured totals:
+  whichever arm of a text went first did the thinking.
+
+James ruled on 22 October: "Make tabulation the default, folded into the reconstruction, with
+frames: none where a text compares nothing." Profile 1.21 records it.
+

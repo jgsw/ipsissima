@@ -250,9 +250,9 @@ def causal_signal(path, text=None):
 def table_signal(text):
     """The tables a source names ("Table 1", "TABLE II"), in the order it names them.
 
-    A SIGNAL FOR AN OFFER, NEVER A VERDICT (the Purpose episode, wave 5, 21 Oct 2026). A text that
+    A SIGNAL FOR ADVICE, NEVER A VERDICT (the Purpose episode, wave 5, 21 Oct 2026). A text that
     cites tables of its own sets things out side by side -- studies against questions, cases against
-    a definition -- and those are the comparisons the tabulation pass records. Extraction loses a
+    a definition -- and those are the comparisons every reconstruction records (profile 1.21). Extraction loses a
     table's shape far more often than not (10 of the 15 corpus texts that cite one lost at least one,
     measured 21 Oct 2026), and rebuilding a table from its page is cheapest while the source is
     being made, so the plan says so before extraction rather than after the map. Read with
@@ -399,31 +399,24 @@ def describe(paths, recursive=True):
             how="only if the user says yes: argdown_method with `mechanism`, after the map "
                 "checks ok and verified"))
 
-    # ---- the text's own tables: offered, never run (B11; ruling 10, 20 Oct 2026) ---- #
-    # A LAYER BECOMES A DEFAULT ONLY ON MEASUREMENT, and tabulation has not been made one. So where a
-    # source cites tables of its own the plan says what the pass would give, and asks, before
-    # extraction: if the user wants the tables, the ones extraction loses are rebuilt from their
-    # pages while the source is made, which is the cheap moment.
+    # ---- the text's own tables: rebuilt at extraction (profile 1.21, 22 Oct 2026) ---- #
+    # THE COMPARISONS ARE READ WITH EVERY ARGUMENT, so nothing is offered or asked. But a text that
+    # cites tables of its own usually loses their shape in extraction, and they are cheapest to
+    # rebuild from their pages while the source is made: the plan says so before extraction.
     cited = [r for r in sources if r["tables_cited"]]
     if cited:
-        names = [r["name"] for r in cited]
         shown = "; ".join(f"{r['name']}: {', '.join(r['tables_cited'][:5])}"
                           f"{' ...' if len(r['tables_cited']) > 5 else ''}" for r in cited[:4])
-        offers.append(dict(
-            id="tables", sources=names,
-            message=(f"The text cites tables of its own ({shown}). A text that sets things out in "
-                     "tables compares them -- studies against questions, cases against a "
-                     "definition, options against criteria -- and Ipsissima can set those "
-                     "comparisons out as tables the reader can question (the tabulation pass, run "
-                     "after the map checks ok). Extraction usually loses a table's shape; if the "
-                     "user wants the tables, rebuild the ones extract_text reports lost from their "
-                     "pages, as it says. A label naming another work's table can be ignored."),
-            how=("ask the user. If yes: rebuild the lost tables extract_text names, with page_images "
-                 "and repair_source; after the map checks ok and verified, read "
-                 "argdown_method(\"tabulation\") and run the pass")))
+        advice.append(dict(
+            kind="tables-cited", sources=[r["name"] for r in cited],
+            message=(f"The text cites tables of its own ({shown}). Its comparisons are read with the "
+                     "argument and set out as tables a reader can question. Extraction usually loses "
+                     "a table's shape: rebuild each one extract_text reports lost from its page "
+                     "(page_images, repair_source) before reconstructing. A label naming another "
+                     "work's table can be ignored.")))
 
-    # ---- WHICH LAYERS THIS TEXT SEEMS TO OFFER (B11, wave 5): each way into a map is fed by a
-    # layer of the one file, and the user is told which will be made and which can be asked for.
+    # ---- THE LAYERS THE MAP WILL HOLD (B11, wave 5): each way into a map is fed by a layer of the
+    # one file, and the user is told which are made and how far.
     layers = [
         dict(id="argument", status="always",
              feeds="the Reasons view, What if…? (supposing a claim false), Study, Weigh the accounts"),
@@ -432,7 +425,7 @@ def describe(paths, recursive=True):
              status="with the argument, as far as it relies on it" if mech_plan else
                     ("offered" if causal else "on request"),
              feeds="the Mechanism view, and suppositions along a causal chain"),
-        dict(id="tables", status="offered" if cited else "on request",
+        dict(id="tables", status="with the argument (`frames: none` where the text compares nothing)",
              feeds="the Tables panel: the text's comparisons, case by case",
              **({"signal": {r["name"]: r["tables_cited"] for r in cited}} if cited else {})),
     ]

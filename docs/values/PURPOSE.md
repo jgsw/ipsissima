@@ -544,7 +544,18 @@ move on to build Wave 5"):
 
 Each change has checks in `test_server.py`, and each check was shown to fail under its mutation.
 
+**Tabulation made the default** (22 Oct; ruling 10 applied). The author asked for the folded form
+to be tried "as the parallel method was", and it was tried on Gettier 1963 and Bates et al. 2011,
+each reconstructed twice. The tables were as full as the separate pass's, the argument was
+unchanged, and the cost that could be measured was about 5,000–7,000 tokens a map
+(`docs/TABULATION-COST.md`). He ruled:
+
+12. **"Make tabulation the default, folded into the reconstruction, with frames: none where a text
+    compares nothing."** Profile 1.21. The tabulation document is read with every reconstruction,
+    beside the mechanism. `argdown_plan` advises rebuilding a text's own tables at extraction
+    rather than offering them, and the checker accepts `frames: none` and faults an `about:` under
+    it. This is the first layer to become a default under ruling 10's test: measured first, then
+    ruled.
+
 **Still to come:**
-- the author's decision on tabulation as a default: a trial of the folded form first, as the
-  parallel method had (`docs/TABULATION-COST.md`, "For the author");
 - wave 6 (a release, asked for first).

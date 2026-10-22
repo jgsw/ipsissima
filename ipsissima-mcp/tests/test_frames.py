@@ -105,6 +105,22 @@ except ValueError:
 check("a wrapped flow mapping beside a block `values:` does not crash the checker",
       ("Traceback" in r.stderr, placed), (False, 4))
 
+print("frames: none (profile 1.21)")
+# A RESULT, NOT A FAULT: the text compares nothing, and the map says so (James's ruling of 22 Oct 2026,
+# tabulation read with every reconstruction). A claim placed in a comparison is then a fault.
+# Mutations: drop the `none` branch -> "must map ids to frames"; drop the placement fault -> silent.
+td = Path(tempfile.mkdtemp())
+(td / "none.argdown").write_text("===\ntitle: Nothing compared\nframes: none\n===\n\n"
+                                 "// frames: none -- one argument, nothing set side by side\n\n"
+                                 "[A]: A claim.\n    <+ [B]: A reason.\n", encoding="utf-8")
+(td / "placed.argdown").write_text("===\ntitle: Placed anyway\nframes: none\n===\n\n"
+                                   "[A]: A claim.\n    <+ [B]: A reason. {about: {case: I}}\n", encoding="utf-8")
+found, shape = run(td / "none.argdown")
+check("`frames: none` draws no fault, and the census records it", ([f["message"] for f in found], (shape or {}).get("none")), ([], True))
+found, _ = run(td / "placed.argdown")
+check("  an `about:` under `frames: none` is a fault",
+      [f["severity"] for f in found if "frames: none" in f["message"]], ["!"])
+
 print()
 if fails:
     print(f"{fails} FAILED")

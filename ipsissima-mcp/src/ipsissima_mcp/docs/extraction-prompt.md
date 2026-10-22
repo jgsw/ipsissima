@@ -21,7 +21,7 @@ question there has an answer:
 | the order of telling (provenance) | the **Exposition** view and the walkthrough | provenance on every claim |
 | the causal chain | the **Mechanism** view | as far as the argument relies on it (`argdown_method("mechanism")`) |
 | the text's question | the question the map opens on, and Study's first card | `questions:` in the front matter (id to `{text, pinpoint}`), in the text's words where it asks one; a claim that answers it says so with `question:` |
-| the text's comparisons, on request | the **Tables** panel | only when the user asks: `argdown_method("tabulation")` |
+| the text's comparisons | the **Tables** panel, and **Weigh the accounts** where it declares rival accounts | `frames:` and `about:`, read with every argument (`argdown_method("tabulation")`); `frames: none` where the text compares nothing |
 
 Three duties govern every layer (B11 of the project's values):
 
@@ -125,6 +125,13 @@ the reason (`depth`). Judge that by what the argument relies on, never by how of
 causal words. If the user wants the argument alone, record `depth: none` with that as the reason.
 Under the series method (`IPSISSIMA_MECHANISM_METHOD=series`) the mechanism is instead a separate
 pass, run only when the user asks for it, on the finished map.
+
+**The text's comparisons are read with every argument too** (since 22 October 2026, profile 1.21):
+read `argdown_method("tabulation")` before writing any node. Its cases against a definition, its
+options against criteria, its studies against the questions they answer and its rival accounts are
+declared as `frames:` with the skeleton, and each claim that states a cell carries `about:`. Where
+the text compares nothing, write `frames: none` and say why in a `//` comment. Tables the extraction
+lost are rebuilt from their pages first.
 
 ### 1. Find the conclusion, then the form
 
@@ -382,7 +389,9 @@ of an argument that is not there is worse than an honest one full of gaps.
 4. Objections of the right kind, attributed to whoever made them.
 5. The author's hedges and scope intact. *Most* is not *all*.
 6. Nothing invented. If the source raises a point and drops it, the dropping is recorded.
-7. **Nothing beside it that is not part of it.** If you wrote a scratch map to try the checker's
+7. **The text's comparisons declared**, as `frames:` with claims placed by `about:`, or
+   `frames: none` where it compares nothing.
+8. **Nothing beside it that is not part of it.** If you wrote a scratch map to try the checker's
    conventions, delete it before you finish: the folder handed over holds the `.argdown` and
    `source/`, and a leftover probe wears the same extension as the real map.
 

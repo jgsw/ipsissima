@@ -81,7 +81,8 @@ def build(tmp):
         "Courts should therefore prefer community orders for short terms.",
         "The government should fund probation accordingly."]) + "\n\n# References\n\n"
         + "Leads to nothing. Causes nothing. " * 20, encoding="utf-8")
-    # A TEXT THAT SETS THINGS OUT IN TABLES OF ITS OWN (wave 5, 21 Oct 2026): it earns the tables offer.
+    # A TEXT THAT SETS THINGS OUT IN TABLES OF ITS OWN (wave 5, 21 Oct 2026): it earns the advice to
+    # rebuild them at extraction (profile 1.21: the comparisons are read with every argument).
     (d / "tabled").mkdir()
     (d / "tabled" / "trials.md").write_text("# Ten trials\n\n" + " ".join([
         "Table 1 sets out the ten evaluations by product and country.",
@@ -163,25 +164,27 @@ def test_sources(d):
                                            if q["id"].startswith("same-text")], [])
     check("under parallel nothing is offered", sources.describe([str(d / "one")])["offers"], [])
 
-    # THE LAYERS, AND THE TABLES OFFER (the Purpose episode, wave 5; B11, ruling 10). Every plan lists
-    # the layers and the way in each feeds; a text citing tables of its own is offered the tables,
-    # named, and a text that cites none is not. Mutations: drop the offer -> none; offer on every
-    # text -> "one" draws it; read the labels off the wrong pattern -> no names.
+    # THE LAYERS, AND THE TABLES (the Purpose episode, wave 5; profile 1.21, ruled 22 Oct 2026). Every
+    # plan lists the layers and the way in each feeds; the comparisons are read with every argument,
+    # so nothing is offered; a text citing tables of its own is advised to rebuild them at extraction,
+    # and a text that cites none is not. Mutations: offer the tables again -> an offer; drop the advice
+    # -> none; advise on every text -> "one" draws it.
     plan = sources.describe([str(d / "tabled")])
-    tab = [o for o in plan["offers"] if o["id"] == "tables"]
-    check("a text citing its own tables is offered them", [o["sources"] for o in tab], [["trials.md"]])
-    check_true("  naming the tables it cites", tab and "Table 1, Table 2, Table 3" in tab[0]["message"],
-               tab and tab[0]["message"][:200])
-    check_true("  and saying to ask, with the rebuild before the pass",
-               tab and tab[0]["how"].startswith("ask the user") and "repair_source" in tab[0]["how"])
+    adv = [a for a in plan["advice"] if a["kind"] == "tables-cited"]
+    check("a text citing its own tables is advised to rebuild them", [a["sources"] for a in adv], [["trials.md"]])
+    check_true("  naming the tables it cites, and how", adv and "Table 1, Table 2, Table 3" in adv[0]["message"]
+               and "repair_source" in adv[0]["message"], adv and adv[0]["message"][:200])
+    check("  and offering nothing: tabulation is part of the reconstruction", plan["offers"], [])
     lay = {x["id"]: x for x in plan["layers"]}
     check("the plan lists the layers", list(lay), ["argument", "order", "mechanism", "tables"])
-    check("  the tables offered, with the signal", (lay["tables"]["status"], lay["tables"].get("signal")),
-          ("offered", {"trials.md": ["Table 1", "Table 2", "Table 3"]}))
+    check_true("  the tables made with the argument, with the signal",
+               lay["tables"]["status"].startswith("with the argument") and
+               lay["tables"].get("signal") == {"trials.md": ["Table 1", "Table 2", "Table 3"]}, lay["tables"])
     check("  and each says which way in it feeds", all(x.get("feeds") for x in plan["layers"]), True)
     plan = sources.describe([str(d / "one")])
-    check("a text citing no table: the tables on request, nothing offered",
-          ({x["id"]: x["status"] for x in plan["layers"]}["tables"], plan["offers"]), ("on request", []))
+    check("a text citing no table: no advice, and the tables still made with the argument",
+          ([a for a in plan["advice"] if a["kind"] == "tables-cited"], plan["offers"],
+           {x["id"]: x["status"] for x in plan["layers"]}["tables"].startswith("with the argument")), ([], [], True))
 
     # A path that is not there is reported rather than treated as an empty folder.
     plan = sources.describe([str(d / "nope")])
@@ -399,12 +402,25 @@ def test_server(d):
         check("  and carries no mechanism", "mechanism" in out, False)
         check("and its `next` says nothing of it", "mechanism" in out.get("next", ""), False)
 
-        # THE TABLES ARE ASKED ABOUT, NOT RUN (wave 5). Mutation: drop the tables clause from `next` -> fails.
+        # THE COMPARISONS ARE READ WITH EVERY ARGUMENT (profile 1.21). Mutations: drop the tabulation
+        # clause from `next` -> fails; drop the rebuild clause -> fails; drop "tabulation" from the
+        # extraction prompt's reply -> fails.
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "tabled")]}))
-        check_true("a plan with the tables offer says to ask, before extraction",
-                   "ask the user whether they want the text's own tables" in out.get("next", ""), out.get("next"))
+        check_true("a plan says to read `tabulation` with the argument, and to rebuild the lost tables first",
+                   "read argdown_method `tabulation`" in out.get("next", "") and
+                   "rebuild from their pages the tables" in out.get("next", ""), out.get("next"))
+        out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "one")]}))
+        check_true("  a text citing no table is still told to read `tabulation`, and not to rebuild",
+                   "read argdown_method `tabulation`" in out.get("next", "") and "rebuild" not in out.get("next", ""), out.get("next"))
         out = result(await s.call_tool("argdown_plan", {"sources": [str(d / "tabled")], "intent": "extract"}))
         check("  and an extraction-only plan neither offers nor lists layers", (out.get("offers"), "layers" in out), ([], False))
+        m = result(await s.call_tool("argdown_method", {"document": "extraction-prompt"}))
+        check_true("the extraction prompt's reply names `tabulation`, read with every argument",
+                   '"tabulation": the text\'s comparisons are read with every argument' in m.get("next", ""), m.get("next"))
+        m = result(await s.call_tool("argdown_method", {"document": "tabulation"}))
+        check_true("  and `tabulation` is served as part of the reconstruction, not on a finished map",
+                   m.get("text", "").startswith("# The text's comparisons, read with the argument") and
+                   "before writing any node" in m.get("next", "") and "frames: none" in m.get("next", ""), m.get("next"))
         # WHAT THE FILE IS FOR (wave 5; B11): the method says which way in each layer feeds, and the
         # three duties. Mutation: drop the section -> fails.
         m = result(await s.call_tool("argdown_method", {"document": "extraction-prompt"}))
