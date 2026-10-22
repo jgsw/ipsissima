@@ -436,7 +436,7 @@ export function framesOf(res, titleToId) {
                   rule: (f.rule && typeof f.rule === "object") ? f.rule : null });
   }
   const byId = new Map(frames.map(f => [f.id, f]));
-  const cells = [];
+  const cells = [], undecided = [];
   for (const kind of ["statements", "arguments"]) {
     for (const [title, rec] of Object.entries(res[kind] || {})) {
       const data = Object.assign({}, rec && rec.data);
@@ -448,9 +448,20 @@ export function framesOf(res, titleToId) {
         if (!a || typeof a !== "object") continue;
         const coords = {};
         let ok = true;
-        for (const k of Object.keys(a)) {
+        // WHAT THE TEXT SAYS OF A CELL OTHER THAN A VALUE (profile 1.23, ruled 22 Oct 2026): that it
+        // cannot occur, or that it cannot be told. A statement, not silence, so it fills the cell.
+        // On an account frame only `indeterminate` is read: the claim, says the text, does not tell
+        // the accounts apart.
+        const keys = Object.keys(a);
+        if (keys.length === 1 && byId.get(keys[0]) && byId.get(keys[0]).kind === "account") {
+          if (String(a[keys[0]]) === "indeterminate")
+            undecided.push({ title, id: titleToId.has(title) ? titleToId.get(title) : null, frame: keys[0] });
+          continue;
+        }
+        for (const k of keys) {
           const f = byId.get(k), v = String(a[k]);
-          if (!f || f.kind === "account" || !f.values.some(x => x.id === v)) { ok = false; break; }
+          const said = RESERVED_VALUES.includes(v) && f && (f.kind === "dimension" || f.kind === "verdict");
+          if (!f || f.kind === "account" || !(said || f.values.some(x => x.id === v))) { ok = false; break; }
           coords[k] = v;
         }
         if (!ok || !Object.keys(coords).some(k => byId.get(k).kind === "case")) continue;
@@ -459,8 +470,13 @@ export function framesOf(res, titleToId) {
       }
     }
   }
-  return { frames, cells };
+  return { frames, cells, undecided };
 }
+
+/** The values a cell may take besides the frame's own (profile 1.23): what the text says of a cell
+ *  when it gives no value -- that the combination cannot occur, or that it cannot be told. Twin of
+ *  check_argdown.py's RESERVED_VALUES; test_method_docs holds the two together. */
+export const RESERVED_VALUES = ["impossible", "indeterminate"];
 
 export function mechanismOf(res, titleToId) {
   const fm = res.frontMatter || {};

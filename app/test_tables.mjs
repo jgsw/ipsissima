@@ -36,6 +36,30 @@ console.log("frames: none (profile 1.21)");
   check(g.frames == null && T.caseTables(g).length === 0, "`frames: none` gives the page no frames and no table", JSON.stringify(g.frames));
 }
 
+console.log("what the text says of a cell instead of a value (profile 1.23)");
+{
+  // A STATEMENT, NOT SILENCE: the cell is filled, never compared, and the undecided reason is read.
+  // Mutations: drop RESERVED_VALUES from framesOf -> the cell is dropped and counted empty; let
+  // `get` return a reserved value -> the two rows are set apart on it.
+  const src = "===\ntitle: Said\nframes:\n" +
+    "    state: {kind: case, values: {small: Small states, mid: Midpowers, great: Great powers}}\n" +
+    "    aims:  {kind: dimension, values: [limited, unlimited]}\n" +
+    "    size:  {kind: dimension, values: [low, high]}\n" +
+    "    acts:  {kind: verdict, values: [balance, bandwagon]}\n" +
+    "    rival: {kind: account, values: {a: {claim: Price}, b: {claim: Habit}}}\n===\n\n" +
+    "[Small cannot]: No small state seeks unlimited aims. {about: [{state: small, aims: impossible}, {state: small, size: low}, {state: small, acts: bandwagon}]}\n" +
+    "    <+ [Mid]: Midpowers seek limited aims. {about: [{state: mid, aims: limited}, {state: mid, size: low}, {state: mid, acts: balance}]}\n\n" +
+    "[Price]: Price decides.\n    <- [Habit]: Habit decides.\n    <+ [Both fit]: The survey fits both. {about: {rival: indeterminate}}\n";
+  const g = toGraph(argdown.run({ input: src, ...RUN }));
+  const [t] = T.caseTables(g);
+  check(t && t.cells.small.aims && t.cells.small.aims.values[0] === "impossible" && !t.empty.some(e => e.row === "small" && e.column === "aims"),
+        "`impossible` fills its cell: the text is not silent there", JSON.stringify(t && t.cells.small));
+  check(t.said.length === 1 && t.said[0].value === "impossible", "and the table lists it as said", JSON.stringify(t.said));
+  check(t.apart.length === 0 && t.alike.length === 0, "a said cell is never compared: small and mid are not set apart on aims", JSON.stringify([t.apart, t.alike]));
+  check(T.undecided(g).length === 1 && T.undecided(g)[0].title === "Both fit" && T.undecided(g)[0].frame === "rival",
+        "a reason the text says does not tell the accounts apart is read", JSON.stringify(T.undecided(g)));
+}
+
 console.log("the definition and its counterexample");
 {
   const g = graphOf("frames/definition.argdown");
@@ -244,6 +268,26 @@ if (chromium) {
     await page.locator("#tables [data-tables-close]").click();
     await box("The definition").click({ button: "right" });
     await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
+
+    // WHAT THE TEXT SAYS INSTEAD OF A VALUE (profile 1.23), drawn as words, and the undecided reason.
+    // Mutations: drop TABLES_SAID -> the raw word "impossible"; drop the said class -> no italic cell;
+    // drop the undecided note in tablesAccountHTML -> no "does not tell them apart".
+    await open(build("frames/said.argdown", "said.html"));
+    await tablesBtn.click();
+    await page.waitForTimeout(250);
+    const saidCells = await page.$$eval("#tables td.said", tds => tds.map(t => t.textContent.trim()));
+    check(JSON.stringify(saidCells) === JSON.stringify(["cannot occur, the text says", "cannot be told, the text says"]) &&
+          await page.locator("#tables td.silent").count() === 1,
+          "a said cell reads as the text's statement, apart from the one silent cell", JSON.stringify(saidCells));
+    // Mutation: count said cells as values -> "a value in 5".
+    check(/The text gives a value in 3 of the 6 cells, says of 2 more that they cannot occur or cannot be told, and is silent in 1\./.test(await page.locator("#tables").innerText()),
+          "the summary counts the said cells apart from the values");
+    await page.locator("#tables select").selectOption("1");
+    await page.waitForTimeout(200);
+    check(/the text says it does not tell them apart/.test(await page.locator("#tables").innerText()),
+          "the account set marks the reason the text says does not tell its accounts apart");
+    await tablesBtn.click();
+    await page.waitForTimeout(150);
 
     // OPTIONS: a case worse on every ranked count, and a declared account set.
     await open(build("frames/options.argdown", "options.html"));

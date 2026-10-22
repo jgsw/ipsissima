@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.22",
+  "version": "1.23",
   "date": "2026-10-22",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -50,7 +50,7 @@
     "mechanism": {"type": "a chain id, or true", "summary": "The claim states a declared chain as a whole -- the account the text gives -- and stands for it in the argument: supported as one account, attacked by a rival, a premise of a bridge, where its steps count as the premise's. `true` stands for the whole mechanism of a map with no chains (since 1.20)."},
     "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"},
     "inconsistent": {"type": "string or list", "summary": "The claim is one of a set the text says cannot all hold (a trilemma, a dilemma, a trade-off): every member carries the same name. The reader is asked which they would give up, and shown what each would cost (since 18 Oct 2026)."},
-    "about": {"type": "map of frame to value, or a list of them", "summary": "The cell or cells of the text's own comparisons that the claim states: its case, and the value it gives on a dimension declared under `frames:` (since 20 Oct 2026; part of every reconstruction since 1.21)."}
+    "about": {"type": "map of frame to value, or a list of them", "summary": "The cell or cells of the text's own comparisons that the claim states: its case, and the value it gives on a dimension declared under `frames:` (since 20 Oct 2026; part of every reconstruction since 1.21). Reserved values, on a dimension or a verdict: `impossible` and `indeterminate`, what the text says of a cell instead of a value; alone on an account frame, `indeterminate` marks a reason the text says does not tell the accounts apart (since 1.23)."}
   },
 
   "pcs_data": {

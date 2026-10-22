@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.22 — 22 October 2026.** The machine-readable registry of everything below is
+**Version 1.23 — 22 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -127,7 +127,7 @@ On any claim or argument, in its `{data}` block:
 | `mechanism` | a chain id, or `true` | The claim states a declared chain as a whole and stands for it in the argument, as one node: §5, *A chain as one node* (*added in 1.20*). |
 | `question` | `{id, move, into}`, or a list | What the claim does to a declared question. `move` is `answers`, `reframes`, `splits` or `dissolves`; `into` names the question(s) that take its place, and a reframing or a split needs one. The census lists each question with the moves on it, and the page lists them from a pill in the orientation strip (*added in 1.17*). |
 | `inconsistent` | string, or a list | The claim is one of a set the **text says cannot all hold** — a trilemma, a dilemma, a trade-off it names — and every member carries the same name. Only a set the text itself states, never one the reconstruction finds. The Reasons view asks which the reader would give up, and shows what giving up each would cost the rest of the argument; a contradictory pair (`><`) needs no mark (*added 18 October 2026*). |
-| `about` | map of frame to value, or a list of them | The **cell the claim states** in one of the text's comparisons: `about: {case: I, justified: yes}` puts it in Case I's row, in the column *justified*, with the value *yes*. Two `case` frames together place it where they cross (`{study: s4, question: use}`). Values must be declared under `frames:`; an `account` frame is never named here, since its cells are the relations drawn (*added 20 October 2026*). |
+| `about` | map of frame to value, or a list of them | The **cell the claim states** in one of the text's comparisons: `about: {case: I, justified: yes}` puts it in Case I's row, in the column *justified*, with the value *yes*. Two `case` frames together place it where they cross (`{study: s4, issue: use}`). Values must be declared under `frames:`; an `account` frame is never named here, since its cells are the relations drawn (*added 20 October 2026*). Two reserved values say what the text says of a cell instead of a value, on a dimension or a verdict: `impossible` (the text says the combination cannot occur) and `indeterminate` (the text says it cannot be told). Alone on an account frame, `{<frame>: indeterminate}` marks a reason the text says does not tell the accounts apart. A said cell is not silence, so it is filled, and it is never compared (*since 1.23*). |
 
 ### The fidelity ladder
 
@@ -877,6 +877,13 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.23** (22 October 2026) let a cell record what the text says of it instead of a value, on
+James's ruling after the tables reading: a statement is not silence (Heuer on evidence that fits
+every hypothesis; Elman's logical and empirical compression; Ragin's "?" rows). `about:` takes the
+reserved values `impossible` and `indeterminate` on a dimension or a verdict, and
+`{<account frame>: indeterminate}` alone marks a reason the text says does not tell its accounts
+apart. Such cells are drawn in words and never compared. Every 1.22 file conforms unchanged.
 
 **1.22** (22 October 2026) made the words a frame or a question offers as the text's checkable, on
 James's ruling after the review of the extraction materials: B11's first duty asks that what the

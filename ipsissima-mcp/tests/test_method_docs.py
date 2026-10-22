@@ -113,12 +113,22 @@ values = {
     "the kinds of frame": list(ca.FRAME_KINDS),
     "the fidelity levels": list(P["fidelity"]),
     "the tags": ["#" + t for t in P["tags"]],
+    "the reserved cell values": list(ca.RESERVED_VALUES),
 }
 ALL = "\n".join(TEXT.values())
 for what, vals in values.items():
     missing = sorted(v for v in vals if v.lstrip("#") not in NAMED and v not in ALL)
     # Mutation: rename "dissolves" wherever the served method names it -> fails.
     check(f"{what}: every one is named", not missing, f"never named: {missing}")
+
+# THE RESERVED CELL VALUES live in three places: the checker, the graph reader and the tables
+# module. Mutation: add a word to one of them -> fails.
+_app = REPO / "app"
+_js_graph = re.search(r"RESERVED_VALUES = (\[[^\]]*\])", (_app / "argdown-graph.mjs").read_text(encoding="utf-8"))
+_js_tables = re.search(r"var RESERVED = (\[[^\]]*\])", (_app / "src" / "argdown-tables.js").read_text(encoding="utf-8"))
+check("the reserved cell values are the same in the checker, the graph reader and the tables module",
+      bool(_js_graph and _js_tables) and json.loads(_js_graph.group(1)) == list(ca.RESERVED_VALUES) ==
+      json.loads(_js_tables.group(1)), f"{_js_graph and _js_graph.group(1)} / {_js_tables and _js_tables.group(1)}")
 
 # THE DIGEST rides on every extract_text reply, and said "the only metadata keys anything reads"
 # while leaving out seven of them. It is now built from the registry; hold it there.

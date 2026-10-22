@@ -29,6 +29,13 @@ function same(a, b) { return a.length === b.length && a.every(function (x, i) { 
 /** One value or none: a cell the text gives two values is not compared, only shown. */
 function single(cell) { return cell && cell.values.length === 1 ? cell.values[0] : null; }
 
+/** WHAT THE TEXT SAYS OF A CELL INSTEAD OF A VALUE (profile 1.23): that it cannot occur, or cannot be
+ *  told. It fills the cell -- the text is not silent there -- and is never compared: a row that
+ *  "cannot" have a value differs from no other row on it, and meets no rule. Twin of
+ *  argdown-graph.mjs's RESERVED_VALUES. */
+var RESERVED = ["impossible", "indeterminate"];
+function isSaid(v) { return RESERVED.indexOf(v) >= 0; }
+
 function ruleOf(f) {
   var r = f && f.rule;
   if (!r || typeof r !== "object" || !r.when || typeof r.when !== "object" || r.then == null) return null;
@@ -68,7 +75,7 @@ function caseTables(graph) {
     var rows = rf.values;
     var dims = cols.filter(function (f) { return f.kind === "dimension"; });
     var verdicts = cols.filter(function (f) { return f.kind === "verdict"; });
-    var get = function (r, k) { return single(cells[r][k]); };
+    var get = function (r, k) { var v = single(cells[r][k]); return v == null || isSaid(v) ? null : v; };
 
     var empty = [];
     rows.forEach(function (r) { cols.forEach(function (c) { if (!cells[r.id][c.id]) empty.push({ row: r.id, column: c.id }); }); });
@@ -134,8 +141,14 @@ function caseTables(graph) {
       }); });
     }
 
+    var said = [];
+    rows.forEach(function (r) { cols.forEach(function (c) {
+      var cell = cells[r.id][c.id];
+      if (cell) cell.values.forEach(function (v) { if (isSaid(v)) said.push({ row: r.id, column: c.id, value: v }); });
+    }); });
+
     out.push({ frame: rf.id, label: rf.label, pinpoint: rf.pinpoint, rows: rows, columns: cols, cells: cells,
-               empty: empty, apart: apart, alike: alike, againstRule: againstRule, dominated: dominated,
+               empty: empty, said: said, apart: apart, alike: alike, againstRule: againstRule, dominated: dominated,
                filled: rows.length * cols.length - empty.length });
   });
   return out;
@@ -218,7 +231,12 @@ function declaredAccounts(graph) {
     .map(function (f) { return { frame: f.id, label: f.label, pinpoint: f.pinpoint, accounts: f.values }; });
 }
 
-var API = { caseTables: caseTables, crossTables: crossTables, declaredAccounts: declaredAccounts, accountRowsByCase: accountRowsByCase };
+/** The claims the text says do not tell an account set's accounts apart (`about: {<account frame>:
+ *  indeterminate}`): [{ frame, id, title }]. */
+function undecided(graph) { var F = framesOf(graph); return (F && F.undecided) || []; }
+
+var API = { caseTables: caseTables, crossTables: crossTables, declaredAccounts: declaredAccounts, accountRowsByCase: accountRowsByCase,
+            undecided: undecided, RESERVED: RESERVED, isSaid: isSaid };
 if (typeof module !== "undefined" && module.exports) module.exports = API;
 /** @type {any} */ (global).ArgdownTables = API;
 

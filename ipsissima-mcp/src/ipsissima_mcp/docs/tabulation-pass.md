@@ -84,9 +84,11 @@ The pass records the text's own comparisons, and only the text's.
   (ii) S believes that P, and (iii) S is justified in believing that P" becomes
   `rule: {then: yes, when: {holds: yes, believes: yes, justified: yes}, claim: "Definition a"}`.
   The page then shows which rows the rule gets wrong, which is the counterexample. Give only a rule
-  the text states, with the claim that states it. A rule here is always "all of these together";
-  where the text's rule is any other shape (two of three, any one of), leave it in its claim and
-  say in the frame's `note:` why it is not written as a rule.
+  the text states, with the claim that states it. A rule here is always "all of these together", and
+  it is read both ways, as "if and only if": the page names a row that meets the conditions and
+  gets another verdict, and a row that gets the verdict without meeting them. Where the text's rule
+  is any other shape (two of three, any one of), or runs one way only ("only if"; "if"), leave it
+  in its claim and say in the frame's `note:` why it is not written as a rule.
 - `note`: optional prose.
 
 **`frames: none`** records that you read the text for its comparisons and found none. Give the
@@ -135,6 +137,114 @@ are set against the questions they answer. (Ids are yours to choose; do not call
 `question`, which a claim already uses for the question layer. And "study" here is the text's word
 for any study: as a step's `basis`, `study` means a designed comparison only.) An `account` frame is never named in `about:`. Its
 cells are the relations drawn to the accounts' claims.
+
+**What the text says of a cell instead of a value** (profile 1.23). Two reserved values may stand
+in `about:` on a dimension or a verdict, beside the frame's own:
+
+- `impossible`: the text says the combination cannot occur ("no small state can seek unlimited
+  aims": `about: {state: small, aims: impossible}`);
+- `indeterminate`: the text says it cannot be told ("what great powers do abroad is unclear").
+
+Alone, on an account frame, `about: {why: indeterminate}` marks a reason the text says does not
+tell the accounts apart ("the survey fits either story"). Draw its relations to the accounts as
+well, as the text states them. A said cell is not silence: the table fills it in words, and never
+compares it with another row.
+
+## Reading a text's comparisons
+
+A cell is a claim about someone else's comparison: that this text puts this case here, on this
+dimension, with this value. Like a causal arrow, a cell says more than the words it came from. A
+filled grid looks complete, and an empty cell asks to be filled (Silver calls this "slotting").
+So a reconstruction can go wrong in two directions. It can lose a comparison the text makes, or it
+can complete one the text left open. The second is worse, because it cannot be seen.
+
+**What kind of table is it?** Collier, LaPorte and Seawright's template, and Elman's three goals,
+give the questions to ask:
+- **What is the overarching concept?** It is the frame's label. If the text names none, the label
+  is yours, so give it no inner quotation marks.
+- **What are the rows?**
+  - *Types*, defined by the dimensions (descriptive: "what constitutes this type?").
+  - *Cases*, assigned to types or verdicts (classificatory: "what is this a case of?").
+  - *Predicted outcomes* (explanatory: "if the theory is right, what do I expect?").
+
+  Types and cases are different rows. Where a text defines types and then places cases in them,
+  that is two frames: the types, and the cases with the type as their verdict. An ideal type with
+  no case is a row, not a gap (Bailey). Where the text draws a distinction within one type only
+  (individual or collective, within "repositioning"), the subtypes are a frame of their own:
+  left in the first, the other types' cells would read as the text's silence.
+- **What decides the verdict?** Only where the text says so:
+  - "iff (i), (ii) and (iii)" is a rule (`rule:`);
+  - a list of dimensions is not.
+
+  Goertz's test helps. A text that excludes a case for lacking an attribute treats the attribute
+  as necessary: map that exclusion as a claim. The rule built from it is your interpretation and
+  needs a warrant. A family-resemblance concept ("any three of four"), or several combinations
+  joined by "or", cannot be written as `rule:`. Leave it in its claim, with the frame's `note:`
+  saying why.
+
+**What is a value?** The text's word, at the text's strength.
+- **A value keeps the text's grade.** "Clearly justified" is yes. "Probably" is a hedge, and
+  "weak", "partly" or "some signs of" are the gray zone. Where the text grades a case, the grade is
+  the value (`[yes, partly, no]`, in its words). Where it hedges without grading, the hedge stays in
+  the claim's words.
+- **A value keeps the text's negative pole.** Where the text's "no" is several things (pluralism,
+  monism, syndicalism), the values say so (Goertz).
+- **Turning a number into a category is your act,** unless the text does it. If the text reports
+  an odds ratio and never says "benefit", a cell `effect: benefit` is an interpretation, with a
+  warrant (Cochrane Handbook, ch. 12).
+- **Never code non-significance as "no effect".** "No significant difference" keeps its words
+  (Altman and Bland; Ogilvie et al.).
+- **The claim that carries a cell is its context unit.** It should say the value plainly, and
+  quote where it can, because the quotation is what shows the value preserves the text's reading
+  (Krippendorff's semantic validity).
+
+**What is silence, and what is a statement?** Only silence is an empty cell. When the text says
+something about a cell other than a value, that is a statement, and it is mapped as a claim:
+- "this finding cannot tell the two accounts apart" (Heuer): `about: {<accounts>: indeterminate}`;
+- "no small state can be an unlimited revisionist" (Elman's logical compression): the cell is
+  `impossible`;
+- "it is unclear what they would do" (Mearsheimer, in Elman): the cell is `indeterminate`;
+- "we found no case of this kind" (empirical compression): a claim, with a note naming the
+  combination, since no row holds it;
+- "we have no evidence that…" (Heuer): an attack on the account it names, not silence.
+
+Ragin writes an empty row as "?". Filling it, even with the obvious value, is a simplifying
+assumption, and such assumptions should not be grafted onto a conclusion "in a mechanistic
+fashion because, after all, we *do* care". Leave it empty.
+
+**What a reader does, the extractor does not do.**
+- **No expansion.** Do not reconstruct the full property space behind a partial typology, and do
+  not tease out the dimensions behind a list of types. Lazarsfeld called this substruction, and
+  Elman calls it reverse engineering, done without assuming the author had it in mind. It is how a
+  reader finds what the text omitted, so record the typology as the text gives it.
+- **No matching.** The census shows pairs of rows that differ in one dimension (Mill's matched
+  cases). Never add a row to make one.
+- **No test labels.** Whether a finding is a hoop or a smoking gun "involves different assumptions
+  and interpretations" (Collier 2011). Keep the text's words where it names a test itself.
+- **No allocation.** A study with mixed results is not filed under the account it "best supports"
+  (Ogilvie et al.). Draw each relation the text states.
+
+**Rival accounts: work across the row.** As each finding is written, ask of every declared account
+whether the text relates the finding to it. Evidence that fits every account has no diagnostic
+value (Heuer), and a table cannot show that unless the relations are drawn. The text's own
+assumptions are rows too, where it states them. Declare accounts as the text words them: do not
+merge two it keeps apart, or split one it treats as one.
+
+**Keep what the text says about its own scheme.**
+- **The dimensions behind a type's name.** Where the text says what makes a type, place the type by
+  those dimensions. A frame of vivid names alone invites reification (Elman; Bailey).
+- **An author's caution about a type** ("some signs of institutional clustering").
+- **A text's own counts** ("most studies found"). These are its claims; never rebuild them from the
+  cells (Cochrane Handbook, ch. 12).
+- **Its grouping and order of studies.** The rows follow the text (SWiM).
+- **A study's characteristics apart from its results.** They are separate frames.
+- **A contradictory row.** Two cases in the same cells with different verdicts is a finding, not a
+  slip. Record both (Ragin).
+- **Imagined cases.** A thought experiment or counterfactual case is a row, and its label or note
+  says it is imagined.
+- **A placement that moves.** Where the text moves a case from one value to another ("from
+  inadvertence to intent"), or two sides place it differently, cross the cases with a frame of the
+  stages or the sides, so that each value has its own cell.
 
 ## The order of work, inside the reconstruction's
 
@@ -218,3 +328,34 @@ The trial maps were Gettier 1963, Stone 1989, Valentino et al. 2018 and Bates et
   page may say one option is worse on every count the text weighs; it never adds the counts up.
 - **Turn a reason into a coordinate.** A claim supports or attacks what it does. `about:` says
   only what the claim is about.
+
+## Sources
+
+- Richards J. Heuer Jr, *Psychology of Intelligence Analysis* (CIA Center for the Study of
+  Intelligence, 1999), ch. 8: diagnosticity; working across the matrix; absence of evidence.
+- Gary Goertz, *Social Science Concepts: A User's Guide* (Princeton University Press, 2006), ch. 2:
+  necessary-and-sufficient against family-resemblance structures; the negative pole; the gray zone.
+- Colin Elman, "Explanatory typologies in qualitative studies of international politics",
+  *International Organization* 59 (2005), 293–326: compression and expansion of property space,
+  after Paul F. Lazarsfeld and Allen H. Barton; reification; puzzle relabelling.
+- David Collier, Jody LaPorte and Jason Seawright, "Putting typologies to work", *Political Research
+  Quarterly* 65 (2012), 217–232: the template for a typology, and its errors.
+- Kenneth D. Bailey, *Typologies and Taxonomies* (Sage, 1994), ch. 1: types and cases; monothetic
+  and polythetic classes; ideal and polar types.
+- Charles C. Ragin, *The Comparative Method* (University of California Press, 1987), chs 6–7, and
+  *Redesigning Social Inquiry* (University of Chicago Press, 2008), ch. 8: the truth table; limited
+  diversity; remainders and simplifying assumptions; counterfactual and matched cases.
+- Klaus Krippendorff, *Content Analysis*, 4th edn (Sage, 2019): coding, context units, semantic
+  validity.
+- Douglas Walton, Chris Reed and Fabrizio Macagno, *Argumentation Schemes* (Cambridge, 2008),
+  schemes 14–17: argument from verbal classification and its critical questions.
+- Joanne E. McKenzie and Sue E. Brennan, ch. 12 of the *Cochrane Handbook for Systematic Reviews of
+  Interventions*, 2nd edn (Wiley, 2019); Mhairi Campbell et al., "Synthesis without meta-analysis
+  (SWiM) in systematic reviews", *BMJ* 368 (2020), l6890; David Ogilvie et al., "The harvest
+  plot", *BMC Medical Research Methodology* 8 (2008), 8: tables of studies; vote counting; the
+  ambiguous null.
+- David Collier, "Understanding process tracing", *PS: Political Science & Politics* 44 (2011),
+  823–830: the four tests, and that assigning one is a judgement.
+- Daniel Silver, "Figure It Out!", *Sociological Methods & Research* 49 (2020), 868–905:
+  cross-classification and slotting; W. Baldamus on cross-classification's missing stopping rule,
+  cited through Silver (p. 880).

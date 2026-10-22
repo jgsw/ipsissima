@@ -1,0 +1,39 @@
+// Planted fixture for profile 1.23 (22 Oct 2026), in the fixture-maker's own words: what a text says
+// of a cell instead of giving it a value. Small states cannot have unlimited aims (impossible); what
+// great powers do abroad the text leaves undecided (indeterminate); and a survey the text says fits
+// both accounts of why visits fell. Answers: the table shows two said cells and one empty cell (the
+// midpowers' verdict); the account set's survey row says the text finds it does not tell them apart.
+===
+title: "Planted -- said, not silent"
+reconstruction:
+    generated: true
+frames:
+  state:
+    kind: case
+    label: "Kinds of state"
+    pinpoint: "planted"
+    values: {small: "Small states", mid: "Midpowers", great: "Great powers"}
+  aims: {kind: dimension, label: "aims", pinpoint: "planted", values: [limited, unlimited]}
+  acts: {kind: verdict, label: "what they do abroad", pinpoint: "planted", values: [balance, bandwagon]}
+  why:
+    kind: account
+    label: "Why visits fell"
+    pinpoint: "planted"
+    values:
+      hours: {claim: "Shorter hours cut visits"}
+      online: {claim: "Reading moved online"}
+===
+
+[States act by their aims]: What a state does abroad follows from its aims.
+    <+ [Small states cannot aim at everything]: No small state can seek unlimited aims.
+        {about: [{state: small, aims: impossible}, {state: small, acts: bandwagon}]}
+    <+ [Midpowers aim low]: Midpowers seek limited aims.
+        {about: {state: mid, aims: limited}}
+    <+ [Great powers are unclear abroad]: Great powers seek unlimited aims, and what they do abroad is unclear.
+        {about: [{state: great, aims: unlimited}, {state: great, acts: indeterminate}]}
+
+[Shorter hours cut visits]: Visits fell because the library opened for fewer hours.
+    <+ [The survey fits both]: The survey of readers fits either story.
+        {about: {why: indeterminate}}
+    <- [Reading moved online]: Visits fell because people read online instead. #reported
+        <+ [The survey fits both]

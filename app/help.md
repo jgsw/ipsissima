@@ -1059,6 +1059,9 @@ the text makes about it. Beneath the table the panel names the moves the table a
 
 - **an empty cell** is where the text says nothing. It stays empty: what the text would say there
   is the question to ask, and the table never fills it.
+- **a cell in italics** is not empty and not a value: the text says that this combination *cannot
+  occur*, or that it *cannot be told*. The cell is never compared with another. In a table of rival
+  accounts, a reason the text says does not tell them apart is marked so beneath it.
 - **against the rule**: a case that meets the conditions the text states for a verdict and is given
   another (Gettier's cases against the definition of knowledge).
 - **alike, and given different verdicts**: two cases the same in every stated respect, so something

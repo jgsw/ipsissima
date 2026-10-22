@@ -133,6 +133,39 @@ print("a frame called `true`")
 found, _ = run(td / "true.argdown")
 check("the fault names the boolean", any("read as a boolean" in (f.get("fix") or "") for f in found), True)
 
+print("what the text says of a cell instead of a value (profile 1.23)")
+# A statement is not silence: "no small state can be an unlimited revisionist" (impossible), "the text
+# leaves it unclear" (indeterminate), and a reason the text says does not tell its accounts apart.
+# Mutations: drop the RESERVED_VALUES branch -> the first is a fault; drop the account exception ->
+# the undecided reason is a fault; accept a reserved value on a case -> the misuse passes.
+rd = Path(tempfile.mkdtemp())
+(rd / "said.argdown").write_text(
+    "===\ntitle: Said, not silent\nframes:\n"
+    "    state: {kind: case, pinpoint: p. 1, values: {small: Small states, great: Great powers}}\n"
+    "    aims:  {kind: dimension, pinpoint: p. 1, values: [limited, unlimited]}\n"
+    "    acts:  {kind: verdict, pinpoint: p. 2, values: [balance, bandwagon]}\n"
+    "    rival: {kind: account, pinpoint: p. 3, values: {a: {claim: Price}, b: {claim: Habit}}}\n===\n\n"
+    "[Small states are never unlimited]: No small state can seek unlimited aims.\n"
+    "    {about: {state: small, aims: impossible}}\n"
+    "    <+ [Great powers are unclear]: What great powers do abroad is unclear. {about: {state: great, acts: indeterminate}}\n\n"
+    "[Price]: Price decides.\n    <- [Habit]: Habit decides.\n"
+    "    <+ [Both fit]: The survey fits both stories. {about: {rival: indeterminate}}\n", encoding="utf-8")
+found, shape = run(rd / "said.argdown")
+check("`impossible` and `indeterminate` fill cells, and an undecided reason is counted, with no fault",
+      ([f["message"] for f in found if f["severity"] == "!"], (shape or {}).get("said"), (shape or {}).get("undecided")),
+      ([], 2, 1))
+(rd / "misuse.argdown").write_text(
+    "===\ntitle: Misused\nframes:\n"
+    "    state: {kind: case, pinpoint: p. 1, values: {small: Small states}}\n"
+    "    aims:  {kind: dimension, pinpoint: p. 1, values: [limited, unlimited]}\n"
+    "    rival: {kind: account, pinpoint: p. 3, values: {a: {claim: Price}, b: {claim: Habit}}}\n===\n\n"
+    "[Price]: Price decides. {about: {state: impossible, aims: limited}}\n"
+    "    <- [Habit]: Habit decides. {about: {rival: impossible}}\n", encoding="utf-8")
+found, _ = run(rd / "misuse.argdown")
+check("  but a case cannot be `impossible`, and an account frame takes `indeterminate` only",
+      sorted(f["message"].split(":")[0] for f in found if f["severity"] == "!"),
+      sorted(["`state", "`about"]))
+
 print("the text's words in a frame or a question, verified (ruled 22 Oct 2026)")
 # B11's first duty by the rule claims already follow: words in double quotation marks INSIDE a
 # label or a question's text claim to be the text's and are checked; words without them are the

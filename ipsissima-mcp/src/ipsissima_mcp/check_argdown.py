@@ -2244,6 +2244,13 @@ def questions_report(cli, path, source_root=None):
 
 
 FRAME_KINDS = ("case", "dimension", "verdict", "account")
+#: WHAT THE TEXT SAYS OF A CELL INSTEAD OF A VALUE (profile 1.23, ruled 22 Oct 2026, after the tables
+#: reading): that the combination cannot occur (Elman's logical compression; "no small state can be
+#: an unlimited revisionist"), or that it cannot be told (Mearsheimer's "unclear"; Heuer's evidence
+#: that fits every account). A statement, not silence: it fills the cell, and is never compared. On
+#: a dimension or a verdict, and -- `indeterminate` only -- on an account frame, where the claim is a
+#: reason the text says does not tell the accounts apart. Twin of argdown-graph.mjs's RESERVED_VALUES.
+RESERVED_VALUES = ("impossible", "indeterminate")
 FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "rule", "note")
 
 
@@ -2382,12 +2389,19 @@ def frames_report(cli, path, source_root=None):
     cells = {}          # (case frame, case value, column frame) -> {value: [titles]}
     crossed = {}        # (case frame, other case frame) -> count
     used = {fid: set() for fid in frames}
+    said = undecided = 0
     for title, cell in placed:
         where = {"title": title}
         if not isinstance(cell, dict) or not cell:
             finding("frames", "!", "`about:` must map frames to values, or be a list of such maps",
                     fix="about: {case: I, justified: yes}", **where)
             continue
+        # A REASON THE TEXT SAYS DOES NOT TELL ITS ACCOUNTS APART: `about: {<account frame>: indeterminate}`.
+        if len(cell) == 1:
+            (k1, v1), = cell.items()
+            if str(k1) in frames and frames[str(k1)]["kind"] == "account" and str(v1) == "indeterminate":
+                undecided += 1
+                continue
         ok, coords = True, {}
         for k, v in cell.items():
             k, v = str(k), str(v)
@@ -2400,7 +2414,16 @@ def frames_report(cli, path, source_root=None):
                 ok = False
             elif frames[k]["kind"] == "account":
                 finding("frames", "!", f"`about:` names the account frame `{k}`: an account's cells are the "
-                        "relations drawn to its claim, not coordinates", fix="draw the support or attack", **where)
+                        "relations drawn to its claim, not coordinates -- except, alone, as "
+                        f"`{{{k}: indeterminate}}`, where the text says this reason does not tell the accounts apart",
+                        fix="draw the support or attack", **where)
+                ok = False
+            elif v in RESERVED_VALUES and frames[k]["kind"] in ("dimension", "verdict"):
+                coords[k] = v
+                said += 1
+            elif v in RESERVED_VALUES:
+                finding("frames", "!", f"`{k}: {v}`: a case is a row, so it cannot be `{v}` -- say it of a "
+                        "dimension or the verdict", **where)
                 ok = False
             elif v not in frames[k]["values"]:
                 finding("frames", "!", f"`{k}: {v}` is not one of frame `{k}`'s values "
@@ -2454,10 +2477,15 @@ def frames_report(cli, path, source_root=None):
         out.append(dict(frame=c, rows=len(f["values"]), columns=cols, filled=filled, cells=size,
                         crossed=[k for (a, k) in crossed if a == c]))
     accounts = [dict(frame=fid, accounts=list(f["values"])) for fid, f in frames.items() if f["kind"] == "account"]
-    SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed), quoted=f_quoted)
+    SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed), quoted=f_quoted,
+                           said=said, undecided=undecided)
     print(f"\n   FRAMES ({len(frames)}): the comparisons the text makes, and {len(placed)} cell(s) placed")
     if f_quoted:
         print(f"      {f_quoted} quoted span(s) in labels verified as the text's own words")
+    if said:
+        print(f"      {said} cell(s) where the text says the combination cannot occur or cannot be told")
+    if undecided:
+        print(f"      {undecided} reason(s) the text says do not tell its accounts apart")
     for t in out:
         if t["columns"]:
             print(f"      {t['frame']}: {t['rows']} case(s) x {len(t['columns'])} column(s) "

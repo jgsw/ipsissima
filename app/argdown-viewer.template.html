@@ -810,6 +810,7 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #tables thead th.an .sub{font-size:10.5px;color:var(--fg-dim)}
 #tables td.hid{color:var(--fg-dim);text-align:center}
 #tables td.silent{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line,#ddd) 5px 6px)}
+#tables td.said{font-style:italic;color:var(--muted,#666)}
 #tables td.two{box-shadow:inset 0 0 0 1px var(--fg-dim)}
 #tables td .sep{color:var(--fg-dim)}
 #tables td .cl + .cl{margin-top:.3rem}
@@ -9705,7 +9706,10 @@ function tablesRender(){
   box.hidden = ARRANGEMENT === "mechanism";
 }
 /** A frame's value as the text words it. */
+// WHAT THE TEXT SAYS INSTEAD OF A VALUE (profile 1.23): the cell is not silent, and says so in words.
+var TABLES_SAID = { impossible: "cannot occur, the text says", indeterminate: "cannot be told, the text says" };
 function tablesValueLabel(frame, v){
+  if (TABLES_SAID[v]) return TABLES_SAID[v];
   var x = frame && frame.values.filter(function(y){ return y.id === v; })[0];
   return x ? x.label : v;
 }
@@ -9743,7 +9747,8 @@ function tablesCaseHTML(t){
           if (!cell) return '<td class="silent" title="The text says nothing here"></td>';
           var f = tablesFrame(c.id), mine = here != null && cell.claims.some(function(x){ return x.id === here; });
           if (cell.values.length > 1) multi.push({ row: r.id, col: c.id, values: cell.values });
-          return '<td' + (cell.values.length > 1 ? ' class="two" title="Two values: does the text say both?"' : '') + '>' + cell.values.map(function(v){
+          var saidAll = cell.values.every(function(v){ return TABLES_SAID[v]; });
+          return '<td' + (cell.values.length > 1 ? ' class="two" title="Two values: does the text say both?"' : saidAll ? ' class="said" title="Not a value: what the text says of this cell"' : '') + '>' + cell.values.map(function(v){
             var by = cell.claims.filter(function(x){ return x.value === v; });
             return tablesGo(by.map(function(x){ return x.id; }), tablesValueLabel(f, v), mine && by.some(function(x){ return x.id === here; }));
           }).join('<span class="sep"> / </span>') + '</td>';
@@ -9776,8 +9781,11 @@ function tablesCaseHTML(t){
     moves.push('<b>' + esc(rowLabel(m.row)) + '</b> is given ' + m.values.length + ' values for ' + esc(colLabel(m.col)) + ' (' + m.values.map(function(v){ return esc(tablesValueLabel(tablesFrame(m.col), v)); }).join(', ') +
       '). Does the text say both? A cell with two values is shown, and left out of the comparisons.');
   });
-  var lead = t.empty.length ? 'The text fills ' + t.filled + ' of the ' + cells + ' cells, and is silent in ' + t.empty.length + '. An empty cell is left empty: what the text would say there is yours to ask.'
-                            : 'The text fills every cell.';
+  // A SAID CELL IS NOT A VALUE (profile 1.23): counted apart, so "fills" never claims a value the text did not give.
+  var said = (t.said || []).length, valued = t.filled - said;
+  var saidW = said ? ', says of ' + said + ' more that ' + (said === 1 ? 'it' : 'they') + ' cannot occur or cannot be told' : '';
+  var lead = t.empty.length ? 'The text gives a value in ' + valued + ' of the ' + cells + ' cells' + saidW + ', and is silent in ' + t.empty.length + '. An empty cell is left empty: what the text would say there is yours to ask.'
+                            : said ? 'The text gives a value in ' + valued + ' of the ' + cells + ' cells' + saidW + '.' : 'The text fills every cell.';
   if (ask.rows && TABLES.picks.length) {
     var hit = TABLES.picks.filter(function(id){ return ask.rows.indexOf(id) >= 0; }).length, missed = ask.rows.filter(function(id){ return TABLES.picks.indexOf(id) < 0; }).length;
     lead = 'You marked ' + TABLES.picks.length + '; ' + hit + ' of them ' + esc(ask.word) + (missed ? '. You did not mark ' + missed + ' that ' + (missed === 1 ? 'does' : 'do') : '') + '. ' + lead;
@@ -9839,6 +9847,8 @@ function tablesAccountHTML(T){
     '<div class="q">The map gives no reason directly for or against these accounts.</div>';
   if (!shown) h += '<div class="ask">Which of these tell the accounts apart? Click the ones you think do, then press <b>Show</b>.</div>';
   var word = { "for": "for", against: "against", both: "both" }, kindW = { apart: "<b>tells them apart</b>", alike: "bears on both alike", one: "on one only" };
+  // THE TEXT'S OWN WORD that a reason does not tell these accounts apart (`about: {frame: indeterminate}`).
+  var undecided = ArgdownTables.undecided(CURRENT_GRAPH).filter(function(u){ return u.frame === S.frame; }).map(function(u){ return u.id; });
   h += '<div class="twrap"><table class="ttab acc"><thead><tr><th></th>' + acc.map(function(a){ return '<th class="c an">' + tablesGo([a.id], '‹' + a.label + '›') + '<div class="sub">' + role(a) + '</div></th>'; }).join("") + (shown ? '<th></th>' : '') + '</tr></thead><tbody>' +
     T.groups.map(function(g, gi){
       var key = "g" + gi, picked = TABLES.picks.indexOf(key) >= 0;
@@ -9846,7 +9856,7 @@ function tablesAccountHTML(T){
                          : (shown ? tablesGo([g.rows[0]], '‹' + weighLabel(g.rows[0]) + '›', g.rows[0] === TABLES.here) : '‹' + esc(weighLabel(g.rows[0])) + '›');
       return '<tr data-tables-row="' + key + '"' + (picked ? ' class="pick"' : '') + '><th scope="row">' + (picked ? '✓ ' : '') + head + '</th>' +
         acc.map(function(a){ var v = g.cells[a.id]; return shown ? (v ? '<td class="c">' + word[v] + '</td>' : '<td class="c silent" title="The text does not say what this account would make of it"></td>') : '<td class="c hid">·</td>'; }).join("") +
-        (shown ? '<td class="k">' + kindW[g.kind] + '</td>' : '') + '</tr>';
+        (shown ? '<td class="k">' + kindW[g.kind] + (g.rows.some(function(id){ return undecided.indexOf(id) >= 0; }) ? '<div class="sub"><i>the text says it does not tell them apart</i></div>' : '') + '</td>' : '') + '</tr>';
     }).join("") + '</tbody></table></div>';
   if (!shown) return h + '<div>Marked: ' + TABLES.picks.length + '. <button type="button" data-tables-show="1">Show</button></div>';
   var apart = T.groups.map(function(g, gi){ return g.kind === "apart" ? "g" + gi : null; }).filter(Boolean);
