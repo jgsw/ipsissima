@@ -118,20 +118,6 @@ GOALS = ("explain", "intervene", "predict", "attribute")
 #: the mechanism was considered and not mapped. The last two say why, in `depth_reason`.
 DEPTHS = ("full", "sketch", "none")
 
-#: THE ORDER A CHAIN'S STEPS ARE TOLD IN (profile 1.17). A pragmatic genealogy is a dynamic model whose
-#: stages come in the order complications are added -- "later primarily means less idealized"
-#: (Queloz 2021, p. 16) -- not the order of history; the chart lays every chain out left to right,
-#: and every reader takes that as time. Mistaking one for the other is the first genetic fallacy
-#: Cohen and Nagel named. `time` is the default.
-CHAIN_ORDERS = ("time", "explanation")
-
-
-def _order(block):
-    """A block's or a chain's declared `order`, or None."""
-    o = block.get("order") if isinstance(block, dict) else None
-    return None if o is None else str(o)
-
-
 def depth_of(block):
     """(depth, reason) of a mechanism block: `full` unless it says otherwise."""
     if not isinstance(block, dict) or block.get("depth") is None:
@@ -194,14 +180,14 @@ RELATION_KEYS = _relation_keys()
 
 
 def _declaration_keys():
-    """{"block", "states", "actors", "chains", "kinds", "channels"}: the keys each part of the
-    `mechanism:` block may carry, from the registry, as RELATION_KEYS has them for steps."""
+    """{"block", "states", "actors", "chains", "kinds"}: the keys each part of the `mechanism:`
+    block may carry, from the registry, as RELATION_KEYS has them for steps."""
     try:
         import json
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
                   encoding="utf-8") as fh:
             m = json.load(fh)["mechanism"]
-        out = {"block": frozenset(k for k in m if k != "summary"), "channels": frozenset({"label"})}
+        out = {"block": frozenset(k for k in m if k != "summary")}
         for part in ("states", "actors", "chains", "kinds"):
             out[part] = frozenset(m[part]["keys"])
         return out
@@ -216,6 +202,32 @@ def _declaration_keys():
 DECLARATION_KEYS = _declaration_keys()
 
 
+def _retired():
+    """{part: {key: what to write instead}} for the keys profile 1.25 retired, from the registry."""
+    try:
+        import json
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "profile.json"),
+                  encoding="utf-8") as fh:
+            r = json.load(fh).get("retired") or {}
+        return {part: {k: v.get("instead", "") for k, v in keys.items()}
+                for part, keys in r.items() if isinstance(keys, dict)}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+#: RETIRED KEYS (profile 1.25, ruled 22 Oct 2026): keys added one trial at a time that almost no
+#: ordinary map used and few readers would find plain -- most of them the diagram comparison's (9 Oct).
+#: An old map that still carries one is told what to write instead; the key is not read.
+RETIRED = _retired()
+_RETIRED_SAID = "was retired in profile 1.25 and is not read"
+
+
+def _retired_in(d, part):
+    """(key, what to write instead) for each retired key `d` carries in part `part`."""
+    gone = RETIRED.get(part) or {}
+    return [(str(k), gone[str(k)]) for k in (d if isinstance(d, dict) else {}) if str(k) in gone]
+
+
 def _unknown_in(d, part):
     """(key, nearest known key or None) for each key of `d` that part `part` of the block may not carry."""
     import difflib
@@ -224,7 +236,7 @@ def _unknown_in(d, part):
         return []
     out = []
     for k in d:
-        if str(k) not in known:
+        if str(k) not in known and str(k) not in (RETIRED.get(part) or {}):
             near = difflib.get_close_matches(str(k), sorted(known), n=1, cutoff=0.6)
             out.append((str(k), near[0] if near else None))
     return out
@@ -238,7 +250,7 @@ def _unknown_keys(c, kind):
         return []
     out = []
     for k in c:
-        if str(k) not in known:
+        if str(k) not in known and str(k) not in (RETIRED.get(kind) or {}):
             near = difflib.get_close_matches(str(k), sorted(known), n=1, cutoff=0.6)
             out.append((str(k), near[0] if near else None))
     return out
@@ -273,13 +285,6 @@ def bridges_of(doc, step_titles):
                 out.append((title, step, scheme["name"], titles, [t for t in titles if t in step_titles]))
             prev, run, step = n, [], step + 1
     return out
-#: HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14): the account of causation it works with -- regular
-#: succession, manipulation, a mechanism, counterfactual difference, or intra-action, where relations
-#: constitute what they relate (Hertz et al. 2024, "Eliciting the plurality of causal reasoning", Table 1;
-#: counterfactual dependence from the Primer, ch. 4).
-#: What an arrow means differs with each.
-ACCOUNTS = ("regularity", "manipulability", "mechanism", "counterfactual", "intra-action")
-EXPERIMENTAL = ("experiment", "replication", "quasi-experiment", "natural experiment")
 #: WHAT A STEP IS ABOUT: a particular case ("the assassination caused the war") or a general
 #: relation between kinds or variables ("exercise increases fitness"). They need different evidence:
 #: a general claim cannot be read off one case without background knowledge (pp. 44-47).
@@ -310,11 +315,6 @@ NOT_ENOUGH = re.compile(r"\b(itself|by itself|alone|on its own|single-handedly|q
 #: `condition` is a standing arrangement. Recorded from the text's grammar, not the reconstructor's
 #: metaphysics, so the census can say whether a chain is told in nouns or in verbs.
 ASPECTS = ("quantity", "activity", "development", "event", "condition")
-#: BEHAVIOUR OVER TIME (1.19, after Meadows): the shape the text says a state follows, drawn as a sketch
-#: on its box. Half of Meadows's figures are such graphs, and her prose explains a structure by them.
-BEHAVIOURS = ("grows", "declines", "levels off", "s-shaped", "oscillates", "overshoot and collapse", "steady")
-#: A RELATION THAT RISES AND FALLS (1.19): Meadows's fish breed most at middling density.
-SHAPES = ("peak", "trough")
 NOUN_ASPECTS = ("quantity", "condition")
 #: WHAT A STEP ACTS ON. `level` and `trend` since 1.8; since 1.11 a step may MAKE or UNMAKE its `to`
 #: (`being`, + and -), MAINTAIN or ERODE it (`persistence`: Hu's institutions "produce and maintain
@@ -566,13 +566,6 @@ def declared(fm):
         if s.get("aspect") is not None and str(s.get("aspect")) not in ASPECTS:
             problems.append(("?", f"state `{sid}` has `aspect: {s.get('aspect')}`; the aspects read are "
                                   f"{', '.join(ASPECTS)}", {"state": str(sid)}))
-        # 1.19: BEHAVIOUR, OBSERVED, DEAD END -- the diagram comparison's findings 6, 18 and 20.
-        if s.get("behaviour") is not None and str(s.get("behaviour")) not in BEHAVIOURS:
-            problems.append(("!", f"state `{sid}` has `behaviour: {s.get('behaviour')}`; the behaviours read are "
-                                  f"{', '.join(BEHAVIOURS)}", {"state": str(sid)}))
-        for key in ("observed", "dead_end"):
-            if s.get(key) is not None and not isinstance(s.get(key), bool):
-                problems.append(("!", f"state `{sid}`: `{key}:` is `true` or `false`, not `{s.get(key)}`", {"state": str(sid)}))
         # A STATE ACROSS LEVELS (profile 1.4): Wimmer's consensus, reached in micro-level
         # negotiation and holding as a macro-level fact; the Coleman boat's transformational step.
         for lv in _as_list(s.get("levels")):
@@ -641,14 +634,6 @@ def declared(fm):
     chains = m.get("chains")
     if chains is not None and not isinstance(chains, dict):
         problems.append(("!", "`chains:` must map ids to chains, each with a `label` and a `question`", {}))
-    for sev, msg, where in form_of(m)[2]:
-        problems.append((sev, msg, where))
-    if _order(m) is not None and _order(m) not in CHAIN_ORDERS:
-        problems.append(("!", f"`order: {_order(m)}` is not one of {', '.join(CHAIN_ORDERS)}", {}))
-    for _cid, _ch in ((m.get("chains") or {}).items() if isinstance(m.get("chains"), dict) else ()):
-        if _order(_ch) is not None and _order(_ch) not in CHAIN_ORDERS:
-            problems.append(("!", f"chain `{_cid}`: `order: {_order(_ch)}` is not one of {', '.join(CHAIN_ORDERS)}",
-                             {"chain": str(_cid)}))
     _d, _why = depth_of(m)
     if _d not in DEPTHS:
         problems.append(("!", f"`depth: {_d}` is not one of {', '.join(DEPTHS)}", {}))
@@ -657,32 +642,12 @@ def declared(fm):
                               f"`depth_reason:` says why", {"fix": "add a one-line `depth_reason:`"}))
     if m.get("goal") is not None and str(m.get("goal")) not in GOALS:
         problems.append(("?", f"`goal: {m.get('goal')}` is not one of {', '.join(GOALS)}", {}))
-    for a in _as_list(m.get("account")):
-        if a not in ACCOUNTS:
-            problems.append(("?", f"`account: {a}` is not one of {', '.join(ACCOUNTS)}", {}))
-    # CHANNELS (1.19): the kinds of link the text tells apart, each in its own words -- ecological
-    # against social (the Coleman-boat paper), signalling against metabolic (Rena et al.).
-    chs = m.get("channels")
-    if chs is not None and not isinstance(chs, dict):
-        problems.append(("!", "`channels:` maps an id to `{label}`", {}))
-    problems.extend(_boundary_problems(m, {}, ""))
     for cid, ch in (chains.items() if isinstance(chains, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
-        problems.extend(_boundary_problems(ch, {"chain": str(cid)}, f"chain `{cid}`: "))
-        # CONDITIONED ON (1.19, Knight and Winship): the states this chain's analysis holds fixed; a
-        # list inside the list is states that cannot be conditioned on apart.
-        for item in _as_list(ch.get("conditioned")) if not isinstance(ch.get("conditioned"), list) else ch.get("conditioned"):
-            for sid in (item if isinstance(item, list) else [item]):
-                if str(sid) not in states:
-                    problems.append(("!", f"chain `{cid}`: `conditioned:` names `{sid}`, which is not a declared state",
-                                     {"chain": str(cid)}))
         for sev, msg, _ in form_of(ch)[2]:
             problems.append((sev, f"chain `{cid}`: {msg}", {"chain": str(cid)}))
         if ch.get("goal") is not None and str(ch.get("goal")) not in GOALS:
             problems.append(("?", f"chain `{cid}`: `goal: {ch.get('goal')}` is not one of {', '.join(GOALS)}", {"chain": str(cid)}))
-        for a in _as_list(ch.get("account")):
-            if a not in ACCOUNTS:
-                problems.append(("?", f"chain `{cid}`: `account: {a}` is not one of {', '.join(ACCOUNTS)}", {"chain": str(cid)}))
         roles = ch.get("roles") or {}
         if not isinstance(roles, dict):
             problems.append(("!", f"chain `{cid}`: `roles:` must map state ids to roles", {"chain": str(cid)}))
@@ -701,14 +666,17 @@ def declared(fm):
     for k, near in _unknown_in(m, "block"):
         problems.append(("!", f"`{k}` is not a key the `mechanism:` block can carry, so it is never "
                               f"read" + _dym(near), {}))
+    for k, instead in _retired_in(m, "block"):
+        problems.append(("?", f"`{k}` on the `mechanism:` block {_RETIRED_SAID}: {instead}", {}))
     for part, noun, a in (("states", "state", "a state"), ("actors", "actor", "an actor"),
-                          ("chains", "chain", "a chain"), ("kinds", "kind", "a kind"),
-                          ("channels", "channel", "a channel")):
+                          ("chains", "chain", "a chain"), ("kinds", "kind", "a kind")):
         coll = m.get(part)
         for xid, x in (coll.items() if isinstance(coll, dict) else ()):
             for k, near in _unknown_in(x, part):
                 problems.append(("!", f"{noun} `{xid}`: `{k}` is not a key {a} can carry, so it is "
                                       f"never read" + _dym(near), {noun: str(xid)}))
+            for k, instead in _retired_in(x, part):
+                problems.append(("?", f"{noun} `{xid}`: `{k}` {_RETIRED_SAID}: {instead}", {noun: str(xid)}))
     # A WHOLE MAY NOT CONTAIN ITSELF, however far round: the view collapses parts into their
     # outermost whole, and a cycle has none.
     for sid in states:
@@ -761,7 +729,7 @@ def steps(doc, appraisal):
                 mods = c.get("modifies")
                 mods = [m for m in (mods if isinstance(mods, list) else [mods] if mods else [])]
                 out.append(dict(
-                    unknown=_unknown_keys(c, "causes"),
+                    unknown=_unknown_keys(c, "causes"), retired=_retired_in(c, "causes"),
                     title=title, kind=kind, tags=sorted(tags),
                     text=" ".join(m.get("text") or "" for m in (node.get("members") or [])),
                     layer=layer,
@@ -781,13 +749,9 @@ def steps(doc, appraisal):
                     # SCOPE (1.13): a particular case, or a general relation.
                     scope="" if c.get("scope") is None else str(c.get("scope")),
                     hedged=bool(c.get("hedged")),
-                    # 1.19: the step's NAME and MARK in the text's words, its CHANNEL, a SHAPE that
-                    # rises and falls, and a NET flow that runs whichever way the gap points.
+                    # 1.19: the step's NAME and MARK in the text's words (the Coleman boat's arrows).
                     name="" if c.get("name") is None else str(c.get("name")),
                     mark="" if c.get("mark") is None else str(c.get("mark")),
-                    channel="" if c.get("channel") is None else str(c.get("channel")),
-                    shape="" if c.get("shape") is None else str(c.get("shape")),
-                    net=c.get("net"),
                     basis=basis, tier=tier, lag=c.get("lag"),
                     given=[_cond(g) for g in given], given_raw=given,
                     how=c.get("how"), reflexive=bool(c.get("reflexive")),
@@ -798,19 +762,15 @@ def steps(doc, appraisal):
                     # VIA (profile 1.8): the states of the finer route the text opens this step
                     # into -- the step IS that route, not a second one beside it.
                     via=_as_list(c.get("via")),
-                    # SHARE (1.8): how much of the step runs by its `via` route -- entire (the
-                    # default), most, partial, or none ("AMPK-independent").
-                    share=(str(c.get("share")) if c.get("share") is not None
-                           else "entire" if c.get("via") else ""),
                     # SIZE (1.8, G3): the magnitude the text gives, quoted.
                     size=_size(c.get("size")),
                     # REGIME and THRESHOLD (1.8, G2): the regime the step holds in, in the text's
                     # words, and the threshold it acts past.
                     regime="" if c.get("regime") is None else str(c.get("regime")),
                     threshold="" if c.get("threshold") is None else str(c.get("threshold")),
-                    # UNLESS and DESPITE (profile 1.8): a state that blocks the step where it holds,
-                    # and one that acted against it and failed -- G1's commonest forms.
-                    unless=_as_list(c.get("unless")), despite=_as_list(c.get("despite")),
+                    # UNLESS (profile 1.8): a state that blocks the step where it holds -- G1's
+                    # commonest form.
+                    unless=_as_list(c.get("unless")),
                     # PERIOD and ON (profile 1.8, G7): when the step holds, in the text's words
                     # anchored to an event, and whether it moves the level of `to` or its trend.
                     period="" if c.get("period") is None else str(c.get("period")),
@@ -866,7 +826,7 @@ def constitutions(doc, appraisal):
                 txt = lambda k: "" if c.get(k) is None else str(c.get(k))
                 out.append(dict(title=title, layer=layer, src=c.get("from"), dst=c.get("to"),
                                 extent=txt("extent"), whole=txt("whole"), basis=c.get("basis"),
-                                under=txt("under"), stance=txt("stance"), raw=c))
+                                stance=txt("stance"), raw=c))
     return out
 
 
@@ -1046,7 +1006,6 @@ def _size(x):
     return out.strip()
 
 
-SHARES = ("entire", "most", "partial", "none")
 _FLIP = {"+": "-", "-": "+"}
 
 
@@ -1159,9 +1118,7 @@ def _opened(steps_, edges):
     `via` the text's own steps give is walked as that route, once (27 Sep 2026)."""
     out = {}
     for s in steps_:
-        # Only a step that runs ENTIRELY by its route is that route; part of it, or none, leaves a
-        # direct remainder the text has not opened.
-        if s["via"] and s["share"] == "entire" and s["src"] is not None and s["dst"] is not None:
+        if s["via"] and s["src"] is not None and s["dst"] is not None:
             run = [s["src"]] + s["via"] + [s["dst"]]
             if all(h in edges for h in zip(run, run[1:])):
                 out[(s["src"], s["dst"])] = list(s["via"])
@@ -1241,9 +1198,8 @@ def _walk(ids, states, text_edges, has_block, signs=None, regimes=None, null_fro
         # AND WHAT A CHAIN IS FOR IS NO DEAD END on the whole map: the badger follow-up's outcome,
         # an outcome only in its own chain, was reported as the chain stopping (gap tests, 27 Sep).
         # A MEASURE STOPS WHERE IT IS READ (1.9): nothing is expected to follow from an estimate.
-        # A DEAD END THE TEXT SETS OUT (1.19) stops by design: Marti and Gond's symbolic use goes nowhere.
         if (i in used and i not in outcomes and i not in ends and not (states[i] or {}).get("appraisal")
-                and not (states[i] or {}).get("measures") and (states[i] or {}).get("dead_end") is not True
+                and not (states[i] or {}).get("measures")
                 and not onward and not any(a == i for a, _ in text_edges)):
             gaps.append(dict(kind="dead-end", state=i,
                              message=f"`{i}` leads nowhere in the text: the chain stops there"))
@@ -1333,9 +1289,8 @@ def _chains(block):
     for cid, ch in (raw.items() if isinstance(raw, dict) else ()):
         ch = ch if isinstance(ch, dict) else {}
         roles = ch.get("roles") if isinstance(ch.get("roles"), dict) else {}
-        # ITS FORM (1.11): its own where it declares one, the whole block's otherwise.
-        own = ch.get("form") is not None
-        form, settles, _ = form_of(ch if own else block)
+        # ITS FORM (1.11): a chain, or a cycle where it says so.
+        form, settles, _ = form_of(ch)
         out[str(cid)] = dict(label=None if ch.get("label") is None else str(ch.get("label")),
                              question=None if ch.get("question") is None else str(ch.get("question")),
                              roles={str(k): v for k, v in roles.items()},
@@ -1344,73 +1299,15 @@ def _chains(block):
                              # why this rather than what (Primer, pp. 94-95).
                              goal=_goal(ch) or _goal(block),
                              contrast=None if ch.get("contrast") is None else str(ch.get("contrast")),
-                             # ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
-                             account=_account_of(ch) or _account_of(block), own_account=bool(_account_of(ch)),
-                             # ITS ORDER (1.17), its own or the block's.
-                             order=_order(ch) or _order(block) or "time",
                              # KEPT APART BY THE TEXT (1.18): why this chain, or its pieces, join no other.
-                             apart=_apart(ch),
-                             # ITS BOUNDARY (1.19), its own or the block's: where the text says what
-                             # it maps is open to what it does not.
-                             boundary=_boundary(ch) or _boundary(block))
+                             apart=_apart(ch))
     return out
 
 
 def _apart(block):
-    """A block's or a chain's `apart:`, the reason the text keeps it apart, or None (1.18)."""
+    """A chain's `apart:`, the reason the text keeps it apart, or None (1.18)."""
     a = block.get("apart") if isinstance(block, dict) else None
     return None if a is None or str(a).strip() == "" else str(a)
-
-
-def _boundary(block):
-    """A block's or a chain's `boundary:` (1.19): the text's own words drawing attention to where
-    the system it maps stops -- that the boundary is a choice, or that what is outside acts on what
-    is inside (Meadows's clouds). {says, pinpoint} or None; a bare string is what it says. Every
-    system has a boundary, so this is set only where the text says so; the view then draws clouds
-    at the open ends of its flows."""
-    b = block.get("boundary") if isinstance(block, dict) else None
-    if b is None:
-        return None
-    if not isinstance(b, dict):
-        return None if str(b).strip() == "" else dict(says=str(b), pinpoint=None)
-    g = lambda k: None if b.get(k) is None or str(b.get(k)).strip() == "" else str(b.get(k))
-    return dict(says=g("says"), pinpoint=g("pinpoint"))
-
-
-def _boundary_problems(b, where, tag):
-    """The faults in one `boundary:` (1.19)."""
-    raw = b.get("boundary") if isinstance(b, dict) else None
-    if raw is None:
-        return []
-    out = []
-    if isinstance(raw, dict):
-        extra = sorted(set(map(str, raw)) - {"says", "pinpoint"})
-        if extra:
-            out.append(("!", f"{tag}`boundary:` takes `says` and `pinpoint`, not `{extra[0]}`", where))
-    elif isinstance(raw, list):
-        out.append(("!", f"{tag}`boundary:` is the text's words, or `{{says, pinpoint}}`", where))
-        return out
-    got = _boundary(b)
-    if not got or not got["says"]:
-        out.append(("!", f"{tag}`boundary:` says nothing: give the text's words", where))
-    elif not got["pinpoint"]:
-        out.append(("?", f"{tag}`boundary:` has no pinpoint: the words are the text's, so say where",
-                    dict(where, fix="write it as `boundary: {says: \"...\", pinpoint: \"p. N\"}`")))
-    return out
-
-
-def _idiom(block):
-    """The block's `idiom:` (1.18): what the map's states are told AS, in the text's words -- Wilson
-    2023's flows, "a process by which inputs are transformed into outputs within a system". A
-    definition of the kind of thing every state is, said once for the chart, never drawn as a state.
-    {term, means, pinpoint} or None; a bare string is the term."""
-    i = block.get("idiom") if isinstance(block, dict) else None
-    if i is None:
-        return None
-    if not isinstance(i, dict):
-        return dict(term=str(i), means=None, pinpoint=None)
-    g = lambda k: None if i.get(k) is None else str(i.get(k))
-    return dict(term=g("term"), means=g("means"), pinpoint=g("pinpoint"))
 
 
 def _parts(states):
@@ -1451,10 +1348,6 @@ def _pieces(ids, links, kind_of=None):
         seen |= comp
         out.append([j for j in ids if j in comp])
     return out if len(out) > 1 else []
-
-
-def _account_of(block):
-    return [a for a in _as_list((block or {}).get("account") if isinstance(block, dict) else None) if a in ACCOUNTS]
 
 
 def _goal(block):
@@ -1540,7 +1433,6 @@ def analyse(fm, doc):
     ordering, order_problems = level_order(block, levels)
     for sev, msg, where in order_problems:
         findings.append((sev, "mechanism", msg, where))
-    form, settles, _ = form_of(block)
 
     # ---- what constitutes what (profile 1.11): never walked ---- #
     all_const = constitutions(doc, appraisal)
@@ -1553,6 +1445,8 @@ def analyse(fm, doc):
             findings.append(("!", "mechanism", f"`{k}` is not a key a constitutive relation can "
                              f"carry, so it is never read" + (f" -- did you mean `{near}`?" if near else ""),
                              where))
+        for k, instead in _retired_in(c["raw"], "constitutes"):
+            findings.append(("?", "mechanism", f"`{k}` on a constitutive relation {_RETIRED_SAID}: {instead}", where))
         if c["src"] is None:
             findings.append(("!", "mechanism", "a constitutive relation has no `from:`", where))
         elif c["src"] not in states:
@@ -1622,20 +1516,13 @@ def analyse(fm, doc):
             elif v in (s["src"], s["dst"]):
                 findings.append(("?", "mechanism", f"`via: {v}` names the step's own `from` or "
                                  f"`to`", {"title": s["title"]}))
-        for key in ("unless", "despite"):
-            for u in s[key]:
-                if u not in states:
-                    findings.append(("!", "mechanism", f"`{key}: {u}` is not a declared state",
-                                     {"title": s["title"]}))
-                elif u in (s["src"], s["dst"]):
-                    findings.append(("?", "mechanism", f"`{key}: {u}` names the step's own "
-                                     f"`from` or `to`", {"title": s["title"]}))
-        if s["share"] and s["share"] not in SHARES:
-            findings.append(("!", "mechanism", f"`share: {s['share']}` is not one of "
-                             f"{', '.join(SHARES)}", {"title": s["title"]}))
-        elif s["raw"].get("share") is not None and not s["via"]:
-            findings.append(("?", "mechanism", "`share` says how much of a step runs by a route, "
-                             "and this step names none in `via`", {"title": s["title"]}))
+        for u in s["unless"]:
+            if u not in states:
+                findings.append(("!", "mechanism", f"`unless: {u}` is not a declared state",
+                                 {"title": s["title"]}))
+            elif u in (s["src"], s["dst"]):
+                findings.append(("?", "mechanism", f"`unless: {u}` names the step's own "
+                                 f"`from` or `to`", {"title": s["title"]}))
         for m in s["modifies"]:
             if not m["by"] or m["by"] not in states:
                 findings.append(("!", "mechanism", f"`modifies: {{by: {m['by'] or '?'}}}` is not a "
@@ -1688,19 +1575,6 @@ def analyse(fm, doc):
         if s["design"] == "illustration" and s["basis"] in ("study", "statistics", "model"):
             findings.append(("?", "mechanism", f"`design: illustration` is a hypothetical case, and "
                              f"`basis: {s['basis']}` says the text tested the step", {"title": s["title"]}))
-        if s["channel"] and s["channel"] not in (block.get("channels") or {} if isinstance(block, dict) else {}):
-            findings.append(("!", "mechanism", f"`channel: {s['channel']}` is not declared under `channels:`",
-                             {"title": s["title"], "fix": f"declare it: `channels: {{{s['channel']}: {{label: \"...\"}}}}`"}))
-        if s["shape"] and s["shape"] not in SHAPES:
-            findings.append(("!", "mechanism", f"`shape: {s['shape']}` is not one of {', '.join(SHAPES)}", {"title": s["title"]}))
-        elif s["shape"] and s["sign"] in ("+", "-", "0"):
-            findings.append(("!", "mechanism", f"`shape: {s['shape']}` says the step rises and falls, and `sign: {s['sign']}` "
-                             f"gives it one direction", {"title": s["title"], "fix": "leave the sign out, or give `sign: which`"}))
-        if s["net"] is not None and not isinstance(s["net"], bool):
-            findings.append(("!", "mechanism", f"`net:` is `true` or `false`, not `{s['net']}`", {"title": s["title"]}))
-        elif s["net"] and s["on"] != "stock":
-            findings.append(("!", "mechanism", "`net: true` is a flow that runs whichever way the gap points, "
-                             "and the step does not flow into a stock", {"title": s["title"], "fix": "add `on: stock`"}))
         if len(s["mark"]) > 6:
             findings.append(("?", "mechanism", f"`mark: {s['mark']}` is drawn in a small circle on the arrow: "
                              f"six characters at most", {"title": s["title"], "fix": "put the words in `name:`"}))
@@ -1766,6 +1640,8 @@ def analyse(fm, doc):
                                 (" -- a note goes on the claim, beside `fidelity:`, not inside "
                                  "`causes:`" if k == "note" else "")),
                              {"title": s["title"]}))
+        for k, instead in s.get("retired") or []:
+            findings.append(("?", "mechanism", f"`{k}` on a step {_RETIRED_SAID}: {instead}", {"title": s["title"]}))
         if s["sign"] not in (None,) + SIGNS:
             findings.append(("?", "mechanism",
                              f"sign `{s['sign']}` is not `+`, `-`, `0` (no effect) or `which` "
@@ -1820,7 +1696,7 @@ def analyse(fm, doc):
     # A STEP THE TEXT OPENS INTO A ROUTE IS WALKED AS THAT ROUTE (profile 1.8).
     opened = _opened(text, text_edges)
     for s in text:
-        if not s["via"] or s["share"] == "none" or not all(v in states for v in s["via"]):
+        if not s["via"] or not all(v in states for v in s["via"]):
             continue
         run = [s["src"]] + s["via"] + [s["dst"]]
         missing = [f"{a} -> {b}" for a, b in zip(run, run[1:]) if (a, b) not in text_edges]
@@ -1835,7 +1711,7 @@ def analyse(fm, doc):
     for s in text:
         # Only the step that names the route is held to its sign: a subgroup's `+` on the same pair
         # is another finding, not a claim about the route (levy map, 27 Sep 2026).
-        if s["via"] and s["share"] == "entire" and (s["src"], s["dst"]) in opened and s["sign"] in ("+", "-"):
+        if s["via"] and (s["src"], s["dst"]) in opened and s["sign"] in ("+", "-"):
             run = [s["src"]] + opened[(s["src"], s["dst"])] + [s["dst"]]
             net = _net(sign_of, list(zip(run, run[1:])))
             if net in ("+", "-") and net != s["sign"]:
@@ -1850,8 +1726,11 @@ def analyse(fm, doc):
     null_from |= {m["by"] for s in text_all for m in s["modifies"] if m["by"] in states}
     rival_edges = {(s["src"], s["dst"]) for s in causal if s["layer"] == "rival"}
     chain_ends = {i for ch in chains.values() for i, r in ch["roles"].items() if "outcome" in _as_list(r)}
+    # A MAP WHOSE EVERY CHAIN IS A CYCLE is a cycle as a whole: not asked where it starts or what it
+    # is for. (The block's own `form:` said so until profile 1.25 retired it.)
+    whole_cycle = bool(chains) and all(c["form"] == "cycle" for c in chains.values())
     W = _walk(ids, states, text_edges, block is not None, sign_of, regime_of, null_from, rival_edges, chain_ends,
-              cycle=form == "cycle", constituted=constituted)
+              cycle=whole_cycle, constituted=constituted)
     entries, gaps, used = W["entries"], W["gaps"], W["used"]
     # WHERE THE CHAIN STOPS AND THE ARGUMENT TAKES IT ON (1.15). A state the chain leads nowhere
     # from is a gap in the mechanism -- unless a claim stating the step into it is itself a reason
@@ -1934,11 +1813,8 @@ def analyse(fm, doc):
         joint=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["jointly"])) for s in text if s["jointly"]}),
         opened=sorted([a, b, v] for (a, b), v in opened.items()),
         blocked=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["unless"])) for s in text if s["unless"]}),
-        despite=sorted({(s["src"], s["dst"], s["sign"] or "", tuple(s["despite"])) for s in text_all if s["despite"]}),
         strata=_strata(text_all),
         sizes=sorted({(s["src"], s["dst"], s["sign"] or "", s["size"]) for s in text_all if s["size"]}),
-        mediation=sorted([a, b, sh, list(v)] for a, b, sh, v in
-                         {(s["src"], s["dst"], s["share"], tuple(s["via"])) for s in text if s["via"]}),
         regimes=sorted({s["regime"] for s in text_all if s["regime"]}),
         thresholds=sorted({(s["src"], s["dst"], s["sign"] or "", s["threshold"]) for s in text_all if s["threshold"]}),
         trends=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "trend"}),
@@ -1960,7 +1836,6 @@ def analyse(fm, doc):
         # or a kind. With chains, each chain says its own pieces, and islands among them.
         pieces=[] if chains else _pieces([i for i in ids if roles_of(states[i]) or any(i in e for e in text_edges)],
                                          text_edges | _parts(states), kind_of),
-        apart=_apart(block), idiom=_idiom(block), boundary=_boundary(block),
         kinds=kinds, akin_steps=akin_steps, instances=instances,
         moderated=sorted({(s["src"], s["dst"], s["sign"] or "", m["by"], m["effect"], m["period"])
                           for s in text_all for m in s["modifies"] if m["by"] in states}),
@@ -1982,11 +1857,11 @@ def analyse(fm, doc):
                            and r["src"] != (states.get(mb) or {}).get("measures")})))
             for s in text_all for mb in s["measured_by"] if mb in states})],
         # PROCESS, FORMATION AND CONSTITUTION (profile 1.11).
-        form=dict(form=form, settles=settles),
+        form=dict(form="cycle" if whole_cycle else "chain", settles=None),
         aspects=sorted([a, n] for a, n in _count(str(st.get("aspect")) for st in states.values()
                                                  if isinstance(st, dict) and str(st.get("aspect")) in ASPECTS).items()),
         formation=sorted({(s["src"], s["dst"], s["sign"] or "", s["on"]) for s in text_all if s["on"] in FORMATION}),
-        constitution=sorted({(c["src"], c["dst"], c["extent"], c["whole"], c["under"], c["layer"], c["title"])
+        constitution=sorted({(c["src"], c["dst"], c["extent"], c["whole"], c["layer"], c["title"])
                              for c in const_ok}),
         # CAUSED AND CONSTITUTED AT ONCE, in the text's own voice (Hu p. 14: policing does "not only
         # reflect and reinforce" racial injustice but "partly form[s]" the category).
@@ -2008,7 +1883,6 @@ def analyse(fm, doc):
         sustaining=[l for l in loops_text if _sustains(l, text)],
         # CAUSAL REASONING (1.13, after Johansson et al. 2024).
         goal=_goal(block), contrast=None if (block or {}).get("contrast") is None else str(block.get("contrast")),
-        account=_account_of(block),
         # A CHANGE IN CHANCE, AND A FLOW INTO A STOCK (1.14): neither says the `to` moves with the `from`.
         chances=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "chance"}),
         stocks=sorted({(s["src"], s["dst"], s["sign"] or "") for s in text_all if s["on"] == "stock"}),
@@ -2036,17 +1910,6 @@ def analyse(fm, doc):
                          and (s["basis"] == "example" or s["design"] in ("case study", "anecdote"))
                          and _cases_of((s["src"], s["dst"]), text_all, instances) <= 1}),
     )
-    # THE ACCOUNT THE TEXT REASONS WITH (1.14), held against what the map shows it doing.
-    # A chain that declares its own account is held to its own steps.
-    for who, acc, mine, where in [("", profile["account"], text_all, {})] + [
-            (f"chain `{cid}`: ", ch["account"], [s for s in text_all if cid in s["chain"]], {"chain": cid})
-            for cid, ch in chains.items() if ch.get("own_account")]:
-        if "manipulability" in acc and not any(s["design"] in EXPERIMENTAL for s in mine):
-            findings.append(("?", "mechanism", f"{who}`account: manipulability`, and no step's evidence is an "
-                             "experiment, a quasi-experiment or a natural experiment (`design:`)", where))
-        if "intra-action" in acc and not const_ok:
-            findings.append(("?", "mechanism", f"{who}`account: intra-action`, and nothing is said to constitute "
-                             "anything (`constitutes:`): relations that make what they relate are constitutive", where))
     if profile["goal"] == "intervene" and not W["interventions"]:
         findings.append(("?", "mechanism", "`goal: intervene`, and no state has `role: intervention`: what does the "
                          "text say to do?", {}))
@@ -2137,12 +2000,6 @@ def step_verb(s):
         return "selection effect"
     if s["assoc"]:
         return "associated"
-    if s["shape"] == "peak":
-        return "rises, then falls"
-    if s["shape"] == "trough":
-        return "falls, then rises"
-    if s["net"] is True:
-        return "net flow"
     sign = s["sign"] or ""
     if sign and _formation_word(s["on"], sign):
         return _formation_word(s["on"], sign)
@@ -2274,7 +2131,6 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs, dr
         out = []
         for x in P:
             out += [(said(x) + " unless " + lab(u), None) for u in x["unless"]]
-            out += [(said(x) + " despite " + lab(u), None) for u in x["despite"]]
             if x["regime"]:
                 out.append((said(x) + ", regime: " + x["regime"], None))
             if x["threshold"]:
@@ -2425,16 +2281,9 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs, dr
             out += [said(x) + " given " + g for g in x["given"]]
         return uniq([(t, None) for t in out])
 
-    def order():
-        ids = _uniq([c for x in P for c in x["chain"]])
-        cs = [(cid, c) for cid, c in _chains(block).items() if cid in ids and c["order"] == "explanation"]
-        if cs:
-            return [(f"the chain \u201c{c['label'] or cid}\u201d runs in order of explanation, not of time", None) for cid, c in cs]
-        return [("the map's chains run in order of explanation, not of time", None)] if (_order(block) or "time") == "explanation" else []
-
     probes = dict(backing=backing, counter=counter, rivals=rivals, stops=stops, common=common, reverse=reverse,
                   mediated=mediated, measure=measure, kinds=kinds, howmany=howmany, onecase=onecase, here=here,
-                  support=support, blockers=blockers, possible=possible, scope=scope, order=order,
+                  support=support, blockers=blockers, possible=possible, scope=scope,
                   route=lambda: [("; ".join(_uniq([said(x) for x in P])), None)] if P else [],
                   otherroutes=lambda: uniq([(said(y), y["title"]) for y in TX if y["title"] not in want and y["dst"] in tos and y["src"] not in froms]),
                   elsewhere=lambda: onward(lambda v: True), goals=lambda: onward(is_outcome),
@@ -2453,7 +2302,6 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs, dr
         out = []
         for x in P:
             out += [said(x) + " unless " + lab(u) for u in x["unless"]]
-            out += [said(x) + " despite " + lab(u) for u in x["despite"]]
             if x["regime"]:
                 out.append(said(x) + ", regime: " + x["regime"])
             if x["threshold"]:
@@ -2602,16 +2450,9 @@ def bridge_questions(ok, states, block, transfers, arg, step, scheme, inputs, dr
             out += [said(x) + " given " + g for g in x["given"]]
         return _uniq(out)
 
-    def order():
-        ids = _uniq([c for x in P for c in x["chain"]])
-        cs = [(cid, c) for cid, c in _chains(block).items() if cid in ids and c["order"] == "explanation"]
-        if cs:
-            return [f"the chain \u201c{c['label'] or cid}\u201d runs in order of explanation, not of time" for cid, c in cs]
-        return ["the map's chains run in order of explanation, not of time"] if (_order(block) or "time") == "explanation" else []
-
     probes = dict(backing=backing, counter=counter, rivals=rivals, stops=stops, common=common, reverse=reverse,
                   mediated=mediated, measure=measure, kinds=kinds, howmany=howmany, onecase=onecase, here=here,
-                  support=support, blockers=blockers, possible=possible, scope=scope, order=order,
+                  support=support, blockers=blockers, possible=possible, scope=scope,
                   route=lambda: ["; ".join(_uniq([said(x) for x in P]))] if P else [],
                   otherroutes=lambda: _uniq([said(y) for y in TX if y["title"] not in want and y["dst"] in tos and y["src"] not in froms]),
                   elsewhere=lambda: onward(lambda v: True), goals=lambda: onward(is_outcome),
@@ -2767,13 +2608,10 @@ def _chain_profiles(chains, states, text, ids, reflexive, kind_of=None, instance
         cp["form"] = dict(form=chains[cp["id"]].get("form", "chain"), settles=chains[cp["id"]].get("settles"))
         cp["goal"] = chains[cp["id"]].get("goal")
         cp["contrast"] = chains[cp["id"]].get("contrast")
-        cp["account"] = chains[cp["id"]].get("account") or []
-        cp["order"] = chains[cp["id"]].get("order", "time")
         # AN ISLAND (1.18): a chain that meets no other, by a state or by a kind; and whether the
         # text keeps it apart, which answers that and its pieces.
         cp["island"] = len(out) > 1 and not cp["shared"] and not cp["akin"]
         cp["apart"] = chains[cp["id"]].get("apart")
-        cp["boundary"] = chains[cp["id"]].get("boundary")
     unchained = len({(s["src"], s["dst"], s["sign"]) for s in text if not s["chain"]}) if chains else 0
     return out, unchained
 
@@ -2840,9 +2678,6 @@ def census(profile):
         lines.append(f"      question: {p['question']}")
     if p.get("contrast"):
         lines.append(f"              rather than: {p['contrast']}")
-    if p.get("account"):
-        lines.append("      account " + ", ".join(p["account"]) + " -- how the text reasons about causes; what an arrow means "
-                     "differs with each")
     if p.get("goal"):
         lines.append(f"      goal    {p['goal']}: " + {"explain": "why and how something happened",
                      "intervene": "what to do to bring an effect about", "predict": "what will happen",
@@ -2857,11 +2692,6 @@ def census(profile):
                      + ("; within: " + ", ".join(f"{c} in {par}" for c, par in od["within"]) if od.get("within") else ""))
     elif len(p["levels"]) > 1:
         lines.append("      levels  the map does not say what ordering its levels are (`ordering:`)")
-    fm = p.get("form") or {}
-    if fm.get("form") == "cycle":
-        lines.append("      form    a cycle: not asked where it starts or what it is for -- "
-                     + {True: "the text says it comes to rest", False: "the text says it does not come to rest",
-                        None: "the text does not say whether it comes to rest"}[fm.get("settles")])
     if p.get("aspects"):
         n = dict(p["aspects"])
         nouns = sum(v for k, v in n.items() if k in NOUN_ASPECTS)
@@ -2940,12 +2770,6 @@ def census(profile):
     for a, b, via in p.get("opened", []):
         lines.append(f"      via     {a} -> {b} is the route through {', '.join(via)}: walked once, "
                      f"as that route")
-    for a, b, sh, via in p.get("mediation", []):
-        if sh in ("most", "partial"):
-            lines.append(f"      via     {a} -> {b} runs {'mostly' if sh == 'most' else 'partly'} "
-                         f"through {', '.join(via)}; the rest by a way the text does not open")
-        elif sh == "none":
-            lines.append(f"      via     {a} -> {b} does NOT run through {', '.join(via)}, the text says")
     if p.get("regimes"):
         lines.append(f"      regime  {len(p['regimes'])} named: {'; '.join(p['regimes'])} -- routes are "
                      f"composed within one regime, never across")
@@ -2956,9 +2780,6 @@ def census(profile):
     for a, b, sg, by in p.get("blocked", []):
         lines.append(f"      unless  {a} -> {b}{' (' + sg + ')' if sg else ''} is blocked where "
                      f"{' or '.join(by)} holds")
-    for a, b, sg, by in p.get("despite", []):
-        lines.append(f"      despite {a} -> {b}{' (' + sg + ')' if sg else ''} held although "
-                     f"{' and '.join(by)} acted against it")
     for a, b, recs in p.get("strata", []):
         lines.append(f"      strata  {a} -> {b}: " + "; ".join(
             (f"{sg or 'unsigned'} " + " ".join(x for x in ("where " + " and ".join(g) if g else "", pd) if x)
@@ -2999,10 +2820,9 @@ def census(profile):
     for a, b, sg in p.get("stocks", []):
         lines.append(f"      {'outflow' if sg == '-' else 'inflow ':<7} {a} -> {b}: " + ("flows out of" if sg == "-" else "flows into")
                      + f" {b}, a stock -- {b} need not move with {a}")
-    for a, b, ext, whole, under, layer, title in p.get("constitution", []):
+    for a, b, ext, whole, layer, title in p.get("constitution", []):
         lines.append(f"      constit {a} {'partly ' if ext == 'partial' else ''}constitutes {b}"
                      + (f", {'no more than their sum' if whole == 'aggregate' else 'through its organisation' if whole == 'organised' else 'and is nothing but them' if whole == 'reducible' else 'each making the other' if whole == 'mutual' else whole}" if whole else "")
-                     + (f", on {under}" if under else "")
                      + f" ({title}{'; reported' if layer == 'rival' else '; the appraisal' if layer == 'appraisal' else ''})"
                      + " -- what makes it up, not a cause: never walked")
     for a, b in p.get("mutual", []):
@@ -3069,11 +2889,6 @@ def census(profile):
         lines.append(f"      span    {st} runs across {', '.join(lvs)}")
     for w, parts in p.get("wholes", []):
         lines.append(f"      whole   {w}: {', '.join(parts)} -- drawn as one box at the text's own level")
-    idi = p.get("idiom")
-    if idi and idi.get("term"):
-        lines.append(f"      told as {idi['term']}" + (f": {idi['means']}" if idi.get("means") else "")
-                     + (f" ({idi['pinpoint']})" if idi.get("pinpoint") else "")
-                     + " -- what the states are, said once for the chart")
     def _pieces_line(what, pcs, apart):
         if apart:
             return [f"      apart   {what} is kept apart by the text: {apart}"]
@@ -3081,10 +2896,10 @@ def census(profile):
             return []
         return [f"      ? pieces {what} falls into {len(pcs)} pieces that meet at no state: "
                 + " | ".join(", ".join(x) for x in pcs)
-                + " -- cases of one kind (`kind:`), questions of their own (chains), or kept apart "
-                  "by the text (`apart:`)?"]
+                + " -- cases of one kind (`kind:`), questions of their own (chains)"
+                + (", or kept apart by the text (`apart:`)?" if what != "the chain" else "?")]
     if not p.get("chains"):
-        lines += _pieces_line("the chain", p.get("pieces"), p.get("apart"))
+        lines += _pieces_line("the chain", p.get("pieces"), None)
     by_id = {ch["id"]: ch for ch in p.get("chains", [])}
     for ch in p.get("chains", []):
         lines.append(f"      chain   {ch['id']}" + (f" \"{ch['label']}\"" if ch.get("label") else "")
@@ -3093,9 +2908,7 @@ def census(profile):
                      f"{len(ch['loops'])} loop{'' if len(ch['loops']) == 1 else 's'}, "
                      f"{len(ch['gaps'])} gap{'' if len(ch['gaps']) == 1 else 's'}"
                      + (" -- a cycle" if (ch.get("form") or {}).get("form") == "cycle" else "")
-                     + (" -- in order of explanation, not of time" if ch.get("order") == "explanation" else "")
                      + (f" -- to {ch['goal']}" if ch.get("goal") else "")
-                     + (f" -- by {', '.join(ch['account'])}" if ch.get("account") else "")
                      + (" -- all in views the text reports" if ch.get("layer") == "rival" else ""))
         if ch.get("question"):
             lines.append(f"              question: {ch['question']}"

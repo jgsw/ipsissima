@@ -27,7 +27,6 @@ mechanism:
         levy:
             label: "The levy's route to health"
             question: "How would the levy improve health?"
-            order: explanation
 ===
 
 [Levy raises prices]: The levy makes sugary drinks dearer.

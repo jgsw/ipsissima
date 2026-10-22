@@ -2,7 +2,7 @@
 // answer is written in those tests, before the code. Shared so the Python checker and the
 // JavaScript arrangement are held to the same answers on the same file.
 ===
-title: "Planted -- sizes and shares (profile 1.8, G3)"
+title: "Planted -- sizes and routes (profile 1.8, G3)"
 reconstruction:
     generated: true
 defaults:
@@ -38,7 +38,7 @@ mechanism:
     +> [Orders keep people in work]
 
 [Fewer reoffend after orders]: "Fewer people reoffend after community orders than after short prison terms, a study found."
-    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", basis: study, lag: "two years", via: [work, reint], share: partial, size: {value: -0.12, unit: "in the reoffending rate", ci: "95% CI -0.20 to -0.04", versus: "short prison terms", at: "two years"}}}
+    {fidelity: "quotation", causes: {from: order, to: reoff, sign: "-", basis: study, lag: "two years", via: [work, reint], size: {value: -0.12, unit: "in the reoffending rate", ci: "95% CI -0.20 to -0.04", versus: "short prison terms", at: "two years"}}}
     +> [Recommend]
 
 [Reoffending fills prisons]: "Reoffending sends people back to prison."
@@ -81,5 +81,5 @@ mechanism:
     +> [Recommend]
 
 [Orders cost less]: "Community orders cost less, whatever happens to reoffending."
-    {fidelity: "quotation", causes: {from: order, to: cost, sign: "-", basis: asserted, via: reoff, share: none, size: "a third of the cost"}}
+    {fidelity: "quotation", causes: {from: order, to: cost, sign: "-", basis: asserted, size: "a third of the cost"}}
     +> [Recommend]

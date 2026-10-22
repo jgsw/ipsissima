@@ -18,4 +18,7 @@ mechanism notation (`mechanism-notation`).
   (action situation, mental states, capacities), declare B and give each part `part_of: B`. Mark
   arrow 1 as the text states it; where the text treats A as partly made up of B, that part is
   `constitutes:`, not a step. Boats chained in time are chains, the D of one the A of the next
-  (`roles:`).
+  (`roles:`, in `rarer-marks`).
+- **The text's own names and numbers for its arrows.** `name:` on a step gives the text's name for
+  it, drawn on the arrow in place of the verb; `mark:` gives the number the text gives it ("1",
+  "P4"), drawn in a small circle, six characters at most.

@@ -642,8 +642,7 @@ A step's panel gives the period it holds in where the text names one ("after cul
 
 **A blocker.** Where the text says a step holds *unless* something else does (defences between a
 hazard and harm), a stem runs from that state and stops on a short bar across its own end, the
-mark of a blocker. The step's panel says *unless*, and also *despite* where the text says the
-step held although something acted against it.
+mark of a blocker. The step's panel says *unless*.
 
 **Reading a drawing for the first time.** *Read this drawing*, in the bar under the chain, steps
 through the marks this chain uses, lighting one example of each and saying what it means.
@@ -727,10 +726,6 @@ argument uses them; the Mechanism panel says so, with the reason, and the states
 are left open on purpose. A map that considered the mechanism and did not map it says so in the
 Mechanism view, with the reason: the text argues from definitions, say, or the reader wanted the
 argument alone.
-
-**In order of explanation.** A chain's steps normally run in time, left to right. A chain marked as
-running **in order of explanation** -- the stages of a genealogy, each adding a complication -- says
-so above the chart, because left to right is otherwise read as history.
 
 **What makes something up.** A box marked **⊂** makes up something else, and a box marked **⊃** is
 made up of other boxes. This is what a thing is made of, not a cause of it, so it is never drawn as an
@@ -845,9 +840,7 @@ back to it, on any chain that has one.
 had no room for it.
 
 **Stocks, flows and loops.** A state that something flows into or out of is drawn as a **stock**, a
-heavier square box, and the flows as **pipes**, each flow's state marked with a valve. Where the text
-draws attention to where its system stops, a **cloud** marks each open end of a flow: where an inflow
-comes from, or an outflow goes, outside what is mapped. Hover a cloud for the text's words. Each loop
+heavier square box, and the flows as **pipes**, each flow's state marked with a valve. Each loop
 has **one mark at its centre**, R where it reinforces and B where it balances, numbered where there
 are several; clicking it shows that loop alone. Where a loop is most of a chain, its states are laid
 out round a ring.
@@ -860,11 +853,8 @@ state** draws the parts apart.
 cause that works in one place and not another — **Show: one panel per …** draws a small chart for
 each value, side by side.
 
-**Marks on a box.** An outcome that stops the process short is drawn grey, and a possibility the
-text sets out, not (or not yet) actual, hollow and in italic; hover either for what it is. Under
-**Marks: All**, ✱ marks a state the text says is unobserved; a small line sketch, the behaviour over
-time the text gives the state (growing, oscillating, levelling off); and a square frame round a state
-says the text's analysis holds it fixed, one round two that they cannot be held fixed apart.
+**Marks on a box.** A possibility the text sets out, not (or not yet) actual, is drawn hollow and in
+italic; hover it for what it is.
 
 **Display.** How the chain is drawn — its labels, its marks, the text's own boxes, nested levels,
 zoom and fit — is under **Display** in the bar, one press away, so the bar keeps to what changes
@@ -875,8 +865,8 @@ what you are looking at. The menu stays open while you try its settings; a press
 weights, loops, AND gates and blockers, the marks a reader can follow without the Legend. Every
 line is solid, since a dashed arrow reads as a weaker causal claim, and a dash here meant only that
 a claim paraphrases the text. **All** adds the marks that need the Legend: line patterns for how
-close each claim stands to the text's words, ≈ ≙ ⊂ ⊃, stocks and flows drawn as pipes with clouds,
-round-ended activities, a colour for each kind of link the text tells apart. What plain leaves out
+close each claim stands to the text's words, ≈ ≙ ⊂ ⊃, stocks and flows drawn as pipes, and
+round-ended activities. What plain leaves out
 is in each arrow's and each state's panel, in words.
 
 **Chains together.** A text that answers several questions has a chain for each, in the **Chain**

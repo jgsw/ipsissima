@@ -1,13 +1,11 @@
 // A planted fishery for STOCKS, CHANCES AND ACCOUNTS (profile 1.14, after Banitz et al. 2022,
 // Hertz et al. 2024 and Martinez Pena et al. 2023): a stock that births add to and a catch drains,
-// with a loop that runs through the inflow; a step that makes collapse likelier rather than more;
-// an account of causation on the map and one on a chain, each held against what the map shows; and
+// with a loop that runs through the inflow; a step that makes collapse likelier rather than more; and
 // a step found in one case and also claimed in general -- an extrapolation.
 ===
 title: "Stocks -- a planted fishery"
 mechanism:
     question: "Why did the fishery collapse?"
-    account: [regularity, intra-action]
     levels: [fishery, boats]
     ordering: composition
     within: {boats: fishery}
@@ -24,7 +22,6 @@ mechanism:
         policy:
             label: "Quota and catch"
             question: "Does a quota cut the catch?"
-            account: manipulability
 ===
 
 [Births add to the stock]: The fish born each year add to the population.

@@ -15,7 +15,6 @@ mechanism:
     contrast: "improvement centred on the cost-effectiveness of each element"
     # WHAT THE STATES ARE TOLD AS (profile 1.18): the text's definition of a flow, which nearly every state
     # is; said once for the chart. It was a state spanning all three levels that no step reached.
-    idiom: {term: "flows", means: "processes by which inputs are transformed into outputs within a system: money, referral journeys, health information", pinpoint: "p. 352"}
     levels: [system, services, people]
     ordering: mixed          # the reconstructor's reading (profile 1.11 pass): "interlinked subsystems, some of which are arranged hierarchically, and others that interact without formally specified chains of authority" (p. 359)
     chains:
@@ -346,7 +345,7 @@ mechanism:
 
 [Slower responses, more calls]: "This leads to worse response times for ambulances, which then leads to additional load on emergency call handlers, as they respond to repeated calls about ambulances that have not arrived." {fidelity: "quotation", pinpoint: "p. 360", note: "'This' is ambulances taken out of service. Footnote 8 gives the response times against target for June 2022.", causes: [{from: outofservice, to: response, sign: "+", basis: asserted, chain: cascade}, {from: response, to: callload, sign: "+", basis: asserted, chain: cascade}]}
 
-[Flows make up the system]: "I use the idea of a flow in a broad sense, to refer to a process by which inputs are transformed into outputs within a system." {fidelity: "quotation", pinpoint: "p. 352", note: "A definition: flows are processes within the system, so they partly make it up. The paper's move to a 'flow-centric' paradigm (p. 363) rests on it. Said once for the chart as the mechanism's `idiom:`; never a state, since nearly every state is one."}
+[Flows make up the system]: "I use the idea of a flow in a broad sense, to refer to a process by which inputs are transformed into outputs within a system." {fidelity: "quotation", pinpoint: "p. 352", note: "A definition: flows are processes within the system, so they partly make it up. The paper's move to a 'flow-centric' paradigm (p. 363) rests on it. Never a state, since nearly every state is one."}
 
 <Cataract argument>: Where demand outstrips capacity for a progressive condition, first come, first served lets patients deteriorate while they wait; so a cataract service that makes people wait is both less cost-effective and less ethically defensible. {fidelity: "compression", pinpoint: "pp. 358-359"}
 

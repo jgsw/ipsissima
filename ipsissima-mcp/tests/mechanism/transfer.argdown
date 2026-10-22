@@ -14,7 +14,7 @@ mechanism:
     levels: [population, people]
     chains:
         policy: {label: "Vaccination", question: "What does a vaccine do, there and here?"}
-        story:  {label: "How a duty of rescue arose", question: "Why do we owe rescue?", order: explanation}
+        story:  {label: "How a duty of rescue arose", question: "Why do we owe rescue?"}
     actors:
         health: {label: "Health authority", level: population}
         kids:   {label: "Children", level: people}

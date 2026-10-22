@@ -53,8 +53,7 @@ The pass records the text's own comparisons, and only the text's.
   - `dimension`: a column with values;
   - `verdict`: a dimension that is the text's verdict or outcome, shown last and read as what the
     others decide;
-  - `account`: rival accounts (unrelated to the mechanism block's `account:`, which says how the
-    text reasons about causes).
+  - `account`: rival accounts.
 - `label`: the frame's name, in the text's words where it has one. **Whose words they are is
   shown by quotation marks inside the value**, as `source:` does: `label: "\"(i) P is true\""` claims
   the text's words, and the checker verifies them against the map's chapter;

@@ -628,10 +628,16 @@ METHOD_DOCS = {
                "naming a rule of inference, writing `formalization:` (NLTK syntax), and strict mode"),
     "coleman": ("appendix-coleman.md",
                 "the Coleman boat (macro-micro-macro), drawn in the mechanism notation"),
+    # THE MECHANISM NOTATION'S RARER MARKS (profile 1.25, ruled 22 Oct 2026): keys used in few
+    # ordinary maps, each plain in the texts that need it, read only by those.
+    "rarer-marks": ("appendix-rarer-marks.md",
+                    "the mechanism notation's rarer marks: nested levels, a state's role in one chain, "
+                    "what is not actual, measures, and a step's period, blocker, regime, threshold, "
+                    "reflexivity and Gross's decomposition"),
 }
 _ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series", "mechanism-notation"}
 #: Served when a text calls for one, never named in the replies to the core documents.
-_CONDITIONAL = {"judgments", "drafts", "dramatised", "formal", "coleman"}
+_CONDITIONAL = {"judgments", "drafts", "dramatised", "formal", "coleman", "rarer-marks"}
 
 
 #: EVERYTHING EVERY RECONSTRUCTION READS, IN AS FEW CALLS AS A CLIENT'S RESULT LIMIT ALLOWS (phase 2 of
@@ -705,7 +711,7 @@ def argdown_method(document: str = "extraction-prompt", part: int = 1) -> dict[s
             (the notation both use); or "tabulation"
             (the text's comparisons as frames, read with every reconstruction); or an appendix the
             extraction prompt names for a kind of text ("judgments", "drafts", "dramatised",
-            "formal", "coleman").
+            "formal", "coleman"), or the mechanism notation's "rarer-marks".
         part: with "all", which part to serve (1, 2, ...); the reply says how many there are.
     """
     if document == "all":

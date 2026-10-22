@@ -15,7 +15,6 @@
 title: "Teaching -- causal junctions after Pearl"
 mechanism:
     question: "What does a causal diagram let us say about intervening, that an association alone does not?"
-    account: [manipulability, counterfactual]
     levels: [world]
     actors:
         world: {label: "The world", level: world}

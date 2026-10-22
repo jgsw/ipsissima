@@ -61,6 +61,7 @@ together, in two or three calls.
 | wholly dramatised: a satire, a dialogue, a persona's case | `argdown_method("dramatised")` |
 | deductive at a step you would name a rule for, or wants formal logic | `argdown_method("formal")` |
 | built on the macro-micro-macro (Coleman) diagram | `argdown_method("coleman")` |
+| causal, and says more than the notation's ordinary marks hold: nested levels, a possibility, a measure, a blocker, a regime or threshold, a step that acts on itself, what an actor faces and does | `argdown_method("rarer-marks")` |
 
 Working from the command line rather than through the MCP server? `SKILL.md`, beside these
 documents, has the commands, the read sizes and the traps.

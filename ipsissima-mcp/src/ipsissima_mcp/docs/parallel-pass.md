@@ -105,7 +105,7 @@ scheme's name has one.
 
 | scheme | the move | what to ask of it |
 |---|---|---|
-| From cause to effect | the steps bring the effect about, so it will or does occur | how strong is each step; does anything stated block it (`unless`, `despite`, a rival route, a regime) |
+| From cause to effect | the steps bring the effect about, so it will or does occur | how strong is each step; does anything stated block it (`unless`, a rival route, a regime) |
 | From effect to cause | the mechanism best explains what was observed | which rival accounts the text sets out; how thorough the account is |
 | From correlation to cause | two things go together, so one brings the other about | a common cause; the other direction; mediation and range; the measure itself |
 | From cases to a general mechanism | the steps hold in these cases, so the general step holds | are the cases kinds of the general step; how many; is a general claim drawn from one case |
@@ -151,9 +151,8 @@ A rival account is a `#reported` claim standing for the rival's chain, which att
 a bridge's premise, such a claim brings the chain's steps with it. Use it only where the text
 treats the account as one thing; where it argues step by step, the steps' own claims carry it, as
 above. `mechanism: true` stands for the whole mechanism of a map with no chains. The census lists
-each one on an `account` line, with its steps and how they are backed. (That census line is not the
-mechanism block's `account:` key, which says how the text reasons about causes, nor an `account`
-frame, which declares rival accounts for the tables.)
+each one on an `account` line, with its steps and how they are backed. (That census line is not an
+`account` frame, which declares rival accounts for the tables.)
 
 ## What the chart shows, and what meets
 
@@ -165,9 +164,8 @@ Two principles govern the Mechanism view:
   links to nothing; the census reports it as a gap.
   - **A definition of what every state is, is not a state.** Wilson 2023 says "I use the idea of a
     flow in a broad sense, to refer to a process by which inputs are transformed into outputs
-    within a system" (p. 352). Nearly every state of that map is a flow in that sense. Say it once
-    with `idiom: {term: flows, means: "...", pinpoint: "p. 352"}` on the block; the chart shows it
-    under its question.
+    within a system" (p. 352). Nearly every state of that map is a flow in that sense. Say it once,
+    in the mechanism's `question:` or a state's `note:`.
 - **Mechanisms shown together meet at a state.** The census asks two questions:
   - `? island`: a chain meets no other chain, by a state or a kind;
   - `? pieces`: a chain's steps fall into pieces that meet at no state.
@@ -179,8 +177,8 @@ Two principles govern the Mechanism view:
      of transformation, and deep, powerful structures shape whole societies. **Look first for this**,
      in the text around the piece. Mark the steps the text states. A step the argument relies on and
      no claim states is an imputation, by the usual rule.
-  2. **A definition or framing made a state.** Take it off the chain: an `idiom:`, or a claim in the
-     argument.
+  2. **A definition or framing made a state.** Take it off the chain: a sentence in the question, or
+     a claim in the argument.
   3. **Cases of one kind with no kind declared.** Three examples of one claim are three pieces until
      a `kind:` joins them. Declare it only where the text treats them as the same kind of thing.
   4. **A contrast or an illustration**, related to the rest by argument, not by cause: the
@@ -257,7 +255,6 @@ Two principles govern the Mechanism view:
   never something to close.
 - **? island** and **? pieces**: a chain that meets no other, and one in pieces (*What meets*,
   above). `apart` reports one the text keeps apart, with its reason.
-- **told as**: the block's `idiom:`.
 
 ## Going back
 

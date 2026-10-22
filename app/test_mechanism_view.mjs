@@ -116,7 +116,7 @@ const CHAINSF = path.join(FIXTURE, "chains.argdown");
         differ.map(k => `${k}: python ${JSON.stringify(pyC[k])} js ${JSON.stringify(MC.profile[k])}`).join("\n          "));
 }
 // MECHANISMS SHOWN TOGETHER MEET AT A STATE (James's principle, 8 Oct 2026): the page and the checker
-// agree on the islands, the pieces, `apart:` and the idiom; "Together" is offered for chains that
+// agree on the islands, the pieces and `apart:`; "Together" is offered for chains that
 // meet, a chain's pieces stand side by side with a rule between, and an island is drawn alone.
 // Mutations: let chainGroups join chains by a kind -> d joins nothing still, but a meets c; drop the
 // side-by-side shift -> u and s share a column; drop the rules -> none.
@@ -127,7 +127,7 @@ const MEETF = path.join(FIXTURE, "meet.argdown");
   const MM = MV.model(graphOf(MEETF));
   const differ = Object.keys(pyM).filter(k => k !== "question" &&
     !same(k === "gaps" ? MM.profile.gaps.map(g => g.message) : MM.profile[k], pyM[k]));
-  check(differ.length === 0, "the page and the checker agree on islands, pieces, `apart:` and the idiom",
+  check(differ.length === 0, "the page and the checker agree on islands, pieces and `apart:`",
         differ.map(k => `${k}: python ${JSON.stringify(pyM[k])} js ${JSON.stringify(MM.profile[k])}`).join("\n          "));
   check(same(MV.chainGroups(MM), [["a", "b"], ["c"], ["d"]]), "chains that share a state are a group; a kind is not a meeting",
         JSON.stringify(MV.chainGroups(MM)));
@@ -271,14 +271,15 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   const differ = Object.keys(pyB).filter(k => k !== "question" &&
     !same(k === "gaps" ? MB.profile.gaps.map(g => g.message) : MB.profile[k], pyB[k]));
   check(differ.length === 0 && pyB.blocked.length === 1 && pyB.strata.length === 1,
-        "the page and the checker agree on a blocker, a failed one, and a step that differs by condition",
+        "the page and the checker agree on a blocker, and a step that differs by condition",
         differ.map(k => `${k}: python ${JSON.stringify(pyB[k])} js ${JSON.stringify(MB.profile[k])}`).join("\n          "));
   const blocked = MV.layout(MB).edges.filter(e => e.blockers.length);
   check(blocked.length === 1 && blocked[0].from === "hazard" && blocked[0].stems.length === 1 &&
         blocked[0].stems[0].blocks && !!blocked[0].stems[0].tbar && !blocked[0].junction,
         "a blocker is drawn as a stem ending in a bar, not a co-cause's junction", JSON.stringify(blocked.map(e => [e.key, e.stems])));
 }
-// AND ON PROCESS, FORMATION AND CONSTITUTION (profile 1.11): a cycle that does not settle, states
+// AND ON PROCESS, FORMATION AND CONSTITUTION (profile 1.11): a cycle that does not settle (declared on
+// its chain, so the whole map, whose every chain is a cycle, is one too), states
 // that say what kind of occurrence they are, steps that make, keep, erode and transform, a process
 // with no owner, and constitutive relations (to an actor; both at once; a rival causal reading).
 // Mutations: drop the cycle's reach in walkChain -> `gaps` differ; drop `readings` -> it differs;
@@ -291,7 +292,7 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   const MP = MV.model(graphOf(PROCF));
   const differ = Object.keys(pyP).filter(k => k !== "question" &&
     !same(k === "gaps" ? MP.profile.gaps.map(g => g.message) : MP.profile[k], pyP[k]));
-  check(differ.length === 0 && pyP.form.form === "cycle" && pyP.form.settles === false && pyP.formation.length === 4 &&
+  check(differ.length === 0 && pyP.form.form === "cycle" && same(pyP.chains[0].form, { form: "cycle", settles: false }) && pyP.formation.length === 4 &&
         pyP.constitution.length === 3 && pyP.both.length === 1 && pyP.readings.length === 1 && pyP.aspects.length === 5,
         "the page and the checker agree on cycles, aspects, making and keeping, and constitution",
         differ.map(k => `${k}: python ${JSON.stringify(pyP[k])} js ${JSON.stringify(MP.profile[k])}`).join("\n          "));
@@ -387,8 +388,8 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   check(assoc.length === 1 && assoc[0].kind === "association" && !assoc[0].head && /^associated/.test(assoc[0].chip.label),
         "an association is drawn as a line with no head, labelled associated", JSON.stringify(assoc.map(e => [e.kind, e.head, e.chip.label])));
 }
-// AND ON STOCKS, CHANCES AND ACCOUNTS (profile 1.14): a stock with an inflow and an outflow, a loop
-// through the inflow, a step on a chance, an account on the block and a chain, an extrapolation.
+// AND ON STOCKS AND CHANCES (profile 1.14): a stock with an inflow and an outflow, a loop through the
+// inflow, a step on a chance, an extrapolation.
 // Mutations: drop stock_loops from the page -> it differs; give "stock" no word -> the chip says
 // "raises"/"lowers".
 {
@@ -399,8 +400,8 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   const differ = Object.keys(pyT).filter(k => k !== "question" &&
     !same(k === "gaps" ? MT.profile.gaps.map(g => g.message) : MT.profile[k], pyT[k]));
   check(differ.length === 0 && pyT.stocks.length === 2 && pyT.chances.length === 1 && pyT.stock_loops.length === 1 &&
-        pyT.extrapolated.length === 1 && same(pyT.account, ["regularity", "intra-action"]),
-        "the page and the checker agree on stocks, chances, stock loops, accounts and extrapolations",
+        pyT.extrapolated.length === 1,
+        "the page and the checker agree on stocks, chances, stock loops and extrapolations",
         differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
   const LT = MV.layout(MT);
   const word = (a, b) => LT.edges.filter(e => e.from === a && e.to === b).map(e => e.chip.label.replace(/ ↻$/, ""));
@@ -428,9 +429,8 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
         "the page and the checker agree on bridges and on where the argument takes the chain on",
         differ.map(k => `${k}: python ${JSON.stringify(pyB[k])} js ${JSON.stringify(MB.profile[k])}`).join("\n          "));
 }
-// AND ON 1.17: a "From there to here" bridge whose premises hold in two settings, a chain told in
-// order of explanation, and the questions. Mutations: drop the regime grouping in the page's
-// transfers -> `transfers` differs; drop the chain's order -> `chains` differs.
+// AND ON 1.17: a "From there to here" bridge whose premises hold in two settings, and the questions.
+// Mutation: drop the regime grouping in the page's transfers -> `transfers` differs.
 {
   const TRF = path.join(FIXTURE, "transfer.argdown");
   const pyT = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
@@ -439,10 +439,8 @@ const BLOCKF = path.join(FIXTURE, "blockers.argdown");
   const differ = Object.keys(pyT).filter(k => k !== "question" &&
     !same(k === "gaps" ? MT.profile.gaps.map(g => g.message) : MT.profile[k], pyT[k]));
   check(differ.length === 0 && pyT.transfers.length === 1 && pyT.transfers[0][3].length === 3,
-        "the page and the checker agree on a transfer between two settings, and on a chain's order",
+        "the page and the checker agree on a transfer between two settings",
         differ.map(k => `${k}: python ${JSON.stringify(pyT[k])} js ${JSON.stringify(MT.profile[k])}`).join("\n          "));
-  check(MT.profile.chains.filter(c => c.id === "story")[0].order === "explanation",
-        "  a chain told in order of explanation says so");
   const Q = GT.questions || [];
   check(Q.length === 2 && Q[0].moves.map(m => m.move).join() === "answers,reframes" &&
         same(Q[0].moves[1].into, ["whose"]),
@@ -671,8 +669,8 @@ const TIMESF = path.join(FIXTURE, "times.argdown");
   check(tr.length === 1 && /^(▲ )?speeds/.test(tr[0].chip.glyph ? tr[0].chip.glyph + " " + tr[0].chip.label : tr[0].chip.label),
         "a step on a trend says it speeds or slows, not raises or lowers", JSON.stringify(tr.map(e => e.chip)));
 }
-// AND ON MAGNITUDE (profile 1.8, G3): sizes, and how much of a step runs by its route. Mutation:
-// let openedOf ignore `share` -> `routes` and `opened` differ; drop sizeTag -> no value on the arrow.
+// AND ON MAGNITUDE (profile 1.8, G3): sizes, and a step opened into its route. Mutation: drop sizeTag
+// -> no value on the arrow.
 const SIZESF = path.join(FIXTURE, "sizes.argdown");
 {
   const pyZ = JSON.parse(execFileSync(PY, [path.join(REPO, "ipsissima-mcp", "src", "ipsissima_mcp", "check_argdown.py"),
@@ -680,12 +678,12 @@ const SIZESF = path.join(FIXTURE, "sizes.argdown");
   const MZ = MV.model(graphOf(SIZESF));
   const differ = Object.keys(pyZ).filter(k => k !== "question" &&
     !same(k === "gaps" ? MZ.profile.gaps.map(g => g.message) : MZ.profile[k], pyZ[k]));
-  check(differ.length === 0 && pyZ.sizes.length === 2 && pyZ.mediation.length === 2,
-        "the page and the checker agree on sizes and on how much of a step runs by its route",
+  check(differ.length === 0 && pyZ.sizes.length === 2 && pyZ.opened.length === 1,
+        "the page and the checker agree on sizes and on a step opened into its route",
         differ.map(k => `${k}: python ${JSON.stringify(pyZ[k])} js ${JSON.stringify(MZ.profile[k])}`).join("\n          "));
-  const sz = MV.layout(MZ).edges.filter(e => e.from === "order" && e.to === "reoff" && / · -0\.12/.test(e.chip.label));
-  check(sz.length === 1 && !/via/.test(sz[0].chip.label),
-        "a step's stated value is on its arrow, and a partial route is not labelled as the step", JSON.stringify(MV.layout(MZ).edges.map(e => e.chip.label)));
+  const LZ = MV.layout(MZ), sz = LZ.edges.filter(e => e.from === "order" && e.to === "cost" && / · a third of the cost/.test(e.chip.label));
+  check(sz.length === 1 && !LZ.edges.some(e => e.from === "order" && e.to === "reoff" && / · -0\.12/.test(e.chip.label)),
+        "a step's stated value is on its arrow, and a step opened into its route is drawn as that route", JSON.stringify(LZ.edges.map(e => e.chip.label)));
 }
 {
   // Two accounts that cannot both hold (Yellowstone). Mutation: drop disputedKey from the chip ->
@@ -1537,13 +1535,15 @@ mechanism:
         JSON.stringify(P && { panels: P.panels, edges: G.edges.map(e => [e.from, e.to, e.kind]) }));
 }
 
-// PROFILE 1.19 ON THE CHART: a named, numbered step in its channel's colour, a peaked relation, a net
-// flow, and the state marks. Mutations: drop the name branch -> the verb; drop the channel ink -> text;
-// drop the behaviour push -> no badge.
+// PROFILE 1.19 ON THE CHART: a named, numbered step (the Coleman boat's arrows). Profile 1.25 retired
+// the rest of 1.19 -- channels, shapes, net flows, behaviour, unobserved, dead ends, conditioning and
+// the boundary's clouds: an old map that carries them is drawn as if they were not there. Mutations:
+// drop the name branch -> the verb; read `channel` again -> a channel ink; read `shape` -> "rises, then falls".
 {
   const K = MV.model(toGraph(argdown.run({ input: `===
 mechanism:
     levels: [one]
+    boundary: "What lies outside still acts on it"
     channels:
         eco: {label: "ecological"}
     actors:
@@ -1553,7 +1553,6 @@ mechanism:
         b: {label: "B", actor: p, behaviour: oscillates, observed: false}
         c: {label: "C", actor: p, role: outcome}
         d: {label: "D", actor: p, dead_end: true}
-        st: {label: "Stock", actor: p}
 ===
 
 [Aim]: A.
@@ -1561,19 +1560,16 @@ mechanism:
 [N]: A raises B, the situational step. {causes: {from: a, to: b, sign: "+", name: "Situational", mark: "1", channel: eco, basis: asserted}}
     +> [Aim]
 
-[P]: B does most to C at middling levels. {causes: {from: b, to: c, shape: peak, basis: asserted}}
+[P]: B does most to C at middling levels. {causes: {from: b, to: c, shape: peak, sign: which, basis: asserted}}
     +> [Aim]
 
-[D]: A leads to D, a dead end. {causes: {from: a, to: d, sign: which, basis: asserted}}
-    +> [Aim]
-
-[F]: C flows into the stock or out of it. {causes: {from: c, to: st, on: stock, net: true, sign: which, basis: asserted}}
+[D]: A leads to D. {causes: {from: a, to: d, sign: which, basis: asserted}}
     +> [Aim]
 `, ...RUN })));
   const G = MV.layout(K), at = (f, t) => G.edges.find(e => e.from === f && e.to === t);
-  const ab = at("a", "b"), bc = at("b", "c"), net = G.edges.find(e => e.stock === "net");
-  check(ab && /Situational/.test(ab.chip.label) && ab.chip.mark === "1" && ab.ink === "ch0" && !ab.chip.quiet,
-        "a named, numbered step says its name and number, in its channel's colour", JSON.stringify(ab && [ab.chip, ab.ink]));
+  const ab = at("a", "b"), bc = at("b", "c");
+  check(ab && /Situational/.test(ab.chip.label) && ab.chip.mark === "1" && ab.ink === "text" && !ab.chip.quiet,
+        "a named, numbered step says its name and number, in the text's own ink", JSON.stringify(ab && [ab.chip, ab.ink]));
   // A numbered step whose words only repeat the sign shows its number alone. Mutation: drop markOnly -> "raises" drawn.
   const K2 = MV.model(toGraph(argdown.run({ input: `===
 mechanism:
@@ -1593,58 +1589,10 @@ mechanism:
   const m4 = MV.layout(K2).edges[0].chip;
   check(m4.markOnly && m4.mark === "4" && m4.lines.join("") === "" && m4.whole === "raises",
         "a numbered step that only rises shows its number alone, and says the rest on hover", JSON.stringify(m4));
-  check(bc && bc.chip.label === "rises, then falls" && net && net.chip.label === "net flow",
-        "a peaked relation and a net flow say so", JSON.stringify([bc && bc.chip.label, net && net.chip.label]));
-  // A DEAD END CARRIES NO BADGE SINCE 17 OCT 2026: its muted box says it. Behaviour and unobserved are
-  // marks of "marks: All", not of the plain marks the view opens on. Mutation: drop the PLAIN return ->
-  // the plain spec carries them.
-  const mk = MV.markSpec(K, K).marks, mp = MV.markSpec(K, K, "plain").marks;
-  check(mk.b.right.some(x => x.kind === "behaviour") && mk.b.left.some(x => x.kind === "unobserved") && !mk.d.left.some(x => x.kind === "deadend") &&
-        !mp.b.right.length && !mp.b.left.length,
-        "behaviour and unobserved are marked on their boxes under all marks, not under plain; a dead end not at all", JSON.stringify([mk.b, mk.d, mp.b]));
-  check(!K.profile.gaps.some(g => g.state === "d"), "and a dead end is not a gap");
-}
-
-// THE SYSTEM'S BOUNDARY (1.19, James's decision, 9 Oct 2026): clouds at the open ends of the flows,
-// only where the text draws attention to where its system stops. Mutations: drop the `opts.boundary`
-// test -> clouds without the key; drop the side rule -> a flow between two stocks gets a cloud.
-{
-  const src = (b) => `===
-mechanism:
-    levels: [one]${b}
-    actors:
-        p: {label: "P", level: one}
-    states:
-        births: {label: "Births", actor: p}
-        pop: {label: "Population", actor: p}
-        moves: {label: "Moving away", actor: p}
-        town: {label: "Town", actor: p}
-        deaths: {label: "Deaths", actor: p}
-===
-
-[Aim]: A.
-
-[B]: Births fill the population. {causes: {from: births, to: pop, on: stock, sign: "+", basis: asserted}}
-    +> [Aim]
-
-[D]: Deaths drain it. {causes: {from: deaths, to: pop, on: stock, sign: "-", basis: asserted}}
-    +> [Aim]
-
-[M]: Moving away drains it. {causes: {from: moves, to: pop, on: stock, sign: "-", basis: asserted}}
-    +> [Aim]
-
-[T]: And fills the town. {causes: {from: moves, to: town, on: stock, sign: "+", basis: asserted}}
-    +> [Aim]
-`;
-  const B = '\n    boundary: {says: "What lies outside the boundary still acts on it", pinpoint: "p. 97"}';
-  const lay = (b) => { const K = MV.model(toGraph(argdown.run({ input: src(b), ...RUN }))); return [K, MV.layout(K, { boundary: !!(K.reasoning && K.reasoning.boundary) })]; };
-  const [K, G] = lay(B), [, G0] = lay("");
-  const at = (v) => (G.clouds || []).filter(c => c.flow === v).map(c => c.side);
-  check(K.reasoning.boundary && K.reasoning.boundary.pinpoint === "p. 97" && same(at("births"), [-1]) && same(at("deaths"), [1]) &&
-        same(at("moves"), []) && !("moves" in G.openEnds) && (G0.clouds || []).length === 0,
-        "a text that marks its boundary gets a cloud at each open end of a flow, and none between two stocks or without the key",
-        JSON.stringify([G.clouds, G0.clouds]));
-  check(MV.audit(G).hard.length === 0, "and the clouds sit clear of everything", JSON.stringify(MV.audit(G).hard));
+  const mk = MV.markSpec(K, K).marks;
+  check(bc && !/rises, then falls/.test(bc.chip.label) && !G.clouds && !mk.b.right.length && !mk.b.left.length,
+        "retired keys draw nothing: no peak, no cloud, no behaviour sketch, no asterisk", JSON.stringify([bc && bc.chip.label, mk.b]));
+  check(K.profile.gaps.some(g => g.state === "d"), "and a state once marked a dead end is asked about like any other");
 }
 
 // THE REDRAW OF 9 OCT 2026, against the authors' figures. Mutations: drop givenTag from the null ->
@@ -2471,8 +2419,6 @@ mechanism:
     const drawnIds = await page.evaluate(() => [...document.querySelectorAll("#mech svg .st")].map(g => g.getAttribute("data-state")).sort());
     check(same(drawnIds, ["x", "y", "z"]) && /drawn together because they meet/.test(await page.locator("#mech .amech-side").innerText()),
           "choosing it draws those chains' states, and says why they are together", JSON.stringify(drawnIds));
-    check(/Told as flows: processes by which inputs become outputs \(p\. 2\)/.test(await page.locator("#mech .amech-head").innerText()),
-          "the idiom is said under the question, not drawn as a state");
     await page.locator("#mech select[data-chain]").selectOption("c");
     await page.waitForTimeout(400);
     check(await page.locator("#mech svg line.piece-rule").count() === 1, "a chain in two pieces is drawn with a rule between them");

@@ -8,7 +8,7 @@
  * that writing it blind is the main cost of a mechanism map.
  *
  * ONE RULE IN ONE PLACE, AS FAR AS IT GOES. The rules here are ipsissima-mcp's mechanism.py --
- * `declared`, `level_order`, `form_of`, `_boundary_problems` and the per-step and per-relation
+ * `declared`, `level_order`, `form_of` and the per-step and per-relation
  * checks of `analyse` -- ported message for message, and test_mechanism_lint.mjs holds the two to
  * the SAME findings, word for word, on every map that has a mechanism. Only the LOCAL rules are
  * here: those a writer can act on where they stand (this key, this state, this chain). The census's
@@ -39,23 +39,18 @@ if (!PROFILE && typeof module !== "undefined" && typeof require === "function") 
 var DEFAULT_LEVELS = ["macro", "meso", "micro"];
 var STATUSES = ["actual", "possible", "open"];
 var ASPECTS = ["quantity", "activity", "development", "event", "condition"];
-var BEHAVIOURS = ["grows", "declines", "levels off", "s-shaped", "oscillates", "overshoot and collapse", "steady"];
 var ROLES = ["intervention", "condition", "outcome"];
-var SHARES = ["entire", "most", "partial", "none"];
 var EFFECTS = ["strengthens", "weakens", "reverses", "0"];
 var ONS = ["level", "trend", "being", "persistence", "character", "possibility", "chance", "stock"];
 var SIGNS = ["+", "-", "0", "which"];
 var BASES = ["study", "statistics", "model", "example", "testimony", "asserted"];
 var STANCES = ["rejected", "unjudged"];
 var ATTRIBUTIONS = ["intentional", "mechanical", "inadvertent", "accidental", "complex"];
-var SHAPES = ["peak", "trough"];
 var SCOPES = ["singular", "general"];
 var EXTENTS = ["partial", "entire"];
 var WHOLES = ["aggregate", "organised", "reducible", "mutual"];
 var CONSTITUTION_BASES = BASES.concat(["account", "definition"]);
 var GOALS = ["explain", "intervene", "predict", "attribute"];
-var ACCOUNTS = ["regularity", "manipulability", "mechanism", "counterfactual", "intra-action"];
-var CHAIN_ORDERS = ["time", "explanation"];
 var DEPTHS = ["full", "sketch", "none"];
 var FORMS = ["chain", "cycle"];
 var ORDERINGS = { composition: "parts within wholes", space: "regions within regions", authority: "a chain of command",
@@ -128,10 +123,26 @@ function relationKeys(kind) {
   var p = PROFILE && PROFILE[kind];
   return p ? Object.keys(p).filter(function (k) { return k !== "summary"; }) : null;
 }
+/** RETIRED KEYS (profile 1.25): {part: {key: what to write instead}} -- mechanism.py's RETIRED. */
+var RETIRED = (function () {
+  var r = (PROFILE && PROFILE.retired) || {}, out = {};
+  Object.keys(r).forEach(function (part) {
+    if (!isDict(r[part])) return;
+    out[part] = {};
+    Object.keys(r[part]).forEach(function (k) { out[part][k] = String((r[part][k] || {}).instead || ""); });
+  });
+  return out;
+})();
+var RETIRED_SAID = "was retired in profile 1.25 and is not read";
+function isRetired(part, k) { return has(RETIRED[part] || {}, k); }
+/** [key, what to write instead] for each retired key `d` carries in `part` -- mechanism.py's _retired_in. */
+function retiredIn(d, part) {
+  return isDict(d) ? Object.keys(d).filter(function (k) { return isRetired(part, k); }).map(function (k) { return [k, RETIRED[part][k]]; }) : [];
+}
 function unknownKeys(c, kind) {
   var known = relationKeys(kind);
   if (!known || !isDict(c)) return [];
-  return Object.keys(c).filter(function (k) { return known.indexOf(k) < 0; })
+  return Object.keys(c).filter(function (k) { return known.indexOf(k) < 0 && !isRetired(kind, k); })
     .map(function (k) { return [k, nearest(k, known)]; });
 }
 
@@ -150,28 +161,6 @@ function formOf(b, path, tag) {
   var st = b.settles;
   if (st != null && typeof st !== "boolean") out.push(F("!", tag + "`settles:` is `true` or `false`, not `" + py(st) + "`", { fm: path.concat(["settles"]) }));
   else if (st != null && form !== "cycle") out.push(F("?", tag + "`settles` says whether a cycle comes to rest, and this is not declared `form: cycle`", { fm: path.concat(["settles"]) }));
-  return out;
-}
-
-function boundaryProblems(b, path, tag) {
-  var raw = isDict(b) ? b.boundary : null;
-  if (raw == null) return [];
-  var out = [], at = { fm: path.concat(["boundary"]) };
-  if (isDict(raw)) {
-    var extra = sortStr(Object.keys(raw).filter(function (k) { return k !== "says" && k !== "pinpoint"; }));
-    if (extra.length) out.push(F("!", tag + "`boundary:` takes `says` and `pinpoint`, not `" + extra[0] + "`", { fm: path.concat(["boundary", extra[0]]) }));
-  } else if (Array.isArray(raw)) {
-    out.push(F("!", tag + "`boundary:` is the text's words, or `{says, pinpoint}`", at));
-    return out;
-  }
-  var says = null, pin = null;
-  if (!isDict(raw)) says = py(raw).trim() === "" ? null : py(raw);
-  else {
-    says = raw.says == null || py(raw.says).trim() === "" ? null : py(raw.says);
-    pin = raw.pinpoint == null || py(raw.pinpoint).trim() === "" ? null : py(raw.pinpoint);
-  }
-  if (!says) out.push(F("!", tag + "`boundary:` says nothing: give the text's words", at));
-  else if (!pin) out.push(F("?", tag + "`boundary:` has no pinpoint: the words are the text's, so say where", at));
   return out;
 }
 
@@ -247,10 +236,6 @@ function declared(m) {
     who.forEach(function (a) { if (!has(actors, a)) P.push(F("!", "state `" + sid + "` names actor `" + a + "`, which is not declared under `actors:`", at("actor", a))); });
     if (s.status != null && STATUSES.indexOf(py(s.status)) < 0) P.push(F("?", "state `" + sid + "` has `status: " + py(s.status) + "`; the statuses read are " + STATUSES.join(", "), at("status")));
     if (s.aspect != null && ASPECTS.indexOf(py(s.aspect)) < 0) P.push(F("?", "state `" + sid + "` has `aspect: " + py(s.aspect) + "`; the aspects read are " + ASPECTS.join(", "), at("aspect")));
-    if (s.behaviour != null && BEHAVIOURS.indexOf(py(s.behaviour)) < 0) P.push(F("!", "state `" + sid + "` has `behaviour: " + py(s.behaviour) + "`; the behaviours read are " + BEHAVIOURS.join(", "), at("behaviour")));
-    ["observed", "dead_end"].forEach(function (k) {
-      if (s[k] != null && typeof s[k] !== "boolean") P.push(F("!", "state `" + sid + "`: `" + k + ":` is `true` or `false`, not `" + py(s[k]) + "`", at(k)));
-    });
     asList(s.levels).forEach(function (lv) { if (levels.indexOf(lv) < 0) P.push(F("!", "state `" + sid + "` names level `" + lv + "`, which is not one of the declared levels", at("levels", lv))); });
     var meas = s.measures;
     if (meas != null && !has(states, meas)) P.push(F("!", "state `" + sid + "` `measures: " + py(meas) + "`, which is not a declared state", at("measures")));
@@ -284,32 +269,14 @@ function declared(m) {
   });
   var chains = m.chains;
   if (chains != null && !isDict(chains)) P.push(F("!", "`chains:` must map ids to chains, each with a `label` and a `question`", { fm: M.concat(["chains"]) }));
-  P = P.concat(formOf(m, M, ""));
-  var order = function (b) { return isDict(b) && b.order != null ? py(b.order) : null; };
-  if (order(m) != null && CHAIN_ORDERS.indexOf(order(m)) < 0) P.push(F("!", "`order: " + order(m) + "` is not one of " + CHAIN_ORDERS.join(", "), { fm: M.concat(["order"]) }));
-  if (isDict(m.chains)) Object.keys(m.chains).forEach(function (cid) {
-    var o = order(m.chains[cid]);
-    if (o != null && CHAIN_ORDERS.indexOf(o) < 0) P.push(F("!", "chain `" + cid + "`: `order: " + o + "` is not one of " + CHAIN_ORDERS.join(", "), { fm: M.concat(["chains", cid, "order"]) }));
-  });
   var d = m.depth == null ? "full" : py(m.depth), why = m.depth == null ? null : (m.depth_reason == null ? null : py(m.depth_reason));
   if (DEPTHS.indexOf(d) < 0) P.push(F("!", "`depth: " + d + "` is not one of " + DEPTHS.join(", "), { fm: M.concat(["depth"]) }));
   else if (d !== "full" && !why) P.push(F("?", "`depth: " + d + "` says the mechanism is not mapped in full, and no `depth_reason:` says why", { fm: M.concat(["depth"]) }));
   if (m.goal != null && GOALS.indexOf(py(m.goal)) < 0) P.push(F("?", "`goal: " + py(m.goal) + "` is not one of " + GOALS.join(", "), { fm: M.concat(["goal"]) }));
-  asList(m.account).forEach(function (a) { if (ACCOUNTS.indexOf(a) < 0) P.push(F("?", "`account: " + a + "` is not one of " + ACCOUNTS.join(", "), { fm: M.concat(["account"]), token: a })); });
-  if (m.channels != null && !isDict(m.channels)) P.push(F("!", "`channels:` maps an id to `{label}`", { fm: M.concat(["channels"]) }));
-  P = P.concat(boundaryProblems(m, M, ""));
   if (isDict(chains)) Object.keys(chains).forEach(function (cid) {
     var ch = isDict(chains[cid]) ? chains[cid] : {}, C = M.concat(["chains", cid]), tag = "chain `" + cid + "`: ";
-    P = P.concat(boundaryProblems(ch, C, tag));
-    var cond = ch.conditioned;
-    (Array.isArray(cond) ? cond : asList(cond)).forEach(function (item) {
-      (Array.isArray(item) ? item : [item]).forEach(function (sid) {
-        if (!has(states, py(sid))) P.push(F("!", "chain `" + cid + "`: `conditioned:` names `" + py(sid) + "`, which is not a declared state", { fm: C.concat(["conditioned"]), token: py(sid) }));
-      });
-    });
     P = P.concat(formOf(ch, C, tag));
     if (ch.goal != null && GOALS.indexOf(py(ch.goal)) < 0) P.push(F("?", "chain `" + cid + "`: `goal: " + py(ch.goal) + "` is not one of " + GOALS.join(", "), { fm: C.concat(["goal"]) }));
-    asList(ch.account).forEach(function (a) { if (ACCOUNTS.indexOf(a) < 0) P.push(F("?", "chain `" + cid + "`: `account: " + a + "` is not one of " + ACCOUNTS.join(", "), { fm: C.concat(["account"]), token: a })); });
     var roles = or(ch.roles, {});
     if (!isDict(roles)) { P.push(F("!", "chain `" + cid + "`: `roles:` must map state ids to roles", { fm: C.concat(["roles"]) })); return; }
     Object.keys(roles).forEach(function (sid) {
@@ -322,19 +289,25 @@ function declared(m) {
   var dym = function (near) { return near ? " -- did you mean `" + near + "`?" : ""; };
   var mech = PROFILE && PROFILE.mechanism;
   if (mech) {
-    var known = { block: Object.keys(mech).filter(function (k) { return k !== "summary"; }), channels: ["label"] };
+    var known = { block: Object.keys(mech).filter(function (k) { return k !== "summary"; }) };
     ["states", "actors", "chains", "kinds"].forEach(function (part) { known[part] = Object.keys(mech[part].keys); });
     Object.keys(m).forEach(function (k) {
-      if (known.block.indexOf(k) < 0) P.push(F("!", "`" + k + "` is not a key the `mechanism:` block can carry, so it is never read" + dym(nearest(k, known.block)), onKey({ fm: M.concat([k]) })));
+      if (known.block.indexOf(k) < 0 && !isRetired("block", k)) P.push(F("!", "`" + k + "` is not a key the `mechanism:` block can carry, so it is never read" + dym(nearest(k, known.block)), onKey({ fm: M.concat([k]) })));
     });
-    [["states", "state", "a state"], ["actors", "actor", "an actor"], ["chains", "chain", "a chain"], ["kinds", "kind", "a kind"], ["channels", "channel", "a channel"]].forEach(function (pn) {
+    retiredIn(m, "block").forEach(function (r) {
+      P.push(F("?", "`" + r[0] + "` on the `mechanism:` block " + RETIRED_SAID + ": " + r[1], onKey({ fm: M.concat([r[0]]) })));
+    });
+    [["states", "state", "a state"], ["actors", "actor", "an actor"], ["chains", "chain", "a chain"], ["kinds", "kind", "a kind"]].forEach(function (pn) {
       var coll = m[pn[0]];
       if (!isDict(coll)) return;
       Object.keys(coll).forEach(function (xid) {
         if (!isDict(coll[xid])) return;
         Object.keys(coll[xid]).forEach(function (k) {
-          if (known[pn[0]].indexOf(k) < 0) P.push(F("!", pn[1] + " `" + xid + "`: `" + k + "` is not a key " + pn[2] + " can carry, so it is never read" + dym(nearest(k, known[pn[0]])),
+          if (known[pn[0]].indexOf(k) < 0 && !isRetired(pn[0], k)) P.push(F("!", pn[1] + " `" + xid + "`: `" + k + "` is not a key " + pn[2] + " can carry, so it is never read" + dym(nearest(k, known[pn[0]])),
             onKey({ fm: M.concat([pn[0], xid, k]), fallback: M.concat([pn[0], xid]) })));
+        });
+        retiredIn(coll[xid], pn[0]).forEach(function (r) {
+          P.push(F("?", pn[1] + " `" + xid + "`: `" + r[0] + "` " + RETIRED_SAID + ": " + r[1], onKey({ fm: M.concat([pn[0], xid, r[0]]), fallback: M.concat([pn[0], xid]) })));
         });
       });
     });
@@ -384,6 +357,9 @@ function findings(graph) {
     unknownKeys(c, "constitutes").forEach(function (u) {
       out.push(F("!", "`" + u[0] + "` is not a key a constitutive relation can carry, so it is never read" + (u[1] ? " -- did you mean `" + u[1] + "`?" : ""), onKey(at(u[0]))));
     });
+    retiredIn(c, "constitutes").forEach(function (r) {
+      out.push(F("?", "`" + r[0] + "` on a constitutive relation " + RETIRED_SAID + ": " + r[1], onKey(at(r[0]))));
+    });
     var src = c.from, dst = c.to;
     if (src == null) out.push(F("!", "a constitutive relation has no `from:`", at(null)));
     else if (!has(states, src)) out.push(F("!", "`constitutes: {from: " + py(src) + "}` is not a declared state", at("from")));
@@ -415,7 +391,6 @@ function findings(graph) {
       out.push(F("!", chainIds.length ? "`mechanism: " + py(ch) + "` is not one of the chains declared under `mechanism: chains:`"
         : "`mechanism: " + py(ch) + "` names a chain, but the front matter declares no `chains:` -- `mechanism: true` stands for the whole mechanism", at));
   });
-  var channels = isDict(block) && isDict(block.channels) ? block.channels : {};
   steps.forEach(function (k) {
     var c = k.raw, title = k.claim.title, at = function (key, tok) { return { claim: title, rel: "causes", i: k.i, key: key, token: tok }; };
     var src = c.from, dst = c.to, ends = [src, dst];
@@ -423,7 +398,6 @@ function findings(graph) {
     var isNull = sign === "0", selects = truthy(c.selects), assoc = truthy(c.association);
     var reported = k.layer === "rival";
     var on = c.on == null ? "level" : py(c.on);
-    var share = c.share != null ? py(c.share) : (c.via != null && truthy(c.via) ? "entire" : "");
     var via = asList(c.via);
     asList(c.chain).forEach(function (ch) {
       if (chainIds.indexOf(ch) < 0)
@@ -434,14 +408,10 @@ function findings(graph) {
       if (!has(states, v)) out.push(F("!", "`via: " + v + "` is not a declared state", at("via", v)));
       else if (ends.indexOf(v) >= 0) out.push(F("?", "`via: " + v + "` names the step's own `from` or `to`", at("via", v)));
     });
-    ["unless", "despite"].forEach(function (key) {
-      asList(c[key]).forEach(function (u) {
-        if (!has(states, u)) out.push(F("!", "`" + key + ": " + u + "` is not a declared state", at(key, u)));
-        else if (ends.indexOf(u) >= 0) out.push(F("?", "`" + key + ": " + u + "` names the step's own `from` or `to`", at(key, u)));
-      });
+    asList(c.unless).forEach(function (u) {
+      if (!has(states, u)) out.push(F("!", "`unless: " + u + "` is not a declared state", at("unless", u)));
+      else if (ends.indexOf(u) >= 0) out.push(F("?", "`unless: " + u + "` names the step's own `from` or `to`", at("unless", u)));
     });
-    if (share && SHARES.indexOf(share) < 0) out.push(F("!", "`share: " + share + "` is not one of " + SHARES.join(", "), at("share")));
-    else if (c.share != null && !via.length) out.push(F("?", "`share` says how much of a step runs by a route, and this step names none in `via`", at("share")));
     var mods = c.modifies;
     (Array.isArray(mods) ? mods : truthy(mods) ? [mods] : []).forEach(function (m) {
       var by = isDict(m) && m.by != null ? py(m.by) : "", effect = isDict(m) && m.effect != null ? py(m.effect) : "";
@@ -468,12 +438,7 @@ function findings(graph) {
     else if (stance && !reported) out.push(F("?", "`stance` says where the text stands on a view it reports, and this claim is not tagged #reported or #contested", at("stance")));
     if (str(c.design) === "illustration" && ["study", "statistics", "model"].indexOf(c.basis) >= 0)
       out.push(F("?", "`design: illustration` is a hypothetical case, and `basis: " + py(c.basis) + "` says the text tested the step", at("design")));
-    var channel = str(c.channel), shape = str(c.shape), mark = str(c.mark);
-    if (channel && !has(channels, channel)) out.push(F("!", "`channel: " + channel + "` is not declared under `channels:`", at("channel")));
-    if (shape && SHAPES.indexOf(shape) < 0) out.push(F("!", "`shape: " + shape + "` is not one of " + SHAPES.join(", "), at("shape")));
-    else if (shape && (sign === "+" || sign === "-" || sign === "0")) out.push(F("!", "`shape: " + shape + "` says the step rises and falls, and `sign: " + sign + "` gives it one direction", at("shape")));
-    if (c.net != null && typeof c.net !== "boolean") out.push(F("!", "`net:` is `true` or `false`, not `" + py(c.net) + "`", at("net")));
-    else if (truthy(c.net) && on !== "stock") out.push(F("!", "`net: true` is a flow that runs whichever way the gap points, and the step does not flow into a stock", at("net")));
+    var mark = str(c.mark);
     if (mark.length > 6) out.push(F("?", "`mark: " + mark + "` is drawn in a small circle on the arrow: six characters at most", at("mark")));
     var MAKES = { being: "makes", persistence: "maintains", possibility: "opens", chance: "makes likelier", stock: "flows into" };
     var UNMAKES = { being: "unmakes", persistence: "erodes", possibility: "closes", chance: "makes less likely", stock: "flows out of" };
@@ -503,6 +468,9 @@ function findings(graph) {
     unknownKeys(c, "causes").forEach(function (u) {
       out.push(F("!", "`" + u[0] + "` is not a key a step can carry, so it is never read" +
         (u[1] ? " -- did you mean `" + u[1] + "`?" : u[0] === "note" ? " -- a note goes on the claim, beside `fidelity:`, not inside `causes:`" : ""), onKey(at(u[0]))));
+    });
+    retiredIn(c, "causes").forEach(function (r) {
+      out.push(F("?", "`" + r[0] + "` on a step " + RETIRED_SAID + ": " + r[1], onKey(at(r[0]))));
     });
     if (sign !== null && SIGNS.indexOf(sign) < 0) out.push(F("?", "sign `" + sign + "` is not `+`, `-`, `0` (no effect) or `which` (decides which)", at("sign")));
     var text = k.claim.joined != null ? k.claim.joined : (k.claim.text || "");
@@ -828,10 +796,9 @@ function contextAt(t, pos) {
 }
 
 // ---------------------------------------------------------------- completion
-var REFS = { from: "state", to: "state", via: "state", unless: "state", despite: "state", jointly: "state",
+var REFS = { from: "state", to: "state", via: "state", unless: "state", jointly: "state",
              measured_by: "state", by: "state", state: "state", part_of: "state", measures: "state", general: "state",
-             chain: "chain", channel: "channel", actor: "actor", level: "level", levels: "level", kind: "kind",
-             conditioned: "state" };
+             chain: "chain", actor: "actor", level: "level", levels: "level", kind: "kind" };
 /** Values a key takes, from the registry's `values`, or the alternatives its `type` lists. */
 function valuesOf(entry) {
   if (!entry) return null;
@@ -867,9 +834,8 @@ function registryAt(ctx) {
     if (p[0] !== "mechanism") return null;
     var mech = PROFILE.mechanism;
     if (p.length === 1) return mech;
-    var col = { states: 1, actors: 1, chains: 1, kinds: 1, channels: 1 };
+    var col = { states: 1, actors: 1, chains: 1, kinds: 1 };
     if (p.length === 3 && col[p[1]]) {
-      if (p[1] === "channels") return { label: { type: "string", summary: "The kind of link, in the text's words." } };
       var ks = mech[p[1]] && mech[p[1]].keys;
       if (!ks) return null;
       var o2 = {};
@@ -888,7 +854,7 @@ function declaredIds(graph) {
   b = isDict(b) ? b : {};
   var pick = function (o) { return isDict(o) ? o : {}; };
   var lbl = function (x) { return isDict(x) && x.label != null ? String(x.label) : ""; };
-  var out = { state: [], actor: [], chain: [], kind: [], channel: [], level: [] };
+  var out = { state: [], actor: [], chain: [], kind: [], level: [] };
   var st = pick(b.states), ac = pick(b.actors);
   Object.keys(st).forEach(function (id) {
     var s = pick(st[id]), who = asList(s.actor).map(function (a) { return lbl(ac[a]) || a; }).join(", ");
@@ -898,7 +864,6 @@ function declaredIds(graph) {
   Object.keys(ac).forEach(function (id) { out.actor.push({ id: id, label: lbl(ac[id]), detail: ac[id] && ac[id].level != null ? String(ac[id].level) : "" }); });
   Object.keys(pick(b.chains)).forEach(function (id) { out.chain.push({ id: id, label: lbl(b.chains[id]), detail: b.chains[id] && b.chains[id].question ? String(b.chains[id].question) : "" }); });
   Object.keys(pick(b.kinds)).forEach(function (id) { out.kind.push({ id: id, label: lbl(b.kinds[id]), detail: "" }); });
-  Object.keys(pick(b.channels)).forEach(function (id) { out.channel.push({ id: id, label: lbl(b.channels[id]), detail: "" }); });
   (Array.isArray(b.levels) ? b.levels : DEFAULT_LEVELS).forEach(function (lv) { out.level.push({ id: String(lv), label: "", detail: "" }); });
   return out;
 }
@@ -999,7 +964,7 @@ function hover(t, pos, graph) {
     if (raw.status != null) bits.push("status: " + py(raw.status));
     return "state `" + word + "`: " + (st.label || "(no label)") + (bits.length ? "\n" + bits.join(" · ") : "");
   }
-  var groups = [["actor", "actor"], ["chain", "chain"], ["kind", "kind"], ["channel", "channel"]];
+  var groups = [["actor", "actor"], ["chain", "chain"], ["kind", "kind"]];
   for (var g = 0; g < groups.length; g++) {
     var x = ids[groups[g][0]].filter(function (y) { return y.id === word; })[0];
     if (x) return groups[g][1] + " `" + word + "`: " + (x.label || "(no label)") + (x.detail ? "\n" + x.detail : "");

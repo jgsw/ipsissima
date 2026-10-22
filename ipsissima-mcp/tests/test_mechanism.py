@@ -346,7 +346,7 @@ check("the rival account the text reports, with its stance", bq["Effect to cause
 check("nothing recorded is said as nothing: no blocker on the lever", bq["Lever"]["blockers"][2:4], ["none", []])
 check("a case's kind, and the kind's general claim", len(bq["Cases"]["kinds"][3]), 2)
 check("a question only a reader can answer is left to the reader",
-      [q[2] for k, q in bq["Vindication"].items() if k.startswith("reader")], ["reader", "reader", "reader"])
+      [q[2] for k, q in bq["Vindication"].items() if k.startswith("reader")], ["reader"] * 4)
 check("a step in one setting only, for a conclusion carried to another",
       bq["There to here"]["here"][3][:1], ["only where no setting is named: \u201cSugary drinks cost more\u201d \u2192 \u201cShoppers drink less sugar\u201d (-)"])
 cen = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), str(FIXTURE / "bridge-questions.argdown"), "--no-fix"],
@@ -370,7 +370,7 @@ check("counter-considerations the argument does not take up leave the question p
 check("a rival account stated and never answered: not answered", vd["Effect to cause"]["rivals"][4], "open")
 check("nothing on a question: the draft does not take it up", vd["Lever"]["blockers"][4:], ["open", "the draft does not take this up"])
 check("no general claim from one case: answered", vd["Cases"]["onecase"][4], "answered")
-check("a question for the reader gets no verdict", [q[4] for k, q in vd["Vindication"].items() if k.startswith("reader")], [None] * 3)
+check("a question for the reader gets no verdict", [q[4] for k, q in vd["Vindication"].items() if k.startswith("reader")], [None] * 4)
 td2 = tempfile.mkdtemp(prefix="mechanism-draft-")
 open(os.path.join(td2, "d.argdown"), "w", encoding="utf-8").write(DRAFT)
 cen_d = subprocess.run([sys.executable, str(PKG / "check_argdown.py"), os.path.join(td2, "d.argdown"), "--no-fix"],
@@ -601,32 +601,28 @@ check("a route that nets the other sign is named", any("nets `+`" in f["message"
 check("a `via` naming no declared state is a fault",
       any("`via: nowhere` is not a declared state" in f["message"] for f in by(run(VIA.replace("via: [work, reint]", "via: [nowhere]")), "mechanism")), True)
 
-print("\nprofile 1.8: a step on a step (unless, despite, conditions on a state)")
+print("\nprofile 1.8: a step on a step (unless, conditions on a state)")
 # G1 (gap tests, 27 Sep 2026): Reason's defences block a hazard -> harm step; Yellowstone's elk
 # suppressed willows DESPITE hunting; metformin's knockouts and the levy's subgroups are conditions.
 BLOCK = (FIXTURE / "blockers.argdown").read_text(encoding="utf-8")
 rb = run(BLOCK)
 cb = rb["shape"]["chain"]
 check("a blocker is named with the step it blocks", cb["blocked"], [["hazard", "harm", "+", ["defence"]]])
-check("  and one that failed, apart", cb["despite"], [["hazard", "harm", "+", ["culture"]]])
 rtb = {(r["start"], r["outcome"]): r for r in cb["routes"]}
 # Mutations: drop unless from _side_edges -> no audit route; drop the flip in _signs -> net +.
 check("a blocker is a cause of the outcome, once, of the opposite sign: audits lower harm",
       (rtb[("audit", "harm")]["routes"], rtb[("audit", "harm")]["net"]), (1, {"+": 0, "-": 1, "?": 0}))
-check("the failed blocker is walked nowhere, and no gap is found at it",
-      [g for g in cb["gaps"] if "culture" in g], [])
 check("a condition may name a state and its value", "audit: absent" in [c for _, _, recs in cb["strata"] for _, g, _, _ in recs for c in g], True)
 # Mutation: _strata requires three records -> [].
 check("a pair whose steps differ by condition is grouped, sign by condition",
       cb["strata"], [["hazard", "harm", [["+", [], "", ""], ["+", ["audit: absent"], "", ""], ["0", ["among trained staff"], "", ""]]]])
 bl = "\n".join(mech.census(cb))
 check("the census says each", ["unless  hazard -> harm (+) is blocked where defence holds" in bl,
-                               "despite hazard -> harm (+) held although culture acted against it" in bl,
                                "strata  hazard -> harm: + unconditioned; + where audit: absent; 0 where among trained staff" in bl],
-      [True, True, True])
+      [True, True])
 check("and none of it is a fault", [f["message"] for f in by(rb, "mechanism") if f["severity"] == "!"], [])
 for bad, why in ((BLOCK.replace("unless: defence", "unless: moat"), "`unless: moat` is not a declared state"),
-                 (BLOCK.replace("despite: culture", "despite: harm"), "`despite: harm` names the step's own"),
+                 (BLOCK.replace("unless: defence", "unless: harm"), "`unless: harm` names the step's own"),
                  (BLOCK.replace("{state: audit,", "{state: audits,"), "`given: {state: audits}` is not a declared state")):
     check(f"a bad G1 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
@@ -648,7 +644,7 @@ check("the census says each", ["strata  order -> reoff: - while the order runs; 
 check("`on` is one of the values read",
       any("`on: rate` is not one of level, trend, being, persistence, character" in f["message"] for f in by(run(TIMES.replace("on: trend", "on: rate")), "mechanism")), True)
 
-print("\nprofile 1.8: magnitude (size, share)")
+print("\nprofile 1.8: magnitude (size), and a step opened into its route")
 # G3 (gap tests, 27 Sep 2026): every text gave sizes; Yellowstone's dispute is ONLY about size.
 SIZES = (FIXTURE / "sizes.argdown").read_text(encoding="utf-8")
 rz = run(SIZES)
@@ -656,23 +652,15 @@ cz = rz["shape"]["chain"]
 check("a size is kept with its step, set out from its parts",
       cz["sizes"], [["order", "cost", "-", "a third of the cost"],
                     ["order", "reoff", "-", "-0.12 in the reoffending rate (95% CI -0.20 to -0.04) versus short prison terms at two years"]])
-check("how much of a step runs by its route is named", cz["mediation"],
-      [["order", "cost", "none", ["reoff"]], ["order", "reoff", "partial", ["work", "reint"]]])
-# Mutation: let _opened ignore `share` -> the partial route is walked as the whole step, 1 route.
-check("a step that runs only partly by its route keeps its direct remainder: two routes",
-      {(r["start"], r["outcome"]): r["routes"] for r in cz["routes"]}[("order", "reoff")], 2)
-check("  and is not walked as that route", cz["opened"], [])
-check("a step that does NOT run through a state needs no route through it",
-      [f["message"] for f in by(rz, "mechanism") if "do not give" in f["message"]], [])
+# `share:`, how much of a step runs by its route, was retired in profile 1.25: a `via` step IS its route.
+check("a step opened into its route is walked as that route, once",
+      ({(r["start"], r["outcome"]): r["routes"] for r in cz["routes"]}[("order", "reoff")], cz["opened"]),
+      (1, [["order", "reoff", ["work", "reint"]]]))
 zl = "\n".join(mech.census(cz))
-check("the census says each", ["runs partly through work, reint" in zl, "does NOT run through reoff" in zl,
-                               "size    order -> cost (-): a third of the cost" in zl], [True, True, True])
+check("the census says the size", "size    order -> cost (-): a third of the cost" in zl, True)
 mixed = dict(cz, routes=[dict(cz["routes"][0], net={"+": 1, "-": 2, "?": 0})])
 check("a start that raises by some routes and lowers by others is said to turn on size",
       "which wins is a matter of size" in "\n".join(mech.census(mixed)), True)
-for bad, why in ((SIZES.replace("share: partial", "share: half"), "`share: half` is not one of entire, most, partial, none"),
-                 (SIZES.replace("via: reoff, share: none", "share: none"), "`share` says how much of a step runs by a route")):
-    check(f"a bad G3 annotation is named: {why}", any(why in f["message"] for f in by(run(bad), "mechanism")), True)
 
 print("\nprofile 1.8: regimes and thresholds")
 # G2 (gap tests, 27 Sep 2026): dose, place, time since culling, the model -- a regime decides which
@@ -876,8 +864,10 @@ PROC = (FIXTURE / "process.argdown").read_text(encoding="utf-8")
 pr = run(PROC, name="process.argdown")["shape"]["chain"]
 # Mutations: drop the cycle from _walk -> the gap checks fail; drop `on` from the formation rows ->
 # the fourth; walk a constitution as a step -> the route check fails.
-check("a cycle is declared, and whether it comes to rest", pr["form"], {"form": "cycle", "settles": False})
-check("  and it is not asked where it starts or what it is for",
+check("a cycle is declared on its chain, and whether it comes to rest",
+      [c["form"] for c in pr["chains"]], [{"form": "cycle", "settles": False}])
+# Mutation: walk the whole map as a chain where every chain is a cycle -> it is asked for a cause.
+check("  and a map whose every chain is a cycle is not asked where it starts or what it is for",
       [g for g in pr["gaps"] if "no state has" in g or g.startswith("the outcome")], [])
 check("each state's aspect is counted",
       pr["aspects"], [["activity", 2], ["condition", 2], ["development", 1], ["event", 1], ["quantity", 1]])
@@ -895,7 +885,7 @@ census_p = "\n".join(mech.census(pr))
 check("the census says it in verbs",
       all(w in census_p for w in ("keeps   meet -> ties", "erodes  drift -> ties", "makes   ties -> boundary",
                                   "changes split -> boundary", "constit meet partly constitutes group",
-                                  "both    ties -> boundary", "reading rite -> boundary", "form    a cycle")), True)
+                                  "both    ties -> boundary", "reading rite -> boundary", "-- a cycle")), True)
 pm = lambda text: [f["message"] for f in by(run(text, name="process.argdown"), "mechanism")]
 check("a process with no owner and no levels is a fault",
       any("names no actor" in m for m in pm(PROC.replace("levels: [micro], aspect: activity", "aspect: activity"))), True)
@@ -906,7 +896,7 @@ check("`on: character` with a + is queried: a change in kind is `which`",
 check("a constitution naming neither a state nor an actor is a fault",
       any("neither a declared state nor a declared actor" in m for m in pm(PROC.replace("to: group, extent", "to: club, extent"))), True)
 check("`settles` without a cycle is queried",
-      any("`settles` says whether a cycle" in m for m in pm(PROC.replace("    form: cycle\n", ""))), True)
+      any("`settles` says whether a cycle" in m for m in pm(PROC.replace(", form: cycle", ""))), True)
 check("a claim that only constitutes is the chain's material, not inert",
       run(PROC, name="process.argdown")["shape"]["contribution"]["inert"], 0)
 
@@ -956,7 +946,7 @@ check("`goal: intervene` with nothing to do is queried",
       any("`goal: intervene`" in m for m in am(REA.replace("goal: explain", "goal: intervene"))), True)
 check("a goal not in the list is queried", any("`goal: guess`" in m for m in am(REA.replace("goal: explain", "goal: guess"))), True)
 
-print("\nprofile 1.14: stocks, chances and accounts (Banitz et al. 2022; Hertz et al. 2024; Martinez Pena et al. 2023)")
+print("\nprofile 1.14: stocks and chances (Banitz et al. 2022; Hertz et al. 2024; Martinez Pena et al. 2023)")
 STO = (FIXTURE / "stocks.argdown").read_text(encoding="utf-8")
 sa = run(STO, name="stocks.argdown")["shape"]["chain"]
 sm = lambda text: [f["message"] for f in by(run(text, name="stocks.argdown"), "mechanism")]
@@ -967,18 +957,6 @@ check("a flow into or out of a stock is its own kind of step", sa["stocks"], [["
 check("  and a loop through a flow into a stock is named", sa["stock_loops"], [["births", "population"]])
 check("a step found in one case and also claimed in general is an extrapolation", sa["extrapolated"], [["quota", "catch"]])
 check("  and one claimed only in general is not", run(STO.replace("scope: singular", "scope: general"), name="stocks.argdown")["shape"]["chain"]["extrapolated"], [])
-check("the account is in the profile, the block's and a chain's own", (sa["account"], [c["account"] for c in sa["chains"]]),
-      (["regularity", "intra-action"], [["manipulability"]]))
-check("`account: intra-action` with nothing constituted is queried", any("`account: intra-action`" in m for m in sm(STO)), True)
-check("  and not once something is said to constitute something",
-      any("`account: intra-action`" in m for m in sm(STO.replace(
-          '{causes: {from: population, to: births, sign: "+", basis: asserted}}',
-          '{causes: {from: population, to: births, sign: "+", basis: asserted}, constitutes: {from: births, to: population, basis: account}}'))), False)
-check("a chain's own `account: manipulability` with no experiment among its steps is queried",
-      any("chain `policy`: `account: manipulability`" in m for m in sm(STO)), True)
-check("  and not once one of its steps rests on a natural experiment",
-      any("`account: manipulability`" in m for m in sm(STO.replace("basis: example, scope: singular", "basis: study, design: natural experiment, scope: singular"))), False)
-check("an account not in the list is queried", any("`account: magic`" in m for m in sm(STO.replace("[regularity, intra-action]", "[regularity, magic]"))), True)
 check("`on: stock` with `which` is queried", any("flows into" in m and "not `which`" in m for m in sm(STO.replace('sign: "-", on: stock', 'sign: which, on: stock'))), True)
 
 print("\nprofile 1.15: bridges, and where the argument takes the chain on (the parallel-pass trial, 30 Sep 2026)")
@@ -1023,7 +1001,7 @@ for _name in ("From there to here", "Vindicatory genealogy", "From a genealogy t
     check(f"`{_name}` is a bridge, listed with its premises", ["The curfew's consequences", 1, _name, 2, 1]
           in _r["shape"]["chain"]["bridges"], True)
 
-print("\nprofile 1.17: depth, order, there and here, and the questions (James, 1 Oct 2026)")
+print("\nprofile 1.17: depth, there and here, and the questions (James, 1 Oct 2026)")
 TRF = (FIXTURE / "transfer.argdown").read_text(encoding="utf-8")
 tr = run(TRF, name="transfer.argdown")
 tc = tr["shape"]["chain"]
@@ -1032,11 +1010,6 @@ check("a From there to here bridge lists each setting's steps that have no count
       tc["transfers"], [["The case carried over", 1, ["case", "world"],
                          [["case", "fails", "death", "+"], ["world", "cover", "exposure", "-"],
                           ["world", "exposure", "death", "+"]]]])
-check("a chain told in order of explanation says so, and one that says nothing runs in time",
-      {c["id"]: c["order"] for c in tc["chains"]}, {"policy": "time", "story": "explanation"})
-_bad = run(TRF.replace("order: explanation", "order: backwards"), name="transfer.argdown")
-check("  an order that is neither is a fault", any("`order: backwards`" in f["message"] and f["severity"] == "!"
-      for f in by(_bad, "mechanism")), True)
 qs = tr["shape"]["questions"]
 check("the questions are listed with the moves on them",
       [(q["id"], [m["move"] for m in q["moves"]]) for q in qs], [("which", ["answers", "reframes"]), ("whose", [])])
@@ -1102,8 +1075,6 @@ check("a chain that meets no other, by a state or a kind, is asked whether the t
       ("? island chain c" in cen, "? island chain a" in cen, "? island chain b" in cen), (True, False, False))
 check("a chain in two pieces is asked what they are", chs["c"]["pieces"], [["u", "v"], ["s", "t"]])
 check("  and two cases joined by a kind are one piece, not two", chs["d"]["pieces"], [])
-check("the idiom is said once, for the chart", ("told as flows: processes by which inputs become outputs (p. 2)" in cen,
-      sh["idiom"]), (True, {"term": "flows", "means": "processes by which inputs become outputs", "pinpoint": "p. 2"}))
 ap = run(MEET.replace('c: {label: "C", question: "Qc?"}', 'c: {label: "C", question: "Qc?", apart: "two separate examples"}'),
          name="meet.argdown")
 apc = ap.get("census", "")
@@ -1111,47 +1082,39 @@ check("`apart:` answers both questions, and says why", ("? island chain c" in ap
       "chain c is kept apart by the text: two separate examples" in apc), (False, False, True))
 check("  and the census's questions are never faults", [f for f in mt["findings"] if f["severity"] == "!"], [])
 
-print("\nprofile 1.19: names, channels, shapes, net flows, behaviour, dead ends, conditioning")
-# The diagram comparison's keys (James's decisions, 9 Oct 2026). Mutations: drop the channel check ->
-# the undeclared channel passes; drop the dead_end exemption -> the dead end is a gap.
-K19 = MEET.replace('    kinds:', '    channels:\n        eco: {label: "ecological"}\n    kinds:', 1) \
-          .replace('        c: {label: "C", question: "Qc?"}', '        c: {label: "C", question: "Qc?", conditioned: [u, [s, t]]}', 1) \
-          .replace('y: {label: "Y", actor: p}', 'y: {label: "Y", actor: p, behaviour: oscillates, observed: false}', 1) \
-          .replace('z: {label: "Z", actor: p, role: outcome}', 'z: {label: "Z", actor: p, role: outcome}\n        w: {label: "W", actor: p, dead_end: true}', 1) \
+print("\nprofile 1.19: a step's name and mark (the Coleman boat's arrows)")
+# Mutation: drop the length check on `mark` -> the long mark passes.
+K19 = MEET.replace('causes: {from: x, to: y, sign: "+", basis: asserted, chain: a}',
+                   'causes: {from: x, to: y, sign: "+", basis: asserted, chain: a, name: "Situational", mark: "1"}', 1)
+check("a name and a short mark, well formed, raise no fault",
+      [f["message"] for f in run(K19, name="meet.argdown")["findings"] if f["severity"] == "!"], [])
+check("  and a mark longer than six characters is queried",
+      any("six characters at most" in f["message"] for f in run(K19.replace('mark: "1"', 'mark: "arrow one"'), name="meet.argdown")["findings"]), True)
+
+print("\nretired keys (profile 1.25, ruled 22 Oct 2026)")
+# Keys added one trial at a time and almost never used: an old map that carries one is told what to
+# write instead, as a query, and the key is not read. Mutations: drop _retired_in from declared() ->
+# the block's and the state's are silent; from steps() -> the step's; from the constitution loop ->
+# the constitution's; let _unknown_in count them as unknown -> faults.
+OLD = MEET.replace("    levels: [one]", "    idiom: flows\n    boundary: \"what is outside acts on it\"\n    levels: [one]", 1) \
+          .replace('        c: {label: "C", question: "Qc?"}', '        c: {label: "C", question: "Qc?", order: explanation, conditioned: [u]}', 1) \
+          .replace('y: {label: "Y", actor: p}', 'y: {label: "Y", actor: p, behaviour: oscillates, dead_end: true}', 1) \
           .replace('causes: {from: x, to: y, sign: "+", basis: asserted, chain: a}',
-                   'causes: [{from: x, to: y, sign: "+", basis: asserted, chain: a, name: "Situational", mark: "1", channel: eco}, '
-                   '{from: x, to: w, sign: which, basis: asserted, chain: a}]', 1)
-k19 = run(K19, name="meet.argdown")
-bad = [f["message"] for f in k19["findings"] if f["severity"] == "!"]
-check("the 1.19 keys, well formed, raise no fault", bad, [])
-import json as _json  # noqa: E402
-check("  and a dead end the text sets out is not a gap",
-      ("`w` leads nowhere" in _json.dumps(k19), "leads nowhere" in _json.dumps(run(K19.replace(", dead_end: true", ""), name="meet.argdown"))),
-      (False, True))
-wrong = run(K19.replace("channel: eco", "channel: social").replace("behaviour: oscillates", "behaviour: wobbles")
-               .replace('chain: a, name:', 'chain: a, shape: peak, name:').replace("conditioned: [u, [s, t]]", "conditioned: [u, [s, nobody]]"),
-            name="meet.argdown")
-msgs = [f["message"] for f in wrong["findings"] if f["severity"] == "!"]
-check("an undeclared channel, an unknown behaviour, a signed peak and an undeclared conditioned state are faults",
-      (any("`channel: social` is not declared" in m for m in msgs), any("behaviour: wobbles" in m for m in msgs),
-       any("`shape: peak` says the step rises and falls" in m for m in msgs), any("names `nobody`" in m for m in msgs)),
-      (True, True, True, True))
-net = run(K19.replace('chain: a, name:', 'chain: a, net: true, name:'), name="meet.argdown")
-check("a net flow that flows into no stock is a fault", any("`net: true`" in f["message"] for f in net["findings"] if f["severity"] == "!"), True)
-# THE BOUNDARY (1.19): the text's words with a pinpoint. Mutations: drop the pinpoint check -> no
-# query; drop the chain call -> the chain's empty boundary passes.
-bd = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: {says: "what is outside acts on it", pinpoint: "p. 9"}', 1),
-         name="meet.argdown")
-check("a boundary in the text's words, with its page, raises nothing and is carried on its chain",
-      ([f["message"] for f in bd["findings"] if "boundary" in f["message"]],
-       [c.get("boundary") for c in bd["shape"]["chain"]["chains"] if c["id"] == "c"]),
-      ([], [{"says": "what is outside acts on it", "pinpoint": "p. 9"}]))
-bq = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: "what is outside acts on it"', 1), name="meet.argdown")
-be = run(K19.replace('        c: {label: "C", question: "Qc?"', '        c: {label: "C", question: "Qc?", boundary: {pinpoint: "p. 9"}', 1), name="meet.argdown")
-check("one with no pinpoint is queried, and one that says nothing is a fault",
-      (any("`boundary:` has no pinpoint" in f["message"] and f["severity"] == "?" for f in bq["findings"]),
-       any("`boundary:` says nothing" in f["message"] and f["severity"] == "!" for f in be["findings"])),
-      (True, True))
+                   'causes: {from: x, to: y, sign: "+", basis: asserted, chain: a, despite: z, share: most, shape: peak}', 1)
+ro = run(OLD, name="meet.argdown")
+said = sorted(f["message"].split(" was retired")[0] for f in ro["findings"] if "was retired in profile 1.25" in f["message"])
+check("each retired key is named, where it is, and the query says what to write instead",
+      said, sorted(["`idiom` on the `mechanism:` block", "`boundary` on the `mechanism:` block",
+                    "chain `c`: `order`", "chain `c`: `conditioned`", "state `y`: `behaviour`", "state `y`: `dead_end`",
+                    "`despite` on a step", "`share` on a step", "`shape` on a step"]))
+check("  as queries, never faults, and never as unknown keys",
+      ([f["severity"] for f in ro["findings"] if "was retired" in f["message"]] == ["?"] * 9,
+       [f["message"] for f in ro["findings"] if "is not a key" in f["message"]]), (True, []))
+check("  each with its replacement", any("`via:` alone" in f["message"] for f in ro["findings"] if "`share`" in f["message"]), True)
+check("  and on a constitutive relation too",
+      any("`under` on a constitutive relation was retired" in f["message"] and f["severity"] == "?"
+          for f in run(PROC.replace("whole: aggregate, basis: definition", 'whole: aggregate, basis: definition, under: "a thick account"'),
+                       name="process.argdown")["findings"]), True)
 
 print("\nwhat counts as a quoted sentence")
 # THE WIMMER DEFECT. Mutations: go back to plain containment -> the first two fail.

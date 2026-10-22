@@ -81,9 +81,6 @@ var FORMATION = ["being", "persistence", "character", "possibility"];
 // CAUSAL REASONING (profile 1.13) -- mechanism.py's GOALS and SCOPES.
 var GOALS = ["explain", "intervene", "predict", "attribute"];
 var SCOPES = ["singular", "general"];
-// HOW THE TEXT REASONS ABOUT CAUSES (profile 1.14) -- mechanism.py's ACCOUNTS.
-var ACCOUNTS = ["regularity", "manipulability", "mechanism", "counterfactual", "intra-action"];
-function accountOf(b) { return asList(obj(b).account).filter(function (a) { return ACCOUNTS.indexOf(a) >= 0; }); }
 // BRIDGES FROM THE MECHANISM INTO THE ARGUMENT (profile 1.15) -- profile.json's "bridges", held
 // equal to it by test_profile.py. An inference line naming one of these is a causal move from
 // step-bearing premises, not a deductive rule; the Reasons view draws its short name and asks
@@ -95,7 +92,7 @@ var BRIDGES = [
     "move": "The steps bring the effect about, so it will or does occur.",
     "questions": [
      "How strong is each step, and what backs it?",
-     "Does anything stated block or counteract the effect (unless, despite, a rival route, a regime)?"
+     "Does anything stated block or counteract the effect (unless, a rival route, a regime)?"
     ],
     "asks": [
      "backing",
@@ -260,7 +257,7 @@ var BRIDGES = [
      null,
      null,
      null,
-     "order"
+     null
     ]
    },
    {
@@ -320,7 +317,6 @@ function bridgeQuestions(M, b) {
       var out = [];
       P.forEach(function (x) {
         (x.unless || []).forEach(function (u) { out.push([stepSaid(x) + " unless " + L(u), null]); });
-        (x.despite || []).forEach(function (u) { out.push([stepSaid(x) + " despite " + L(u), null]); });
         if (x.regime) out.push([stepSaid(x) + ", regime: " + x.regime, null]);
         if (x.threshold) out.push([stepSaid(x) + " past a threshold: " + x.threshold, null]);
       });
@@ -445,12 +441,6 @@ function bridgeQuestions(M, b) {
         (x.given || []).forEach(function (g) { out.push(stepSaid(x) + " given " + g); });
       });
       return uniq(own(out));
-    },
-    order: function () {
-      var ids = uniqList([].concat.apply([], P.map(function (x) { return x.chain || []; })));
-      var cs = (M.chains || []).filter(function (c) { return ids.indexOf(c.id) >= 0 && c.order === "explanation"; });
-      if (cs.length) return cs.map(function (c) { return ["the chain “" + (c.label || c.id) + "” runs in order of explanation, not of time", null]; });
-      return M.order === "explanation" ? [["the map's chains run in order of explanation, not of time", null]] : [];
     }
   };
   var taken = {}; (b.taken || []).forEach(function (t) { taken[t] = true; });
@@ -501,7 +491,7 @@ function bridgeScheme(rules) {
   return names.length === 1 && BRIDGE_BY_NAME[names[0]] ? BRIDGE_BY_NAME[names[0]] : null;
 }
 function goalOf(b) { var g = obj(b).goal; return g != null && GOALS.indexOf(String(g)) >= 0 ? String(g) : null; }
-/** The form a block or a chain declares -- mechanism.py's form_of, less its problems. */
+/** The form a chain declares -- mechanism.py's form_of, less its problems. */
 function formOf(b) {
   b = obj(b);
   var form = b.form == null ? "chain" : String(b.form);
@@ -625,10 +615,8 @@ function model(graph) {
         // AN ASSOCIATION and a SCOPE (profile 1.13) -- see mechanism.py.
         assoc: !!raw.association, scope: raw.scope == null ? "" : String(raw.scope),
         lag: raw.lag == null ? "" : String(raw.lag), given: given.map(condText),
-        // 1.19 -- see mechanism.py: the step's name and mark, its channel, a shape, a net flow.
+        // 1.19 -- see mechanism.py: the step's name and mark (the Coleman boat's arrows).
         name: raw.name == null ? "" : String(raw.name), mark: raw.mark == null ? "" : String(raw.mark),
-        channel: raw.channel == null ? "" : String(raw.channel), shape: raw.shape == null ? "" : String(raw.shape),
-        net: raw.net === true,
         // A CONDITION ON A DECLARED STATE, kept as one: the chart names the state and draws it.
         givenOn: given.filter(function (g) { return g && typeof g === "object" && !Array.isArray(g) && has(states, String(g.state)); })
                       .map(function (g) { return { state: String(g.state), value: g.value == null ? "" : String(g.value) }; }),
@@ -641,12 +629,10 @@ function model(graph) {
         // VIA (profile 1.8): the finer route the text opens this step into. Not `via`, which a
         // folded route already carries for the states folded into it.
         statedVia: asList(raw.via),
-        // UNLESS and DESPITE (profile 1.8): a blocker, and a blocker that failed.
-        unless: asList(raw.unless), despite: asList(raw.despite),
+        // UNLESS (profile 1.8): a blocker.
+        unless: asList(raw.unless),
         // PERIOD and ON (profile 1.8, G7): when the step holds, and whether it moves a level or a trend.
         period: raw.period == null ? "" : String(raw.period), on: raw.on == null ? "level" : String(raw.on),
-        // SHARE and SIZE (profile 1.8, G3) -- mechanism.py's `share` and _size.
-        share: raw.share != null ? String(raw.share) : raw.via != null ? "entire" : "",
         // REGIME and THRESHOLD (profile 1.8, G2).
         regime: raw.regime == null ? "" : String(raw.regime), threshold: raw.threshold == null ? "" : String(raw.threshold),
         size: sizeText(raw.size), sizeValue: raw.size && typeof raw.size === "object" && raw.size.value != null ? String(raw.size.value) : ""
@@ -666,7 +652,7 @@ function model(graph) {
       var txt = function (k) { return raw[k] == null ? "" : String(raw[k]); };
       if (!has(states, raw.from) || !(has(states, raw.to) || has(actors, raw.to)) || raw.from === raw.to) return;
       consts.push({ claim: c, layer: layer, from: String(raw.from), to: String(raw.to), toActor: !has(states, raw.to),
-                    extent: txt("extent"), whole: txt("whole"), under: txt("under"), basis: raw.basis == null ? null : String(raw.basis) });
+                    extent: txt("extent"), whole: txt("whole"), basis: raw.basis == null ? null : String(raw.basis) });
     });
   });
   var chains = chainsOf(block), kinds = kindsOf(block);
@@ -680,9 +666,10 @@ function model(graph) {
       against[titleOfId[e.from] + "\u0000" + titleOfId[e.to]] = against[titleOfId[e.to] + "\u0000" + titleOfId[e.from]] = true;
   });
   var ordering = levelOrder(block, levels);
-  var form = formOf(block);
-  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast), account: accountOf(block),
-                    apart: apartOf(block), idiom: idiomOf(block), boundary: boundaryOf(block) };
+  // A MAP WHOSE EVERY CHAIN IS A CYCLE is a cycle as a whole -- mechanism.py's walk. (The block's own
+  // `form:` said so until profile 1.25 retired it.)
+  var form = { form: chains.length && chains.every(function (c) { return c.form === "cycle"; }) ? "cycle" : "chain", settles: null };
+  var reasoning = { goal: goalOf(block), contrast: block.contrast == null ? null : String(block.contrast) };
   var prof = profile(levels, actors, states, ids, ok,
                      m.appraisal != null ? m.appraisal : appraisalClaims, chains, kinds, against, ordering,
                      form, consts, reasoning);
@@ -731,8 +718,7 @@ function model(graph) {
     return [f.argument, f.step, regimes, unmatched.sort(cmpDeep)];
   }).filter(Boolean).sort(cmpDeep);
   // WHAT THE MAP SAYS TO EACH BRIDGE'S QUESTIONS (10 Oct 2026) -- mechanism.py's bridge_questions.
-  var forQ = { steps: ok, states: states, ids: ids, chains: chains, kinds: kinds, profile: prof,
-               order: block.order == null ? "time" : String(block.order) };
+  var forQ = { steps: ok, states: states, ids: ids, chains: chains, kinds: kinds, profile: prof };
   // What the argument takes up, for a draft's verdicts: its reasons, and the claims it attacks.
   var takenQ = (m.reasons || []).concat(m.attacked || []);
   prof.bridge_questions = (m.inferences || []).map(function (f) {
@@ -750,9 +736,6 @@ function model(graph) {
            dropped: steps.length - ok.length, appraisalClaims: appraisalClaims,
            question: block.question == null ? "" : String(block.question), chains: chains, kinds: kinds, against: against,
            form: form, constitutions: consts, reasoning: reasoning,
-           order: block.order == null ? "time" : String(block.order),
-           // THE KINDS OF LINK THE TEXT TELLS APART (1.19), in its own words: drawn as colour.
-           channels: Object.keys(obj(block.channels)).map(function (k) { return { id: String(k), label: String(obj(block.channels[k]).label || k) }; }),
            profile: prof };
 }
 
@@ -957,45 +940,20 @@ function chainsOf(block) {
   var raw = obj(block.chains), out = [];
   Object.keys(raw).forEach(function (id) {
     var c = obj(raw[id]);
-    // ITS FORM (1.11): its own where it declares one, the whole block's otherwise.
-    var f = formOf(c.form != null ? c : block);
+    // ITS FORM (1.11): a chain, or a cycle where it says so.
+    var f = formOf(c);
     out.push({ id: String(id), label: c.label == null ? null : String(c.label),
                question: c.question == null ? null : String(c.question), roles: obj(c.roles),
                form: f.form, settles: f.settles,
                // ITS GOAL (1.13), its own or the block's, and its CONTRAST -- as the checker has it.
                goal: goalOf(c) || goalOf(block), contrast: c.contrast == null ? null : String(c.contrast),
-               // ITS ACCOUNT OF CAUSATION (1.14), its own or the block's.
-               account: accountOf(c).length ? accountOf(c) : accountOf(block),
-               // ITS ORDER (1.17), its own or the block's: time, or the order of explanation.
-               order: c.order != null ? String(c.order) : block.order != null ? String(block.order) : "time",
                // KEPT APART BY THE TEXT (1.18) -- as the checker has it.
-               apart: apartOf(c),
-               // CONDITIONED ON (1.19): states held fixed; a list inside the list, states held together.
-               // ITS BOUNDARY (1.19), its own or the block's -- as the checker has it.
-               boundary: boundaryOf(c) || boundaryOf(block),
-               conditioned: (Array.isArray(c.conditioned) ? c.conditioned : c.conditioned == null ? [] : [c.conditioned])
-                 .map(function (x) { return asList(x); }) });
+               apart: apartOf(c) });
   });
   return out;
 }
-/** A block's or a chain's `apart:` (1.18), or null -- mechanism.py's `_apart`. */
+/** A chain's `apart:` (1.18), or null -- mechanism.py's `_apart`. */
 function apartOf(b) { var a = obj(b).apart; return a == null || String(a).trim() === "" ? null : String(a); }
-/** A block's or a chain's `boundary:` (1.19) as {says, pinpoint}, or null -- mechanism.py's `_boundary`. */
-function boundaryOf(b) {
-  var x = obj(b).boundary;
-  if (x == null) return null;
-  if (typeof x !== "object" || Array.isArray(x)) return String(x).trim() === "" ? null : { says: String(x), pinpoint: null };
-  var g = function (k) { return x[k] == null || String(x[k]).trim() === "" ? null : String(x[k]); };
-  return { says: g("says"), pinpoint: g("pinpoint") };
-}
-/** The block's `idiom:` (1.18): what the map's states are told AS -- mechanism.py's `_idiom`. */
-function idiomOf(b) {
-  var i = obj(b).idiom;
-  if (i == null) return null;
-  if (typeof i !== "object" || Array.isArray(i)) return { term: String(i), means: null, pinpoint: null };
-  var g = function (k) { return i[k] == null ? null : String(i[k]); };
-  return { term: g("term"), means: g("means"), pinpoint: g("pinpoint") };
-}
 /** Each part and the whole it is grouped in, as a pair -- mechanism.py's `_parts`. */
 function partsOf(states) {
   return Object.keys(states).filter(function (i) { return obj(states[i]).part_of != null; })
@@ -1115,9 +1073,8 @@ function walkChain(ids, states, edges, signs, regimes, nullFrom, rivalEdges, end
     onward = onward || (constituted[i] || []).some(function (w) {
       return w.indexOf("actor:") === 0 || outcomes.indexOf(w) >= 0 || !!from[w]; });
     // A MEASURE STOPS WHERE IT IS READ (1.9) -- as the checker has it.
-    // A DEAD END THE TEXT SETS OUT (1.19) stops by design -- as the checker has it.
     if (used[i] && outcomes.indexOf(i) < 0 && !ends[i] && !obj(states[i]).appraisal && obj(states[i]).measures == null
-        && obj(states[i]).dead_end !== true && !onward && !from[i])
+        && !onward && !from[i])
       gaps.push({ kind: "dead-end", state: i,
                   message: "`" + i + "` leads nowhere in the text: the chain stops there" });
   });
@@ -1159,7 +1116,7 @@ function openedOf(steps, edges) {
   var have = {}, out = {};
   edges.forEach(function (e) { have[e[0] + "\u0000" + e[1]] = true; });
   steps.forEach(function (s) {
-    if (!(s.statedVia || []).length || s.share !== "entire" || s.from == null || s.to == null) return;
+    if (!(s.statedVia || []).length || s.from == null || s.to == null) return;
     var run = [s.from].concat(s.statedVia, [s.to]);
     for (var i = 0; i + 1 < run.length; i++) if (!have[run[i] + "\u0000" + run[i + 1]]) return;
     out[s.from + "\u0000" + s.to] = s.statedVia.slice();
@@ -1253,12 +1210,9 @@ function chainProfiles(chains, states, ids, text, isReflexive, kindOf, instances
     cp.form = { form: ch.form || "chain", settles: ch.settles == null ? null : ch.settles };
     cp.goal = ch.goal == null ? null : ch.goal;
     cp.contrast = ch.contrast == null ? null : ch.contrast;
-    cp.account = ch.account || [];
-    cp.order = ch.order || "time";
     // AN ISLAND (1.18) -- as the checker has it.
     cp.island = out.length > 1 && !cp.shared.length && !cp.akin.length;
     cp.apart = ch.apart == null ? null : ch.apart;
-    cp.boundary = ch.boundary || null;
   });
   var loose = {};
   if (chains.length) text.forEach(function (s) { if (!s.chain.length) loose[s.from + "\u0000" + s.to + "\u0000" + s.sign] = true; });
@@ -1290,7 +1244,7 @@ function disputedOf(steps, against) {
 }
 
 function profile(levels, actors, states, ids, steps, appraisalClaims, chains, kinds, against, ordering, form, consts, reasoning) {
-  form = form || { form: "chain", settles: null }; consts = consts || []; reasoning = reasoning || { goal: null, contrast: null, account: [] };
+  form = form || { form: "chain", settles: null }; consts = consts || []; reasoning = reasoning || { goal: null, contrast: null };
   // What each state constitutes, in the text's own voice (1.11) -- as the checker has it.
   var constituted = {};
   consts.forEach(function (c) { if (c.layer !== "text") return;
@@ -1386,7 +1340,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
       return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; })
                 .map(function (r) { return r[1]; });
     })(),
-    blocked: sideRows(text, "unless"), despite: sideRows(textAll, "despite"),
+    blocked: sideRows(text, "unless"),
     strata: strataOf(textAll),
     regimes: (function () { var r = {}; textAll.forEach(function (s) { if (s.regime) r[s.regime] = true; }); return Object.keys(r).sort(); })(),
     thresholds: (function () {
@@ -1399,13 +1353,6 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
       var seen = {}, out = [];
       textAll.forEach(function (s) { if (!s.size) return;
         var k = [s.from, s.to, s.sign, s.size].join("\u0000"); if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.sign, s.size]]); } });
-      return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
-    })(),
-    mediation: (function () {
-      var seen = {}, out = [];
-      text.forEach(function (s) { if (!(s.statedVia || []).length) return;
-        var k = [s.from, s.to, s.share].concat(s.statedVia).join("\u0000");
-        if (!seen[k]) { seen[k] = true; out.push([k, [s.from, s.to, s.share, s.statedVia.slice()]]); } });
       return out.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; }).map(function (r) { return r[1]; });
     })(),
     trends: (function () {
@@ -1437,7 +1384,6 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     // ONE PICTURE IN PIECES (1.18) -- as the checker has it.
     pieces: (chains || []).length ? [] : piecesOf(ids.filter(function (i) {
       return rolesOf(states[i]).length || edges.some(function (e) { return e[0] === i || e[1] === i; }); }), edges.concat(partsOf(states)), kindOf),
-    apart: reasoning.apart == null ? null : reasoning.apart, idiom: reasoning.idiom || null, boundary: reasoning.boundary || null,
     kinds: kindList, akin_steps: AK.akin, instances: AK.instances,
     moderated: uniqSorted([].concat.apply([], textAll.map(function (s) {
       return s.modifies.filter(function (m) { return has(states, m.by); })
@@ -1465,7 +1411,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     aspects: counted(ids.map(function (i) { var a = obj(states[i]).aspect; return a != null && ASPECTS.indexOf(String(a)) >= 0 ? String(a) : ""; })),
     formation: uniqSorted(textAll.filter(function (s) { return FORMATION.indexOf(s.on) >= 0; })
                                  .map(function (s) { return [s.from, s.to, s.sign, s.on]; })),
-    constitution: uniqSorted(consts.map(function (c) { return [c.from, c.to, c.extent, c.whole, c.under, c.layer, c.claim.title]; })),
+    constitution: uniqSorted(consts.map(function (c) { return [c.from, c.to, c.extent, c.whole, c.layer, c.claim.title]; })),
     both: (function () {
       var have = {}; text.forEach(function (s) { have[s.from + "\u0000" + s.to] = true; });
       return uniqSorted(consts.filter(function (c) { return c.layer === "text" && have[c.from + "\u0000" + c.to]; })
@@ -1483,8 +1429,7 @@ function profile(levels, actors, states, ids, steps, appraisalClaims, chains, ki
     sustaining: loopsText.filter(function (l) { return sustains(l, text); }),
     // CAUSAL REASONING (1.13) -- mechanism.py's, field for field.
     goal: reasoning.goal, contrast: reasoning.contrast,
-    // STOCKS, CHANCES AND ACCOUNTS (1.14) -- mechanism.py's, field for field.
-    account: reasoning.account || [],
+    // STOCKS AND CHANCES (1.14) -- mechanism.py's, field for field.
     chances: uniqSorted(textAll.filter(function (s) { return s.on === "chance"; }).map(function (s) { return [s.from, s.to, s.sign]; })),
     stocks: uniqSorted(textAll.filter(function (s) { return s.on === "stock"; }).map(function (s) { return [s.from, s.to, s.sign]; })),
     stock_loops: loopsText.filter(function (l) { return l.some(function (a, i) { var b = l[(i + 1) % l.length];
@@ -1573,8 +1518,8 @@ function accountsOf(ids, steps) {
   return out;
 }
 
-/** [from, to, sign, states] for each distinct step with a blocker (`unless`) or a failed one
- *  (`despite`), sorted as the checker sorts them. */
+/** [from, to, sign, states] for each distinct step with a blocker (`unless`), sorted as the checker
+ *  sorts them. */
 function sideRows(steps, key) {
   var seen = {}, out = [];
   steps.forEach(function (s) { if (!(s[key] || []).length) return;
@@ -1810,11 +1755,6 @@ function verbOf(s0, signs, kind) {
   if (kind === "selection") return "selection effect";
   // "ASSOCIATED" (1.13): the text reports they go together, and no more.
   if (kind === "association") return "associated";
-  // A RELATION THAT RISES AND FALLS (1.19) says so: it has no one sign.
-  if (s0.shape === "peak") return "rises, then falls";
-  if (s0.shape === "trough") return "falls, then rises";
-  // A NET FLOW (1.19) runs whichever way the gap points.
-  if (s0.net) return "net flow";
   // A STEP THAT MAKES, KEEPS OR CHANGES IN KIND (1.11) says which, in a verb.
   if (signs.length === 1 && formationWord(s0.on, signs[0])) return formationWord(s0.on, signs[0]);
   // A STEP ON A TREND (G7) says so: the levy slowed obesity's rise, it did not lower it.
@@ -1897,8 +1837,7 @@ function readback(graph) {
       if (s.sufficient === false) q.push("not alone");
       if ((s.jointly || []).length) q.push("only together with " + names(s.jointly));
       if ((s.unless || []).length) q.push("unless " + names(s.unless));
-      if ((s.despite || []).length) q.push("despite " + names(s.despite));
-      if ((s.statedVia || []).length) q.push("through " + names(s.statedVia) + (s.share && s.share !== "entire" ? " (" + s.share + " of it)" : ""));
+      if ((s.statedVia || []).length) q.push("through " + names(s.statedVia));
       (s.givenOn || []).forEach(function (g) { q.push("given " + name(g.state) + (g.value ? " = " + g.value : "")); });
       (s.given || []).forEach(function (g) { if (!(s.givenOn || []).some(function (o) { return condText(o) === g; })) q.push("given " + g); });
       if (s.regime) q.push("regime: " + s.regime);
@@ -1928,7 +1867,7 @@ function readback(graph) {
 /** THE MARKS EACH STATE CARRIES, AND THE LOOPS' CENTRES. `tier` is "plain" (what the view opens on)
  *  or "all" (the default here, as every caller before 17 Oct 2026 had it). Plain keeps a mark only
  *  where the drawing needs it to be read rightly: the badge that takes a reader to the other chain.
- *  The rest -- ≈, ≙, ⊂ ⊃, *, the behaviour sketch -- need the legend to be read, and say nothing the
+ *  The rest -- ≈, ≙, ⊂ ⊃ -- need the legend to be read, and say nothing the
  *  state's panel does not say in words (the think piece on what the view is for, and James's
  *  moratorium on new marks, 17 Oct 2026). */
 function markSpec(FULL, M, tier) {
@@ -1945,14 +1884,10 @@ function markSpec(FULL, M, tier) {
     // energy chain said nothing the one mark does not. See `centres` below.
     var elsewhere = M.chain && M.chain.shared && M.chain.shared[v];
     if (elsewhere && elsewhere.length) left.push({ kind: "shared" });
-    // NOT (YET) ACTUAL (1.12) and A DEAD END (1.19) carry no badge since 17 Oct 2026: the box says
-    // it, hollow and in italic, or muted, and its title in words. The ◌, … and ⊘ said it twice.
+    // NOT (YET) ACTUAL (1.12) carries no badge since 17 Oct 2026: the box says it, hollow and in
+    // italic, and its title in words. The ◌ and … said it twice.
     marks[v] = { left: left, right: right, foot: foot };
     if (PLAIN) return;
-    // 1.19: UNOBSERVED (Knight and Winship's asterisk), and the BEHAVIOUR OVER TIME the text gives
-    // it (Meadows's graphs), sketched.
-    if (obj(M.states[v]).observed === false) left.push({ kind: "unobserved" });
-    if (BEHAVIOUR_PATH[obj(M.states[v]).behaviour]) right.push({ kind: "behaviour" });
     var k = FULL ? obj(FULL.states[v]).kind : null, kd = k == null ? null : KINDS.filter(function (x) { return x.id === String(k); })[0];
     if (kd && kd.states.some(function (w) { return w !== v; })) left.push({ kind: "kin" });
     var ms = FULL ? obj(FULL.states[v]).measures : null;
@@ -1993,7 +1928,7 @@ function layout(M, opts) {
   return G;
 }
 function layoutOnce(M, opts) {
-  // THE PLAIN MARKS (17 Oct 2026): no pipes, valves or clouds, no channel colours. A flow is an
+  // THE PLAIN MARKS (17 Oct 2026): no pipes or valves. A flow is an
   // arrow that says "flows into" in words. See markSpec.
   var PLAIN = opts.tier === "plain";
   // AN OUTFLOW RUNS FROM ITS STOCK OUT TO THE FLOW, as Meadows draws it: "deaths flow out of the
@@ -2357,11 +2292,6 @@ function layoutOnce(M, opts) {
   // M9 ACROSS: a gap between two columns is widened where a label on an arrow across it had no
   // clear place (Badger culling's ranging → contact, 30 Sep 2026); asked for by placeChips below.
   var nestPad = nest ? nest.maxDepth * NEST_INSET : 0;
-  // ROOM ON THE LEFT FOR A CLOUD, where the text marks its boundary and an inflow starts the chart.
-  if (opts.boundary && !PLAIN && M.steps.some(function (s) {
-    return s.on === "stock" && s.sign === "+" && !s.outflow && col[s.from] === 0 && !M.steps.some(function (t) {
-      return t.on === "stock" && t.sign === "-" && (t.outflow ? t.to : t.from) === s.from; });
-  })) nestPad += 44;
   var xOfCol = function (c) { var x = GUT + nestPad + c * COL; for (var i = 0; i < c; i++) x += (opts.minW && opts.minW[i]) || 0; return x; };
   ids.forEach(function (v) {
     var rowY = function (li) { return lanes[li].y + HEAD + PADY / 2 + rowOff(li, slots[M.levels[li] + "|" + col[v]].indexOf(v)); };
@@ -2456,7 +2386,7 @@ function layoutOnce(M, opts) {
   var hops = {};
   drawn.steps.forEach(function (s) {
     if (s.isNull || s.selects || s.assoc) return;
-    if (!((s.statedVia || []).length && s.share === "entire")) hops[hopKey(s.from, s.to, s.layer)] = true;
+    if (!(s.statedVia || []).length) hops[hopKey(s.from, s.to, s.layer)] = true;
     (s.jointly || []).forEach(function (j) { hops[hopKey(j, s.to, s.layer)] = true; });
   });
   // STOCKS AND FLOWS (James's decision, 9 Oct 2026): a state a flow runs into or out of (`on: stock`)
@@ -2474,7 +2404,7 @@ function layoutOnce(M, opts) {
   // the text's boat (17 Oct 2026). An unnumbered summary stays in the panel.
   var summaries = [];
   drawn.steps = drawn.steps.filter(function (s) {
-    if (s.parts || s.isNull || !(s.statedVia || []).length || s.share !== "entire" || s.mark) return true;
+    if (s.parts || s.isNull || !(s.statedVia || []).length || s.mark) return true;
     var run = [s.from].concat(s.statedVia, [s.to]);
     for (var i = 0; i + 1 < run.length; i++) if (!hops[hopKey(run[i], run[i + 1], s.layer)]) return true;
     summaries.push(s);
@@ -2545,9 +2475,8 @@ function layoutOnce(M, opts) {
             // something a plain "raises" does not (profile 1.9).
             (s.necessary === true ? "\u0000N" : "") + (typeof s.sufficient === "boolean" ? "\u0000S" + s.sufficient : "") +
             (s.attribution ? "\u0000A" + s.attribution : "") +
-            // and (1.19) a named step, a numbered one, one of another channel, a peaked one, a net flow.
-            (s.name ? "\u0000n" + s.name : "") + (s.mark ? "\u0000m" + s.mark : "") + (s.channel ? "\u0000c" + s.channel : "") +
-            (s.shape ? "\u0000s" + s.shape : "") + (s.net ? "\u0000net" : "");
+            // and (1.19) a named step, a numbered one.
+            (s.name ? "\u0000n" + s.name : "") + (s.mark ? "\u0000m" + s.mark : "");
     // A MODERATOR IS NOT A SECOND ARROW: it acts on the relationship, and Marti and Gond's six
     // propositions about one pair of states drew six parallel arrows. Its ring goes on the one arrow.
     // AN ARROW THE READER HAS OPENED draws each of its steps apart: "raises ×2" said how many, not
@@ -2856,10 +2785,6 @@ function layoutOnce(M, opts) {
     var fidelity = ss.map(function (s) { return s.fidelity; })
                      .sort(function (p, q) { return FIDELITY.indexOf(p) - FIDELITY.indexOf(q); })[0];
     var ink = s0.layer !== "text" ? s0.layer : kind === "selection" ? "selection" : kind === "association" ? "association" : "text";   // kind is "step" when mixed
-    // A CHANNEL IS A COLOUR (1.19): the text's own kinds of link -- the Coleman-boat paper's ecological
-    // arrows in teal, Rena's signalling and metabolism -- each its own ink, its heads with it.
-    var chIdx = (M.channels || []).map(function (c) { return c.id; }).indexOf(s0.channel);
-    if (!PLAIN && ink === "text" && s0.channel && chIdx >= 0 && ss.every(function (x) { return x.channel === s0.channel; })) ink = "ch" + (chIdx % CHANNEL_INKS);
     // THE ARROWHEAD RIDES A SHORT SOLID STUB at the end of the path. On a dashed line the head sat
     // wherever the dash pattern happened to end -- often after a gap, floating off its line.
     var d, stub, P, segs = null, overArc = false;
@@ -3000,7 +2925,7 @@ function layoutOnce(M, opts) {
       // that route, not a second one beside it.
       // A NUMBERED SUMMARY is the text's arrow and carries its number, as the text draws it; the route
       // it summarises is drawn beside it, and the panel names it.
-      var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && x.share === "entire" && !x.mark; }) ? s0.statedVia : null;
+      var stated = !s0.parts && ss.every(function (x) { return (x.statedVia || []).length && !x.mark; }) ? s0.statedVia : null;
       // THE SIZE ON THE ARROW (G3): two texts that agree on direction and dispute only size drew as
       // one picture of agreement. One step with a stated value shows it.
       var sz = s0.sizeValue || s0.size || "";
@@ -3095,7 +3020,7 @@ function layoutOnce(M, opts) {
                   !ss.every(function (x) { return x.on === "stock"; }),
              // A FLOW IS A PIPE: "in" runs into the stock, "out" runs out of it to the flow (drawn that way round).
              stock: !PLAIN && kind === "step" && ss.every(function (x) { return x.on === "stock"; })
-                    ? (ss.every(function (x) { return x.net; }) ? "net" : signs.length === 1 && signs[0] === "+" ? "in" : signs.length === 1 && signs[0] === "-" ? "out" : null) : null,
+                    ? (signs.length === 1 && signs[0] === "+" ? "in" : signs.length === 1 && signs[0] === "-" ? "out" : null) : null,
              chip: (function () {
                var glyph = kind === "step" && breakdown.length === 1 && signs.length === 1
                  ? ({ "+": "▲", "-": "▼", "which": "◆" })[signs[0]] || "" : "";
@@ -3397,50 +3322,7 @@ function layoutOnce(M, opts) {
     if (!best) best = [cx, cy];
     centres.push({ kind: c.kind, i: c.i, label: c.label, states: c.states, x: Math.round(best[0]), y: Math.round(best[1]), r: CENTRE_R });
   });
-  // CLOUDS AT THE OPEN ENDS OF THE FLOWS (James's decision, 9 Oct 2026), only where the text
-  // draws attention to where its system stops (`boundary:`): every system has a boundary, and a
-  // cloud on every flow would say nothing. A flow that fills a stock comes from a cloud on its
-  // left; one that drains a stock runs into a cloud on its right. A flow between two stocks has no
-  // open end. Set where nothing else is, or not at all.
-  var clouds = [], CLOUD_W = 30, CLOUD_H = 18;
-  var openEnds = !opts.boundary ? {} : Object.keys(flows).reduce(function (o, v) {
-    if (flows[v] === "in" || flows[v] === "out") o[v] = flows[v] === "in" ? -1 : 1;
-    return o;
-  }, {});
-  // Straight out from the flow's outer end where that is clear; else at an angle off it, nearer
-  // first (Meadows's population: the inflow's left is where its causes' arrows come in).
-  var nearSeg = function (S, a, b, d) {
-    return S.some(function (q) {
-      var vx = b[0] - a[0], vy = b[1] - a[1], L = vx * vx + vy * vy || 1;
-      var t = Math.max(0, Math.min(1, ((q[0] - a[0]) * vx + (q[1] - a[1]) * vy) / L));
-      return Math.hypot(q[0] - a[0] - t * vx, q[1] - a[1] - t * vy) < d;
-    });
-  };
-  Object.keys(openEnds).forEach(function (v) {
-    var n = shown[v], side = openEnds[v];
-    if (!n) return;
-    var edgeX = side < 0 ? n.x - 8 : n.x + n.w, mid = n.y + n.h / 2, done = false;
-    [34, 48, 62, 76].forEach(function (r) {
-      [0, -30, 30, -55, 55, -75, 75].forEach(function (deg) {
-        if (done) return;
-        var a = deg * Math.PI / 180, cx = edgeX + side * r * Math.cos(a), cy = mid + r * Math.sin(a);
-        var ey = Math.max(n.y + 8, Math.min(n.y + n.h - 8, cy));
-        var box = { x: cx - CLOUD_W / 2, y: cy - CLOUD_H / 2, w: CLOUD_W, h: CLOUD_H }, pb = pad(box, 4);
-        if (box.x < 2 || box.y < TOP - 4) return;
-        var A = [cx, cy], E = [edgeX, ey];
-        var hit = ids.some(function (o) { var m = nodes[o]; return overlap(pb, pad(m, 4)) > 0; }) ||
-          ids.some(function (o) { if (o === v) return false; var m = nodes[o]; for (var t = 0; t <= 1; t += 0.1) { var x = A[0] + t * (E[0] - A[0]), y = A[1] + t * (E[1] - A[1]); if (x > m.x - 3 && x < m.x + m.w + 3 && y > m.y - 3 && y < m.y + m.h + 3) return true; } return false; }) ||
-          lanes.some(function (ln) { return !ln.hidden && ln.head && overlap(pb, ln.head) > 0; }) ||
-          centres.some(function (c) { return overlap(pb, { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }) > 0 || nearSeg([[c.x, c.y]], A, E, c.r + 3); }) ||
-          clouds.some(function (c) { return overlap(pb, c.box) > 0; }) ||
-          lineSamples.some(function (S) { return S.some(function (q) { return q[0] > pb.x && q[0] < pb.x + pb.w && q[1] > pb.y && q[1] < pb.y + pb.h; }) || nearSeg(S, A, E, 6); });
-        if (hit) return;
-        clouds.push({ flow: v, side: side, x: Math.round(cx), y: Math.round(cy), w: CLOUD_W, h: CLOUD_H, edgeX: edgeX, endY: Math.round(ey), box: box });
-        done = true;
-      });
-    });
-  });
-  var chipFails = placeChips(edges, shown, lanes, centres.concat(compartments, clouds));
+  var chipFails = placeChips(edges, shown, lanes, centres.concat(compartments));
   // Wide enough for every lane's heading too (M3: a one-column chain cut its headings off).
   var headRight = Math.max.apply(null, lanes.map(function (ln) { return ln.head ? ln.head.x + ln.head.w + 10 : 0; }).concat([0]));
   var needW = {};
@@ -3474,7 +3356,6 @@ function layoutOnce(M, opts) {
   // into the gap beside the last column, and its label went off the edge with it.
   var extX = 0, extY = 0;
   Object.keys(nodes).forEach(function (v) { extX = Math.max(extX, nodes[v].x + nodes[v].w + 24); extY = Math.max(extY, nodes[v].y + nodes[v].h + 24); });
-  clouds.forEach(function (c) { extX = Math.max(extX, c.box.x + c.w + 8); });
   edges.forEach(function (e) {
     pathPts(e, 8).forEach(function (q) { extX = Math.max(extX, q[0]); extY = Math.max(extY, q[1]); });
     extX = Math.max(extX, e.chip.x + e.chip.w / 2); extY = Math.max(extY, e.chip.y + e.chip.h / 2);
@@ -3508,7 +3389,7 @@ function layoutOnce(M, opts) {
            edges: edges, box: { w: BW, h: BH },
            folded: Object.keys(drawn.folded).sort(), hidden: drawn.hidden,
            ends: !!(opts.ends && hasEnds && !noLine), noLine: noLine, setAside: setAside.sort(), offMain: offMain,
-           summaries: summaries, centres: centres, clouds: clouds, openEnds: openEnds, stocks: stocks, flows: flows, compartments: compartments, ring: ring, panelTitles: panelTitles };
+           summaries: summaries, centres: centres, stocks: stocks, flows: flows, compartments: compartments, ring: ring, panelTitles: panelTitles };
 }
 
 /** PATH FOLDING. A folded state is taken out of the chain and every pair of steps through it --
@@ -3570,7 +3451,7 @@ function foldSteps(M, folded, nodes) {
           // and is blocked by whatever blocks any step on it.
           unless: (i.unless || []).concat((o.unless || []).filter(function (j) { return (i.unless || []).indexOf(j) < 0; }))
                      .filter(function (j) { return j !== o.to; }),
-          despite: [], statedVia: [],
+          statedVia: [],
           claim: null
         });
       });
@@ -3603,7 +3484,7 @@ function foldable(M, voice) {
 function textSteps(M) {
   var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && !s.assoc && s.from !== s.to; });
   var opened = openedOf(text, edgesWithCoCauses(text, M.states));
-  return text.filter(function (s) { return !((s.statedVia || []).length && s.share === "entire" && has(opened, s.from + "\u0000" + s.to)); });
+  return text.filter(function (s) { return !((s.statedVia || []).length && has(opened, s.from + "\u0000" + s.to)); });
 }
 function hopKeys(run) { var out = []; for (var i = 0; i + 1 < run.length; i++) out.push(run[i] + "\u0000" + run[i + 1]); return out; }
 /** Every route from `start` to `goal` along `edges`, as runs of states, in one regime and period
@@ -4382,7 +4263,6 @@ function audit(G, opts) {
   var items = [];
   G.lanes.forEach(function (ln, i) { if (ln.head && !ln.hidden) items.push({ r: ln.head, what: "heading of " + ln.level, lane: i }); });
   (G.centres || []).forEach(function (c) { items.push({ r: { x: c.x - c.r, y: c.y - c.r, w: 2 * c.r, h: 2 * c.r }, what: "loop mark " + c.label }); });
-  (G.clouds || []).forEach(function (c) { if (shown[c.flow]) items.push({ r: c.box, what: "cloud by " + name(c.flow), on: c.flow }); });
   Object.keys(shown).forEach(function (v) {
     var n = shown[v];
     items.push({ r: { x: n.x, y: n.y, w: n.w, h: n.h }, what: "box " + name(v), box: v });
@@ -4540,13 +4420,11 @@ function injectStyle() {
     // the appraisal in the violet the Reasons map gives it; selection, a different relation, teal.
     // The light-and-shadow bar is shades of the one navy, as its lines are weights of it.
     "  --mv-cond-bg:#dfe7f3;--mv-text:#203a6a;--mv-rival:#7f8a9a;--mv-appraisal:#6d5ba3;--mv-appraisal-bg:#f1eefa;--mv-gap:#c2410c;--mv-neg:#b4352f;",
-    "  --mv-ch0:#0f8a7e;--mv-ch1:#7c3aed;--mv-ch2:#a16207;--mv-ch3:#0369a1;--mv-ch4:#be185d;--mv-ch5:#4d7c0f;",
     "  --mv-selection:#2f8f83;--mv-association:#8a6d3b;",
     "  --mv-evidence:#203a6a;--mv-argued:#5a78a8;--mv-asserted:#a7b6cf;--mv-imputed:#dde2ea;",
     "  --mv-lane-a:rgba(0,0,0,.035);--mv-lane-b:rgba(0,0,0,.015);--mv-sel:#e0a800}",
     "@media (prefers-color-scheme:dark){.amech{",
     "  --mv-cond-bg:#23324a;--mv-text:#9cc3ef;--mv-rival:#9aa4b3;--mv-appraisal:#b3a4e6;--mv-appraisal-bg:#2a2638;--mv-gap:#f08a4b;--mv-neg:#ec7d74;",
-    "  --mv-ch0:#4cc3b5;--mv-ch1:#b49cf5;--mv-ch2:#e0b45c;--mv-ch3:#6cb7e8;--mv-ch4:#f08cbf;--mv-ch5:#a3d06a;",
     "  --mv-selection:#5fc2b5;--mv-association:#d2b27a;",
     "  --mv-evidence:#9cc3ef;--mv-argued:#6f93bf;--mv-asserted:#4d6484;--mv-imputed:#334155;",
     "  --mv-lane-a:rgba(255,255,255,.04);--mv-lane-b:rgba(255,255,255,.015);--mv-sel:#f5c542}}",
@@ -4633,14 +4511,10 @@ function injectStyle() {
     ".amech .st.condition rect.box{fill:var(--mv-cond-bg);stroke:var(--mv-text)}",
     ".amech .loopmark{cursor:pointer}.amech .loopmark circle{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
     ".amech .loopmark text{font-size:10.5px;font-weight:700;fill:var(--mv-text)}",
-    ".amech .loopmark .sketch{fill:none;stroke:var(--mv-text);stroke-width:1.5}",
-    ".amech .st.deadend rect.box{fill:var(--mv-dead-bg,#eceef1);stroke:var(--mv-rival)}.amech .st.deadend>text{fill:var(--muted,#5b6472)}",
-    ".amech .condframe{fill:none;stroke:var(--mv-text);stroke-width:1.4}",
     ".amech .chipmark{fill:currentColor;stroke:none}.amech .chipmark-t{font-size:10px;font-weight:700;fill:var(--panel,#fff)}",
     ".amech .panel-l{font-size:12.5px;font-weight:700;fill:var(--mv-text)}.amech .st.comphead text{font-weight:600}.amech .comp{fill:var(--mv-comp,rgba(34,64,111,.06));stroke:var(--mv-rival);stroke-width:1.2}.amech .comp-l{font-size:11px;font-weight:600;fill:var(--mv-text)}",
     ".amech .st.stock rect.box{stroke-width:2.8}.amech .valve{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.4}",
     ".amech .chip .leader{stroke:currentColor;stroke-width:1;stroke-dasharray:2 2;fill:none;opacity:.7}",
-    ".amech .cloud .pipe{stroke:var(--mv-text);opacity:.55}.amech .cloud .puff{fill:var(--panel,#fff);stroke:var(--mv-text);stroke-width:1.3}",
     ".amech .pipe-core{stroke:var(--panel,#fff)}.amech svg.hovering g[data-edge].hot .pipe{stroke-width:8.5}",
     ".amech .loopmark.centre circle{stroke:var(--mv-rival);stroke-width:1.2}.amech .loopmark.centre text{font-size:12.5px}",
     ".amech-loop{display:block;text-align:left;font:inherit;background:none;border:1px solid var(--line,#ddd);border-radius:6px;",
@@ -4710,19 +4584,7 @@ function injectStyle() {
   document.head.appendChild(s);
 }
 
-var CHANNEL_INKS = 6;
-/** A SKETCH OF EACH BEHAVIOUR OVER TIME (1.19), in a 16 x 10 box: never a graph of numbers the text
- *  does not give, only the shape it names. */
-var BEHAVIOUR_PATH = {
-  "grows": "M-8,4 C-2,4 2,2 4,-1 C5,-3 6,-4 8,-6",
-  "declines": "M-8,-6 C-6,-4 -4,-1 -2,1 C1,3 4,4 8,4",
-  "levels off": "M-8,4 C-5,-2 -2,-4 2,-5 C4,-5 6,-5 8,-5",
-  "s-shaped": "M-8,4 C-4,4 -2,3 0,0 C2,-3 4,-5 8,-5",
-  "oscillates": "M-8,0 C-6,-6 -4,-6 -2,0 C0,6 2,6 4,0 C5,-3 7,-4 8,-3",
-  "overshoot and collapse": "M-8,4 C-4,3 -2,-6 0,-6 C2,-6 3,0 5,3 C6,4 7,4 8,4",
-  "steady": "M-8,0 L8,0"
-};
-var INKS = ["text", "rival", "appraisal", "selection", "association", "ch0", "ch1", "ch2", "ch3", "ch4", "ch5"];
+var INKS = ["text", "rival", "appraisal", "selection", "association"];
 /** How an arrow is drawn: weight from what the text offers, pattern from how close its claims
  *  stand to the words, colour from whose step it is. A null finding is drawn thin whatever backs
  *  it -- its chip and its bar say what it is. */
@@ -4781,7 +4643,7 @@ function collapseModel(M) {
            form: M.form, constitutions: consts, reasoning: M.reasoning,
            profile: profile(M.levels, M.actors, states, ids, steps, M.appraisalClaims, undefined, undefined, undefined, M.ordering,
                             M.form, consts, M.reasoning),
-           chains: [], chain: M.chain, kinds: M.kinds, channels: M.channels,
+           chains: [], chain: M.chain, kinds: M.kinds,
            collapsed: { inside: inside, parts: M.ids.length - ids.length,
                         wholes: M.profile.wholes.length } };
 }
@@ -4816,14 +4678,14 @@ function chainModel(M, id) {
   ids.forEach(function (i) { asList(obj(M.states[i]).actor).forEach(function (a) { if (has(M.actors, a)) actors[a] = M.actors[a]; }); });
   (steps || []).forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cform = { form: c.form || "chain", settles: c.settles == null ? null : c.settles };
-  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast, account: c.account || [],
-                  apart: c.apart == null ? null : c.apart, idiom: M.reasoning ? M.reasoning.idiom : null, boundary: c.boundary || null };
+  var creason = { goal: c.goal == null ? null : c.goal, contrast: c.contrast == null ? null : c.contrast,
+                  apart: c.apart == null ? null : c.apart };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
   return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length,
            question: c.question || M.question, chains: [], kinds: M.kinds,
-           chain: { id: c.id, label: c.label || c.id, shared: shared, conditioned: c.conditioned || [] }, channels: M.channels,
-           form: cform, constitutions: consts, reasoning: creason, order: c.order || "time",
+           chain: { id: c.id, label: c.label || c.id, shared: shared },
+           form: cform, constitutions: consts, reasoning: creason,
            profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
                             cform, consts, creason) };
 }
@@ -5022,15 +4884,12 @@ function groupModel(M, gids) {
   steps.forEach(function (x) { var a = x.how && x.how.actor; if (a && has(M.actors, a)) actors[a] = M.actors[a]; });
   var cs = (M.chains || []).filter(function (c) { return gids.indexOf(c.id) >= 0; });
   var gform = { form: cs.every(function (c) { return c.form === "cycle"; }) ? "cycle" : "chain", settles: null };
-  var greason = { goal: null, contrast: null, account: M.reasoning ? M.reasoning.account || [] : [], apart: null,
-                  idiom: M.reasoning ? M.reasoning.idiom : null,
-                  boundary: cs.map(function (c) { return c.boundary; }).filter(Boolean)[0] || null };
+  var greason = { goal: null, contrast: null, apart: null };
   var consts = (M.constitutions || []).filter(function (x) { return inIds[x.from]; });
   return { levels: M.levels, ordering: M.ordering, actors: actors, states: states, ids: ids, steps: steps,
            dropped: 0, appraisalClaims: Object.keys(appr).length, question: M.question, chains: [], kinds: M.kinds,
-           chain: { id: "together:" + gids[0], label: cs.map(function (c) { return c.label || c.id; }).join(" · "), shared: {}, group: gids.slice(),
-                    conditioned: [].concat.apply([], cs.map(function (c) { return c.conditioned || []; })) }, channels: M.channels,
-           form: gform, constitutions: consts, reasoning: greason, order: "time",
+           chain: { id: "together:" + gids[0], label: cs.map(function (c) { return c.label || c.id; }).join(" · "), shared: {}, group: gids.slice() },
+           form: gform, constitutions: consts, reasoning: greason,
            profile: profile(M.levels, actors, states, ids, steps, Object.keys(appr).length, [], M.kinds, undefined, M.ordering,
                             gform, consts, greason) };
 }
@@ -5305,7 +5164,7 @@ function create(container, graph, opts) {
   var NEST = nestingOf(M.ordering);
   if (!NEST.offer) keep.nest = null;
   var nestSpec = function () { return keep.nest ? NEST.spec : null; };
-  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, boundary: !!(M.reasoning && M.reasoning.boundary), tier: keep.marks });
+  var G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, tier: keep.marks });
   // Off unless the host says the page's switch is already on: the view reports its layers back
   // as soon as it is drawn, and starting from `false` regardless would have turned off, on first
   // entry, an appraisal the reader had switched on in Reasons.
@@ -5335,10 +5194,6 @@ function create(container, graph, opts) {
   // small type and pills.
   var head = document.createElement("div"); head.className = "amech-head";
   head.innerHTML = '<div class="amech-q">' + esc(M.question) + '</div>' +
-    // WHAT THE STATES ARE TOLD AS (1.18), said once for the chart and never drawn as a box: Wilson
-    // 2023's flows, "a process by which inputs are transformed into outputs" (James, 8 Oct 2026).
-    (M.profile.idiom && M.profile.idiom.term ? '<div class="amech-q amech-idiom">Told as <b>' + esc(M.profile.idiom.term) + '</b>' +
-      (M.profile.idiom.means ? ': ' + esc(M.profile.idiom.means) : '') + (M.profile.idiom.pinpoint ? ' (' + esc(M.profile.idiom.pinpoint) + ')' : '') + '</div>' : '') +
     // WHERE THE ARGUMENT TAKES THIS CHAIN UP AS ONE ACCOUNT (1.20): the claims that stand for it.
     (function () {
       var mine = ((FULL && FULL.chainClaims) || []).filter(function (cc) {
@@ -5402,7 +5257,7 @@ function create(container, graph, opts) {
       '<button type="button" data-marks="plain"' + (PLAIN ? ' class="on" aria-pressed="true"' : '') +
       ' title="Boxes, arrows, their weight and heads, loops, AND gates and blockers: what reads without the legend. What else the text says is in each panel, in words">Plain</button>' +
       '<button type="button" data-marks="all"' + (PLAIN ? '' : ' class="on" aria-pressed="true"') +
-      ' title="Every mark: line patterns for how close each claim stands to the words, \u2248 \u2259 \u2282 \u2283, pipes and clouds, channel colours, round-ended activities">All</button></span>') +
+      ' title="Every mark: line patterns for how close each claim stands to the words, \u2248 \u2259 \u2282 \u2283, pipes, round-ended activities">All</button></span>') +
     // Offered only where the map declares wholes (F2). Named for what a click will show.
     (hasWholes ? '<button type="button" class="amech-tog boxes" data-boxes title="Parts drawn inside the boxes the text itself draws, or every state apart">' +
       (keep.boxes ? "Show every state" : "The text’s own boxes") + '</button>' : '') +
@@ -5544,9 +5399,6 @@ function create(container, graph, opts) {
   // no time line" (Johansson et al. 2024, p. 102), and a cycle has no first state to read from.
   el("text", { x: GUT, y: 22, "class": "actor-l" }, svg).textContent =
     M.form && M.form.form === "cycle" ? "a cycle: its order on the page is not time" :
-    // AN ORDER OF EXPLANATION IS NOT TIME (1.17): a genealogy's stages come in the order
-    // complications are added, and left to right reads as history unless the chart says otherwise.
-    M.order === "explanation" ? "in order of explanation, not of time: each stage adds a complication →" :
     "in sequence, left to right →";
   var gCap = el("g", {}, svg);
 
@@ -5681,7 +5533,6 @@ function create(container, graph, opts) {
       var notActual = s.status === "possible" || s.status === "open";
       if (notActual) { g.setAttribute("data-status", String(s.status)); g.setAttribute("class", cls + " notactual"); }
       if (G.stocks && G.stocks[v]) { rx = 2; g.setAttribute("class", g.getAttribute("class") + " stock"); }
-      if (s.dead_end === true) g.setAttribute("class", g.getAttribute("class") + " deadend");
       // A COMPARTMENT'S WHOLE heads it, its name in bold.
       if ((G.compartments || []).some(function (c) { return c.whole === v && c.boxed; })) g.setAttribute("class", g.getAttribute("class") + " comphead");
       el("rect", { "class": "box", width: p.w, height: p.h, rx: rx }, g);
@@ -5704,10 +5555,10 @@ function create(container, graph, opts) {
         el("title", {}, mo).textContent = p.open ? "Show the first lines only" : "Show the whole of “" + (s.label || v) + "”";
         mo.addEventListener("click", function (ev) { ev.stopPropagation(); setOpen(v, !p.open); });
       }
-      // WHAT THE BOX'S LOOK SAYS, SAID IN WORDS: hollow and italic, or muted, carried a badge until 17 Oct 2026.
+      // WHAT THE BOX'S LOOK SAYS, SAID IN WORDS: hollow and italic carried a badge until 17 Oct 2026.
       var tt = el("title", {}, g); tt.textContent = (s.label || v) +
         (s.status === "possible" ? " (a possibility the text sets out: not, or not yet, actual)" : s.status === "open" ? " (open: the text says it cannot be specified in advance)" : "") +
-        (s.dead_end === true ? " (a dead end: the text sets it out as stopping the process short)" : "") + " — click to see only the paths through it";
+        " — click to see only the paths through it";
       drawnNodes[v] = g;
       // THE MARKS, WHERE THE LAYOUT PUT THEM (M11). A loop is marked on every state in it, not only
       // on the arrow that closes it: the closing arc alone was easy to miss, and a reader tracing
@@ -5741,14 +5592,6 @@ function create(container, graph, opts) {
             var x = CHAINS.filter(function (c) { return c.id === o; })[0]; return "“" + (x && x.label || o) + "”"; }).join(" and ") +
             " — click to see " + (other && other.label || elsewhere[0]);
           mk.addEventListener("click", function (ev) { ev.stopPropagation(); keep.chain = elsewhere[0]; keep.then = { state: v }; remount(); });
-        } else if (b.kind === "unobserved") {
-          tx.textContent = "*";
-          ti.textContent = "Unobserved: the text says this is not measured or seen";
-        } else if (b.kind === "behaviour") {
-          var bh = String(obj(M.states[v]).behaviour);
-          tx.textContent = "";
-          el("path", { d: BEHAVIOUR_PATH[bh], "class": "sketch" }, mk);
-          ti.textContent = "Over time, the text says: " + bh;
         } else if (b.kind === "kin") {
           var kin = kinOf(v), gk = generalOfKind(kindOfState(v));
           mk.setAttribute("data-kind", kindOfState(v));
@@ -5798,35 +5641,6 @@ function create(container, graph, opts) {
         });
       }
       menuOn(g, function () { return stateMenu(v); });
-    });
-    // CONDITIONED ON (1.19): a square frame round each state the chain's analysis holds fixed, one round
-    // two the text says cannot be held apart -- Knight and Winship's boxes and tall box.
-    (PLAIN ? [] : (M.chain && M.chain.conditioned) || []).forEach(function (grp) {
-      var ns = grp.filter(function (v) { return drawnNodes[v]; }).map(function (v) { return G.nodes[v]; });
-      if (!ns.length) return;
-      var x0 = Math.min.apply(null, ns.map(function (n) { return n.x; })) - 6, y0 = Math.min.apply(null, ns.map(function (n) { return n.y; })) - 6;
-      var x1 = Math.max.apply(null, ns.map(function (n) { return n.x + n.w; })) + 6, y1 = Math.max.apply(null, ns.map(function (n) { return n.y + n.h; })) + 6;
-      var others = Object.keys(drawnNodes).some(function (w) { var n = G.nodes[w];
-        return grp.indexOf(w) < 0 && n.x < x1 && n.x + n.w > x0 && n.y < y1 && n.y + n.h > y0; });
-      (ns.length > 1 && !others ? [[x0, y0, x1, y1]] : ns.map(function (n) { return [n.x - 6, n.y - 6, n.x + n.w + 6, n.y + n.h + 6]; }))
-        .forEach(function (r) {
-          var fr = el("rect", { x: r[0], y: r[1], width: r[2] - r[0], height: r[3] - r[1], rx: 1, "class": "condframe" }, gN);
-          el("title", {}, fr).textContent = grp.length > 1 ? "Conditioned on together: the text says these cannot be held fixed apart"
-                                                          : "Conditioned on: held fixed in this analysis";
-        });
-    });
-    // THE CLOUDS, each joined to its flow by a stub of pipe.
-    (G.clouds || []).forEach(function (c) {
-      if (!drawnNodes[c.flow]) return;
-      var cg = el("g", { "class": "cloud", "data-cloud": c.flow }, gN);
-      var stub = "M" + c.x + "," + c.y + " L" + c.edgeX + "," + c.endY;
-      el("path", { d: stub, "class": "pipe", "stroke-width": 7, fill: "none" }, cg);
-      el("path", { d: stub, "class": "pipe-core", "stroke-width": 3.2, fill: "none" }, cg);
-      el("path", { "class": "puff", transform: "translate(" + c.x + "," + c.y + ")",
-                   d: "M-13,6 A5,5 0 0,1 -12,-3 A7,7 0 0,1 0,-6 A6,6 0 0,1 10,-3 A5,5 0 0,1 13,6 Z" }, cg);
-      var B = M.reasoning && M.reasoning.boundary;
-      el("title", {}, cg).textContent = (c.side < 0 ? "From outside what is mapped" : "Out of what is mapped") +
-        (B && B.says ? ": the text draws attention to its boundary — “" + B.says + "”" + (B.pinpoint ? " (" + B.pinpoint + ")" : "") : "");
     });
     // ONE MARK PER LOOP, at its centre, where every state of it is drawn (James's decision, 9 Oct 2026).
     (G.centres || []).forEach(function (c) {
@@ -5961,8 +5775,6 @@ function create(container, graph, opts) {
       (s.size ? " · <b>size</b>: " + esc(s.size) : "") +
       (s.regime ? " · <b>regime</b>: " + esc(s.regime) : "") +
       (s.threshold ? " · <b>only past a threshold</b>: " + esc(s.threshold) : "") +
-      ((s.statedVia || []).length && s.share !== "entire" ? " · " + (s.share === "none" ? "<b>not</b> through " : "runs " + (s.share === "most" ? "mostly" : "partly") + " through ") +
-        s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") : "") +
       (s.on === "trend" ? " · <b>on the trend</b>: it " + (s.sign === "-" ? "slows" : s.sign === "+" ? "speeds" : "changes") + " the change in its effect, not its level" : "") +
       (s.on === "being" ? " · <b>" + (s.sign === "-" ? "unmakes" : "makes") + "</b>: it brings its effect " + (s.sign === "-" ? "to an end" : "into being") + ", not more or less of it" : "") +
       (s.on === "persistence" ? " · <b>" + (s.sign === "-" ? "erodes" : "maintains") + "</b>: it " + (s.sign === "-" ? "wears its effect away" : "keeps its effect going") + ", not more or less of it" : "") +
@@ -5970,8 +5782,7 @@ function create(container, graph, opts) {
       (s.on === "possibility" ? " · <b>" + (s.sign === "-" ? "closes off" : "opens up") + "</b>: it changes what can happen, not what does" : "") +
       (s.on === "chance" ? " · <b>" + (s.sign === "-" ? "makes less likely" : "makes likelier") + "</b>: it changes the chance of its effect, not whether it happens" : "") +
       (s.on === "stock" ? " · <b>" + (s.sign === "-" ? "flows out of" : "flows into") + "</b>: " + (s.sign === "-" ? "an outflow from" : "an inflow to") + " a stock; the stock need not move with it" : "") +
-      ((s.despite || []).length ? " · <b>despite</b> " + s.despite.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" and ") + ", which acted against it and failed" : "") +
-      ((s.statedVia || []).length && s.share === "entire" ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
+      ((s.statedVia || []).length ? " · <b>the route through</b> " + s.statedVia.map(function (j) { return esc(obj(FULL.states[j]).label || j); }).join(" → ") +
         ": this link and that route are one, counted once" : "") +
       ((s.modifies || []).length ? " · <b>moderated</b>: " + s.modifies.map(function (m) {
         return esc(obj(FULL.states[m.by]).label || m.by) + " " + esc(EFFECT_WORD[m.effect] || m.effect) + (m.period ? " (" + esc(m.period) + ")" : ""); }).join("; ") : "") +
@@ -6028,8 +5839,6 @@ function create(container, graph, opts) {
     });
     // THE CHANNELS (1.19), each its colour and the text's word for it.
     var inksSeen = {}; G.edges.forEach(function (e) { if (e.layer === "text" || layers[e.layer]) inksSeen[e.ink] = true; });
-    var chRows = (M.channels || []).map(function (c, i) { return inksSeen["ch" + (i % CHANNEL_INKS)] ? row(line("var(--mv-ch" + (i % CHANNEL_INKS) + ")", 2.4, ""), c.label) : ""; }).join("");
-    if (chRows) out += '<div class="g">Colour: the kind of link, in the text’s words</div>' + chRows;
     if (isNull) out += row('<svg width="46" height="12" aria-hidden="true"><line x1="2" y1="6" x2="37" y2="6" stroke="var(--mv-text)" stroke-width="1.4"/>' +
       '<circle cx="40.5" cy="6" r="3.6" fill="var(--panel,#fff)" stroke="var(--mv-text)" stroke-width="1.6"/></svg>', "no effect found: nothing passes");
     if (G.edges.some(function (e) { return e.neg && (e.layer === "text" || layers[e.layer]); }))
@@ -6306,18 +6115,11 @@ function create(container, graph, opts) {
         intervene: "to find what to do to bring an effect about", predict: "to predict what will happen",
         attribute: "to attribute responsibility: what cause was decisive, and whose" })[P.goal]) + '</span></div>' : '') +
       (P.contrast ? '<div class="amech-row"><span class="k">rather than</span><span>' + esc(P.contrast) + '</span></div>' : '') +
-      // ITS ACCOUNT OF CAUSATION (1.14): what an arrow means differs with each.
-      ((P.account || []).length ? '<div class="amech-row"><span class="k">causation as</span><span>' + esc(P.account.map(function (a) { return ({
-        regularity: "regular succession", manipulability: "what changes when you intervene", mechanism: "a mechanism",
-        counterfactual: "what would have happened otherwise", "intra-action": "relations that make what they relate" })[a]; }).join("; ")) + '</span></div>' : '') +
       ((P.stock_loops || []).length ? '<div class="amech-row"><span class="k">stock loops</span><span>' + P.stock_loops.length +
         ' loop' + (P.stock_loops.length === 1 ? '' : 's') + ' through a flow into a stock: the sign counts flows, and the states need not move together</span></div>' : '') +
-      // HOW FAR IT IS MAPPED, and AN ORDER OF EXPLANATION (1.17).
+      // HOW FAR IT IS MAPPED (1.17).
       (P.depth === "sketch" ? '<div class="amech-row"><span class="k">mapped</span><span>a sketch: steps marked only where the argument relies on them' +
         (P.depth_reason ? ' -- ' + esc(P.depth_reason) : '') + '</span></div>' : '') +
-      ((P.chains || []).some(function (c) { return c.order === "explanation"; }) ? '<div class="amech-row"><span class="k">order</span><span>' +
-        esc((P.chains || []).filter(function (c) { return c.order === "explanation"; }).map(function (c) { return c.id; }).join(", ")) +
-        ': told in order of explanation, each stage adding a complication -- not in order of time</span></div>' : '') +
       (P.form && P.form.form === "cycle" ? '<div class="amech-row"><span class="k">form</span><span>a cycle, not asked where it starts or ends; ' +
         (P.form.settles === true ? 'the text says it comes to rest' : P.form.settles === false ? 'the text says it does not come to rest' : 'the text does not say whether it comes to rest') + '</span></div>' : '') +
       ((P.aspects || []).length ? '<div class="amech-row"><span class="k">told in</span><span>' + esc(P.aspects.map(function (a) { return a[1] + " " + a[0]; }).join(", ")) + '</span></div>' : '') +
@@ -6536,7 +6338,7 @@ function create(container, graph, opts) {
               return '<div>' + (c.extent === "partial" ? 'partly ' : '') + esc(o) +
                 ' <span class="amech-q">(' + esc(c.claim.title) + (c.layer === "rival" ? '; reported' : c.layer === "appraisal" ? '; the appraisal' : '; the text’s own') +
                 (c.whole ? '; ' + esc({ aggregate: "no more than their sum", organised: "through their organisation", reducible: "nothing but them" }[c.whole] || c.whole) : '') +
-                (c.under ? '; on ' + esc(c.under) : '') + ')</span></div>'; }).join("") + '</span></div>' : ''; };
+                ')</span></div>'; }).join("") + '</span></div>' : ''; };
           return row("makes up", CS.filter(function (c) { return c.from === selected.state; }), function (c) {
                    return c.toActor ? (obj(M.actors[c.to]).label || c.to) : (obj(FULL.states[c.to]).label || c.to); }) +
                  row("made up of", CS.filter(function (c) { return !c.toActor && c.to === selected.state; }), function (c) {
@@ -6816,7 +6618,7 @@ function create(container, graph, opts) {
   var foldAll = /** @type {HTMLElement|null} */ (bar.querySelector("[data-foldall]"));
   function refold() {
     if (!Object.keys(folded).length) ends = false;
-    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, boundary: !!(M.reasoning && M.reasoning.boundary), tier: keep.marks });
+    G = layout(M, { folded: folded, ends: ends, expand: expanded, open: opened, full: keep.full, marks: MS.marks, centres: MS.centres, nest: nestSpec(), compartments: !!M.compartmented, tier: keep.marks });
     selected = null;
     // "UNFOLD", NOT "SHOW THE WHOLE CHAIN": that label also named the way out of a focus, which
     // is a different action (clarity audit, 27 Sep 2026). One name, one thing.

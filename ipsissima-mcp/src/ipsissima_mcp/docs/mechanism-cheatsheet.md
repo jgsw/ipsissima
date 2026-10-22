@@ -205,7 +205,7 @@ which of the text's words are one state is interpretation**: record it in the st
 **Grain is also a decision.** The same link may appear at two grains: *fees cut take-up* in the
 abstract, a route through cash on hand and screening in section 4; a trial's total effect, then the
 mechanism the discussion gives for it. Mark both as the text states them, the coarse link as that route, not a second one
-beside it (the notation's `via:` and `share:`). Do not invent intermediate
+beside it (the notation's `via:`). Do not invent intermediate
 states for a link the text gives only coarsely: a sketch with a black box in it is the text's grain
 (Machamer, Darden and Craver 2000 on sketches; Craver 2006, pp. 360–61; Craver and Kaplan 2020, on
 why more detail is not always better), and filling the box is appraisal. Gross counts "six
@@ -228,7 +228,7 @@ different claims, and each is drawn differently.
 | *Z moderates the relationship between X and Y*, *X raises Y more when Z* | a **moderator** — it changes the step, not Y (Baron and Kenny 1986) | `modifies: {by: Z, effect: strengthens}` where the text names Z as something the chain has; `given: ["…"]` where it is only a qualification in words |
 | *Z does not moderate X → Y* | a **null moderation** — a finding | `modifies: {by: Z, effect: "0"}` |
 | *X raises Y among A, not among B* | a **stratified** finding | one step per group, each with its `given:` (a state and its value where the group is a state) |
-| *X brings Y unless D*, *D stands between X and Y* | a **blocker** — a defence, a knockout | `unless: [D]` on X → Y; `despite: [D]` where D acted and failed |
+| *X brings Y unless D*, *D stands between X and Y* | a **blocker** — a defence, a knockout | `unless: [D]` on X → Y (`rarer-marks`); where D acted and failed, the claim's words |
 | *X raises Y only together with W* | a **joint cause** — neither suffices alone | `jointly: [W]` |
 | *Z produces both X and Y* | a **confounder** — the text's own rival explanation | Z → X and Z → Y, as the text states them; X → Y, if the text rejects it, on a `#reported` claim |
 | *those who got X were already different* | **selection** | `selects: true` — drawn apart, never walked |
@@ -244,9 +244,9 @@ walked. The notation says how to mark each.
 
 Texts that evaluate or model say more about a step than its direction: when it holds, whether it
 moves a level or a trend, how much, and in which regime or past which threshold. Each was lost when
-the notation could not hold it. Read for all four, and keep the text's words; the notation's *Time is
-not only a lag*, *Keep a regime's steps to their regime* and *Give the size the text gives* say how
-to mark them. Two texts that agree on the direction and dispute the size draw as agreement without
+the notation could not hold it. Read for all four, and keep the text's words; the notation's *A
+change of trend* and *Give the size the text gives*, and `rarer-marks` for a period, a regime or a
+threshold, say how to mark them. Two texts that agree on the direction and dispute the size draw as agreement without
 it.
 
 ### Step 6. Nulls, rivals and reported views
@@ -301,7 +301,7 @@ state `levels:` only where the text says it holds at both.
 
 Then say what the levels are (`ordering:`). "Level" does several jobs — part within whole, region
 within region, rank, size, a place in a food chain — and a reader cannot tell which from the list
-(Ylikoski 2024). Nest them (`within:`) only where the text treats one as part of another, and as a
+(Ylikoski 2024). Nest them (`within:`, in `rarer-marks`) only where the text treats one as part of another, and as a
 tree: two groups within one society are siblings, not one inside the other (Craver 2025).
 
 ### Step 7b. Keep the verbs
@@ -318,15 +318,15 @@ started as "the number of companies started". Do not do that to the text.
 
 Where the text is about what could happen rather than what does, say so:
 - `on: possibility` for a step that opens up or closes off a possibility;
-- `status: possible` for a possibility the text sets out;
-- `status: open` for what it says cannot be specified in advance.
+- `status: possible` for a possibility the text sets out, and `status: open` for what it says cannot
+  be specified in advance (both in `rarer-marks`).
 
 Keep an association apart from a cause (`association: true`), and a particular case apart from a
 general relation (`scope:`). "Association" is "often mistakenly interpreted as a term for a causal
 relation" (Johansson et al. 2024, p. 71), and a general causal claim cannot be read off one case.
 
 A flow into a stock is `on: stock` ("flows into", "flows out of"), not a plain raise. A change in chance is
-`on: chance`. `account:` names how the text reasons about causes, where that is plain.
+`on: chance`.
 
 A process-relational text may hold that a whole and its parts make each other (`whole: mutual`), or
 that a relation belongs to several actors at once (`actor: [a, b]`) (Hertz et al. 2020, 2025).

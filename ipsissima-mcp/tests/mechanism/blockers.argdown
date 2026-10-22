@@ -1,6 +1,6 @@
 // Planted fixture for test_mechanism.py and app/test_mechanism_view.mjs (profile 1.8, G1): a
-// blocker (`unless`), a blocker that failed (`despite`), a condition naming a state, and one pair
-// whose steps differ by condition. Expected answers are written in those tests.
+// blocker (`unless`), a condition naming a state, and one pair whose steps differ by condition.
+// (`despite`, a blocker that failed, was retired in profile 1.25: the culture is in the claim's words.) Expected answers are written in those tests.
 ===
 title: "Planted -- defences and their failures"
 reconstruction:
@@ -32,7 +32,7 @@ mechanism:
     +> [Audit]
 
 [Harm despite culture]: "Harm came about despite a reporting culture, where no audit was made."
-    {fidelity: "quotation", causes: {from: hazard, to: harm, sign: "+", basis: example, despite: culture, given: [{state: audit, value: "absent"}]}}
+    {fidelity: "quotation", causes: {from: hazard, to: harm, sign: "+", basis: example, given: [{state: audit, value: "absent"}]}}
     +> [Audit]
 
 [No harm among the trained]: "Among trained staff, hazards did no harm."

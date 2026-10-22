@@ -94,7 +94,7 @@ for (const dir of dirs) for (const file of findMaps(dir)) {
   const tot = { hard: 0, chipCrossings: 0, crossings: 0, detours: 0, pictures: 0 };
   for (const [pname, M, o] of pictures(FULL)) {
     let G, A;
-    try { G = MV.layout(M, { ...o, boundary: !!(M.reasoning && M.reasoning.boundary) }); A = MV.audit(G); }
+    try { G = MV.layout(M, o); A = MV.audit(G); }
     catch (e) { breaches.push({ map: name, picture: pname, rule: "!", what: "threw: " + e.message }); tot.hard++; continue; }
     tot.pictures++;
     tot.hard += A.hard.length;

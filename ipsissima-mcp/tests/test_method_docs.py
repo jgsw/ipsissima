@@ -130,6 +130,22 @@ check("the reserved cell values are the same in the checker, the graph reader an
       bool(_js_graph and _js_tables) and json.loads(_js_graph.group(1)) == list(ca.RESERVED_VALUES) ==
       json.loads(_js_tables.group(1)), f"{_js_graph and _js_graph.group(1)} / {_js_tables and _js_tables.group(1)}")
 
+# RETIRED KEYS (profile 1.25) ARE TAUGHT NOWHERE: a key the checker answers with "retired" must not
+# be one a served document tells the model to write. Only keys retired in every part they lived in
+# are held here: `form`, `settles` and `apart` live on on chains, `account` as a frame's kind. Mutation: put `despite:`
+# back in a served example -> fails.
+_parts_of = {}
+for _part, _keys in P["retired"].items():
+    if isinstance(_keys, dict):
+        for _k in _keys:
+            _parts_of.setdefault(_k, set()).add(_part)
+_LIVE = set(P["claim_data"]) | set(P["map_frontmatter"]) | set(P["mechanism"]) | set(P["causes"]) \
+    | set(P["constitutes"]) | {k for part in ("states", "actors", "chains", "kinds") for k in P["mechanism"][part]["keys"]} \
+    | set(ca.FRAME_KEYS) | set(ca.FRAME_KINDS)   # `account` is a frame's kind as well
+_gone = sorted(k for k in _parts_of if k not in _LIVE)
+_taught = sorted(k for k in _gone if k in named_in("\n".join(TEXT.values())))
+check(f"no served document teaches a retired key ({len(_gone)} retired everywhere)", not _taught, f"still taught: {_taught}")
+
 # THE DIGEST rides on every extract_text reply, and said "the only metadata keys anything reads"
 # while leaving out seven of them. It is now built from the registry; hold it there.
 digest = re.search(r'CONVENTIONS_DIGEST = (?:f?""").*?"""', SERVER, re.S)

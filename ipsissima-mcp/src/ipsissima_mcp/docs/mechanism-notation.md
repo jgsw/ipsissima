@@ -68,9 +68,8 @@ mechanism:
   that works through several cases (the Coleman-boat paper's drought and migration, its
   fisheries, its segregation model), or a theory whose phases the text sets out as separate
   questions. Declare each with a `label` and the `question` it answers, and mark every step with
-  `chain: <id>` (a list, for a step two chains share). Where a state one chain explains is where
-  another begins, give it that role in the second: `roles: {forest: condition}`. One question
-  with one chain needs none of this. Do not split a single argument into chains to make a busy
+  `chain: <id>` (a list, for a step two chains share). One question with one chain needs none of
+  this. Do not split a single argument into chains to make a busy
   diagram smaller — a chain is a question the TEXT answers apart.
 - **`kinds:`** where the same KIND of state recurs across cases the text keeps apart: a general
   claim about rural–urban migration and a case of herders' migration; forest cover in one study
@@ -87,10 +86,8 @@ mechanism:
   (regions within regions), `authority` (a chain of command), `scale` (larger and smaller, without
   containment), `sequence` (a food chain, a supply chain), `systems` (separate systems acting on one
   another), `mixed`, or `unstated` where the text orders its levels without saying by what. It is
-  your reading unless the text says it: then `{kind, pinpoint}`. Where the levels nest, `within:`
-  gives each its parent, as a tree — `{elites: nation, citizens: nation}`, never read off the order of
-  the list — and the list puts each level's parts straight after it. If you cannot tell what the
-  levels are doing, write `unstated` and say so to the user: that is a finding about the text.
+  your reading unless the text says it: then `{kind, pinpoint}`. If you cannot tell what the levels
+  are doing, write `unstated` and say so to the user: that is a finding about the text.
 - **Keep the text's verbs**. Where the text says what happens as a doing — "families send a
   member to the city", "patients wait in ambulances" — label the state with the verb, not a noun
   ("rural–urban migration", "ambulance waiting times"). Where the text's own grammar makes it clear,
@@ -106,73 +103,38 @@ mechanism:
   **But not on a loop that runs either way**. Where the text says a loop can run in both
   directions -- Meadows's coffee cools or warms toward the room, and she labels her states "stored
   energy in body", not "low energy level" -- give the state a label without a direction, and give a
-  flow that runs whichever way the gap points `on: stock, net: true` (with `sign: which`).
+  flow that runs whichever way the gap points `on: stock` with `sign: which`.
 - **A cycle**. Where the text describes a cycle of reproduction and transformation rather
-  than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
-  `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
-  whether it comes to rest.
-- **The order the chain runs in**. Chains run in the order of time unless the text says
-  otherwise. Where its stages are stages of *explanation* — a genealogy whose each stage adds a
-  complication, so later means less idealised, not later in history — write `order: explanation`,
-  on the block or on the chain, so the chart's left to right is not read as history.
+  than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare it as
+  a chain with `form: cycle` (one chain, where the whole map is the cycle). Add `settles: true` or
+  `false` only where the text says whether it comes to rest.
 - **What the chain is for, and against what**: `goal:` is `explain`, `intervene`, `predict`
   or `attribute` (responsibility), where the text makes it plain. `contrast:` gives the foil its
   question sets ("why here, rather than there"). The block's `question:` is the one question its
   chain answers, in words. It is not the question layer (`questions:` in the front matter, and a
   claim's `question: {id, move}`; the conventions, §6), though where the chain answers one of the
   text's declared questions it should use the same words.
-- **How the text reasons about causes**: `account:` is `regularity` (regular succession),
-  `manipulability` (change the cause and the effect changes), `mechanism`, `counterfactual` (what
-  would have happened otherwise) or `intra-action` (relations that make what they relate). Give it,
-  as a list if need be, only where the text's method or theory makes it plain. The checker holds
-  `manipulability` to an experimental `design:` and `intra-action` to a `constitutes:`. This
-  `account:` is unrelated to the tables' `account` frame, which declares rival accounts of one thing.
-- **Possibility**:
-  - a step that opens up or closes off what *can* happen is `on: possibility` (`+` or `-`);
-  - a state the text sets out only as a possibility (an option, a path not yet taken) is
-    `status: possible`;
-  - an outcome the text says cannot be specified in advance is `status: open`.
-
-  Do not mark a merely hedged step this way: `hedged: true` says the text is unsure whether the step
-  holds; `possible` says the state itself is not actual.
+- **Possibility**: a step that opens up or closes off what *can* happen is `on: possibility` (`+` or
+  `-`). Do not mark a merely hedged step this way: `hedged: true` says the text is unsure whether the
+  step holds.
 - **Several actors together**: where the text makes a doing or a relation belong to several
   actors at once — people and land, fishers and their species — give `actor:` a list.
 - **A process with no owner**: a cascade, a flow, the dynamics of a field. It may leave out
   `actor` and give `levels:` instead. Where the text does attribute it to something, use that as its
   actor.
-- **What the states are told as**. Where the text defines the kind of thing nearly every
-  state is ("I use the idea of a flow … to refer to a process by which inputs are transformed into
-  outputs"), give it once on the block, as `idiom: {term, means, pinpoint}`. Never make it a state:
-  no step reaches it, and the chart draws only what a step touches.
-- **What a state's own keys add**, each only where the text says it:
-  - `behaviour:` the behaviour over time the text says a state follows -- `grows`, `declines`,
-    `levels off`, `s-shaped`, `oscillates`, `overshoot and collapse`, `steady` (Meadows's "inventory
-    oscillates", "the population levels off"). It is drawn as a sketch, so it is no graph of numbers.
-  - `observed: false` where the text says a state is unobserved (Knight and Winship's U*, Bias*).
-  - `dead_end: true` on an outcome the text sets out as stopping the process short (Marti and Gond's
-    symbolic use of a theory, which "will not lead to effective performativity"). Give it the step
-    that leads to it, so it is drawn; the checker then does not ask why it leads nowhere.
-  - On a chain, `conditioned:` the states its analysis holds fixed, and a list inside the list for
-    states the text says cannot be held fixed apart: `conditioned: [hours, [policy, care]]`.
-  - On a chain or the block, `boundary: {says, pinpoint}` only where the text itself draws attention
-    to where its system stops -- that the line is drawn by choice, or that things outside it act on
-    what is inside. Quote it. Every system has a boundary; do not set the key because yours does.
-- **The kinds of link**. Where the text tells kinds of link apart and the difference is its
-  point -- the Coleman-boat paper's ecological against social mechanisms, Rena et al.'s signalling
-  against metabolic conversion -- declare them once, `channels: {eco: {label: "ecological"}}`, in its
-  words, and mark each step with `channel:`. Not for a distinction you are making yourself.
-- **What the text keeps apart**. Where a chain meets no other, or its steps fall into pieces
-  that meet at no state, and the text keeps them apart (a contrast case, separate examples), say why
-  in `apart:` on the chain (or on the block, for a map with no chains). First look for a link the
-  text makes; see `parallel-pass.md`, *What meets*.
+- **What the states are told as**. Where the text defines the kind of thing nearly every state is
+  ("I use the idea of a flow … to refer to a process by which inputs are transformed into outputs"),
+  say so once, in the mechanism's `question:` or a state's `note:`. Never make it a state: no step
+  reaches it, and the chart draws only what a step touches.
+
+**When the text says more**, read `argdown_method("rarer-marks")`: where its levels nest; where one
+state plays different roles in two chains; where a state is only a
+possibility, or an outcome the text says cannot be specified in advance; where it says when a step
+holds, what blocks it, or the regime or threshold it holds in; where it reads a state through a
+measure; where a step runs through a prediction or a classification it acts on; and where it says
+what an actor faces and does (Gross's decomposition).
 
 ## 2. Mark the steps
-
-**Names, numbers, shapes**. Where the text names a step -- the kind of mechanism it is
-("situational", "transformational"), the question it asks, the feedback it is ("path dependency") --
-give `name:` in its words; where it numbers its steps (Marti and Gond's P1 to P9, Rena's 1 to 10),
-`mark:`. A relation the text says rises and then falls ("scarcer fish don't breed much, nor do
-crowded fish") is `shape: peak` (or `trough`), with no sign.
 
 **Making, keeping and changing in kind**. A step that brings its effect into being or ends
 it is `on: being` (`+` makes, `-` unmakes). One that keeps its effect going or wears it away is
@@ -202,7 +164,7 @@ describing it, say so in the note.
 
 **Constitution is not a step**. Where the text says something *constitutes*, *partly
 forms*, *makes up* or *defines* something else, mark it with `constitutes:`, never with `causes:`:
-`{from, to, extent, whole, basis, under}`. Its `to` may be an actor, such as a group or a system the
+`{from, to, extent, whole, basis}`. Its `to` may be an actor, such as a group or a system the
 states make up. A text may say one pair is related both ways at once (Hu: policing does "not only
 reflect and reinforce" racial injustice but "partly form[s]" the category). Then mark both, a
 `causes:` and a `constitutes:` on the same claim. Moving between scales by "zooming out" (the macro
@@ -228,26 +190,17 @@ substantially reduces adoption".
 | `basis` | what the TEXT offers for the step: `study` (a study or trial it reports), `statistics` (data it cites), `model` (a model's estimate), `example` (a case or a country), `testimony` (an authority's word, a consensus), `asserted` (nothing) |
 | `lag` | timing the text states: `"within five years"` |
 | `given` | conditions the text states, in its words: `["as part of a broader rehabilitation agenda"]` |
-| `how` | Gross's decomposition, **only where the text gives it**: `{actor, situation, habit, response}` |
-| `reflexive` | `true` where the step runs through a classification, a prediction or a model the step itself acts on |
 | `selects` | `true` where the link holds because of WHO ends up on each side, not because one brings the other about (below) |
 | `hedged` | `true` where the text puts the step as a possibility — "fees *may* worsen targeting" |
 | `jointly` | states the step holds **only together with**: `jointly: [desire]` where belief moves people to act "only where they wish to fit in" |
-| `period` | when the step holds, in the text's words anchored to an event: `"after culling ended"` |
 | `on` | `trend` where the step moves the trend of its `to`, not its level: the levy slowed obesity's rise |
-| `unless` | a state that **blocks** the step where it holds: `unless: defence` on hazard → harm |
-| `despite` | a state that acted against the step and **failed**: `despite: culling` |
-| `regime` | the regime the step holds in, in the text's words: `"at clinical doses"`, `"outside the cull zone"` |
-| `threshold` | the threshold the step acts past, in the text's words: `"above about 3°C of local warming"` |
 | `size` | the magnitude the text gives, quoted: `"a third of the cost"`, or `{value: -1.6, unit: "percentage points", ci: "95% CI -2.3 to -0.9", versus: "the counterfactual", at: "Nov 2019"}` |
-| `share` | with `via`: how much of the step runs by the route, `entire` (the default), `most`, `partial` or `none` |
 | `via` | the finer route the text opens this link into, in order: `via: [reform, sugar]` where the levy's effect on obesity runs through reformulation and sugar bought |
 | `modifies` | a state that **moderates** the step: `{by: backers, effect: strengthens}`; `weakens`, `reverses`, or `"0"` where the text finds it does not moderate it |
 | `necessary` | `true` where the text says the effect holds **only if** the cause does: "only when", "sine qua non" |
 | `sufficient` | `true` where the cause (with its `jointly` co-causes) brings the effect about **on its own**; `false` where the text says it is **not enough** alone |
 | `design` | the design of the evidence, in the text's words: `experiment`, `replication`, `anecdote`, `case study`, `illustration` (a hypothetical case) |
 | `attribution` | the **type** of causing the step attributes: `intentional`, `inadvertent`, `mechanical`, `accidental`, `complex`; as `{type, by: actor}` to say whose |
-| `measured_by` | the measure the step's evidence is read from (a state with `measures`) |
 | `stance` | on a `#reported` or `#contested` step: `rejected` or `unjudged` |
 
 - **A joint cause is one step, not two.** Where the text says two things bring something about only
@@ -255,25 +208,15 @@ substantially reduces adoption".
   mark the step from one with `jointly:` naming the others. Two separate steps would say each is
   enough alone. Where the text gives the second only as a qualification in words ("in a tight labour
   market"), it is a `given:`, not a state. Pick as `from` the cause the text leads with.
-- **Time is not only a lag.** Where the text reports one step in two periods (an effect during an
-  intervention, none after it), mark each record with its `period:`, in the text's words anchored to
-  the event. Where a finding is a change of trend ("slowed the rise", "a dampening of the rate of
-  increase rather than a reversal"), give the step `on: trend`: a plain `-` would say the level fell.
-- **Keep a regime's steps to their regime.** Where the text says a mechanism runs only at a dose,
-  in a place or in one model, give each such step its `regime:` in the text's words. The census will
-  not compose a route across two regimes. Where a step acts only past a threshold, say so in
-  `threshold:`; a plain sign would say the effect grows smoothly with its cause.
+- **A change of trend is not a change of level.** Where a finding is a change of trend ("slowed the
+  rise", "a dampening of the rate of increase rather than a reversal"), give the step `on: trend`: a
+  plain `-` would say the level fell.
 - **Give the size the text gives.** Where the text reports how much, put it in `size:` in its
   words or as an estimate with its interval and comparison. Two texts that agree on the direction and
-  dispute the size draw as agreement without it. Where a link runs only partly through a state, say
-  `share: partial` beside its `via`; where the text says it does not run through a state at all,
-  `share: none`.
-- **A blocker is not a second cause.** Where the text says X brings about Y *unless* D holds (the
-  defences between a hazard and harm), mark X → Y with `unless: D`, not a separate D → Y step. Where
-  it says the step held *despite* D, use `despite: D`: `given:` would say the step holds only where D
-  holds. A knockout, a subgroup or a place can be a condition that names a state:
-  `given: [{state: ampk, value: absent}]`. Mark each subgroup's finding as its own step with its
-  condition, and the census groups them.
+  dispute the size draw as agreement without it.
+- **A condition can name a state.** A knockout, a subgroup or a place can be a condition that names
+  a declared state: `given: [{state: ampk, value: absent}]`. Mark each subgroup's finding as its own
+  step with its condition, and the census groups them.
 - **A link the text opens is one route, not two.** Where the text states a link whole (a trial's
   total effect, "metformin lowers glucose") and elsewhere says how it runs ("mediated entirely by
   AMPK"; reformulation, then less sugar bought), mark the finer steps and give the whole link
@@ -315,12 +258,6 @@ substantially reduces adoption".
   **hypothetical** example ("imagine a manager who …") is `design: illustration`: it shows how a step
   could go, not that it does, and it is shaded as asserted. Where the evidence is for each period and
   not for the change between them, say so in `design:` in the text's words.
-- **A measure is not a cause.** Where the text reports a state through a measure — a survey score, an
-  estimate computed by a model, a marker — and the measure matters to the argument (a method's
-  artefact, a critique that the estimate is biased), declare the measure as its own state with
-  `measures: <state>` and `method:`. Steps into the measure are claims about the measurement. Never
-  draw a step from the measure to what it measures. Give the step whose evidence the measure carries
-  `measured_by: <measure>`, so that a bias in the measure bears on that step.
 - **Say where the text stands on a story it reports.** A `#reported` step is a view the text sets
   out; `stance:` says whether it sets it out to reject it or leaves it unjudged. A report the author
   endorses is her own claim: drop `#reported` and write it in her voice, `hedged: true` where the
@@ -331,8 +268,8 @@ substantially reduces adoption".
 - **Hedged steps.** A step the text puts as a possibility ("may", "might", "could") is the text's own,
   marked `hedged: true`. A step the text sets out only to reject is the rival's (`#reported`).
 - Where two groups respond differently to the same situation — heavy drinkers cut down, dependent
-  drinkers cut food instead — mark two steps from the same state, with `how:` naming each actor.
-  Do not invent a "moderator" state.
+  drinkers cut food instead — mark two steps from the same state, and say whose response each is in
+  its claim. Do not invent a "moderator" state.
 
 ## 3. Never close a gap to complete the chain
 
@@ -367,6 +304,6 @@ census:
 
 Annotate section by section, and declare the text's own levels. Expect many actors, loops that
 return through institutions, and strategies that are alternatives rather than steps; mark each
-alternative as its own step from the same situation. Keep `how:` for where the text actually says
-what an actor faces and does — in a text of that kind it usually does, and that is where the chain
-becomes intelligible.
+alternative as its own step from the same situation. Where the text says what an actor faces and
+does, which in a text of that kind it usually does, `rarer-marks` has Gross's decomposition: that is
+where the chain becomes intelligible.

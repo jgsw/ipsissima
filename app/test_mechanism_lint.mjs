@@ -201,7 +201,7 @@ check("py() prints Python's values", L.py(true) === "True" && L.py(null) === "No
   check("after chain:, the declared chains", c4 && c4.options.length === 1 && c4.options[0].label === "one", JSON.stringify(c4 && c4.options));
   const p5 = t.indexOf("      label: One");
   const c5 = L.complete(t, p5 + 6, g);
-  check("inside a chain in the front matter, a chain's keys", c5 && c5.options.some(o => o.label === "conditioned"), JSON.stringify(c5 && c5.options.map(o => o.label)));
+  check("inside a chain in the front matter, a chain's keys", c5 && c5.options.some(o => o.label === "settles") && !c5.options.some(o => o.label === "conditioned"), JSON.stringify(c5 && c5.options.map(o => o.label)));
   const p6 = t.indexOf("actor: herders, role") + 8;
   const c6 = L.complete(t, p6, g);
   check("a state's actor: offers the declared actors", c6 && c6.options.some(o => o.label === "herders"), JSON.stringify(c6 && c6.options));
