@@ -113,6 +113,7 @@ const SUITES = [
   ["the text's comparisons: frames and about (checker)", PY, [path.join(PYTESTS, "test_frames.py")]],
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
   ["the profile holds to the code",   PY, [path.join(PYTESTS, "test_profile.py")]],
+  ["the served method holds to the registry", PY, [path.join(PYTESTS, "test_method_docs.py")]],
   // The same file, the same report: two hash seeds once reshuffled every tie in the census.
   ["the census, run twice",      PY, [path.join(PYTESTS, "test_census_deterministic.py")]],
   ["two readings, compared",     PY, [path.join(PYTESTS, "test_compare.py")]],

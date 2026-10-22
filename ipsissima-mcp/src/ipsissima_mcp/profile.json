@@ -1,6 +1,6 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.21",
+  "version": "1.22",
   "date": "2026-10-22",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
@@ -14,8 +14,8 @@
     "reconstruction": {"type": "map", "summary": "The reading policy.", "keys": "reading_policy"},
     "defaults": {"type": "map", "summary": "Claim metadata declared once for every claim that does not set its own (usually `chapter`); `reviewed` here records a person's pass over the whole map."},
     "contentions": {"type": "list of titles", "summary": "The text's stated theses, added to the computed apex. Only the author's own."},
-    "questions": {"type": "map of id to {text, pinpoint}", "summary": "The questions the text works on, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (since 1.17)."},
-    "frames": {"type": "map of id to {kind, label, pinpoint, values, ordered, rule, note}, or none", "summary": "The comparisons the text itself makes: its cases (rows), the dimensions and verdict it gives them (columns, with the text's values), and the rival accounts of one thing it sets against each other. Claims are placed in them with `about:`. Read with every reconstruction since 1.21 (a trial from 20 Oct 2026); `none` records that the text compares nothing."},
+    "questions": {"type": "map of id to {text, pinpoint}", "summary": "The questions the text works on, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (since 1.17). In a question's `text`, words in double quotation marks inside the value are the text's own and are verified like any quotation; words without them are the reconstructor's (since 1.22)."},
+    "frames": {"type": "map of id to {kind, label, pinpoint, values, ordered, rule, note}, or none", "summary": "The comparisons the text itself makes: its cases (rows), the dimensions and verdict it gives them (columns, with the text's values), and the rival accounts of one thing it sets against each other. Claims are placed in them with `about:`. Read with every reconstruction since 1.21 (a trial from 20 Oct 2026); `none` records that the text compares nothing. In a label or a value's label, words in double quotation marks inside the value are the text's own and are verified like any quotation; words without them are the reconstructor's (since 1.22)."},
     "text-provenance": {"type": "string", "values": ["generated"], "summary": "Declares that the manuscript itself was machine-generated; shown beside the title."},
     "author": {"type": "string", "summary": "Who drew a survey map (a map with no source text)."},
     "draft": {"type": "boolean", "summary": "As the reading policy's `draft`, read here too, where older maps put it."},

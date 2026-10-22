@@ -28,7 +28,7 @@ title: A worked example
 (1) [Harm principle]: The law's role is to protect society from harm, not people from
     themselves.
 (2) Taking soft drugs harms nobody else.
--- Modus ponens {uses: [1,2]} --                      // the inference (optional detail)
+-----                                                 // the inference line
 (3) Soft drugs should not be criminal.
     +> [Legalise soft drugs]                          // this conclusion supports the contention
 
@@ -368,14 +368,14 @@ which is how one claim does work in two arguments.
 YAML in braces, attached to the statement, argument or heading above it.
 
 ```argdown
-[A claim]: The text. {source: "p. 14", checked: true}
+[A claim]: The text. {pinpoint: "p. 14", fidelity: "paraphrase"}
 ```
 
 Or on the next line, which is better for anything long:
 
 ```argdown
 [A claim]: The text.
-    {source: "p. 14", note: "Why this reading was chosen."}
+    {pinpoint: "p. 14", note: "Why this reading was chosen."}
 ```
 
 **Block form** requires a line break *immediately* after `{`, and then you must use YAML block
@@ -384,7 +384,7 @@ style — you cannot mix in JSON style:
 ```argdown
 [A claim]: The text.
     {
-    source: "p. 14"
+    pinpoint: "p. 14"
     note: "A longer note."
     }
 ```
@@ -579,7 +579,9 @@ The map draws what is connected. A file with no relations at all produces an emp
 1. It parses.
 2. Every title you referenced is spelled exactly as it was defined — check the list of statements
    for near-duplicates.
-3. Nothing is orphaned: every claim reaches the contention by some route.
+3. Nothing is orphaned by accident: every claim reaches the contention by some route, unless it is
+   left unconnected on purpose (a step the text explains but argues from nothing, under the
+   mechanism method; unplaced material in a draft) and its `note:` or section says why.
 4. Each objection is the *right kind*: attack if it denies a claim, undercut if it denies the
    inference, `><` if the two cannot both hold.
 5. Indentation is even at each level.

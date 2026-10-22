@@ -121,6 +121,50 @@ found, _ = run(td / "placed.argdown")
 check("  an `about:` under `frames: none` is a fault",
       [f["severity"] for f in found if "frames: none" in f["message"]], ["!"])
 
+print("a frame called `true`")
+# The served method's own example once used `true` as a frame id. The front matter reads it as the
+# boolean ("True"), Argdown hands the claim's `about: {true: yes}` over as the word ("true"), and the
+# hint for exactly this case tested only the first spelling, so it never fired (review of 22 Oct
+# 2026). Mutation: test `k in ("True", "False")` again -> the hint is gone.
+(td / "true.argdown").write_text(
+    "===\ntitle: A boolean id\nframes:\n    case: {kind: case, pinpoint: p. 1, values: {I: Case I}}\n"
+    "    true: {kind: dimension, pinpoint: p. 1, values: [yes, no]}\n===\n\n"
+    "[A]: A claim.\n    <+ [B]: A reason. {about: {case: I, true: yes}}\n", encoding="utf-8")
+found, _ = run(td / "true.argdown")
+check("the fault names the boolean", any("read as a boolean" in (f.get("fix") or "") for f in found), True)
+
+print("the text's words in a frame or a question, verified (ruled 22 Oct 2026)")
+# B11's first duty by the rule claims already follow: words in double quotation marks INSIDE a
+# label or a question's text claim to be the text's and are checked; words without them are the
+# reconstructor's and claim nothing. Mutations: make framing_quotes return early -> the misquotes
+# pass silently; check unquoted labels too -> "Gettier's cases" becomes a fault.
+sd = Path(tempfile.mkdtemp())
+(sd / "source").mkdir()
+(sd / "source" / "g.md").write_text("Is Justified True Belief Knowledge?\n\nS knows that P IFF (i) P is "
+                                    "true, (ii) S believes that P, and (iii) S is justified in "
+                                    "believing that P.\n", encoding="utf-8")
+def labelled(label, qtext):
+    (sd / "m.argdown").write_text(
+        "===\ntitle: Quoted labels\ndefaults:\n    chapter: \"source/g.md\"\n"
+        f"questions:\n    q1: {{text: {qtext}, pinpoint: p. 1}}\n"
+        "frames:\n    case: {kind: case, label: \"Gettier's cases\", pinpoint: p. 1, values: {I: Case I}}\n"
+        f"    holds: {{kind: dimension, label: {label}, pinpoint: p. 1, values: [yes, no]}}\n===\n\n"
+        "[A]: A claim. {question: {id: q1, move: answers}}\n"
+        "    <+ [B]: A reason. {about: {case: I, holds: yes}}\n", encoding="utf-8")
+    r = subprocess.run([sys.executable, str(CHECK), str(sd / "m.argdown"), "--format", "json",
+                        "--source-root", str(sd)], capture_output=True, text=True)
+    d = json.loads(r.stdout)
+    bad = [f["message"] for f in d.get("findings", []) if "does not verify" in f.get("message", "")
+           and f.get("check") in ("frames", "questions")]
+    return bad, (d.get("shape", {}).get("frames") or {}).get("quoted")
+bad, quoted = labelled('"\\"(i) P is true\\""', '"\\"Is Justified True Belief Knowledge?\\""')
+check("quoted words that are the text's verify, and are counted", (bad, quoted), ([], 1))
+bad, _ = labelled('"\\"(i) P is certainly true\\""', '"\\"Is justified belief knowledge?\\""')
+check("  misquoted, in a label and in a question, they are faults",
+      sorted(m.split(":")[0] for m in bad), ["frame `holds`'s label", "question `q1`"])
+bad, _ = labelled('"P is certainly true"', '"Is justified belief knowledge?"')
+check("  without inner quotation marks the words are the reconstructor's, and claim nothing", bad, [])
+
 print()
 if fails:
     print(f"{fails} FAILED")

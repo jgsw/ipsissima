@@ -1,6 +1,6 @@
 # The text's comparisons, read with the argument
 
-PART OF EVERY RECONSTRUCTION since 22 October 2026 (profile 1.21), on the author's ruling after a
+PART OF EVERY RECONSTRUCTION since 22 October 2026 (profile 1.21), on the project's ruling after a
 trial on two texts. Tables made while reconstructing were as full as those of a separate pass over
 the finished map, the argument was unchanged, and what tabulation added that could be measured was
 about 5,000-7,000 tokens a map. Read this with the reconstruction documents, before writing any
@@ -62,8 +62,13 @@ The pass records the text's own comparisons, and only the text's.
   - `dimension`: a column with values;
   - `verdict`: a dimension that is the text's verdict or outcome, shown last and read as what the
     others decide;
-  - `account`: rival accounts.
-- `label`: the frame's name, in the text's words where it has one.
+  - `account`: rival accounts (unrelated to the mechanism block's `account:`, which says how the
+    text reasons about causes).
+- `label`: the frame's name, in the text's words where it has one. **Whose words they are is
+  shown by quotation marks inside the value**, as `source:` does: `label: "\"(i) P is true\""` claims
+  the text's words, and the checker verifies them against the map's chapter;
+  `label: "Gettier's cases"` is your own name for the frame, and claims nothing. The same holds for
+  a value's label. (YAML's own quotation marks are syntax and do not count.)
 - `pinpoint`: where the text sets out the comparison. A frame the text never states is not the
   text's frame.
 - `values` (required):
@@ -77,41 +82,58 @@ The pass records the text's own comparisons, and only the text's.
 - `rule:` (verdicts only): a rule the text states or reports, as the verdict it gives when the
   dimensions take given values. For example, definition (a)'s "S knows that P iff (i) P is true,
   (ii) S believes that P, and (iii) S is justified in believing that P" becomes
-  `rule: {then: yes, when: {true: yes, believes: yes, justified: yes}, claim: "Definition a"}`.
+  `rule: {then: yes, when: {holds: yes, believes: yes, justified: yes}, claim: "Definition a"}`.
   The page then shows which rows the rule gets wrong, which is the counterexample. Give only a rule
-  the text states, with the claim that states it.
+  the text states, with the claim that states it. A rule here is always "all of these together";
+  where the text's rule is any other shape (two of three, any one of), leave it in its claim and
+  say in the frame's `note:` why it is not written as a rule.
 - `note`: optional prose.
 
 **`frames: none`** records that you read the text for its comparisons and found none. Give the
 reason in a `//` comment under the front matter. A map with no `frames:` at all was made before the
 comparisons were part of every reconstruction.
 
-```yaml
-frames:
-  case:
-    kind: case
-    label: "Gettier's cases"
-    pinpoint: "pp. 122-123"
-    values:
-      I: "Case I: the man who will get the job has ten coins"
-      II: "Case II: either Jones owns a Ford or Brown is in Barcelona"
-  justified: {kind: dimension, label: "(iii) S is justified in believing that P", values: [yes, no]}
-  true:      {kind: dimension, label: "(i) P is true", values: [yes, no]}
-  believes:  {kind: dimension, label: "(ii) S believes that P", values: [yes, no]}
-  knows:     {kind: verdict,   label: "S knows that P", values: [yes, no]}
-```
-
 **`about:` on a claim.** It names the cell or cells the claim states: the case, and the value it
 gives on one or more dimensions. Use a list where one claim states several cells.
 
-```
-[Smith is justified in believing e]: Smith is clearly justified in believing that (e) is true.
-    {fidelity: "quotation", pinpoint: "p. 122", about: {case: I, justified: yes}}
+The whole of it on Gettier 1963. The conditions' labels are Gettier's words, so they carry inner
+quotation marks; the cases' labels are summaries, so they do not. The truth condition's id is
+`holds`, not `true`: see *Ids that YAML reads as something else*, below.
+
+```argdown
+===
+frames:
+    case:
+        kind: case
+        label: "Gettier's cases"
+        pinpoint: "pp. 122-123"
+        values:
+            I: "Case I: the man who will get the job has ten coins"
+            II: "Case II: either Jones owns a Ford or Brown is in Barcelona"
+    holds:     {kind: dimension, label: "\"(i) P is true\"", pinpoint: "p. 121", values: [yes, no]}
+    believes:  {kind: dimension, label: "\"(ii) S believes that P\"", pinpoint: "p. 121", values: [yes, no]}
+    justified: {kind: dimension, label: "\"(iii) S is justified in believing that P\"", pinpoint: "p. 121", values: [yes, no]}
+    knows:
+        kind: verdict
+        label: "\"S knows that P\""
+        pinpoint: "p. 122"
+        values: [yes, no]
+        rule: {then: yes, when: {holds: yes, believes: yes, justified: yes}, claim: "Definition a"}
+===
+
+[Definition a]: S knows that P iff (i) P is true, (ii) S believes that P, and (iii) S is justified
+in believing that P. {fidelity: "quotation", pinpoint: "p. 121"}
+    <- [Smith does not know e]: It is equally clear that Smith does not know that (e) is true.
+        {fidelity: "quotation", pinpoint: "p. 122", about: {case: I, knows: no}}
+        <+ [Smith is justified in believing e]: Smith is clearly justified in believing that (e)
+          is true. {fidelity: "quotation", pinpoint: "p. 122", about: {case: I, justified: yes}}
 ```
 
-A claim may also name two `case` frames together, such as `about: {study: s4, question: use}`.
-That puts it in the cell where that study meets that question, which is how Bates's ten studies
-are set against the questions they answer. An `account` frame is never named in `about:`. Its
+A claim may also name two `case` frames together, such as `about: {study: s4, issue: use}`.
+That puts it in the cell where that study meets that issue, which is how Bates's ten studies
+are set against the questions they answer. (Ids are yours to choose; do not call a frame
+`question`, which a claim already uses for the question layer. And "study" here is the text's word
+for any study: as a step's `basis`, `study` means a designed comparison only.) An `account` frame is never named in `about:`. Its
 cells are the relations drawn to the accounts' claims.
 
 ## The order of work, inside the reconstruction's
@@ -173,11 +195,12 @@ The trial maps were Gettier 1963, Stone 1989, Valentino et al. 2018 and Bates et
   account, are one row that tells the accounts apart once they are grouped by the study they are
   `about`.
 - **Ids that YAML reads as something else.**
-  - `true`, `false` and `null` are not words in YAML: never use them as a frame's id or a value.
+  - `true`, `false` and `null` are not words in YAML: never use them as a frame's id or a value
+    (the Gettier example above calls the truth condition `holds`).
   - `yes` and `no` are words, as Argdown reads them, and the checker now reads them the same way.
 - **Keep a study's facts apart from its results** (21 October). A claim about study 1's result goes
   in the cell where study 1 meets that result; the study's product and country are a cell of their
-  own (`about: [{study: s1, question: takeup}, {study: s1, product: "deworming medicine"}]`).
+  own (`about: [{study: s1, issue: takeup}, {study: s1, product: "deworming medicine"}]`).
   Written as one map, the product is read as a value of the result row, and the checker asks
   whether the text gives one result four products.
 - **Give every column a pinpoint**, not only the rows: where does the text use this dimension?
@@ -188,8 +211,9 @@ The trial maps were Gettier 1963, Stone 1989, Valentino et al. 2018 and Bates et
 
 - **Fill a cell the text leaves empty.** Not from the reconstructor's knowledge, not by
   inference, not "obviously". The empty cell is the finding.
-- **Add a dimension the text does not use.** Silver's warning about cross-classification, and
-  Baldamus's endless dichotomies, both apply.
+- **Add a dimension the text does not use.** A form invites its slots to be filled, and a
+  cross-classification can always take one more dichotomy (Daniel Silver, "Figure It Out!",
+  *Sociological Methods & Research* 49, 2020, pp. 878–889).
 - **Rank or total the options.** `ordered:` reports the text's own ordering on each criterion. The
   page may say one option is worse on every count the text weighs; it never adds the counts up.
 - **Turn a reason into a coordinate.** A claim supports or attacks what it does. `about:` says

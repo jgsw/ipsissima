@@ -193,7 +193,7 @@ sources:
 |---|---|
 | `chapter` | path to the source file, relative to `--source-root`. Without it a claim cannot be placed at all. |
 | `section` | the heading the claim comes from. Scopes the paragraph search. |
-| `source` | where the reconstruction parks the author's exact words; quotations here are checked and located. |
+| `source` | the author's exact words, pinning a claim whose own text has to be a summary; checked and located. Quote in the claim itself wherever the words allow. |
 | `fidelity` | `quotation` · `paraphrase` · `compression` · `interpretation` · `imputation`. Drawn as the node border. |
 | `warrant` | why the reading departs from the text, on `interpretation` and `imputation`: `enthymeme` · `hyperbole` · `sloppy-phrasing` · `secret-sign` · `other-texts` · `coherence` · `convention`. Any other short value is accepted and listed. |
 | `note` | the prose reason. Keep it; `warrant` is the countable slot beside it, not a replacement. |
@@ -212,24 +212,8 @@ when the metadata was there all along. VERIFIED.
 
 ### A set that cannot all hold
 
-Where the text says that several claims cannot all be true together — a trilemma, a dilemma, an
-aporia, a trade-off it names — give each claim the same `inconsistent:` name:
-
-```argdown
-[The levy is high]: The levy is set high enough to change what people buy.
-    {inconsistent: "the levy trilemma"}
-[The poor are spared]: The levy costs poorer households little.
-    {inconsistent: "the levy trilemma"}
-[The yield is large]: The levy raises a great deal of money.
-    {inconsistent: "the levy trilemma"}
-```
-
-A claim in more than one such set takes a list of names. Mark only a set the text itself says cannot
-all hold, never one the reconstruction finds: the mark is the text's claim, and the reader is then
-asked which they would give up, and shown what giving up each would cost the rest of the argument.
-Two claims that contradict each other need no mark: draw the contradiction (`><`), and the page
-treats the pair as a set of two. Each claim must be on the map (related to something), as any claim
-must be to be drawn.
+`inconsistent:` marks a set of claims the text says cannot all hold. It is taught, with an example,
+in `ipsissima-conventions.md` §6.
 
 ---
 

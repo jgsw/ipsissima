@@ -18,11 +18,13 @@ Attach it as you write. Retro-fitting means re-reading the whole source, and cos
 map did.
 
 ```argdown
-[The state may override freedom]: The law may restrict personal freedom to protect people
-from themselves.
-    {fidelity: "quotation", pinpoint: "p. 14",
+[The state may override freedom]: Paternalist laws can be justified.
+    {fidelity: "compression", pinpoint: "p. 14",
      source: "\"the law may restrict personal freedom to protect people from themselves\""}
 ```
+
+The claim's own text is a summary, so `source:` pins it to the words it summarises. Where the
+words themselves will do as the claim, quote them in the claim and leave `source:` out.
 
 | field | what it does |
 |---|---|
@@ -30,6 +32,7 @@ from themselves.
 | `source` | the author's exact words, in quotation marks, **for pinning a claim whose own text has to be a summary** — as the example above shows. Verified character by character, exactly like a quoted span in the claim's own text. But the claim text is where quotation belongs (ruled 8 Sep 2026): the map draws fidelity as the border of the box, and only words in the claim itself are ever shown — a map whose every span hides in `source:` passes every check and shows the reader none of the author's words. Quote in the claim; reach for `source:` when the claim cannot carry the words |
 | `echoes` | where **else** the text states the claim, as the author's words — one span, or a list: `echoes: ["the sentence in the abstract that announces it"]`. The claim stays placed where it is argued; the exposition view draws a faint echo at each of these places, so a thesis announced early is seen early. Verified like a quotation. **Recorded, not guessed**: `check_argdown.py --echo-candidates` proposes places the words recur, and some of them only share vocabulary (an objection uses the claim's words too), so confirm each one against the text |
 | `section` | only when a claim has *no* quotation and the source prints a heading to name. A verified quotation has already pinned the line |
+| `line` | **override only**: the line in the chapter where a claim with no quotation and no heading to name is placed. Positions are otherwise computed fresh on every run, so leave it out unless the checker cannot place the claim |
 | `pinpoint` | page or section, for a human reader. Read the page off the source's `<!-- p.N begins here -->` markers rather than estimating it: the checker reports a quoted claim whose words are not on the page cited. Where the claim's words stand in more than one place, the page it cites decides where the claim is placed |
 | `note` | prose: why this reading, what was compressed, what was left out |
 | `reviewed` | date of a **person's** pass over the map. Front-matter `defaults:`. A generated map never sets it — the reviewer does, removing `generated: true` at the same time |
@@ -381,7 +384,69 @@ Field- or text-specific tags are legitimate on that test. A book symposium recon
 author against another may want that author named. What does not earn its place is a second word
 for something the map already knows.
 
-## 6. House style for claims
+## 6. The questions the text works on, and what cannot all hold
+
+**`questions:`, in the front matter.** The questions the text sets itself, in its own words where it
+asks them: an id to `{text, pinpoint}`. The map opens on them, and Study's first card asks one.
+Whose words the question is in is shown as for a frame's label: in double quotation marks inside
+the value (`text: "\"Is Justified True Belief Knowledge?\""`) it claims the text's words and is
+verified; without them it is yours. Where the text only implies its question, write it in your own
+words, with no inner quotation marks. Most texts have one to three; a question no claim moves on is reported.
+
+```argdown
+===
+questions:
+    q1: {text: "\"Is Justified True Belief Knowledge?\"", pinpoint: "p. 121"}
+===
+
+[Definition a is not sufficient]: Justified true belief is not sufficient for knowledge.
+    {fidelity: "compression", pinpoint: "p. 123", question: {id: q1, move: answers}}
+    <+ [Smith does not know e]: Smith does not know that (e) is true.
+        {fidelity: "quotation", pinpoint: "p. 122"}
+```
+
+**`question:`, on a claim**, says what the claim does to a declared question: `{id, move}`, or a
+list of them. There are four moves:
+
+| `move:` | the claim |
+|---|---|
+| `answers` | answers it |
+| `reframes` | puts a different question in its place: it offers a new way of seeing the matter rather than settling what was asked. Name the new question with `into: [q2]` |
+| `splits` | shows it is several questions, `into: [q2, q3]` |
+| `dissolves` | shows it has no answer to give: the question rests on a mistake |
+
+A reframing is a move on a question, not a reason. Recorded this way it is not drawn as support,
+which is what the plain arrows would make of it. The mechanism block's `question:` is a different
+key: the one question its chain answers, in words.
+
+**`inconsistent:`, for a set the text says cannot all hold.** Where the text says several claims
+cannot all be true together (a trilemma, a dilemma, an aporia, a trade-off it names), give each
+member the same `inconsistent:` name, or a list of names for a claim in more than one set:
+
+```argdown
+[The levy should be high]: The levy should be set high enough to change what people buy.
+    {inconsistent: "the levy trilemma"}
+    <+ [Price changes habits]: Shoppers buy less of what costs more.
+
+[The levy should spare the poor]: The levy should cost poorer households little.
+    {inconsistent: "the levy trilemma"}
+    <+ [The poor buy more of it]: Poorer households spend more on these drinks.
+
+[The levy should raise money]: The levy should raise a great deal of money.
+    {inconsistent: "the levy trilemma"}
+    <+ [The money funds school sport]: The revenue is promised to school sport.
+```
+
+Each member keeps its own reasons. The set is the mark, not a relation between them.
+
+Mark only a set the text itself says cannot all hold, never one you find: the reader is asked which
+member they would give up, and shown what giving up each would cost the rest of the argument. Two
+claims that contradict each other need no mark: draw `><`, and the page treats the pair as a set of
+two. Each member must be on the map, related to something, as every claim must be to be drawn.
+
+---
+
+## 7. House style for claims
 
 - **Titles are prose.** `[The state may override freedom]`, not `[state-override-freedom]`.
   Argdown titles take spaces, capitals and punctuation, and every published Argdown document uses
@@ -391,13 +456,15 @@ for something the map already knows.
 - **One claim per statement.** If it needs "and" or a semicolon, it is probably two.
 - **Record objections as objections**, not as smoothed-over qualifications. A reconstruction with
   no attacks is usually a misreading.
-- **Do not invent claims.** If the source raises a point and drops it, record the dropping as a
-  `#conceded` claim rather than silently completing the thought.
+- **Do not invent claims.** If the source raises a point and drops it, map the point as the text
+  states it, attached to what it bears on, and say in its `note:` that the text does not pursue it,
+  rather than silently completing the thought. Tag it only as its voice requires: `#conceded` is
+  for a point the author grants tells against them, which a dropped point need not be.
 - **Group with headings** — `# Part {isGroup: true}` — which add structure without adding nodes.
 
 ---
 
-## 7. What the checker will tell you
+## 8. What the checker will tell you
 
 ```bash
 ipsissima-check FILE.argdown --source-root DIR --format json

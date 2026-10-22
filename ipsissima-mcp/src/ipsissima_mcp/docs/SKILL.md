@@ -14,7 +14,8 @@ argument live in three documents beside it, and are not repeated here:
 | `reconstruction-cheatsheet.md` | **the method** — finding the conclusion, the Assertibility Question, linked vs convergent, charity and its limit |
 | `ipsissima-conventions.md` | **what Ipsissima records** — provenance, fidelity, warrants, tags, front matter |
 
-Those three used to be duplicated inside this file and inside `extraction-prompt.md`, in versions
+`extraction-prompt.md` says how a map is made from them, and names the documents read with them for
+the mechanism and the comparisons, which are part of every reconstruction. Those three used to be duplicated inside this file and inside `extraction-prompt.md`, in versions
 that had drifted apart. They now exist once.
 
 ---
@@ -30,9 +31,9 @@ python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py "<file>.argdown" \
     --source-root "<manuscript dir>" --format json
 ```
 
-`--format json` gives the faults with their locations and fixes, and nothing else: 372 words
-rather than 682 on the Darwin sample, and 2.0s rather than 4.6. Bare, it prints the full census —
-apex, sections, tags, debt — which is what a person wants once and a fix loop wants never.
+`--format json` gives the faults with their locations and fixes, and the census beside them:
+`census` in prose and `shape` as data, so one call is the whole picture and a second run on an
+unchanged file tells you nothing new. Bare, it prints the census alone, for a person.
 
 **Parsing clean is necessary, not sufficient.** A file can parse perfectly and be four
 disconnected trees with a corrupted heading. The checker is what catches that.
@@ -94,7 +95,7 @@ judgement half is where a strong model earns its place.
 ## Set the session up before you start, not during
 
 A reconstruction through this server runs in **your own conversation**, not in a side process. It
-is a long job that reads about 68 KB of reference documents, the whole source, and then holds the
+is a long job that reads about 210 KB of method documents, the whole source, and then holds the
 finished map — and all of that stays in your session afterwards. Four things follow, and the first
 two are free.
 
@@ -182,7 +183,10 @@ marker was forgotten rather than that none applies.
 |---|---|
 | `argdown-cheatsheet.md` | **before writing any Argdown** |
 | `reconstruction-cheatsheet.md` | **before reconstructing any argument** |
-| `ipsissima-conventions.md` | attaching provenance, fidelity or tags |
+| `ipsissima-conventions.md` | attaching provenance, fidelity or tags, the text's questions, a set that cannot all hold |
+| `tabulation-pass.md` | **with every reconstruction**: the text's comparisons, as `frames:` and `about:` |
+| `parallel-pass.md` | **with every reconstruction**: the mechanism, read with the argument |
+| `mechanism-cheatsheet.md`, `mechanism-pass.md` | with `parallel-pass.md`: how to read a causal claim, and the notation for steps |
 | `map-semantics.md` | deciding what the map should draw — borders, tags, selection modes |
 | `order-views.md` | interpreting the Manuscript view, or explaining what `--source-root` buys |
 | `viewer.md` | changing the renderer, or describing the viewer's controls |

@@ -288,6 +288,14 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
 #: rulebook reaches every client. For a client that can read the prompt this is a moment's
 #: redundancy; for the others it is the difference between knowing the conventions and
 #: guessing them.
+#:
+#: THE KEY LIST IS THE REGISTRY'S. Written by hand it said "the only metadata keys anything reads"
+#: and named ten, leaving out `echoes`, `about`, `causes`, `constitutes`, `question`, `mechanism` and
+#: `inconsistent` -- and then told the model to use `about:` (review of 22 Oct 2026). `lineSource` is
+#: the tooling's record of how `line` was arrived at, never a reconstruction's to write.
+_PROFILE = json.loads((HERE / "profile.json").read_text(encoding="utf-8"))
+_DIGEST_KEYS = ", ".join(k for k in _PROFILE["claim_data"] if k != "lineSource")
+_DIGEST_PCS_KEYS = " and ".join(k for k in _PROFILE["pcs_data"] if k != "formalized")
 CONVENTIONS_DIGEST = """\
 The map the checker can verify uses these conventions. The `reconstruct_argument` prompt and
 the server's resources carry the full method -- prefer them when your client can fetch them,
@@ -314,8 +322,8 @@ the author's own theses, never a persona's. Most maps need no declaration.
 A CLAIM, and the only metadata keys anything reads:
     [Title in prose]: Claim text, quoting the source's exact words "in double quotation
     marks" wherever the words allow. #tag {fidelity: "compression", note: "..."}
-The keys are: chapter, source, section, pinpoint, note, fidelity, warrant, reviewed --
-plus uses and formalization on premise-conclusion lines. `reviewed` records a PERSON's
+The keys are: """ + _DIGEST_KEYS + """ --
+plus """ + _DIGEST_PCS_KEYS + """ on premise-conclusion lines. `reviewed` records a PERSON's
 pass over the map: never set it on a map you generated; the reviewer sets it, removing
 `generated: true` at the same time. There is NO other quotation
 field: quoted spans of 10+ characters inside the claim's own text, and in `source:`, are
@@ -362,7 +370,14 @@ An <Argument> takes a fidelity marker like any other node.
 COMPARISONS: the text's cases against a definition, options against criteria, studies against
 questions and rival accounts are declared under front-matter `frames:`, and a claim stating a cell
 carries `about: {case: I, justified: yes}`. Only the text's own frames and values; an empty cell
-stays empty. `frames: none` where the text compares nothing. argdown_method `tabulation` has it.
+stays empty. A label, or a question's text, in the text's own words carries quotation marks inside
+the value (`label: "\"(i) P is true\""`) and is verified; without them it is yours. `frames: none` where the text compares nothing. argdown_method `tabulation` has it.
+
+QUESTIONS the text works on go under front-matter `questions:`, id to {text, pinpoint}. A claim
+that moves on one says how: `question: {id: q1, move: answers}` -- answers, reframes, splits or
+dissolves, with `into: [q2]` naming what takes a reframed or split question's place. A SET THE
+TEXT SAYS CANNOT ALL HOLD (a trilemma, a trade-off it names): give each member the same
+`inconsistent:` name. The conventions have both.
 
 Then run argdown_check, fix exactly what it names, and stop only when `ok` AND
 `verified` are BOTH true. Hand over a clean folder -- the .argdown and source/, with no
@@ -561,10 +576,11 @@ METHOD_DOCS = {
     "conventions": ("ipsissima-conventions.md",
                     "what Ipsissima records on a claim: provenance, fidelity, warrants, "
                     "tags, front matter"),
-    # THE MECHANISM, served only when asked for by name: never named in the replies to the other
-    # four, so a reconstruction is never pointed at it unasked. `mechanism` is the METHOD IN FORCE
-    # (1.15): parallel-pass.md by default, mechanism-pass.md when IPSISSIMA_MECHANISM_METHOD=series
-    # -- resolved when served, see argdown_method. Both are always reachable by their own names.
+    # THE MECHANISM. `mechanism` is the METHOD IN FORCE (1.15): parallel-pass.md by default,
+    # mechanism-pass.md when IPSISSIMA_MECHANISM_METHOD=series -- resolved when served, see
+    # argdown_method. Under parallel it is part of every reconstruction (1.17), and the replies to the
+    # other documents say so; under series it is served only when the user asks for the mechanism.
+    # Both methods are always reachable by their own names.
     "mechanism": ("parallel-pass.md",
                   "the mechanism, by the method in force: under `parallel` (the default) the argument "
                   "and the causal chain reconstructed together, for every text, as far as the "
@@ -574,14 +590,16 @@ METHOD_DOCS = {
                            "the parallel method: argument and mechanism read together, the mechanism "
                            "entering the argument through bridges -- part of every reconstruction"),
     "mechanism-series": ("mechanism-pass.md",
-                         "the series method, and the notation for steps both methods use: the chain "
-                         "marked on a finished map -- only when the user has asked for the mechanism"),
+                         "the notation for states and steps both methods use (sections 2-7, with the "
+                         "differences its opening note names), and the series method: the chain "
+                         "marked on a finished map, only when the user has asked for it. Under "
+                         "parallel, read with every reconstruction"),
     # HOW TO READ A MECHANISM, as the argument sheet says how to read an argument (28 Sep 2026):
-    # served with the pass, on request only.
+    # served with the method in force -- every reconstruction under parallel, on request under series.
     "mechanism-method": ("mechanism-cheatsheet.md",
                          "how to read the chain a text asserts before marking it: strength, "
-                         "necessity, moderators, time and size, rival accounts -- with the pass, "
-                         "only when the user has asked for the mechanism"),
+                         "necessity, moderators, time and size, rival accounts -- read with "
+                         "`mechanism`, under either method"),
     # THE TEXT'S COMPARISONS (a trial from 20 Oct 2026; part of every reconstruction since 22 Oct,
     # profile 1.21): declared as frames a reader can work, read with the argument as the mechanism is.
     "tabulation": ("tabulation-pass.md",
@@ -1439,9 +1457,9 @@ def _doc(name):
 @server.prompt(
     title="Reconstruct an argument as Argdown",
     description="The full instructions for turning a source text into a checkable .argdown "
-                "map -- its argument, and the causal chain read with it: how to find the form, "
-                "what fidelity levels mean, how to record provenance, and the traps that do not "
-                "announce themselves.",
+                "map -- its argument, the questions it works on, the causal chain and the "
+                "comparisons read with it: how to find the form, what fidelity levels mean, how "
+                "to record provenance, and the traps that do not announce themselves.",
 )
 def reconstruct_argument(source_path: str = "", out_path: str = "") -> str:
     tail = ""

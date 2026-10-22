@@ -20,13 +20,16 @@ question there has an answer:
 | rival accounts (`#reported`, `#contested`) | **Weigh the accounts**: each account with the reasons the text gives for it and against it | each reason's relation to *every* account it bears on, where the text states it. Nothing more: a reason the text gives only against the rival stays only against the rival |
 | the order of telling (provenance) | the **Exposition** view and the walkthrough | provenance on every claim |
 | the causal chain | the **Mechanism** view | as far as the argument relies on it (`argdown_method("mechanism")`) |
-| the text's question | the question the map opens on, and Study's first card | `questions:` in the front matter (id to `{text, pinpoint}`), in the text's words where it asks one; a claim that answers it says so with `question:` |
+| the text's question | the question the map opens on, and Study's first card | `questions:` in the front matter (id to `{text, pinpoint}`), in the text's words where it asks one; a claim that moves on one says how, `question: {id: q1, move: answers}`: answers, reframes, splits or dissolves (the conventions, §6) |
+| a set the text says cannot all hold | **These cannot all hold**: which would you give up, and what would it cost? | the same `inconsistent:` name on each member (the conventions, §6); a pair that contradicts is drawn `><` instead |
 | the text's comparisons | the **Tables** panel, and **Weigh the accounts** where it declares rival accounts | `frames:` and `about:`, read with every argument (`argdown_method("tabulation")`); `frames: none` where the text compares nothing |
 
 Three duties govern every layer (B11 of the project's values):
 
 1. **Every layer answers for its distance from the text.** Fidelity and warrant apply to a step
-   in a chain or a cell in a table as they do to a claim.
+   in a chain or a cell in a table as they do to a claim. A frame's label, a value's label and a
+   question's text are the text's words only where they carry quotation marks inside the value
+   (`label: "\"(i) P is true\""`), and are then verified; otherwise they are yours.
 2. **A layer records only what the text supplies.** An absence stays an absence. Where the text
    gives no reason against its own account, the grid shows an empty cell, and that empty cell is
    the reader's best question. Do not fill it with a reason the text does not give. "Nothing to
@@ -36,8 +39,9 @@ Three duties govern every layer (B11 of the project's values):
 
 ## Read these first
 
-Three reference documents carry what you need. **Read all three before writing any node** — they
-are short, and every round of the check-and-fix loop costs more than reading them does.
+Three reference documents carry what you need for the argument. **Read all three before writing
+any node**: every round of the check-and-fix loop costs more than reading them does. The order of
+work below adds two more, the mechanism and the comparisons, read with them.
 
 | resource | what it gives you |
 |---|---|
@@ -45,14 +49,10 @@ are short, and every round of the check-and-fix loop costs more than reading the
 | `ipsissima://reconstruction/method` | **how to reconstruct.** Finding the conclusion, the Assertibility Question, linked vs convergent, what to do about what is not said |
 | `ipsissima://ipsissima/conventions` | **what Ipsissima records.** Provenance, fidelity, warrants, tags, front matter |
 
-Without the MCP server, **two calls** — the three together are about 55 KB, which is over the
-inline cap, so one `cat` of all of them spills to a file you then have to read back. See rule 1
-below:
-
-```bash
-cat ipsissima-mcp/src/ipsissima_mcp/docs/argdown-cheatsheet.md ipsissima-mcp/src/ipsissima_mcp/docs/ipsissima-conventions.md
-cat ipsissima-mcp/src/ipsissima_mcp/docs/reconstruction-cheatsheet.md
-```
+Without the MCP server, read them from `ipsissima-mcp/src/ipsissima_mcp/docs/` with the `Read`
+tool, **one document per call**: `argdown-cheatsheet.md`, `reconstruction-cheatsheet.md`,
+`ipsissima-conventions.md`, then `tabulation-pass.md`, `parallel-pass.md`,
+`mechanism-cheatsheet.md` and `mechanism-pass.md`. Each is 12–40 KB. See rule 1 below.
 
 ---
 
@@ -71,15 +71,16 @@ One consequence for a long turn: if you are working in a conversation cached for
 turn that thinks for longer than that makes the next request rebuild the whole context. Prefer
 several ordinary turns to one enormous one.
 
-**1. Read the reference documents in TWO calls, and never with the source.** Served as MCP
-resources this is not a problem. On the command line it is: the three documents come to about
-55 KB, which is over the tool's inline cap, so one `cat` of all three does not save a call — it
-spills to a file you must then read back, and produces a turn long enough to outlive the prompt
-cache. **Two `cat`s of about 30 KB each. Not one, not four.**
+**1. Read the method documents one per call, with `Read`, and never with the source.** Served by
+`argdown_method` this is not a problem. On the command line it is: the documents together come to
+about 210 KB, and a `cat` over about 30 KB does not arrive inline — it spills to a file you must
+then read back, and a `cat` of several produces a turn long enough to outlive the prompt cache.
+Two of them, `mechanism-cheatsheet.md` and `mechanism-pass.md`, are over 30 KB on their own. **`Read`
+each document once; do not `cat` them together.**
 
 **And if a call does spill to a file, READ THE FILE.** Do not re-run the command: it will spill
 again, and you will have paid twice for nothing. This is not hypothetical and it is not rare — it
-is the single most common way this rule gets broken. One run crammed all four documents into a
+is the single most common way this rule gets broken. One run crammed four documents into a
 `cat`, spilled, re-ran *the same `cat`*, spilled again, and wrote 66 KB to disk twice before a
 `Read` finally delivered the text. Two calls wasted, by a run that had this paragraph in front of
 it.

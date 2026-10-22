@@ -69,7 +69,7 @@ because its relations were never drawn.
 **When the paper argues thesis → application → closing corollary, declare the theses.** A used
 conclusion is an intermediate one by the tests above, and on a serial paper that puts only the
 closing corollary at the computed apex — *The Will to Believe*'s map crowns the coda about
-mutual tolerance while the claim James calls "the thesis I defend" ranks as an intermediate.
+mutual tolerance while the claim William James calls "the thesis I defend" ranks as an intermediate.
 The front matter's `contentions:` list (see the conventions) raises the paper's stated theses
 to contention rank beside the computed apex, additively, so the census and the map's ladder
 answer with the thesis. Declare rarely — most papers' conclusions are their termini — and only
@@ -159,7 +159,9 @@ untouched.
 > Drawing convergent reasons as linked claims the author's case collapses if any one fails —
 > usually false, and unfair. Drawing linked reasons as convergent claims each premise supports
 > the conclusion alone — usually false, and flattering. **When the author's intention is genuinely
-> unclear, Fisher's rule: choose the reading that yields the better argument.**
+> unclear, Fisher's rule: choose the reading that yields the better argument — and say so.** The
+> choice decides what fades when a reader supposes a premise false, so it is a departure to declare:
+> a `note:` on the argument saying the text leaves it open, and `#crux` where interpreters divide.
 
 Two further shapes worth naming: **serial**, where a reason supports an intermediate conclusion
 which supports the main one; and **divergent**, where one premise supports two distinct
@@ -419,7 +421,9 @@ explanation of the same thing ("excluded because strikebreakers" against "strike
 excluded"), or simply the claim the text denies ("Definition a" against "Definition a is not
 sufficient"). Both are drawn the same way, as an attack. The viewer tells them apart by the
 titles, reading a title that negates the other's subject as a denial. So title a rival account as
-the account it is, and a refutation's failure claim as the failure it states.
+the account it is, and a refutation's failure claim as the failure it states. Where the text sets
+rival accounts of one thing against each other, say so outright: declare them as an `account` frame
+(`tabulation-pass.md`), and the viewer need not read the titles at all.
 
 ---
 

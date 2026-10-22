@@ -9,7 +9,7 @@ Ipsissima-MCP is an [MCP](https://modelcontextprotocol.io) server. It gathers wh
 needs. It gets the document into structured Markdown with its paragraphs and page numbers intact.
 It serves the method for reading the text into one Argdown file that holds several of its
 structures: the argument and its reasons, the causal chain the text says happens, the questions it
-asks, and, when you ask for them, the comparisons it draws as tables. Then it checks the finished
+asks, and the comparisons it draws, as tables. Then it checks the finished
 map against its sources word for word. The judgement, reading a paper into a map, is done by the
 assistant you are already talking to; this server hands it the instructions and then checks its
 work.

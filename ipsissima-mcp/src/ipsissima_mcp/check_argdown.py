@@ -2102,7 +2102,54 @@ def exposition_report(prov, doc, source_root, quotes, contentions):
 QUESTION_MOVES = ("answers", "reframes", "splits", "dissolves")
 
 
-def questions_report(cli, path):
+def framing_quotes(path, source_root, items, check):
+    """The words a frame or a question offers as THE TEXT'S, verified like any quotation.
+
+    B11's FIRST DUTY, BY THE RULE CLAIMS ALREADY FOLLOW (ruled 22 Oct 2026, the review of the
+    extraction materials, decision 1(a)). A frame's label, a case's label and a question's text are
+    either the text's words or the reconstructor's, and the reader of a table or of the question a
+    map opens on was given no way to tell which. So: words written in double quotation marks INSIDE
+    the value (`label: "\\"(i) P is true\\""`, as `source:` already does, since YAML's own quotes are
+    syntax) claim to be the text's, and are checked against the map's chapter; words without them
+    are the reconstructor's own, and claim nothing. No new key. Silent without a source root, as
+    the claims' quotations are.
+
+    `items` is a list of (where, text). Returns how many spans verified."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import argdown_provenance as prov
+    if not source_root:
+        return 0
+    chapter = ((prov.read_frontmatter(path) or {}).get("defaults") or {}).get("chapter")
+    text, ok = None, 0
+    if chapter:
+        try:
+            with open(os.path.join(source_root, chapter), encoding="utf-8", errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            text = None
+    for where, value in items:
+        for mo in prov.quotations(str(value or "")):
+            quote = mo.group(1)
+            if text is None:
+                finding(check, "?", f"{where} quotes the text, and there is no `defaults: chapter:` "
+                        "source to check it against", quote=quote)
+                continue
+            status, _line, detail = prov.find_quote(quote, text)
+            if status == "exact":
+                ok += 1
+                continue
+            found = prov.locate_elsewhere(quote, source_root, chapter)
+            if found:
+                ok += 1
+                continue
+            finding(check, "!", f"{where}: quotation does not verify against the source ({status})",
+                    quote=quote, detail=detail,
+                    fix="quote the text's words exactly -- or drop the inner quotation marks, and "
+                        "the words are then yours")
+    return ok
+
+
+def questions_report(cli, path, source_root=None):
     """The questions the map says the text works on (front matter `questions:`), and the claims'
     moves on them (`question:`): checked, and listed in the census. Silent for a map with neither."""
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -2141,6 +2188,7 @@ def questions_report(cli, path):
                             "(`text`, `pinpoint`)", fix="drop it, or put it in a `//` comment")
         if not texts[str(qid)]:
             finding("questions", "!", f"question `{qid}` has no `text`", fix="give the question in words")
+    q_quoted = framing_quotes(path, source_root, [(f"question `{q}`", t) for q, t in texts.items()], "questions")
     done = {}
     for title, kind, mv in moves:
         where = {"title": title}
@@ -2178,6 +2226,8 @@ def questions_report(cli, path):
                                moves=[dict(move=m, title=t, into=i) for m, t, _k, i in done.get(str(k), [])])
                           for k in decl]
     print(f"\n   QUESTIONS ({len(decl)}): what the text works on, and what its claims do to each")
+    if q_quoted:
+        print(f"      {q_quoted} quoted span(s) in the questions verified as the text's own words")
     verb = {"answers": "answered by", "reframes": "reframed by", "splits": "split by", "dissolves": "dissolved by"}
     into_of = {x for _t, _k, mv in moves if isinstance(mv, dict) for x in
                ([] if mv.get("into") is None else mv.get("into") if isinstance(mv.get("into"), list) else [mv.get("into")])}
@@ -2197,7 +2247,7 @@ FRAME_KINDS = ("case", "dimension", "verdict", "account")
 FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "rule", "note")
 
 
-def frames_report(cli, path):
+def frames_report(cli, path, source_root=None):
     """The comparisons the text makes (front matter `frames:`), and the claims placed in them
     (`about:`): checked, and each case table sized in the census. Silent for a map with neither.
 
@@ -2260,6 +2310,7 @@ def frames_report(cli, path):
         return
     decl = decl or {}
     frames = {}
+    worded = []          # (where, words): what a frame offers as the text's words, checked below
     for fid, f in decl.items():
         fid = str(fid)
         if not isinstance(f, dict):
@@ -2305,6 +2356,10 @@ def frames_report(cli, path):
         if f.get("rule") is not None and kind != "verdict":
             finding("frames", "!", f"frame `{fid}`: `rule:` belongs to a verdict, not to a {kind}")
         frames[fid] = dict(kind=kind, values=values, label=str(f.get("label") or fid), rule=f.get("rule"))
+        worded.append((f"frame `{fid}`'s label", f.get("label")))
+        if isinstance(vals, dict) and kind != "account":
+            worded += [(f"frame `{fid}`, value `{vid}`", v) for vid, v in vals.items() if isinstance(v, str)]
+    f_quoted = framing_quotes(path, source_root, worded, "frames")
     # A STATED RULE: the verdict a definition or a rule gives when the dimensions take these values.
     for fid, f in frames.items():
         r = f.get("rule")
@@ -2338,8 +2393,10 @@ def frames_report(cli, path):
             k, v = str(k), str(v)
             if k not in frames:
                 finding("frames", "!", f"`about: {{{k}: ...}}`: no frame `{k}` is declared under `frames:`",
+                        # Argdown hands `about: {true: ...}` over as the word "true"; the front
+                        # matter's `true:` was read here as the boolean, "True". Either spelling.
                         fix=("a frame called `true` or `false` is read as a boolean: give it another id"
-                             if k in ("True", "False") else None), **where)
+                             if k.lower() in ("true", "false") else None), **where)
                 ok = False
             elif frames[k]["kind"] == "account":
                 finding("frames", "!", f"`about:` names the account frame `{k}`: an account's cells are the "
@@ -2349,7 +2406,7 @@ def frames_report(cli, path):
                 finding("frames", "!", f"`{k}: {v}` is not one of frame `{k}`'s values "
                         f"({', '.join(list(frames[k]['values'])[:8])})",
                         fix=("`true` and `false` are YAML's booleans, not words: use another id, "
-                             "e.g. `holds`" if v in ("True", "False") or "True" in frames[k]["values"]
+                             "e.g. `holds`" if v.lower() in ("true", "false") or "True" in frames[k]["values"]
                              or "False" in frames[k]["values"] else None), **where)
                 ok = False
             else:
@@ -2397,8 +2454,10 @@ def frames_report(cli, path):
         out.append(dict(frame=c, rows=len(f["values"]), columns=cols, filled=filled, cells=size,
                         crossed=[k for (a, k) in crossed if a == c]))
     accounts = [dict(frame=fid, accounts=list(f["values"])) for fid, f in frames.items() if f["kind"] == "account"]
-    SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed))
+    SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed), quoted=f_quoted)
     print(f"\n   FRAMES ({len(frames)}): the comparisons the text makes, and {len(placed)} cell(s) placed")
+    if f_quoted:
+        print(f"      {f_quoted} quoted span(s) in labels verified as the text's own words")
     for t in out:
         if t["columns"]:
             print(f"      {t['frame']}: {t['rows']} case(s) x {len(t['columns'])} column(s) "
@@ -2953,9 +3012,10 @@ def _report(cli, path, a):
                      if a.source_root else None)
 
     # ---- 5d3. the questions the text works on (profile 1.17) -------------- #
-    questions_report(cli, path)
+    _sr = os.path.abspath(os.path.expanduser(a.source_root)) if a.source_root else None
+    questions_report(cli, path, _sr)
     # ---- 5d4. the comparisons the text makes (a trial, 20 Oct 2026) -------- #
-    frames_report(cli, path)
+    frames_report(cli, path, _sr)
 
     # ---- 5e. the shape of the premise-conclusion structures --------------- #
     # After fidelity, because these are questions about the ARGUMENT rather than about whose

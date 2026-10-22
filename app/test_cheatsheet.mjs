@@ -50,10 +50,17 @@ function blocks(md) {
 
 // The documents a model is told to read, plus the prompt it is served. These must be clean:
 // an example that does not parse teaches the mistake to every reconstruction written afterwards.
+// EVERY DOCUMENT `argdown_method` SERVES, read off the server's own table, so a document added
+// there is held here without anyone remembering to list it (the review of 22 Oct 2026 found four
+// served documents outside this list). `ipsissima-mcp/tests/test_method_docs.py` runs the same
+// examples through the checker, which is stricter than the parser.
 // map-semantics.md, order-views.md, viewer.md and reference.md still carry broken examples and
 // are not yet in this list; add each as it is cleaned.
-const CLEAN = ["argdown-cheatsheet.md", "reconstruction-cheatsheet.md",
-               "ipsissima-conventions.md", "extraction-prompt.md", "SKILL.md"];
+const SERVER = fs.readFileSync(path.resolve(DOCS, "..", "server.py"), "utf8");
+const TABLE = SERVER.match(/^METHOD_DOCS = \{([\s\S]*?)^\}/m)[1];
+const SERVED = [...TABLE.matchAll(/\("([\w-]+\.md)",/g)].map(m => m[1]);
+const CLEAN = [...new Set([...SERVED, "SKILL.md"])];
+if (SERVED.length < 8) { console.log(`  FAIL  read only ${SERVED.length} served documents off server.py`); fails++; }
 const files = fs.readdirSync(DOCS).filter(f => CLEAN.includes(f)).sort();
 console.log("== Argdown examples in the documentation\n");
 

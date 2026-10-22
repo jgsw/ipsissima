@@ -4,9 +4,15 @@
 > (`parallel-pass.md`, served as `mechanism`): the argument and the mechanism are read together, and
 > the mechanism enters the argument through bridges. This document is still served, as
 > `mechanism-series`, for two reasons. **Its §§2–7, the notation for states and steps, are what the
-> parallel method uses unchanged.** And the series method comes back whole if
-> `IPSISSIMA_MECHANISM_METHOD=series` is set. Under the parallel method, §1, "What it may and may not
-> change", and §4's separate section do not apply.
+> parallel method uses.** And the series method comes back whole if
+> `IPSISSIMA_MECHANISM_METHOD=series` is set.
+>
+> **Under the parallel method, five things here do not apply:** the next paragraph and "What it
+> may and may not change" (the parallel method wires steps into the argument); §1 (the source is
+> read once, with the argument); §4's separate section (a step the argument never uses stands in
+> the section where the text states it — no mechanism appendix); §5's section (the imputed step is
+> a premise of the argument that relies on it); and §7's closing report (the census is read, and
+> the map is the report).
 
 A SEPARATE PASS, AND ONLY ON REQUEST. It runs when a reader has asked for the mechanism of a text —
 "map its mechanism too", or yes to `argdown_plan`'s offer — and never as part of an ordinary
@@ -70,6 +76,7 @@ mechanism:
         household: {label: "Poor household", level: micro}
     states:
         price:   {label: "User fee charged", actor: ngo, role: intervention}
+        cash:    {label: "Household has cash on hand", actor: household}
         takeup:  {label: "Household takes the product up", actor: household,
                   note: "the text's 'take-up', 'adoption' and 'access' read as one state"}
         use:     {label: "Product used", actor: household,
@@ -136,7 +143,8 @@ mechanism:
   takes. Use a kind only where the text itself treats the two as the same kind of thing — the
   same word is not enough. Where one of them is the text's GENERAL claim and the others cases of
   it (a general mechanism and the examples it is illustrated by), name it: `general: <state>`.
-  Leave it out where the cases are equals.
+  Leave it out where the cases are equals. (A state's `kind:` names one of these; a frame's `kind:`,
+  in the tables, says what sort of frame it is. The two are unrelated.)
 - **Levels** default to macro, meso and micro. A text with its own levels — a multilevel theory
   that names individuals, networks, organisations, the state, the field — declares them, top first.
 - **Say what the levels are** (*1.10*): `ordering:` is `composition` (parts within wholes), `space`
@@ -167,14 +175,22 @@ mechanism:
   than a chain from causes to ends — Wimmer's boundary making, iterative improvement — declare
   `form: cycle`, on the block or on the chain. Add `settles: true` or `false` only where the text says
   whether it comes to rest.
+- **The order the chain runs in** (*1.17*). Chains run in the order of time unless the text says
+  otherwise. Where its stages are stages of *explanation* — a genealogy whose each stage adds a
+  complication, so later means less idealised, not later in history — write `order: explanation`,
+  on the block or on the chain, so the chart's left to right is not read as history.
 - **What the chain is for, and against what** (*1.13*): `goal:` is `explain`, `intervene`, `predict`
   or `attribute` (responsibility), where the text makes it plain. `contrast:` gives the foil its
-  question sets ("why here, rather than there").
+  question sets ("why here, rather than there"). The block's `question:` is the one question its
+  chain answers, in words. It is not the question layer (`questions:` in the front matter, and a
+  claim's `question: {id, move}`; the conventions, §6), though where the chain answers one of the
+  text's declared questions it should use the same words.
 - **How the text reasons about causes** (*1.14*): `account:` is `regularity` (regular succession),
   `manipulability` (change the cause and the effect changes), `mechanism`, `counterfactual` (what
   would have happened otherwise) or `intra-action` (relations that make what they relate). Give it,
   as a list if need be, only where the text's method or theory makes it plain. The checker holds
-  `manipulability` to an experimental `design:` and `intra-action` to a `constitutes:`.
+  `manipulability` to an experimental `design:` and `intra-action` to a `constitutes:`. This
+  `account:` is unrelated to the tables' `account` frame, which declares rival accounts of one thing.
 - **Possibility** (*1.12*):
   - a step that opens up or closes off what *can* happen is `on: possibility` (`+` or `-`);
   - a state the text sets out only as a possibility (an option, a path not yet taken) is
