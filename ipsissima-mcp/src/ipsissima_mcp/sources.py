@@ -411,8 +411,9 @@ def describe(paths, recursive=True):
             kind="tables-cited", sources=[r["name"] for r in cited],
             message=(f"The text cites tables of its own ({shown}). Its comparisons are read with the "
                      "argument and set out as tables a reader can question. Extraction usually loses "
-                     "a table's shape: rebuild each one extract_text reports lost from its page "
-                     "(page_images, repair_source) before reconstructing. A label naming another "
+                     "a table's shape: once the skeleton says which tables a frame uses, rebuild each of "
+                     "those that extract_text reports lost from its page (page_images, repair_source), "
+                     "before writing the claims that quote it. A label naming another "
                      "work's table can be ignored.")))
 
     # ---- THE LAYERS THE MAP WILL HOLD (B11, wave 5): each way into a map is fed by a layer of the

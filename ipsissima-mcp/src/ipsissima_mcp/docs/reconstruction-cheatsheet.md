@@ -82,13 +82,10 @@ thing the paper demolishes — a census reporting the *target* as the contention
 the author's claims as mere objections. The paper's answer to its own question — *no analysis of
 this form is sufficient* — is a claim, the author usually states it (often as two or three
 closing sentences), and joining those into one contention that the failure arguments support is
-a report of the paper, not an addition to it. **And draw the reported target as ATTACKING the
-contention** — `<- [Target]` beneath the failure claim — not the other way round. The wiring
-matters, and it was measured going wrong: an earlier form of this advice said the refutation
-should attack the target, a run followed it with `-> [Target]`, then `><`, and both times the
-census crowned the target — an attacked node with no outgoing edge still "supports nothing",
-which is what the computed apex is. The target attacking the contention is also the truer
-picture: the definition, were it right, is the standing reason against the failure claim.
+a report of the paper, not an addition to it. Draw the reported target as attacking that
+contention, never the reverse (the extraction prompt, step 3(b), says why the wiring matters). It is
+also the truer picture: the definition, were it right, is the standing reason against the failure
+claim.
 
 ### Step 2. Work backwards, and use the Assertibility Question
 
@@ -375,28 +372,27 @@ is. A map that presents one interpretation as *the* interpretation forecloses pr
 struggle between readings that contested texts are taught for.
 
 The discipline is the warrant field's honesty applied to interpretation: **a choice made visibly,
-not one claim at a time.** At each point where you chose among live readings, tag the claim
-`#crux` and name the road not taken in its `note:`, attributed where the division has names. A
-rival that is local and load-bearing may be *reported* beside your reading (`#reported`,
-attributed), exactly as an opponent's position is. A rival that would re-wire the argument, move
-the apex, or answer the reading policy differently is a different reconstruction — a sibling
-file, one file per reading, each checkable on its own terms. The conventions document (§5) has
-the full three-scale rule.
+not one claim at a time.** The conventions (§5, `#crux`) give the rule at its three scales: the
+note on every crux, a local rival reported beside it, a global rival in a sibling file.
 
 ## 3. Forms worth recognising
 
 Naming the form gets the skeleton right. It shapes the wiring; it is not recorded anywhere.
 
-| form | skeleton | where objections usually land |
-|---|---|---|
-| **elimination of alternatives** | the candidates are X, Y, Z; none survives; so not-P | that the list is exhaustive — almost never argued |
-| **refutation by counterexample** | the definition says P; here is a case where P holds and the thing does not | whether the case is really as described |
-| **reductio ad absurdum** | assume P; derive something unacceptable; so not-P | whether the derived claim is really unacceptable |
-| **inference to the best explanation** | E is puzzling; H explains it better than rivals; so H | whether a rival was overlooked — an **undercut** |
-| **argument from analogy** | S and T are alike in these ways; S has Q; so T has Q | whether the similarities are the *relevant* ones — an **undercut** |
-| **conductive / balance of considerations** | several independent factors, weighed against counterconsiderations | the weighing, not any single factor |
-| **dilemma** | either P or Q; both are bad | whether the disjunction is exhaustive |
-| **transcendental** | X is possible only if Y; X is actual; so Y | the necessity claim |
+| form | skeleton | where objections usually land | the frame it usually brings |
+|---|---|---|---|
+| **elimination of alternatives** | the candidates are X, Y, Z; none survives; so not-P | that the list is exhaustive — almost never argued | options against the criteria each fails |
+| **refutation by counterexample** | the definition says P; here is a case where P holds and the thing does not | whether the case is really as described | cases against the definition's conditions, the verdict last, with the definition as `rule:` |
+| **reductio ad absurdum** | assume P; derive something unacceptable; so not-P | whether the derived claim is really unacceptable | usually none |
+| **inference to the best explanation** | E is puzzling; H explains it better than rivals; so H | whether a rival was overlooked — an **undercut** | an `account` frame: the rival explanations, with the evidence drawn to each |
+| **argument from analogy** | S and T are alike in these ways; S has Q; so T has Q | whether the similarities are the *relevant* ones — an **undercut** | the two cases against the respects compared |
+| **conductive / balance of considerations** | several independent factors, weighed against counterconsiderations | the weighing, not any single factor | where there are options, options against the considerations; never totalled |
+| **dilemma** | either P or Q; both are bad | whether the disjunction is exhaustive | the two horns against what is bad in each; or, where the text says they cannot all hold, `inconsistent:` |
+| **transcendental** | X is possible only if Y; X is actual; so Y | the necessity claim | usually none |
+
+**The frame is the comparison the form is made of** (the last column). Declare it with the skeleton
+(the extraction prompt, step 3(b)), from the text's own cases and terms; a form that brings none
+needs none.
 
 **A text of any length uses several forms.** Naming one at the top describes the top-level move
 and usually none of the arguments inside it. Name a form for each argument you reconstruct.

@@ -186,8 +186,47 @@ marker was forgotten rather than that none applies.
 | `ipsissima-conventions.md` | attaching provenance, fidelity or tags, the text's questions, a set that cannot all hold |
 | `tabulation-pass.md` | **with every reconstruction**: the text's comparisons, as `frames:` and `about:` |
 | `parallel-pass.md` | **with every reconstruction**: the mechanism, read with the argument |
-| `mechanism-cheatsheet.md`, `mechanism-pass.md` | with `parallel-pass.md`: how to read a causal claim, and the notation for steps |
+| `mechanism-cheatsheet.md`, `mechanism-notation.md` | with `parallel-pass.md`: how to read a causal claim, and the notation for steps |
 | `map-semantics.md` | deciding what the map should draw — borders, tags, selection modes |
 | `order-views.md` | interpreting the Manuscript view, or explaining what `--source-root` buys |
 | `viewer.md` | changing the renderer, or describing the viewer's controls |
 | `integrations.md` | putting a map into a document via pandoc, Quarto or reveal.js |
+
+---
+
+## Working from the command line, without the MCP server
+
+The extraction prompt's round-trip rules, in the form the command line needs them.
+
+**Read the method documents with `Read`, one per call**, from this folder:
+`extraction-prompt.md`, then `argdown-cheatsheet.md`, `reconstruction-cheatsheet.md`,
+`ipsissima-conventions.md`, `tabulation-pass.md`, `parallel-pass.md`, `mechanism-cheatsheet.md`
+and `mechanism-notation.md`, and any appendix the prompt names for the text in hand. Never `cat`
+them together: a `cat` over about 30 KB does not arrive inline but spills to a file, and a `cat` of
+several produces a turn long enough to outlive the prompt cache.
+
+**If a call does spill to a file, READ THE FILE.** Do not re-run the command: it will spill again.
+One run crammed four documents into a `cat`, spilled, re-ran the same `cat`, spilled again, and
+wrote 66 KB to disk twice before a `Read` delivered the text. A spill is not an error; it is the
+tool saying where it put the output.
+
+**Know the read cap before you spend a call on it.** `Read` refuses anything over about 25,000
+tokens, a limit separate from the ~30 KB inline cap of a `cat`. Two calls were lost on a 434 KB book
+exactly that way. The arithmetic: roughly 90 KB of prose per read, so a source of N kilobytes needs
+at least N/90 reads. Size the chunks first.
+
+**Check with:**
+
+```bash
+python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown \
+    --source-root DIR --no-fix --format json
+```
+
+- `--no-fix` matters, and the MCP tool passes it for you. Without it the checker corrects the
+  file's own `quotation`/`paraphrase` markers whenever the front matter says `generated: true`.
+- `--format json` carries the census as well as the faults; never run it twice on an unchanged
+  file.
+- `--selection-modes` adds the node-count table at the cost of six more process spawns; you will
+  rarely want it.
+- `--echo-candidates` proposes every place a claim's words recur, for a full exposition pass.
+

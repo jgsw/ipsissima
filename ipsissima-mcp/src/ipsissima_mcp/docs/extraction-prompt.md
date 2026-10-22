@@ -49,98 +49,82 @@ work below adds two more, the mechanism and the comparisons, read with them.
 | `ipsissima://reconstruction/method` | **how to reconstruct.** Finding the conclusion, the Assertibility Question, linked vs convergent, what to do about what is not said |
 | `ipsissima://ipsissima/conventions` | **what Ipsissima records.** Provenance, fidelity, warrants, tags, front matter |
 
-Without the MCP server, read them from `ipsissima-mcp/src/ipsissima_mcp/docs/` with the `Read`
-tool, **one document per call**: `argdown-cheatsheet.md`, `reconstruction-cheatsheet.md`,
-`ipsissima-conventions.md`, then `tabulation-pass.md`, `parallel-pass.md`,
-`mechanism-cheatsheet.md` and `mechanism-pass.md`. Each is 12–40 KB. See rule 1 below.
+Through the MCP server, `argdown_method("all")` serves these, the mechanism and the comparisons
+together, in two or three calls.
+
+**Some texts need one more**, read with the rest before writing any node:
+
+| when the text is… | read |
+|---|---|
+| a court judgment | `argdown_method("judgments")` |
+| a working draft | `argdown_method("drafts")` |
+| wholly dramatised: a satire, a dialogue, a persona's case | `argdown_method("dramatised")` |
+| deductive at a step you would name a rule for, or wants formal logic | `argdown_method("formal")` |
+| built on the macro-micro-macro (Coleman) diagram | `argdown_method("coleman")` |
+
+Working from the command line rather than through the MCP server? `SKILL.md`, beside these
+documents, has the commands, the read sizes and the traps.
 
 ---
 
-## Round trips are the cost of a reconstruction
+## Round trips cost something; the thinking costs most
 
-**Measured across five runs: 37 to 45 tool calls whatever the paper** — 41 for a 266-word passage
-and 44 for a 10,751-word judgment. Applying the four rules below took the same passage to **six**.
+Measured across five runs, a reconstruction took 37 to 45 tool calls whatever the paper, and the
+rules below took one passage to six. That cut the tokens by 31%, not 85%: **the bulk of a
+reconstruction is the thinking**, and one deliberative turn on that run emitted 44,411 tokens. So
+follow these rules, and **do not trade a worse reading for a shorter run**.
 
-Be clear about what that buys, because the same measurement settled it. Cutting the calls by 85%
-cut the tokens by 31%, not 85%: **the bulk of a reconstruction is the thinking, not the round
-trips**, and one deliberative turn on that run emitted 44,411 tokens on its own. So these rules are
-worth following and they are not the main cost. **Do not trade a worse reading for a shorter run** —
-that is the one saving this document does not want.
+1. **Read each method document once**, before the source, and never fetch it again.
+2. **Read the source once, whole, before you start**, in as few reads as your tools allow; then
+   re-read only the passage you are quoting.
+3. **Do not verify quotations one span at a time.** The checker verifies every span in one call,
+   and names each that fails with the text it found.
+4. **Never run the checker twice on an unchanged file.** One call carries the faults and the
+   census.
 
-One consequence for a long turn: if you are working in a conversation cached for five minutes, a
-turn that thinks for longer than that makes the next request rebuild the whole context. Prefer
-several ordinary turns to one enormous one.
-
-**1. Read the method documents one per call, with `Read`, and never with the source.** Served by
-`argdown_method` this is not a problem. On the command line it is: the documents together come to
-about 210 KB, and a `cat` over about 30 KB does not arrive inline — it spills to a file you must
-then read back, and a `cat` of several produces a turn long enough to outlive the prompt cache.
-Two of them, `mechanism-cheatsheet.md` and `mechanism-pass.md`, are over 30 KB on their own. **`Read`
-each document once; do not `cat` them together.**
-
-**And if a call does spill to a file, READ THE FILE.** Do not re-run the command: it will spill
-again, and you will have paid twice for nothing. This is not hypothetical and it is not rare — it
-is the single most common way this rule gets broken. One run crammed four documents into a
-`cat`, spilled, re-ran *the same `cat`*, spilled again, and wrote 66 KB to disk twice before a
-`Read` finally delivered the text. Two calls wasted, by a run that had this paragraph in front of
-it.
-
-A spill is not an error. It is the tool telling you where it put the output, and the next thing to
-do is open it.
-
-**2. Read the source once, whole, before you start — in as few reads as the CAP allows.** Runs
-that read it in nine or fourteen dribbles paid for each one. Read it through, then re-read only the
-passage you are quoting.
-
-**Know the cap before you spend a call on it.** `Read` refuses anything over about **25,000
-tokens**, and that limit is SEPARATE from the ~30 KB inline cap that makes a `cat` spill to a file
-— so a chunk sized against the one is rejected by the other, having read nothing. Two calls were
-lost exactly that way on a 434 KB book: 26,681 tokens and 38,631 tokens, both refused before a word
-arrived.
-
-So the arithmetic is: **roughly 90 KB of prose per read, and a source of N kilobytes needs at least
-N/90 of them.** A book-length manuscript takes six or seven, not three, and no instruction can make
-it take fewer. Size the chunks first; do not discover the ceiling by hitting it.
-
-**3. Do not verify quotations one span at a time.** Two runs spent eleven and thirteen calls
-checking `source:` spans individually before ever running the checker. **The checker verifies every
-span in the file in a single call** and names each one that fails, with the text it actually found.
-Eleven calls to save one is not a saving. Write the map with the spans you believe are right, then
-let one check tell you about all of them at once.
-
-**4. Never run the checker twice on the same file.** This was between two and three times as many
-invocations as there were distinct versions of the map — six to ten wasted round trips a run —
-because the faults came from `--format json` and the census came from running it again without.
-**`--format json` now carries the census too**, under `census`: apex, tags, provenance, quotations,
-contribution, fidelity, interpretive load. One call is the whole picture. Run it again only after
-you have *changed* the file.
+If a turn would think for longer than your conversation's cache lasts (five minutes on some
+setups), prefer several ordinary turns to one enormous one.
 
 ---
 
 ## The order of work
 
-**The mechanism is read with every argument** under the method in force (parallel, by default):
-read `argdown_method("mechanism")` before writing any node. That document says how the causal chain
-enters the argument, and how far to map it -- in full, as a sketch, or recorded as not mapped with
-the reason (`depth`). Judge that by what the argument relies on, never by how often the text uses
-causal words. If the user wants the argument alone, record `depth: none` with that as the reason.
-Under the series method (`IPSISSIMA_MECHANISM_METHOD=series`) the mechanism is instead a separate
-pass, run only when the user asks for it, on the finished map.
+One order for every layer of the map. The mechanism and tabulation documents say what their layer
+adds at these steps, by these numbers; they have no order of their own.
 
-**The text's comparisons are read with every argument too** (since 22 October 2026, profile 1.21):
-read `argdown_method("tabulation")` before writing any node. Its cases against a definition, its
-options against criteria, its studies against the questions they answer and its rival accounts are
-declared as `frames:` with the skeleton, and each claim that states a cell carries `about:`. Where
-the text compares nothing, write `frames: none` and say why in a `//` comment. Tables the extraction
-lost are rebuilt from their pages first.
+### 1. Read the method
 
-### 1. Find the conclusion, then the form
+The documents above, before the source. With them, the mechanism, under the method in force:
+`argdown_method("mechanism")` (the parallel method, by default: the causal chain is read with the
+argument, as far as the argument relies on it), with `mechanism-method` and `mechanism-notation`;
+and the comparisons, `argdown_method("tabulation")`. Under the series method
+(`IPSISSIMA_MECHANISM_METHOD=series`) the mechanism is instead a separate pass, run only when the
+user asks for it, on the finished map.
 
-The conclusion first — the claim the author wants you to accept by the end, not the topic and not
-the title. Then name the **form**: elimination of alternatives, refutation by counterexample,
-reductio, inference to the best explanation, dilemma, argument from analogy, conductive weighing.
+### 2. Read the source, whole and once
 
-The form is the map's skeleton. **Working section-by-section through the text instead produces a
+As you read, note four things:
+- what the text asks;
+- what it concludes;
+- what it sets side by side: its tables, its numbered cases and studies, "by contrast", options and
+  criteria, rival accounts of one thing;
+- where its case rests on what brings what about: for each section, whether it justifies,
+  explains, or both.
+
+### 3. The skeleton, before any claim
+
+**(a) The question, and its answer.** The text's question goes under `questions:`, in its words
+where it asks one. The conclusion is its answer: the claim the author wants you to accept by the
+end, not the topic and not the title. A paper may conclude more than one thing; the method says how
+to tell a second conclusion from an intermediate one.
+
+**(b) The form, and the frame that comes with it.** Name the form: elimination of alternatives,
+refutation by counterexample, reductio, inference to the best explanation, dilemma, argument from
+analogy, conductive weighing. Several forms bring a comparison with them (the method's table of
+forms says which). Declare it under `frames:` now, with the other comparisons the text sets out,
+or write `frames: none` and say why in a `//` comment.
+
+The form is the map's skeleton. **Working section by section through the text instead produces a
 map that mirrors the table of contents and hides the argument.**
 
 **On a refutation, put the failure claim at the apex.** When the thesis is that a target fails,
@@ -154,35 +138,35 @@ check verifies it. And a text of any length uses several: name the top-level mov
 a form for each `<Argument>` you build. A single label at the top describes none of the arguments
 inside it.
 
-**If the source is a legal judgment, the conclusion is the disposal** — the order the court
-actually made, not the most interesting proposition in it. Work back from there. The steps the
-court expressly or impliedly treated as necessary to reach that order are its *ratio*; everything
-else it said is `#obiter`, and belongs on the map, tagged, rather than left out. **Obiter still
-has to hang off something.** It is not unrelated to the judgment — it bears on some claim in it,
-and only fails to hold up the order — so give it the relation it really has. A statement carrying
-no relation at all is not a map node in Argdown, so tagging it `#obiter` and leaving it loose puts
-it nowhere: it drops out of the map, out of the tag chips, and out of the reader's view entirely,
-which is worse than not marking it. A step in a
-judgment usually has the shape *rule of law + facts found → legal conclusion*, so a step with no
-rule of law among its inputs is usually missing one. Do not try to state *the* ratio as a claim of
-its own: which rule a case stands for is settled by later courts, not by this one, and a map that
-records the route to the disposal lets a reader read it off without the reconstruction pretending
-to fix it.
+**If the source is a court judgment**, read `argdown_method("judgments")` first: the conclusion is
+the disposal, and *obiter* has its own rule.
 
-### 2. Work backwards from the conclusion
+**(c) The mechanism's skeleton.** Its question, contrast, actors, states and chains, and how far to
+map it: `depth` is `full`, `sketch`, or `none` with its reason. Judge that by what the argument
+relies on, never by how often the text uses causal words. If the user wants the argument alone,
+record `depth: none` with that as the reason.
+
+Let each part decide things in the others: the contention usually supplies the mechanism's
+question, and the frame often is the form.
+
+### 4. Rebuild the lost tables the frames use
+
+Extraction names each table the text cites that did not come through as a table. Now you know which
+of them a frame uses. Rebuild those from their pages (`page_images`, `repair_source`), before you
+write the claims that quote their cells. A table no frame uses is left as it is.
+
+### 5. Fill the map, backwards from the conclusion
 
 For the conclusion, ask what immediate reasons the text gives for it. Then ask the same of each
-reason, until you reach what the text simply asserts.
+reason, until you reach what the text simply asserts. Where the author's intention is unclear, use
+the **Assertibility Question**, and use it with the discipline that makes it honest: generate the
+candidate reasons, then check whether the author actually asserts or clearly assumes them. If they
+do not, **drop the candidate rather than attribute it.**
 
-Where the author's intention is unclear, use the **Assertibility Question** — and use it with the
-discipline that makes it honest. Generate the candidate reasons, then check whether the author
-actually asserts or clearly assumes them. If they do not, **drop the candidate rather than
-attribute it**. The method document has this in full.
-
-### 3. Write the map, with provenance attached as you go
-
-One pass. Retro-fitting `chapter`, `source` and `fidelity` means re-reading the source, and a
-second pass over a finished map costs more than the map.
+**One pass, everything attached as each claim is written:** its provenance and fidelity; `about:`
+where it states a cell; `causes:` where it states a step; `question:` where it moves on a declared
+question; `echoes:` where the text states it elsewhere. Retro-fitting any of them means re-reading
+the source, and a second pass over a finished map costs more than the map.
 
 Use the **whole language**, not the part of it you are sure of:
 
@@ -200,29 +184,10 @@ Use the **whole language**, not the part of it you are sure of:
   back to an earlier premise or skips one belonging to a sibling step. The bar the map draws
   asserts the claims gathered onto it stand or fall together — `uses` is what makes that
   assertion yours rather than the layout's
-- **where a step really is deductive, name the rule and formalize it** — `-- Modus ponens
-  {uses: [1, 2]} --`, with `{formalization: "p -> q"}` on every line of that step. Naming a rule
-  claims the conclusion *follows*, and that claim is now checked: an invalid step is reported as
-  a fault with a countermodel, and the map draws the rule name struck through. **Do not reach for
-  this by default.** Most philosophical argument is conductive — independent considerations
-  weighed, premises that do not entail the conclusion — and a rule name on such a step claims
-  something the author never did. Name a rule when the step would be *invalid if a premise were
-  removed*, not when it merely reads as tight
-- **never write `formalized:` yourself.** It is a hash of the claim's own text, written by
-  `check_argdown.py --stamp` once a human has satisfied themselves that the formulas say what the
-  claims say. A value invented here would either mark every step of the file as stale or, worse,
-  vouch for an agreement nobody made
-- **any rule name is accepted, and these eighteen are abbreviated on the map** — modus ponens,
-  modus tollens, hypothetical syllogism, disjunctive syllogism, constructive dilemma, destructive
-  dilemma, simplification, conjunction, addition, double negation, de Morgan, contraposition,
-  universal instantiation, universal generalisation, existential instantiation, existential
-  generalisation, biconditional elimination, reductio ad absurdum. Prefer one of these where it
-  is the right name; write whatever is right where it is not, and the map reduces it to initials.
-  **The validity verdict never reads the name** — it comes from the `formalization` lines alone —
-  but a single canonical name is checked against its own schema: a valid step wearing the wrong
-  textbook name comes back from the checker as a `?`. A name of your own, and a line naming two
-  rules at once (a compound step), are labels rather than claims to a known form, and are not
-  examined — so get those right for the reader, because nothing else will
+- **name a rule only where a step really is deductive** — where it would be *invalid if a premise
+  were removed*. Most philosophical argument is conductive, and a rule name claims the conclusion
+  *follows*, which the checker then tests. How to name and formalize a rule:
+  `argdown_method("formal")`. **Never write `formalized:` yourself**: it is a person's stamp
 
 **And where the language runs out, say so rather than inventing.** `<+` is one arrow doing several
 jobs: a reason a reader can weigh, a precedent or statute that binds whatever anyone thinks of it,
@@ -238,14 +203,10 @@ limitation the reader is told about is a limitation, while one they must infer f
 is a misreading waiting to happen.
 
 **And where the text underdetermines the reading, say which reading this is.** A claim you
-settled by choosing among live interpretations is a **crux**: tag it `#crux`, and let its
-`note:` name the reading followed and the road not taken — attributed, where scholarship
-divides (*"Follows Allison; Guyer reads this as…"*). Where a rival reading is local and
-load-bearing, report it beside your own (`#reported`, attributed to whose reading it is);
-where it would re-wire the argument, move the apex, or answer the reading policy differently,
-it is a different reconstruction — a sibling file, never a second reading multiplexed into
-this one. Naming a crux is a result, not a failure: a map of an old or contested text with no
-cruxes is usually claiming a determinacy the text does not have.
+settled by choosing among live interpretations is a **crux**: tag it `#crux`, and let its `note:`
+name the reading followed and the road not taken. A local rival may be reported beside it; a rival
+that would re-wire the argument is a sibling file (the conventions, §5, have the rule). A map of an
+old or contested text with no cruxes is usually claiming a determinacy the text does not have.
 
 **Record where the text announces what it argues, as you write.** A text states its thesis more
 than once: announced in the abstract or the roadmap, argued in the body, restated at the end.
@@ -256,39 +217,28 @@ not a pass. An echo is a *statement* of the claim, never a question, a promise t
 or its denial by someone the author answers. Do it for the contentions and for what each
 section argues; do not hunt for every restatement.
 
-**A wholly dramatised text also declares itself once, whole.** Where the entire argument is a
-persona's — a satire, a dialogue, a view set out to be seen through — tag its claims
-`#reported` as the conventions direct, and *also* write `voice:` into the source file's front
-matter: one or two sentences of yours saying whose voice the mapped argument is in and where
-the text's force lies. The app shows it where the reader orients, so a faithful map of the
-persona's case is never mistaken for the text's own testimony.
+**A wholly dramatised text** (a satire, a dialogue, a persona's case set out to be seen through)
+is mapped by its own rules: read `argdown_method("dramatised")`.
 
-### 4. Check, and fix what it finds
+### 6. The bridge pass
+
+Where the mechanism enters the argument through a bridge (a causal scheme named on an inference
+line), check its precondition and look in the text for what its questions ask. Mark what the text
+answers; leave what it does not, since its silence is the finding. The mechanism document has the
+schemes and their questions.
+
+### 7. Check, and fix what it finds
 
 ```
 argdown_check(path=..., source_root=...)
-```
-
-Without the MCP server, the same thing on the command line:
-
-```bash
-python3 ipsissima-mcp/src/ipsissima_mcp/check_argdown.py FILE.argdown \
-    --source-root DIR --no-fix --format json
 ```
 
 Apply what it reports and run it again. **Fix the claim it names — do not rewrite the map.** A
 failing quotation is one claim to re-quote, not a reason to start again.
 
 One call gives you both halves. `findings` is what to fix; `census` is the shape of the finished
-map — the apex, the tags, what reaches a contention, the fidelity counts. **Read the census from
-that same result rather than running the command again without `--format json`**, which is what
-every run measured so far did, and what rule 4 above is about. `--selection-modes` adds the
-node-count table at the cost of six more process spawns; you will rarely want it.
-
-`--no-fix` matters and the MCP tool passes it for you. Without it the checker will *correct the
-file's own `quotation`/`paraphrase` markers* whenever the front matter says `generated: true` —
-which is helpful once you have decided you want it, and disconcerting in the middle of a run
-when you did not ask.
+map — the apex, the tags, what reaches a contention, the fidelity counts. Read it from that same
+result (rule 4).
 
 **Stop when the `!` findings are gone**, not when the report is empty. `!` is a fault; `?` is
 something to look at, and some of those are judgements you are entitled to make differently —
@@ -314,9 +264,10 @@ one edit. Nothing else depends on it, so **if you have been asked for speed abov
 view, skip it.** The block's
 last line counts what only a **full exposition pass** would take up: every other unmapped
 section, and a book's chapter openings. That pass is optional, because on a long text it means
-reading pages again. Take it only when the map is for close reading, and then run
-`check_argdown.py FILE --source-root DIR --echo-candidates` for every place a claim's words
-recur.
+reading pages again. Take it only when the map is for close reading; the checker can then
+propose every place a claim's words recur (`SKILL.md` has the command).
+
+### 8. Before you stop
 
 **`ok` alone is not the finish line — read `verified` beside it.** `ok` says nothing was wrong
 with what the run looked at. `verified` says whether the quotations were among what it looked at,
@@ -324,52 +275,22 @@ and that is true only when you passed `source_root`. **`ok: true, verified: fals
 of the map has been compared with any text**, which is not a checked reconstruction however clean
 the report reads. Pass the folder holding `source/` and run it again before you stop.
 
+Once the map is `ok` and `verified`, read the census's layers once each, and act on what the text
+supports:
+- **CHAIN:** answer each `? island` and `? pieces` (the mechanism document, *What meets*): find the
+  link the text makes, or record with `apart:` that it keeps the piece apart. Never invent a link.
+- **FRAMES:** a case declared and placed nowhere, or a cell given two values. Does the text say
+  both? An empty cell stays empty.
+- **QUESTIONS:** a question no claim moves on. Mark the claim that does, or drop the question.
+
+Then check the map against the list below, and stop.
+
 ---
 
 ## If the text is a draft
 
-Everything above assumes a text that has **finished arguing**: that there is a conclusion the
-author wants you to accept, that the hedges are deliberate, that a chapter which reaches no claim
-has been misread rather than left unfinished. A working draft satisfies none of that, and applying
-the ordinary rules to one does not produce a cautious map — **it produces an invented one**, because
-the only way to clear "the paper's own conclusions at the apex" on a chapter with no conclusion is
-to write the conclusion yourself.
-
-**Say so in the front matter**, and the checker will stop treating unfinishedness as a fault:
-
-```
-===
-draft: true
-===
-```
-
-Then four things change, and only these four:
-
-**1. A chapter with no conclusion gets no conclusion.** Record the material and say in a `note:`
-that the text has not reached one. *"This chapter has not yet reached a conclusion"* is often the
-most useful sentence a draft map contains, and nothing in the ordinary instructions lets you write
-it.
-
-**2. Material that connects to nothing stays unconnected.** Do not invent a relation to tie it in.
-The checker reports an orphan as an observation here rather than a fault, because in a draft it is
-usually a passage whose place the author has not settled.
-
-**3. Mark the holes, and mark them as yours.** Where the argument plainly needs a premise the text
-does not supply, write it as `fidelity: "imputation"` with a `warrant:`, and say in the `note:`
-what the text would have to establish. Used this way the imputations become **a list of what is
-left to write**, which is worth more to a drafting author than the claims already there.
-
-**4. More than one apex is a result, not a failure.** If the parts do not yet meet, draw them
-apart and say so. Forcing a draft into a single contention hides precisely what its author needs
-to see.
-
-**What does NOT change**: every check on the words themselves. A quotation still has to be
-verbatim, a fidelity marker still has to match the text it describes, provenance is still
-required. Those are facts about the words, and they do not become negotiable because the writing
-is unfinished — a draft map that misquotes is not a draft, it is wrong.
-
-**And say what you are unsure of.** A draft is being read to find out what it says. A confident map
-of an argument that is not there is worse than an honest one full of gaps.
+A working draft has not finished arguing, and the ordinary rules would invent its conclusions.
+Declare `draft: true` in the reading policy and read `argdown_method("drafts")`.
 
 ## What a finished reconstruction has
 
@@ -390,8 +311,12 @@ of an argument that is not there is worse than an honest one full of gaps.
 4. Objections of the right kind, attributed to whoever made them.
 5. The author's hedges and scope intact. *Most* is not *all*.
 6. Nothing invented. If the source raises a point and drops it, the dropping is recorded.
-7. **The text's comparisons declared**, as `frames:` with claims placed by `about:`, or
-   `frames: none` where it compares nothing.
+7. **Every layer accounted for.**
+   - The text's question, under `questions:`, where it asks one.
+   - Its comparisons, as `frames:` with claims placed by `about:`, or `frames: none` with its
+     reason.
+   - Its mechanism, as a `mechanism:` block with its `depth` (`none` with its reason, where the
+     argument relies on no mechanism), and `method: parallel` in the reading policy.
 8. **Nothing beside it that is not part of it.** If you wrote a scratch map to try the checker's
    conventions, delete it before you finish: the folder handed over holds the `.argdown` and
    `source/`, and a leftover probe wears the same extension as the real map.

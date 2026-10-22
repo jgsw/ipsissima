@@ -1,10 +1,10 @@
 # Reconstructing a mechanism
 
-How to read the causal chain a text asserts, before marking it. The companion `mechanism-pass.md`
+How to read the causal chain a text asserts, before marking it. The companion `mechanism-notation.md`
 says what to add and in what notation; the profile's §5 defines each key. This sheet is about
-reading, and it was revised on 28 September 2026 against gap tests on twelve texts: an RCT, an
-interrupted time series, a pair of trials, a biochemical review, a safety model, an ecological
-dispute, a climate review, and five works of social and political theory.
+reading. It was tested against twelve texts: an RCT, an interrupted time series, a pair of trials,
+a biochemical review, a safety model, an ecological dispute, a climate review, and five works of
+social and political theory.
 
 ---
 
@@ -144,7 +144,7 @@ Three rules follow.
 - **Watch the recommendation.** Texts often keep their findings cautious and let their
   recommendations presuppose the cause (in nearly half of 1,170 papers, Haber et al. 2022; Govier's
   diet example, pp. 290–2). A step the recommendation *relies on* and the findings never state is
-  an imputation, `warrant: "enthymeme"` (mechanism pass §5) — never a silent upgrade of the finding.
+  an imputation, `warrant: "enthymeme"` (as the argument sheet does for an unstated premise) — never a silent upgrade of the finding.
 
 ### Step 3. Separate the claim, its basis, and your appraisal
 
@@ -181,17 +181,18 @@ necessary, both, or a **contributory factor**, and the social and biological sci
 the last. Do not upgrade *a factor* to *the cause*. But read for the other three, because theory
 texts state them more often than one expects:
 
-- **Necessity is the commonest.** "Only if", "only when", "sine qua non", "a key assumption … no
-  longer holds": mark the step `necessary: true`. A plain `+` draws "only if" as "raises" — more of
-  the one, more of the other — which the text did not say.
-- **Denied sufficiency is next.** "Necessary, but not sufficient", "may help; it will not
-  guarantee", "not solely", "at least in part": `sufficient: false`, and keep the words.
-- **Joint sufficiency is rare.** "If all the boundary conditions are met" is one step with
-  `jointly:` naming the rest and `sufficient: true`.
+- **Necessity is the commonest:** "only if", "only when", "sine qua non", "a key assumption … no
+  longer holds". A plain `+` would draw "only if" as "raises", which the text did not say.
+- **Denied sufficiency is next:** "necessary, but not sufficient", "may help; it will not
+  guarantee", "not solely", "at least in part". Keep the words.
+- **Joint sufficiency is rare:** "if all the boundary conditions are met".
 - **A list is conjoint unless the text says otherwise.** "More likely if …, if … and if …" leaves
-  open whether the conditions act separately or only together. Read it as conjoint — one step, the
-  other conditions `jointly` — and say in the `note:` that the text leaves it open. Mark them as
-  separate steps only where the text says each works on its own ("any one of", "or").
+  open whether the conditions act separately or only together; separate steps only where the text
+  says each works on its own ("any one of", "or").
+
+The notation's *"Only if" is not "raises"* says how to mark each (`necessary`, `sufficient`,
+`jointly`).
+
 - **The same condition can be read four ways.** Marti and Gond call their boundary conditions
   necessary, moderating, determining and a precondition, on different pages. Mark what each
   sentence says, and record the drift.
@@ -203,11 +204,8 @@ which of the text's words are one state is interpretation**: record it in the st
 
 **Grain is also a decision.** The same link may appear at two grains: *fees cut take-up* in the
 abstract, a route through cash on hand and screening in section 4; a trial's total effect, then the
-mechanism the discussion gives for it. Mark both as the text states them, and give the coarse step
-`via:` naming the states between: it **is** that route, not a second one beside it. Marked as two
-separate steps, the whole link reads as a direct effect beside an indirect one, which is partial
-mediation the text never claimed. Where the text says the route carries only part of the effect,
-`share: partial`; where it rules a route out ("AMPK-independent"), `share: none`. Do not invent intermediate
+mechanism the discussion gives for it. Mark both as the text states them, the coarse link as that route, not a second one
+beside it (the notation's `via:` and `share:`). Do not invent intermediate
 states for a link the text gives only coarsely: a sketch with a black box in it is the text's grain
 (Machamer, Darden and Craver 2000 on sketches; Craver 2006, pp. 360–61; Craver and Kaplan 2020, on
 why more detail is not always better), and filling the box is appraisal. Gross counts "six
@@ -236,33 +234,20 @@ different claims, and each is drawn differently.
 | *those who got X were already different* | **selection** | `selects: true` — drawn apart, never walked |
 
 Three rules. **Mark a confounder only if the text names it.** A confounder you suspect is
-appraisal, however obvious — the pass reports the text's causal account, not the account you would
-give. **A moderator is not a cause of the step's end**: making "time to pay" a box with an arrow into
-take-up says it brings take-up about in its own right, which is a different and usually unmade
-claim. `modifies` puts it on the step instead, and the view draws it as a ring on the arrow. And
-**a measure is not a cause**: where the text reports a state through a survey score, a model's
-estimate or a biomarker, and the measurement matters to its case (a timing artefact, an estimate
-computed from the very variable it is compared with), declare the measure as a state with `measures:`
-and `method:`. Steps into it are claims about the measurement; nothing is walked from it. Give the
-step whose evidence the measure carries `measured_by:`, so that a bias in the measure is seen to
-bear on the step, as a critic's undercut does.
+appraisal, however obvious: the pass reports the text's causal account, not the account you would
+give. **A moderator is not a cause of the step's end**: a box with an arrow into the outcome says it
+brings the outcome about in its own right, a different and usually unmade claim. And **a measure is
+not a cause**: where the measurement matters to the text's case, it is a state of its own, never
+walked. The notation says how to mark each.
 
 ### Step 5b. When, how much, and in which regime
 
-Texts that evaluate or model say more about a step than its direction, and each of these was lost
-when the notation could not hold it.
-
-- **When.** A lag says how long; `period:` says when the step holds, in the text's words anchored to
-  an event ("during culling", "since Obama's election in 2008"). One step with an effect during an
-  intervention and none after it is a time course, not a finding and a contradiction. The census
-  never composes a route or a loop across two periods.
-- **Level or trend.** An interrupted time series that finds "a dampening of the rate of increase …
-  rather than a reversal" has found a step on a **trend**: `on: trend`, and the arrow reads "slows".
-- **How much.** Give the size the text gives, with its interval and comparison (`size:`). Two texts
-  that agree on the direction and dispute the size draw as agreement without it, and "stronger where
-  devices exist, weaker where absent" is a whole result.
-- **Which regime.** A mechanism that runs only at a dose, in a place, or in one model is `regime:`;
-  one that acts only past a threshold is `threshold:`. Routes are composed within one regime.
+Texts that evaluate or model say more about a step than its direction: when it holds, whether it
+moves a level or a trend, how much, and in which regime or past which threshold. Each was lost when
+the notation could not hold it. Read for all four, and keep the text's words; the notation's *Time is
+not only a lag*, *Keep a regime's steps to their regime* and *Give the size the text gives* say how
+to mark them. Two texts that agree on the direction and dispute the size draw as agreement without
+it.
 
 ### Step 6. Nulls, rivals and reported views
 
@@ -291,21 +276,16 @@ routes, both theirs. A rival the text never mentions is appraisal. Tell two kind
 - **A rival account of the world** — Stone's three stories of malnutrition, a critic's cascade, a
   reporting bias against performativity — is a mechanism, and is marked as `#reported` steps.
 
-**Say where the text stands on each reported account.** "Reported" is not one thing. The text may
-set it out to reject it, or set it out without judging it ("causal theories are neither right nor
-wrong"): `stance: rejected | unjudged`. When the author endorses what she reports (Stiles
-"demonstrated" the hookworm cause), the claim is hers: write it in her voice, not as `#reported`,
-and mark it `hedged` where the reporting works as a hedge, as it often does. The census then sets
-each outcome's accounts side by side, with the story that opens another's cause.
+**Say where the text stands on each reported account.** "Reported" is not one thing: the text may
+set an account out to reject it, or without judging it ("causal theories are neither right nor
+wrong"). When the author endorses what she reports (Stiles "demonstrated" the hookworm cause), the
+claim is hers.
 
 **Say what kind of causing each account attributes.** Where a text is about blame, harm or
-responsibility, rival stories of one harm often differ only in the type of causing: `intentional`,
-`inadvertent`, `mechanical` (guided through another agent), `accidental`, or `complex`, after Stone.
-Mark it with `attribution:`, and say whose action or intention it is — `{type: intentional, by:
-the eaters}` is not `{type: mechanical, by: the advertisers}`. It is the difference a political
-reader most needs to see. Where two stories run through one state, give each story its own chain,
-so each can be read alone: drawn together, the radical story's advertisers seemed to set off the
-conservative story's knowing choice.
+responsibility, rival stories of one harm often differ only in the type of causing: intentional,
+inadvertent, mechanical (guided through another agent), accidental, or complex, after Stone; and in
+whose action or intention it is. It is the difference a political reader most needs to see. The
+notation's *Say where the text stands on a story it reports* says how to mark both.
 
 ### Step 7. Actors and levels
 
@@ -412,7 +392,7 @@ Naming the form tells you where the text's case is thin and what its own critica
 | **interrupted time series** | the series bent at the intervention | a step `on: trend`, with its `period` and `size` against the counterfactual |
 | **tipping point** | past a threshold, the system switches | `threshold:`; the regimes either side as `regime:` |
 | **rival stories** | one harm, several accounts, attributed by camp | `#reported` steps with `stance` and `attribution`; the census's accounts line |
-| **Coleman boat** | macro A → micro B → micro C → macro D; A–D is what is to be explained | corners at their levels; arrows with the text's `mark` and `name`; A–D left out, an `association`, or a numbered `via` summary, as the text has it; feedback C → B a step (`mechanism-pass.md`) |
+| **Coleman boat** | macro A → micro B → micro C → macro D; A–D is what is to be explained | corners at their levels; arrows with the text's `mark` and `name`; A–D left out, an `association`, or a numbered `via` summary, as the text has it; feedback C → B a step (`mechanism-notation.md`) |
 
 Govier's **objectionable cause** (pp. 306–8) includes a variant in which two things the author
 dislikes are joined causally. Mark it faithfully and let `basis: asserted` show what holds it up.
@@ -537,7 +517,7 @@ reconstructor's opinion, and the reader cannot see the join.
   *Am. J. Epidemiol.* 154 (2001); Tyler J. VanderWeele and Whitney R. Robinson, *Epidemiology* 25
   (2014) — the ethics of causal attribution.
 
-For the notation these decisions are written in, see `mechanism-pass.md` and the profile, §5.
+For the notation these decisions are written in, see `mechanism-notation.md` and the profile, §5.
 Marti and Gond (2018), Valentino et al. (2018) and Stone (1989) are the texts behind the 1.9
 additions; the earlier gap tests read metformin's mechanisms (Rena et al. 2017), Reason (2000), the
 soft drinks levy (Rogers et al. 2023), badger culling (Donnelly et al. 2006; Jenkins et al. 2010),

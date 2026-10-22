@@ -78,9 +78,9 @@ THE ORDER OF WORK
      THE USER and do not guess: reconstructing the wrong text, or making one map where six were
      wanted, costs the user real money.
   2. `extract_text` — writes the structured Markdown a reconstruction can point at.
-  3. Reconstruct. Use the `reconstruct_argument` prompt; if your client cannot fetch prompts,
-     the `argdown_method` tool serves the same instructions -- call it before writing
-     any Argdown. The reconstruction itself is your judgement, not a tool.
+  3. Reconstruct. Read the method first: `argdown_method("all")` serves every document a
+     reconstruction reads, in two or three parts (or use the `reconstruct_argument` prompt, if your
+     client fetches prompts). The reconstruction itself is your judgement, not a tool.
   4. `argdown_check` — repeatedly, until it reports ok. It returns faults with locations
      and fixes; apply the fixes, do not rewrite the map.
   5. Where the map names inference rules, `next` will say how many formalizations carry no
@@ -94,7 +94,8 @@ Read `argdown_method("tabulation")` with the reconstruction documents, before wr
 cases against a definition, options against criteria, studies against questions and rival
 accounts against findings are declared as `frames:` and claims placed in them with `about:`. Where
 the text compares nothing, write `frames: none`. Extraction notes a table the text cites but the
-conversion lost: rebuild it from its page before reconstructing, as the note says.
+conversion lost: once the skeleton says a frame uses it, rebuild it from its page, before writing
+the claims that quote it.
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
@@ -200,7 +201,8 @@ def _run_check(path, source_root=None, fmt="json", extra=()):
         "not to do -- and runs after the map, only if the user says yes.\n\n"
         "`layers` lists the structures the map will hold and the way into the map each feeds. Where a "
         "source cites tables of its own, `advice` says so: the comparisons are read with every "
-        "argument, and a table the conversion loses is rebuilt from its page at extraction."),
+        "argument, and a table the conversion loses is rebuilt from its page once the skeleton says a "
+        "frame uses it."),
 )
 def argdown_plan(sources: list[str], intent: str = "reconstruct",
              out: str | None = None, recursive: bool = True) -> dict[str, Any]:
@@ -271,8 +273,8 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
                          "the text's comparisons are read with every argument (`frames: none` where "
                          "it compares nothing)")
     if any(a.get("kind") == "tables-cited" for a in plan.get("advice", [])):
-        plan["next"] += ("; and rebuild from their pages the tables extract_text reports lost, before "
-                         "reconstructing (`advice`)")
+        plan["next"] += ("; and rebuild from their pages the tables extract_text reports lost that a "
+                         "frame uses, once the skeleton is written and before the claims (`advice`)")
     return plan
 
 
@@ -590,10 +592,15 @@ METHOD_DOCS = {
                            "the parallel method: argument and mechanism read together, the mechanism "
                            "entering the argument through bridges -- part of every reconstruction"),
     "mechanism-series": ("mechanism-pass.md",
-                         "the notation for states and steps both methods use (sections 2-7, with the "
-                         "differences its opening note names), and the series method: the chain "
-                         "marked on a finished map, only when the user has asked for it. Under "
-                         "parallel, read with every reconstruction"),
+                         "the series method: the chain marked on a finished map, only when the user "
+                         "has asked for it, and only when IPSISSIMA_MECHANISM_METHOD=series"),
+    # THE NOTATION BOTH METHODS MARK THE CHAIN IN, split out of the series document (phase 2 of the
+    # extraction-materials review, 22 Oct 2026): it used to be served whole with a note naming the
+    # five passages that did not apply under the method in force.
+    "mechanism-notation": ("mechanism-notation.md",
+                           "the notation for the mechanism: the cast (actors, states, levels, chains), "
+                           "the steps a claim marks with `causes:`, and what the census reports -- "
+                           "read with `mechanism` under either method"),
     # HOW TO READ A MECHANISM, as the argument sheet says how to read an argument (28 Sep 2026):
     # served with the method in force -- every reconstruction under parallel, on request under series.
     "mechanism-method": ("mechanism-cheatsheet.md",
@@ -606,8 +613,60 @@ METHOD_DOCS = {
                    "the text's own comparisons (cases against dimensions, options against criteria, "
                    "rival accounts) declared as `frames:` and placed with `about:` -- read with every "
                    "reconstruction; `frames: none` where the text compares nothing"),
+    # WHAT ONLY SOME TEXTS NEED (phase 2 of the extraction-materials review, 22 Oct 2026): sections
+    # every reconstruction used to read, moved out so a text that needs none of them reads none. Each
+    # is named, with the text that calls for it, where it used to stand.
+    "judgments": ("appendix-judgments.md",
+                  "a court judgment: the disposal, the ratio and obiter; #authority, and what to do where "
+                  "one arrow does several jobs"),
+    "drafts": ("appendix-drafts.md",
+               "a working draft (`draft: true`): the four things that change, and the one that does not"),
+    "dramatised": ("appendix-dramatised.md",
+                   "a wholly dramatised text (satire, dialogue, persona): #reported throughout, the "
+                   "author's imputed contentions, and `voice:`"),
+    "formal": ("appendix-formal.md",
+               "naming a rule of inference, writing `formalization:` (NLTK syntax), and strict mode"),
+    "coleman": ("appendix-coleman.md",
+                "the Coleman boat (macro-micro-macro), drawn in the mechanism notation"),
 }
-_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series"}
+_ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism-series", "mechanism-notation"}
+#: Served when a text calls for one, never named in the replies to the core documents.
+_CONDITIONAL = {"judgments", "drafts", "dramatised", "formal", "coleman"}
+
+
+#: EVERYTHING EVERY RECONSTRUCTION READS, IN AS FEW CALLS AS A CLIENT'S RESULT LIMIT ALLOWS (phase 2 of
+#: the extraction-materials review, 22 Oct 2026). Reading the documents one by one took 17 calls in the
+#: tabulation trial of 21 Oct. Parts are cut at document boundaries and kept under _PART_CHARS: a
+#: client's tool-result limit is about 25,000 tokens, and a reply past it reaches the model as nothing.
+_PART_CHARS = 80_000
+
+
+def _always_read():
+    from ipsissima_mcp import mechanism
+    docs = ["extraction-prompt", "syntax", "method", "conventions", "tabulation"]
+    if mechanism.mechanism_method() == "parallel":
+        docs += ["mechanism", "mechanism-method", "mechanism-notation"]
+    return docs
+
+
+def _parts():
+    parts, cur, size = [], [], 0
+    for d in _always_read():
+        n = len(_doc(_file_of(d)))
+        if cur and size + n > _PART_CHARS:
+            parts.append(cur); cur, size = [], 0
+        cur.append(d); size += n
+    if cur:
+        parts.append(cur)
+    return parts
+
+
+def _file_of(document):
+    fname = METHOD_DOCS[document][0]
+    if document == "mechanism":
+        from ipsissima_mcp import mechanism
+        fname = "parallel-pass.md" if mechanism.mechanism_method() == "parallel" else "mechanism-pass.md"
+    return fname
 
 
 @server.tool(
@@ -618,7 +677,9 @@ _ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism
         "server's prompts and resources -- many expose tools alone, and none lets the model "
         "pull a prompt mid-task. The `reconstruct_argument` prompt and the ipsissima:// "
         "resources carry the same documents; use those when your client surfaces them. "
-        "Otherwise call this BEFORE writing any .argdown, starting with \"extraction-prompt\", "
+        "Otherwise call this BEFORE writing any .argdown. \"all\" serves every document a "
+        "reconstruction reads, in two or three parts (`part`: 1, 2, ...): the fewest calls. Or ask "
+        "for one by name, starting with \"extraction-prompt\", "
         "which names the other three and the order to read them: \"syntax\" (the Argdown "
         "language -- do not write Argdown from memory), \"method\" (how to reconstruct), "
         "\"conventions\" (what goes on a claim). The `conventions` digest in extract_text's "
@@ -628,29 +689,46 @@ _ON_REQUEST = {"mechanism", "mechanism-method", "mechanism-parallel", "mechanism
         "reconstruction: the mechanism is read with the argument and mapped as far as the argument "
         "relies on it. Under the series method serve it only when the user has asked for the "
         "mechanism of a text. With it, \"mechanism-method\" says how to read a "
-        "text's causal claims, and \"mechanism-series\" gives the notation for steps. "
+        "text's causal claims, and \"mechanism-notation\" gives the notation for steps. "
         "\"tabulation\" reads the comparisons a text makes, as tables a reader can work: part of "
         "EVERY reconstruction, read with the others before writing any node."),
 )
-def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
+def argdown_method(document: str = "extraction-prompt", part: int = 1) -> dict[str, Any]:
     """
     Args:
-        document: which document — "extraction-prompt", "syntax", "method" or "conventions";
+        document: "all" -- every document a reconstruction reads, in parts (start with this);
+            or one document by name: "extraction-prompt", "syntax", "method" or "conventions";
             or "mechanism" (the method in force: under `parallel`, the default, part of every
             reconstruction; under `series`, only when asked), "mechanism-method" (how to read
             causal claims),
-            "mechanism-parallel" or "mechanism-series" (either method by name); or "tabulation"
-            (the text's comparisons as frames, read with every reconstruction).
+            "mechanism-parallel" or "mechanism-series" (either method by name), "mechanism-notation"
+            (the notation both use); or "tabulation"
+            (the text's comparisons as frames, read with every reconstruction); or an appendix the
+            extraction prompt names for a kind of text ("judgments", "drafts", "dramatised",
+            "formal", "coleman").
+        part: with "all", which part to serve (1, 2, ...); the reply says how many there are.
     """
+    if document == "all":
+        parts = _parts()
+        if not 1 <= part <= len(parts):
+            return dict(ok=False, error=f"part {part}: there are {len(parts)} parts", parts=len(parts))
+        names = parts[part - 1]
+        text = "\n\n---\n\n".join(f"<!-- argdown_method document: {d} -->\n\n" + _doc(_file_of(d)) for d in names)
+        nxt = (f"call argdown_method again with document \"all\" and part {part + 1}"
+               if part < len(parts) else
+               "that is every document a reconstruction reads. Read the appendix the extraction prompt "
+               "names for your text, if it names one (judgments, drafts, dramatised, formal, coleman); "
+               "then read the source and follow the extraction prompt's order of work")
+        return dict(ok=True, document="all", part=part, parts=len(parts), documents=names, text=text, next=nxt)
     if document not in METHOD_DOCS:
         return dict(ok=False, error=f"no document called {document!r}",
                     documents={k: v[1] for k, v in METHOD_DOCS.items()})
     fname, _ = METHOD_DOCS[document]
     if document == "tabulation":
         return dict(ok=True, document=document, text=_doc(fname),
-                    next=("read it with the reconstruction documents, before writing any node; rebuild "
-                          "the text's own lost tables in the source first; declare `frames:` with the "
-                          "skeleton (or `frames: none` where the text compares nothing), place claims "
+                    next=("read it with the reconstruction documents, before writing any node; declare "
+                          "`frames:` with the skeleton (or `frames: none` where the text compares nothing), "
+                          "then rebuild in the source the lost tables a frame uses, place claims "
                           "with `about:` as you write them, and run argdown_check with source_root "
                           "until ok and verified, reading the FRAMES section of the census"))
     if document in _ON_REQUEST:
@@ -660,20 +738,27 @@ def argdown_method(document: str = "extraction-prompt") -> dict[str, Any]:
             fname = "parallel-pass.md" if method == "parallel" else "mechanism-pass.md"
         parallel = fname == "parallel-pass.md"
         if parallel:
-            nxt = ("read \"mechanism-method\" (how to read causal claims) and \"mechanism-series\" "
-                   "(its sections 2-7 are the notation for steps) too, and the four reconstruction "
+            nxt = ("read \"mechanism-method\" (how to read causal claims) and \"mechanism-notation\" "
+                   "(the notation for states and steps) too, and the four reconstruction "
                    "documents; then reconstruct the argument and the mechanism together, write "
                    "`method: parallel` in the reading policy, and run argdown_check with source_root "
                    "until ok and verified, reading the CHAIN section of the census")
+        elif document == "mechanism-notation":
+            nxt = ("read it with \"mechanism\" (how the chain enters the argument) and \"mechanism-method\" "
+                   "(how to read causal claims); run argdown_check with source_root until ok and "
+                   "verified, and read the CHAIN section of the census")
         elif document == "mechanism-method":
             nxt = ("then \"mechanism\" says what to mark and in what notation; run argdown_check "
                    "with source_root until ok and verified, and read the CHAIN section of the census")
         else:
-            nxt = ("read \"mechanism-method\" too, on how to read the text's causal claims; the map "
+            nxt = ("read \"mechanism-method\" and \"mechanism-notation\" too; the map "
                    "must already check ok and verified; mark the chain, then run argdown_check with "
                    "source_root until ok and verified, and read the CHAIN section of the census")
         return dict(ok=True, document=document, method_in_force=method, text=_doc(fname), next=nxt)
-    others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document and k not in _ON_REQUEST)
+    if document in _CONDITIONAL:
+        return dict(ok=True, document=document, text=_doc(fname),
+                    next="read it with the reconstruction documents; it changes only what it says it changes")
+    others = ", ".join(f'"{k}"' for k in METHOD_DOCS if k != document and k not in _ON_REQUEST | _CONDITIONAL)
     from ipsissima_mcp import mechanism
     with_mech = ("; under the parallel method, in force, read \"mechanism\" too: the mechanism is "
                  "read with every argument" if mechanism.mechanism_method() == "parallel" else "")

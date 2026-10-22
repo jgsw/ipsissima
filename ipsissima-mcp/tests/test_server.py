@@ -393,6 +393,18 @@ def test_server(d):
         check("`mechanism` serves the parallel method by default",
               (m.get("method_in_force"), "Argument and mechanism, reconstructed together" in m.get("text", "")),
               ("parallel", True))
+        # EVERYTHING A RECONSTRUCTION READS, IN PARTS (phase 2 of the extraction-materials review):
+        # each always-read document once, every part under a client's result limit. Mutations: drop a
+        # document from _always_read -> missing; raise _PART_CHARS past the limit -> a part too long.
+        first = result(await s.call_tool("argdown_method", {"document": "all"}))
+        got, sizes = [], []
+        for k in range(1, (first.get("parts") or 0) + 1):
+            part = result(await s.call_tool("argdown_method", {"document": "all", "part": k}))
+            got += part.get("documents", []); sizes.append(len(part.get("text", "")))
+        check("`all` serves every always-read document once, in parts under the result limit",
+              (sorted(got), all(n <= 80_000 for n in sizes), 1 < len(sizes) <= 4),
+              (sorted(["extraction-prompt", "syntax", "method", "conventions", "tabulation", "mechanism",
+                       "mechanism-method", "mechanism-notation"]), True, True))
         m = result(await s.call_tool("argdown_method", {"document": "mechanism-series"}))
         check_true("and the series method is still served by name",
                    m.get("text", "").startswith("# The mechanism pass"), m.get("text", "")[:80])

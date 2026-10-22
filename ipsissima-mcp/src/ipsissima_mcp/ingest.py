@@ -954,7 +954,8 @@ def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
         where = "; ".join(f"{lab} (line {ln}{f', p.{pg}' if pg else ''})" for lab, ln, pg in lost[:6])
         notes.append(f"! {len(lost)} table(s) the text names did not come through as a table: "
                      f"{where}{' ...' if len(lost) > 6 else ''}. A table is often the author's "
-                     f"own frame (studies against questions, types against dimensions). Render "
+                     f"own frame (studies against questions, types against dimensions). Once the "
+                     f"map's skeleton says a frame uses it, render "
                      f"its page with page_images, rebuild it as a Markdown table read off the "
                      f"page, cells in the text's own words, and put it in with repair_source "
                      f"where the caption stands")

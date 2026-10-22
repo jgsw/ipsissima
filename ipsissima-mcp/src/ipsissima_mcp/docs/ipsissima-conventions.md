@@ -29,7 +29,7 @@ words themselves will do as the claim, quote them in the claim and leave `source
 | field | what it does |
 |---|---|
 | `chapter` | path to the source file. **Without it a claim cannot be placed in the text at all** — no Manuscript link, no exposition view. Declare it once in front-matter `defaults:` rather than on every claim |
-| `source` | the author's exact words, in quotation marks, **for pinning a claim whose own text has to be a summary** — as the example above shows. Verified character by character, exactly like a quoted span in the claim's own text. But the claim text is where quotation belongs (ruled 8 Sep 2026): the map draws fidelity as the border of the box, and only words in the claim itself are ever shown — a map whose every span hides in `source:` passes every check and shows the reader none of the author's words. Quote in the claim; reach for `source:` when the claim cannot carry the words |
+| `source` | the author's exact words, in quotation marks, **for pinning a claim whose own text has to be a summary** — as the example above shows. Verified character by character, exactly like a quoted span in the claim's own text. But the claim text is where quotation belongs: the map draws fidelity as the border of the box, and only words in the claim itself are ever shown — a map whose every span hides in `source:` passes every check and shows the reader none of the author's words. Quote in the claim; reach for `source:` when the claim cannot carry the words |
 | `echoes` | where **else** the text states the claim, as the author's words — one span, or a list: `echoes: ["the sentence in the abstract that announces it"]`. The claim stays placed where it is argued; the exposition view draws a faint echo at each of these places, so a thesis announced early is seen early. Verified like a quotation. **Recorded, not guessed**: `check_argdown.py --echo-candidates` proposes places the words recur, and some of them only share vocabulary (an objection uses the claim's words too), so confirm each one against the text |
 | `section` | only when a claim has *no* quotation and the source prints a heading to name. A verified quotation has already pinned the line |
 | `line` | **override only**: the line in the chapter where a claim with no quotation and no heading to name is placed. Positions are otherwise computed fresh on every run, so leave it out unless the checker cannot place the claim |
@@ -54,8 +54,9 @@ sentence as prose, even where the converter split it.
 
 **Rebuild a table the text names but the conversion lost.** A text layer keeps a table's words and
 loses its shape, and the extraction notes name each table that did not come through ("! 1 table(s)
-the text names did not come through as a table"). Rebuild it before reconstructing: a table is
-often the author's own frame — the studies set against the questions they answer, the types
+the text names did not come through as a table"). Rebuild each one a frame uses, once the
+skeleton has said which (the extraction prompt, step 4), and before writing the claims that quote
+its cells: a table is often the author's own frame — the studies set against the questions they answer, the types
 against the dimensions that make them — and a map read from the flattened words cannot see it.
 Render its page with `page_images`, write the table in Markdown under its caption, cells in the
 text's own words, and with `repair_source` put it where the scattered cells stood, so the cells
@@ -120,28 +121,8 @@ direction. A claim carrying an exact quotation *feels* like a quotation.
 conclusion rather than asserting it — a dialogue, a satire, a thought experiment — has an
 *imputed* contention. Saying so is not a weakness of the reconstruction; concealing it would be.
 
-**And when the whole text is dramatised, the treatment has three parts.** Reconstructions
-left to work this out for themselves converge on the same policy, so here it is stated. The
-persona's case is mapped in full and tagged `#reported`: it is the view the author sets out to
-be seen through, and untagged it would read as asserted. The sentences where the author's own
-voice breaks through the mask — the asides that give the game away — are left untagged, with a
-`note:` saying they are read as the author's: the words are the persona's, so the fidelity
-marker stays honest about the words, and the note carries the attribution the notation cannot.
-The author's real contentions, stated nowhere, stand at the apex as `imputation` with a
-`warrant:` — and they count in their own interpretive load, because every route to a
-conclusion the author never stated ends at the reconstructor. Declare `unit: commitment` in
-the front matter: the question such a text poses is which view is held, not what the words
-mean.
-
-**And say it once of the whole, where the reader orients.** The tags carry the persona claim
-by claim, but no tag can say that the text's *value* is not its argument — that a perfectly
-faithful map of the proposer's case is the least of what A Modest Proposal is. Write one or
-two sentences of the reconstructor's own into the **source file's** front matter under
-`voice:` (a YAML block scalar, like `abstract:`), saying whose voice the mapped argument is
-in and where the text's force actually lies. The app draws it on the orientation panel — the
-same panel that carries an abstract or the facts of a case — labelled as the reconstructor's
-reading, before the reader takes a single green border as the text vouched for whole. Most
-texts need no `voice:` line at all; a text that needs one needs it badly.
+**When the whole text is dramatised**, the treatment has three parts and a declaration of the
+whole: `argdown_method("dramatised")`.
 
 ---
 
@@ -218,7 +199,7 @@ that is charitable at one `strength` is uncharitable at another. Declaring them 
 *"this reading is uncharitable"* a claim someone can argue with rather than an appeal to a
 principle that names no single thing.
 
-**`contentions:` — for the paper whose stated thesis is not its terminus** (ruled 10 Sep 2026).
+**`contentions:` — for the paper whose stated thesis is not its terminus.**
 Every contention-relative measure — the census's contribution roles, interpretive load, the
 map's spine and depth ladder — anchors on the computed apex: claims that support nothing. On a
 serial paper that argues *thesis → application → closing corollary*, only the corollary sits
@@ -276,7 +257,7 @@ from one they are attacking.
 | *(untagged)* | **the author's own, asserted.** The common case, and it costs nothing |
 | `#reported` | **a view the author sets out but does not hold** — an opponent's position, a rival hypothesis, the theory under examination |
 | `#conceded` | **something the author grants tells against them** — Govier's *counterconsideration*, and the scope limits an author sets on their own thesis |
-| `#contested` | **an objection voiced in the text that is not the author's view** — a critic's, an interlocutor's, or one the author raises against their own position and answers. Never the author's own view, even where it opposes a persona or a position the text sets out (in a satire the author's real point is untagged, an `imputation` with its warrant). Never the reconstruction's own objection either: a rival reading is a `#crux` with the rival `#reported` beside it (below), and a reading of the text against the world is `#appraisal`. Narrowed 26 Sep 2026 after an audit of every use: 46 of 50 were objections the text voices, 3 were a rival reading, 1 was a satirist's own point |
+| `#contested` | **an objection voiced in the text that is not the author's view** — a critic's, an interlocutor's, or one the author raises against their own position and answers. Never the author's own view, even where it opposes a persona or a position the text sets out (in a satire the author's real point is untagged, an `imputation` with its warrant). Never the reconstruction's own objection either: a rival reading is a `#crux` with the rival `#reported` beside it (below), and a reading of the text against the world is `#appraisal`. |
 | `#authority` | **a proposition whose force comes from its source, not from its content** — a decided case, a statute, a constitutional instrument. Chiefly for legal texts |
 | `#obiter` | **said in a legal judgment, but not a necessary step to the disposal** — the court's own remarks *by the way*. The untagged steps on the route to the order the court made are its *ratio*; this marks what sits off that route |
 | `#crux` | **a claim the reconstructor settled by choosing among live readings** — the text underdetermines it, interpreters divide over it, and the claim's `note:` names the reading followed and the road not taken |
@@ -285,37 +266,11 @@ from one they are attacking.
 Each answers a question the structure cannot: nothing about the shape of a graph reveals that a
 claim is Hume's rather than the paper's.
 
-### `#authority`, and the thing it half-fixes
+### `#authority`
 
-An authority is not a reason in the ordinary sense. *The King hath no prerogative but that which
-the law of the land allows him* supports the claim it hangs under **because a court decided it in
-1611**, not because a reader finds it plausible. Article 9 of the Bill of Rights binds whatever
-anyone thinks of it. Drawn as a bare `<+`, both look exactly like evidence, and a reader cannot
-tell from the map which supports are arguments and which are citations.
-
-It earns its place on the three tests below: the structure cannot compute it, it recurs wherever a
-judgment cites its authorities, and *"show me only what this judgment rests on"* is the first
-question a lawyer asks of a case. Tag the **cited proposition**, not the claim it supports.
-
-**What it does not fix, and what to do instead.** Miller exposed `<+` doing three different jobs:
-evidential support, institutional authority, and jurisdictional precondition — the last being
-something that must hold before a court may rule at all. Argdown has one arrow for all three, and
-**this project does not invent syntax**: a map that used a private relation would stop being
-Argdown, would not parse anywhere else, and would fail the promise that Ipsissima displays the
-language rather than a dialect of it.
-
-So:
-
-- **institutional authority** → tag the cited proposition `#authority`;
-- **jurisdictional precondition** → usually a modelling mistake rather than a notation gap. A
-  precondition is a *premise* of the step it conditions, so put it in the premise-conclusion
-  structure instead of hanging it off the conclusion as support;
-- **anything still overloaded** → say so in the claim's `note:`. A limitation a reader is told
-  about is a limitation; one they must infer from a flat arrow is a misreading waiting to happen.
-
-That last rule is general. **Where the notation cannot carry a distinction the argument turns on,
-the note carries it** — and the reconstruction is more honest for saying which distinction the map
-is not drawing.
+An authority is not a reason in the ordinary sense, and `<+` cannot say so. For a court
+judgment, `argdown_method("judgments")` says how to mark one, and what to do where the arrow is
+overloaded.
 
 ### `#crux`: where the reading divides
 
@@ -357,20 +312,9 @@ reading set out beside it is `#reported`, never `#contested`.
 
 ### Why there is no `#core`
 
-There was, and it did not work. It was a reader's estimate of which claims the argument rests on,
-applied by hand — and across the published samples it marked 27% of the claims in one map and 65%
-in another, so the chip meant something different in every file. Nothing could check it against
-the argument it described.
-
-The map now computes it. The **spine** control draws only claims that hold something up: remove
-one and part of the argument loses its route to a contention. That is a different measure from the
-*how much* ladder, which reveals the map outward from the contention by distance — a claim five
-steps out that holds up twenty others is spine and the ladder shows it last; a claim beside the
-contention that holds up nothing is a remark and the ladder shows it first.
-
-`#background` went with it. It turned out to mean two unrelated things: in three of the five
-samples it was marking **someone else's view** — Hume's, Williams's, Queloz's — which is now
-`#reported`; in the other two it was marking the author's own asides, which need no tag at all.
+Importance is not a tag. The map computes what an argument rests on (the **spine** control: claims
+whose removal cuts part of the argument off from a contention), so no tag says it. A hand-applied
+"core" tag once marked 27% of the claims in one map and 65% in another.
 
 ### When to add a tag of your own
 

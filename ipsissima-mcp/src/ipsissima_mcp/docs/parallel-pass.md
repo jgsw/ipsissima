@@ -1,22 +1,16 @@
 # Argument and mechanism, reconstructed together
 
-THE METHOD IN FORCE FOR A TEXT'S MECHANISM, since 1 October 2026. Adopted by the project's
-maintainer, James Wilson, after a trial on two texts (William James, *The Will to Believe*; Wilson,
-"What makes a health system good?"), in which he judged the parallel maps better than the series
-ones. Below, "the author" always means the author of the text being mapped. It is reversible by one
-setting: `IPSISSIMA_MECHANISM_METHOD=series`, or the extension's "Mechanism method" option, serves
-the series method (`mechanism-series`) instead, unchanged.
-
-Since profile 1.17 it is part of EVERY reconstruction: the mechanism is read with the argument,
-and mapped as far as the argument relies on it (*How far to map it*, below). Arguments that need no
+THE METHOD IN FORCE FOR A TEXT'S MECHANISM, and part of EVERY reconstruction: the mechanism is read
+with the argument, and mapped as far as the argument relies on it (*How far to map it*, below).
+Below, "the author" always means the author of the text being mapped. One setting,
+`IPSISSIMA_MECHANISM_METHOD=series`, serves the series method (`mechanism-series`) instead. Arguments that need no
 understanding of mechanisms are the exception rather than the default. If the user wants
 the argument alone, record `depth: none` with that as the reason.
 
 Read these with it:
 - the four reconstruction documents (`extraction-prompt` first);
 - `mechanism-method`, on how to read a causal claim;
-- `mechanism-series`, whose §§2–7 are the notation for states and steps, which this method uses
-  unchanged.
+- `mechanism-notation`, the notation for states and steps.
 
 This document says what is different.
 
@@ -39,37 +33,34 @@ In the trial the parallel reading also found causal passages the series pass had
 them were halves of arguments. One concession in the series argument was attached to the wrong
 claim. Interpretive load stayed at zero: everything added was the author's words.
 
-## The order of work
+## What the mechanism adds at each step
 
-1. **Triage.** Read the source whole. For each section, note whether it justifies, explains, or
-   both, and where the text's case rests on what brings what about. This is where the bridges will
-   be.
-2. **Two skeletons, together.** Before any claim, write down both:
-   - the contention or contentions and the top-level form (as the extraction prompt says);
-   - the mechanism's `question`, `goal` and `contrast`, its levels, actors, outcome states and
-     chains.
+The steps are the extraction prompt's (*The order of work*); this says what the mechanism adds.
 
-   Let each decide things in the other:
-   - the contention usually supplies the mechanism's question, contrast and intervention ("What does
-     deciding by passion, rather than waiting for evidence, bring about?");
-   - an outcome state is often a contention's subject;
-   - a chain is often a premise.
-3. **Fill both.** The argument by the extraction prompt's method; the steps by the mechanism
-   notation (`mechanism-series` §§2–7). The series pass's ban on wiring is replaced by the bridge rule
-   below.
-4. **The bridge pass.** For each bridge, check its precondition and ask its questions of the map.
-   Where a step the argument relies on is missing, add it as a premise, `fidelity: "imputation"`,
-   `warrant: "enthymeme"`. Where the text answers a question itself, the answer is in the map. Where
-   it does not, that is a finding, never a gap to close.
-5. **Write `method: parallel`** in the reading policy (`reconstruction:`), then `argdown_check` with
-   `source_root` until ok and verified.
-6. **Answer the census's `? island` and `? pieces`** (*What meets*, below): find the link the text
-   makes, declare the kind, give the piece its own chain, or record with `apart:` that the text keeps
-   it apart.
+- **2. Reading the source:** for each section, note whether it justifies, explains, or both, and
+  where the text's case rests on what brings what about. This is where the bridges will be.
+- **3(c). The skeleton:** the mechanism's `question`, `goal` and `contrast`, its levels, actors,
+  outcome states and chains, and its `depth` (*How far to map it*, below). Let it and the
+  argument's skeleton decide things in each other:
+  - the contention usually supplies the mechanism's question, contrast and intervention ("What does
+    deciding by passion, rather than waiting for evidence, bring about?");
+  - an outcome state is often a contention's subject;
+  - a chain is often a premise.
+- **5. Filling the map:** the steps in the notation (`mechanism-notation`), on the claims that state
+  them, in the sections where the text uses them. A step enters the argument as support or through
+  a bridge (*How a mechanism enters the argument*, below).
+- **6. The bridge pass:** for each bridge, check its precondition and ask its questions of the map.
+  Where a step the argument relies on is missing, add it as a premise, `fidelity: "imputation"`,
+  `warrant: "enthymeme"`. Where the text answers a question itself, the answer is in the map. Where
+  it does not, that is a finding, never a gap to close.
+- **7. The check:** write `method: parallel` in the reading policy (`reconstruction:`) first.
+- **8. Before you stop:** answer the census's `? island` and `? pieces` (*What meets*, below): find
+  the link the text makes, declare the kind, give the piece its own chain, or record with `apart:`
+  that the text keeps it apart.
 
 ## How far to map it
 
-The skeletons (step 2) are the cheap first look. Before filling the mechanism, decide its `depth` in
+The skeleton (step 3) is the cheap first look. Before filling the mechanism, decide its `depth` in
 the `mechanism:` block (nothing to do with the Reasons view's depth ladder, which shows a map outward
 from its contention), by what the argument relies on -- never by how often the text uses causal
 words (the planner's count read Merton at 2 causal sentences per thousand words, and Merton is a
@@ -129,7 +120,7 @@ scheme's name has one.
 | From a genealogy to contingency | a practice or view came about by a process that gives no reason to prefer it, so it could as well have been otherwise | does the formation really give no reason; is contingency being taken as a reason against it; would a rival have met the same needs |
 
 These are Walton, Reed and Macagno's causal and practical schemes (*Argumentation Schemes*, 2008),
-with the four the first trial needed and three the second added (profile 1.16). A genealogy has
+with seven added for the moves texts were found to make. A genealogy has
 three directions (Queloz 2021, ch. 9): it vindicates, it shows contingency, or it debunks; it is
 vindicatory first, so do not reach for debunking by default. "From there to here" is the move a
 text makes whenever it carries a finding across settings -- from a trial to a population, a
@@ -166,7 +157,7 @@ frame, which declares rival accounts for the tables.)
 
 ## What the chart shows, and what meets
 
-Two principles govern the Mechanism view (8 October 2026):
+Two principles govern the Mechanism view:
 
 - **No state is shown unless it is in a mechanism or a flow.** The chart draws only states a step
   touches, as cause, effect, co-cause, blocker, moderator or measure. A state whose only tie is
@@ -200,7 +191,7 @@ Two principles govern the Mechanism view (8 October 2026):
   `apart:` records why. The chart offers *Together* only for chains that meet, and stands a chain's
   pieces side by side with a rule between them.
 
-## Six things the trial taught
+## Six lessons from the trial maps
 
 1. **An explanation is not a reason.** "A `because` drawn as support" is still the commonest error,
    and the parallel method invites it. Wire a step only where the text uses it to make the reader
@@ -232,7 +223,7 @@ Two principles govern the Mechanism view (8 October 2026):
    to infer the general principle. But it at least has the virtue of making this weakness
    perspicuous" (Wilson, on his map of William James). Do not leave cases out to make the inference look stronger.
 
-## Slips the checker catches (the trial, 1 October 2026)
+## Slips the checker catches
 
 - **`basis` says what the text offers**: study, statistics, model, example, testimony or
   asserted. `argued` is the census's word for a step whose claim has support in the map; never
@@ -270,6 +261,4 @@ Two principles govern the Mechanism view (8 October 2026):
 
 ## Going back
 
-Everything the series method did is still there. `mechanism-series` serves it, and
-`IPSISSIMA_MECHANISM_METHOD=series` makes it the method in force again. A map records how it was
-made (`method: series | parallel`), so maps made each way can be compared and the switch judged.
+A map records how it was made (`method: series | parallel`), so maps made each way can be compared.

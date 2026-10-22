@@ -195,9 +195,7 @@ undercut, and drawing it as an attack misreports the argument.
       // undercut: grants the comparison, denies that it licenses the conclusion
 ```
 
-Typical undercut phrasings in a source: *"even if that were so, it would not show…"*, *"that may
-be true, but it does not follow that…"*, *"this holds only under conditions that do not obtain
-here"*, *"the analogy breaks down at exactly the point that matters"*.
+How to recognise one in a source: the reconstruction method, Step 6.
 
 An undercut properly targets an **argument** (an inference has to exist to be undercut). The
 parser will let you undercut a statement; do not.
@@ -306,44 +304,11 @@ disagreement between the two.
 The rule name itself stays optional -- prefer the plain bar unless the rule genuinely informs
 the reader. **But naming one is a claim, and it is now checked.**
 
-### Naming a rule, and `formalization:`
+### Naming a rule
 
-`-- Modus ponens {uses: [1, 2]} --` says the conclusion *follows*. Give every line of that step a
-`formalization:` and the checker will decide whether it does:
-
-```argdown
-(1) [If crisis then maggots]: If the NHS were in crisis it would use maggots. {formalization: "q -> p"}
-(2) [Maggots are used]: The NHS uses maggots. {formalization: "p"}
--- Modus ponens {uses: [1, 2]} --
-(3) [The NHS is in crisis]: The NHS is in crisis. {formalization: "q"}
-```
-
-That step is reported as a fault, with a countermodel: it is affirming the consequent, not modus
-ponens. **Only a step that names a rule is checked** -- a plain `-----` claims nothing, and most
-philosophical argument is conductive rather than deductive, so checking every step would report
-good reconstructions as invalid for failing to be something they never claimed to be.
-
-The syntax is **NLTK's**, which is what `debatelab/argdown-feedback` parses, so a formalization
-means the same thing in both tools:
-
-| | |
-|---|---|
-| negation | `-p` or `!p` |
-| and, or | `p & q`, `p \| q` |
-| implies, iff | `p -> q`, `p <-> q` |
-| quantifiers | `all x.(F(x) -> G(x))`, `exists x.(F(x) & G(x))` |
-| predicates | one place only: `F(x)`, `F(a)` |
-
-**`~` is not negation and is rejected.** NLTK reads `~p` as an atom *called* `~p`, so a step
-written with it is satisfiable for the wrong reason and an invalid argument passes silently.
-Accepting it here would be worse, because the same file would then mean two different things in
-the two tools.
-
-What is decided: propositional logic completely, and one-place predicate logic completely, so
-long as there is no equality and no function symbols. Anything else -- a two-place relation, more
-than four predicates -- is reported as *not decidable here*, which is a different answer from
-invalid and is never drawn as one. `docs/VALIDITY-PLAN.md` explains why this is decided in the
-project rather than by a solver.
+`-- Modus ponens {uses: [1, 2]} --` says the conclusion *follows*, and the checker tests it
+against `formalization:` lines on every line of the step. How to write them, and which names are
+abbreviated on the map: `argdown_method("formal")`.
 
 ### Premises and conclusions can carry titles and relations
 
@@ -410,40 +375,8 @@ author: Who wrote it
 
 ### Interpretation mode — leave it alone
 
-Argdown reads relations in one of two modes. **The default is `loose`, and it is almost always
-what you want.** You do not need to declare it.
-
-In **loose** mode a relation between two statements is *argumentative*: `<+` means this reason
-speaks for that claim. In **strict** mode it is *logical*: `<+` asserts that one statement
-**entails** the other, and `<-` that they are **contrary** — claims about logical form, not about
-what a text argues.
-
-Strict mode touches **only relations between two statements**. Anything involving an argument is
-unchanged, and `><` means contradiction in both modes:
-
-| relation | loose (default) | strict |
-|---|---|---|
-| statement `<+` statement | support | **entails** |
-| statement `<-` statement | attack | **contrary** |
-| statement `><` statement | contradictory | contradictory |
-| statement `<+` `<-` argument | support / attack | unchanged |
-| argument `<_` argument | undercut | unchanged |
-
-Turn it on only if you are reconstructing formal logical relations and mean the stronger claim:
-
-```argdown
-===
-model:
-    mode: strict
-===
-
-[All ravens are black]: Every raven is black.
-    -> [A white raven]: There is a white raven.
-```
-
-**Reconstructing a text? Stay in loose.** Saying that a paper's premises *entail* its conclusion
-is a claim about validity that the paper itself usually does not make, and the reconstruction
-should not make it on the author's behalf.
+Argdown's default, `loose`, is what a reconstruction wants: `<+` means a reason speaks for a
+claim. Strict mode makes it mean *entails*; see `argdown_method("formal")` before ever turning it on.
 
 ---
 
