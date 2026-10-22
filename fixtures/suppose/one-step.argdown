@@ -1,0 +1,18 @@
+// A chain of one step, and nothing else: the one case the Mechanism view sets out in words rather
+// than drawing (plainChain; James, 22 Oct 2026). Kept by app/test_suppose.mjs.
+===
+title: "One step"
+mechanism:
+    levels: [world]
+    actors:
+        world: {label: "The world", level: world}
+    states:
+        rain: {label: "It rains", actor: world, role: condition}
+        wet:  {label: "The street is wet", actor: world, role: outcome}
+    chains:
+        direct:
+            label: "Rain wets the street"
+===
+
+[Rain wets the street]: Rain makes the street wet.
+    {causes: {from: rain, to: wet, sign: "+", basis: asserted, chain: direct}}

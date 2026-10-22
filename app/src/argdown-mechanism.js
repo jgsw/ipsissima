@@ -3957,14 +3957,16 @@ function conditionsTable(M) {
   return { starts: starts, outcomes: outs, rows: rows, needs: needs, trivial: trivial };
 }
 
-/** NOTHING TO DRAW (the think piece's "Stage 1", James's go 18 Oct 2026). A chain that is one short line
- *  -- each state led to by one step at most and leading on by one at most, co-causes counted -- and whose
- *  steps add up to nothing they do not say one by one (`follows` finds nothing) is a picture of what one
- *  few sentences say: Lynch's "picture of nothing". It is set out in words, and drawn on request. Only the
- *  text's own steps, and only where the chain has nothing else to show: a rival's step, an appraisal, a
- *  null finding, an association or a selection link each is something to see. Returns the steps in order
- *  along the line, or null. */
-var PLAIN_LINE_MAX = 6;
+/** NOTHING TO DRAW (the think piece's "Stage 1", James's go 18 Oct 2026). A chain that is one step -- A
+ *  brings about B, and nothing else -- is a picture of what one sentence says: Lynch's "picture of
+ *  nothing". It is set out in words, and drawn on request. Only the text's own step, and only where the
+ *  chain has nothing else to show: a rival's step, an appraisal, a null finding, an association or a
+ *  selection link each is something to see. Returns the step (as a one-item list), or null.
+ *  TWO STEPS ARE DRAWN (James, 22 Oct 2026). Until then a line of up to six steps was set out in words.
+ *  But a line of three states has a middle, and a middle is where one intervenes: suppose the tar does
+ *  not build up, and the smoking no longer brings the cancer about. That is done on the drawing, so a
+ *  line with a middle is drawn from the start. */
+var PLAIN_LINE_MAX = 1;
 function plainChain(M, F) {
   // A line's only composed route is the line read end to end, which the words below say.
   if (!M || !F || F.items.some(function (it) { return it.kind !== "composed"; }) || M.core || M.panels || M.compartmented || M.collapsed) return null;
@@ -5105,7 +5107,7 @@ function create(container, graph, opts) {
                guess: {},
                // Whether the reader is guessing what a supposition costs: only the supposed is drawn.
                quiet: false,
-               // Chains the reader asked to see drawn though they are one short line (see plainChain).
+               // Chains the reader asked to see drawn though they are one step (see plainChain).
                drawn: {},
                // Chains whose "what each outcome needs" the reader has opened (see conditionsTable).
                condShown: {} };
@@ -5442,22 +5444,19 @@ function create(container, graph, opts) {
   var side = document.createElement("div"); side.className = "amech-side";
   body.appendChild(stage); body.appendChild(side); container.appendChild(body);
   container.appendChild(bar);
-  // NOTHING TO DRAW: one short line whose steps add up to nothing they do not say one by one is set
-  // out in words first, and drawn when the reader asks -- or as soon as something is supposed of it,
-  // since a supposition is made and read on the drawing.
+  // NOTHING TO DRAW: a chain of one step is set out in words first, and drawn when the reader asks -- or
+  // as soon as something is supposed of it, since a supposition is made and read on the drawing.
   var lineKey = String(keep.chain || ""), supposedHere = Object.keys(keep.exp.fail).length + Object.keys(keep.exp.off).length + Object.keys(keep.exp.hold).length + Object.keys(keep.exp.actor || {}).length;
   var LINE = !FIG && !keep.drawn[lineKey] && !supposedHere ? plainChain(M, FOLLOWS) : null;
   if (LINE) {
     var words = document.createElement("div"); words.className = "amech-words";
     var nmW = function (v) { return "\u201c" + esc(obj(M.states[v]).label || v) + "\u201d"; };
     var verbW = function (s) { return s.sign === "+" ? "raises" : s.sign === "-" ? "lowers" : "brings about"; };
-    var first = LINE[0].from;
-    words.innerHTML = '<p>This chain is one line of ' + LINE.length + ' step' + (LINE.length === 1 ? '' : 's') + ': no branch, no loop, no second route. ' +
-      'Read in order, the steps say all a drawing would, so here they are in words.</p><ol>' +
+    words.innerHTML = '<p>This chain is one step: nothing between the cause and what it brings about, no branch, no second route. ' +
+      'The sentence says all a drawing would, so here it is in words.</p><ol>' +
       LINE.map(function (s) { return '<li>' + nmW(s.from) + ' ' + verbW(s) + ' ' + nmW(s.to) +
         (s.claim && s.claim.title ? ' <button type="button" class="amech-claimlink" data-claim="' + esc(s.claim.title) + '" title="Show the claim that states it">\u2039' + esc(s.claim.title) + '\u203a</button>' : '') + '</li>'; }).join('') +
-      // WHAT THE LINE COMES TO END TO END is left to the panel's question, to be guessed before it is shown.
-      '</ol>' + (LINE.length > 1 ? '<p class="amech-q">Where does the line take ' + nmW(first) + '? The panel asks; guess before you look.</p>' : '') +
+      '</ol>' +
       '<div class="amech-state-act"><button type="button" data-draw-line="1">Draw it</button> <span class="amech-q">to suppose something of it, draw it, then right-click a state or an arrow</span></div>';
     words.addEventListener("click", function (ev) {
       var t = /** @type {Element} */ (ev.target);

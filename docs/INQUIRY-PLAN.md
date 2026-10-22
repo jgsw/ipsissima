@@ -121,9 +121,10 @@ the go to the two small items and to "nothing to draw".
   without), with the whole table on request; each start can be switched off as a supposition.
 - **Suppose an actor does nothing** (`actorOff`), on a state's menu where two actors or more carry the
   chain: what the actor alone carries stops; a state it shares is named and left standing.
-- **Nothing to draw** (`plainChain`). A chain that is one short line, within one level, opens in
-  words (what it comes to end to end stays the panel's question); **Draw it**, or any supposition, draws it. Fourteen of the
-  corpus's 231 chains open so on 18 Oct.
+- **Nothing to draw** (`plainChain`). A chain of one step, within one level, opens in words;
+  **Draw it**, or any supposition, draws it. Until 22 Oct this held for a line of up to six steps
+  (fourteen of the corpus's 231 chains on 18 Oct). James ruled it back to one step: a line of three
+  states has a middle, and the middle is where one intervenes (smoking → tar → cancer).
 
 Not built: the `cases:` block (typology, definition and counterexample, comparison of cases), which
 waits until these tables have been used.

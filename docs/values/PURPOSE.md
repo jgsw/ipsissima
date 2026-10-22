@@ -557,5 +557,13 @@ unchanged, and the cost that could be measured was about 5,000–7,000 tokens a 
     it. This is the first layer to become a default under ruling 10's test: measured first, then
     ruled.
 
+**A line with a middle is drawn** (22 Oct). "Nothing to draw" had set out in words any line of up to
+six steps, so smoking → tar → cancer opened as a list. The author noticed it and asked that it be
+drawn: a three-element sequence gives the potential for intervention, as in supposing that the
+smoking does not cause the tar to build up, while a case "so simple that it's merely A causing B"
+can stay in words. Now only a chain of one step opens in words; every line of two steps or more is
+drawn from the start (`plainChain`, `app/test_suppose.mjs`). Of the 265 chains in the samples, the
+teaching map and the research maps, 15 opened in words before and 7 do now.
+
 **Still to come:**
 - wave 6 (a release, asked for first).

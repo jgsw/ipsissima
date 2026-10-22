@@ -792,11 +792,11 @@ the text, never verdicts on it. Where nothing follows, the panel says so: the dr
 the text. The chain's counts, gaps, loops and legend are under **About this chain**, at the foot of
 the panel.
 
-**Nothing to draw.** A chain that is one short line — each state led to by one step and leading on
-by one, no loop, no branch, no second route — is set out in words first: its steps in order (what they come to end to end is the panel's question,
-to guess before you look). A drawing would only repeat them. **Draw it** draws it, and so does
-supposing anything of it. A line that crosses levels is drawn as usual: the bands say something the
-words do not.
+**Nothing to draw.** A chain of one step — A brings about B, and nothing else — is set out in words
+first: a drawing would only repeat the sentence. **Draw it** draws it, and so does supposing anything
+of it. A step that crosses levels is drawn as usual: the bands say something the words do not. A
+chain of two steps or more is always drawn, however plain: smoking → tar → cancer has a middle, and
+the middle is where you can intervene (suppose the tar does not build up).
 
 **What the starting states do.** Where a chain starts from two to four states, the panel lists them,
 each with a tick: untick one to suppose it does not happen (the same supposition as the right-click,

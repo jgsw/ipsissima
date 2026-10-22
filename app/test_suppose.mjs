@@ -26,6 +26,7 @@ const DENIAL = path.join(REPO, "fixtures", "suppose", "denial.argdown");
 const TRILEMMA = path.join(REPO, "fixtures", "suppose", "trilemma.argdown");
 const ACTORS = path.join(REPO, "fixtures", "suppose", "actors.argdown");
 const TEACHING = path.join(REPO, "teaching", "causal-junctions.argdown");
+const ONE_STEP = path.join(REPO, "fixtures", "suppose", "one-step.argdown");
 const WILSON = path.join(REPO, "samples", "Wilson 2023 - What makes a health system good", "wilson-2023-health-system-good.argdown");
 const MILLER = path.join(REPO, "samples", "Miller 2019 - Prorogation of Parliament", "miller-2019-uksc-41.argdown");
 const PRESCOTT = path.join(REPO, "samples", "Prescott-Couch 2024 - The Philosopher as Reverse-Engineer", "prescott-couch-reverse-engineer.argdown");
@@ -162,8 +163,12 @@ console.log("\nthe Mechanism view: nothing to draw, the starting states, who car
 {
   const MJ = MV.model(graphOf(TEACHING));
   const chain = id => MV.chainModel(MJ, id);
-  // Mutation: let `plainChain` refuse any chain with a finding -> the line's own composed route stops it.
-  check(!!MV.plainChain(chain("mediation"), MV.follows(chain("mediation"))), "a chain that is one short line is set out in words");
+  // A LINE WITH A MIDDLE IS DRAWN (James, 22 Oct 2026): the middle is where one intervenes.
+  // Mutation: set PLAIN_LINE_MAX back to 6 -> smoking, tar, cancer opens in words again.
+  check(!MV.plainChain(chain("mediation"), MV.follows(chain("mediation"))), "a line of three states has a middle to intervene on, and is drawn");
+  const MO = MV.chainModel(MV.model(graphOf(ONE_STEP)), "direct");
+  // Mutation: set PLAIN_LINE_MAX to 0 -> the one step is drawn too.
+  check(!!MV.plainChain(MO, MV.follows(MO)), "a chain of one step, A brings about B, is set out in words");
   check(!MV.plainChain(chain("joint"), MV.follows(chain("joint"))) && !MV.plainChain(chain("fork"), MV.follows(chain("fork"))),
         "a joint cause or a fork is not a line, and is drawn");
   const J = MV.conditionsTable(chain("joint")), C = MV.conditionsTable(chain("collider"));
@@ -732,12 +737,22 @@ if (chromium) {
     await page.waitForTimeout(300);
     await page.locator("#mech select[data-chain]").selectOption("mediation");
     await page.waitForTimeout(250);
+    check(await page.locator(".amech-words").count() === 0 && await page.locator("#mech .amech-stage").isVisible(),
+          "smoking, tar, cancer is drawn from the start: its middle is where one intervenes");
+    await page.goto("file://" + build(ONE_STEP, "one-step.html"));
+    await page.waitForTimeout(800);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(300);
     // Mutation: drop `stage.hidden = true` -> the chart is drawn as well.
     check(await page.locator(".amech-words").isVisible() && await page.locator("#mech .amech-stage").isHidden() &&
-          /raises “Lung cancer”/.test(await page.locator(".amech-words").innerText()), "a chain that is one short line opens in words, step by step");
+          /“It rains” raises “The street is wet”/.test(await page.locator(".amech-words").innerText()), "a chain of one step opens in words");
     await page.locator("[data-draw-line]").click();
     await page.waitForTimeout(250);
     check(await page.locator(".amech-words").count() === 0 && await page.locator("#mech .amech-stage").isVisible(), "Draw it draws it");
+    await page.goto("file://" + build(TEACHING, "teaching.html"));
+    await page.waitForTimeout(800);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(300);
     await page.locator("#mech select[data-chain]").selectOption("joint");
     await page.waitForTimeout(250);
     await page.locator("[data-cond-show]").click();
