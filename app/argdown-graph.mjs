@@ -432,7 +432,7 @@ export function framesOf(res, titleToId) {
     if (!values.length) continue;
     frames.push({ id, kind: f.kind, label: f.label == null ? id : String(f.label),
                   pinpoint: f.pinpoint == null ? null : String(f.pinpoint),
-                  ordered: f.ordered === true, note: f.note == null ? null : String(f.note), values,
+                  ordered: f.ordered === true, comparable: f.comparable !== false, note: f.note == null ? null : String(f.note), values,
                   rule: (f.rule && typeof f.rule === "object") ? f.rule : null });
   }
   const byId = new Map(frames.map(f => [f.id, f]));

@@ -2251,7 +2251,7 @@ FRAME_KINDS = ("case", "dimension", "verdict", "account")
 #: a dimension or a verdict, and -- `indeterminate` only -- on an account frame, where the claim is a
 #: reason the text says does not tell the accounts apart. Twin of argdown-graph.mjs's RESERVED_VALUES.
 RESERVED_VALUES = ("impossible", "indeterminate")
-FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "rule", "note")
+FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "comparable", "rule", "note")
 
 
 def frames_report(cli, path, source_root=None):
@@ -2349,6 +2349,17 @@ def frames_report(cli, path, source_root=None):
                     fix="a frame the text never states is not the text's frame")
         if f.get("ordered") is not None and kind not in ("dimension", "verdict"):
             finding("frames", "!", f"frame `{fid}`: `ordered:` belongs to a dimension, not to a {kind}")
+        # A COLUMN THE TEXT SAYS CANNOT BE COMPARED ACROSS ITS ROWS (profile 1.24, the gap test's G2:
+        # Shepherd's "recidivism", defined differently by country). The page shows it, never compares it.
+        if f.get("comparable") is not None:
+            if kind != "dimension":
+                finding("frames", "!", f"frame `{fid}`: `comparable:` belongs to a dimension, not to a {kind}")
+            elif f.get("comparable") is not False:
+                finding("frames", "!", f"frame `{fid}`: `comparable:` is written only as `false`",
+                        fix="leave it out where the text compares the column's cells")
+            elif f.get("ordered"):
+                finding("frames", "?", f"frame `{fid}` is ranked (`ordered`) and not comparable: the page "
+                        "will rank no case against another on it. Does the text rank it across the cases?")
         if kind == "account":
             for vid, v in values.items():
                 claim = v.get("claim") if isinstance(v, dict) else None

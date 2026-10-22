@@ -12,7 +12,8 @@
  *    (the method of difference); pairs alike in every stated dimension yet given different
  *    verdicts; rows that meet a stated rule and get another verdict (Gettier's
  *    cases against definition (a)); and, on dimensions the text ranks (`ordered`), a case worse on
- *    every count than another. Nothing is totalled and no empty cell is filled.
+ *    every count than another. Nothing is totalled and no empty cell is filled, and a dimension the
+ *    text says cannot be compared across its rows (`comparable: false`) is shown and never compared.
  *  - CROSS TABLES: where claims name two `case` frames at once (Bates's studies against the
  *    questions they answer), one frame's cases as rows and the other's as columns, the claims in
  *    the cells.
@@ -74,6 +75,11 @@ function caseTables(graph) {
     if (!cols.length) return;
     var rows = rf.values;
     var dims = cols.filter(function (f) { return f.kind === "dimension"; });
+    // A COLUMN THE TEXT SAYS CANNOT BE COMPARED ACROSS ITS ROWS (`comparable: false`, profile 1.24):
+    // Shepherd's "recidivism", defined differently in each country. Its cells are shown and never
+    // compared: no pair of rows is alike or apart on it, and no row is worse on it than another.
+    var incomparable = dims.filter(function (d) { return d.comparable === false; }).map(function (d) { return d.id; });
+    dims = dims.filter(function (d) { return d.comparable !== false; });
     var verdicts = cols.filter(function (f) { return f.kind === "verdict"; });
     var get = function (r, k) { var v = single(cells[r][k]); return v == null || isSaid(v) ? null : v; };
 
@@ -148,7 +154,7 @@ function caseTables(graph) {
     }); });
 
     out.push({ frame: rf.id, label: rf.label, pinpoint: rf.pinpoint, rows: rows, columns: cols, cells: cells,
-               empty: empty, said: said, apart: apart, alike: alike, againstRule: againstRule, dominated: dominated,
+               empty: empty, said: said, incomparable: incomparable, apart: apart, alike: alike, againstRule: againstRule, dominated: dominated,
                filled: rows.length * cols.length - empty.length });
   });
   return out;

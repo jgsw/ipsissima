@@ -166,6 +166,19 @@ check("  but a case cannot be `impossible`, and an account frame takes `indeterm
       sorted(f["message"].split(":")[0] for f in found if f["severity"] == "!"),
       sorted(["`state", "`about"]))
 
+print("a column the text says cannot be compared (profile 1.24)")
+# G2 of the tables reading's gap test. Mutations: drop `comparable` from FRAME_KEYS -> the clean
+# fixture draws an unknown-key fault; drop the kind test -> the verdict passes; drop the ordered
+# query -> it is silent.
+found, _ = run(REPO / "fixtures" / "frames" / "incomparable.argdown")
+check("`comparable: false` on a dimension is clean", [f["message"] for f in found if f["severity"] in ("!", "?")], [])
+found, _ = run(planted("incomparable.argdown", 'values: ["yes", "no"]}', 'values: ["yes", "no"], comparable: false}'))
+check("  on a verdict it is a fault", [f["severity"] for f in found if "`comparable:` belongs to a dimension" in f["message"]], ["!"])
+found, _ = run(planted("incomparable.argdown", "    comparable: false", "    comparable: true"))
+check("  written `true` it is a fault", [f["severity"] for f in found if "only as `false`" in f["message"]], ["!"])
+found, _ = run(planted("incomparable.argdown", "    comparable: false\n", "    comparable: false\n    ordered: true\n"))
+check("  ranked as well, it is queried", [f["severity"] for f in found if "is ranked (`ordered`) and not comparable" in f["message"]], ["?"])
+
 print("the text's words in a frame or a question, verified (ruled 22 Oct 2026)")
 # B11's first duty by the rule claims already follow: words in double quotation marks INSIDE a
 # label or a question's text claim to be the text's and are checked; words without them are the

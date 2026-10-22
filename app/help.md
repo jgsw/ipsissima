@@ -1062,6 +1062,9 @@ the text makes about it. Beneath the table the panel names the moves the table a
 - **a cell in italics** is not empty and not a value: the text says that this combination *cannot
   occur*, or that it *cannot be told*. The cell is never compared with another. In a table of rival
   accounts, a reason the text says does not tell them apart is marked so beneath it.
+- **not compared**, beneath a column's name: the text says that column does not measure one thing
+  across the cases (each country counting reoffending its own way). Its cells are shown, and no
+  case is compared with another on it.
 - **against the rule**: a case that meets the conditions the text states for a verdict and is given
   another (Gettier's cases against the definition of knowledge).
 - **alike, and given different verdicts**: two cases the same in every stated respect, so something

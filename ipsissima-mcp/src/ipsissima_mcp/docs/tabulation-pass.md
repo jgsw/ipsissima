@@ -70,6 +70,9 @@ The pass records the text's own comparisons, and only the text's.
 - `ordered: true` (dimensions only): the values are listed from what the text counts best to what
   it counts worst. This lets the page say when one case is worse on every count the text weighs.
   It is never used to add anything up.
+- `comparable: false` (dimensions only): the text says this column's cells do not measure one thing
+  across the cases, as when each country defines "recidivism" its own way. The page shows the
+  cells and compares no case with another on them. Give the text's words in the frame's `note:`.
 - `rule:` (verdicts only): a rule the text states or reports, as the verdict it gives when the
   dimensions take given values. For example, definition (a)'s "S knows that P iff (i) P is true,
   (ii) S believes that P, and (iii) S is justified in believing that P" becomes
@@ -183,6 +186,8 @@ give the questions to ask:
 - **Turning a number into a category is your act,** unless the text does it. If the text reports
   an odds ratio and never says "benefit", a cell `effect: benefit` is an interpretation, with a
   warrant (Cochrane Handbook, ch. 12).
+- **A value is comparable across the rows only if the text measures them alike.** Where it says
+  the measure differs from case to case, mark the dimension `comparable: false`.
 - **Never code non-significance as "no effect".** "No significant difference" keeps its words
   (Altman and Bland; Ogilvie et al.).
 - **The claim that carries a cell is its context unit.** It should say the value plainly, and

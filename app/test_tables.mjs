@@ -60,6 +60,23 @@ console.log("what the text says of a cell instead of a value (profile 1.23)");
         "a reason the text says does not tell the accounts apart is read", JSON.stringify(T.undecided(g)));
 }
 
+console.log("a column the text says cannot be compared (profile 1.24)");
+{
+  // fixtures/frames/incomparable.argdown carries its answers in its header. Mutations: drop the
+  // comparable filter in caseTables -> nl and se are set apart on reoffending, and nl/uk differ in two
+  // respects; drop `comparable` from framesOf -> the same.
+  const g = graphOf("frames/incomparable.argdown");
+  const [t] = T.caseTables(g);
+  check(t && JSON.stringify(t.incomparable) === '["reoffending"]' && t.columns.some(c => c.id === "reoffending") && t.cells.nl.reoffending,
+        "the column is kept, with its cells, and named as not compared", JSON.stringify(t && t.incomparable));
+  check(t.alike.length === 1 && t.alike[0].a === "nl" && t.alike[0].b === "se",
+        "the Dutch and Swedish schemes are alike in every compared respect, yet given different verdicts", JSON.stringify(t.alike));
+  check(JSON.stringify(t.apart.map(m => [m.a, m.b, m.dimension])) === '[["nl","uk","cost"],["se","uk","cost"]]',
+        "each differs from the British in cost alone, and nothing is set apart on reoffending", JSON.stringify(t.apart.map(m => [m.a, m.b, m.dimension])));
+  check(t.dominated.length === 2 && t.dominated.every(m => m.worse === "uk" && m.on.join() === "cost,uptake"),
+        "the British scheme is worse on every ranked count, counted without the column not compared", JSON.stringify(t.dominated));
+}
+
 console.log("the definition and its counterexample");
 {
   const g = graphOf("frames/definition.argdown");
@@ -286,6 +303,20 @@ if (chromium) {
     await page.waitForTimeout(200);
     check(/the text says it does not tell them apart/.test(await page.locator("#tables").innerText()),
           "the account set marks the reason the text says does not tell its accounts apart");
+    await tablesBtn.click();
+    await page.waitForTimeout(150);
+
+    // A COLUMN NOT COMPARED (profile 1.24): marked in its header, said once, and named in "every respect".
+    // Mutations: drop the nocmp header -> no "not compared"; drop the aside -> "the text states, and".
+    await open(build("frames/incomparable.argdown", "incomparable.html"));
+    await tablesBtn.click();
+    await page.waitForTimeout(250);
+    const n0 = await page.locator("#tables").innerText();
+    check(await page.locator("#tables thead th.nocmp").count() === 1 && /not compared/.test(await page.locator("#tables thead th.nocmp").innerText()) &&
+          /reoffending is shown and never compared: the text says it does not measure one thing across the cases\./.test(n0) &&
+          /are alike in every respect the text states \(reoffending aside\), and given different verdicts/.test(n0) &&
+          !/differ in one respect only, reoffending/.test(n0),
+          "the column the text says is not comparable is marked, said once, and set aside in every comparison", n0.slice(0, 700));
     await tablesBtn.click();
     await page.waitForTimeout(150);
 

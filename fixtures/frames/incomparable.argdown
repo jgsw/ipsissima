@@ -1,0 +1,35 @@
+// Planted fixture for profile 1.24 (22 Oct 2026), in the fixture-maker's own words: three countries'
+// schemes set against cost, uptake and reoffending, where the text says each country counts
+// reoffending its own way (the gap test's G2, after Shepherd). Answers, worked out before the code:
+// with `comparable: false` on reoffending, the Dutch and Swedish schemes are alike in every respect
+// that is compared and given different verdicts; each differs from the British in cost alone; the
+// British is worse on every ranked count. Ignoring the key, the Dutch and Swedish would instead be
+// set apart on reoffending, and the Dutch and British would differ in two respects.
+===
+title: "Planted -- a column not compared"
+reconstruction:
+    generated: true
+frames:
+  country:
+    kind: case
+    label: "Schemes"
+    pinpoint: "planted"
+    values: {nl: "The Dutch scheme", se: "The Swedish scheme", uk: "The British scheme"}
+  cost: {kind: dimension, label: "cost", pinpoint: "planted", values: [low, high], ordered: true}
+  uptake: {kind: dimension, label: "uptake", pinpoint: "planted", values: [high, low], ordered: true}
+  reoffending:
+    kind: dimension
+    label: "reoffending"
+    pinpoint: "planted"
+    values: [low, high]
+    comparable: false
+    note: "Each country counts reoffending its own way, the text says."
+  works: {kind: verdict, label: "worth copying", pinpoint: "planted", values: ["yes", "no"]}
+===
+
+[Copy the Dutch scheme]: The Dutch scheme is worth copying.
+    {about: [{country: nl, cost: low}, {country: nl, uptake: high}, {country: nl, reoffending: low}, {country: nl, works: "yes"}]}
+    <+ [Swedes take it up too]: The Swedish scheme is as cheap and as taken up, but reoffending there is high, and it is not worth copying.
+        {about: [{country: se, cost: low}, {country: se, uptake: high}, {country: se, reoffending: high}, {country: se, works: "no"}]}
+    <+ [The British scheme costs more]: The British scheme is dear, well taken up, has high reoffending, and is not worth copying.
+        {about: [{country: uk, cost: high}, {country: uk, uptake: high}, {country: uk, reoffending: high}, {country: uk, works: "no"}]}

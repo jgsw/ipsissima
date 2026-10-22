@@ -811,6 +811,7 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #tables td.hid{color:var(--fg-dim);text-align:center}
 #tables td.silent{background:repeating-linear-gradient(135deg,transparent 0 5px,var(--line,#ddd) 5px 6px)}
 #tables td.said{font-style:italic;color:var(--muted,#666)}
+#tables thead th.nocmp .sub{font-size:10.5px;font-weight:normal;font-style:italic;color:var(--fg-dim)}
 #tables td.two{box-shadow:inset 0 0 0 1px var(--fg-dim)}
 #tables td .sep{color:var(--fg-dim)}
 #tables td .cl + .cl{margin-top:.3rem}
@@ -9737,7 +9738,9 @@ function tablesCaseHTML(t){
   if (!shown) h += '<div class="ask">' + esc(ask.q) + (ask.rows ? ' Click the cases, then press <b>Show</b>.' : ' Then press <b>Show</b>.') + '</div>';
   var multi = [];
   h += '<div class="twrap"><table class="ttab"><thead><tr><th></th>' + t.columns.map(function(c){
-    return '<th' + (c.kind === "verdict" ? ' class="verdict-col" title="The verdict the text gives"' : '') + '>' + esc(c.label) + '</th>'; }).join("") + '</tr></thead><tbody>' +
+    var nocmp = (t.incomparable || []).indexOf(c.id) >= 0;
+    return '<th' + (c.kind === "verdict" ? ' class="verdict-col" title="The verdict the text gives"' : nocmp ? ' class="nocmp" title="The text says this column cannot be compared across the cases"' : '') + '>' + esc(c.label) +
+      (nocmp ? '<div class="sub">not compared</div>' : '') + '</th>'; }).join("") + '</tr></thead><tbody>' +
     t.rows.map(function(r){
       var picked = TABLES.picks.indexOf(r.id) >= 0;
       return '<tr data-tables-row="' + esc(r.id) + '"' + (picked ? ' class="pick"' : '') + '><th scope="row">' + (picked ? '✓ ' : '') + esc(r.label) + '</th>' +
@@ -9764,9 +9767,14 @@ function tablesCaseHTML(t){
       ' (if ' + esc(cond) + ', then ' + esc(colLabel(m.verdict)) + ': ' + esc(tablesValueLabel(vf, m.rule.then)) + ')' +
       (m.meets ? ', and is given ' : ', and is given it all the same: ') + '<b>' + esc(tablesValueLabel(vf, m.got)) + '</b>.');
   });
+  // A COLUMN NOT COMPARED (profile 1.24) is said once, and "every respect" then says which it leaves out.
+  var nocmp = (t.incomparable || []).map(colLabel), aside = nocmp.length ? ' (' + nocmp.map(esc).join(', ') + ' aside)' : '';
+  nocmp.forEach(function(l){
+    moves.push('<b>' + esc(l) + '</b> is shown and never compared: the text says it does not measure one thing across the cases.');
+  });
   t.alike.forEach(function(m){
     var vf = tablesFrame(m.verdict);
-    moves.push('<b>' + esc(rowLabel(m.a)) + '</b> and <b>' + esc(rowLabel(m.b)) + '</b> are alike in every respect the text states, and given different verdicts (' +
+    moves.push('<b>' + esc(rowLabel(m.a)) + '</b> and <b>' + esc(rowLabel(m.b)) + '</b> are alike in every respect the text states' + aside + ', and given different verdicts (' +
       esc(tablesValueLabel(vf, m.values[0])) + ', ' + esc(tablesValueLabel(vf, m.values[1])) + '): something the columns do not state decides it.');
   });
   t.apart.forEach(function(m){

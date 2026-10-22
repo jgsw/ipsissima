@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.23 — 22 October 2026.** The machine-readable registry of everything below is
+**Version 1.24 — 22 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -85,7 +85,7 @@ defaults:
 | `defaults` | map | Claim metadata stated once, inherited by every claim that does not set the key itself — usually `chapter`. A claim's own value always wins. `defaults.reviewed` records a person's pass over the whole map. |
 | `contentions` | list of claim titles | The text's **stated theses**, added to the apex the map computes. Only the author's own; never a persona's. Rarely needed. |
 | `questions` | map of id to `{text, pinpoint}` | The **questions the text works on**, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (`question:` on a claim). In `text`, words in double quotation marks inside the value (`text: "\"Is justified true belief knowledge?\""`) are the text's own and are verified like any quotation; words without them are the reconstructor's (*since 1.22*). A reframing is a move on a question, not a reason, and the notation drew it only as support or attack before this (*added in 1.17*). |
-| `frames` | map of id to `{kind, label, pinpoint, values, ordered, rule, note}`, or `none` | The **comparisons the text itself makes**, so a reader can work them as tables. `kind` is `case` (the rows: studies, examples, options, frameworks), `dimension` (a column, with the text's `values`), `verdict` (the dimension the others decide) or `account` (rival accounts of one thing, each value naming its claim). `ordered: true` lists a dimension's values from what the text counts best to worst; `rule:` on a verdict states a rule the text gives (`{then, when, claim}`), so the rows it gets wrong can be shown. Only the text's own frames, each with a pinpoint; claims are placed with `about:`. Read with every reconstruction (*since 1.21*; a trial from 20 October 2026; method: `tabulation`): `frames: none` records that the text compares nothing, and a claim with `about:` is then a fault. In a frame's `label`, and in a value's label, words in double quotation marks inside the value are the text's own and are verified; words without them are the reconstructor's (*since 1.22*). |
+| `frames` | map of id to `{kind, label, pinpoint, values, ordered, comparable, rule, note}`, or `none` | The **comparisons the text itself makes**, so a reader can work them as tables. `kind` is `case` (the rows: studies, examples, options, frameworks), `dimension` (a column, with the text's `values`), `verdict` (the dimension the others decide) or `account` (rival accounts of one thing, each value naming its claim). `ordered: true` lists a dimension's values from what the text counts best to worst; `comparable: false` marks a dimension the text says does not measure one thing across the cases (Shepherd's *recidivism*, defined differently by country), shown and never compared (*since 1.24*); `rule:` on a verdict states a rule the text gives (`{then, when, claim}`), so the rows it gets wrong can be shown. Only the text's own frames, each with a pinpoint; claims are placed with `about:`. Read with every reconstruction (*since 1.21*; a trial from 20 October 2026; method: `tabulation`): `frames: none` records that the text compares nothing, and a claim with `about:` is then a fault. In a frame's `label`, and in a value's label, words in double quotation marks inside the value are the text's own and are verified; words without them are the reconstructor's (*since 1.22*). |
 | `text-provenance` | `generated` | The *manuscript itself* was machine-generated (a report written for the purpose). Shown beside the title. Other values are carried verbatim. |
 | `author`, `date` | string | For a **survey map** — a map of a pattern of public argument with no source text: who drew it and when. |
 | `mechanism` | map | The causal chain the text asserts: §5. |
@@ -877,6 +877,13 @@ rule: name your gaps).
   in statistics (a trial's rate ratio) scores low. Both are prompts, not measurements.
 
 ## Versioning
+
+**1.24** (22 October 2026) let a dimension say that the text does not compare it, on James's
+ruling after the gap test of the tables reading (G2): Shepherd's jurisdictions are set against
+outcomes whose "recidivism" each country defines its own way, and the text says so. A `note:` said
+it but did not stop the page comparing the cells as if they measured one thing. `comparable: false`
+on a dimension does: the column is shown, marked *not compared*, and no pair of rows is set alike or
+apart on it, and no row ranked against another. Every 1.23 file conforms unchanged.
 
 **1.23** (22 October 2026) let a cell record what the text says of it instead of a value, on
 James's ruling after the tables reading: a statement is not silence (Heuer on evidence that fits
