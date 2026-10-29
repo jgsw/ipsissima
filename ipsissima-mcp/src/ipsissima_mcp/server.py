@@ -372,12 +372,14 @@ An <Argument> takes a fidelity marker like any other node.
 COMPARISONS: the text's cases against a definition, options against criteria, studies against
 questions and rival accounts are declared under front-matter `frames:`, and a claim stating a cell
 carries `about: {case: I, justified: yes}`. Only the text's own frames and values; an empty cell
-stays empty. A label, or a question's text, in the text's own words carries quotation marks inside
+stays empty. Rival accounts are rival answers to a declared question: the frame names it,
+`question: q2`, and its members are the answers the text weighs, not ones it mentions in passing. A label, or a question's text, in the text's own words carries quotation marks inside
 the value (`label: "\"(i) P is true\""`) and is verified; without them it is yours. `frames: none` where the text compares nothing. argdown_method `tabulation` has it.
 
 QUESTIONS the text works on go under front-matter `questions:`, id to {text, pinpoint}. A claim
 that moves on one says how: `question: {id: q1, move: answers}` -- answers, reframes, splits or
-dissolves, with `into: [q2]` naming what takes a reframed or split question's place. A SET THE
+dissolves, with `into: [q2]` naming what takes a reframed or split question's place -- on the
+question the claim itself settles, read against that question's own words. A SET THE
 TEXT SAYS CANNOT ALL HOLD (a trilemma, a trade-off it names): give each member the same
 `inconsistent:` name. The conventions have both.
 
@@ -1221,11 +1223,12 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
     title="Check a reconstruction",
     description=(
         "Validate an .argdown file and check it against the text it cites. Returns FAULTS ONLY, "
-        "each with where it is and — where one can be worked out — the fix itself. The result "
-        "also carries `shape`: the census as data (nodes, apex, declared and measured "
-        "contentions, contribution, fidelity counts, quotations, interpretive load), assembled "
-        "from the same objects the prose census is printed from — read that rather than "
-        "parsing the prose. `checked_file` names the file this run actually read (md5, bytes, "
+        "each with where it is and — where one can be worked out — the fix itself. While any "
+        "`!` fault remains, that is all it returns, with the census's EXPOSITION block as "
+        "`exposition`: fix the faults first. Once none remains, the result "
+        "also carries `census`: the shape of the map in prose, block by block (APEX, "
+        "QUOTATIONS, EXPOSITION, CHAIN, QUESTIONS, FRAMES and the rest), which the method "
+        "refers to by those names. `checked_file` names the file this run actually read (md5, bytes, "
         "mtime): on a client that syncs files to another machine, compare it with what you "
         "wrote before believing findings about an edit — a synced copy can lag one edit "
         "behind.\n\n"
@@ -1244,7 +1247,8 @@ def add_page_numbers(markdown_path: str, pdf_path: str,
         "against the source word for word."),
 )
 def argdown_check(path: str, source_root: str | None = None,
-                         full_report: bool = False) -> dict[str, Any]:
+                         full_report: bool = False, with_census: bool = False,
+                         with_shape: bool = False) -> dict[str, Any]:
     """
     Args:
         path: the .argdown file.
@@ -1253,12 +1257,28 @@ def argdown_check(path: str, source_root: str | None = None,
             spawns. Everything else the prose report has — apex, tags, provenance, quotations,
             contribution, fidelity, interpretive load — is in `census` on EVERY call, so you
             almost never want this.
+        with_census: return `census` even while a `!` fault remains.
+        with_shape: add `shape`, the census as data, for a program reading the reply.
 
     ONE CALL, BOTH HALVES. This used to run the checker a second time in text mode to get the
     census, and callers duly called it twice: once for the faults, once for the shape. Measured
     across five reconstructions that was six to ten wasted round trips a run, the single largest
     piece of avoidable cost in the pipeline. The census now rides in the json, so there is nothing
     a second call can tell you about a file you have not changed.
+
+    BUT NOT WHILE THERE ARE FAULTS TO FIX (the S6 trial, 28 Oct 2026). Over MCP the whole reply
+    enters the model's context, and on Bates that was 35-40 KB, about 14.5k tokens a check. A
+    round with a fault left is followed by another check, so its census is read again a round
+    later; until then only the findings and the EXPOSITION block (which the first round's fixes
+    use) are worth sending. Measured: 1.2-1.7k tokens a faulty round instead of 14.5k, and neither
+    trial arm wanted what was withheld.
+
+    AND THE CENSUS IN ONE FORM, PROSE (James, 28 Oct 2026). `--format json` carries the census
+    twice: as prose and as `shape`, data built from the same objects. The reader of this reply is
+    a model, which reads the prose as easily; the prose is the shorter (16 KB against 22 KB on
+    Bates), the method names its blocks, and it alone holds the sentences the exposition step acts
+    on. `shape` is for programs -- the app's tests, the trials' scripts -- which run the
+    command line, whose output is unchanged. So it is left out here unless asked for.
     """
     p = Path(path).expanduser()
     if not p.exists():
@@ -1320,16 +1340,41 @@ def argdown_check(path: str, source_root: str | None = None,
     expo_note = (f"  The census's EXPOSITION block lists {ex['step']} place(s) where the text "
                  "announces what it argues; take the exposition step once (method, step 4) "
                  "before you stop." if ex.get("step") else "")
+    faulted = any(f.get("severity") == "!" for f in out.get("findings") or [])
+    trim = faulted and not with_census
     out["next"] = ("apply the fixes above" + (" -- and, in the same edit, take the exposition "
-                                              "step on the census's EXPOSITION block (method, "
-                                              "step 4)" if ex.get("step") else "") +
+                                              "step on the EXPOSITION block (`exposition`; "
+                                              "method, step 4)" if ex.get("step") else "") +
                    " and call this again" if not out.get("ok") else
                    "nothing to fix" + expo_note + stamp_note if out.get("verified") else
                    "no faults among what was checked — but NOT verified against the source: no "
                    "quotation in this map has been compared with any text. Call this again with "
                    "`source_root` set to the folder holding `source/` before treating the "
                    "reconstruction as finished" + stamp_note)
+    if trim:
+        exposition = _census_block(out.get("census") or "", "EXPOSITION")
+        out = {k: out[k] for k in ("file", "profile", "ok", "verified", "findings", "checked_file",
+                                   "note", "next") if k in out}
+        out["exposition"] = exposition
+        out["withheld"] = ("`census` comes back once no `!` fault remains "
+                           "(`with_census: true` to have it now)")
+    elif not with_shape:
+        out.pop("shape", None)
     return out
+
+
+def _census_block(census: str, name: str) -> str:
+    """One block of the prose census: its heading line and what is indented beneath it."""
+    out: list[str] = []
+    for line in census.splitlines():
+        head = re.match(r"^   [A-Z][A-Z ]", line)
+        if head and out:
+            break
+        if head and line.lstrip().startswith(name):
+            out.append(line)
+        elif out:
+            out.append(line)
+    return "\n".join(out)
 
 
 @server.tool(

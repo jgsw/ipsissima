@@ -80,8 +80,8 @@ follow these rules, and **do not trade a worse reading for a shorter run**.
    re-read only the passage you are quoting.
 3. **Do not verify quotations one span at a time.** The checker verifies every span in one call,
    and names each that fails with the text it found.
-4. **Never run the checker twice on an unchanged file.** One call carries the faults and the
-   census.
+4. **Never run the checker twice on an unchanged file.** One call carries the faults and, once
+   none remains, the census.
 
 If a turn would think for longer than your conversation's cache lasts (five minutes on some
 setups), prefer several ordinary turns to one enormous one.
@@ -237,9 +237,10 @@ argdown_check(path=..., source_root=...)
 Apply what it reports and run it again. **Fix the claim it names — do not rewrite the map.** A
 failing quotation is one claim to re-quote, not a reason to start again.
 
-One call gives you both halves. `findings` is what to fix; `census` is the shape of the finished
-map — the apex, the tags, what reaches a contention, the fidelity counts. Read it from that same
-result (rule 4).
+`findings` is what to fix. While a `!` fault remains, that is all the reply carries, with the
+census's EXPOSITION block as `exposition`: the census would change with your fixes, so it waits.
+Once no `!` remains, `census` comes with the findings: the shape of the finished map — the apex,
+the tags, what reaches a contention, the fidelity counts. Read it from that same result (rule 4).
 
 **Stop when the `!` findings are gone**, not when the report is empty. `!` is a fault; `?` is
 something to look at, and some of those are judgements you are entitled to make differently —
@@ -249,7 +250,7 @@ it, so read them once before you stop and act on the ones you agree with.
 
 **And take the exposition step, in the same edit as your first round of fixes.** The map is built
 from the conclusion backwards, which is right, and it leaves the text's own order thin in
-predictable places. The census's `EXPOSITION` block names them from your first check, each with
+predictable places. The `EXPOSITION` block names them from your first check (as `exposition` while faults remain), each with
 the sentence you need to judge it. So this needs no second reading of the source, and done
 alongside the fixes it costs no extra round trip: the next check verifies both.
 
@@ -281,7 +282,10 @@ supports:
 - **CHAIN:** answer each `? island` and `? pieces` (the mechanism document, *What meets*): find the
   link the text makes, or record with `apart:` that it keeps the piece apart. Never invent a link.
 - **FRAMES:** a case declared and placed nowhere, or a cell given two values. Does the text say
-  both? An empty cell stays empty.
+  both? An empty cell stays empty. Then the rival accounts: for each question the census lists
+  without them, does the text set two or more answers against each other and weigh them? Declare
+  those it does as an account frame with `question:` (the tabulation document, *Two families*), and
+  leave the rest. Do the same for a rival's step the census says no frame sets beside its rivals.
 - **QUESTIONS:** a question no claim moves on. Mark the claim that does, or drop the question.
 
 Then check the map against the list below, and stop.

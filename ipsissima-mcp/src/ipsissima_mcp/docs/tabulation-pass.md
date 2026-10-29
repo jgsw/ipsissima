@@ -43,6 +43,18 @@ The pass records the text's own comparisons, and only the text's.
      the map's other rivals: an objection and the text's reply to it stay in the weigh panel beside
      the declared accounts, unless they repeat one of them. So declare only rival accounts of one
      thing, not every objection the text answers.
+   - **Rival accounts are rival answers to one of the text's questions.** Name it with
+     `question:`. Find them question by question: for each question under `questions:`, ask whether
+     the text sets two or more answers to it against each other and weighs them. A text announces
+     some ("this has been explained in two ways"); it poses others as a question with answers set
+     "in contrast", or as a worry and the finding that answers it. Both are sets.
+   - **A member is an answer the text compares**: one it sets evidence for or against, tests, or
+     weighs against the others, its own answer included. A possibility it mentions in passing is
+     not a member, and a list of possibilities it does not weigh is not a set: record them as
+     claims.
+   - **An artefact the design rules out is not an account.** Where the text answers explanations of
+     its result as a flaw of method (a failure to treat, a measure that primed everyone), they are
+     threats: a case table of them, with how the text meets each.
 
 ## The notation
 
@@ -82,6 +94,8 @@ The pass records the text's own comparisons, and only the text's.
   gets another verdict, and a row that gets the verdict without meeting them. Where the text's rule
   is any other shape (two of three, any one of), or runs one way only ("only if"; "if"), leave it
   in its claim and say in the frame's `note:` why it is not written as a rule.
+- `question:` (account frames only): the id of the declared question the accounts answer
+  (`question: q2`). The census lists the questions with rival answers declared, and those without.
 - `note`: optional prose.
 
 **`frames: none`** records that you read the text for its comparisons and found none. Give the
@@ -224,6 +238,34 @@ whether the text relates the finding to it. Evidence that fits every account has
 value (Heuer), and a table cannot show that unless the relations are drawn. The text's own
 assumptions are rows too, where it states them. Declare accounts as the text words them: do not
 merge two it keeps apart, or split one it treats as one.
+
+A sketch, in summary words, of Snow 1855 on cholera. He asks how the disease is communicated, and
+weighs the received answer, effluvia in the air, against his own, water fouled by the sick: one
+question, two answers he compares, one frame.
+
+```argdown
+===
+questions:
+    q1: {text: "How is cholera communicated?"}
+frames:
+    spread:
+        kind: account
+        label: "How cholera is communicated"
+        question: q1
+        values:
+            air: {claim: "Cholera spreads through the air"}
+            water: {claim: "Cholera spreads through water"}
+===
+
+[Cholera spreads through water]: Cholera is passed on in water fouled by the sick.
+    {fidelity: "compression", question: {id: q1, move: answers}}
+    <+ [Deaths clustered round one pump]: The deaths of the outbreak clustered round one pump.
+        {fidelity: "compression"}
+
+[Cholera spreads through the air]: Cholera is communicated by effluvia in the air. #reported
+    {fidelity: "compression"}
+    <- [Deaths clustered round one pump]
+```
 
 **Keep what the text says about its own scheme.**
 - **The dimensions behind a type's name.** Where the text says what makes a type, place the type by

@@ -81,7 +81,7 @@ print("options, criteria and two accounts")
 found, shape = run(FIX / "options.argdown")
 check("the clean file draws no fault", [f["message"] for f in found if f["severity"] == "!"], [])
 check("  and asks about the case no claim places", [("lottery" in f["message"]) for f in found if f["severity"] == "?"], [True])
-check("  its census names the accounts", (shape or {}).get("accounts"), [{"frame": "why", "accounts": ["hours", "online"]}])
+check("  its census names the accounts", (shape or {}).get("accounts"), [{"frame": "why", "accounts": ["hours", "online"], "question": None}])
 found, _ = run(planted("options.argdown", 'online: {claim: "Reading moved online"}', 'online: {claim: "Reading went online"}'))
 check("an account must name a claim that exists", any("no claim is titled" in f["message"] for f in found), True)
 found, _ = run(planted("options.argdown", "{about: {option: grant, cost: low}}", "{about: {option: grant, why: hours}}"))
@@ -210,6 +210,32 @@ check("  misquoted, in a label and in a question, they are faults",
       sorted(m.split(":")[0] for m in bad), ["frame `holds`'s label", "question `q1`"])
 bad, _ = labelled('"P is certainly true"', '"Is justified belief knowledge?"')
 check("  without inner quotation marks the words are the reconstructor's, and claim nothing", bad, [])
+
+print("rival accounts tied to the questions they answer (profile 1.26)")
+# THE RIVAL-ACCOUNTS RESEARCH, 28 Oct 2026: sets the text poses as a question with rival answers were
+# declared a third to half of the time, though their claims were in the map. Two `?` nudges and one
+# key. Mutations: drop the question query -> the q2 check fails; drop the rival query -> the fees
+# check fails; stop following support -> the clean frame's own rival is asked about too.
+found, shape = run(FIX / "accounts.argdown")
+check("the clean file draws no fault", [f["message"] for f in found if f["severity"] == "!"], [])
+check("  its census records the question each account frame answers",
+      (shape or {}).get("accounts"), [{"frame": "why", "accounts": ["hours", "online"], "question": "q1"}])
+check("  the question with no account frame is asked about, once",
+      [f["message"].split(":")[0] for f in found if "have no account frame" in f["message"]],
+      ["1 declared question(s) have no account frame (q2)"])
+rival = [f["message"] for f in found if "is brought about" in f["message"]]
+check("  and the rival's step no frame sets beside its rivals, and only that one",
+      (len(rival), "[Fees drove readers away]" in (rival or [""])[0], "E-books replaced loans" in " ".join(rival)),
+      (1, True, False))
+found, _ = run(planted("accounts.argdown", "question: q1\n", "question: q9\n"))
+check("a frame's question must be declared",
+      any("`question: q9` is not declared" in f["message"] and f["severity"] == "!" for f in found), True)
+found, _ = run(planted("accounts.argdown", "        question: q1\n", ""))
+check("  an account frame with no question is asked which it answers",
+      any("names no `question:`" in f["message"] and f["severity"] == "?" for f in found), True)
+found, _ = run(planted("options.argdown", 'label: "Ways to fund the library"', 'label: "Ways to fund the library"\n    question: q1'))
+check("  and `question:` belongs to an account frame only",
+      any("`question:` belongs to an account frame" in f["message"] for f in found), True)
 
 print()
 if fails:

@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.25 — 22 October 2026.** The machine-readable registry of everything below is
+**Version 1.26 — 29 October 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -85,7 +85,7 @@ defaults:
 | `defaults` | map | Claim metadata stated once, inherited by every claim that does not set the key itself — usually `chapter`. A claim's own value always wins. `defaults.reviewed` records a person's pass over the whole map. |
 | `contentions` | list of claim titles | The text's **stated theses**, added to the apex the map computes. Only the author's own; never a persona's. Rarely needed. |
 | `questions` | map of id to `{text, pinpoint}` | The **questions the text works on**, in its words or the reconstructor's: what its claims answer, reframe, split or dissolve (`question:` on a claim). In `text`, words in double quotation marks inside the value (`text: "\"Is justified true belief knowledge?\""`) are the text's own and are verified like any quotation; words without them are the reconstructor's (*since 1.22*). A reframing is a move on a question, not a reason, and the notation drew it only as support or attack before this (*added in 1.17*). |
-| `frames` | map of id to `{kind, label, pinpoint, values, ordered, comparable, rule, note}`, or `none` | The **comparisons the text itself makes**, so a reader can work them as tables. `kind` is `case` (the rows: studies, examples, options, frameworks), `dimension` (a column, with the text's `values`), `verdict` (the dimension the others decide) or `account` (rival accounts of one thing, each value naming its claim). `ordered: true` lists a dimension's values from what the text counts best to worst; `comparable: false` marks a dimension the text says does not measure one thing across the cases (Shepherd's *recidivism*, defined differently by country), shown and never compared (*since 1.24*); `rule:` on a verdict states a rule the text gives (`{then, when, claim}`), so the rows it gets wrong can be shown. Only the text's own frames, each with a pinpoint; claims are placed with `about:`. Read with every reconstruction (*since 1.21*; a trial from 20 October 2026; method: `tabulation`): `frames: none` records that the text compares nothing, and a claim with `about:` is then a fault. In a frame's `label`, and in a value's label, words in double quotation marks inside the value are the text's own and are verified; words without them are the reconstructor's (*since 1.22*). |
+| `frames` | map of id to `{kind, label, pinpoint, values, ordered, comparable, rule, question, note}`, or `none` | The **comparisons the text itself makes**, so a reader can work them as tables. `kind` is `case` (the rows: studies, examples, options, frameworks), `dimension` (a column, with the text's `values`), `verdict` (the dimension the others decide) or `account` (rival accounts of one thing, each value naming its claim). `ordered: true` lists a dimension's values from what the text counts best to worst; `comparable: false` marks a dimension the text says does not measure one thing across the cases (Shepherd's *recidivism*, defined differently by country), shown and never compared (*since 1.24*); `rule:` on a verdict states a rule the text gives (`{then, when, claim}`), so the rows it gets wrong can be shown. Only the text's own frames, each with a pinpoint; claims are placed with `about:`. Read with every reconstruction (*since 1.21*; a trial from 20 October 2026; method: `tabulation`): `frames: none` records that the text compares nothing, and a claim with `about:` is then a fault. In a frame's `label`, and in a value's label, words in double quotation marks inside the value are the text's own and are verified; words without them are the reconstructor's (*since 1.22*). An `account` frame names the declared question its accounts answer, `question: <id>` (*added in 1.26*). |
 | `text-provenance` | `generated` | The *manuscript itself* was machine-generated (a report written for the purpose). Shown beside the title. Other values are carried verbatim. |
 | `author`, `date` | string | For a **survey map** — a map of a pattern of public argument with no source text: who drew it and when. |
 | `mechanism` | map | The causal chain the text asserts: §5. |
@@ -238,7 +238,7 @@ substantially reduces adoption".
 | `lag` | string | Timing the text states. |
 | `period` | string | **When** the step holds, in the text's words anchored to an event: "during culling", "after the order ends" (*added in 1.8*). |
 | `on` | `level` \| `trend` \| `being` \| `persistence` \| `character` \| `possibility` \| `chance` \| `stock` | Whether the step moves the **level** of its `to` (the default) or its **trend**: the levy slowed obesity's rise rather than lowering it (*added in 1.8*). Since 1.11: whether it **makes** or **unmakes** its `to` (`being`, `+` or `-`), **maintains** or **erodes** it (`persistence`), or changes what **kind** of thing it is (`character`, with `sign: which`). Since 1.12: whether it **opens up** or **closes off** the possibility of its `to` (`possibility`, `+` or `-`). Since 1.14: whether it makes its `to` **more** or **less likely** (`chance`, `+` or `-`), or **flows into** or **out of** it, a stock (`stock`, `+` or `-`). |
-| `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
+| `given` | list of strings, or of `{state, value}` | Conditions the text states, in its words, under which the step holds; never a description of what the claim is about. A moderator is a condition, not a state. Since 1.8 a condition may name a declared state and the value it has: `{state: ampk, value: absent}`. |
 | `how` | `{actor, situation, habit, response}` | Gross's decomposition of a step, only where the text gives it. |
 | `reflexive` | boolean | The step runs through a classification or prediction it acts on. |
 | `selects` | boolean | A **selection link**: who ends up on each side, not an effect. |
@@ -869,6 +869,16 @@ each say, as a query, what to write instead. The registry lists them under `reti
 | `under` | a constitution | The claim's words |
 
 ## Versioning
+
+**1.26** (29 October 2026) tied each account frame to the question it answers, on James's ruling
+after the rival-accounts research of 28 October. Across six maps of one text, a set of rival accounts
+the text announced was declared every time, and one it posed as a question with rival answers a
+third to half of the time, though the member claims were almost always in the map. `question: <id>`
+on an account frame names the declared question; the census lists the questions with rival answers
+declared and those without, and queries both those and a rival's step that no frame sets beside its
+rivals. A member is an answer the text weighs, not one it mentions in passing; an artefact of method
+the design rules out is a threat, a case table, not an account. Every 1.25 file conforms, with
+queries.
 
 **1.25** (22 October 2026) retired 21 mechanism keys, on James's ruling after the review of the
 extraction materials: keys added one trial at a time that are rarely used, and that a reader would

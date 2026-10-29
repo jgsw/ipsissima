@@ -1,0 +1,47 @@
+// Planted fixture for the rival-accounts queries (profile 1.26, 29 Oct 2026), in the fixture-maker's
+// own words. Two questions: why visits fell, which the text answers with two accounts it weighs (a
+// frame names them and the question); and how the library should be paid for, which it answers
+// once. A third rival, that fees drove readers away, is stated as a step into the same state and
+// set in no frame, so the checker asks about it. The online account's step sits on a claim beneath
+// it, as steps often do, and is declared through it.
+===
+title: "Planted -- rival accounts and the questions they answer"
+reconstruction:
+    generated: true
+questions:
+    q1: {text: "Why did visits fall?"}
+    q2: {text: "How should the library be paid for?"}
+mechanism:
+    depth: full
+    question: "What brought visits down?"
+    actors:
+        library: {label: "The library"}
+        readers: {label: "Its readers"}
+    states:
+        hours:  {label: "Opening hours cut", actor: library, role: intervention}
+        online: {label: "Reading moves online", actor: readers}
+        fees:   {label: "Fees charged", actor: library}
+        visits: {label: "Visits to the library", actor: readers, role: outcome}
+frames:
+    why:
+        kind: account
+        label: "Why visits fell"
+        pinpoint: "planted"
+        question: q1
+        values:
+            hours: {claim: "Shorter hours cut visits"}
+            online: {claim: "Reading moved online"}
+===
+
+[Fund it by grant]: The library should be funded by a council grant.
+    {question: {id: q2, move: answers}}
+    <+ [Shorter hours cut visits]: Visits fell because the library opened for fewer hours.
+        {question: {id: q1, move: answers}, causes: {from: hours, to: visits, sign: "-", basis: study}}
+        <+ [Visits fell on the closed evenings]: Visits fell most on the evenings it closed early.
+    <- [Reading moved online]: Visits fell because people read online instead. #reported
+        <+ [E-books replaced loans]: Readers who once borrowed now download. #reported
+            {causes: {from: online, to: visits, sign: "-", basis: asserted, stance: rejected}}
+        <- [Visits fell on the closed evenings]
+    <- [Fees drove readers away]: Visits fell because readers would not pay the new fees. #reported
+        {causes: {from: fees, to: visits, sign: "-", basis: asserted, stance: rejected}}
+        <- [Visits fell on the closed evenings]

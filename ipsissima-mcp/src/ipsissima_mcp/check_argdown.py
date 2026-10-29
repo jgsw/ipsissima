@@ -2251,7 +2251,7 @@ FRAME_KINDS = ("case", "dimension", "verdict", "account")
 #: a dimension or a verdict, and -- `indeterminate` only -- on an account frame, where the claim is a
 #: reason the text says does not tell the accounts apart. Twin of argdown-graph.mjs's RESERVED_VALUES.
 RESERVED_VALUES = ("impossible", "indeterminate")
-FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "comparable", "rule", "note")
+FRAME_KEYS = ("kind", "label", "pinpoint", "values", "ordered", "comparable", "rule", "question", "note")
 
 
 def frames_report(cli, path, source_root=None):
@@ -2288,6 +2288,8 @@ def frames_report(cli, path, source_root=None):
     except yaml.YAMLError:
         return                      # the mechanism report names a front matter that is not YAML
     decl = (fm or {}).get("frames") if isinstance(fm, dict) else None
+    qdecl = (fm or {}).get("questions") if isinstance(fm, dict) else None
+    qids = [str(q) for q in qdecl] if isinstance(qdecl, dict) else []
     doc = export_json(cli, path) or {}
     titles = set()
     placed = []
@@ -2371,9 +2373,23 @@ def frames_report(cli, path, source_root=None):
                             f"\"{claim}\"", fix="name the account's claim by its title, without brackets")
             if len(values) < 2:
                 finding("frames", "?", f"account frame `{fid}` names one account: rivals come in twos at least")
+        # THE QUESTION AN ACCOUNT FRAME ANSWERS (profile 1.26, the rival-accounts research of 28 Oct
+        # 2026): rival accounts are rival answers to one of the text's questions, and the questions
+        # are what every run finds. Tying each frame to one turns noticing a rivalry into deciding,
+        # question by question, whether the text weighs rival answers to it.
+        if f.get("question") is not None:
+            if kind != "account":
+                finding("frames", "!", f"frame `{fid}`: `question:` belongs to an account frame, not to a {kind}")
+            elif str(f["question"]) not in qids:
+                finding("frames", "!", f"frame `{fid}`: `question: {f['question']}` is not declared under `questions:`",
+                        fix="name the id of the declared question the accounts answer")
+        elif kind == "account" and qids:
+            finding("frames", "?", f"account frame `{fid}` names no `question:`: which of the text's declared "
+                    "questions do its accounts answer?", fix="question: <id>")
         if f.get("rule") is not None and kind != "verdict":
             finding("frames", "!", f"frame `{fid}`: `rule:` belongs to a verdict, not to a {kind}")
-        frames[fid] = dict(kind=kind, values=values, label=str(f.get("label") or fid), rule=f.get("rule"))
+        frames[fid] = dict(kind=kind, values=values, label=str(f.get("label") or fid), rule=f.get("rule"),
+                           question=str(f["question"]) if f.get("question") is not None else None)
         worded.append((f"frame `{fid}`'s label", f.get("label")))
         if isinstance(vals, dict) and kind != "account":
             worded += [(f"frame `{fid}`, value `{vid}`", v) for vid, v in vals.items() if isinstance(v, str)]
@@ -2476,6 +2492,7 @@ def frames_report(cli, path, source_root=None):
             finding("frames", "?", f"`{c}: {cv}` has {len(vals)} values for `{k}` "
                     f"({', '.join(sorted(vals))}): does the text say both?",
                     titles=sorted(t for ts in vals.values() for t in ts)[:6])
+    _account_queries(frames, qids, doc)
     # THE CENSUS: each case table's size, and how much of it the text fills.
     out = []
     for c, f in frames.items():
@@ -2487,7 +2504,8 @@ def frames_report(cli, path, source_root=None):
         size = len(f["values"]) * len(cols)
         out.append(dict(frame=c, rows=len(f["values"]), columns=cols, filled=filled, cells=size,
                         crossed=[k for (a, k) in crossed if a == c]))
-    accounts = [dict(frame=fid, accounts=list(f["values"])) for fid, f in frames.items() if f["kind"] == "account"]
+    accounts = [dict(frame=fid, accounts=list(f["values"]), question=f["question"])
+                for fid, f in frames.items() if f["kind"] == "account"]
     SHAPE["frames"] = dict(tables=out, accounts=accounts, placed=len(placed), quoted=f_quoted,
                            said=said, undecided=undecided)
     print(f"\n   FRAMES ({len(frames)}): the comparisons the text makes, and {len(placed)} cell(s) placed")
@@ -2506,7 +2524,92 @@ def frames_report(cli, path, source_root=None):
         if not t["columns"] and not t["crossed"]:
             print(f"      {t['frame']}: {t['rows']} case(s), no values placed yet")
     for a in accounts:
-        print(f"      {a['frame']}: accounts {', '.join(a['accounts'])}")
+        print(f"      {a['frame']}: accounts {', '.join(a['accounts'])}"
+              + (f" -- rival answers to {a['question']}" if a["question"] else ""))
+    if qids:
+        framed = {a["question"] for a in accounts if a["question"]}
+        print(f"      questions with rival answers declared: {', '.join(q for q in qids if q in framed) or 'none'};"
+              f" without: {', '.join(q for q in qids if q not in framed) or 'none'}")
+
+
+def _account_queries(frames, qids, doc):
+    """Two queries for rival accounts the map may hold and no frame declares (profile 1.26).
+
+    WHY (the rival-accounts research, 28 Oct 2026): across six Bates maps a set the text announces
+    was declared every time, and a set it poses as a question with rival answers a third to half of
+    the time -- though ten of the twelve misses had every member claim in the map. The reading was
+    done; the declaring was not. So two nudges, both `?`:
+      1. each declared question with no account frame, to be decided once: does the text weigh
+         rival answers to it?
+      2. a rival's step (a `#reported` view's, or one with a `stance:`) into a state that another
+         cause, or another rival, also brings about, where the rival's claim leads to no claim an
+         account frame names -- following support up to three steps, because a frame names the
+         ACCOUNT claim and the steps often sit on claims beneath it."""
+    acc_sets = [{str(v.get("claim")) for v in f["values"].values() if isinstance(v, dict)}
+                for f in frames.values() if f["kind"] == "account"]
+    framed = {f["question"] for f in frames.values() if f["kind"] == "account" and f.get("question")}
+    unframed = [q for q in qids if q not in framed]
+    if unframed:
+        finding("frames", "?", f"{len(unframed)} declared question(s) have no account frame "
+                f"({', '.join(unframed)}): for each, does the text set two or more answers to it against "
+                "each other and weigh them?",
+                fix="where it does, declare them as an account frame with `question: <id>`; where it gives "
+                    "one answer, or names possibilities in passing without weighing them, leave it")
+    chain = SHAPE.get("chain") or {}
+    rows_by_state = chain.get("accounts") or []
+    if not rows_by_state:
+        return
+    up = {}
+    for r in doc.get("relations") or []:
+        if r.get("relationType") == "support" and r.get("from") and r.get("to"):
+            up.setdefault(str(r["from"]), set()).add(str(r["to"]))
+    for title, a in (doc.get("arguments") or {}).items():
+        pcs = a.get("pcs") or []
+        for st in pcs:
+            if st.get("role") == "premise":
+                up.setdefault(str(st.get("title")), set()).add(str(title))
+        concl = [st.get("title") for st in pcs if st.get("role") != "premise"]
+        if concl:
+            up.setdefault(str(title), set()).add(str(concl[-1]))
+
+    down = {}
+    for a_, bs in up.items():
+        for b in bs:
+            down.setdefault(b, set()).add(a_)
+
+    def reach(t, hops=3):
+        """What the claim supports, and what supports it: an umbrella rival ("charging encourages
+        use") is declared when the accounts beneath it are."""
+        seen = {t}
+        for g in (up, down):
+            frontier = {t}
+            for _ in range(hops):
+                frontier = {n for x in frontier for n in g.get(x, ())} - seen
+                seen |= frontier
+        return seen
+
+    for a in rows_by_state:
+        rows = a.get("accounts") or []
+        rivals = [x for x in rows if x.get("layer") != "text" or x.get("stance")]
+        if not rivals:
+            continue
+        rfrom = {x.get("from") for x in rivals}
+        others = [x for x in rows if x not in rivals and x.get("from") not in rfrom]
+        if len(rivals) < 2 and not others:
+            continue
+        # A rival already set in some frame is declared, whichever frame: one state can hold two
+        # rivalries (take-up: who is targeted, and why people are price-sensitive).
+        loose = [x for x in rivals if not any(reach(str(x["title"])) & s for s in acc_sets)]
+        if not loose:
+            continue
+        names = sorted({str(x["title"]) for x in loose})
+        causes = sorted({str(x.get("from")) for x in others})
+        finding("frames", "?", f"`{a.get('state')}` is brought about, the map says, by a rival's step "
+                f"({'; '.join('[' + n + ']' for n in names[:3])})"
+                + (f" and by steps from {', '.join('`' + c + '`' for c in causes[:4])}" if causes else "")
+                + ": no account frame sets them side by side",
+                fix="where the text weighs these as rival answers to one of its questions, declare them as an "
+                    "account frame with `question:`; where it does not, leave them")
 
 
 def mechanism_report(cli, path, source_root=None):
@@ -2582,7 +2685,7 @@ def mechanism_report(cli, path, source_root=None):
                         f"text use causal language and no step quotes them"
                         + (f" ({cov['near']} of them share a paragraph with a step)"
                            if cov.get("near") else ""),
-                        fix="read each (listed in the census and in shape.chain.coverage): mark a "
+                        fix="read each (listed in the census's CHAIN block): mark a "
                             "step where it states one the chain lacks, quoting it; leave it where "
                             "it states none")
     SHAPE["chain"] = profile

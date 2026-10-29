@@ -189,7 +189,7 @@ substantially reduces adoption".
 | `sign` | `+` or `-`; `"0"` where the text finds **no effect** (below); `which` where the step **decides which** of several alternatives follows — institutions that "determine which" strategy actors pursue — rather than raising or lowering a quantity |
 | `basis` | what the TEXT offers for the step: `study` (a study or trial it reports), `statistics` (data it cites), `model` (a model's estimate), `example` (a case or a country), `testimony` (an authority's word, a consensus), `asserted` (nothing) |
 | `lag` | timing the text states: `"within five years"` |
-| `given` | conditions the text states, in its words: `["as part of a broader rehabilitation agenda"]` |
+| `given` | conditions the text states, in its words, under which the step holds: `["as part of a broader rehabilitation agenda"]`. A condition, never a description of what the claim is about: "the neighbours of those offered free nets" belongs in the claim's words |
 | `selects` | `true` where the link holds because of WHO ends up on each side, not because one brings the other about (below) |
 | `hedged` | `true` where the text puts the step as a possibility — "fees *may* worsen targeting" |
 | `jointly` | states the step holds **only together with**: `jointly: [desire]` where belief moves people to act "only where they wish to fit in" |

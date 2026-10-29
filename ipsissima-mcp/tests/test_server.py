@@ -377,6 +377,34 @@ def test_server(d):
                        all(f.get("title") or f.get("line") is not None
                            for f in out.get("findings", [])),
                        "a fault with no location cannot be acted on")
+            # THE CENSUS IN ONE FORM, PROSE (28 Oct 2026): `shape` only when asked for. Mutations:
+            # keep shape -> fails; ignore with_shape -> fails.
+            check_true("  a map with no fault gets the census, in prose only",
+                       out.get("ok") and "census" in out and "shape" not in out, list(out))
+            withs = result(await s.call_tool("argdown_check",
+                                             {"path": str(sample / "darwin-natural-selection.argdown"),
+                                              "source_root": str(sample), "with_shape": True}))
+            check_true("  and `with_shape` adds the census as data", "shape" in withs, list(withs))
+            # FINDINGS ONLY WHILE A FAULT REMAINS (S6, 28 Oct 2026): the census waits for the
+            # faults to go; the EXPOSITION block does not. Mutations: drop the trim -> the census
+            # comes back with a fault; drop `exposition` -> missing; ignore with_census -> no census.
+            import shutil
+            bad = d / "darwin-bad"
+            shutil.copytree(sample, bad)
+            mp = bad / "darwin-natural-selection.argdown"
+            text = mp.read_text(encoding="utf-8")
+            q = re.search(r'source: "\\"([^"\\]{30,})', text)
+            mp.write_text(text.replace(q.group(1), q.group(1)[::-1], 1), encoding="utf-8")
+            full = result(await s.call_tool("argdown_check", {"path": str(mp), "source_root": str(bad),
+                                                              "with_census": True}))
+            out = result(await s.call_tool("argdown_check", {"path": str(mp), "source_root": str(bad)}))
+            from ipsissima_mcp.server import _census_block
+            check("with a `!` fault the reply holds findings and the EXPOSITION block, no census",
+                  (out.get("ok"), "census" in out, "shape" in out,
+                   out.get("exposition") == _census_block(full.get("census", ""), "EXPOSITION"),
+                   any(f.get("severity") == "!" for f in out.get("findings", []))),
+                  (False, False, False, True, True))
+            check_true("  and `with_census` brings it back", "census" in full, list(full))
 
         # THE MECHANISM REACHES THE CLIENT AS PART OF THE METHOD (1.17): parallel by default, and
         # `next` says to read it with the reconstruction documents and record its depth.

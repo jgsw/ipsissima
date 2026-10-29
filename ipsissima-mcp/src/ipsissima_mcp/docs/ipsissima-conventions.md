@@ -359,6 +359,10 @@ list of them. There are four moves:
 | `splits` | shows it is several questions, `into: [q2, q3]` |
 | `dissolves` | shows it has no answer to give: the question rests on a mistake |
 
+Mark a move on the question the claim itself settles. Where the text asks several questions, set
+each move against that question's own words: a finding that paying does not raise use answers the
+question about use, not the question about targeting asked beside it.
+
 A reframing is a move on a question, not a reason. Recorded this way it is not drawn as support,
 which is what the plain arrows would make of it. The mechanism block's `question:` is a different
 key: the one question its chain answers, in words.
