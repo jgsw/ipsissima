@@ -433,7 +433,9 @@ export function framesOf(res, titleToId) {
     frames.push({ id, kind: f.kind, label: f.label == null ? id : String(f.label),
                   pinpoint: f.pinpoint == null ? null : String(f.pinpoint),
                   ordered: f.ordered === true, comparable: f.comparable !== false, note: f.note == null ? null : String(f.note), values,
-                  rule: (f.rule && typeof f.rule === "object") ? f.rule : null });
+                  rule: (f.rule && typeof f.rule === "object") ? f.rule : null,
+                  // THE QUESTION AN ACCOUNT FRAME ANSWERS (profile 1.26): its id under `questions:`.
+                  question: f.question == null ? null : String(f.question) });
   }
   const byId = new Map(frames.map(f => [f.id, f]));
   const cells = [], undecided = [];

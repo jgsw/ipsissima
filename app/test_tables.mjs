@@ -157,6 +157,16 @@ console.log("an account set's rows grouped by case");
         "two one-account rows from one case are one row that tells the accounts apart", JSON.stringify(groups));
 }
 
+console.log("the question a declared account set answers (profile 1.26)");
+{
+  // Mutations: drop `question` from framesOf -> null; drop questionOf in declaredSets -> undefined.
+  const set = A.accountSets(graphOf("frames/accounts.argdown")).filter(s => s.declared)[0];
+  check(set && set.question && set.question.id === "q1" && set.question.text === "Why did visits fall?",
+        "a declared set carries the question its frame names, in its words", JSON.stringify(set && set.question));
+  const plain = A.accountSets(graphOf("frames/options.argdown")).filter(s => s.declared)[0];
+  check(plain && plain.question === null, "  and a frame that names none carries none", JSON.stringify(plain && plain.question));
+}
+
 console.log("a map with no frames");
 {
   const g = graphOf("suppose/accounts.argdown");
@@ -333,10 +343,25 @@ if (chromium) {
     await page.locator("#tables select").selectOption("1");
     await page.waitForTimeout(200);
     check(/1 of the 1 rows tells the accounts apart/.test(await page.locator("#tables").innerText()), "the account set's reason tells the two accounts apart");
+    check(!/Rival answers to/.test(await page.locator("#tables").innerText()), "  a frame that names no question shows none");
     // Mutation: drop the data-tables-weigh handler -> weigh stays shut.
     await page.locator("#tables [data-tables-weigh]").click();
     await page.waitForTimeout(250);
     check(await page.locator("#tables").isHidden() && /Weigh the accounts/.test(await page.locator("#weigh").innerText()), "Weigh these accounts hands the set to the weigh panel");
+    await page.locator("#weigh [data-weigh-close]").click();
+
+    // THE QUESTION THE ACCOUNTS ANSWER (profile 1.26), over the account table and in the weigh panel.
+    // Mutations: drop accountsQuestionHTML from tablesAccountHTML -> the Tables check fails; from
+    // weighAccountsHTML -> the weigh check fails.
+    await open(build("frames/accounts.argdown", "accounts-q.html"));
+    await tablesBtn.click();
+    await page.waitForTimeout(250);
+    check(/Rival answers to: Why did visits fall\?/.test(await page.locator("#tables").innerText()),
+          "the account table says which of the text's questions its accounts answer", (await page.locator("#tables").innerText()).slice(0, 300));
+    await page.locator("#tables [data-tables-weigh]").click();
+    await page.waitForTimeout(250);
+    check(/Rival answers to: Why did visits fall\?/.test(await page.locator("#weigh").innerText()),
+          "  and so does the weigh panel", (await page.locator("#weigh").innerText()).slice(0, 300));
     await page.locator("#weigh [data-weigh-close]").click();
 
     // STUDIES: findings grouped by the study they are about, a cross table, and a cell with two values.

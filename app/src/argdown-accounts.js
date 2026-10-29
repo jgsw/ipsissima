@@ -123,13 +123,19 @@ function declaredSets(graph, byId, edges) {
   var F = graph && graph.frames;
   var frames = F ? F.frames.filter(function (f) { return f.kind === "account"; }) : [];
   if (!frames.length) return null;
+  // THE QUESTION THE ACCOUNTS ANSWER (profile 1.26): the frame names it; the panel shows its words.
+  var qs = (graph && graph.questions) || [];
+  var questionOf = function (f) {
+    var q = f.question == null ? null : qs.filter(function (x) { return x.id === f.question; })[0];
+    return q ? { id: q.id, text: q.text } : null;
+  };
   return frames.map(function (f) {
     var accs = f.values.map(function (v) { return v.claimId; }).filter(function (id) { return id != null && byId[id]; });
     accs.sort(function (a, b) { return (isRival(byId[a]) ? 1 : 0) - (isRival(byId[b]) ? 1 : 0); });
     var isAcc = {}; accs.forEach(function (a) { isAcc[a] = true; });
     var between = edges.filter(function (e) { return isAcc[e.from] && isAcc[e.to]; })
       .map(function (e) { return { from: e.from, to: e.to, type: e.type }; });
-    return { id: accs[0], frame: f.id, label: f.label, declared: true,
+    return { id: accs[0], frame: f.id, label: f.label, declared: true, question: questionOf(f),
              accounts: accs.map(function (a, k) { return { id: a, label: byId[a].label, own: k === 0 && !isRival(byId[a]), denial: false }; }),
              rows: rowsFor(accs, edges, byId), between: between, allDenials: false };
   }).filter(function (s) { return s.accounts.length >= 2; });

@@ -754,6 +754,8 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #weigh header .grow{flex:1}
 #weigh header button.plain{font-size:14px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
 #weigh .q{color:var(--fg-dim)}
+#weigh .aq{margin:.1rem 0 .35rem;color:var(--fg-dim)}
+#weigh .aq i{color:var(--fg)}
 #weigh button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .1rem}
 #weigh select{font:inherit;font-size:12px;max-width:100%;margin:.1rem 0 .35rem}
 #weigh .accts div{margin:.1rem 0}
@@ -789,6 +791,8 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #tables header .grow{flex:1}
 #tables header button.plain{font-size:14px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
 #tables .q{color:var(--fg-dim)}
+#tables .aq{margin:.1rem 0 .35rem;color:var(--fg-dim)}
+#tables .aq i{color:var(--fg)}
 #tables .tname{font-weight:600;margin:.1rem 0 .3rem}
 #tables .ask{margin:.35rem 0 .1rem}
 #tables button{font:inherit;font-size:11.5px;padding:.05rem .4rem;margin:0 .1rem}
@@ -9430,13 +9434,18 @@ function weighRender(){
   box.hidden = ARRANGEMENT === "mechanism";
   if (LIVE) LIVE.markClaims(WEIGH.mode === "accounts" ? S.accounts.map(function(a){ return a.id; }) : S.members);
 }
+/** The question a declared set answers, where its frame names one (profile 1.26). */
+function accountsQuestionHTML(S){
+  return S && S.question && S.question.text
+    ? '<div class="aq">Rival answers to: <i>' + ArgdownStaircase.esc(S.question.text) + '</i></div>' : '';
+}
 function weighAccountsHTML(S, q, go){
   var esc = ArgdownStaircase.esc, acc = S.accounts;
   // NAMES, NOT LETTERS (James, 21 Oct 2026): "B undercuts A" sent the reader hunting for which was
   // which; the claims' own short names say it at once. Throughout the panel, and in Study's card.
   // THE ACCOUNTS ARE THE GRID'S ROWS, so they are listed here only where there is no grid to show them.
-  var h = !S.rows.length || S.allDenials ? '<div class="accts">' + acc.map(function(a){
-    return '<div>' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>' : '';
+  var h = accountsQuestionHTML(S) + (!S.rows.length || S.allDenials ? '<div class="accts">' + acc.map(function(a){
+    return '<div>' + go(a.id) + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></div>'; }).join("") + '</div>' : '');
   // GROUPED BY WHAT IS OBJECTED TO, so five rivals of one account name it once, not five times.
   if (S.between && S.between.length) {
     var by = {}, order = [];
@@ -9846,7 +9855,7 @@ function tablesCrossHTML(t){
 }
 /** A DECLARED ACCOUNT SET, its reasons grouped by the case they are about (argdown-tables.js, accountRowsByCase). */
 function tablesAccountHTML(T){
-  var esc = ArgdownStaircase.esc, S = T.set, shown = TABLES.shown, acc = S.accounts, h = "";
+  var esc = ArgdownStaircase.esc, S = T.set, shown = TABLES.shown, acc = S.accounts, h = accountsQuestionHTML(S);
   var hasOwn = acc.some(function(a){ return a.own; });
   var role = function(a){ return a.own ? "the text’s own" : hasOwn ? "set beside it" : "an account the text weighs"; };
   // NAMES, NOT LETTERS (21 Oct 2026): each column is headed by its account's short name, not a letter
