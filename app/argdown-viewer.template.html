@@ -231,6 +231,11 @@ main.swapped{flex-direction:row-reverse}
    corner the Abstract fold floats in, which covered the question's first words (26 Sep 2026).
    While the fold is offered, the bar starts clear of it. */
 #stage:has(> #abs:not([hidden])) #mech .amech-head{padding-left:calc(var(--orient-w,106px) + 12px)}
+/* Unless the strip leaves too little beside it: a long question chip on a narrow window left the
+   question a 32px column, one word to a line, and the chart under it a sliver (Wimmer 2008, 30 Oct
+   2026). Then the question starts below the strip instead, across the whole width. */
+#stage[data-orient-above]:has(> #abs:not([hidden])) #mech .amech-head{padding-left:12px;
+  padding-top:calc(var(--orient-h,21px) + 14px)}
 /* The chevron IS the affordance: it points right when there is something folded away and down
    when it is open, so the button says what a click will do without a second label. */
 #absbtn .chev{transition:transform .18s ease}
@@ -6319,8 +6324,14 @@ function manuscriptAbstract(){
 function syncOrient(){
   var any = ["absbtn", "gentext", "mapprov", "cruxchip", "qchip"].some(function(id){ return !$(id).hidden; });
   $("abs").hidden = !any;
-  $("stage").style.setProperty("--orient-w", any ? $("orient").offsetWidth + "px" : "0px");
+  var w = any ? $("orient").offsetWidth : 0;
+  $("stage").style.setProperty("--orient-w", w + "px");
+  $("stage").style.setProperty("--orient-h", any ? $("orient").offsetHeight + "px" : "0px");
+  // Room for about forty characters of the question beside the strip, or it goes below it.
+  $("stage").toggleAttribute("data-orient-above", any && $("stage").clientWidth - w < 360);
 }
+// The strip's chip is cut to the window, so its width, and the room beside it, change with it.
+window.addEventListener("resize", syncOrient);
 /** How far the strip reaches down over the map, for the map's framing to keep clear of. */
 function orientInset(){
   return $("abs").hidden ? 0 : $("orient").getBoundingClientRect().height + 8;

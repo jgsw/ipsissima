@@ -2320,6 +2320,25 @@ mechanism:
           "and Restore on a fresh page puts the chart back: the arrangement, the opened box, the zoom and the marks",
           await page.locator("#foldstateerr").innerText().catch(() => ""));
 
+    // A LONG QUESTION CHIP ON A NARROW WINDOW (Wimmer 2008, 30 Oct 2026): the strip beside the chart's
+    // question left it a 32px column, one word to a line, and the chart a sliver below. Mutation: drop
+    // the `data-orient-above` rule -> the question is a column and the head takes the view.
+    await page.goto("file://" + withChain);
+    await page.waitForTimeout(600);
+    await page.locator("#mechbtn").click();
+    await page.waitForTimeout(400);
+    await page.evaluate(() => { const q = document.getElementById("qchip"); q.hidden = false;
+      q.textContent = "? Why do ethnic boundaries vary in political salience, social closure, cultural differentiation " +
+                      "and stability, and how are they made, kept and unmade over time?"; });
+    await page.setViewportSize({ width: 900, height: 650 });
+    await page.waitForTimeout(400);
+    const narrow = await page.evaluate(() => ({ q: document.querySelector("#mech .amech-q").getBoundingClientRect().width,
+      head: document.querySelector("#mech .amech-head").getBoundingClientRect().height,
+      mech: document.getElementById("mech").getBoundingClientRect().height }));
+    check(narrow.q > 600 && narrow.head < narrow.mech / 4,
+          "on a narrow window a long question chip leaves the chain's question the width, and the chart the height", JSON.stringify(narrow));
+    await page.setViewportSize({ width: 1500, height: 950 });
+
     // WHAT THE LEVELS ARE, ON THE PAGE (profile 1.10). Mutations: nest from the list whatever
     // `within:` says -> the tree check fails; offer the switch for `systems` -> the third fails;
     // show the banner for a declared tree -> the second fails.
