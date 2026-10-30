@@ -883,6 +883,7 @@ rulings on it, with no key changed:
 - members explain or predict, and the finding they are weighed on is a row;
 - a worry and the finding that answers it is a claim and its rebuttal, not a set;
 - a possibility named only in passing or in a conclusion is a claim;
+- an explanation of the text's result that it raises only to answer, by argument, is an objection;
 - one rivalry, one frame.
 
 **1.25** (22 October 2026) retired 21 mechanism keys, on James's ruling after the review of the

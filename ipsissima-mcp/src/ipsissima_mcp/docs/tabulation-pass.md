@@ -63,7 +63,10 @@ The pass records the text's own comparisons, and only the text's.
        role");
      - an answer to a neighbouring question (why so few take something up, where the question is
        why price matters);
-     - a list of possibilities it does not weigh, which is not a set at all.
+     - a list of possibilities it does not weigh, which is not a set at all;
+     - an explanation of the text's own result that it raises only to answer, by argument rather
+       than by evidence built to tell the accounts apart ("that cannot explain the result,
+       because…"). That is an objection: draw it `#contested`, with the text's reply.
    - **One rivalry, one frame.** Where the same rival answers meet under two of the text's
      questions, declare them once, under the question the text tests them on. Do not split one
      rivalry into a frame for the prediction and another for the explanation.
