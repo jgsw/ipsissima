@@ -377,7 +377,7 @@ a worse reading for a shorter run. And because a reconstruction is the expensive
 reports what is ambiguous rather than guessing, and refuses to convert several sources until
 the question is answered: "the server declining to spend your money on a coin toss."
 
-**Seen in.** The cost model in `ipsissima-mcp/README.md` (measured over nine runs); the
+**Seen in.** The cost model in `ipsissima-mcp/README.md` (measured over nine runs in August, remeasured over 25 in October 2026); the
 round-trip rules ("Do not trade a worse reading for a shorter run — that is the one saving this
 document does not want"); `plan_job`'s questions; the 18 Aug alarm ("This level of token
 expenditure and time is unsustainable").

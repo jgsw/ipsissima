@@ -353,44 +353,45 @@ that is the server declining to spend your money on a coin toss.
 
 ### What a reconstruction costs
 
-Measured over nine runs, not estimated. Roughly:
+Measured over 25 runs of the current method on five texts (30 October 2026), not estimated.
+Roughly:
 
 ```
-tokens  ≈  147,000  +  0.9 × bytes of map  +  2.3 × words of source
+tokens added by a run  ≈  48,000  +  2.2 × bytes of map  +  10.7 × words of source
 ```
 
-Three things follow, and they are the whole of what you need to know before pressing go.
+That is new input plus output, after whatever your client sends before it starts. Claude Code
+opened these sessions at about 75,000 tokens of its own; yours may open smaller or larger.
 
-**Most of it is fixed.** About 147,000 tokens go on the procedure itself — reading the
-instructions, reading the source, writing, checking, fixing — whatever the paper. That is **92% of
-the cost of mapping a 266-word passage** and still **60% of mapping a long one**. Reconstructing a
-short paper is not cheap, and there is no setting that makes it so.
+**In practice**, a journal article of 7,000–11,000 words runs **180,000–310,000 tokens** on top
+of the client's own. A short paper of 1,500 words was about **95,000**. Of that, thinking and
+writing (output) is about 90,000 on an article.
 
-**A long source costs even when the map is small.** This is the part that surprises. Two maps of
-the same 68,695-word book — one of 88,029 bytes, one of 39,708 — came out only 58,000 tokens apart
-while both sat about 90,000 above what their map size alone predicted. The reading has to happen
-before there is anything to be brief about. **Budget on the length of the text, not on the size of
-the map you want.**
+**Most of the rest is reading.** The method is read whole every time: the argument, the
+mechanism, the comparisons. It is about 34,000 words, and it is why a short paper still costs a
+good deal. The source is read once. The map is written once and checked.
 
-**In practice**, at `max` effort: a journal article runs **200,000–250,000 tokens**, a short
-passage about **160,000**, and a book-length manuscript **280,000–350,000** — the last two figures
-being a whole book mapped once, not per chapter. *Doing a book chapter by chapter costs the fixed
-147,000 every time*, so eleven chapters is over 1.5 million tokens before a single claim is
-written. Map the book in one pass; go back for the chapters that turn out to matter.
+**What the bill mostly is.** Each call re-sends the conversation from the cache, at a tenth of the
+rate, so the rate-weighted total is mostly those re-reads. It follows the number of round trips
+more than anything in the text. On the published multipliers an article came to 640,000–810,000
+input-equivalent tokens.
 
-Two levers, and they are not equal:
+Two things keep it down, and both are already applied:
+- **Fewer round trips.** The instructions carry the rules for them.
+- **Check replies that send only the faults while any remain**, about 1,500 tokens instead of
+  14,500.
 
-- **Effort** is the largest and the one with a real cost. `high` came in 16% cheaper than `max` on
-  the same paper — and made eight mechanical faults where `max` made none. Good for a draft you
-  will check yourself; poor for anything you intend to publish or show its author. See
-  `eval/effort-testing/`, which keeps both arms side by side.
-- **Round trips** are worth about 47,000 tokens and cost nothing at all. They are already applied:
-  the instructions carry four rules about them, and the same passage went from 41 tool calls to 6.
+Two levers are yours:
+- **Effort** is the largest. `high` came in 16% cheaper than `max` on the same paper in August,
+  and made eight mechanical faults where `max` made none (`eval/effort-testing/`).
+- **Map a book once, not chapter by chapter.** The method is read again for every map.
 
-**A caveat this file would rather state than bury.** The source term rests on two runs at one
-source size, so do not extrapolate it much past 70,000 words. The workings, the residuals and what
-would falsify the model are in `eval/COST-2026-08-27.md`; `eval/run_cost.py` measures any run of
-your own from its transcript.
+**A caveat this file would rather state than bury.** The source term rests on five texts, and two
+of them carry most of the runs. Read it as "longer articles cost more", not as a price per word,
+and do not extrapolate it past 11,000 words. The workings, the residuals and what would falsify
+the model are in `eval/COST-2026-10-30.md`. It replaces August's model (`eval/COST-2026-08-27.md`),
+which was measured another way and predates the mechanism and tables layers.
+`eval/run_cost.py` measures any run of your own from its transcript.
 
 ---
 

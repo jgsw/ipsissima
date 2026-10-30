@@ -134,6 +134,38 @@ each annotation is introduced. The largest debts:
 
 None of these authors has anything to do with this program.
 
+## How a text's comparisons are read — the tables literature
+
+Since October 2026 every reconstruction also records what a text compares: cases against a
+definition, options against criteria, studies against questions, rival accounts against the
+evidence. Those comparisons are declared as frames, and the Tables panel and **Weigh the accounts**
+draw them. The method is `ipsissima-mcp/src/ipsissima_mcp/docs/tabulation-pass.md`. Its section
+"Reading a text's comparisons" and its Sources list say which rule comes from which work. The
+largest debts:
+
+- **Richards J. Heuer Jr**, *Psychology of Intelligence Analysis* (CIA, 1999), ch. 8, "Analysis of
+  Competing Hypotheses". It is the source of working across the row, of a finding that fits every
+  account telling the reader nothing, and of rival accounts set against the evidence at all.
+- **Gary Goertz**, *Social Science Concepts* (Princeton, 2006). It is why `rule:` means a rule the
+  text states both ways, and why a one-way rule stays in its claim.
+- **Paul F. Lazarsfeld and Allen H. Barton**, on property space (1951), read through **Colin
+  Elman**, "Explanatory typologies in qualitative studies of international politics" (2005), and
+  **David Collier, Jody LaPorte and Jason Seawright**, "Putting typologies to work" (2012), for how
+  a typology's rows, columns and cells are read, and how they are misread. **Kenneth D. Bailey**,
+  *Typologies and Taxonomies* (Sage, 1994), for types against cases.
+- **Charles C. Ragin**, *The Comparative Method* (1987) and *Redesigning Social Inquiry* (2008):
+  an empty cell is a remainder, and filling one is an assumption. That is why the page leaves the
+  text's silences empty.
+- **Klaus Krippendorff**, *Content Analysis* (4th edn, 2019), for coding a cell from the text's own
+  words.
+- **Joanne E. McKenzie and Sue E. Brennan** (*Cochrane Handbook*, ch. 12), **Mhairi Campbell et
+  al.** (SWiM, 2020) and **David Ogilvie et al.** (the harvest plot, 2008), for tables of studies.
+  They are why the page never counts votes or files a mixed result under the account it "best
+  supports".
+- **Daniel Silver**, "Figure It Out!" (2020), on cross-classification and slotting.
+
+None of these authors has anything to do with this program.
+
 ---
 
 ## Tom Stern, and why this program checks what it checks
