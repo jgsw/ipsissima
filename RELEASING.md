@@ -85,6 +85,16 @@ push.
 once in the workflow and inherited by every tag, so this is the moment to notice that they no
 longer describe what is being shipped.
 
+### If the tagged commit already deployed the site
+
+Check the site after a release, not only the run. Pages names a deployment after its commit, and a
+second deployment of the same commit is reported as a success and changes nothing. A release commit
+that touches `site/` deploys once from its push to main, with the product still built from the
+*previous* tag. When the tag on that same commit deploys again, Pages keeps the first deployment.
+That happened with v0.4.0: the run was green, and the new Bates page returned 404. To fix it, run
+`gh workflow run pages.yml --ref main` once main has moved past the tag. That deployment has a commit
+of its own and builds the product from the new tag.
+
 ### If a build fails after some jobs have succeeded
 
 Delete the draft release before re-running, keeping the tag. Successful jobs upload as they
