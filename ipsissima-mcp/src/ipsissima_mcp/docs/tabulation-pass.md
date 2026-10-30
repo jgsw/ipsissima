@@ -47,11 +47,26 @@ The pass records the text's own comparisons, and only the text's.
      `question:`. Find them question by question: for each question under `questions:`, ask whether
      the text sets two or more answers to it against each other and weighs them. A text announces
      some ("this has been explained in two ways"); it poses others as a question with answers set
-     "in contrast", or as a worry and the finding that answers it. Both are sets.
-   - **A member is an answer the text compares**: one it sets evidence for or against, tests, or
-     weighs against the others, its own answer included. A possibility it mentions in passing is
-     not a member, and a list of possibilities it does not weigh is not a set: record them as
-     claims.
+     "in contrast", or as a worry met by a rival explanation. Both are sets.
+   - **Members explain or predict.** Each says why or how something happens, or what will happen.
+     The finding they are weighed against is evidence, a row, not a member, even where it answers
+     a whether-question: "the treatment had no effect" is what the accounts are tested on, not a
+     third account.
+   - **A worry and the finding that answers it are a claim and its rebuttal, not a set.** Where
+     the text raises a worry ("recipients would sell it on") and a finding answers it ("they kept
+     it"), draw the attack and declare nothing. It is a set only where the answer is itself a
+     rival explanation.
+   - **A member is an answer the text weighs in its body**: one it sets evidence for or against,
+     or tests against the others, as an answer to this question, its own answer included. These
+     are not members; record them as claims:
+     - a possibility it names in passing, or only in a summary or a conclusion ("X also plays a
+       role");
+     - an answer to a neighbouring question (why so few take something up, where the question is
+       why price matters);
+     - a list of possibilities it does not weigh, which is not a set at all.
+   - **One rivalry, one frame.** Where the same rival answers meet under two of the text's
+     questions, declare them once, under the question the text tests them on. Do not split one
+     rivalry into a frame for the prediction and another for the explanation.
    - **An artefact the design rules out is not an account.** Where the text answers explanations of
      its result as a flaw of method (a failure to treat, a measure that primed everyone), they are
      threats: a case table of them, with how the text meets each.
@@ -241,7 +256,8 @@ merge two it keeps apart, or split one it treats as one.
 
 A sketch, in summary words, of Snow 1855 on cholera. He asks how the disease is communicated, and
 weighs the received answer, effluvia in the air, against his own, water fouled by the sick: one
-question, two answers he compares, one frame.
+question, two answers he compares, one frame. The deaths round the pump are what he weighs them
+on: a row, not a third account.
 
 ```argdown
 ===

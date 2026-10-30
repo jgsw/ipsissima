@@ -878,7 +878,12 @@ on an account frame names the declared question; the census lists the questions 
 declared and those without, and queries both those and a rival's step that no frame sets beside its
 rivals. A member is an answer the text weighs, not one it mentions in passing; an artefact of method
 the design rules out is a threat, a case table, not an account. Every 1.25 file conforms, with
-queries.
+queries. The membership rule was sharpened on 30 October, after a twelve-run trial and James's
+rulings on it, with no key changed:
+- members explain or predict, and the finding they are weighed on is a row;
+- a worry and the finding that answers it is a claim and its rebuttal, not a set;
+- a possibility named only in passing or in a conclusion is a claim;
+- one rivalry, one frame.
 
 **1.25** (22 October 2026) retired 21 mechanism keys, on James's ruling after the review of the
 extraction materials: keys added one trial at a time that are rarely used, and that a reader would

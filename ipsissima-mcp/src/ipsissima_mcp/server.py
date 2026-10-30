@@ -373,7 +373,10 @@ COMPARISONS: the text's cases against a definition, options against criteria, st
 questions and rival accounts are declared under front-matter `frames:`, and a claim stating a cell
 carries `about: {case: I, justified: yes}`. Only the text's own frames and values; an empty cell
 stays empty. Rival accounts are rival answers to a declared question: the frame names it,
-`question: q2`, and its members are the answers the text weighs, not ones it mentions in passing. A label, or a question's text, in the text's own words carries quotation marks inside
+`question: q2`, and its members are the explanations or predictions the text weighs against each
+other in its body. Its finding is a row, not a member; a worry a finding answers is a claim and
+its rebuttal, not a set; a possibility named in passing or in a conclusion is a claim. One
+rivalry, one frame. A label, or a question's text, in the text's own words carries quotation marks inside
 the value (`label: "\"(i) P is true\""`) and is verified; without them it is yours. `frames: none` where the text compares nothing. argdown_method `tabulation` has it.
 
 QUESTIONS the text works on go under front-matter `questions:`, id to {text, pinpoint}. A claim

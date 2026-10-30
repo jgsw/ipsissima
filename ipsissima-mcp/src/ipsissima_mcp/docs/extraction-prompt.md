@@ -283,9 +283,10 @@ supports:
   link the text makes, or record with `apart:` that it keeps the piece apart. Never invent a link.
 - **FRAMES:** a case declared and placed nowhere, or a cell given two values. Does the text say
   both? An empty cell stays empty. Then the rival accounts: for each question the census lists
-  without them, does the text set two or more answers against each other and weigh them? Declare
-  those it does as an account frame with `question:` (the tabulation document, *Two families*), and
-  leave the rest. Do the same for a rival's step the census says no frame sets beside its rivals.
+  without them, does the text set two or more explanations or predictions against each other and
+  weigh them? Declare those it does as an account frame with `question:` (the tabulation document,
+  *Two families*, says who is a member), and leave the rest: a worry and the finding that answers
+  it is not a set. Do the same for a rival's step the census says no frame sets beside its rivals.
 - **QUESTIONS:** a question no claim moves on. Mark the claim that does, or drop the question.
 
 Then check the map against the list below, and stop.

@@ -2551,10 +2551,11 @@ def _account_queries(frames, qids, doc):
     unframed = [q for q in qids if q not in framed]
     if unframed:
         finding("frames", "?", f"{len(unframed)} declared question(s) have no account frame "
-                f"({', '.join(unframed)}): for each, does the text set two or more answers to it against "
-                "each other and weigh them?",
+                f"({', '.join(unframed)}): for each, does the text set two or more explanations or "
+                "predictions answering it against each other and weigh them?",
                 fix="where it does, declare them as an account frame with `question: <id>`; where it gives "
-                    "one answer, or names possibilities in passing without weighing them, leave it")
+                    "one answer, answers a worry with a finding, or names possibilities in passing "
+                    "without weighing them, leave it")
     chain = SHAPE.get("chain") or {}
     rows_by_state = chain.get("accounts") or []
     if not rows_by_state:
