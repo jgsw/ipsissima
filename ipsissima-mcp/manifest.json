@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "ipsissima-mcp",
   "display_name": "Ipsissima",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Turn a document into an Argdown map that cites it — its argument, the causal chain it sets out, the comparisons it draws — and check the map against the text.",
   "long_description": "Ipsissima-MCP turns a document — PDF, EPUB, .docx or an HTML article — into structured Markdown that keeps its paragraphs and page numbers, so that a map of it can cite the text it reads. It serves the method for reading that text into one ordinary Argdown file holding several of its structures: the argument and its reasons, the causal chain the text says happens, the questions it asks, and the comparisons it draws, as tables. It then checks the finished map against its sources word for word: every quotation verified character by character, every claim's distance from the author's own words recorded and reported.\n\nIt does not reconstruct arguments itself. That judgement belongs to the model, and the instructions given to it are served as prompts read off disk, where anyone can read and change them.\n\nThe maps it produces open in Ipsissima, which makes complex reasoning clear through maps you can check and question: the argument beside the passage each claim was drawn from, and ways to question it — suppose a claim false and see what follows, weigh rival accounts, study it on your own.",
   "author": {
