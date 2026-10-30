@@ -1,0 +1,72 @@
+# Rebuild the vendored Argdown bundle on a Dependabot branch, and test the result.
+#
+# WHY. `ipsissima-mcp/src/ipsissima_mcp/vendor/argdown-cli.mjs` is a committed bundle of the npm
+# packages under `app/`, and its NOTICE names each one's version (see build_argdown_shim.mjs for
+# why both are committed). A bump to any of them -- axios, image-size, follow-redirects on 30 Oct
+# 2026 -- changes both, and `test_argdown_shim.mjs` rightly fails a bundle that has drifted from
+# its source. Dependabot cannot run the build, so every such PR arrived red. This does it for it.
+#
+# TWO JOBS, BECAUSE THE BUILD RUNS THE BUMPED CODE. Installing and bundling a dependency that has
+# just changed is exactly when a compromised release would act, so that job has a read-only token
+# and no credentials left in git. The job that can push runs nothing from npm: it lays the two
+# built files over the branch and commits them.
+#
+# THEN IT ASKS FOR THE TESTS. A push made with the workflow's own token starts no workflow, so the
+# new commit would sit with no `suite` check and the PR could not merge. A `workflow_dispatch` is
+# the one event that token may start, and its run reports against the branch's new head.
+name: dependabot bundle
+
+on:
+  pull_request:
+    paths: [app/package.json, app/package-lock.json]
+
+jobs:
+  build:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm --prefix app ci
+      - run: node app/build_argdown_shim.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vendor
+          path: |
+            ipsissima-mcp/src/ipsissima_mcp/vendor/argdown-cli.mjs
+            ipsissima-mcp/src/ipsissima_mcp/vendor/argdown-cli.NOTICE.md
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to push the rebuilt bundle to the Dependabot branch
+      actions: write    # to start the tests on the new head
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: vendor
+          path: ipsissima-mcp/src/ipsissima_mcp/vendor
+      - name: Commit if the bundle changed, and test the new head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          if git diff --quiet -- ipsissima-mcp/src/ipsissima_mcp/vendor; then
+            echo "The bundle already matches its source."; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Rebuild the vendored Argdown bundle for this dependency bump" -- ipsissima-mcp/src/ipsissima_mcp/vendor
+          git push origin "HEAD:$BRANCH"
+          gh workflow run tests.yml --ref "$BRANCH"

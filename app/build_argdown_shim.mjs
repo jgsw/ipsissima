@@ -9,7 +9,10 @@
  *  the shim is that installing the server should not require a JavaScript toolchain.
  *
  *  So the artifact is committed, and `test_argdown_shim.mjs` fails if it has drifted from this
- *  source or from the real CLI's output. Regenerate it whenever `@argdown/*` is upgraded.
+ *  source or from the real CLI's output. Regenerate it whenever any package it bundles is
+ *  upgraded, not only `@argdown/*`: the NOTICE names every version, so a bump to axios deep in
+ *  the tree changes it too. On a Dependabot branch `.github/workflows/dependabot-bundle.yml` does
+ *  this, since Dependabot cannot.
  */
 import * as esbuild from "esbuild";
 import fs from "fs";
