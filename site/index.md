@@ -196,4 +196,6 @@ top of standard Argdown is specified in the
 Argdown</a> (CC BY 4.0). The samples above are
 public domain (Darwin, Carroll), Crown copyright reused under the
 <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Open
-Government Licence</a> (Miller), or open access reproduced by their author (Wilson).</small>
+Government Licence</a> (Miller), under
+<a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a> (Bates, Glennerster, Gumede
+and Duflo), or open access reproduced by their author (Wilson).</small>

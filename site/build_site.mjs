@@ -35,7 +35,7 @@ const OUT = HERE;
  *
  *  PUBLIC-DOMAIN AND OPEN-LICENCE ONLY, which is not a coincidence. Darwin and Carroll are out of
  *  copyright; Miller is Crown copyright reusable under the Open Government Licence. A CC-BY
- *  sample would drag its attribution onto a web page that has nowhere sensible to put it, and the
+ *  sample carries its attribution in `credit`, which the landing page prints under its blurb; the
  *  private corpus must never come near this script at all.
  */
 const SAMPLES = [
@@ -66,15 +66,29 @@ const SAMPLES = [
            "living, forced and momentous, and evidence cannot settle it, James argues that " +
            "our passional nature not only may but must decide — against Clifford's rule that " +
            "believing on insufficient evidence is always, everywhere wrong." },
+  // THE FIRST WITH A MECHANISM, AND THE FIRST POLICY TEXT (James Wilson's call, 30 Oct 2026). It is
+  // CC BY, so it carries its attribution as Wilson's carries its permission, below the blurb.
+  { slug: "bates",
+    dir: "Bates et al 2012 - The Price is Wrong",
+    file: "bates-2012-price-is-wrong.argdown",
+    title: "Bates, Glennerster, Gumede and Duflo, The Price is Wrong",
+    blurb: "A policy text, and the first here with a mechanism: ten randomized evaluations of " +
+           "charging small fees for health and education products, read as an argument and as " +
+           "the causal chain the text says runs from the price to the good the product does. " +
+           "Most of its findings are of no effect, and the Mechanism view draws each against " +
+           "the rival view's arrow it answers.",
+    credit: "Bates, M. A., Glennerster, R., Gumede, K. and Duflo, E. (2012) 'The Price is Wrong', " +
+            "<em>Field Actions Science Reports</em>, Special Issue 4, pp. 30–37. " +
+            "<a href=\"https://creativecommons.org/licenses/by/3.0/\">CC BY 3.0</a>; the map is a " +
+            "reading by someone else, and its judgements are not the authors'." },
   // SWIFT STAYS OFF THE SITE, DELIBERATELY (James Wilson's call, 10 Sep 2026). The sample is in
   // `samples/` — A Modest Proposal is the corpus's dramatised-text test case — but its surface
   // argument is dark enough to repel, or be read straight by, a first-time visitor who meets it
   // cold, and the landing page is where visitors are coldest. Its README carries the framing a
   // reader needs; the landing page cannot.
-  // FIFTH, AND THE ONLY ONE HERE BY SOMEBODY STILL ALIVE TO MIND. Published open access, and by
-  // the author of Ipsissima, which is what makes putting a whole journal article on this site his
-  // decision to make rather than a licence question. The other CC-BY samples in `samples/` stay
-  // off the web on etiquette rather than law.
+  // A WHOLE ARTICLE BY THE AUTHOR OF IPSISSIMA. Published open access, which is what makes putting
+  // it on this site his decision to make rather than a licence question. The other CC-BY samples in
+  // `samples/` stay off the web on etiquette rather than law, Bates above by his decision.
   { slug: "wilson",
     dir: "Wilson 2026 - Williams Dewey and the Nature of Value Inquiry",
     file: "wilson-williams-dewey.argdown",
