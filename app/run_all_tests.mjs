@@ -72,6 +72,9 @@ const SUITES = [
   ["the two sides agree about names", "node", [path.join(HERE, "test_dead_fields.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
+  // THE SEATS: one order per map, chosen once to cross less -- the same in every view, premises
+  // in their order, and no level of the depth ladder crossing more than written order did.
+  ["the seats cross less, and only once", "node", [path.join(HERE, "test_seats.mjs")]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
   // The SECOND py/js pair. One decision procedure written twice will drift, so both halves run
   // the same hand-written vectors and any divergence fails here. See docs/VALIDITY-PLAN.md.

@@ -22,7 +22,7 @@
   "bendWorst": 54,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 54,
+  "edgeCrossings": 51,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ detail": {
@@ -35,7 +35,7 @@
   "bendWorst": 60,
   "overshoot": 38,
   "detourWorst": 1.1,
-  "edgeCrossings": 86,
+  "edgeCrossings": 81,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ all": {
@@ -45,10 +45,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 95,
+  "bendWorst": 75,
   "overshoot": 75,
   "detourWorst": 1.1,
-  "edgeCrossings": 118,
+  "edgeCrossings": 107,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ folded": {
@@ -66,7 +66,7 @@
  },
  "akhlaghi-revelatory-autonomy @ transitions": {
   "foldClicks": 45,
-  "anchorCross": 0.13,
+  "anchorCross": 0.09,
   "moveWorst": 1.99,
   "moveMedian": 0.05,
   "quietMove": 0
@@ -107,7 +107,7 @@
   "bendWorst": 77,
   "overshoot": 75,
   "detourWorst": 1.2,
-  "edgeCrossings": 67,
+  "edgeCrossings": 65,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ all": {
@@ -117,10 +117,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 75,
+  "bendWorst": 94,
   "overshoot": 72,
   "detourWorst": 1.3,
-  "edgeCrossings": 113,
+  "edgeCrossings": 90,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ folded": {
@@ -189,10 +189,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 91,
+  "bendWorst": 79,
   "overshoot": 64,
   "detourWorst": 1.2,
-  "edgeCrossings": 43,
+  "edgeCrossings": 29,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ folded": {
@@ -212,7 +212,7 @@
   "foldClicks": 30,
   "anchorCross": 0.13,
   "moveWorst": 0.6,
-  "moveMedian": 0.1,
+  "moveMedian": 0.18,
   "quietMove": 0.17
  },
  "darwin-natural-selection @ main": {
@@ -297,7 +297,7 @@
   "bendWorst": 73,
   "overshoot": 38,
   "detourWorst": 1.2,
-  "edgeCrossings": 9,
+  "edgeCrossings": 5,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ reasons": {
@@ -310,7 +310,7 @@
   "bendWorst": 36,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 19,
+  "edgeCrossings": 18,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ detail": {
@@ -323,7 +323,7 @@
   "bendWorst": 38,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 62,
+  "edgeCrossings": 50,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ all": {
@@ -336,7 +336,7 @@
   "bendWorst": 28,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 68,
+  "edgeCrossings": 56,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ folded": {
@@ -405,10 +405,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 107,
+  "bendWorst": 74,
   "overshoot": 72,
   "detourWorst": 1.2,
-  "edgeCrossings": 23,
+  "edgeCrossings": 21,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ folded": {
@@ -426,7 +426,7 @@
  },
  "miller-2019-uksc-41 @ transitions": {
   "foldClicks": 37,
-  "anchorCross": 0.14,
+  "anchorCross": 0.16,
   "moveWorst": 1.13,
   "moveMedian": 0.1,
   "quietMove": 0
@@ -441,7 +441,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 1,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ reasons": {
@@ -454,7 +454,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 25,
+  "edgeCrossings": 24,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ detail": {
@@ -464,10 +464,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 66,
+  "bendWorst": 17,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 49,
+  "edgeCrossings": 46,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ all": {
@@ -477,10 +477,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 105,
+  "bendWorst": 84,
   "overshoot": 78,
   "detourWorst": 1.2,
-  "edgeCrossings": 102,
+  "edgeCrossings": 87,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ folded": {
@@ -500,7 +500,7 @@
   "foldClicks": 32,
   "anchorCross": 0.03,
   "moveWorst": 0.28,
-  "moveMedian": 0.03,
+  "moveMedian": 0.02,
   "quietMove": 0
  },
  "swift-modest-proposal @ main": {
@@ -611,7 +611,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 22,
+  "edgeCrossings": 21,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ all": {
@@ -624,7 +624,7 @@
   "bendWorst": 107,
   "overshoot": 75,
   "detourWorst": 1.4,
-  "edgeCrossings": 135,
+  "edgeCrossings": 127,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -683,7 +683,7 @@
   "bendWorst": 50,
   "overshoot": 35,
   "detourWorst": 1.1,
-  "edgeCrossings": 43,
+  "edgeCrossings": 19,
   "nodeOverlaps": 0
  },
  "wilson-2023-health-system-good @ all": {
@@ -693,10 +693,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 73,
+  "bendWorst": 61,
   "overshoot": 49,
   "detourWorst": 1.2,
-  "edgeCrossings": 104,
+  "edgeCrossings": 50,
   "nodeOverlaps": 0
  },
  "wilson-2023-health-system-good @ folded": {
@@ -742,7 +742,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 38,
+  "edgeCrossings": 19,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
@@ -752,10 +752,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 107,
-  "overshoot": 77,
-  "detourWorst": 1.3,
-  "edgeCrossings": 54,
+  "bendWorst": 77,
+  "overshoot": 72,
+  "detourWorst": 1.1,
+  "edgeCrossings": 30,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
@@ -765,10 +765,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 116,
+  "bendWorst": 107,
   "overshoot": 75,
   "detourWorst": 1.3,
-  "edgeCrossings": 147,
+  "edgeCrossings": 105,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {
@@ -788,7 +788,7 @@
   "foldClicks": 53,
   "anchorCross": 0.04,
   "moveWorst": 0.56,
-  "moveMedian": 0.03,
+  "moveMedian": 0.06,
   "quietMove": 0
  }
 }

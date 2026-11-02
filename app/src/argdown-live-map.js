@@ -879,6 +879,9 @@ function filterOnce(graph, state, force) {
         warrant: n.warrant || null,    // why a departure from them was taken
         order: n.order == null ? null : n.order,
         docLine: n.docLine == null ? null : n.docLine,   // line in the .argdown, for seating
+        // Where the claim sits among its row-mates: one order for the whole map, chosen once to
+        // cross less. See `seatsOf`. The by-position view has its own order and never asks.
+        seat: S.byText ? null : (seatsOf(graph).get(id) ?? null),
         pos: n.pos || null,            // where in the manuscript; see argdown-positions.js
         group: firstVisibleGroup(ix, n.group, S),
         hidden: hiddenBelow.get(id) || 0,
@@ -2047,7 +2050,8 @@ function chapterLabel(chapter) {
  *            never lies over the row above.
  *   boxes    a section's box is the hull of its members: 16 aside, 26 above for the label
  *            strip drawGroups draws, 12 below -- the same language the text layout speaks.
- *   x        assignHomeColumns, below: the document decides, not the traffic.
+ *   x        assignHomeColumns, below: the document decides, then the seats (`seatsOf`) reorder
+ *            row-mates once per map where that crosses less.
  *   routes   drawn for this arrangement: boundary-anchored, one waypoint per crossed rank,
  *            stepping around any claim the straight run would pierce.
  *
@@ -2239,6 +2243,206 @@ function layoutByArgument(vis, sizes, opt) {
   return g;
 }
 
+/* ===== seats: one order per map, chosen once to cross less =====
+ *
+ * Home columns (below) pack each section's row-mates in the order the .argdown writes them.
+ * That order is the reconstructor's, and it knows nothing about where the lines go. Measured on
+ * the eleven samples (2 Nov 2026), a fifth of all crossings went by changing nothing but which
+ * of two row-mates is drawn first: 1,596 to 1,280 over every depth level, and on the
+ * Williams–Dewey map with everything open, 147 to 86.
+ *
+ * So each claim gets a SEAT: its place among the claims sharing its section and its row,
+ * chosen by the barycentre method (the mean x of everything its lines meet, above and below),
+ * over three sweeps of the whole map, top to bottom. Four rules keep it honest:
+ *
+ *   once per map  computed on the whole map, unfolded, and cached on the graph object. Every
+ *                 view is then a projection of one fixed order -- the stability plan's
+ *                 principle (docs/STABILITY-PLAN.md): folding removes neighbours, it never
+ *                 reshuffles them. Seats are the .argdown's own line numbers, permuted within
+ *                 each section-row, so they compare with every other line number unchanged.
+ *   premises      an argument's premises move as one block, in their numbered order: each takes
+ *                 the mean barycentre of its set, and no reseat may put two premises of one
+ *                 argument out of order, even in different rows (they can share one at a
+ *                 shallower level). The Williams map once drew propositions (i)-(iv) right to
+ *                 left, and this must not bring that back.
+ *   no worse      a reseat stands only if it LOWERS the crossings on the depth ladder (main,
+ *                 reasons, detail, everything) and raises them at no level. The "everything"
+ *                 order alone made the opening levels worse on Bates and Swift; a sum over the
+ *                 ladder still let Hu's main level go from 10 crossings to 15.
+ *   host-blind    widths are estimated from the label, not measured, so every host -- the app,
+ *                 the browser, the quality instruments -- seats a map the same way.
+ *
+ * THE PRICE, written down: about one pair in thirteen of claims that share a row is drawn out
+ * of the order the .argdown writes them (126 of 1,665 on the samples), against crossings down
+ * a fifth. James chose it on 2 Nov 2026, after an order-keeping alternative (sliding claims
+ * sideways, never past each other) was measured and cost the opening views and fold stability.
+ */
+const SEATS = new WeakMap();
+const seatSize = n => ({ width: Math.max(90, Math.min(190, 8 + (n.label || "").length * 5.5)),
+                         height: 54 + Math.floor((n.label || "").length / 34) * 12 });
+
+function seatsOf(graph) {
+  if (SEATS.has(graph)) return SEATS.get(graph);
+  // The working copy goes in the cache FIRST: every layout below filters the same graph, and
+  // must see the seats as they stand so far -- and must not start this computation again.
+  const seat = new Map();
+  for (const n of graph.nodes || []) if (n.docLine != null) seat.set(n.id, n.docLine);
+  SEATS.set(graph, seat);
+  if ((graph.nodes || []).length < 3) return seat;
+
+  // The ladder: main, reasons, detail, everything. Which claims a level shows does not depend
+  // on the seats, so each level is filtered ONCE and its claims' seats are rewritten in place
+  // before each layout -- filtering was most of the cost.
+  const LEVELS = [1, 2, 3, null];
+  const views = LEVELS.map(depth => {
+    const vis = filterGraph(graph, { collapsedGroups: new Set(), collapsedNodes: new Set(),
+                                     expandedNodes: new Set(), depth, facets: null });
+    return { vis, sizes: new Map(vis.nodes.map(n => [n.id, seatSize(n)])),
+             shown: new Set(vis.nodes.map(n => n.id)) };
+  });
+  // Layouts are kept until a seat changes: most rows of a sweep move nothing.
+  let version = 0, stamp = 0;     // stamp only grows, so a restored version is never reused
+  const laid = new Map();
+  const layoutAt = i => {
+    const { vis, sizes } = views[i];
+    if (!vis.nodes.length) return null;
+    const had = laid.get(i);
+    if (had && had.version === version) return had;
+    for (const n of vis.nodes) if (seat.has(n.id)) n.seat = seat.get(n.id);
+    const L = { vis, sizes, g: layoutByArgument(vis, sizes), version };
+    laid.set(i, L);
+    return L;
+  };
+  const crossingsAt = i => {
+    const L = layoutAt(i);
+    if (!L) return 0;
+    const geo = edgeGeometry(L.g, L.vis, L.sizes), paths = [];
+    for (const e of L.g.edges()) {
+      const p = geo.get(e.v + " " + e.w + " " + e.name);
+      if (p && p.length > 1) paths.push(p);
+    }
+    // Each line's bounding box first: most pairs of lines are nowhere near each other.
+    const bb = paths.map(p => {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const q of p) { x0 = Math.min(x0, q.x); x1 = Math.max(x1, q.x);
+                           y0 = Math.min(y0, q.y); y1 = Math.max(y1, q.y); }
+      return { x0, x1, y0, y1 };
+    });
+    let c = 0;
+    for (let i = 0; i < paths.length; i++)
+      for (let j = i + 1; j < paths.length; j++) {
+        const a = bb[i], b = bb[j];
+        if (a.x1 < b.x0 || b.x1 < a.x0 || a.y1 < b.y0 || b.y1 < a.y0) continue;
+        if (pathsCross(paths[i], paths[j])) c++;
+      }
+    return c;
+  };
+  // Every argument's premises, each listed with the others of its set. The block rule below
+  // keeps a set in order within one row; this keeps it in order across rows too, because two
+  // premises in different rows here can share one at a shallower level.
+  const fellows = new Map(), premisesOf = new Map();
+  for (const e of graph.edges || []) if (e.line != null) {
+    if (!premisesOf.has(e.to)) premisesOf.set(e.to, []);
+    premisesOf.get(e.to).push(e.from);
+  }
+  for (const ps of premisesOf.values())
+    for (const a of ps) for (const b of ps) if (a !== b && seat.has(a) && seat.has(b)) {
+      if (!fellows.has(a)) fellows.set(a, []);
+      fellows.get(a).push(b);
+    }
+  const line = new Map((graph.nodes || []).map(n => [n.id, n.docLine]));
+  const premisesInOrder = ids => ids.every(a => (fellows.get(a) || []).every(b =>
+    (line.get(a) - line.get(b)) * (seat.get(a) - seat.get(b)) >= 0));
+
+  // A reseat is re-measured only at the levels that show one of the claims it moves.
+  const ALL = LEVELS.length - 1;
+  const count = LEVELS.map((d, i) => crossingsAt(i));
+  for (let sweep = 0; sweep < 3; sweep++) {
+    const first = layoutAt(ALL);
+    if (!first) break;
+    const rows = [...new Set(first.vis.nodes.map(n => Math.round(first.g.node(n.id).y)))]
+      .sort((a, b) => a - b);
+    for (const y of rows) {
+      const { vis, g } = layoutAt(ALL);
+      const groupIds = new Set(vis.groups.map(x => x.id));
+      const meets = new Map(vis.nodes.map(n => [n.id, []]));
+      for (const e of vis.edges)
+        if (meets.has(e.from) && meets.has(e.to)) {
+          meets.get(e.from).push(e.to);
+          meets.get(e.to).push(e.from);
+        }
+      const buckets = new Map();
+      for (const n of vis.nodes) {
+        if (!seat.has(n.id) || Math.round(g.node(n.id).y) !== y) continue;
+        const c = n.group && groupIds.has(n.group) ? n.group : "";
+        if (!buckets.has(c)) buckets.set(c, []);
+        buckets.get(c).push(n.id);
+      }
+      for (const list of buckets.values()) {
+        if (list.length < 2) continue;
+        const bary = new Map(list.map(id => {
+          const xs = meets.get(id).map(o => g.node(o).x);
+          return [id, xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : g.node(id).x];
+        }));
+        // Premise sets move as one block: union the premises of each argument, and give every
+        // member the mean of its set, so the set keeps its own order among the others.
+        const here = new Set(list), root = new Map(list.map(id => [id, id]));
+        const find = x => root.get(x) === x ? x : find(root.get(x));
+        const firstOf = new Map();
+        for (const e of vis.edges) {
+          if (e.line == null || !here.has(e.from)) continue;
+          if (firstOf.has(e.to)) root.set(find(e.from), find(firstOf.get(e.to)));
+          else firstOf.set(e.to, e.from);
+        }
+        const sum = new Map();
+        for (const id of list) {
+          const s = sum.get(find(id)) || [0, 0];
+          s[0] += bary.get(id); s[1]++;
+          sum.set(find(id), s);
+        }
+        const key = id => { const s = sum.get(find(id)); return s[0] / s[1]; };
+        const lines = list.map(id => seat.get(id)).sort((a, b) => a - b);
+        const next = list.slice().sort((a, b) => key(a) - key(b) || seat.get(a) - seat.get(b));
+        if (next.every((id, i) => seat.get(id) === lines[i])) continue;
+        const was = new Map(list.map(id => [id, seat.get(id)]));
+        const wasVersion = version, wasLaid = new Map(laid);
+        next.forEach((id, i) => seat.set(id, lines[i]));
+        version = ++stamp;
+        // Kept only if no level crosses more and the ladder as a whole crosses less: a sum
+        // alone let the opening levels pay for gains further down.
+        const ordered = premisesInOrder(list);
+        const now = ordered
+          ? views.map((v, i) => list.some(id => v.shown.has(id)) ? crossingsAt(i) : count[i])
+          : count;
+        if (ordered && now.every((c, i) => c <= count[i]) && now.some((c, i) => c < count[i]))
+          now.forEach((c, i) => { count[i] = c; });
+        else {
+          // Put the seats back, and with them the layouts already drawn for those seats.
+          for (const [id, l] of was) seat.set(id, l);
+          version = wasVersion;
+          laid.clear();
+          for (const [k, v] of wasLaid) laid.set(k, v);
+        }
+      }
+    }
+  }
+  return seat;
+}
+
+/** Do two drawn polylines cross? Touching at an end is not crossing: lines meet at claims. */
+function pathsCross(p, q) {
+  for (let a = 0; a < p.length - 1; a++)
+    for (let b = 0; b < q.length - 1; b++) {
+      const p1 = p[a], p2 = p[a + 1], p3 = q[b], p4 = q[b + 1];
+      const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+      if (Math.abs(d) < 1e-9) continue;
+      const t = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+      const u = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+      if (t > 0.01 && t < 0.99 && u > 0.01 && u < 0.99) return true;
+    }
+  return false;
+}
+
 /* ===== stable order: home columns =====
  *
  * The stability plan's Phase 2b (docs/STABILITY-PLAN.md). Where the seating pass above
@@ -2288,7 +2492,8 @@ function assignHomeColumns(g, vis, stats) {
     let k = null;
     const n = byId.get(id);
     if (n) {
-      k = [n.order == null ? HI : n.order, n.docLine == null ? HI : n.docLine];
+      const line = n.seat != null ? n.seat : n.docLine;
+      k = [n.order == null ? HI : n.order, line == null ? HI : line];
     } else {
       for (const c of childrenOf.get(id) || []) {
         const ck = keyOf(c);
@@ -7657,7 +7862,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               layoutByText, posKey, sanitiseGraph, overlapsAnywhere, textLane, laneChapter,
               hiddenSpans, drawnPolyline, segmentHitsBox, boxesOf, junctionGeometry,
               junctionFeet, retargetTail, slalomFlips, pcsRows, premiseHull,
-              layoutByArgument, clearOfBadge, offsetPastBadge,
+              layoutByArgument, seatsOf, pathsCross, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
               edgeGeometry,
               directionFractions,
