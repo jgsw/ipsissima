@@ -12,6 +12,100 @@ contentions:
     - Passional nature must decide genuine options
     - The agnostic veto is irrational
     - Respect one another's mental freedom
+mechanism:
+    depth: full
+    question: "What does deciding a genuine option by our passional nature, rather than waiting for sufficient evidence, bring about?"
+    contrast: "waiting for sufficient evidence"
+    levels: [universe, society, person]
+    ordering: composition
+    actors:
+        thinker:    {label: "The individual thinker", level: person}
+        other:      {label: "The other person in a personal relation", level: person}
+        members:    {label: "Members of a social organism", level: person}
+        group:      {label: "A social organism: a government, an army, a ship, a college, a team", level: society}
+        climate:    {label: "The intellectual climate", level: society}
+        science:    {label: "The schools of science, and the logicians", level: society}
+        vetoer:     {label: "The faith-vetoer (Clifford)", level: person}
+        highwaymen: {label: "A few highwaymen", level: person}
+        passengers: {label: "A train's passengers", level: person}
+        powers:     {label: "The powers above a man", level: society}
+        us:         {label: "We who dispute about belief", level: society}
+        universe:   {label: "The universe, as the religious hypothesis has it", level: universe}
+    kinds:
+        faith: {label: "Faith that runs ahead of the evidence", general: prefaith}
+        fact:  {label: "A fact that such faith helps bring about", general: fact}
+        passion: {label: "A passion of our willing nature", general: willing}
+        creed:   {label: "A belief or rule that a passion produces", general: belief}
+        abstain: {label: "Holding back from an option for want of certainty", general: suspend}
+        forgone: {label: "What holding back forgoes"}
+    states:
+        willing:     {label: "Our willing nature acts: fear and hope, prejudice and passion, imitation and partisanship", actor: thinker, kind: passion, role: condition}
+        pretend:     {label: "A pre-existing tendency to believe", actor: thinker}
+        authority:   {label: "Authority: influences born of the intellectual climate", actor: climate, role: condition}
+        prestige:    {label: "The prestige of the opinions", actor: climate}
+        use:         {label: "He has a use for the fact or theory", actor: thinker}
+        pascal:      {label: "He takes holy water and has masses said", actor: thinker}
+        live:        {label: "The hypothesis is live for him", actor: thinker, measured: "by his willingness to act (p. 3)"}
+        belief:      {label: "He believes: his convictions, his creeds", actor: thinker, kind: creed, role: outcome}
+        moralbelief: {label: "He has moral beliefs at all", actor: thinker}
+        loyalties:   {label: "The loyalties bred in the schools of science", actor: science, kind: passion}
+        intolerance: {label: "Science will not tolerate believing by volition", actor: science, kind: creed}
+        wish:        {label: "The logicians' wish to exclude what they have no use for", actor: science, kind: passion}
+        lrule:       {label: "The logicians' law against passional belief", actor: science, kind: creed}
+        interest:    {label: "Eager interest in one side, balanced by keen nervousness", actor: thinker, kind: passion}
+        observer:    {label: "He is a sensitive observer, a useful investigator", actor: thinker}
+        sciadv:      {label: "Science advances", actor: science}
+        horror:      {label: "His private horror of becoming a dupe", actor: vetoer, kind: passion}
+        veto:        {label: "The veto: believe nothing on insufficient evidence", actor: vetoer, kind: creed, role: condition}
+        badbelief:   {label: "Belief on insufficient evidence", actor: thinker}
+        town:        {label: "Such belief spreads to the rest of the town", actor: us}
+        decide:      {label: "He decides the option by his passional nature, believing ahead of the evidence", actor: thinker, role: intervention}
+        norisk:      {label: "He keeps out of battle forever rather than risk a single wound", actor: thinker, kind: abstain}
+        victory:     {label: "Victories over enemies or over nature", actor: thinker, kind: forgone}
+        suspend:     {label: "He leaves the question open, waiting for evidence", actor: thinker, kind: abstain, aspect: activity}
+        inquiry:     {label: "We go on experiencing and thinking over our experience", actor: us, aspect: activity}
+        error:       {label: "He believes a falsehood", actor: thinker}
+        truth:       {label: "He gains, and acknowledges, the truth", actor: thinker, kind: forgone, role: outcome}
+        refuse:      {label: "He refuses a unique opportunity", actor: thinker}
+        prize:       {label: "He wins the prize", actor: thinker}
+        nature:      {label: "The facts of physical nature", actor: universe}
+        faith:       {label: "He meets the other half-way, assumes she must like him, shows trust", actor: thinker, kind: faith}
+        aloof:       {label: "He stands aloof until he has objective evidence", actor: thinker}
+        liking:      {label: "The other's liking comes", actor: other, kind: fact, aspect: event}
+        mutualtrust: {label: "Each member does his duty trusting that the others will do theirs", actor: members, kind: faith}
+        result:      {label: "A result of co-operation exists: a government, an army, a ship, a team", actor: group, kind: fact, role: outcome}
+        claimfaith:  {label: "He treats promotions as live hypotheses, sacrifices and takes risks for them in advance", actor: thinker, kind: faith}
+        promotion:   {label: "He gains promotions, boons, appointments", actor: thinker, kind: fact}
+        hwtrust:     {label: "The highwaymen count on one another", actor: highwaymen, kind: faith}
+        pfear:       {label: "Each passenger fears he will be shot before anyone backs him", actor: passengers}
+        looting:     {label: "The train is looted", actor: passengers, aspect: event}
+        ptrust:      {label: "Each passenger believes the whole car-full would rise with him", actor: passengers, kind: faith, status: possible}
+        rise:        {label: "The passengers rise at once", actor: passengers, status: possible}
+        robbing:     {label: "Train-robbing is attempted", actor: highwaymen}
+        prefaith:    {label: "A preliminary faith in a fact's coming", actor: thinker, kind: faith}
+        fact:        {label: "The fact comes", actor: thinker, kind: fact, role: outcome}
+        hesitate:    {label: "He hesitates indefinitely to propose", actor: thinker, kind: abstain}
+        angel:       {label: "The angel-possibility", actor: other, kind: forgone, status: possible}
+        relbelief:   {label: "He believes the religious hypothesis", actor: thinker}
+        good:        {label: "He gains religion's vital good, even now", actor: thinker, kind: forgone, status: possible, role: outcome}
+        reactions:   {label: "His reactions to the world", actor: thinker}
+        advance:     {label: "He meets the religious hypothesis half-way", actor: thinker}
+        gods:        {label: "Evidence of the gods; making their acquaintance", actor: universe, kind: forgone, status: possible}
+        service:     {label: "The universe is done the deepest service", actor: universe, status: possible}
+        churl:       {label: "He makes no advances, and believes no one's word without proof", actor: thinker, kind: abstain}
+        rewards:     {label: "The social rewards a trusting spirit earns", actor: thinker, kind: forgone}
+        certitude:   {label: "The doctrine of objective certitude", actor: us}
+        inquisition: {label: "The labours of the Inquisition", actor: us}
+        respect:     {label: "We respect one another's mental freedom and issue no vetoes", actor: us, role: intervention}
+        republic:    {label: "The intellectual republic, and inner tolerance", actor: us, role: outcome}
+    chains:
+        psychology: {label: "What produces our beliefs", question: "What actually produces our convictions?", goal: explain}
+        creation:   {label: "Faith that creates its fact", question: "How can faith in a fact help bring the fact about?", goal: explain, contrast: "in physical nature, where facts are what they are independently of us"}
+        risk:       {label: "What believing and waiting risk", question: "What do believing and waiting each do to our chance of truth, and of error?", goal: intervene,
+                     apart: "Dr. Nansen's expedition (p. 3) shows what makes an option momentous; the text does not set it among the risks of believing and waiting."}
+        religion:   {label: "The religious hypothesis, supposed true", question: "If the religious hypothesis is true, what does the veto cost us?", goal: predict}
+        republic:   {label: "Tolerance", question: "What does respecting one another's mental freedom bring about?", goal: intervene,
+                     apart: "The closing ought and the Inquisition are each reasons about absolutism and tolerance; the text draws no causal line from either to the veto or the beliefs of the other chains."}
 questions:
     q1: {text: "\"Can our will either help or hinder our intellect in its perceptions of truth?\"", pinpoint: "p. 4"}
     q2: {text: "\"whether it be simply reprehensible and pathological, or whether, on the contrary, we must treat it as a normal element in making up our minds\"", pinpoint: "p. 11"}
@@ -86,6 +180,19 @@ frames:
 // formed, so no `account` frame is declared. Eight claims are new, all quotations: the seven under
 // the definition of a genuine option, which carry James's own illustrations, and the empiricists'
 // way of believing in truth, which the closing conditional relies on.
+//
+// The mechanism (added 2 Nov 2026, the same day). Ported from the parallel-method trial of
+// 30 Sep 2026 and checked again against the text, but added as the series pass adds one: the
+// argument is as it was, and the 30 claims that state a step it does not use stand unwired in the
+// sections where James uses them. Five chains: what produces our beliefs, faith that creates its
+// fact, what believing and waiting risk, the religious hypothesis supposed true, and tolerance.
+// The kinds are James's own groupings. Passion: the duties about truth and error are "only
+// expressions of our passional life" (p. 18), the logicians' law rests on "their own natural wish"
+// (p. 11), the veto is "intellect with one passion laying down its law" (p. 27). Holding back: each
+// case is likened to waiting for evidence ("It is like a general", p. 19; "It is as if a man
+// should hesitate", p. 26; "just as a man who in a company of gentlemen made no advances", p. 28),
+// and what each forgoes is offered as what truth, religion's good and the gods' acquaintance are
+// like.
 
 // Form of the top-level move: a refutation of the evidentialist veto (Clifford) by showing
 // that suspension of belief is itself a passional, risk-bearing option, combined with an
@@ -116,7 +223,9 @@ frames:
     +> [Respect one another's mental freedom]
 
 [Respect one another's mental freedom]: "No one of us ought to issue vetoes to the other, nor should we bandy words of abuse. We ought, on the contrary, delicately and profoundly to respect one another's mental freedom" {fidelity: "quotation", pinpoint: "p. 30", note: "The closing practical conclusion: 'then only shall we bring about the intellectual republic'."}
-    <+ [Waiting is also acting at our peril]: "Indeed we may wait if we will,---I hope you do not think that I am denying that,---but if we do so, we do so at our peril as much as if we believed. In either case we act, taking our life in our hands." {fidelity: "quotation", pinpoint: "p. 30", about: [{stance: wait, acts: yes}, {stance: believe, acts: yes}]}
+    <+ [Waiting is also acting at our peril]: "Indeed we may wait if we will,---I hope you do not think that I am denying that,---but if we do so, we do so at our peril as much as if we believed. In either case we act, taking our life in our hands." {fidelity: "quotation", pinpoint: "p. 30", about: [{stance: wait, acts: yes}, {stance: believe, acts: yes}], causes: {from: suspend, to: truth, sign: "-", on: chance, basis: asserted, chain: risk}}
+
+[Only mutual respect brings the intellectual republic]: We ought "to respect one another's mental freedom: then only shall we bring about the intellectual republic" {fidelity: "compression", pinpoint: "p. 30", causes: {from: respect, to: republic, sign: "+", necessary: true, basis: asserted, chain: republic}}
 
 # Preliminary distinctions (section I) {isGroup: true}
 
@@ -141,11 +250,15 @@ frames:
     <+ [The chemist's option is trivial]: "Such trivial options abound in the scientific life. A chemist finds an hypothesis live enough to spend a year in its verification: he believes in it to that extent. But if his experiments prove inconclusive either way, he is quit for his loss of time, no vital harm being done."
         {fidelity: "quotation", pinpoint: "p. 4", about: {option: chemist, momentous: trivial}}
 
+[Refusing a unique opportunity loses the prize]: "He who refuses to embrace a unique opportunity loses the prize as surely as if he tried and failed." {fidelity: "quotation", pinpoint: "p. 3", causes: {from: refuse, to: prize, sign: "-", basis: asserted, scope: general, chain: risk}}
+
 # The objection from the psychology of belief (section II) {isGroup: true}
 
-[Belief cannot be willed]: "Does it not seem preposterous on the very face of it to talk of our opinions being modifiable at will?" We cannot by willing it believe that Lincoln's existence is a myth or that two one-dollar bills sum to a hundred: "We can say any of these things, but we are absolutely impotent to believe them" #reported {fidelity: "compression", pinpoint: "pp. 4-5", note: "The first of the two views James canvasses on the psychology of opinion; Pascal's wager is offered as the example that makes willed belief look 'silly'. James concedes the point for dead hypotheses only."}
-    <- [Only dead hypotheses are beyond the will]: "It is only our already dead hypotheses that our willing nature is unable to bring to life again But what has made them dead for us is for the most part" a previous action of our willing nature of an antagonistic kind. {fidelity: "quotation", pinpoint: "pp. 8-9", note: "The source lacks a full stop after 'again'; quoted as printed."}
-    <+ [Pascal's wager is not a living option]: "It is evident that unless there be some pre-existing tendency to believe in masses and holy water, the option offered to the will by Pascal is not a living option." #conceded {fidelity: "quotation", pinpoint: "p. 6", note: "James grants that a faith adopted by mechanical calculation 'would lack the inner soul of faith's reality'; the concession is later reversed for cases where 'the previous passional work has been already in their own direction' (p. 11).", about: {option: pascal, living: dead}}
+[Belief cannot be willed]: "Does it not seem preposterous on the very face of it to talk of our opinions being modifiable at will?" We cannot by willing it believe that Lincoln's existence is a myth or that two one-dollar bills sum to a hundred: "We can say any of these things, but we are absolutely impotent to believe them" #reported {fidelity: "compression", pinpoint: "pp. 4-5", note: "The first of the two views James canvasses on the psychology of opinion; Pascal's wager is offered as the example that makes willed belief look 'silly'. James concedes the point for dead hypotheses only.", causes: {from: willing, to: belief, sign: "0", basis: example, chain: psychology, given: ["dead hypotheses"], stance: rejected}}
+    <- [Only dead hypotheses are beyond the will]: "It is only our already dead hypotheses that our willing nature is unable to bring to life again But what has made them dead for us is for the most part" a previous action of our willing nature of an antagonistic kind. {fidelity: "quotation", pinpoint: "pp. 8-9", note: "The source lacks a full stop after 'again'; quoted as printed.", causes: [{from: willing, to: live, sign: "-", basis: asserted, chain: psychology, given: ["a previous action of our willing nature of an antagonistic kind"]}, {from: willing, to: live, sign: "0", basis: asserted, chain: psychology, given: ["hypotheses already dead"]}]}
+    <+ [Pascal's wager is not a living option]: "It is evident that unless there be some pre-existing tendency to believe in masses and holy water, the option offered to the will by Pascal is not a living option." #conceded {fidelity: "quotation", pinpoint: "p. 6", note: "James grants that a faith adopted by mechanical calculation 'would lack the inner soul of faith's reality'; the concession is later reversed for cases where 'the previous passional work has been already in their own direction' (p. 11).", about: {option: pascal, living: dead}, causes: {from: pretend, to: live, sign: "+", necessary: true, basis: asserted, chain: psychology}}
+
+[Pascal: take holy water, and belief will come]: "Go, then, and take holy water, and have masses said; belief will come and stupefy your scruples" #reported {fidelity: "quotation", pinpoint: "p. 6", note: "Pascal's wager, in James's free translation.", causes: {from: pascal, to: belief, sign: "+", basis: asserted, chain: psychology, stance: rejected}}
 
 # Clifford's evidentialism and the scientific ethos (section II) {isGroup: true}
 
@@ -158,23 +271,41 @@ frames:
 <Science's options are trivial, so its ethos does not generalise>: In science the sceptical attitude is right because its options are not genuine; that gives no rule for forced, momentous, living options. {fidelity: "compression", pinpoint: "pp. 19-22"}
 
 (1) [Scientific options are not genuine]: In our dealings with objective nature "The questions here are always trivial options, the hypotheses are hardly living (at any rate not living for us spectators), the choice between believing truth or falsehood is seldom forced." {fidelity: "compression", pinpoint: "p. 20", about: {option: science, momentous: trivial}}
-(2) [Sceptical balance is wise where no option is forced]: "The attitude of sceptical balance is therefore the absolutely wise one if we would escape mistakes." #conceded {fidelity: "quotation", pinpoint: "p. 20", note: "James's own scope concession: 'wherever there is no forced option, the dispassionately judicial intellect with no pet hypothesis... ought to be our ideal' (pp. 21-22)."}
+(2) [Sceptical balance is wise where no option is forced]: "The attitude of sceptical balance is therefore the absolutely wise one if we would escape mistakes." #conceded {fidelity: "quotation", pinpoint: "p. 20", note: "James's own scope concession: 'wherever there is no forced option, the dispassionately judicial intellect with no pet hypothesis... ought to be our ideal' (pp. 21-22).", causes: {from: suspend, to: error, sign: "-", basis: asserted, chain: risk, given: ["wherever there is no forced option"]}}
 (3) [Truth is unlikely to be adjusted to our needs]: "It seems a priori improbable that the truth should be so nicely adjusted to our needs and powers as that." {fidelity: "quotation", pinpoint: "p. 22", note: "'That' is the supposition that we can 'always wait with impunity till the coercive evidence shall have arrived'."}
 -----
 (4) [Forced speculative options may exist]: James asks, "Are there not somewhere forced options in our speculative questions, and can we (as men who may be interested at least as much in positively gaining truth as in merely escaping dupery) always wait with impunity till the coercive evidence shall have arrived?" {fidelity: "compression", pinpoint: "p. 22", note: "A rhetorical question; read as asserting that there may be forced speculative options for which the scientific rule of waiting gives no guidance, which is what section IX then argues."}
+
+[Clifford: such belief spreads like a pestilence]: Clifford's duty "is to guard ourselves from such beliefs as from a pestilence which may shortly master our own body and then spread to the rest of the town" #reported {fidelity: "compression", pinpoint: "p. 8", causes: {from: badbelief, to: town, sign: "+", hedged: true, basis: asserted, chain: risk, stance: rejected}}
+
+[Passionate desires advanced science]: "science would be far less advanced than she is if the passionate desires of individuals to get their own faiths confirmed had been kept out of the game." {fidelity: "quotation", pinpoint: "p. 21", causes: {from: willing, to: sciadv, sign: "+", basis: asserted, chain: psychology}}
+
+[The useful investigator is interested and nervous]: "The most useful investigator, because the most sensitive observer, is always he whose eager interest in one side of the question is balanced by an equally keen nervousness lest he become deceived." {fidelity: "quotation", pinpoint: "p. 21", causes: {from: interest, to: observer, sign: "+", basis: asserted, chain: psychology}}
+
+[Physical facts are independent of us]: "Throughout the breadth of physical nature facts are what they are quite independently of us" {fidelity: "quotation", pinpoint: "p. 20", causes: {from: belief, to: nature, sign: "0", basis: asserted, scope: general, chain: creation}}
+
+[Science's loyalties go against believing by volition]: "The whole system of loyalties which grow up in the schools of science go dead against its toleration" {fidelity: "quotation", pinpoint: "p. 7", note: "'Its' is believing by our volition.", causes: {from: loyalties, to: intolerance, sign: "+", basis: asserted, chain: psychology}}
 
 # Passion already shapes belief (section III) {isGroup: true}
 
 <The evidentialist rule is itself a passion>: Our non-intellectual nature does in fact influence our convictions, and the logicians' rule that would exclude it is itself only their wish. {fidelity: "compression", pinpoint: "pp. 8-11"}
 
 (1) [Willing nature makes hypotheses live or dead]: By 'willing nature' James means "all such factors of belief as fear and hope, prejudice and passion, imitation and partisanship, the circumpressure of our caste and set." {fidelity: "compression", pinpoint: "p. 9"}
-(2) [Our beliefs rest on prestige, not insight]: "not insight, but the prestige of the opinions, is what makes the spark shoot from them and light up our sleeping magazines of faith." {fidelity: "quotation", pinpoint: "p. 9"}
+(2) [Our beliefs rest on prestige, not insight]: "not insight, but the prestige of the opinions, is what makes the spark shoot from them and light up our sleeping magazines of faith." {fidelity: "quotation", pinpoint: "p. 9", causes: {from: prestige, to: belief, sign: "+", basis: asserted, chain: psychology}}
 (3) [Belief in truth itself is a volition]: Our belief that there is a truth and that our minds are made for it is "a passionate affirmation of desire, in which our social system backs us up"; against the pyrrhonist "It is just one volition against another". {fidelity: "compression", pinpoint: "pp. 9-10"}
-(4) [We disbelieve what we have no use for]: "As a rule we disbelieve all facts and theories for which we have no use." {fidelity: "quotation", pinpoint: "p. 10", note: "Illustrated by Clifford, Huxley, Newman and the scientists who will not look at the evidence for telepathy."}
+(4) [We disbelieve what we have no use for]: "As a rule we disbelieve all facts and theories for which we have no use." {fidelity: "quotation", pinpoint: "p. 10", note: "Illustrated by Clifford, Huxley, Newman and the scientists who will not look at the evidence for telepathy.", causes: {from: use, to: belief, sign: "+", basis: example, scope: general, chain: psychology}}
 -- {uses: [1, 2, 3, 4]} --
-(5) [Our non-intellectual nature does influence our convictions]: "Evidently, then, our non-intellectual nature does influence our convictions." {fidelity: "quotation", pinpoint: "p. 11", question: {id: q1, move: answers}}
+(5) [Our non-intellectual nature does influence our convictions]: "Evidently, then, our non-intellectual nature does influence our convictions." {fidelity: "quotation", pinpoint: "p. 11", question: {id: q1, move: answers}, causes: {from: willing, to: belief, sign: "+", basis: example, scope: general, chain: psychology}}
 -- {uses: [4, 5]} --
-(6) [The logicians' rule is itself a wish]: "This very law which the logicians would impose upon us" "is based on nothing but their own natural wish to exclude all elements for" which they, as logicians, can find no use. {fidelity: "compression", pinpoint: "pp. 10-11"}
+(6) [The logicians' rule is itself a wish]: "This very law which the logicians would impose upon us" "is based on nothing but their own natural wish to exclude all elements for" which they, as logicians, can find no use. {fidelity: "compression", pinpoint: "pp. 10-11", causes: {from: wish, to: lrule, sign: "+", basis: asserted, chain: psychology}}
+
+[Authority makes hypotheses live or dead]: Mr. Balfour "gives the name of 'authority' to all those influences, born of the intellectual climate, that make hypotheses possible or impossible for us, alive or dead." {fidelity: "quotation", pinpoint: "p. 9", causes: {from: authority, to: live, sign: which, basis: testimony, chain: psychology}}
+
+[Later passions are too late unless earlier ones prepared the way]: "There are passional tendencies and volitions which run before and others which come after belief, and it is only the latter that are too late for the fair; and they are not too late when the previous passional work has been already in their own direction." {fidelity: "quotation", pinpoint: "p. 11", causes: {from: willing, to: belief, sign: "0", basis: asserted, chain: psychology, given: ["volitions that come after belief, unless the previous passional work ran in their direction"]}}
+
+[Pascal's argument completes a prepared faith]: "Pascal's argument, instead of being powerless, then seems a regular clincher, and is the last stroke needed to make our faith in masses and holy water complete." {fidelity: "quotation", pinpoint: "p. 11", causes: {from: pascal, to: belief, sign: "+", basis: asserted, chain: psychology, jointly: [pretend]}}
+
+[A use for telepathy might have opened the evidence]: "if this very man had been shown something which as a scientist he might do with telepathy, he might not only have examined the evidence, but even have found it good enough." {fidelity: "quotation", pinpoint: "p. 10", causes: {from: use, to: belief, sign: "+", hedged: true, basis: example, scope: singular, chain: psychology}}
 
 # Absolutism and empiricism about truth (sections V-VI) {isGroup: true}
 
@@ -195,6 +326,10 @@ frames:
     <+ [Empiricists cannot infallibly know when they have truth]: "the empiricists think that although we may attain it, we cannot infallibly know when"
         {fidelity: "quotation", pinpoint: "p. 12", about: {way: empiricist, attain: yes, knowwhen: no}, note: "Section V's definition, set against the absolutists, who say 'we not only can attain to knowing truth, but we can know when we have attained to knowing it'. It is what the closing conditional's 'if we are empiricists' means; James declares himself 'a complete empiricist' on p. 15."}
 
+[Only thus can opinions grow more true]: "I live, to be sure, by the practical faith that we must go on experiencing and thinking over our experience, for only thus can our opinions grow more true; but to hold any one of them---I absolutely do not care which---as if it never could be reinterpretable or corrigible, I believe to be a tremendously mistaken attitude" {fidelity: "quotation", pinpoint: "p. 15", causes: {from: inquiry, to: truth, sign: "+", necessary: true, basis: asserted, chain: risk}}
+
+[Certitude's application was the Inquisition]: "the most striking practical application to life of the doctrine of objective certitude has been the conscientious labors of the Holy Office of the Inquisition" {fidelity: "quotation", pinpoint: "p. 16", causes: {from: certitude, to: inquisition, sign: "+", basis: example, chain: republic}}
+
 # Two commandments (section VII) {isGroup: true}
 
 <Believe truth and shun error are separable laws>: The evidentialist's preference for avoiding error over gaining truth is itself a passional choice, and not the only reasonable one. {fidelity: "compression", pinpoint: "pp. 17-19"}
@@ -203,11 +338,17 @@ frames:
 (2) [Clifford chooses shunning error]: Clifford "exhorts us to the latter course. Believe nothing, he tells us, keep your mind in suspense forever, rather than by closing it on insufficient evidence incur the awful risk of believing lies." #reported {fidelity: "compression", pinpoint: "p. 18", about: {stance: wait, paramount: error}}
 (3) [Duties about truth and error are passional]: "these feelings of our duty about either truth or error are in any case only expressions of our passional life." {fidelity: "quotation", pinpoint: "p. 18", about: [{stance: wait, passional: yes}, {stance: believe, passional: yes}]}
 -- {uses: [1, 2, 3]} --
-(4) [Clifford's rule expresses a private horror of dupery]: he who says "Better go without belief forever than believe a lie!" "merely shows his own preponderant private horror of becoming a dupe." {fidelity: "quotation", pinpoint: "p. 18"}
+(4) [Clifford's rule expresses a private horror of dupery]: he who says "Better go without belief forever than believe a lie!" "merely shows his own preponderant private horror of becoming a dupe." {fidelity: "quotation", pinpoint: "p. 18", causes: {from: horror, to: veto, sign: "+", basis: asserted, chain: psychology}}
 (5) [Worse things than being duped can happen]: James also has "a horror of being duped; but I can believe that worse things than being duped may happen to a man in this world" {fidelity: "compression", pinpoint: "p. 19", note: "The general who keeps his soldiers out of battle forever rather than risk a single wound: 'Not so are victories either over enemies or over nature gained.'"}
 -- {uses: [4, 5]} --
 (6) [Clifford's exhortation is fantastic]: "Clifford's exhortation has to my ears a thoroughly fantastic sound." {fidelity: "quotation", pinpoint: "p. 19"}
     -> [Clifford's rule]
+
+[Escaping error does not bring truth]: "it hardly ever happens that by merely disbelieving B we necessarily believe A. We may in escaping B fall into believing other falsehoods, C or D, just as bad as B; or we may escape B by not believing anything at all, not even A." {fidelity: "quotation", pinpoint: "p. 17", causes: {from: suspend, to: truth, sign: "-", basis: asserted, chain: risk}}
+
+[Believing risks error for the chance of truth]: "You, on the other hand, may think that the risk of being in error is a very small matter when compared with the blessings of real knowledge, and be ready to be duped many times in your investigation rather than postpone indefinitely the chance of guessing true." {fidelity: "quotation", pinpoint: "p. 18", note: "Put to the hearer as the other reasonable weighting; James then says he finds it impossible to go with Clifford.", causes: [{from: decide, to: truth, sign: "+", on: chance, basis: asserted, chain: risk}, {from: decide, to: error, sign: "+", on: chance, basis: asserted, chain: risk}]}
+
+[Avoiding every risk wins no victories]: "It is like a general informing his soldiers that it is better to keep out of battle forever than to risk a single wound. Not so are victories either over enemies or over nature gained." {fidelity: "quotation", pinpoint: "p. 19", causes: {from: norisk, to: victory, sign: "-", basis: example, design: illustration, chain: risk}}
 
 # Where faith creates fact (section IX) {isGroup: true}
 
@@ -216,31 +357,49 @@ frames:
 (1) [Moral questions concern worth, not existence]: "A moral question is a question not of what sensibly exists, but of what is good, or would be good if it did exist." {fidelity: "quotation", pinpoint: "p. 22"}
 (2) [Science cannot compare worths]: "Science can tell us what exists; but to compare the worths, both of what exists and of what does not exist, we must consult not science, but what Pascal calls our heart." {fidelity: "quotation", pinpoint: "p. 22"}
 -----
-(3) [Moral belief is decided by the will]: "The question of having moral beliefs at all or not having them is decided by" our will; "Moral scepticism can no more be refuted or proved by logic than intellectual scepticism can." {fidelity: "compression", pinpoint: "pp. 22-23", note: "Joins two passages about a page apart: the opening sentence on p. 22-23 and the conclusion of the paragraph on p. 23."}
+(3) [Moral belief is decided by the will]: "The question of having moral beliefs at all or not having them is decided by" our will; "Moral scepticism can no more be refuted or proved by logic than intellectual scepticism can." {fidelity: "compression", pinpoint: "pp. 22-23", note: "Joins two passages about a page apart: the opening sentence on p. 22-23 and the conclusion of the paragraph on p. 23.", causes: {from: willing, to: moralbelief, sign: which, basis: asserted, chain: psychology}}
 
 <Faith can create its own facts>: In truths dependent on our personal action, a preliminary faith is often what brings the fact about, so a veto on faith running ahead of evidence would be insane. {fidelity: "compression", pinpoint: "pp. 23-25"}
 
-(1) [Personal relations depend on precursive faith]: "Whether you do or not depends, in countless instances, on whether I meet you half-way, am willing to assume that you must like me, and show you trust and expectation." {fidelity: "quotation", pinpoint: "p. 23", note: "'You do or not' answers the example question 'Do you like me or not?'"}
-(2) [Social organisms rest on mutual trust]: "Wherever a desired result is achieved by the co-operation of many independent persons, its existence as a fact is a pure consequence of the precursive faith in one another of those immediately concerned." {fidelity: "quotation", pinpoint: "p. 24", note: "Governments, armies, ships, colleges, athletic teams; the train looted by a few highwaymen who can count on one another."}
+(1) [Personal relations depend on precursive faith]: "Whether you do or not depends, in countless instances, on whether I meet you half-way, am willing to assume that you must like me, and show you trust and expectation." {fidelity: "quotation", pinpoint: "p. 23", note: "'You do or not' answers the example question 'Do you like me or not?'", causes: {from: faith, to: liking, sign: "+", necessary: true, basis: example, scope: general, chain: creation, given: ["in countless instances"]}}
+(2) [Social organisms rest on mutual trust]: "Wherever a desired result is achieved by the co-operation of many independent persons, its existence as a fact is a pure consequence of the precursive faith in one another of those immediately concerned." {fidelity: "quotation", pinpoint: "p. 24", note: "Governments, armies, ships, colleges, athletic teams; the train looted by a few highwaymen who can count on one another.", causes: {from: mutualtrust, to: result, sign: "+", necessary: true, basis: example, scope: general, chain: creation}}
 -- {uses: [1, 2]} --
-(3) [Some facts need a preliminary faith]: "There are, then, cases where a fact cannot come at all unless a preliminary faith exists in its coming." {fidelity: "quotation", pinpoint: "p. 25"}
-(4) [Where faith helps create the fact, forbidding it is insane]: "And where faith in a fact can help create the fact, that would be an insane logic which should say that faith running ahead of scientific evidence is the 'lowest kind of immorality' into which a thinking being can fall." {fidelity: "quotation", pinpoint: "p. 25"}
+(3) [Some facts need a preliminary faith]: "There are, then, cases where a fact cannot come at all unless a preliminary faith exists in its coming." {fidelity: "quotation", pinpoint: "p. 25", causes: {from: prefaith, to: fact, sign: "+", necessary: true, basis: example, scope: general, chain: creation}}
+(4) [Where faith helps create the fact, forbidding it is insane]: "And where faith in a fact can help create the fact, that would be an insane logic which should say that faith running ahead of scientific evidence is the 'lowest kind of immorality' into which a thinking being can fall." {fidelity: "quotation", pinpoint: "p. 25", causes: {from: prefaith, to: fact, sign: "+", sufficient: false, basis: asserted, scope: general, chain: creation}}
     -> [Clifford's rule]
 -- {uses: [3, 4]} --
 (5) [Faith based on desire is lawful in truths dependent on action]: "In truths dependent on our personal action, then, faith based on desire is certainly a lawful and possibly an indispensable thing." {fidelity: "quotation", pinpoint: "p. 25"}
+
+[The heart decides moral belief]: "If your heart does not want a world of moral reality, your head will assuredly never make you believe in one." {fidelity: "quotation", pinpoint: "p. 23", causes: {from: willing, to: moralbelief, sign: "+", necessary: true, basis: asserted, chain: psychology}}
+
+[Faith makes the liking come]: "The previous faith on my part in your liking's existence is in such cases what makes your liking come." {fidelity: "quotation", pinpoint: "p. 23", causes: {from: faith, to: liking, sign: "+", on: being, basis: example, chain: creation}}
+
+[Aloofness keeps the liking away]: "if I stand aloof, and refuse to budge an inch until I have objective evidence" "ten to one your liking never comes." {fidelity: "compression", pinpoint: "p. 23", causes: {from: aloof, to: liking, sign: "-", on: chance, basis: example, chain: creation}}
+
+[Desire brings the truth into existence]: "The desire for a certain kind of truth here brings about that special truth's existence; and so it is in innumerable cases of other sorts." {fidelity: "quotation", pinpoint: "p. 23", causes: {from: prefaith, to: fact, sign: "+", on: being, basis: example, scope: general, chain: creation}}
+
+[Faith creates its own verification]: The man who gains promotions is he who "discounts them, sacrifices other things for their sake before they have come, and takes risks for them in advance" "His faith acts on the powers above him as a claim, and creates its own verification." {fidelity: "compression", pinpoint: "p. 23", causes: {from: claimfaith, to: promotion, sign: "+", on: being, basis: example, chain: creation}}
+
+[Highwaymen who trust one another loot a train]: "A whole train of passengers (individually brave enough) will be looted by a few highwaymen, simply because the latter can count on one another, while each passenger fears that if he makes a movement of resistance, he will be shot before any one else backs him up." {fidelity: "quotation", pinpoint: "p. 24", causes: {from: hwtrust, to: looting, sign: "+", jointly: [pfear], basis: example, chain: creation}}
+
+[Passengers' mutual faith would stop train-robbing]: "If we believed that the whole car-full would rise at once with us, we should each severally rise, and train-robbing would never even be attempted." {fidelity: "quotation", pinpoint: "p. 24", causes: [{from: ptrust, to: rise, sign: "+", basis: example, chain: creation}, {from: rise, to: robbing, sign: "-", on: possibility, basis: example, chain: creation}]}
+
+[The veto withholds the faith that would make the fact]: A rule forbidding faith that runs ahead of scientific evidence withholds the preliminary faith, and with it the fact that faith would have helped create. {fidelity: "imputation", warrant: "enthymeme", note: "What makes the logic 'insane' in <Faith can create its own facts> (4): the rule does not merely risk error, it prevents the fact. The text states the faith-to-fact step and calls the rule insane; it does not state the rule-to-faith step between them.", causes: [{from: veto, to: prefaith, sign: "-", basis: asserted, chain: creation}]}
 
 # Suspension is itself a decision (sections IV and X) {isGroup: true}
 
 <Suspension is itself a passional decision>: Refusing to decide a genuine option is not a way of avoiding passional decision; it is one more passional decision, with the same risk of losing truth. {fidelity: "compression", pinpoint: "pp. 11, 26-27"}
 
-(1) [Not deciding is itself a passional decision]: "to say, under such circumstances," 'Do not decide, but leave the question open,' "is itself a passional decision,---just like deciding yes or no,---and is attended with the same risk of losing the truth" {fidelity: "quotation", pinpoint: "p. 11", note: "One sentence of the source; the inner quoted words are James's, split here only because the converter escapes the inner quotation marks.", about: [{stance: wait, passional: yes}, {stance: believe, passional: yes}]}
-(2) [Scepticism is an option of risk]: "Scepticism, then, is not avoidance of option; it is option of a certain particular kind of risk. Better risk loss of truth than chance of error,---that is your faith-vetoer's exact position." {fidelity: "quotation", pinpoint: "p. 26", about: {stance: wait, paramount: error}}
+(1) [Not deciding is itself a passional decision]: "to say, under such circumstances," 'Do not decide, but leave the question open,' "is itself a passional decision,---just like deciding yes or no,---and is attended with the same risk of losing the truth" {fidelity: "quotation", pinpoint: "p. 11", note: "One sentence of the source; the inner quoted words are James's, split here only because the converter escapes the inner quotation marks.", about: [{stance: wait, passional: yes}, {stance: believe, passional: yes}], causes: {from: suspend, to: truth, sign: "-", on: chance, basis: asserted, chain: risk}}
+(2) [Scepticism is an option of risk]: "Scepticism, then, is not avoidance of option; it is option of a certain particular kind of risk. Better risk loss of truth than chance of error,---that is your faith-vetoer's exact position." {fidelity: "quotation", pinpoint: "p. 26", about: {stance: wait, paramount: error}, causes: {from: suspend, to: truth, sign: "-", on: chance, basis: asserted, chain: risk}}
 (3) [The sceptic backs the field]: The faith-vetoer "is actively playing his stake as much as the believer is; he is backing the field against the religious hypothesis, just as the believer is backing the religious hypothesis against the field." {fidelity: "compression", pinpoint: "p. 26", about: [{stance: wait, backs: field}, {stance: believe, backs: hypothesis}]}
 -- {uses: [1, 2, 3]} --
 (4) [The veto is one passion laying down its law]: "It is not intellect against all passions, then; it is only intellect with one passion laying down its law." {fidelity: "quotation", pinpoint: "p. 27", about: {stance: wait, passional: yes}}
 (5) [No proof that dupery through hope is worse than dupery through fear]: "Dupery for dupery, what proof is there that dupery through hope is so much worse than dupery through fear? I, for one, can see no proof" {fidelity: "quotation", pinpoint: "p. 27", about: [{stance: wait, yields: fear}, {stance: believe, yields: hope}]}
 -- {uses: [4, 5]} --
 (6) [Refusal of the scientist's form of risk]: James simply refuses "obedience to the scientist's command to imitate his kind of option, in a case where my own stake is important enough to give me the right to choose my own form of risk." {fidelity: "compression", pinpoint: "p. 27"}
+
+[Waiting means acting as if religion were not true]: The command that we "wait---acting of course meanwhile more or less as if religion were not true" {fidelity: "compression", pinpoint: "p. 29", note: "Footnote 4: 'he who forbids us to believe religion to be true, necessarily also forbids us to act as we should if we did believe it to be true.'", causes: {from: veto, to: suspend, sign: "+", basis: asserted, chain: religion}}
 
 # The religious hypothesis (section X) {isGroup: true}
 
@@ -249,10 +408,10 @@ frames:
 (1) [Genuine option]
 (2) [Live hypothesis]
 (3) [Religion's first affirmation]: Religion "says that the best things are the more eternal things, the overlapping things, the things in the universe that throw the last stone, so to speak, and say the final word." {fidelity: "compression", pinpoint: "p. 25", note: "Charles Secretan's phrase 'Perfection is eternal'; 'an affirmation which obviously cannot yet be verified scientifically at all'."}
-(4) [Religion's second affirmation]: "The second affirmation of religion is that we are better off even now if we believe her first affirmation to be true." {fidelity: "quotation", pinpoint: "p. 26"}
+(4) [Religion's second affirmation]: "The second affirmation of religion is that we are better off even now if we believe her first affirmation to be true." {fidelity: "quotation", pinpoint: "p. 26", causes: {from: relbelief, to: good, sign: "+", basis: asserted, chain: religion, given: ["in case the religious hypothesis be really true"]}}
 (5) [Religion is live for the saving remnant]: "If for any of you religion be a hypothesis that cannot, by any living possibility be true, then you need go no farther. I speak to the 'saving remnant' alone." #conceded {fidelity: "quotation", pinpoint: "p. 26", note: "James restricts his audience: the argument presupposes a living option.", about: {option: religion, living: living}}
-(6) [Religion is a momentous option]: "religion offers itself as a momentous option. We are supposed to gain, even now, by our belief, and to lose by our non-belief, a certain vital good." {fidelity: "quotation", pinpoint: "p. 26", about: {option: religion, momentous: momentous}}
-(7) [Religion is a forced option]: "religion is a forced option, so far as that good goes. We cannot escape the issue by remaining sceptical and waiting for more light, because, although we do avoid error in that way if religion be untrue, we lose the good, if it be true, just as certainly as if we positively chose to disbelieve." {fidelity: "quotation", pinpoint: "p. 26", note: "The man who hesitates indefinitely to propose marriage 'because he was not perfectly sure that she would prove an angel'.", about: {option: religion, forced: forced}}
+(6) [Religion is a momentous option]: "religion offers itself as a momentous option. We are supposed to gain, even now, by our belief, and to lose by our non-belief, a certain vital good." {fidelity: "quotation", pinpoint: "p. 26", about: {option: religion, momentous: momentous}, causes: {from: relbelief, to: good, sign: "+", basis: asserted, chain: religion, given: ["in case the religious hypothesis be really true"]}}
+(7) [Religion is a forced option]: "religion is a forced option, so far as that good goes. We cannot escape the issue by remaining sceptical and waiting for more light, because, although we do avoid error in that way if religion be untrue, we lose the good, if it be true, just as certainly as if we positively chose to disbelieve." {fidelity: "quotation", pinpoint: "p. 26", note: "The man who hesitates indefinitely to propose marriage 'because he was not perfectly sure that she would prove an angel'.", about: {option: religion, forced: forced}, causes: [{from: suspend, to: good, sign: "-", basis: asserted, chain: religion, given: ["if it be true"]}, {from: suspend, to: error, sign: "-", basis: asserted, chain: religion, given: ["if religion be untrue"]}]}
 (8) [The evidence for religion is insufficient]: "If religion be true and the evidence for it be still insufficient" {fidelity: "quotation", pinpoint: "p. 27", note: "James does not argue this; he supposes it throughout as the case at issue ('our merely logical intellect may not have been coerced', p. 1)."}
 -- {uses: [1, 2, 3, 4, 5, 6, 7, 8]} --
 (9) [Religion is a genuine option undecidable by intellect]: For those to whom it is live, the religious hypothesis is a forced, living and momentous option that cannot by its nature be decided on intellectual grounds. {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "pp. 26-27", note: "James states the three conditions separately and the insufficiency of evidence as a supposition; the conjunction, which is what the thesis requires, is not stated in one place.", question: {id: q3, move: answers}, about: {option: religion, genuine: yes}}
@@ -265,18 +424,26 @@ frames:
 (3) [Preaching scepticism is preferring fear to hope]: "To preach scepticism to us as a duty until 'sufficient evidence' for religion be found, is tantamount therefore to telling us, when in presence of the religious hypothesis, that to yield to our fear of its being error is wiser and better than to yield to our hope that it may be true." {fidelity: "quotation", pinpoint: "pp. 26-27", about: [{stance: wait, yields: fear}, {stance: believe, yields: hope}]}
 (4) [No proof that dupery through hope is worse than dupery through fear]
 -- {uses: [3, 4]} --
-(5) [Forfeiting the chance of the winning side]: If religion be true and the evidence insufficient, James does not wish "by putting your extinguisher upon my nature (which feels to me as if it had after all some business in this matter), to forfeit my sole chance in life of getting upon the winning side" {fidelity: "compression", pinpoint: "p. 27"}
+(5) [Forfeiting the chance of the winning side]: If religion be true and the evidence insufficient, James does not wish "by putting your extinguisher upon my nature (which feels to me as if it had after all some business in this matter), to forfeit my sole chance in life of getting upon the winning side" {fidelity: "compression", pinpoint: "p. 27", causes: {from: veto, to: good, sign: "-", on: chance, basis: asserted, chain: religion, given: ["if religion be true and the evidence for it be still insufficient"]}}
 
 <A veto that could block real truth is irrational>: If the religious hypothesis is true in all its parts, including that the gods must be met half-way, an intellectualist veto on willing advances would be an absurdity. {fidelity: "compression", pinpoint: "pp. 27-29"}
 
 (1) [The universe as a Thou]: "The universe is no longer a mere It to us, but a Thou, if we are religious; and any relation that may be possible from person to person might be possible" here. {fidelity: "quotation", pinpoint: "p. 27"}
-(2) [Evidence may be withheld unless we meet the hypothesis half-way]: "We feel, too, as if the appeal of religion to us were made to our own active good-will, as if evidence might be forever withheld from us unless we met the hypothesis half-way." {fidelity: "quotation", pinpoint: "p. 28", note: "The man in a company of gentlemen who 'believed no one's word without proof' cuts himself off from social rewards; so the snarling logician may cut himself off 'forever from his only opportunity of making the gods' acquaintance'."}
-(3) [Willing advance is part of the religious hypothesis]: "This feeling, forced on us we know not whence, that by obstinately believing that there are gods (although not to do so would be so easy both for our logic and our life) we are doing the universe the deepest service we can, seems part of the living essence of the religious hypothesis." {fidelity: "quotation", pinpoint: "p. 28"}
+(2) [Evidence may be withheld unless we meet the hypothesis half-way]: "We feel, too, as if the appeal of religion to us were made to our own active good-will, as if evidence might be forever withheld from us unless we met the hypothesis half-way." {fidelity: "quotation", pinpoint: "p. 28", note: "The man in a company of gentlemen who 'believed no one's word without proof' cuts himself off from social rewards; so the snarling logician may cut himself off 'forever from his only opportunity of making the gods' acquaintance'.", causes: {from: advance, to: gods, sign: "+", necessary: true, hedged: true, basis: asserted, chain: religion}}
+(3) [Willing advance is part of the religious hypothesis]: "This feeling, forced on us we know not whence, that by obstinately believing that there are gods (although not to do so would be so easy both for our logic and our life) we are doing the universe the deepest service we can, seems part of the living essence of the religious hypothesis." {fidelity: "quotation", pinpoint: "p. 28", causes: {from: relbelief, to: service, sign: "+", hedged: true, basis: asserted, chain: religion}}
 -- {uses: [1, 2, 3]} --
-(4) [If the hypothesis were true, the veto would be absurd]: "If the hypothesis were true in all its parts, including this one, then pure intellectualism, with its veto on our making willing advances, would be an absurdity; and some participation of our sympathetic nature would be logically required." {fidelity: "quotation", pinpoint: "p. 28"}
+(4) [If the hypothesis were true, the veto would be absurd]: "If the hypothesis were true in all its parts, including this one, then pure intellectualism, with its veto on our making willing advances, would be an absurdity; and some participation of our sympathetic nature would be logically required." {fidelity: "quotation", pinpoint: "p. 28", causes: {from: veto, to: advance, sign: "-", basis: asserted, chain: religion, given: ["if the hypothesis were true in all its parts"]}}
 (5) [A rule that would block real truth is irrational]: "a rule of thinking which would absolutely prevent me from acknowledging certain kinds of truth if those kinds of truth were really there, would be an irrational rule" {fidelity: "quotation", pinpoint: "p. 28", note: "'That for me is the long and short of the formal logic of the situation, no matter what the kinds of truth might materially be' (pp. 28-29)."}
 -- {uses: [4, 5]} --
-(6) [The agnostic rules would block real truth]: The agnostic rules for truth-seeking would absolutely prevent us from acknowledging the religious kind of truth if it were really there. {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "p. 28", note: "The minor premise James's 'therefore' requires; not stated separately, but it is what (4) amounts to once the veto is generalised into a rule."}
+(6) [The agnostic rules would block real truth]: The agnostic rules for truth-seeking would absolutely prevent us from acknowledging the religious kind of truth if it were really there. {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "p. 28", note: "The minor premise James's 'therefore' requires; not stated separately, but it is what (4) amounts to once the veto is generalised into a rule.", causes: {from: veto, to: truth, sign: "-", on: possibility, basis: asserted, chain: religion, given: ["if those kinds of truth were really there"]}}
+
+[Religious belief determines our reactions]: "the religious hypothesis gives to the world an expression which specifically determines our reactions, and makes them in a large part unlike what they might be on a purely naturalistic scheme of belief." {fidelity: "quotation", pinpoint: "p. 31, n. 4", causes: {from: relbelief, to: reactions, sign: which, basis: asserted, chain: religion}}
+
+[Hesitating to propose cuts off the angel-possibility]: A man who hesitates indefinitely to propose, because he is not perfectly sure she would prove an angel, cuts himself off from that angel-possibility as decisively as if he married someone else. {fidelity: "paraphrase", pinpoint: "p. 26", source: "\"Would he not cut himself off from that particular angel-possibility as decisively as if he went and married some one else?\"", note: "A rhetorical question in the source, read as asserting its answer.", causes: {from: hesitate, to: angel, sign: "-", on: possibility, basis: example, design: illustration, chain: religion}}
+
+[Churlishness forfeits social rewards]: "a man who in a company of gentlemen made no advances, asked a warrant for every concession, and believed no one's word without proof, would cut himself off by such churlishness from all the social rewards that a more trusting spirit would earn" {fidelity: "quotation", pinpoint: "p. 28", causes: {from: churl, to: rewards, sign: "-", on: possibility, basis: example, design: illustration, chain: religion}}
+
+[Snarling logicality may forfeit the gods' acquaintance]: "one who should shut himself up in snarling logicality and try to make the gods extort his recognition willy-nilly, or not get it at all, might cut himself off forever from his only opportunity of making the gods' acquaintance." {fidelity: "quotation", pinpoint: "p. 28", causes: {from: veto, to: gods, sign: "-", on: possibility, hedged: true, basis: asserted, chain: religion}}
 
 # Objections James answers (section X) {isGroup: true}
 

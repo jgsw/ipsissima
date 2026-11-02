@@ -10,6 +10,53 @@ reconstruction:
     method: parallel
 defaults:
     chapter: "source/wilson-2023-what-makes-a-health-system-good.md"
+questions:
+    q1: {text: "\"What is the best conception of improvement for a health system?\"", pinpoint: "p. 352"}
+    q2: {text: "\"whether the problem has been not enough cost-effectiveness analysis, or whether what is required is an approach to improvement that looks beyond cost-effectiveness\"", pinpoint: "p. 354"}
+    q3: {text: "\"When does cost-effectiveness analysis help, and when does it hinder in improving health systems?\"", pinpoint: "p. 360"}
+frames:
+    whole:
+        kind: account
+        label: "What a system's cost-effectiveness is a function of"
+        pinpoint: "pp. 358-360"
+        question: q2
+        note: "The rival answer is the one that makes going comprehensive the cure: if the system's cost-effectiveness is a simple function of its elements', more cost-effectiveness analysis is what is needed. The text weighs it on the cascades it reports and calls it a fallacy of composition."
+        values:
+            simple: {claim: "The simple-function view"}
+            interactions: {claim: "System effectiveness depends on interactions"}
+    assumption:
+        kind: case
+        label: "\"four assumptions\""
+        pinpoint: "pp. 353-356"
+        values:
+            measurability: "\"measurability\""
+            synoptic: "\"single synoptic decision procedure\""
+            external: "\"external validity\""
+            static: "\"static ranking\""
+    discussed:
+        kind: dimension
+        label: "How far the literature on prioritisation has questioned it"
+        pinpoint: "pp. 355-356"
+        note: "The text adds that questioning the second pair 'creates a deeper challenge' (p. 356)."
+        values: {widely: "\"widely acknowledged to be controversial\"", seldom: "\"much less frequently discussed\""}
+    holds:
+        kind: verdict
+        label: "Holds in real-world contexts"
+        pinpoint: "p. 360"
+        values: [yes, no]
+    element:
+        kind: case
+        label: "Human and non-human elements of a system"
+        pinpoint: "p. 362"
+        values:
+            machine: "A photocopier"
+            human: "Healthcare workers"
+    replaceable: {kind: dimension, label: "\"replaceable\"", pinpoint: "p. 362", values: [yes, no]}
+    pricein:
+        kind: verdict
+        label: "The cost of its breakdown may be priced in"
+        pinpoint: "p. 362"
+        values: [yes, no]
 mechanism:
     question: "What does improving a health system element by element, centred on cost-effectiveness, do to the system as a whole -- and how else are its means and values improved?"
     contrast: "improvement centred on the cost-effectiveness of each element"
@@ -138,7 +185,7 @@ mechanism:
         subsystems:   {label: "Sub-elements, themselves systems, several layers deep", levels: [services], aspect: condition}
         denied:       {label: "Patients are denied life-saving care another reasonable process would have given them", actor: patients, aspect: event}
         challenge:    {label: "They question the ethical justifiability of the process", actor: patients, aspect: activity}
-        overuse:      {label: "A photocopier is run past its monthly work cycle", actor: office, design: illustration, aspect: activity}
+        overuse:      {label: "A photocopier is run past its monthly work cycle", actor: office, aspect: activity}
         breakdown:    {label: "The photocopier breaks down and needs an engineer", actor: office, aspect: event}
         savings:      {label: "The reform's cost savings", actor: hospitals, aspect: quantity}
         careelse:     {label: "Patient care improves elsewhere in the system", actor: nhs, aspect: condition}
@@ -170,7 +217,7 @@ mechanism:
 # The thesis {isGroup: true}
 
 [Holistic improvement]: "health systems should move from simple and atomistic approaches to measuring effectiveness to approaches that are holistic both in focusing on performance at the level of the health system as a whole, and also in incorporating a wider range of ethical concerns in thinking about what makes a health system good"
-    {fidelity: "quotation", pinpoint: "p. 351", note: "The paper's stated thesis, from the abstract. Its two arms, system-level performance and a wider range of ethical concerns, are carried by the flow-centric and values strands below."}
+    {fidelity: "quotation", pinpoint: "p. 351", note: "The paper's stated thesis, from the abstract. Its two arms, system-level performance and a wider range of ethical concerns, are carried by the flow-centric and values strands below.", question: {id: q1, move: answers}}
     <+ [Flow-centric shift]
     <+ [Values beyond cost-effectiveness]
     <+ [CEA as one tool]
@@ -179,14 +226,33 @@ mechanism:
 
 # Against cost-effectiveness-centred improvement {isGroup: true}
 
+// QUESTIONS AND TABLES (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the argument
+// and its mechanism as they were): three questions in the text's words; the four assumptions, sorted
+// as the text sorts them; the photocopier and the clinicians; and the two views of what a system's
+// cost-effectiveness is a function of, weighed on the cascades. Two new claims carry the sorting.
+[Pragmatic tool]
+    <+ [Measurability and synoptic procedure are widely acknowledged controversial]: "We have seen that that measurability and single synoptic decision procedure are already widely acknowledged to be controversial."
+        {fidelity: "quotation", pinpoint: "p. 355", about: [{assumption: measurability, discussed: widely}, {assumption: synoptic, discussed: widely}], note: "The doubled 'that' is the source's. The next sentence draws the moral: conceptions that use cost-effectiveness 'should acknowledge this'."}
+
+[EV and SR fail]
+    <+ [External validity and static ranking are seldom discussed]: "External validity and static ranking are also controversial, but the significance of this point is much less frequently discussed within the literature on healthcare prioritisation."
+        {fidelity: "quotation", pinpoint: "p. 356", about: [{assumption: external, discussed: seldom}, {assumption: static, discussed: seldom}]}
+
+[System effectiveness depends on interactions]
+    <+ [Cascading scarcity]
+    <+ [Problems interact and exacerbate each other]
+
+[The simple-function view]
+    <- [Cascading scarcity]
+
 <Four assumptions argument>: Centring improvement on cost-effectiveness is sensible only if four assumptions hold, and each is implausible in a range of real-world contexts; so cost-effectiveness analysis should be reframed as one tool among many. {fidelity: "compression", pinpoint: "pp. 360"}
 
 <Four assumptions argument>
 
 (1) [CEA sensible only if four hold]: "centring improvement attempts on improving cost-effectiveness is a sensible strategy only if measurabillty, single synoptic decision procedure, external validity, and static ranking all hold" {fidelity: "quotation", pinpoint: "p. 360", note: "'measurabillty' is the published misspelling, kept as printed."}
-(2) [Four assumptions implausible]: "each of these assumptions prove to be implausible in a range of real-world contexts" {fidelity: "quotation", pinpoint: "p. 360", note: "Scope kept: implausible in a range of real-world contexts, not in every context."}
+(2) [Four assumptions implausible]: "each of these assumptions prove to be implausible in a range of real-world contexts" {fidelity: "quotation", pinpoint: "p. 360", note: "Scope kept: implausible in a range of real-world contexts, not in every context.", about: [{assumption: measurability, holds: no}, {assumption: synoptic, holds: no}, {assumption: external, holds: no}, {assumption: static, holds: no}]}
 -----
-(3) [CEA as one tool]: Tools such as cost-effectiveness analysis should not be abandoned but reframed "as one among a plurality of tools by which health system performance can be measured and means-improved" {fidelity: "compression", pinpoint: "p. 360"}
+(3) [CEA as one tool]: Tools such as cost-effectiveness analysis should not be abandoned but reframed "as one among a plurality of tools by which health system performance can be measured and means-improved" {fidelity: "compression", pinpoint: "p. 360", question: {id: q3, move: answers}}
 
 [CEA as one tool]
     <+ [Pragmatic tool]: Conceptions of improvement that use cost-effectiveness can "adopt a view of cost-effectiveness analysis that sees it as a pragmatically useful, but imperfect tool, rather than the only ethically defensible approach to health system improvement" {fidelity: "compression", pinpoint: "p. 355"}
@@ -213,10 +279,10 @@ mechanism:
     <+ [EV and SR fail]
 
 [EV and SR fail]: "neither external validity nor static ranking is correct within large-scale and interconnected health systems" {fidelity: "quotation", pinpoint: "p. 354", note: "Scope kept: within large-scale and interconnected health systems."}
-    <+ [EV usually false]: "It is a substantive, and usually false, assumption that the effects (and hence cost-effectiveness) of an intervention are atomic, i.e. that they are the same everywhere the intervention is undertaken, rather than shifting in response to changes elsewhere in health systems." {fidelity: "quotation", pinpoint: "p. 356", note: "External validity: cost-effectiveness assessed in one context transfers without significant difficulty to the policymaker's own. The general step; adherence and the cataract service are its cases.", causes: {from: syschange, to: effects, sign: which, scope: general, basis: example, chain: dynamic}}
+    <+ [EV usually false]: "It is a substantive, and usually false, assumption that the effects (and hence cost-effectiveness) of an intervention are atomic, i.e. that they are the same everywhere the intervention is undertaken, rather than shifting in response to changes elsewhere in health systems." {fidelity: "quotation", pinpoint: "p. 356", note: "External validity: cost-effectiveness assessed in one context transfers without significant difficulty to the policymaker's own. The general step; adherence and the cataract service are its cases.", causes: {from: syschange, to: effects, sign: which, scope: general, basis: example, chain: dynamic}, about: {assumption: external, holds: no}}
         <+ [Adherence]: "The effectiveness (and cost-effectiveness) of a drug in practice depends on, among other things, on the level of support that patients have in adhering to treatment." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: adherence, to: drugce, sign: "+", basis: asserted, chain: dynamic}}
         <+ [Trial gap]: "there may be a significant gap between the effects of an intervention in an experimental context, and the effects that the same intervention will have in a real-world context" {fidelity: "quotation", pinpoint: "p. 355"}
-    <+ [Rankings change]: "it is common, rather than rare, for circumstances to change in ways that require rankings delivered in prioritisation processes to be reconfigured within rounds of resource allocation, rather than only at the beginning of such a period" {fidelity: "quotation", pinpoint: "p. 356", note: "Static ranking: that prioritisation rankings will not change unexpectedly over the period governed by the allocation.", causes: {from: circumstances, to: ranking, sign: which, scope: general, basis: example, chain: dynamic}}
+    <+ [Rankings change]: "it is common, rather than rare, for circumstances to change in ways that require rankings delivered in prioritisation processes to be reconfigured within rounds of resource allocation, rather than only at the beginning of such a period" {fidelity: "quotation", pinpoint: "p. 356", note: "Static ranking: that prioritisation rankings will not change unexpectedly over the period governed by the allocation.", causes: {from: circumstances, to: ranking, sign: which, scope: general, basis: example, chain: dynamic}, about: {assumption: static, holds: no}}
         <+ [Operating parameters]: "If the system needs to start operating outside of these parameters, then this may make a significant difference to what calibration of services will be overall most cost-effective." {fidelity: "quotation", pinpoint: "p. 356", note: "The parameters are assumed patient flows, e.g. 300 beds sufficing, or an A&E department processing no more than 40 patients an hour.", causes: {from: beyond, to: calibration, sign: which, basis: example, hedged: true, chain: dynamic}}
         <+ [Fair ordering decays]: "A prioritisation ordering that was fair may not remain fair as patients’ conditions change." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: change, to: fairorder, sign: "-", on: persistence, basis: asserted, hedged: true, chain: dynamic}}
 
@@ -294,13 +360,13 @@ mechanism:
 (1) [Comprehensive only if EV and SR]: Moving to comprehensive cost-effectiveness analysis "would be a good answer to how best to improve health systems only if it can safely be assumed that external validity and static ranking hold" {fidelity: "compression", pinpoint: "p. 358", note: "The subject is given in the preceding sentences, which propose going further and deeper with explicit prioritisation towards a comprehensive approach; 'This would be a good answer' refers back to that proposal."}
 (2) [EV and SR fail]
 -----
-(3) [Comprehensive not a good answer]: Moving to comprehensive cost-effectiveness analysis is not a good answer to how best to improve health systems. {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 358", note: "The text states the conditional and says it will show 'neither assumption is safe to make'; the negated consequent is left for the reader, and is what the passage is for."}
+(3) [Comprehensive not a good answer]: Moving to comprehensive cost-effectiveness analysis is not a good answer to how best to improve health systems. {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 358", note: "The text states the conditional and says it will show 'neither assumption is safe to make'; the negated consequent is left for the reader, and is what the passage is for.", question: {id: q2, move: answers}}
 
 [Not solvable by comprehensive CEA]: Cascading scarcity is "not a problem of scarcity that can be solved easily, or very satisfactorily, by a greater emphasis on cost-effectiveness analysis, or even by adopting comprehensive cost-effectiveness analysis" {fidelity: "compression", pinpoint: "p. 359"}
     <+ [Fallacy of composition]
     <+ [Cascading scarcity]
 
-[The simple-function view]: "the cost-effectiveness in practice of a complex system as a whole is a simple function of the cost-effectiveness of its component elements" #reported {fidelity: "quotation", pinpoint: "p. 359", note: "The assumption the text calls a fallacy of composition: the whole as no more than the sum of its elements.", constitutes: {from: elementce, to: systemce, extent: entire, whole: aggregate, basis: asserted, stance: rejected}}
+[The simple-function view]: "the cost-effectiveness in practice of a complex system as a whole is a simple function of the cost-effectiveness of its component elements" #reported {fidelity: "quotation", pinpoint: "p. 359", note: "The assumption the text calls a fallacy of composition: the whole as no more than the sum of its elements.", constitutes: {from: elementce, to: systemce, extent: entire, whole: aggregate, basis: asserted, stance: rejected}, question: {id: q2, move: answers}}
     <- [Fallacy of composition]
     +> [Go comprehensive]
 
@@ -313,7 +379,7 @@ mechanism:
 -- From a mechanism to what to do {uses: [1, 2]} --
 (3) [System-level mapping]
 
-[System effectiveness depends on interactions]: How effective the health system as a whole is "does not just depend on the performance of" one element, "but on interactions of numerous elements, which are each linked with one another via multiple feedback loops". {fidelity: "compression", pinpoint: "pp. 359-360", constitutes: [{from: elementce, to: systemce, extent: partial, whole: organised, basis: asserted}, {from: interactions, to: systemce, extent: partial, whole: organised, basis: asserted}]}
+[System effectiveness depends on interactions]: How effective the health system as a whole is "does not just depend on the performance of" one element, "but on interactions of numerous elements, which are each linked with one another via multiple feedback loops". {fidelity: "compression", pinpoint: "pp. 359-360", constitutes: [{from: elementce, to: systemce, extent: partial, whole: organised, basis: asserted}, {from: interactions, to: systemce, extent: partial, whole: organised, basis: asserted}], question: {id: q2, move: answers}}
 
 [Flow-centric shift]: "Reflecting on challenges such as waiting times and system congestion should lead us to shift from the distribution-focused paradigm presupposed in cost-effectiveness analysis and in philosophical discussions of resource allocation, to a flow-centric one." {fidelity: "quotation", pinpoint: "p. 363",}
     <+ [Flows make up the system]
@@ -380,9 +446,9 @@ mechanism:
 
 <Humans are not photocopiers>: A machine may be run to breakdown because it is replaceable; staff may not, because overwork brings moral injury and breakdown that cannot be priced in, and neglect has instrumental costs besides. {fidelity: "compression", pinpoint: "p. 362"}
 
-(1) [The photocopier may be run past its cycle]: "Machinery is replaceable: it is perfectly reasonable for an office manager to decide to allow a photocopier to be operated in excess of its monthly work cycle, in the knowledge that this will make it more likely to break down, and to require fixing by an engineer." {fidelity: "quotation", pinpoint: "p. 362", causes: {from: overuse, to: breakdown, sign: "+", on: chance, basis: example, design: illustration, chain: staff}}
+(1) [The photocopier may be run past its cycle]: "Machinery is replaceable: it is perfectly reasonable for an office manager to decide to allow a photocopier to be operated in excess of its monthly work cycle, in the knowledge that this will make it more likely to break down, and to require fixing by an engineer." {fidelity: "quotation", pinpoint: "p. 362", causes: {from: overuse, to: breakdown, sign: "+", on: chance, basis: example, design: illustration, chain: staff}, about: {element: machine, replaceable: yes, pricein: yes}}
 (2) [Overwork breaks staff]
-(3) [Humans not replaceable]: "Human beings are not replaceable, and a health system cannot and should not price-in the cost of staff moral injury and breakdown." {fidelity: "quotation", pinpoint: "p. 362", note: "Contrasted with a photocopier, which may reasonably be run past its work cycle because machinery is replaceable."}
+(3) [Humans not replaceable]: "Human beings are not replaceable, and a health system cannot and should not price-in the cost of staff moral injury and breakdown." {fidelity: "quotation", pinpoint: "p. 362", note: "Contrasted with a photocopier, which may reasonably be run past its work cycle because machinery is replaceable.", about: {element: human, replaceable: no, pricein: no}}
 (4) [Neglect of the human has instrumental costs]
 -- From consequences {uses: [1, 2, 3, 4]} --
 (5) [Human elements constrain efficiency]
@@ -407,7 +473,7 @@ mechanism:
 
 [Denied patients question the process]: "Where prioritisation processes lead to individuals being denied access to life-saving care that they would have received on a different but equally reasonable approach to resource allocation, such individuals are likely to question the ethical justifiability of the processes that have been adopted." {fidelity: "quotation", pinpoint: "p. 356", causes: {from: denied, to: challenge, sign: "+", on: chance, basis: asserted}}
 
-[Health-system-specific]: "the best conception of improvement for a health system needs to be specific to the kind of endeavour that a healthcare system is" {fidelity: "quotation", pinpoint: "p. 352"}
+[Health-system-specific]: "the best conception of improvement for a health system needs to be specific to the kind of endeavour that a healthcare system is" {fidelity: "quotation", pinpoint: "p. 352", question: {id: q1, move: answers}}
     <+ [Sui generis considerations]: "healthcare is taken by policymakers, clinicians and citizens more broadly to entail a set of sui generis ethical considerations" {fidelity: "quotation", pinpoint: "p. 353"}
     <+ [Human elements constrain efficiency]: "when it comes to the human elements of a system, maximum speed and efficiency must be constrained by and be responsive to the needs, values and moral standing of all those who are stakeholders" {fidelity: "quotation", pinpoint: "p. 362"}
     <+ [Practice norms not to be sidelined]

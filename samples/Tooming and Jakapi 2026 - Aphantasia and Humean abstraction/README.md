@@ -93,6 +93,26 @@ and the other two located to a paragraph. `section` is carried only where a clai
 and every one cites the authors' own numbered sections rather than the converter — this is the
 first folder here where that is true.
 
+## Questions, tables and the mechanism
+
+Added on 2 November 2026, after the review of 27 August, and not yet reviewed themselves. **Three
+questions**: whether those who cannot imagine with imagery can still abstract in Hume's sense
+(§2.2), how Hume's account can accommodate them (§5), and, implied, what aphantasia consists of.
+
+**Four tables.** The seven responses, with the paper's own sorting into empirical and exegetical
+and its verdict on each. Object and spatial imagery: object imagery suits Hume's individual ideas
+and is what aphantasics lack; spatial imagery is what they keep and does not suit. The missing shade
+of blue and aphantasia, which differ in one respect (whether the capacity at issue underlies
+cognition in general) and so in the verdict (whether Hume can treat the case as an isolated
+anomaly). And an **account frame**: unconscious imagery against no imagery at all, the two of
+Phillips's accounts that §4.1 weighs on evidence built to tell them apart.
+
+The **mechanism** is a sketch: Hume's route from a general term to abstract thought, the conditions
+projective imagination needs (filtering, frontal delta power), and the finding the paper sets
+against the route's necessity, that aphantasics think abstractly without it. Its two chains are
+recorded as kept apart: the paper's own steps stop short of abstraction, and that gap is its
+challenge. Three claims are new.
+
 ## What the conversion needed
 
 Two lines of config, and nothing else:

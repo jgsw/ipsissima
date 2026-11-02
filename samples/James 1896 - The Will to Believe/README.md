@@ -69,6 +69,20 @@ options in our speculative questions (answered by the religious option). **Three
 There is no account frame: the essay answers its objections rather than weighing rival
 explanations.
 
+## The mechanism
+
+Added the same day, ported from the parallel-method arm of the trial of 30 September 2026, the
+arm judged the better of the two. Every step was read again against the essay. It is added as
+the series pass adds one: the argument is as it was, and the 30 claims that state a step the
+argument does not use stand unwired, in the sections where James uses them. **Five chains:**
+what produces our beliefs; faith that creates its fact (the liking, the train, the promotions);
+what believing and waiting each risk; the religious hypothesis, supposed true; and tolerance. 44
+steps, 59 states, 112 quotations verified. The **kinds** are James's own groupings: the passions
+behind the vetoer's rule and the logicians' law; the holding back he likens to waiting for
+evidence (the general, the hesitating suitor, the churl); and what each kind of holding back
+forgoes. The trial's argument changes (three new bridges, Clifford's pestilence as a reason) are
+not ported: they would rewire the argument, which this pass leaves alone.
+
 ## What making it taught the tooling
 
 - The Gutenberg HTML carried its page numbers as inline `.pagenum` spans in the middle of
