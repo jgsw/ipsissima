@@ -53,6 +53,24 @@ author's contentions imputed at the apex, counting in their own interpretive loa
 out across five independent reconstructions of this pamphlet, of which this map was the
 strongest reading.
 
+## Questions, a table and the mechanism
+
+Added on 2 November 2026. **Two questions**: the proposer's own ("How this number shall be reared
+and provided for?"), and Swift's, never asked, in the map's words, answered by his two imputed
+contentions.
+
+**One table**, the proposer's comparison of ways to dispose of the children (sale at a year old,
+sale at twelve, his friend's refinement, the other expedients), on the grounds he gives. He applies
+cruelty to the refinement and to nothing else, so the cell where his own scheme meets it is
+**empty**. The table leaves it empty: that silence is the satire's point.
+
+The **mechanism** has two chains. The scheme's advertised consequences (fewer Papists, eight
+shillings to the breeder, custom to the taverns) are the persona's, `#reported` and rejected. What
+the poor already suffer (the landlords' oppression, the aged dying of cold and famine, the young who
+cannot get work) is in the sentences this map reads as Swift's own voice. The chains meet where the
+parents "would think it a great happiness to have been sold for food". Two new claims, both
+untagged for that reason.
+
 ## Rebuilding
 
 ```bash

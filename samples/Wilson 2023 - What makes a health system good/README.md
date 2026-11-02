@@ -49,6 +49,23 @@ Mechanism view's light and shadow shows. Means- and values-improvement are drawn
 does not come to rest ("continual and iterative"), and what makes the system up -- flows, elements
 and their interactions -- is marked as constitution, never as steps.
 
+## Questions and tables
+
+Added on 2 November 2026, with the mechanism left as it was. **Three questions**, in the paper's
+words: the best conception of improvement for a health system (p. 352); whether the NHS's problem
+has been "not enough cost-effectiveness analysis" or calls for an approach beyond it (p. 354); and
+when cost-effectiveness analysis helps and when it hinders (p. 360).
+
+**Three tables.** The four assumptions, as the paper sorts them: two already widely acknowledged to
+be controversial and two seldom discussed, all four implausible in real-world contexts. The
+photocopier and the healthcare worker, which differ in whether they are replaceable and so in
+whether the cost of their breakdown may be priced in. And an **account frame**: the view that a
+system's cost-effectiveness is a simple function of its elements', which makes going comprehensive
+the cure, against the paper's view that it depends on their interactions, weighed on the cascades
+it reports. Two new claims carry the sorting of the assumptions. One fault the pass found and fixed:
+the photocopier state carried `design:`, a key only a step can carry, so it was never read; the step
+already had it.
+
 ## The source
 
 `make_source.py` runs Ipsissima's own conversion and adds only the bibliographic front matter.

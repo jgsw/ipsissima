@@ -1699,7 +1699,7 @@ mechanism:
 }
 
 console.log("\na map with no chain");
-const plain = graphOf(path.join(REPO, "samples", "Darwin 1859 - Natural selection", "darwin-natural-selection.argdown"));
+const plain = graphOf(path.join(REPO, "samples", "Carroll 1895 - What the Tortoise said to Achilles", "carroll-tortoise-achilles.argdown"));
 check(plain.mechanism === null, "carries no mechanism");
 check(MV.model(plain) === null, "and the page builds no model");
 
@@ -1836,7 +1836,7 @@ if (chromium) {
   const withChain = path.join(tmp, "chain.html"), without = path.join(tmp, "plain.html");
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), CHAIN, "--source-root", FIXTURE, "-o", withChain], { stdio: "pipe" });
   execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"),
-    path.join(REPO, "samples", "Darwin 1859 - Natural selection", "darwin-natural-selection.argdown"), "-o", without], { stdio: "pipe" });
+    path.join(REPO, "samples", "Carroll 1895 - What the Tortoise said to Achilles", "carroll-tortoise-achilles.argdown"), "-o", without], { stdio: "pipe" });
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });

@@ -149,6 +149,28 @@ reader might not otherwise make explicit: that the premises are linked rather th
 and that the passage's load-bearing step is one Darwin never takes. Both are contestable, and
 both are now on the page where they can be contested.
 
+## Questions, tables and the mechanism
+
+Added on 2 November 2026, after the review of 27 August, and not yet reviewed themselves.
+
+The passage asks no question in so many words, so its **two questions** are in the map's own
+words: whether variations useful to beings themselves have occurred in nature, as so many useful
+to man have under domestication; and how the small differences between varieties come to equal
+those between species and genera. The map records that the passage **compares nothing**
+(`frames: none`): its one comparison, with the variations useful to man, is an analogy carried in
+a premise, with no dimension to set the two cases on.
+
+The passage does set out a **mechanism**, and the map now declares it (`depth: full`). A high rate
+of increase brings a struggle for life. A useful variation, only together with that struggle,
+makes a being likelier to be preserved. Preservation, only together with the principle of
+inheritance, makes similarly characterised offspring likelier. More diversified descendants
+likewise fare better in the struggle. And preservation, with those offspring, widens the
+differences between varieties into the differences between species. All five steps sit on claims
+the argument already had: here the mechanism *is* the argument, read as what it says happens.
+Its one gap is the elision before *Therefore*. Nothing in the transcription says how a species'
+descendants come to be diversified, and the chain leaves that open rather than guess at the
+elided text.
+
 ## Rebuilding
 
 ```bash

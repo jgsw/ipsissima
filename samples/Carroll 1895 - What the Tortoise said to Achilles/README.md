@@ -85,6 +85,19 @@ author never made. The contention's own fidelity is now reported separately -- a
 10 September 2026, an imputed contention counts in its own load. Carroll was the first
 sample map where it fires; the Swift satire now joins it, with two.
 
+## The question and the table
+
+Added on 2 November 2026, after the review of 27 August, and not yet reviewed themselves. Carroll
+asks nothing in so many words, so the map's **one question** is its own: must the principle that Z
+follows from A and B be granted as a further premise before accepting A and B compels accepting
+Z? Both answers are drawn: the Tortoise's yes, reported, and the no this map imputes to the piece.
+
+The **one table** is the Tortoise's two readers. One accepts the Hypothetical but not A and B; the
+other accepts A and B but not the Hypothetical; and neither is "under any logical necessity to
+accept Z". Set beside Achilles's "any one who accepts A and B as true, must accept Z as true", the
+second row is the counterexample, and Achilles grants it. His claim runs one way only, so it stays
+in its words rather than becoming the table's rule.
+
 ## Rebuilding
 
 ```bash

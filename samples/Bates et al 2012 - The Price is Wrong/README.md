@@ -53,6 +53,38 @@ which were kept apart; those are the decisions two readers are likeliest to make
 The checker's coverage report finds 37 of the text's 73 sentences of causal language quoted by a
 step, and 20 more in a paragraph with one.
 
+## Questions and tables
+
+Added on 2 November 2026 by an upgrade pass under profile 1.26, which leaves the argument as it
+was. The map opens on one of **eight questions** the text asks in its own words, from "How big a
+barrier to access are user fees in education and health?" to "When are the disadvantages of
+cost-sharing likely to be so great that products should be offered for free?", and marks the claim
+that answers each.
+
+Its tables are the fullest in the samples:
+
+- **Table 1's ten studies, crossed with what the bulletin asks of them**: take-up, use, resale,
+  targeting, long-term effects, why small fees deter, and cost. Each finding sits in the cell where
+  its study meets the result it serves, with the study's product and country beside it, so a
+  reader can see which studies answer which question, and which answer none.
+- **Four sets of rival accounts**, each on one of the text's questions: the screening and
+  sunk-cost routes by which charging "has been thought to promote use"; whether charging targets
+  the neediest or worsens targeting; whether free distribution breeds resentment or teaches the
+  benefits of a product; and why people are so sensitive to small fees (low value, lack of cash,
+  the effort of deciding). The findings are drawn to the accounts they bear on, so the Weigh panel
+  can show which evidence tells them apart.
+
+The four sets follow a pattern tested in repeated runs on the 2011 bulletin, ported here and
+checked against the 2012 text. Two things are deliberately not sets. The resale worry and the
+cost-recovery case are each a worry met by a finding or an argument, not a rival explanation.
+Convenience is left out of the sensitivity set, because the text offers it for a neighbouring
+question, the low take-up of preventive products. Eleven relations were added among existing
+claims, so that the account tables can tell their rows apart, and two claims: the deliberation
+idea study 8 tested, and its soap result. The hypothesis that charging may worsen targeting is
+now tagged `#reported`, as its rival already was: the text sets both out and concludes for
+neither. The deliberation idea now stands as a fourth apex: it is
+an account the text weighs and grants "at best" a small part, and it supports nothing.
+
 ## How it was made
 
 - **The text**: `make_source.py` converts the reprint's PDF with Ipsissima's own route and then

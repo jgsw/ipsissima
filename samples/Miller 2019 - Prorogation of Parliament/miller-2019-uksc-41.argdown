@@ -9,7 +9,49 @@ reconstruction:
 defaults:
     chapter: "source/miller-2019-uksc-41.md"
     reviewed: "2026-08-30"
+questions:
+    q1: {text: "\"Is the question of whether the Prime Minister’s advice to the Queen was lawful justiciable in a court of law?\"", pinpoint: "[27]"}
+    q2: {text: "\"If it is, by what standard is its lawfulness to be judged?\"", pinpoint: "[27]"}
+    q3: {text: "\"By that standard, was it lawful?\"", pinpoint: "[27]"}
+    q4: {text: "\"If it was not, what remedy should the court grant?\"", pinpoint: "[27]"}
+    q5: {text: "\"is Parliament prorogued or is it not?\"", pinpoint: "[62]"}
+frames:
+    issue:
+        kind: case
+        label: "\"two different issues\""
+        pinpoint: "[35]"
+        note: "The two questions that can be asked about a prerogative power. The court's answer to issue (1) turns on which of them these appeals raise."
+        values:
+            limits: "\"whether a prerogative power exists, and if it does exist, its extent\""
+            exercise: "\"whether its exercise within its legal limits is challengeable in the courts\""
+    justiciable:
+        kind: verdict
+        label: "Justiciable"
+        pinpoint: "[35]"
+        values: {yes: "\"justiciable\"", depends: "\"may raise questions of justiciability\""}
+        note: "The second value is the court's own hedge: whether an exercise within the limits is justiciable depends, after CCSU, on 'the nature and subject matter of the particular prerogative power being exercised'."
+    challenge:
+        kind: case
+        label: "Challenges to a prerogative, and the issue each raises"
+        pinpoint: "[35]-[36], [52]-[54]"
+        note: "The court places the challenge by effects among questions of the limits of the power. Counsel's excluded-categories submission treats it as an exercise within the limits, which the court answers by saying that argument 'only arises' for that issue; their placement is drawn as the attack it is, not as a cell. The challenge by motive is left unplaced: the court reaches it only if the advice was lawful ([54]), so its row is empty by the court's choice."
+        values:
+            effects: "The challenge to the advice by the effect of the prorogation"
+            motive: "The challenge to the advice by the Prime Minister's motive"
+            dissolution: "Dissolution of Parliament under the prerogative, in Lord Roskill's list"
+    raises:
+        kind: verdict
+        label: "The issue it raises"
+        pinpoint: "[35], [52]"
+        values: {limits: "the limits of the power", exercise: "an exercise within its limits"}
 ===
+
+// Questions and tables (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the
+// argument as it was): the court's four issues at [27] and the question it calls essential at
+// [62]; the two kinds of question about a prerogative power, and where each challenge falls. The
+// distinctions at [4]-[6] (prorogation against dissolution and against recess) are background the
+// reasoning does not turn on, so they have no frame; dissolution enters only as counsel's
+// analogy, as a row of the challenges.
 
 // Reconstructed from the disposal backwards, per the legal-judgment rule in the extraction
 // prompt. The order the court made is at [70]-[71]; everything the court treated as a necessary
@@ -20,7 +62,7 @@ defaults:
 
 # The disposal {isGroup: true}
 
-[Parliament has not been prorogued]: It follows that Parliament has not been prorogued and that this court should make declarations to that effect. {fidelity: "quotation", pinpoint: "[70]", source: "\"It follows that Parliament has not been prorogued and that this court should make declarations to that effect.\""}
+[Parliament has not been prorogued]: It follows that Parliament has not been prorogued and that this court should make declarations to that effect. {fidelity: "quotation", pinpoint: "[70]", source: "\"It follows that Parliament has not been prorogued and that this court should make declarations to that effect.\"", question: [{id: q4, move: answers}, {id: q5, move: answers}]}
 
 [The appeals are disposed of]: The Advocate General's appeal in Cherry is dismissed and Mrs Miller's appeal is allowed, with the same declarations and orders in each case. {fidelity: "paraphrase", pinpoint: "[71]", source: "\"Thus the Advocate General's appeal in the case of Cherry is dismissed and Mrs Miller's appeal is allowed. The same declarations and orders should be made in each case.\"", note: "The order the court actually made. Everything above it on the map is what the court treated as necessary to reach it."}
 
@@ -57,7 +99,7 @@ defaults:
 
 # Was the advice justiciable {isGroup: true}
 
-[The advice is justiciable]: The question whether the Prime Minister's advice to the Queen was lawful is justiciable. {formalization: "j", formalized: "ba260aa7", fidelity: "paraphrase", pinpoint: "[52]", source: "\"we are firmly of the opinion that it is justiciable\"", note: "Issue (1) of the four the court sets itself at [27]. It conditions the whole judgment: without it the court reaches neither the standard nor its application. THE CHECKER WILL ALWAYS REPORT IT AS A PREMISE THE STEP DOES NOT NEED, and that is right rather than a fault: justiciability is a JURISDICTIONAL PRECONDITION, not a premise of the entailment from the standard and the facts to unlawfulness. `ipsissima-conventions.md` §5 names this as one of the three jobs `<+` is doing at once, and says a precondition belongs in the premise-conclusion structure even though nothing in the notation marks it as a different kind of input. The formalization `j` is a placeholder for a claim that is about the court's power rather than about the argument."}
+[The advice is justiciable]: The question whether the Prime Minister's advice to the Queen was lawful is justiciable. {formalization: "j", formalized: "ba260aa7", fidelity: "paraphrase", pinpoint: "[52]", source: "\"we are firmly of the opinion that it is justiciable\"", note: "Issue (1) of the four the court sets itself at [27]. It conditions the whole judgment: without it the court reaches neither the standard nor its application. THE CHECKER WILL ALWAYS REPORT IT AS A PREMISE THE STEP DOES NOT NEED, and that is right rather than a fault: justiciability is a JURISDICTIONAL PRECONDITION, not a premise of the entailment from the standard and the facts to unlawfulness. `ipsissima-conventions.md` §5 names this as one of the three jobs `<+` is doing at once, and says a precondition belongs in the premise-conclusion structure even though nothing in the notation marks it as a different kind of input. The formalization `j` is a placeholder for a claim that is about the court's power rather than about the argument.", question: {id: q1, move: answers}}
 
 <Justiciability turns on which question is asked>: The court distinguishes two questions about a prerogative power, and places this case in the one that is undoubtedly justiciable. {fidelity: "interpretation", warrant: "coherence", pinpoint: "[35]-[52]", note: "The three premises are assembled from paragraphs seventeen apart. The court never numbers them, but the argument does not hold together any other way: [35] draws the distinction, [52] places the case."}
 
@@ -69,12 +111,12 @@ defaults:
 
 [Two issues about prerogative power]: In the case of prerogative powers it is necessary to distinguish whether a power exists and its extent, from whether an exercise of the power within its limits is open to legal challenge. {fidelity: "compression", pinpoint: "[35]", source: "\"The first is whether a prerogative power exists, and if it does exist, its extent.\"", note: "Two consecutive sentences joined. The second issue is the one that 'may raise questions of justiciability'; the first is not in doubt."}
 
-[The existence and extent of a power is justiciable]: The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept. {fidelity: "quotation", pinpoint: "[35]", source: "\"The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept.\""}
+[The existence and extent of a power is justiciable]: The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept. {fidelity: "quotation", pinpoint: "[35]", source: "\"The first of these issues undoubtedly lies within the jurisdiction of the courts and is justiciable, as all the parties to these proceedings accept.\"", about: {issue: limits, justiciable: yes}}
     <+ [CCSU]
 
 [CCSU]: Council of Civil Service Unions v Minister for the Civil Service \[1985\] AC 374, cited as authority that the courts may rule on the existence and extent of prerogative powers. #authority {fidelity: "compression", pinpoint: "[35]", source: "\"If authority is required, it can be found in the decision of the House of Lords in the case of Council of Civil Service Unions v Minister for the Civil Service [1985] AC 374.\""}
 
-[The standard determines the limits of the power]: The standard the court applies is not concerned with the mode of exercise of the prerogative within its lawful limits; it determines the limits of the power, marking the boundary between the prerogative and the constitutional principles of Parliamentary sovereignty and responsible government. {fidelity: "compression", pinpoint: "[52]", source: "\"it is a standard which determines the limits of the power, marking the boundary between the prerogative on the one hand and the operation of the constitutional principles of the sovereignty of Parliament and responsible government on the other hand\"", note: "This is where the argument turns: the case is placed on the justiciable side of the [35] distinction by what the standard does, so the standard at [50] has to be settled before justiciability can be."}
+[The standard determines the limits of the power]: The standard the court applies is not concerned with the mode of exercise of the prerogative within its lawful limits; it determines the limits of the power, marking the boundary between the prerogative and the constitutional principles of Parliamentary sovereignty and responsible government. {fidelity: "compression", pinpoint: "[52]", source: "\"it is a standard which determines the limits of the power, marking the boundary between the prerogative on the one hand and the operation of the constitutional principles of the sovereignty of Parliament and responsible government on the other hand\"", note: "This is where the argument turns: the case is placed on the justiciable side of the [35] distinction by what the standard does, so the standard at [50] has to be settled before justiciability can be.", about: {challenge: effects, raises: limits}}
 
 [The advice is justiciable]
     <+ [Political context is no bar]
@@ -112,7 +154,7 @@ defaults:
 -- {uses: [1, 2]} --
 (3) [The advice is not justiciable]
 
-[Roskill's dictum]: In the Council of Civil Service Unions case Lord Roskill mentioned the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable. #authority {fidelity: "paraphrase", pinpoint: "[35]", source: "\"Lord Roskill mentioned at p 418 the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable\""}
+[Roskill's dictum]: In the Council of Civil Service Unions case Lord Roskill mentioned the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable. #authority {fidelity: "paraphrase", pinpoint: "[35]", source: "\"Lord Roskill mentioned at p 418 the dissolution of Parliament as one of a number of powers whose exercise was in his view non-justiciable\"", about: {challenge: dissolution, raises: exercise}}
 
 [The advice is not justiciable]: The lawfulness of the Prime Minister's advice is not justiciable in a court of law. #reported {fidelity: "imputation", warrant: "enthymeme", pinpoint: "[28]", note: "The conclusion the Prime Minister's submissions are put to, stated by the court as their position at [28] rather than in these words by counsel."}
 
@@ -124,9 +166,12 @@ defaults:
 
 [The excluded-categories argument is never reached]: The excluded-categories argument arises only if the issue concerns the exercise of a prerogative power within its lawful limits, and no question of justiciability can arise about the existence or legal limits of such a power, which are by definition questions of law. {fidelity: "compression", pinpoint: "[36]", source: "\"no question of justiciability, whether by reason of subject matter or otherwise, can arise in relation to whether the law recognises the existence of a prerogative power, or in relation to its legal limits. Those are by definition questions of law.\""}
 
+[The excluded-categories argument is never reached]
+    <+ [The exercise of a power within its limits may raise questions of justiciability]: The second of these issues, on the other hand, may raise questions of justiciability. {fidelity: "quotation", pinpoint: "[35]", about: {issue: exercise, justiciable: depends}, note: "The second of the 'two different issues': whether an exercise of the power within its legal limits is challengeable on the recognised grounds of judicial review. It is the only one on which the excluded categories could bear."}
+
 # By what standard {isGroup: true}
 
-[The standard]: A decision to prorogue Parliament, or to advise the monarch to prorogue Parliament, will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive. {formalization: "(f & -r) -> u", formalized: "fb038f2a", fidelity: "quotation", pinpoint: "[50]", source: "\"a decision to prorogue Parliament (or to advise the monarch to prorogue Parliament) will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive\"", note: "Issue (2). The rule of law the case is usually cited for -- but the court states it 'for the purposes of the present case', and what it stands for as precedent is for later courts, not this map, to settle."}
+[The standard]: A decision to prorogue Parliament, or to advise the monarch to prorogue Parliament, will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive. {formalization: "(f & -r) -> u", formalized: "fb038f2a", fidelity: "quotation", pinpoint: "[50]", source: "\"a decision to prorogue Parliament (or to advise the monarch to prorogue Parliament) will be unlawful if the prorogation has the effect of frustrating or preventing, without reasonable justification, the ability of Parliament to carry out its constitutional functions as a legislature and as the body responsible for the supervision of the executive\"", note: "Issue (2). The rule of law the case is usually cited for -- but the court states it 'for the purposes of the present case', and what it stands for as precedent is for later courts, not this map, to settle.", question: {id: q2, move: answers}}
 
 <Deriving the limit>: The limit on the prerogative is derived from the constitutional principles the power would otherwise defeat. {fidelity: "interpretation", warrant: "coherence", pinpoint: "[38]-[50]", note: "Assembled across thirteen paragraphs. The court argues each principle separately and states the limit at [50] without gathering the premises; the gathering is the reconstructor's."}
 
@@ -185,7 +230,7 @@ defaults:
 
 # Was the advice lawful {isGroup: true}
 
-[The advice was unlawful]: It follows that the decision to advise Her Majesty to prorogue Parliament was unlawful. {formalization: "u", formalized: "a338af07", fidelity: "paraphrase", pinpoint: "[61]", source: "\"It follows that the decision was unlawful.\""}
+[The advice was unlawful]: It follows that the decision to advise Her Majesty to prorogue Parliament was unlawful. {formalization: "u", formalized: "a338af07", fidelity: "paraphrase", pinpoint: "[61]", source: "\"It follows that the decision was unlawful.\"", question: {id: q3, move: answers}}
 
 <Applying the standard>: The two limbs of the standard, applied to the facts found. {fidelity: "compression", pinpoint: "[55]-[61]", note: "The court stages it as two questions -- did it frustrate Parliament, and was there a reasonable justification -- and answers them in turn."}
 

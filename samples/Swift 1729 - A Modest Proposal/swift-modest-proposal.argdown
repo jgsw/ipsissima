@@ -8,6 +8,60 @@ reconstruction:
     strength: ordinary
 defaults:
     chapter: "source/a-modest-proposal.md"
+questions:
+    q1: {text: "\"How this number shall be reared and provided for?\""}
+    q2: {text: "What is already being done to the Irish poor, and why is nothing done to relieve them?"}
+frames:
+    way:
+        kind: case
+        label: "Ways of disposing of the children of the poor, as the proposer weighs them"
+        note: "The persona's own comparison, on the grounds he gives. He applies cruelty to his friend's refinement and to nothing else: the cell where his own scheme meets it is empty, and that silence is the satire's point, not a gap to fill."
+        values:
+            proposal: "Sale at a year old (the proposal)"
+            twelve: "Sale at twelve years old"
+            refinement: "The friend's refinement: lads and maidens of twelve to fourteen"
+            expedients: "The other expedients: taxing absentees, home manufactures, mercy in landlords"
+    account:  {kind: dimension, label: "\"turn to account\"", values: [yes, no]}
+    power:    {kind: dimension, label: "\"full in our own power\"", values: [yes, no]}
+    cruelty:  {kind: dimension, label: "\"bordering upon cruelty\"", values: [yes, no]}
+    verdict:
+        kind: verdict
+        label: "The proposer's verdict"
+        values: {offered: "offered", refused: "refused"}
+mechanism:
+    depth: full
+    question: "What would selling the children of the poor at a year old bring about, and what is already being done to the poor without it?"
+    levels: [macro, meso, micro]
+    ordering: unstated
+    actors:
+        kingdom:   {label: "The kingdom of Ireland", level: macro}
+        landlords: {label: "Landlords", level: meso}
+        gentry:    {label: "Persons of quality and fortune; the squire", level: meso}
+        poor:      {label: "The Irish poor: mothers, breeders, tenants, labourers, children", level: micro}
+    kinds:
+        perish: {label: "The poor wasting away", general: dying}
+    states:
+        sale:       {label: "Children of the poor sold as food at a year old", actor: kingdom, role: intervention,
+                     note: "Recommended by the persona only; Swift recommends nothing in the pamphlet."}
+        abortion:   {label: "Voluntary abortions, and mothers murdering their bastard children", actor: poor}
+        papists:    {label: "Number of Papists", actor: kingdom, aspect: quantity}
+        distrain:   {label: "Poorer tenants have something distrainable of their own", actor: poor}
+        stock:      {label: "The nation's stock", actor: kingdom, aspect: quantity}
+        gain:       {label: "Breeders' gain, and relief from the charge of maintenance", actor: poor}
+        squire:     {label: "The squire learns to be a good landlord", actor: gentry}
+        taverns:    {label: "Custom to taverns", actor: gentry}
+        marriage:   {label: "Marriage, and mothers' care for their children", actor: poor}
+        population: {label: "Number of people in the kingdom", actor: kingdom, aspect: quantity}
+        oppression: {label: "Oppression of landlords", actor: landlords, role: condition}
+        misery:     {label: "The poor's perpetual scene of misfortunes", actor: poor, role: outcome,
+                     note: "'The impossibility of paying rent without money or trade, the want of common sustenance, with neither house nor clothes' (the closing challenge) and 'cold and famine, and filth, and vermin' read as one state."}
+        dying:      {label: "The aged and diseased poor die and rot", actor: poor, kind: perish}
+        nowork:     {label: "The young cannot get work", actor: poor}
+        pine:       {label: "Young labourers pine away from want of nourishment", actor: poor, kind: perish}
+        thieves:    {label: "Children grow up to turn thieves, or leave the country", actor: poor}
+    chains:
+        scheme: {label: "The proposer's scheme and its advantages", question: "What would selling the children of the poor at a year old bring about?", goal: intervene}
+        plight: {label: "What is already done to the poor", question: "What is already being done to the Irish poor?", goal: attribute}
 ===
 
 // The pamphlet is spoken throughout by a persona, the proposer. Claims that belong to
@@ -15,25 +69,40 @@ defaults:
 // A handful of the persona's sentences are read, on the standard reading, as Swift's own
 // voice breaking through; those are left untagged and each carries a note saying so.
 // Swift's contention is never stated and is marked as an imputation.
+//
+// QUESTIONS, TABLE AND MECHANISM (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves
+// the argument as it was). q1 is the proposer's own question; q2 is Swift's, never asked, so in
+// this file's words. The table is the proposer's comparison of ways to dispose of the children.
+// The mechanism has two chains: the scheme's advantages, which are the persona's (`#reported`),
+// and what is already done to the poor, in the sentences this map reads as Swift's own voice.
+// They meet where the parents "would think it a great happiness to have been sold for food".
+// Two new claims, both untagged for that reason: the beggars' children of the opening, and the
+// young labourers who cannot get work.
 
 # The proposer's case {isGroup: true}
 
 [The proposal should be adopted]: Ireland should adopt the scheme of selling the children of the poor at a year old as food, this being "a fair, cheap and easy method of making these children sound and useful members of the commonwealth". #reported
-    {fidelity: "compression", note: "The apex of the persona's argument. The scheme itself is stated across several paragraphs; the quoted phrase is the criterion the proposer sets himself at the outset."}
+    {fidelity: "compression", note: "The apex of the persona's argument. The scheme itself is stated across several paragraphs; the quoted phrase is the criterion the proposer sets himself at the outset.", question: {id: q1, move: answers}, about: {way: proposal, verdict: offered}}
     <+ [A new method of providing for the children of the poor is needed]
     <+ [At a year old the children can be turned to account for parents and kingdom]
     <+ [The advantages of the proposal are obvious and many]
     <+ [No other expedient is to be talked of until there is some hope it will be attempted]
-    <+ [The scheme prevents abortion and infanticide]: The scheme "will prevent those voluntary abortions, and that horrid practice of women murdering their bastard children". #reported {fidelity: "compression"}
+    <+ [The scheme prevents abortion and infanticide]: The scheme "will prevent those voluntary abortions, and that horrid practice of women murdering their bastard children". #reported {fidelity: "compression", causes: {from: sale, to: abortion, sign: "-", basis: asserted, chain: scheme, stance: rejected}}
     <+ [The parents themselves would think it a happiness to have been sold for food]
     <+ [The proposer has no personal interest in the scheme]: The proposer has "not the least personal interest in endeavouring to promote this necessary work", having "no children, by which I can propose to get a single penny". #reported {fidelity: "compression", note: "Offered as a warrant for the proposer's sincerity rather than as a reason for the scheme; hung here because the text offers it in support of the whole."}
-    <- [The population of the kingdom would be much lessened]: "the number of people will be thereby much lessened in the kingdom". #conceded {fidelity: "quotation", note: "The only objection the proposer can think of. He grants it and converts it: this I freely own, and was indeed one principal design in offering it to the world."}
+    <- [The population of the kingdom would be much lessened]: "the number of people will be thereby much lessened in the kingdom". #conceded {fidelity: "quotation", note: "The only objection the proposer can think of. He grants it and converts it: this I freely own, and was indeed one principal design in offering it to the world.", causes: {from: sale, to: population, sign: "-", basis: asserted, chain: scheme}}
     <- [The scheme does nothing for the aged, diseased or maimed poor]: "Some persons of a desponding spirit are in great concern about that vast number of poor people, who are aged, diseased, or maimed", for whom the scheme makes no provision. #contested {fidelity: "compression", note: "Voiced by unnamed persons of a desponding spirit who have desired the proposer to employ his thoughts on the matter."}
         <- [No provision is needed for the aged, diseased and maimed poor]: The proposer is "not in the least pain upon that matter". #reported {fidelity: "compression"}
             <+ [The aged poor are every day dying of cold, famine, filth and vermin]
 
 [The aged poor are every day dying of cold, famine, filth and vermin]: The aged, diseased and maimed poor "are every day dying, and rotting, by cold and famine, and filth, and vermin, as fast as can be reasonably expected".
-    {fidelity: "compression", note: "Spoken by the persona as reassurance; read as Swift's own report of the condition of the poor, which is why it is left untagged. It also feeds the young labourers point: they cannot get work, and consequently pine away from want of nourishment."}
+    {fidelity: "compression", note: "Spoken by the persona as reassurance; read as Swift's own report of the condition of the poor, which is why it is left untagged. It also feeds the young labourers point: they cannot get work, and consequently pine away from want of nourishment.", causes: {from: misery, to: dying, sign: "+", basis: asserted, chain: plight}}
+
+[Children of the poor turn thieves for want of work]: "who, as they grow up, either turn thieves for want of work, or leave their dear native country, to fight for the Pretender in Spain, or sell themselves to the Barbadoes"
+    {fidelity: "quotation", causes: {from: nowork, to: thieves, sign: "+", basis: asserted, chain: plight}, note: "The opening scene, of beggar mothers whose infants grow up so. Spoken by the persona before the scheme begins, and read as Swift's own report of the condition of the poor, so left untagged. It supports nothing in the argument: it is the chain's material."}
+
+[Young labourers cannot get work and pine away]: "They cannot get work, and consequently pine away from want of nourishment"
+    {fidelity: "quotation", causes: {from: nowork, to: pine, sign: "+", basis: asserted, chain: plight}, note: "Said of the young labourers, 'in almost as hopeful a condition' as the aged poor. Read, like that passage, as Swift's report, and left untagged."}
 
 ## The arithmetic of the poor {isGroup: true}
 
@@ -43,7 +112,7 @@ defaults:
 (1) [A hundred and twenty thousand children of poor parents are born annually]: "There only remain a hundred and twenty thousand children of poor parents annually born." #reported {fidelity: "quotation"}
 (2) [No method hitherto proposed can rear and provide for these children]: Providing for this number "under the present situation of affairs, is utterly impossible by all the methods hitherto proposed". #reported {fidelity: "compression"}
     <+ [Children under six cannot work, cultivate land or steal]: Children under six can neither be employed in handicraft or agriculture, nor build houses or cultivate land, and can very seldom live by stealing. #reported {fidelity: "paraphrase", note: "Left out: the proposer excepts children of towardly parts, confesses that they learn the rudiments of theft much earlier, and counts them as probationers until six on the word of a principal gentleman in the county of Cavan."}
-    <+ [Before twelve a child is no saleable commodity]: "a boy or a girl, before twelve years old, is no saleable commodity", and even then will not yield above three pounds, "which cannot turn to account either to the parents or kingdom". #reported {fidelity: "compression", note: "Joins two spans of the same sentence, eliding the price of three pounds or three pounds and half a crown that sits between them."}
+    <+ [Before twelve a child is no saleable commodity]: "a boy or a girl, before twelve years old, is no saleable commodity", and even then will not yield above three pounds, "which cannot turn to account either to the parents or kingdom". #reported {fidelity: "compression", note: "Joins two spans of the same sentence, eliding the price of three pounds or three pounds and half a crown that sits between them.", about: {way: twelve, account: no}}
     <+ [No rival scheme says how a hundred thousand useless mouths are to be fed and clothed]: No author of a rival scheme has considered "how they will be able to find food and raiment for a hundred thousand useless mouths and backs". #reported {fidelity: "compression", note: "The closing challenge to objectors, read as a reason for the impossibility claim: the proposer dares any objector to answer the question, which he takes to be unanswerable as things now stand."}
     <- <Other expedients would provide for the poor>
 -----
@@ -63,11 +132,11 @@ defaults:
     _> <Other expedients would provide for the poor>
 
 (1) [There is no hope of a sincere attempt to put the other expedients into practice]: "let no man talk to me of these and the like expedients, till he hath at least some glympse of hope, that there will ever be some hearty and sincere attempt to put them into practice".
-    {fidelity: "quotation", note: "Spoken by the persona, but read as Swift's own verdict on the Irish governing class, and so left untagged. It does double duty: it is the persona's ground for dismissing the expedients and Swift's ground for despairing of them."}
-(2) [The proposal is solid, cheap, and wholly in our own power]: The proposal, "as it is wholly new, so it hath something solid and real, of no expence and little trouble, full in our own power, and whereby we can incur no danger in disobliging England". #reported {fidelity: "compression"}
+    {fidelity: "quotation", note: "Spoken by the persona, but read as Swift's own verdict on the Irish governing class, and so left untagged. It does double duty: it is the persona's ground for dismissing the expedients and Swift's ground for despairing of them.", about: {way: expedients, power: no}}
+(2) [The proposal is solid, cheap, and wholly in our own power]: The proposal, "as it is wholly new, so it hath something solid and real, of no expence and little trouble, full in our own power, and whereby we can incur no danger in disobliging England". #reported {fidelity: "compression", about: {way: proposal, power: yes}}
     <+ [Infant flesh will not bear exportation]: "this kind of commodity will not bear exportation", flesh being of too tender a consistence to admit a long continuance in salt. #reported {fidelity: "compression"}
 -----
-(3) [No other expedient is to be talked of until there is some hope it will be attempted]: "Therefore let no man talk to me of other expedients". #reported {fidelity: "quotation"}
+(3) [No other expedient is to be talked of until there is some hope it will be attempted]: "Therefore let no man talk to me of other expedients". #reported {fidelity: "quotation", about: {way: expedients, verdict: refused}}
 
 ## The child as commodity {isGroup: true}
 
@@ -78,16 +147,16 @@ defaults:
 (2) [A gentleman would give ten shillings for the carcass of a good fat child]: "no gentleman would repine to give ten shillings for the carcass of a good fat child". #reported {fidelity: "quotation"}
 (3) [Nursing a beggar's child for a year costs about two shillings]: The proposer has computed "the charge of nursing a beggar's child" to be "about two shillings per annum, rags included". #reported {fidelity: "compression"}
 -----
-(4) [At a year old the children can be turned to account for parents and kingdom]: Sold at a year old, the children turn to account: "the mother will have eight shillings neat profit, and be fit for work till she produces another child", and the squire will learn to be a good landlord. #reported {fidelity: "compression", note: "Answers the earlier finding that before twelve a child cannot turn to account either to the parents or kingdom."}
+(4) [At a year old the children can be turned to account for parents and kingdom]: Sold at a year old, the children turn to account: "the mother will have eight shillings neat profit, and be fit for work till she produces another child", and the squire will learn to be a good landlord. #reported {fidelity: "compression", note: "Answers the earlier finding that before twelve a child cannot turn to account either to the parents or kingdom.", about: {way: proposal, account: yes}, causes: [{from: sale, to: squire, sign: "+", basis: asserted, chain: scheme, stance: rejected}, {from: sale, to: gain, sign: "+", basis: asserted, chain: scheme, size: "eight shillings neat profit", stance: rejected}]}
 
 [Only infants of a year old are to be sold]: Of the hundred and twenty thousand, twenty thousand are to be "reserved for breed" and "the remaining hundred thousand may, at a year old, be offered in sale to the persons of quality and fortune, through the kingdom". #reported
     {fidelity: "compression"}
     +> [At a year old the children can be turned to account for parents and kingdom]
     <- [Lads and maidens between twelve and fourteen should be sold as well]: "the want of venison might be well supplied by the bodies of young lads and maidens, not exceeding fourteen years of age, nor under twelve". #reported {fidelity: "quotation", note: "A refinement offered by a very worthy person, a true lover of his country; the proposer, with due deference, cannot be altogether in his sentiments."}
         <+ [In Formosa the carcasses of executed young persons are sold as a prime dainty]: Psalmanaazor of Formosa told the friend that in his country "the executioner sold the carcass to persons of quality, as a prime dainty". #reported {fidelity: "compression"}
-        <- [The flesh of the males would be tough and lean]: "their flesh was generally tough and lean, like that of our schoolboys, by continual exercise, and their taste disagreeable, and to fatten them would not answer the charge". #reported {fidelity: "quotation"}
-        <- [Selling the females would be a loss to the public]: "it would, I think, with humble submission, be a loss to the publick, because they soon would become breeders themselves". #reported {fidelity: "quotation"}
-        <- [Some scrupulous people might censure the practice as bordering upon cruelty]: "it is not improbable that some scrupulous people might be apt to censure such a practice, (although indeed very unjustly) as a little bordering upon cruelty". #conceded {fidelity: "quotation", note: "The proposer calls the censure unjust and yet offers it as a reason against the refinement."}
+        <- [The flesh of the males would be tough and lean]: "their flesh was generally tough and lean, like that of our schoolboys, by continual exercise, and their taste disagreeable, and to fatten them would not answer the charge". #reported {fidelity: "quotation", about: {way: refinement, account: no}}
+        <- [Selling the females would be a loss to the public]: "it would, I think, with humble submission, be a loss to the publick, because they soon would become breeders themselves". #reported {fidelity: "quotation", about: {way: refinement, account: no}}
+        <- [Some scrupulous people might censure the practice as bordering upon cruelty]: "it is not improbable that some scrupulous people might be apt to censure such a practice, (although indeed very unjustly) as a little bordering upon cruelty". #conceded {fidelity: "quotation", note: "The proposer calls the censure unjust and yet offers it as a reason against the refinement.", about: {way: refinement, cruelty: yes}}
             <+ [Cruelty is the strongest objection against any project]
 
 [Cruelty is the strongest objection against any project]: Cruelty "hath always been with me the strongest objection against any project, how well soever intended". #conceded
@@ -97,25 +166,25 @@ defaults:
 
 [The advantages of the proposal are obvious and many]: "the advantages by the proposal which I have made are obvious and many, as well as of the highest importance". #reported
     {fidelity: "quotation", note: "Conductive: six numbered advantages, each offered as counting on its own, plus others omitted for brevity. They are drawn as convergent siblings, not as linked premises."}
-    <+ [The scheme would lessen the number of Papists]: "it would greatly lessen the number of Papists, with whom we are yearly overrun". #reported {fidelity: "quotation"}
-    <+ [The poorer tenants would have something distrainable of their own]: "The poorer tenants will have something valuable of their own, which by law may be made liable to a distress, and help to pay their landlord's rent". #reported {fidelity: "quotation"}
-    <+ [The nation's stock would be increased by fifty thousand pounds a year]: "the nation's stock will be thereby encreased fifty thousand pounds per annum", besides the profit of a new dish. #reported {fidelity: "quotation"}
-    <+ [The breeders would gain eight shillings a year and be rid of the charge of maintenance]: "The constant breeders, besides the gain of eight shillings sterling per annum by the sale of their children, will be rid of the charge of maintaining them after the first year." #reported {fidelity: "quotation"}
-    <+ [The scheme would bring great custom to taverns]: "This food would likewise bring great custom to taverns". #reported {fidelity: "quotation"}
-    <+ [The scheme would be a great inducement to marriage]: "This would be a great inducement to marriage", and "It would encrease the care and tenderness of mothers towards their children". #reported {fidelity: "compression"}
+    <+ [The scheme would lessen the number of Papists]: "it would greatly lessen the number of Papists, with whom we are yearly overrun". #reported {fidelity: "quotation", causes: {from: sale, to: papists, sign: "-", basis: asserted, chain: scheme, stance: rejected}}
+    <+ [The poorer tenants would have something distrainable of their own]: "The poorer tenants will have something valuable of their own, which by law may be made liable to a distress, and help to pay their landlord's rent". #reported {fidelity: "quotation", causes: {from: sale, to: distrain, sign: "+", basis: asserted, chain: scheme, stance: rejected}}
+    <+ [The nation's stock would be increased by fifty thousand pounds a year]: "the nation's stock will be thereby encreased fifty thousand pounds per annum", besides the profit of a new dish. #reported {fidelity: "quotation", causes: {from: sale, to: stock, sign: "+", basis: asserted, chain: scheme, size: "fifty thousand pounds per annum", stance: rejected}}
+    <+ [The breeders would gain eight shillings a year and be rid of the charge of maintenance]: "The constant breeders, besides the gain of eight shillings sterling per annum by the sale of their children, will be rid of the charge of maintaining them after the first year." #reported {fidelity: "quotation", causes: {from: sale, to: gain, sign: "+", basis: asserted, chain: scheme, size: "eight shillings sterling per annum", stance: rejected}}
+    <+ [The scheme would bring great custom to taverns]: "This food would likewise bring great custom to taverns". #reported {fidelity: "quotation", causes: {from: sale, to: taverns, sign: "+", basis: asserted, chain: scheme, stance: rejected}}
+    <+ [The scheme would be a great inducement to marriage]: "This would be a great inducement to marriage", and "It would encrease the care and tenderness of mothers towards their children". #reported {fidelity: "compression", causes: {from: sale, to: marriage, sign: "+", basis: asserted, chain: scheme, stance: rejected}}
 
 ## The challenge to objectors {isGroup: true}
 
 [The parents themselves would think it a happiness to have been sold for food]: Those who dislike the overture should first ask the parents of these mortals "whether they would not at this day think it a great happiness to have been sold for food at a year old".
-    {fidelity: "compression", note: "The persona's closing challenge, read as Swift's own indictment and so left untagged: the point is not that the scheme is good but that the life it replaces is worse."}
-    <+ [The poor suffer a perpetual scene of misfortunes]: The parents have gone through "the oppression of landlords, the impossibility of paying rent without money or trade, the want of common sustenance, with neither house nor clothes to cover them from the inclemencies of the weather", with the prospect of entailing the like on their breed for ever. {fidelity: "compression", note: "Spoken by the persona; read as Swift's own catalogue of the causes of Irish misery, and so left untagged."}
+    {fidelity: "compression", note: "The persona's closing challenge, read as Swift's own indictment and so left untagged: the point is not that the scheme is good but that the life it replaces is worse.", causes: {from: sale, to: misery, sign: "-", basis: asserted, chain: [scheme, plight]}}
+    <+ [The poor suffer a perpetual scene of misfortunes]: The parents have gone through "the oppression of landlords, the impossibility of paying rent without money or trade, the want of common sustenance, with neither house nor clothes to cover them from the inclemencies of the weather", with the prospect of entailing the like on their breed for ever. {fidelity: "compression", note: "Spoken by the persona; read as Swift's own catalogue of the causes of Irish misery, and so left untagged.", causes: {from: oppression, to: misery, sign: "+", basis: asserted, chain: plight}}
 
 # Swift's argument {isGroup: true}
 
 [The Irish poor are already being devoured]: The Irish poor are already consumed by their landlords, by England, and by those who reckon them as stock; eating their children would only make literal what is already done to them.
-    {fidelity: "imputation", warrant: "convention", note: "The satire never states its contention. This is the standard reading and the wording is the reconstructor's. The reductio below is the route from the persona's argument to it."}
+    {fidelity: "imputation", warrant: "convention", note: "The satire never states its contention. This is the standard reading and the wording is the reconstructor's. The reductio below is the route from the persona's argument to it.", question: {id: q2, move: answers}}
     <+ <The proposal as reductio>
-    <+ [Landlords have already devoured most of the parents]: Landlords, "as they have already devoured most of the parents, seem to have the best title to the children". {fidelity: "compression", note: "Spoken by the persona as a pleasantry about who can afford the dish; read as Swift's own charge, and so left untagged."}
+    <+ [Landlords have already devoured most of the parents]: Landlords, "as they have already devoured most of the parents, seem to have the best title to the children". {fidelity: "compression", note: "Spoken by the persona as a pleasantry about who can afford the dish; read as Swift's own charge, and so left untagged.", causes: {from: oppression, to: misery, sign: "+", basis: asserted, chain: plight}}
     <+ [England would gladly eat up the whole nation]: "perhaps I could name a country, which would be glad to eat up our whole nation without it". {fidelity: "quotation", note: "The persona's aside on exportation; read as Swift on England, and so left untagged."}
     <+ [The aged poor are every day dying of cold, famine, filth and vermin]
     <+ [The parents themselves would think it a happiness to have been sold for food]
@@ -132,7 +201,7 @@ defaults:
 (4) [Reckoning the poor purely as stock is monstrous]: The way of reckoning the poor that yields the proposal is itself monstrous. {fidelity: "imputation", warrant: "enthymeme", note: "The conclusion of the reductio; it supports the contention because the reckoning is not the persona's invention but the projectors' and landlords' ordinary practice."}
 
 [The honest remedies for Ireland are known and refused]: The expedients that would relieve Ireland are known to all and will not be sincerely attempted by those with the power to attempt them.
-    {fidelity: "imputation", warrant: "other-texts", note: "Swift's second contention, argued separately. The expedients listed and dismissed by the persona are those Swift had urged in his own Irish tracts, so the dismissal is read as Swift's despair rather than the persona's impatience."}
+    {fidelity: "imputation", warrant: "other-texts", note: "Swift's second contention, argued separately. The expedients listed and dismissed by the persona are those Swift had urged in his own Irish tracts, so the dismissal is read as Swift's despair rather than the persona's impatience.", question: {id: q2, move: answers}}
     <+ [The other expedients are the real remedies]: The expedients the proposer refuses to hear of, from taxing absentees to teaching landlords one degree of mercy, are the remedies Ireland actually needs. {fidelity: "interpretation", warrant: "other-texts", note: "The persona dismisses them as vain, idle, visionary thoughts; they are Swift's own proposals."}
         <+ [There are other expedients]
     <+ [There is no hope of a sincere attempt to put the other expedients into practice]

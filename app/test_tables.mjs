@@ -451,12 +451,14 @@ if (chromium) {
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(batesDir, batesMap), "-o", batesOut], { stdio: "pipe" });
     await open(batesOut);
     // THE TEXT'S QUESTION, BEFORE THE MAP'S ANSWER (the Purpose episode; ruled 20 Oct 2026, "A1" and
-    // "A3"). Bates names its chain's question. Mutations: never schedule qFirstOffer -> no card; keep
-    // the chip a count -> it does not say the question; forget "Don't ask first" -> the card returns.
+    // "A3"). Bates declares the questions it asks, in its own words, and the card asks the first with
+    // one pair of quotation marks, not the text's inside the card's. Mutations: never schedule
+    // qFirstOffer -> no card; keep the chip a count -> it does not say the question; wrap the text's
+    // quoted words in the card's marks -> doubled quotes; forget "Don't ask first" -> the card returns.
     const qcard = page.locator("#qfirst"), qchip = page.locator("#qchip");
-    check(await qcard.isVisible() && /^“How would charging small user fees, rather than giving products away/.test(await qcard.locator(".qtext").innerText()),
+    check(await qcard.isVisible() && /^“How big a barrier to access are user fees in education and health\?”$/.test(await qcard.locator(".qtext").innerText()),
           "a map that names its question asks it as the map opens, in a card over the map");
-    check(/^\? How would charging small user fees/.test(await qchip.innerText()) &&
+    check(/^\? "How big a barrier to access are user fees/.test(await qchip.innerText()) &&
           await page.evaluate(() => document.getElementById("orient").firstElementChild.id === "qchip"),
           "and the strip says the question itself, first, where it used to count questions");
     await qcard.locator('[data-qfirst="never"]').click();

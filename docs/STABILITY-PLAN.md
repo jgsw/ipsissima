@@ -367,6 +367,51 @@ geometry adaptation 1–2, baselines and fixtures 1–2, stability re-proof 1).
    The trade was pre-approved in spirit by the author's size ruling; what it waits on is a
    feature that earns it, not permission.
 
+## Seats: one order per map, chosen once to cross less — 2 Nov 2026
+
+**Why.** Home columns pack each section's row-mates in the order the .argdown writes them, which
+is the reconstructor's order and knows nothing about where the lines go. Looking into why
+Tooming & Jakapi crossed so much, we found that a fifth of all crossings on the samples could go
+by changing nothing but which of two row-mates is drawn first.
+
+**What.** `seatsOf` gives every claim a seat: one of its own section's written line numbers,
+reassigned among the claims that share its row when everything is open. It uses the barycentre
+method, three sweeps top to bottom. The phase 2 principle stands: the seats are computed once
+per map and cached on the graph, so every view is still a projection of one fixed order, and
+folding removes neighbours without reshuffling them. Three further rules:
+- an argument's premises stay in their order, even across rows;
+- a reseat stands only if it lowers crossings on the depth ladder and raises them at no level;
+- widths are estimated from labels, so every host seats a map the same way.
+
+`test_seats.mjs` holds all four rules.
+
+**Measured** with `map_quality` (same estimated sizes) against the renderer before the change:
+
+| | samples (11 maps) | OneDrive corpus (51 maps: course maps, other maps, test corpus) |
+|---|---|---|
+| crossings, main | 52 → 47 | 377 → 271 (−28%) |
+| crossings, reasons | 202 → 178 | 962 → 781 (−19%) |
+| crossings, detail | 398 → 327 | 1,822 → 1,532 (−16%) |
+| crossings, everything | 899 → 718 (−20%) | 2,517 → 1,970 (−22%) |
+| crossings, opening (folded) | 45 → 45 | 93 → 88 |
+| rows where crossings rose at all | 0 | 0 |
+| row-mate pairs drawn out of written order (everything open) | 124 of 1,665 | 473 of 6,625 (7.1%) |
+| premise pairs out of numbered order | 29 → 29 | 153 → 153 |
+| other metrics past their slack | none | 9 rows (below) |
+| time to seat, worst map | 133 ms (Williams–Dewey) | 82 ms (Cribb) |
+
+The corpus rows past their slack:
+- Lines bending around a claim in their new path: Valentino (both copies) overshoot 0 → 75,
+  bendWorst up to 83; the Wilson 2023 answer-key map overshoot 15 → 35 and 14 → 47.
+- Two movement rows: Gettier anchorCross 0.19 → 0.24; Semmelweiss moveMedian 0 → 0.17.
+
+**The price, the author's call (2 Nov 2026).** About one row-mate pair in fourteen is drawn out
+of the order the .argdown writes them. An order-keeping alternative was measured first: claims
+slid sideways toward what they connect to, never past each other. It cut crossings less
+(−12%) and cost the opening views and fold stability (Williams–Dewey's opening view went from
+4 crossings to 15). A reseat limited to claims citing the same pinpoint kept more order but cut
+crossings only 6%.
+
 ## Order of work
 
 1. Phase 1 attribution table (de-risks everything after).

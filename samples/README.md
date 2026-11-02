@@ -36,22 +36,34 @@ openly licensed instead.
 | | | |
 |---|---|---|
 | **Carroll**, "What the Tortoise Said to Achilles" (1895) | 36 nodes, 3 pages | public domain |
-| **Darwin**, natural selection (*Origin*, p. 168) | 13 nodes, 2 paragraphs | public domain |
-| **Miller**, *R (Miller) v The Prime Minister* [2019] UKSC 41 | 66 nodes, 25 pages | Open Government Licence |
+| **Darwin**, natural selection (*Origin*, p. 168) | 13 nodes, 2 paragraphs, and a mechanism | public domain |
+| **Miller**, *R (Miller) v The Prime Minister* [2019] UKSC 41 | 67 nodes, 25 pages | Open Government Licence |
 | **Prescott-Couch**, "The Philosopher as Reverse-Engineer" (2024) | 191 nodes, 17 pages | CC-BY 4.0 |
 | **Akhlaghi**, "Transformative experience and the right to revelatory autonomy" (2023) | 93 nodes, 10 pages | CC-BY 4.0 |
-| **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 127 nodes, 9 pages | CC-BY 4.0 |
+| **Tooming & Jakapi**, "Aphantasia as a challenge for Humean abstraction" (2026) | 130 nodes, 9 pages, and a mechanism sketch | CC-BY 4.0 |
 | **Wilson**, "Williams, Dewey, and the Nature of Value Inquiry" (2026) | 161 nodes, 28 pages | Creative Commons, by the author of Ipsissima |
-| **James**, "The Will to Believe" (1896) | 69 nodes, 31 pages | public domain |
-| **Swift**, *A Modest Proposal* (1729) | 53 nodes, one pamphlet | public domain |
-| **Bates, Glennerster, Gumede & Duflo**, "The Price is Wrong" (2012) | 97 nodes, 8 pages, and a mechanism | CC BY 3.0 |
-| **Wilson**, "What makes a health system good?" (2023) | 139 nodes, 15 pages, and a mechanism read with the argument | CC BY 4.0, by the author of Ipsissima |
+| **James**, "The Will to Believe" (1896) | 77 nodes, 31 pages, and a mechanism | public domain |
+| **Swift**, *A Modest Proposal* (1729) | 53 nodes, one pamphlet, and a mechanism | public domain |
+| **Bates, Glennerster, Gumede & Duflo**, "The Price is Wrong" (2012) | 102 nodes, 8 pages, and a mechanism | CC BY 3.0 |
+| **Wilson**, "What makes a health system good?" (2023) | 143 nodes, 15 pages, and a mechanism read with the argument | CC BY 4.0, by the author of Ipsissima |
 
 **The middle column counts nodes, not claims, and the difference is not cosmetic.** A node is a
 claim *or* an argument, and an argument with a premise-conclusion structure is a node in its own
 right — so the two numbers are never the same, and a table that said "claims" here disagreed with
 every folder README it pointed at. Nodes is also the number that can be checked: it is what the
 build command at the foot of this file prints.
+
+**Nine of them carry the two layers added in v0.4.0** — Bates, Darwin, James, Miller, Carroll,
+Wilson (2026), Tooming & Jakapi, Swift and Wilson (2023), upgraded on 2 November 2026 without
+rewriting their arguments. Each declares
+the **questions** the text works on (`questions:`, in the text's own words where it asks them),
+so the map opens on one and Study's first card asks it, and marks the claims that answer,
+dissolve or reframe each. Each declares the text's **comparisons** as tables (`frames:`), with
+the claims that fill a cell marked `about:`, so the Tables panel has something to show; Darwin's
+passage compares nothing, and its map says so (`frames: none`). Akhlaghi and Prescott-Couch
+predate the layers and do not have them yet. Seven samples now also carry a **mechanism**: Bates
+and Wilson (2023) had one; Darwin, James, Tooming & Jakapi and Swift gained theirs in the same pass
+(Swift's is two chains, the persona's advertised consequences and what the poor already suffer).
 
 Read **Carroll** and **Darwin** side by side if you want one thing from this folder. They are the
 clearest statement here of the distinction that decides how a reconstruction is wired:
@@ -102,7 +114,9 @@ being examined, and the critic's own conclusion.
 
 **Wilson (2026)** is the long one: three contentions rather than a single thesis, themes that recur and
 modulate. It is what the layout and folding behaviour is hardest on, and what the exposition
-sparkline has most to say about.
+sparkline has most to say about. Its tables include the one **account frame** outside Bates:
+Williams's humanistic programme in ethics against his realist critics', weighed on philosophy's
+record of ambition without progress.
 
 **Bates et al.** is the policy text, and the first sample with a **mechanism**: besides the
 argument, the chain the text says runs from charging a small fee to health, schooling and the
@@ -111,7 +125,10 @@ paying does not raise use, fees do not target the needy — each drawn against t
 it answers, and its one screening effect is drawn as selection, not as an effect of the price. It is
 also the one sample whose text comes from a two-column reprint with boxes, a table and charts, so
 its `make_source.py` shows the repairs such a layout needs, with a check that none of them changes a
-word.
+word. It is the fullest demonstration of the **Tables panel**: Table 1's ten studies crossed with
+the results they serve, and four sets of rival accounts the text weighs (how charging might raise
+use, whether it targets the needy, what free distribution does to later buying, why small fees
+deter so many), each with the findings drawn for and against it.
 
 **Wilson (2023)** is the sample whose argument runs on its mechanism, and the one made by the
 **parallel method**: argument and mechanism read together, the causal steps entering the argument

@@ -9,7 +9,102 @@ reconstruction:
 defaults:
     chapter: "source/wilson-2026-williams-dewey-nature-of-value-inquiry.md"
     reviewed: "2026-08-27"
+questions:
+    q1: {text: "\"How should philosophy position itself in this changing intellectual landscape?\"", pinpoint: "§1, p. 2"}
+    q2: {text: "\"whether philosophy belongs with the humanities or the sciences\"", pinpoint: "§1, p. 3"}
+    q3: {text: "Should inquiry in ethics be expected to converge, given better methods, on answers whose history is vindicatory?", pinpoint: "§§4–5, pp. 10–16"}
+    q4: {text: "Is the debate between Williams and his moral realist critics deadlocked?", pinpoint: "§1, p. 4"}
+    q5: {text: "\"Are thought experiments in ethics best understood as a way of doing science, or do they form part of humanistic inquiry?\"", pinpoint: "§6, p. 18"}
+    q6: {text: "\"what are the kinds of research questions in ethics that can fruitfully be answered by thought experiments, and what are thought experiments’ limitations even where they are useful?\"", pinpoint: "§6, p. 18"}
+    q7: {text: "\"can narratives or artworks provide kinds of ethical insight that philosophical argument cannot, and if so, how can these insights be integrated into philosophical thinking?\"", pinpoint: "§6, p. 18"}
+frames:
+    programme:
+        kind: account
+        label: "\"rival research paradigms, which interpret ethics as engaged in very different kinds of inquiry\""
+        pinpoint: "§5, p. 13"
+        question: q3
+        note: "Williams's humanistic programme and his moral realist critics', each with what it predicts of ethical theory. The paper weighs them on philosophy's record: the mismatch between its ambition and its power to resolve disagreement is 'evidence in favour of Williams's view rather than his moral realist opponents' (§1, p. 4)."
+        values:
+            humanistic: {claim: "Limits on convergence in sense-making"}
+            realist: {claim: "Ethical theory could yet become vindicatory"}
+    discipline:
+        kind: case
+        label: "Disciplines, by ambition and progressiveness"
+        pinpoint: "§5, p. 15"
+        values:
+            philosophy: "Philosophy"
+            anthropology: "Anthropology"
+            chemistry: "Chemistry"
+    ambition:
+        kind: dimension
+        label: "\"ambition\""
+        pinpoint: "§5, p. 14"
+        note: "Ambition is 'a vector of its generality, and the precision of the answers it provides'. The text grades it, and the grades are kept."
+        values: {high: "\"ambitious\"", more: "\"more ambitious\"", low: "\"low generality\""}
+    progress:  {kind: dimension, label: "\"progressiveness\"", pinpoint: "§5, p. 14", values: {low: "low"}}
+    testing:
+        kind: dimension
+        label: "Power of its methods to decide between theories"
+        pinpoint: "§5, p. 15"
+        values: {strong: "\"test them much more definitively\"", weak: "weak"}
+    mismatch:
+        kind: verdict
+        label: "\"discrepancy between its level of progressiveness, and the ambition of the theories advanced\""
+        pinpoint: "§5, p. 15"
+        values: [yes, no]
+    theory:
+        kind: case
+        label: "Middle-range and general theory"
+        pinpoint: "§5, pp. 16–17"
+        values:
+            middle: "\"theories of the middle-range\""
+            general: "More abstract and general theory"
+    rigour:
+        kind: dimension
+        label: "\"rigorous\""
+        pinpoint: "§5, p. 17"
+        ordered: true
+        values: {more: "more rigorous", less: "less rigorous"}
+    useful:
+        kind: dimension
+        label: "\"useful for the purposes of understanding and improving our current situation\""
+        pinpoint: "§5, p. 17"
+        ordered: true
+        values: {more: "more useful", less: "less useful"}
+    thinker:
+        kind: case
+        label: "Williams and Dewey"
+        pinpoint: "§§7–8, pp. 21–25"
+        values:
+            williams: "Bernard Williams"
+            dewey: "John Dewey"
+    freedom:    {kind: dimension, label: "\"ethical freedom\"", pinpoint: "§8, p. 25", values: [yes, no]}
+    naturalism: {kind: dimension, label: "\"naturalism\"", pinpoint: "§8, p. 25", values: [yes, no]}
+    experience: {kind: dimension, label: "Gives significant weight to experience and to the arts", pinpoint: "§8, p. 25", values: [yes, no]}
+    absolute:   {kind: dimension, label: "\"the absolute conception of reality\"", pinpoint: "§7, p. 23", values: [yes, no]}
+    divide:
+        kind: dimension
+        label: "Inquiry differs in kind between science and ethics"
+        pinpoint: "§7, pp. 23–24"
+        values: [yes, no]
+    arts:
+        kind: dimension
+        label: "The positive role of the arts in ethics"
+        pinpoint: "§7, pp. 21–22"
+        values: {hints: "\"scattered hints\"", argued: "argued at length"}
+    nimbler:
+        kind: verdict
+        label: "\"the nimbler thinker about what philosophy might become\""
+        pinpoint: "§8, p. 25"
+        values: [yes, no]
 ===
+
+// QUESTIONS AND TABLES (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the
+// argument as it was). Five questions are the paper's own words; q3 and q4 are implied, so they
+// are in this file's words. The four comparisons: the two research programmes in ethics, weighed
+// on philosophy's record (an account frame on q3); philosophy against anthropology and chemistry
+// on ambition and progressiveness; middle-range against general theory; and Williams against
+// Dewey.
 
 // THREE CONCLUSIONS, and the paper states all three in section 8. The top-level move is a
 // FRIENDLY AMENDMENT: the paper grants Williams's account of ethics as sense-making and denies
@@ -21,14 +116,14 @@ defaults:
 
 # What the paper concludes {isGroup: true}
 
-[What value inquiry requires]: What is required is less a shift from scientistic to humanistic conceptions of philosophy, than for philosophers working in value inquiry to better align their aspirations for theory with what it can actually deliver. {fidelity: "quotation", pinpoint: "abstract", source: "\"What is required is less a shift from scientistic to humanistic conceptions of philosophy, than for philosophers working in value inquiry to better align their aspirations for theory with what it can actually deliver.\"", note: "A comparative thesis whose two halves are the paper's two lines of argument: the first half is answered by the sections 1 to 3 result about disciplinary placement, the second by the section 5 case for middle-range theory."}
+[What value inquiry requires]: What is required is less a shift from scientistic to humanistic conceptions of philosophy, than for philosophers working in value inquiry to better align their aspirations for theory with what it can actually deliver. {fidelity: "quotation", pinpoint: "abstract", source: "\"What is required is less a shift from scientistic to humanistic conceptions of philosophy, than for philosophers working in value inquiry to better align their aspirations for theory with what it can actually deliver.\"", note: "A comparative thesis whose two halves are the paper's two lines of argument: the first half is answered by the sections 1 to 3 result about disciplinary placement, the second by the section 5 case for middle-range theory.", question: {id: q1, move: answers}}
     <+ [Middle-range rather than grand theory]
     <+ [No overall answer to where philosophy fits]
 
-[The debate is not deadlocked]: Analysis using the tools of transdisciplinary epistemology suggests that the debate between Williams and moral realists is not deadlocked after all. {fidelity: "quotation", pinpoint: "§5, p. 16", source: "\"Our analysis using the tools of transdisciplinary epistemology suggests that the debate between Williams and moral realists is not deadlocked after all.\"", note: "The paper's own hedge, 'suggests', is kept."}
+[The debate is not deadlocked]: Analysis using the tools of transdisciplinary epistemology suggests that the debate between Williams and moral realists is not deadlocked after all. {fidelity: "quotation", pinpoint: "§5, p. 16", source: "\"Our analysis using the tools of transdisciplinary epistemology suggests that the debate between Williams and moral realists is not deadlocked after all.\"", note: "The paper's own hedge, 'suggests', is kept.", question: {id: q4, move: answers}}
     <+ [Williams's view better fits the evidence]
 
-[Dewey is the nimbler thinker]: It is Dewey who is the nimbler thinker about what philosophy might become, due to his explicit emphasis on a unified, flexible and transdisciplinary approach to inquiry. {fidelity: "quotation", pinpoint: "§8, p. 25", source: "\"it is Dewey who is the nimbler thinker about what philosophy might become, due to his explicit emphasis on a unified, flexible and transdisciplinary approach to inquiry\""}
+[Dewey is the nimbler thinker]: It is Dewey who is the nimbler thinker about what philosophy might become, due to his explicit emphasis on a unified, flexible and transdisciplinary approach to inquiry. {fidelity: "quotation", pinpoint: "§8, p. 25", source: "\"it is Dewey who is the nimbler thinker about what philosophy might become, due to his explicit emphasis on a unified, flexible and transdisciplinary approach to inquiry\"", about: [{thinker: dewey, nimbler: yes}, {thinker: williams, nimbler: no}]}
     <- [Williams and Dewey share deep commitments]
     <+ [Dewey complements and partly corrects Williams]
     <+ <Dewey's account of inquiry is the more flexible>
@@ -71,7 +166,7 @@ defaults:
 
 # The disciplinary framing, and why it has no answer {isGroup: true}
 
-[No overall answer to where philosophy fits]: It is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences. {fidelity: "quotation", pinpoint: "§1, p. 3", source: "\"it is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences\""}
+[No overall answer to where philosophy fits]: It is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences. {fidelity: "quotation", pinpoint: "§1, p. 3", source: "\"it is a mistake to think that there is an overall answer to the question whether philosophy belongs with the humanities or the sciences\"", question: {id: q2, move: dissolves}}
     <+ [Method should follow the research problem]
     <+ [Philosophy is too various for one grouping]
     <+ [Whether a field is both humanistic and scientific is a substantive question]
@@ -116,7 +211,7 @@ defaults:
 [Philosophy is too various for one grouping]: We should not expect all the breadth of contemporary philosophy to fit comfortably within a single grouping of disciplines. {fidelity: "quotation", pinpoint: "§3, p. 9", source: "\"We should not expect all the breadth of contemporary philosophy to fit comfortably within a single grouping of disciplines.\""}
     <+ [Good work differs across philosophy's subfields]: Good work in the philosophy of physics may look nothing like good work in the philosophy of literature. {fidelity: "quotation", pinpoint: "§3, p. 9", source: "\"good work in the philosophy of physics may look nothing like good work in the philosophy of literature\""}
     <+ [Many areas of philosophy work on another discipline's questions]: Many areas of philosophy, including philosophy of law, philosophy of biology, philosophy of education, philosophy of art, and philosophy of medicine, reflect on the philosophical questions and challenges that arise for scholars and practitioners within another academic discipline. {fidelity: "quotation", pinpoint: "§3, p. 8", source: "\"Many areas of philosophy, including philosophy of law, philosophy of biology, philosophy of education, philosophy of art, and philosophy of medicine, reflect on the philosophical questions and challenges that arise for scholars and practitioners within another academic discipline.\""}
-        <+ [Their norms come from the first-order discipline]: The prevailing norms for what counts as good work, and appropriate methods, in these different areas of philosophy are influenced by features that are unique to the first-order discipline and are frequently interdisciplinary. {fidelity: "paraphrase", pinpoint: "§3, p. 9", source: "\"the prevailing norms for what counts as good work, and appropriate methods, in these different\"", note: "The quotation stops at the page break; the sentence continues 'areas of philosophy are influenced by features that are unique to the first-order discipline and are frequently interdisciplinary'."}
+        <+ [Their norms come from the first-order discipline]: The prevailing norms for what counts as good work, and appropriate methods, in these different areas of philosophy are influenced by features that are unique to the first-order discipline and are frequently interdisciplinary. {fidelity: "quotation", pinpoint: "§3, p. 9", source: "\"the prevailing norms for what counts as good work, and appropriate methods, in these different\"", note: "The quotation stops at the page break; the sentence continues 'areas of philosophy are influenced by features that are unique to the first-order discipline and are frequently interdisciplinary'."}
     <- [Interdisciplinary philosophy tends to be bad philosophy]: Interdisciplinary forms of philosophy tend to be bad philosophy. #contested {fidelity: "quotation", pinpoint: "§3, p. 9", source: "\"these interdisciplinary forms of philosophy tend to be bad philosophy\"", note: "The paper raises this as 'one possible response to such a line of thinking' and rejects it; it is nobody's stated position in the text."}
         <- [Williams does not take that line]: That interdisciplinary philosophy is bad philosophy is not the line that Williams takes, either in his pronouncements about philosophy, or his own practice. {fidelity: "paraphrase", pinpoint: "§3, p. 9", source: "\"this isn't the line that Williams takes either in his pronouncements about philosophy, or his own practice\""}
 
@@ -143,7 +238,7 @@ defaults:
     <+ [The virtues of truth underdetermine the account]: The combination of the facts and the intellectual virtues provide real constraints, but they systematically underdetermine what could count as a truthful and accurate way of making sense of a particular set of events. #reported {fidelity: "quotation", pinpoint: "§4, p. 11", source: "\"The combination of the facts and the intellectual virtues provide real constraints, but they systematically underdetermine what could count as a truthful and accurate way of making sense of a particular set of events.\""}
     <+ [Williams grants there are plain truths about the past]: Williams accepts that there are facts and plain truths about the past. #reported #conceded {fidelity: "quotation", pinpoint: "§4, p. 11", source: "\"Williams accepts that there are facts and plain truths about the past\"", note: "The paper stresses that the argument 'begins from premisses that are favourable to realists', which is why the concession counts towards the argument rather than against it."}
 -- {uses: [3, 4]} --
-(5) [Limits on convergence in sense-making]: There are important in principle limits on the extent to which we should expect inquiries that focus on sense-making to lead to convergence on a single truth, and limits too on the extent to which any convergence that does occur can be given a vindicatory explanation. #reported {fidelity: "quotation", pinpoint: "§4, p. 10", source: "\"There are important in principle limits on the extent to which we should expect inquiries that focus on sense-making to lead to convergence on a single truth, and limits too on the extent to which any convergence that does occur can be given a vindicatory explanation.\""}
+(5) [Limits on convergence in sense-making]: There are important in principle limits on the extent to which we should expect inquiries that focus on sense-making to lead to convergence on a single truth, and limits too on the extent to which any convergence that does occur can be given a vindicatory explanation. #reported {fidelity: "quotation", pinpoint: "§4, p. 10", source: "\"There are important in principle limits on the extent to which we should expect inquiries that focus on sense-making to lead to convergence on a single truth, and limits too on the extent to which any convergence that does occur can be given a vindicatory explanation.\"", question: {id: q3, move: answers}}
     >< [Ethical theory could yet become vindicatory]
 
 <It is early days for ethics>: The realists' reply: little progress so far is not the same as no progress possible. #reported #contested {fidelity: "compression", pinpoint: "§4, p. 10", note: "Parfit and Williamson, as the paper reports them. It grants the record and denies that the record licenses the conclusion, which is why it undercuts rather than attacks."}
@@ -151,7 +246,7 @@ defaults:
 (1) [Secular academic ethics is recent]: It is recent for ethics to be undertaken as an academic inquiry entirely outside of the limitations imposed by religious traditions. #reported {fidelity: "paraphrase", pinpoint: "§4, p. 10", source: "\"how recent it is for ethics to be undertaken as an academic inquiry entirely outside of the limitations imposed by religious traditions\""}
 (2) [Lack of progress is not inherent to philosophy]: Lack of progress isn't inherent to philosophy as a discipline; the problem has been that philosophy has not been done in a way that is precise enough to ensure progress. #reported {fidelity: "quotation", pinpoint: "§4, p. 10", source: "\"lack of progress isn't inherent to philosophy as a discipline; the problem has been that philosophy has not been done in a way that is precise enough to ensure progress\""}
 -----
-(3) [Ethical theory could yet become vindicatory]: Someone could accept that ethical theory has made relatively little progress so far, but argue that there is every reason to think that it could do, given the sustained use of better methods. #reported #contested {fidelity: "quotation", pinpoint: "§4, p. 10", source: "\"Someone could accept that ethical theory has made relatively little progress so far, but argue that there is every reason to think that it could do, given the sustained use of better methods.\""}
+(3) [Ethical theory could yet become vindicatory]: Someone could accept that ethical theory has made relatively little progress so far, but argue that there is every reason to think that it could do, given the sustained use of better methods. #reported #contested {fidelity: "quotation", pinpoint: "§4, p. 10", source: "\"Someone could accept that ethical theory has made relatively little progress so far, but argue that there is every reason to think that it could do, given the sustained use of better methods.\"", question: {id: q3, move: answers}}
     <- [Hopes of assimilation misunderstand value inquiry]: Expressions of hope based on the assumption that method in philosophy could be assimilated either to mathematics or to the sciences express a misunderstanding of the problems that value inquiry exists to examine. #reported {fidelity: "paraphrase", pinpoint: "§4, p. 10", source: "\"expresses a misunderstanding of the problems that value inquiry exists to examine\"", note: "Williams's answer to Parfit and Williamson."}
 
 <It is early days for ethics>
@@ -161,7 +256,7 @@ defaults:
 <Williams's commitments hang together>: Seeing ethics as sense-making under conditions of ethical freedom shows Williams's characteristic commitments to be unified. #reported {fidelity: "compression", pinpoint: "§4, pp. 12–13"}
 
 (1) [Ethical freedom]: We are substantively free to set our own ends, and thereby generate our own values and correlative practical reasons. #reported {fidelity: "quotation", pinpoint: "§4, p. 12", source: "\"we are substantively free to set our own ends, and thereby generate our own values and correlative practical reasons\"", note: "Fricker's formulation of what she takes to be Williams's most fundamental commitment. The paper never asserts ethical freedom in its own voice; in section 8 it stays conditional, 'if Williams and Dewey are correct to think that we do indeed have ethical freedom'."}
-    <+ [Ethical freedom is Williams's most fundamental commitment]: Williams's account of sense-making, his account of reasons, and much else in his philosophy can be brought into focus by the realization that his most fundamental philosophical commitment is to ethical freedom. #reported {fidelity: "paraphrase", pinpoint: "§4, p. 12", source: "\"account of sense-making, his account of reasons, and much else in his philosophy can be brought into focus by the realization that his most fundamental philosophical commitment is to ethical freedom\""}
+    <+ [Ethical freedom is Williams's most fundamental commitment]: Williams's account of sense-making, his account of reasons, and much else in his philosophy can be brought into focus by the realization that his most fundamental philosophical commitment is to ethical freedom. #reported {fidelity: "quotation", pinpoint: "§4, p. 12", source: "\"account of sense-making, his account of reasons, and much else in his philosophy can be brought into focus by the realization that his most fundamental philosophical commitment is to ethical freedom\""}
 (2) [Value inquiry is a form of sense-making]
 -----
 (3) [Williams's commitments form a unified picture]: Viewing ethics as a sense-making activity through which we contend with the implications of our ethical freedom helps us to see how Williams's characteristic commitments hang together in a unified way. {fidelity: "quotation", pinpoint: "§4, p. 13", source: "\"Viewing ethics as a sense-making activity through which we contend with the implications of our ethical freedom helps us to see how Williams's characteristic commitments hang together in a unified way, but it does little to prevent the critic from contraposing the argument\""}
@@ -188,24 +283,24 @@ defaults:
 
 (1) [Ambition is generality and precision]: The ambition of a research program is a vector of its generality, and the precision of the answers it provides to its research questions. {fidelity: "quotation", pinpoint: "§5, p. 14", source: "\"the ambition of a research program is a vector of its generality, and the precision of the answers it provides to its research questions\""}
 (2) [Progressive means a vindicatory history]: A research programme is progressive to the extent that its history is vindicatory in Williams's sense. {fidelity: "quotation", pinpoint: "§5, p. 14", source: "\"A research programme is progressive to the extent that its history is vindicatory in Williams's sense.\""}
-(3) [Philosophy is ambitious without being progressive]: Philosophical research programmes tend to be ambitious without being progressive. {fidelity: "quotation", pinpoint: "§5, p. 14", source: "\"philosophical research programmes tend to be ambitious without being progressive\""}
-    <+ [Philosophical debate rarely yields decisive reasons]: The back-and-forth of philosophical discussion – even when conducted at the highest levels of sophistication and rigour over an extended timeframe – rarely leads to decisive reasons to endorse one theory over another. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"The back-and-forth of philosophical discussion – even when conducted at the highest levels of sophistication and rigour over an extended timeframe – rarely leads to decisive reasons to endorse one theory over another.\""}
+(3) [Philosophy is ambitious without being progressive]: Philosophical research programmes tend to be ambitious without being progressive. {fidelity: "quotation", pinpoint: "§5, p. 14", source: "\"philosophical research programmes tend to be ambitious without being progressive\"", about: {discipline: philosophy, ambition: high, progress: low, mismatch: yes}}
+    <+ [Philosophical debate rarely yields decisive reasons]: The back-and-forth of philosophical discussion – even when conducted at the highest levels of sophistication and rigour over an extended timeframe – rarely leads to decisive reasons to endorse one theory over another. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"The back-and-forth of philosophical discussion – even when conducted at the highest levels of sophistication and rigour over an extended timeframe – rarely leads to decisive reasons to endorse one theory over another.\"", about: {discipline: philosophy, testing: weak}}
         <+ [Progress is refinement and a better sense of the price]: Philosophical progress consists in developing more refined versions of the theories we started with, and a better understanding of the price to be paid for maintaining each particular position. #reported {fidelity: "paraphrase", pinpoint: "§5, p. 15", source: "\"philosophical progress consists in developing more refined versions of the theories we started with, and a better understanding of the price to be paid\"", note: "Lewis, as the paper reports him."}
     <+ [Philosophers' confidence in ambitious theory stays high]: Philosophers' level of confidence that the discipline should be organised around the construction of ambitious theories remains high. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"philosophers' level of confidence that the discipline should be organised around the construction of ambitious theories remains high\""}
         <+ [Parfit claims a priori normative knowledge while granting he is not understood]: We can discover some normative truths merely by thinking about them… Most philosophers seem to reject my metaethical and other meta-normative beliefs. #reported {fidelity: "paraphrase", pinpoint: "n. 4, p. 15", source: "\"we can discover some normative truths merely by thinking about them\"", note: "The elision joins two sentences of the same footnote, which the paper prints together precisely because the pairing is the evidence: the second continues 'Many of these other people don't even understand what I believe. When I talk to these people, we can't even disagree.'"}
-    <+ [No other discipline shows this discrepancy]: No other discipline exhibits such a discrepancy between its level of progressiveness, and the ambition of the theories advanced. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"No other discipline exhibits such a discrepancy between its level of progressiveness, and the ambition of the theories advanced.\""}
-        <+ [Anthropology matches low progressiveness with low generality]: In anthropology, low progressiveness is matched by low generality. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"in anthropology, low progressiveness is matched by low generality\""}
-        <+ [Chemistry's ambition is buttressed by testability]: Chemists make more ambitious claims, but those more ambitious claims are buttressed by an ability to form precise hypotheses and to test them much more definitively than is ever the case in philosophy. {fidelity: "paraphrase", pinpoint: "§5, p. 15", source: "\"those more ambitious claims are buttressed by an ability to form precise hypotheses and to test them much more definitively than is ever the case in philosophy\""}
+    <+ [No other discipline shows this discrepancy]: No other discipline exhibits such a discrepancy between its level of progressiveness, and the ambition of the theories advanced. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"No other discipline exhibits such a discrepancy between its level of progressiveness, and the ambition of the theories advanced.\"", about: [{discipline: philosophy, mismatch: yes}, {discipline: anthropology, mismatch: no}, {discipline: chemistry, mismatch: no}]}
+        <+ [Anthropology matches low progressiveness with low generality]: In anthropology, low progressiveness is matched by low generality. {fidelity: "quotation", pinpoint: "§5, p. 15", source: "\"in anthropology, low progressiveness is matched by low generality\"", about: {discipline: anthropology, ambition: low, progress: low}}
+        <+ [Chemistry's ambition is buttressed by testability]: Chemists make more ambitious claims, but those more ambitious claims are buttressed by an ability to form precise hypotheses and to test them much more definitively than is ever the case in philosophy. {fidelity: "paraphrase", pinpoint: "§5, p. 15", source: "\"those more ambitious claims are buttressed by an ability to form precise hypotheses and to test them much more definitively than is ever the case in philosophy\"", about: {discipline: chemistry, ambition: more, testing: strong}}
 (4) [Sustained mismatch is a reason to reduce ambition]: Sustained mismatch between the level of ambition and the level of progressiveness provides reasons to reduce ambition. {fidelity: "quotation", pinpoint: "§5, p. 16", source: "\"Sustained mismatch between the level of ambition and the level of progressiveness provides reasons to reduce ambition.\""}
 -----
 (5) [Middle-range rather than grand theory]: Value inquiry should be done in a way that is both interdisciplinary and more modest, aiming to construct theories of the middle-range rather than grand theory. {fidelity: "paraphrase", pinpoint: "§8, p. 25", source: "\"I proposed a different way of doing philosophy, which is both interdisciplinary and more modest in that it aims to construct theories of the middle-range, rather than grand theory\""}
     <+ [Testable claims allow more reliable progress]: Bringing the generality and precision of the claims made within value inquiry more closely into line with the ability to test them will allow for a more reliable way of attaining whatever level of progress turns out to possible. {fidelity: "quotation", pinpoint: "§5, p. 16", source: "\"Bringing the generality and precision of the claims made within value inquiry more closely into line with the ability to test them will allow for a more reliable way of attaining whatever level of progress turns out to possible.\"", note: "Quoted with the source's own slip, 'turns out to possible'."}
     <+ [Merton made the same move in sociology]: Sociologists do better when they shift away from totalising theories that attempt to explain everything in society, to… theories of the middle-range, which are deliberately limited in their range and applicability. #reported {fidelity: "paraphrase", pinpoint: "§5, p. 16", source: "\"sociologists do better when they shift away from totalising theories that attempt to explain everything in society, to what he described as theories of the middle-range, which are deliberately limited in their range and applicability\""}
-    <+ [Middle-range theory is more useful]: Middle-range theory is often also more useful for the purposes of understanding and improving our current situation than more ambitious theory. {fidelity: "quotation", pinpoint: "§5, p. 17", source: "\"Middle-range theory is often also more useful for the purposes of understanding and improving our current situation than more ambitious theory.\""}
+    <+ [Middle-range theory is more useful]: Middle-range theory is often also more useful for the purposes of understanding and improving our current situation than more ambitious theory. {fidelity: "quotation", pinpoint: "§5, p. 17", source: "\"Middle-range theory is often also more useful for the purposes of understanding and improving our current situation than more ambitious theory.\"", about: [{theory: middle, useful: more}, {theory: general, useful: less}]}
     <+ [Middle-range theories are more rigorous]
 
-[Middle-range theories are more rigorous]: Middle-range theories are often more rigorous than more abstract and general ones. {fidelity: "quotation", pinpoint: "§5, p. 17", source: "\"middle-range theories are often more rigorous than more abstract and general ones\""}
-    <+ [Straining beyond the evidence makes reasoning less rigorous]: Straining for a greater degree of precision and generality than the evidence allows makes reasoning less, rather than more, rigorous. {fidelity: "paraphrase", pinpoint: "§5, p. 16", source: "\"Straining for a greater degree of precision and generality than the evidence allows makes reasoning\"", note: "The quotation stops at the page break; the sentence completes 'less, rather than more, rigorous.'"}
+[Middle-range theories are more rigorous]: Middle-range theories are often more rigorous than more abstract and general ones. {fidelity: "quotation", pinpoint: "§5, p. 17", source: "\"middle-range theories are often more rigorous than more abstract and general ones\"", about: [{theory: middle, rigour: more}, {theory: general, rigour: less}]}
+    <+ [Straining beyond the evidence makes reasoning less rigorous]: Straining for a greater degree of precision and generality than the evidence allows makes reasoning less, rather than more, rigorous. {fidelity: "quotation", pinpoint: "§5, p. 16", source: "\"Straining for a greater degree of precision and generality than the evidence allows makes reasoning\"", note: "The quotation stops at the page break; the sentence completes 'less, rather than more, rigorous.'"}
     <- [The claim about rigour may seem counterintuitive]: The claim that middle-range theory is likely to be more rigorous may seem counterintuitive. #conceded {fidelity: "quotation", pinpoint: "§5, p. 17", source: "\"I acknowledge that the claim that middle-range theory is likely to be more rigorous may seem counterintuitive\""}
 
 <The counterexample objection to middle-range theory>: Philosophers hold a theory refuted by any successful counterexample, however remote from the actual world, and on that standard a middle-range theory is bound to fail. #contested {fidelity: "compression", pinpoint: "§5, p. 17", note: "The paper reports this as what philosophers often assume, and answers it."}
@@ -237,6 +332,14 @@ defaults:
 (5) [Intractable disagreement is evidence for Williams]: To the extent that there are deep-seated and apparently intractable disagreements about the ontology and epistemology of ethical values, this is evidence in favour of Williams's view rather than his moral realist opponents. {fidelity: "quotation", pinpoint: "§1, p. 4", source: "\"to the extent that there are deep-seated and apparently intractable disagreements about the ontology and epistemology of ethical values, this is evidence in favour of Williams's view rather than his moral realist opponents\"", note: "The paper's scope marker, 'to the extent that', is kept."}
     +> [Williams's view better fits the evidence]
 
+// The two programmes weighed on the record (§1, p. 4): the mismatch is "evidence in favour of
+// Williams's view rather than his moral realist opponents".
+[Limits on convergence in sense-making]
+    <+ [Philosophy's methods are weak at resolving its disagreements]
+
+[Ethical theory could yet become vindicatory]
+    <- [Philosophy's methods are weak at resolving its disagreements]
+
 [Williams's view better fits the evidence]: It is Williams's humanistic view of ethics that better comports with the totality of the evidence. {fidelity: "quotation", pinpoint: "§1, p. 4", source: "\"it is Williams's humanistic view of ethics that better comports with the totality of the evidence\"", note: "The paper's own framing, 'Looked at in this way', ties the verdict to the transdisciplinary perspective rather than asserting it flat."}
     -> [Williams's argument may be question-begging]
 
@@ -247,7 +350,7 @@ defaults:
 
 # Cases, fiction and the arts {isGroup: true}
 
-[The blunt categorical question is unhelpful]: Asking whether thought experiments in ethics are best understood as a way of doing science, or as part of humanistic inquiry, is a blunt categorical question, and such a question is unhelpful. {fidelity: "paraphrase", pinpoint: "§6, p. 18", source: "\"such a blunt categorical question is unhelpful\"", note: "Section 6 applies the sections 1 to 3 result to a second-order case, which is why that result is drawn as an intermediate conclusion and not only as a contention."}
+[The blunt categorical question is unhelpful]: Asking whether thought experiments in ethics are best understood as a way of doing science, or as part of humanistic inquiry, is a blunt categorical question, and such a question is unhelpful. {fidelity: "paraphrase", pinpoint: "§6, p. 18", source: "\"such a blunt categorical question is unhelpful\"", note: "Section 6 applies the sections 1 to 3 result to a second-order case, which is why that result is drawn as an intermediate conclusion and not only as a contention.", question: {id: q5, move: reframes, into: [q6, q7]}}
     +> [Cases may be treated as experiments or as narratives]
 
 [Cases may be treated as experiments or as narratives]: There is no reason why it can't be fruitful in some circumstances to treat cases as scientific experiments, and in others to think of them as literary narratives. {fidelity: "quotation", pinpoint: "§6, p. 18", source: "\"There is no reason why it can't be fruitful in some circumstances to treat cases as scientific experiments, and in others to think of them as literary narratives.\""}
@@ -269,7 +372,7 @@ defaults:
 (3) [Thought experiments have had no comparable methodological attention]: Thought experiments have unfortunately not received anything like the same systematic approach to their design, methodology and real-world extrapolation as is found in other disciplines. {fidelity: "quotation", pinpoint: "§6, p. 19", source: "\"Thought experiments have unfortunately not received anything like the same systematic approach to their design, methodology and real-world extrapolation as is found in other disciplines\""}
     <+ [The Beholder's Share challenges internal validity]: The Beholder's Share poses a methodological challenge for achieving internal validity in thought experiments. {fidelity: "paraphrase", pinpoint: "§6, p. 20", source: "\"The Beholder's Share not only poses a methodological challenge for achieving internal validity in thought experiments\""}
 -----
-(4) [The science analogy makes thought experiments look less reliable]: The analogy with science may make thought experiments seem less, rather than more, reliable when we look across to the seriousness with which methodology is taken in other sciences. {fidelity: "paraphrase", pinpoint: "§6, pp. 19–20", source: "\"seem less, rather than more, reliable when we look across to the seriousness with which methodology is taken in other sciences\"", note: "The sentence straddles a page break in the converted source, so only its second half is quoted."}
+(4) [The science analogy makes thought experiments look less reliable]: The analogy with science may make thought experiments seem less, rather than more, reliable when we look across to the seriousness with which methodology is taken in other sciences. {fidelity: "quotation", pinpoint: "§6, pp. 19–20", source: "\"seem less, rather than more, reliable when we look across to the seriousness with which methodology is taken in other sciences\"", note: "The sentence straddles a page break in the converted source, so only its second half is quoted."}
 
 <The science analogy tells against the method of cases>
     _> <The method of cases>
@@ -282,7 +385,7 @@ defaults:
 (3) [Experimental science on humans yields middle-range theory]: Experimental science that takes human beings as its subject matter will typically lead to middle-range, rather than to more ambitious theory. {fidelity: "quotation", pinpoint: "§6, p. 19", source: "\"Experimental science that takes human beings as its subject matter will typically lead to middle-range, rather than to more ambitious theory.\""}
     +> [Thought experiments as science support the shift to middle-range]
 
-[Thought experiments as science support the shift to middle-range]: Conceiving of thought experiments in ethics as a way of doing science may support rather than undermine reasons for shifting to middle-range theories. {fidelity: "quotation", pinpoint: "§6, p. 19", source: "\"conceiving of thought experiments in ethics as a way of doing science may support rather than undermine reasons for shifting to middle-range theories\"", note: "The section's reversal: the practitioners who claim the authority of science are the ones the analogy pushes towards modesty."}
+[Thought experiments as science support the shift to middle-range]: Conceiving of thought experiments in ethics as a way of doing science may support rather than undermine reasons for shifting to middle-range theories. {fidelity: "quotation", pinpoint: "§6, p. 19", source: "\"conceiving of thought experiments in ethics as a way of doing science may support rather than undermine reasons for shifting to middle-range theories\"", note: "The section's reversal: the practitioners who claim the authority of science are the ones the analogy pushes towards modesty.", question: {id: q6, move: answers}}
     <+ [Philosophers treat thought experiments as science]: Philosophers often describe thought experiments in ethics as if they are doing science. #reported {fidelity: "quotation", pinpoint: "§6, p. 18", source: "\"Philosophers often describe thought experiments in ethics as if they are doing science.\""}
     +> [Middle-range rather than grand theory]
 
@@ -293,7 +396,7 @@ defaults:
 (3) [There is no single correct use of the Beholder's Share]: There are better and worse ways of making use of the Beholder's Share, but there isn't one single correct way. {fidelity: "paraphrase", pinpoint: "§6, p. 20", source: "\"There are, of course, better and worse ways of making use of the Beholder's Share, but there isn't one single correct way\""}
 (4) [Ethical freedom]
 -----
-(5) [Fecundity of response may be the sign of a good case]: If, like Williams, we are persuaded that we have ethical freedom, we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case. {fidelity: "paraphrase", pinpoint: "§6, p. 20", source: "\"we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case\"", note: "The conditional and the hedge are the paper's: it says 'we may come to think', not that this is so."}
+(5) [Fecundity of response may be the sign of a good case]: If, like Williams, we are persuaded that we have ethical freedom, we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case. {fidelity: "paraphrase", pinpoint: "§6, p. 20", source: "\"we may come to think that it is fecundity of response, rather than homogeneity, that is the sign of a good case\"", note: "The conditional and the hedge are the paper's: it says 'we may come to think', not that this is so.", question: {id: q7, move: answers}}
     +> [Art gives values and meanings words cannot carry]
 
 # Dewey, and what Williams left undone {isGroup: true}
@@ -303,15 +406,15 @@ defaults:
 
 <Dewey goes further than Williams on the arts>: Williams left the positive role of the arts at the level of hints; Dewey argued it out. {fidelity: "compression", pinpoint: "§7, pp. 21–22"}
 
-(1) [Williams gives only scattered hints about the arts]: Williams gives little more than scattered hints about how the arts might play such a positive role. {fidelity: "quotation", pinpoint: "§7, p. 21", source: "\"Williams gives little more than scattered hints about how the arts might play such a positive role.\""}
+(1) [Williams gives only scattered hints about the arts]: Williams gives little more than scattered hints about how the arts might play such a positive role. {fidelity: "quotation", pinpoint: "§7, p. 21", source: "\"Williams gives little more than scattered hints about how the arts might play such a positive role.\"", about: {thinker: williams, arts: hints}}
     <+ [Williams's examples mostly undercut ethical theory]: Given the mostly critical tone of Williams's engagement in ethics, his use of examples from the arts serves mostly to undercut the pretensions of ethical theory. {fidelity: "paraphrase", pinpoint: "§7, p. 21", source: "\"his use of such examples serves mostly to undercut the pretensions of ethical theory\""}
         <- [Williams grants the arts a role in developing valuing]: Williams accepts that the thick concepts and exemplars by which we navigate ethical life are local and human created, and would agree that the arts play a crucial role in articulating and developing novel modes of valuing. #reported #conceded {fidelity: "paraphrase", pinpoint: "§7, p. 21", source: "\"Williams, of course, accepts that the thick concepts and exemplars by which we navigate ethical life are local and human created, and would agree that the arts play a crucial role in articulating and developing novel modes of valuing.\""}
     <+ [Williams on what music can do that words cannot]: Music has the power to express feeling that cannot be fully captured in words, a power which underlies the special opportunities that opera possesses as a form of drama. #reported {fidelity: "paraphrase", pinpoint: "§7, p. 21", source: "\"the power of music to express feeling that cannot be fully captured in words, a power which underlies the special opportunities that opera possesses as a form of drama\"", note: "The clearest of the hints, from Williams's writing on opera."}
-(2) [Art gives values and meanings words cannot carry]: There are values and meanings that can be expressed only by immediately visible and audible qualities, and to ask what they mean in the sense of something that can be put into words is to deny their distinctive existence. #reported {fidelity: "quotation", pinpoint: "§7, p. 22", source: "\"There are values and meanings that can be expressed only by immediately visible and audible qualities, and to ask what they mean in the sense of something that can be put into words is to deny their distinctive existence\"", note: "Dewey, quoted by the paper."}
+(2) [Art gives values and meanings words cannot carry]: There are values and meanings that can be expressed only by immediately visible and audible qualities, and to ask what they mean in the sense of something that can be put into words is to deny their distinctive existence. #reported {fidelity: "quotation", pinpoint: "§7, p. 22", source: "\"There are values and meanings that can be expressed only by immediately visible and audible qualities, and to ask what they mean in the sense of something that can be put into words is to deny their distinctive existence\"", note: "Dewey, quoted by the paper.", question: {id: q7, move: answers}}
 (3) [Taking art seriously challenges philosophical method]: Taking art seriously has the potential not just to act as an adjunct or extension to traditional philosophical methods in ethics, but to fundamentally challenge them. #reported {fidelity: "quotation", pinpoint: "§7, p. 22", source: "\"taking art seriously has the potential not just to act as an adjunct or extension to traditional philosophical methods in ethics, but to fundamentally challenge them\""}
     <+ [Philosophy may look questionable from the side of art]: Philosophers forget that philosophy may look equally as questionable from the perspective of art or of immediate experience. #reported {fidelity: "paraphrase", pinpoint: "§7, p. 22", source: "\"They forget that philosophy may look equally as questionable from the perspective of art or of immediate experience.\""}
 -----
-(4) [Dewey explores what Williams only gestured at]: On the ethical potential of the arts, Dewey provides the extended argument for which Williams offers only hints. {fidelity: "interpretation", warrant: "coherence", pinpoint: "§7, pp. 21–22", note: "The comparison the section is built to make; the paper states the two halves and the verdict of section 8, but not this intermediate step."}
+(4) [Dewey explores what Williams only gestured at]: On the ethical potential of the arts, Dewey provides the extended argument for which Williams offers only hints. {fidelity: "interpretation", warrant: "coherence", pinpoint: "§7, pp. 21–22", note: "The comparison the section is built to make; the paper states the two halves and the verdict of section 8, but not this intermediate step.", about: [{thinker: dewey, arts: argued}, {thinker: williams, arts: hints}]}
 
 <Williams's late work is pragmatist>: Williams's quarrel was with Rorty, and it does not reach the pragmatism Dewey stands for. {fidelity: "compression", pinpoint: "§7, pp. 22–23"}
 
@@ -321,7 +424,7 @@ defaults:
 (4) [Queloz reads the genealogy as pragmatic]: Williams's genealogy is a perspicuous derivation, from needs we have anyway, of the need for an intrinsic value of truth. #reported {fidelity: "paraphrase", pinpoint: "§7, p. 23", source: "\"The genealogy is a perspicuous derivation, from needs we have anyway, of the need for an intrinsic value of truth\""}
 -----
 (5) [Williams's late work belongs to the pragmatist tradition]: Notwithstanding his protests to the contrary, there is a good case for taking Williams's late work to be a contribution to the pragmatist tradition. {fidelity: "quotation", pinpoint: "§7, p. 23", source: "\"notwithstanding his protests to the contrary, there is a good case for taking Williams's late work to be a contribution to the pragmatist tradition\""}
-    <- [Two elements remain in tension with Dewey]: Some elements of Williams's overall perspective remain in tension even with a Deweyan pragmatist outlook – namely the absolute conception of reality, and his insistence that there is a fundamental difference between scientific and ethical inquiry. #conceded {fidelity: "quotation", pinpoint: "§7, p. 23", source: "\"some elements of Williams's overall perspective remain in tension even with a Deweyan pragmatist outlook – namely the absolute conception of reality, and his insistence that there is a fundamental difference between scientific and ethical inquiry\""}
+    <- [Two elements remain in tension with Dewey]: Some elements of Williams's overall perspective remain in tension even with a Deweyan pragmatist outlook – namely the absolute conception of reality, and his insistence that there is a fundamental difference between scientific and ethical inquiry. #conceded {fidelity: "quotation", pinpoint: "§7, p. 23", source: "\"some elements of Williams's overall perspective remain in tension even with a Deweyan pragmatist outlook – namely the absolute conception of reality, and his insistence that there is a fundamental difference between scientific and ethical inquiry\"", about: {thinker: williams, absolute: yes, divide: yes}}
     +> [Williams could have gained coherence by dropping them]
 
 [Williams could have gained coherence by dropping them]: Williams could have increased the coherence of his position if he abandoned the absolute conception and the insistence on a fundamental difference between scientific and ethical inquiry. {fidelity: "paraphrase", pinpoint: "§7, p. 23", source: "\"there are reasons to think that Williams could have increased the coherence of his position if he abandoned these elements\""}
@@ -331,14 +434,14 @@ defaults:
 
 <Dewey's account of inquiry is the more flexible>: Dewey treats the reach of the local as an outcome of inquiry rather than a standing constraint upon it, which is what a transdisciplinary epistemology needs. {fidelity: "compression", pinpoint: "§7, p. 24"}
 
-(1) [For Dewey inquiry has one structure across domains]: Dewey argues that inquiry has the same kind of structure across all domains, integrating experience, including aesthetic experience, reasoning and action. #reported {fidelity: "quotation", pinpoint: "§7, p. 24", source: "\"Dewey argues that inquiry has the same kind of structure across all domains, integrating experience (including aesthetic experience), reasoning and action\""}
+(1) [For Dewey inquiry has one structure across domains]: Dewey argues that inquiry has the same kind of structure across all domains, integrating experience, including aesthetic experience, reasoning and action. #reported {fidelity: "quotation", pinpoint: "§7, p. 24", source: "\"Dewey argues that inquiry has the same kind of structure across all domains, integrating experience (including aesthetic experience), reasoning and action\"", about: {thinker: dewey, divide: no}}
 (2) [Deweyan inquiry is iterative]: Inquiry on the Deweyan picture is iterative, in that each new inquiry is able to draw on the problematisation, observation, reasoning and judgements of previous inquiries, and generates resources that can be used in future inquiries. #reported {fidelity: "quotation", pinpoint: "§7, p. 24", source: "\"Inquiry on the Deweyan picture is iterative, in that each new inquiry is able to draw on the problematisation, observation, reasoning and judgements of previous inquiries, and generates resources that can be used in future inquiries.\""}
 (3) [Whether to eliminate the local is settled through inquiry]: For Dewey, how far an inquiry should aspire to eliminate our own local ways of apprehending things is something to be clarified through the iterative process of inquiry, rather than something to be imposed on particular inquiries as a requirement from outside. #reported {fidelity: "paraphrase", pinpoint: "§7, p. 24", source: "\"something to be clarified through the iterative process of inquiry, rather than something to be imposed on particular inquiries\""}
     <+ [Iteration may push either way]: In some domains, epistemic iteration may push inquirers in the direction of eliminating what is peculiar to our local ways of apprehending things, while in others it may lead us to insist on maintaining the local and the contextual. #reported {fidelity: "quotation", pinpoint: "§7, p. 24", source: "\"In some domains, epistemic iteration may push inquirers in the direction of eliminating what is peculiar to our local ways of apprehending things, while in others it may lead us to insist on maintaining the local and the contextual.\""}
 -----
 (4) [Dewey is the nimbler thinker]
 
-[Williams and Dewey share deep commitments]: Both Williams and Dewey share a deep commitment to ethical freedom, to naturalism, and to defending a conception of philosophy that gives significant weight to experience, and to the arts. #conceded {fidelity: "quotation", pinpoint: "§8, p. 25", source: "\"Both Williams and Dewey share a deep commitment to ethical freedom, to naturalism, and to defending a conception of philosophy that gives significant weight to experience, and to the arts.\"", note: "The paper's own concession, introduced in section 8 by 'Despite these commonalities' — a counterconsideration in Govier's sense rather than a reason for the verdict."}
+[Williams and Dewey share deep commitments]: Both Williams and Dewey share a deep commitment to ethical freedom, to naturalism, and to defending a conception of philosophy that gives significant weight to experience, and to the arts. #conceded {fidelity: "quotation", pinpoint: "§8, p. 25", source: "\"Both Williams and Dewey share a deep commitment to ethical freedom, to naturalism, and to defending a conception of philosophy that gives significant weight to experience, and to the arts.\"", note: "The paper's own concession, introduced in section 8 by 'Despite these commonalities' — a counterconsideration in Govier's sense rather than a reason for the verdict.", about: [{thinker: williams, freedom: yes, naturalism: yes, experience: yes}, {thinker: dewey, freedom: yes, naturalism: yes, experience: yes}]}
 
 [The two focus on complementary things]: While Williams focuses on working through the crisis of legitimacy for our shared ethical values which the acknowledgement of ethical freedom brings, Dewey focuses in a complementary way on the potential of creativity to provide a transformative vision through which experience can be enriched. {fidelity: "quotation", pinpoint: "§8, p. 25", source: "\"While Williams focuses on working through the crisis of legitimacy for our shared ethical values which the acknowledgement of ethical freedom brings, Dewey focuses in a complementary way on the potential of creativity to provide a transformative vision through which experience can be enriched.\""}
     +> [Williams and Dewey share deep commitments]

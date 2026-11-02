@@ -8,9 +8,9 @@
 > Project Gutenberg e-text of the 1897 collection — the essay only, pages 1–31 of the printed
 > book — and Gutenberg's own page anchors are what became the page markers.
 
-9,145 words, ten sections, and the first long-form essay in this corpus. 69 nodes, 11 of them
-arguments. 44 quotation · 30 compression · 2 interpretation, one of them the single `enthymeme`
-the essay's logic needs. **74 of 74 quotations verify.** Tags: `#reported` for Clifford's rule
+9,145 words, ten sections, and the first long-form essay in this corpus. 77 nodes, 11 of them
+arguments. 53 quotation · 29 compression · 2 interpretation, one of them the single `enthymeme`
+the essay's logic needs. **81 of 81 quotations verify.** Tags: `#reported` for Clifford's rule
 and the psychology objection, `#conceded` for the Pascal's-wager concession, `#contested` for
 the two objections James answers.
 
@@ -42,6 +42,46 @@ certitude is never actually had; faith can create its own facts; moral questions
 for proof — and attacked by the two views James sets out in order to answer. His hedges
 survive: "Indeed we may wait if we will… but if we do so, we do so at our peril as much as if
 we believed."
+
+## Questions and tables
+
+Added on 2 November 2026 by an upgrade pass under profile 1.26, which leaves the argument as it
+was. **Three questions**, in James's words: whether our will can "either help or hinder our
+intellect in its perceptions of truth" (answered by the finding that our non-intellectual nature
+does influence our convictions); whether that influence is "reprehensible and pathological" or "a
+normal element in making up our minds" (answered by the thesis); and whether there are forced
+options in our speculative questions (answered by the religious option). **Three tables:**
+
+- **Options** (section I). James's imagined offers, each placed on the one distinction it
+  illustrates (living or dead, forced or avoidable, momentous or trivial), with scientific
+  questions, Pascal's wager and the religious hypothesis beside them. The verdict column is
+  "genuine option", with James's definition as its rule, so the page can show that only the
+  religious hypothesis meets all three conditions, and that the umbrella fails on one. The seven
+  claims that carry the illustrations are new: the map had not needed them.
+- **Waiting and believing** (sections IV, VII and X). The sceptic who leaves the question open,
+  set beside the believer: alike in making a passional decision and in acting at their peril,
+  different in what they back, which passion they yield to, and which commandment they make
+  paramount. This is James's symmetry argument as a table.
+- **The absolutist and empiricist ways** of believing in truth (section V), which differ in one
+  dimension only: whether we can know when we have attained it. One claim is new, the empiricists'
+  own definition, which the closing conditional relies on.
+
+There is no account frame: the essay answers its objections rather than weighing rival
+explanations.
+
+## The mechanism
+
+Added the same day, ported from the parallel-method arm of the trial of 30 September 2026, the
+arm judged the better of the two. Every step was read again against the essay. It is added as
+the series pass adds one: the argument is as it was, and the 30 claims that state a step the
+argument does not use stand unwired, in the sections where James uses them. **Five chains:**
+what produces our beliefs; faith that creates its fact (the liking, the train, the promotions);
+what believing and waiting each risk; the religious hypothesis, supposed true; and tolerance. 44
+steps, 59 states, 112 quotations verified. The **kinds** are James's own groupings: the passions
+behind the vetoer's rule and the logicians' law; the holding back he likens to waiting for
+evidence (the general, the hesitating suitor, the churl); and what each kind of holding back
+forgoes. The trial's argument changes (three new bridges, Clifford's pestilence as a reason) are
+not ported: they would rewire the argument, which this pass leaves alone.
 
 ## What making it taught the tooling
 
