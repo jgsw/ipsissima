@@ -9,6 +9,24 @@ reconstruction:
 defaults:
     chapter: "source/carroll-1895-what-the-tortoise-said-to-achilles.md"
     reviewed: "2026-08-27"
+questions:
+    q1: {text: "Must the principle that Z follows from A and B be granted as a further premise before accepting A and B compels accepting Z?", pinpoint: "pp. 691-93"}
+frames:
+    reader:
+        kind: case
+        label: "Two readers of Euclid"
+        pinpoint: "pp. 691-92"
+        note: "The Tortoise's two imagined readers, the second of which he asks Achilles to take him for. Achilles's claim that 'any one who accepts A and B as true, must accept Z as true' runs one way only (an 'if'), so it is left in its claim and not written as a rule; the second reader meets its condition and is not compelled, which Achilles grants ('Quite so')."
+        values:
+            first: "Accepts the Hypothetical, but not A and B"
+            second: "Accepts A and B, but not the Hypothetical"
+    ab:  {kind: dimension, label: "Accepts A and B as true", pinpoint: "pp. 691-92", values: [yes, no]}
+    hyp: {kind: dimension, label: "Accepts the Hypothetical", pinpoint: "p. 692", values: [yes, no]}
+    compelled:
+        kind: verdict
+        label: "\"under any logical necessity to accept Z\""
+        pinpoint: "p. 692"
+        values: [yes, no]
 ===
 
 // WHAT MAKES THIS TEXT DIFFERENT, AND IT IS TWO THINGS.
@@ -31,6 +49,12 @@ defaults:
 //    Untagged are the claims Carroll's construction plainly stands behind: Euclid's step,
 //    what accepting A and B commits a reader to, and the narrator's report of how it ended.
 //
+// QUESTIONS AND TABLES (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the
+// argument as it was). The dialogue asks its question only by staging it, so q1 is in this
+// file's words, and both its answers are drawn: the Tortoise's, reported, and the one this map
+// imputes to the piece. The one comparison is the Tortoise's two readers, whose second row is
+// the counterexample to Achilles's 'any one who accepts A and B ... must accept Z'.
+//
 // THE FORM. Top level: REDUCTIO. The dialogue's own opening concession and the regress the
 // Tortoise's demand generates cannot both stand, so the demand goes. The forms inside it:
 //   Euclid's step                  -- the object-level inference, quoted
@@ -43,7 +67,7 @@ defaults:
 
 # What the dialogue shows {isGroup: true}
 
-[A rule of inference is not a further premise]: What licenses the step from A and B to Z cannot do that work by being added to A and B as one more proposition the reasoner must first accept. #crux {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "CARROLL SAYS NOTHING OF THE KIND, and the map should not pretend otherwise. The piece states no moral at all: it closes with the Tortoise asking to be renamed Taught-Us, Achilles asking to be renamed A Kill-Ease, and the narrator away at the Bank. This apex is the reconstruction's own, imputed on coherence: it is what makes the Tortoise's opening announcement of a race-course with infinitely many ever-longer steps, the three iterations that follow, and the narrator's thousand and one hang together as one point rather than as a running joke about a note-book. READING FOLLOWED: the regress as a point about the status of a rule of inference. ROAD NOT TAKEN: the regress as a fact about a reasoner who declines to infer, which is reported beside it as A different moral."}
+[A rule of inference is not a further premise]: What licenses the step from A and B to Z cannot do that work by being added to A and B as one more proposition the reasoner must first accept. #crux {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "CARROLL SAYS NOTHING OF THE KIND, and the map should not pretend otherwise. The piece states no moral at all: it closes with the Tortoise asking to be renamed Taught-Us, Achilles asking to be renamed A Kill-Ease, and the narrator away at the Bank. This apex is the reconstruction's own, imputed on coherence: it is what makes the Tortoise's opening announcement of a race-course with infinitely many ever-longer steps, the three iterations that follow, and the narrator's thousand and one hang together as one point rather than as a running joke about a note-book. READING FOLLOWED: the regress as a point about the status of a rule of inference. ROAD NOT TAKEN: the regress as a fact about a reasoner who declines to infer, which is reported beside it as A different moral.", question: {id: q1, move: answers}}
 
 <What the race-course shows>: The regress ends in something the dialogue has already granted, so the demand that generated it must be refused. {fidelity: "imputation", warrant: "coherence", pinpoint: "pp. 691-93", note: "A reductio, and the assembling of it is the reconstruction's work. Premise 3 is the Tortoise's demand, entertained rather than asserted -- it is the thing the argument refuses. The dialogue never runs this argument; it runs the regress and stops."}
 
@@ -51,7 +75,7 @@ defaults:
 
 (1) [Accepting A and B compels Z]: Any one who accepts A and B as true, must accept Z as true. {fidelity: "quotation", pinpoint: "p. 691", source: "\"Z follows logically from A and B, so that any one who accepts A and B as true, must accept Z as true\"", note: "The Tortoise offers it as what readers of Euclid will grant, and Achilles answers Undoubtedly. Both parties are behind it, and so, on any reading, is Carroll."}
 (2) [Z is never compelled]: The Tortoise is never brought under logical necessity to accept Z. {fidelity: "interpretation", warrant: "coherence", pinpoint: "pp. 692-93", note: "The dialogue exhibits three rounds and reports a thousand and one, which is a large finite number, not an infinity. The claim that the series never ends rests on the Tortoise's own advance description of the race-course as consisting of an infinite number of distances, and on the fact that each round is generated by the round before it."}
-(3) [The licence must be granted as a premise]: A principle licensing the step to Z binds the Tortoise only once it has been written into the note-book among the premises and granted. #reported {fidelity: "compression", pinpoint: "pp. 692-93", source: "\"as soon as you've entered it in that note-book of yours\"; \"Until I've granted that, of course I needn't grant Z.\"", note: "The Tortoise's standing demand, stated first of C and last of E, and the engine of the whole piece. It is his, not Carroll's, and the reductio above is built in order to refuse it."}
+(3) [The licence must be granted as a premise]: A principle licensing the step to Z binds the Tortoise only once it has been written into the note-book among the premises and granted. #reported {fidelity: "compression", pinpoint: "pp. 692-93", source: "\"as soon as you've entered it in that note-book of yours\"; \"Until I've granted that, of course I needn't grant Z.\"", note: "The Tortoise's standing demand, stated first of C and last of E, and the engine of the whole piece. It is his, not Carroll's, and the reductio above is built in order to refuse it.", question: {id: q1, move: answers}}
 -----
 (4) [A rule of inference is not a further premise]
 
@@ -107,13 +131,13 @@ defaults:
 
 <The Tortoise's first refusal>
 
-(1) [The second kind of reader]: A reader might accept A and B as true and not accept the Hypothetical. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"you accept A and B, but you don't accept the Hypothetical\"", note: "The Tortoise then asks to be considered a reader of this kind, and asks to be forced, logically, to accept Z."}
-(2) [Neither reader is compelled]: Neither of these two readers is as yet under any logical necessity to accept Z. #conceded {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"is as yet under any logical necessity to accept Z\"", note: "Achilles's assent is Quite so, and it is the concession the piece turns on. The hedge as yet is the author's and is kept: it is what lets Achilles grant this without noticing that he has already granted that any one who accepts A and B must accept Z. The two cannot both be true, and neither speaker remarks on it."}
+(1) [The second kind of reader]: A reader might accept A and B as true and not accept the Hypothetical. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"you accept A and B, but you don't accept the Hypothetical\"", note: "The Tortoise then asks to be considered a reader of this kind, and asks to be forced, logically, to accept Z.", about: {reader: second, ab: yes, hyp: no}}
+(2) [Neither reader is compelled]: Neither of these two readers is as yet under any logical necessity to accept Z. #conceded {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"is as yet under any logical necessity to accept Z\"", note: "Achilles's assent is Quite so, and it is the concession the piece turns on. The hedge as yet is the author's and is kept: it is what lets Achilles grant this without noticing that he has already granted that any one who accepts A and B must accept Z. The two cannot both be true, and neither speaker remarks on it.", about: [{reader: first, compelled: no}, {reader: second, compelled: no}]}
 -----
 (3) [The Tortoise is not yet compelled]: The Tortoise, accepting A and B but not the Hypothetical, is as yet under no logical necessity to accept Z. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"Then I must ask you to accept C.\"", note: "Achilles accepts the position as stated and answers it by asking for C, which is where the regress starts."}
 
 [Accepting the Hypothetical is separate from accepting A and B]: Accepting the Hypothetical and accepting A and B are separate acceptances, and a reader may make either without the other. {fidelity: "interpretation", warrant: "coherence", pinpoint: "p. 692", note: "The point of the two-reader passage, which the Tortoise sets out and does not state. It is what makes his demand look reasonable, so it is drawn as supporting the demand rather than as a claim of the dialogue's own."}
-    <+ [The first kind of reader]: A reader might accept the Hypothetical Proposition that, if A and B be true, Z must be true, and not accept A and B as true. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"the Hypothetical Proposition that, if A and B be true, Z must be true; but, I don't accept A and B as true\"", note: "Achilles's hedge sits just outside the quotation: he says only that such a reader might exist, and adds that he would do wisely in abandoning Euclid and taking to football."}
+    <+ [The first kind of reader]: A reader might accept the Hypothetical Proposition that, if A and B be true, Z must be true, and not accept A and B as true. #reported {fidelity: "paraphrase", pinpoint: "p. 692", source: "\"the Hypothetical Proposition that, if A and B be true, Z must be true; but, I don't accept A and B as true\"", note: "Achilles's hedge sits just outside the quotation: he says only that such a reader might exist, and adds that he would do wisely in abandoning Euclid and taking to football.", about: {reader: first, hyp: yes, ab: no}}
     <+ [The second kind of reader]
     +> [The licence must be granted as a premise]
 

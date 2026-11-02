@@ -139,6 +139,23 @@ a `source:` span the checker verifies against the text, and the two that cut som
 load-bearing — the parenthesis in the paper's account of what makes an activity a science, and the
 two halves of Parfit's footnote — carry a note naming what was cut.
 
+## Questions and tables
+
+Added on 2 November 2026, after the review of 27 August, and not yet reviewed themselves.
+**Seven questions**, five in the paper's words: how philosophy should position itself (answered
+by what value inquiry requires); whether philosophy belongs with the humanities or the sciences
+(*dissolved*: there is no overall answer); and whether thought experiments are science or
+humanistic inquiry (*reframed* into the two better questions the paper then takes in turn). Two
+are implied, so they are in the map's words: whether ethics should be expected to converge on
+vindicated answers, and whether the debate with the realists is deadlocked.
+
+**Four tables:** the two research programmes in ethics as rival accounts, weighed on
+philosophy's record; philosophy, anthropology and chemistry on ambition, progressiveness and the
+power of their methods, with the paper's verdict that only philosophy shows the discrepancy;
+middle-range against general theory, on rigour and usefulness; and Williams against Dewey, on
+what they share and where they part. No claim is new. Two relations were added, from the mismatch
+to each programme, as the paper states them (§1, p. 4).
+
 ## Conversion
 
 `pdf_to_source.py` refuses this paper, correctly: it is set with **different margins on recto and

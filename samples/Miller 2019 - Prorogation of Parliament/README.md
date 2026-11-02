@@ -35,6 +35,21 @@ Three things make it different from anything else in `samples/`, and all three a
   easiest source of `<-` in the corpus and asks whether the map can show a court disposing of the
   arguments put to it.
 
+## Questions and tables
+
+Added on 2 November 2026, after the review of 30 August, and not yet reviewed themselves. The
+court's own **four issues** at [27], and the question it calls essential at [62] ("is Parliament
+prorogued or is it not?"), are the map's questions, each answered by the claim that settles it.
+
+One comparison carries the reasoning on issue (1): the court's "two different issues" about a
+prerogative power ([35]). Its existence and extent are justiciable; an exercise within its limits
+"may raise questions of justiciability". A second table places each challenge: the challenge by
+the prorogation's effects falls among the limits ([52]), Lord Roskill's dissolution among the
+exercises, and the challenge by motive is left unplaced, because the court reaches it only if the
+advice was lawful ([54]). One claim is new: the court's hedge on the second issue. The
+distinctions between prorogation, dissolution and recess at [4]–[6] are background the reasoning
+does not turn on, and have no table.
+
 ## What to look at
 
 The **Exposition** arrangement, and whether the bands land on the judgment's own numbered

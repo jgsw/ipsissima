@@ -12,7 +12,80 @@ contentions:
     - Passional nature must decide genuine options
     - The agnostic veto is irrational
     - Respect one another's mental freedom
+questions:
+    q1: {text: "\"Can our will either help or hinder our intellect in its perceptions of truth?\"", pinpoint: "p. 4"}
+    q2: {text: "\"whether it be simply reprehensible and pathological, or whether, on the contrary, we must treat it as a normal element in making up our minds\"", pinpoint: "p. 11"}
+    q3: {text: "\"Are there not somewhere forced options in our speculative questions, and can we (as men who may be interested at least as much in positively gaining truth as in merely escaping dupery) always wait with impunity till the coercive evidence shall have arrived?\"", pinpoint: "p. 22"}
+frames:
+    option:
+        kind: case
+        label: "Options"
+        pinpoint: "pp. 3-4, 20, 26"
+        note: "The first eight rows are offers James imagines making to his hearers ('If I say to you'), each put to show one distinction; they are classified on that one alone, and the rest of their cells are left as he leaves them. Scientific questions are 'hardly living' and 'seldom forced': those grades stay in the claim's words."
+        values:
+            theosophist: "\"Be a theosophist or be a Mohammedan\""
+            agnostic: "\"Be an agnostic or be a Christian\""
+            umbrella: "\"Choose between going out with your umbrella or without it\""
+            love: "\"Either love me or hate me\""
+            theory: "\"Either call my theory true or call it false\""
+            accept: "\"Either accept this truth or go without it\""
+            nansen: "Join Dr. Nansen's North Pole expedition (imagined)"
+            chemist: "A chemist's year spent verifying a hypothesis"
+            pascal: "Pascal's wager, offered to Protestants"
+            science: "Questions in our dealings with objective nature"
+            religion: "The religious hypothesis, for those to whom it is live"
+    living:    {kind: dimension, label: "Living or dead", pinpoint: "p. 3", values: [living, dead]}
+    forced:    {kind: dimension, label: "Forced or avoidable", pinpoint: "p. 3", values: [forced, avoidable]}
+    momentous: {kind: dimension, label: "Momentous or trivial", pinpoint: "p. 4", values: [momentous, trivial]}
+    genuine:
+        kind: verdict
+        label: "\"genuine option\""
+        pinpoint: "p. 3"
+        values: [yes, no]
+        rule: {then: yes, when: {living: living, forced: forced, momentous: momentous}, claim: "Genuine option"}
+    stance:
+        kind: case
+        label: "Leaving the question open, and deciding it"
+        pinpoint: "pp. 11, 18, 26-27, 30"
+        note: "James's symmetry: the sceptic who waits and the believer who decides are set side by side, alike where the evidentialist says they differ (both are passional, both act at their peril) and different only in which risk they run."
+        values:
+            wait: "Leave the question open: the sceptic, or faith-vetoer"
+            believe: "Decide for the religious hypothesis: the believer"
+    passional: {kind: dimension, label: "\"a passional decision\"", pinpoint: "p. 11", values: [yes, no]}
+    paramount:
+        kind: dimension
+        label: "Which commandment is made paramount"
+        pinpoint: "p. 18"
+        values: {error: "\"Shun error\"", truth: "\"Believe truth\""}
+    backs:
+        kind: dimension
+        label: "What each backs"
+        pinpoint: "p. 26"
+        values: {field: "\"the field\"", hypothesis: "\"the religious hypothesis\""}
+    yields:
+        kind: dimension
+        label: "The passion each yields to"
+        pinpoint: "p. 26"
+        values: {fear: "\"our fear of its being error\"", hope: "\"our hope that it may be true\""}
+    acts:      {kind: dimension, label: "Acts, at its peril", pinpoint: "p. 30", values: [yes, no]}
+    way:
+        kind: case
+        label: "Two ways of believing in truth"
+        pinpoint: "p. 12"
+        note: "The pyrrhonist sceptic, who will not make the postulate that there is truth to attain, is set aside before the comparison begins and has no row."
+        values:
+            absolutist: "The absolutist way"
+            empiricist: "The empiricist way"
+    attain:   {kind: dimension, label: "We can attain to knowing truth", pinpoint: "p. 12", values: [yes, no]}
+    knowwhen: {kind: dimension, label: "We can know when we have attained it", pinpoint: "p. 12", values: [yes, no]}
 ===
+
+// Questions and tables (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the
+// argument as it was). The essay weighs no rival accounts: the objection that belief cannot be
+// willed is met as an objection and answered, not weighed as a rival account of how belief is
+// formed, so no `account` frame is declared. Eight claims are new, all quotations: the seven under
+// the definition of a genuine option, which carry James's own illustrations, and the empiricists'
+// way of believing in truth, which the closing conditional relies on.
 
 // Form of the top-level move: a refutation of the evidentialist veto (Clifford) by showing
 // that suspension of belief is itself a passional, risk-bearing option, combined with an
@@ -23,7 +96,7 @@ contentions:
 
 # The contentions {isGroup: true}
 
-[Passional nature must decide genuine options]: "Our passional nature not only lawfully may, but must, decide an option between propositions, whenever it is a genuine option that cannot by its nature be decided on intellectual grounds" {fidelity: "quotation", pinpoint: "p. 11", note: "James's own statement of 'the thesis I defend', section IV. The thesis is restricted to genuine options: forced, living and momentous."}
+[Passional nature must decide genuine options]: "Our passional nature not only lawfully may, but must, decide an option between propositions, whenever it is a genuine option that cannot by its nature be decided on intellectual grounds" {fidelity: "quotation", pinpoint: "p. 11", note: "James's own statement of 'the thesis I defend', section IV. The thesis is restricted to genuine options: forced, living and momentous.", question: {id: q2, move: answers}}
     <+ <Suspension is itself a passional decision>
     <+ <The evidentialist rule is itself a passion>
     <+ <Believe truth and shun error are separable laws>
@@ -43,7 +116,7 @@ contentions:
     +> [Respect one another's mental freedom]
 
 [Respect one another's mental freedom]: "No one of us ought to issue vetoes to the other, nor should we bandy words of abuse. We ought, on the contrary, delicately and profoundly to respect one another's mental freedom" {fidelity: "quotation", pinpoint: "p. 30", note: "The closing practical conclusion: 'then only shall we bring about the intellectual republic'."}
-    <+ [Waiting is also acting at our peril]: "Indeed we may wait if we will,---I hope you do not think that I am denying that,---but if we do so, we do so at our peril as much as if we believed. In either case we act, taking our life in our hands." {fidelity: "quotation", pinpoint: "p. 30"}
+    <+ [Waiting is also acting at our peril]: "Indeed we may wait if we will,---I hope you do not think that I am denying that,---but if we do so, we do so at our peril as much as if we believed. In either case we act, taking our life in our hands." {fidelity: "quotation", pinpoint: "p. 30", about: [{stance: wait, acts: yes}, {stance: believe, acts: yes}]}
 
 # Preliminary distinctions (section I) {isGroup: true}
 
@@ -51,11 +124,28 @@ contentions:
 
 [Genuine option]: "we may call an option a genuine option when it is of the forced, living, and momentous kind." {fidelity: "quotation", pinpoint: "p. 3", note: "An option is 'the decision between two hypotheses'. Living: both hypotheses live. Forced: 'there is no standing place outside of the alternative'. Momentous: the opportunity is unique, the stake significant, or the decision irreversible."}
 
+// James's illustrations of the three distinctions: each places one imagined offer on one of them.
+[Genuine option]
+    <+ [Theosophist or Mohammedan is probably a dead option]: "it is probably a dead option, because for you neither hypothesis is likely to be alive"
+        {fidelity: "quotation", pinpoint: "p. 3", about: {option: theosophist, living: dead}, note: "Of the offer 'Be a theosophist or be a Mohammedan'. 'Probably' is James's hedge and stays in the claim."}
+    <+ [Agnostic or Christian is a living option]: "trained as you are, each hypothesis makes some appeal, however small, to your belief"
+        {fidelity: "quotation", pinpoint: "p. 3", about: {option: agnostic, living: living}, note: "Of the offer 'Be an agnostic or be a Christian': 'it is otherwise'."}
+    <+ [The umbrella option is not genuine, for it is not forced]: "I do not offer you a genuine option, for it is not forced. You can easily avoid it by not going out at all."
+        {fidelity: "quotation", pinpoint: "p. 3", about: {option: umbrella, forced: avoidable, genuine: no}, note: "Of the offer 'Choose between going out with your umbrella or without it'. The one row whose verdict James states, and the one the definition's rule is seen to work on."}
+    <+ [Loving or hating, and judging a theory, are avoidable]: "your option is avoidable. You may remain indifferent to me, neither loving nor hating, and you may decline to offer any judgment as to my theory."
+        {fidelity: "quotation", pinpoint: "p. 3", about: [{option: love, forced: avoidable}, {option: theory, forced: avoidable}]}
+    <+ [Accepting a truth or going without it is forced]: "I put on you a forced option, for there is no standing place outside of the alternative"
+        {fidelity: "quotation", pinpoint: "p. 3", about: {option: accept, forced: forced}, note: "Of the offer 'Either accept this truth or go without it'. 'Every dilemma based on a complete logical disjunction, with no possibility of not choosing, is an option of this forced kind.'"}
+    <+ [Nansen's expedition would be a momentous option]: "if I were Dr. Nansen and proposed to you to join my North Pole expedition, your option would be momentous"
+        {fidelity: "quotation", pinpoint: "p. 4", about: {option: nansen, momentous: momentous}, note: "Momentous because the opportunity is unique: 'He who refuses to embrace a unique opportunity loses the prize as surely as if he tried and failed.'"}
+    <+ [The chemist's option is trivial]: "Such trivial options abound in the scientific life. A chemist finds an hypothesis live enough to spend a year in its verification: he believes in it to that extent. But if his experiments prove inconclusive either way, he is quit for his loss of time, no vital harm being done."
+        {fidelity: "quotation", pinpoint: "p. 4", about: {option: chemist, momentous: trivial}}
+
 # The objection from the psychology of belief (section II) {isGroup: true}
 
 [Belief cannot be willed]: "Does it not seem preposterous on the very face of it to talk of our opinions being modifiable at will?" We cannot by willing it believe that Lincoln's existence is a myth or that two one-dollar bills sum to a hundred: "We can say any of these things, but we are absolutely impotent to believe them" #reported {fidelity: "compression", pinpoint: "pp. 4-5", note: "The first of the two views James canvasses on the psychology of opinion; Pascal's wager is offered as the example that makes willed belief look 'silly'. James concedes the point for dead hypotheses only."}
     <- [Only dead hypotheses are beyond the will]: "It is only our already dead hypotheses that our willing nature is unable to bring to life again But what has made them dead for us is for the most part" a previous action of our willing nature of an antagonistic kind. {fidelity: "quotation", pinpoint: "pp. 8-9", note: "The source lacks a full stop after 'again'; quoted as printed."}
-    <+ [Pascal's wager is not a living option]: "It is evident that unless there be some pre-existing tendency to believe in masses and holy water, the option offered to the will by Pascal is not a living option." #conceded {fidelity: "quotation", pinpoint: "p. 6", note: "James grants that a faith adopted by mechanical calculation 'would lack the inner soul of faith's reality'; the concession is later reversed for cases where 'the previous passional work has been already in their own direction' (p. 11)."}
+    <+ [Pascal's wager is not a living option]: "It is evident that unless there be some pre-existing tendency to believe in masses and holy water, the option offered to the will by Pascal is not a living option." #conceded {fidelity: "quotation", pinpoint: "p. 6", note: "James grants that a faith adopted by mechanical calculation 'would lack the inner soul of faith's reality'; the concession is later reversed for cases where 'the previous passional work has been already in their own direction' (p. 11).", about: {option: pascal, living: dead}}
 
 # Clifford's evidentialism and the scientific ethos (section II) {isGroup: true}
 
@@ -67,7 +157,7 @@ contentions:
 
 <Science's options are trivial, so its ethos does not generalise>: In science the sceptical attitude is right because its options are not genuine; that gives no rule for forced, momentous, living options. {fidelity: "compression", pinpoint: "pp. 19-22"}
 
-(1) [Scientific options are not genuine]: In our dealings with objective nature "The questions here are always trivial options, the hypotheses are hardly living (at any rate not living for us spectators), the choice between believing truth or falsehood is seldom forced." {fidelity: "compression", pinpoint: "p. 20"}
+(1) [Scientific options are not genuine]: In our dealings with objective nature "The questions here are always trivial options, the hypotheses are hardly living (at any rate not living for us spectators), the choice between believing truth or falsehood is seldom forced." {fidelity: "compression", pinpoint: "p. 20", about: {option: science, momentous: trivial}}
 (2) [Sceptical balance is wise where no option is forced]: "The attitude of sceptical balance is therefore the absolutely wise one if we would escape mistakes." #conceded {fidelity: "quotation", pinpoint: "p. 20", note: "James's own scope concession: 'wherever there is no forced option, the dispassionately judicial intellect with no pet hypothesis... ought to be our ideal' (pp. 21-22)."}
 (3) [Truth is unlikely to be adjusted to our needs]: "It seems a priori improbable that the truth should be so nicely adjusted to our needs and powers as that." {fidelity: "quotation", pinpoint: "p. 22", note: "'That' is the supposition that we can 'always wait with impunity till the coercive evidence shall have arrived'."}
 -----
@@ -82,7 +172,7 @@ contentions:
 (3) [Belief in truth itself is a volition]: Our belief that there is a truth and that our minds are made for it is "a passionate affirmation of desire, in which our social system backs us up"; against the pyrrhonist "It is just one volition against another". {fidelity: "compression", pinpoint: "pp. 9-10"}
 (4) [We disbelieve what we have no use for]: "As a rule we disbelieve all facts and theories for which we have no use." {fidelity: "quotation", pinpoint: "p. 10", note: "Illustrated by Clifford, Huxley, Newman and the scientists who will not look at the evidence for telepathy."}
 -- {uses: [1, 2, 3, 4]} --
-(5) [Our non-intellectual nature does influence our convictions]: "Evidently, then, our non-intellectual nature does influence our convictions." {fidelity: "quotation", pinpoint: "p. 11"}
+(5) [Our non-intellectual nature does influence our convictions]: "Evidently, then, our non-intellectual nature does influence our convictions." {fidelity: "quotation", pinpoint: "p. 11", question: {id: q1, move: answers}}
 -- {uses: [4, 5]} --
 (6) [The logicians' rule is itself a wish]: "This very law which the logicians would impose upon us" "is based on nothing but their own natural wish to exclude all elements for" which they, as logicians, can find no use. {fidelity: "compression", pinpoint: "pp. 10-11"}
 
@@ -95,19 +185,23 @@ contentions:
 (3) [Contradictory opinions have all claimed objective evidence]: "there is indeed nothing which some one has not thought absolutely true, while his neighbor deemed it absolutely false" {fidelity: "quotation", pinpoint: "p. 16"}
 -- {uses: [1, 2, 3]} --
 (4) [Objective evidence is a mere aspiration]: The "lauded objective evidence is never triumphantly there, it is a mere aspiration or Grenzbegriff, marking the infinitely remote ideal of our thinking life." {fidelity: "compression", pinpoint: "p. 16"}
-(5) [The absolutist doctrine of objective evidence]: The absolutists hold that "we not only can attain to knowing truth, but we can know when we have attained to knowing it"; scholastic orthodoxy elaborates this as the doctrine of 'objective evidence'. #reported {fidelity: "compression", pinpoint: "pp. 12-13"}
+(5) [The absolutist doctrine of objective evidence]: The absolutists hold that "we not only can attain to knowing truth, but we can know when we have attained to knowing it"; scholastic orthodoxy elaborates this as the doctrine of 'objective evidence'. #reported {fidelity: "compression", pinpoint: "pp. 12-13", about: {way: absolutist, attain: yes, knowwhen: yes}}
 (6) [Giving up certitude is not giving up truth]: "when as empiricists we give up the doctrine of objective certitude, we do not thereby give up the quest or hope of truth itself." {fidelity: "quotation", pinpoint: "p. 17", note: "For the empiricist 'Not where it comes from but what it leads to is to decide': a hypothesis is true if 'the total drift of thinking continues to confirm it'."}
 -- {uses: [4, 5, 6]} --
-(7) [Empiricists have no bell to wait for]: "if we are empiricists, if we believe that no bell in us tolls to let us know for certain when truth is in our grasp, then it seems a piece of idle fantasticality to preach so solemnly our duty of waiting for the bell." {fidelity: "quotation", pinpoint: "p. 30"}
+(7) [Empiricists have no bell to wait for]: "if we are empiricists, if we believe that no bell in us tolls to let us know for certain when truth is in our grasp, then it seems a piece of idle fantasticality to preach so solemnly our duty of waiting for the bell." {fidelity: "quotation", pinpoint: "p. 30", about: {way: empiricist, knowwhen: no}}
     +> [Respect one another's mental freedom]
+
+[Empiricists have no bell to wait for]
+    <+ [Empiricists cannot infallibly know when they have truth]: "the empiricists think that although we may attain it, we cannot infallibly know when"
+        {fidelity: "quotation", pinpoint: "p. 12", about: {way: empiricist, attain: yes, knowwhen: no}, note: "Section V's definition, set against the absolutists, who say 'we not only can attain to knowing truth, but we can know when we have attained to knowing it'. It is what the closing conditional's 'if we are empiricists' means; James declares himself 'a complete empiricist' on p. 15."}
 
 # Two commandments (section VII) {isGroup: true}
 
 <Believe truth and shun error are separable laws>: The evidentialist's preference for avoiding error over gaining truth is itself a passional choice, and not the only reasonable one. {fidelity: "compression", pinpoint: "pp. 17-19"}
 
 (1) [Two separable laws]: "We must know the truth; and we must avoid error,---these are our first and great commandments as would-be knowers; but they are not two ways of stating an identical commandment, they are two separable laws." {fidelity: "quotation", pinpoint: "p. 17"}
-(2) [Clifford chooses shunning error]: Clifford "exhorts us to the latter course. Believe nothing, he tells us, keep your mind in suspense forever, rather than by closing it on insufficient evidence incur the awful risk of believing lies." #reported {fidelity: "compression", pinpoint: "p. 18"}
-(3) [Duties about truth and error are passional]: "these feelings of our duty about either truth or error are in any case only expressions of our passional life." {fidelity: "quotation", pinpoint: "p. 18"}
+(2) [Clifford chooses shunning error]: Clifford "exhorts us to the latter course. Believe nothing, he tells us, keep your mind in suspense forever, rather than by closing it on insufficient evidence incur the awful risk of believing lies." #reported {fidelity: "compression", pinpoint: "p. 18", about: {stance: wait, paramount: error}}
+(3) [Duties about truth and error are passional]: "these feelings of our duty about either truth or error are in any case only expressions of our passional life." {fidelity: "quotation", pinpoint: "p. 18", about: [{stance: wait, passional: yes}, {stance: believe, passional: yes}]}
 -- {uses: [1, 2, 3]} --
 (4) [Clifford's rule expresses a private horror of dupery]: he who says "Better go without belief forever than believe a lie!" "merely shows his own preponderant private horror of becoming a dupe." {fidelity: "quotation", pinpoint: "p. 18"}
 (5) [Worse things than being duped can happen]: James also has "a horror of being duped; but I can believe that worse things than being duped may happen to a man in this world" {fidelity: "compression", pinpoint: "p. 19", note: "The general who keeps his soldiers out of battle forever rather than risk a single wound: 'Not so are victories either over enemies or over nature gained.'"}
@@ -139,12 +233,12 @@ contentions:
 
 <Suspension is itself a passional decision>: Refusing to decide a genuine option is not a way of avoiding passional decision; it is one more passional decision, with the same risk of losing truth. {fidelity: "compression", pinpoint: "pp. 11, 26-27"}
 
-(1) [Not deciding is itself a passional decision]: "to say, under such circumstances," 'Do not decide, but leave the question open,' "is itself a passional decision,---just like deciding yes or no,---and is attended with the same risk of losing the truth" {fidelity: "quotation", pinpoint: "p. 11", note: "One sentence of the source; the inner quoted words are James's, split here only because the converter escapes the inner quotation marks."}
-(2) [Scepticism is an option of risk]: "Scepticism, then, is not avoidance of option; it is option of a certain particular kind of risk. Better risk loss of truth than chance of error,---that is your faith-vetoer's exact position." {fidelity: "quotation", pinpoint: "p. 26"}
-(3) [The sceptic backs the field]: The faith-vetoer "is actively playing his stake as much as the believer is; he is backing the field against the religious hypothesis, just as the believer is backing the religious hypothesis against the field." {fidelity: "compression", pinpoint: "p. 26"}
+(1) [Not deciding is itself a passional decision]: "to say, under such circumstances," 'Do not decide, but leave the question open,' "is itself a passional decision,---just like deciding yes or no,---and is attended with the same risk of losing the truth" {fidelity: "quotation", pinpoint: "p. 11", note: "One sentence of the source; the inner quoted words are James's, split here only because the converter escapes the inner quotation marks.", about: [{stance: wait, passional: yes}, {stance: believe, passional: yes}]}
+(2) [Scepticism is an option of risk]: "Scepticism, then, is not avoidance of option; it is option of a certain particular kind of risk. Better risk loss of truth than chance of error,---that is your faith-vetoer's exact position." {fidelity: "quotation", pinpoint: "p. 26", about: {stance: wait, paramount: error}}
+(3) [The sceptic backs the field]: The faith-vetoer "is actively playing his stake as much as the believer is; he is backing the field against the religious hypothesis, just as the believer is backing the religious hypothesis against the field." {fidelity: "compression", pinpoint: "p. 26", about: [{stance: wait, backs: field}, {stance: believe, backs: hypothesis}]}
 -- {uses: [1, 2, 3]} --
-(4) [The veto is one passion laying down its law]: "It is not intellect against all passions, then; it is only intellect with one passion laying down its law." {fidelity: "quotation", pinpoint: "p. 27"}
-(5) [No proof that dupery through hope is worse than dupery through fear]: "Dupery for dupery, what proof is there that dupery through hope is so much worse than dupery through fear? I, for one, can see no proof" {fidelity: "quotation", pinpoint: "p. 27"}
+(4) [The veto is one passion laying down its law]: "It is not intellect against all passions, then; it is only intellect with one passion laying down its law." {fidelity: "quotation", pinpoint: "p. 27", about: {stance: wait, passional: yes}}
+(5) [No proof that dupery through hope is worse than dupery through fear]: "Dupery for dupery, what proof is there that dupery through hope is so much worse than dupery through fear? I, for one, can see no proof" {fidelity: "quotation", pinpoint: "p. 27", about: [{stance: wait, yields: fear}, {stance: believe, yields: hope}]}
 -- {uses: [4, 5]} --
 (6) [Refusal of the scientist's form of risk]: James simply refuses "obedience to the scientist's command to imitate his kind of option, in a case where my own stake is important enough to give me the right to choose my own form of risk." {fidelity: "compression", pinpoint: "p. 27"}
 
@@ -156,19 +250,19 @@ contentions:
 (2) [Live hypothesis]
 (3) [Religion's first affirmation]: Religion "says that the best things are the more eternal things, the overlapping things, the things in the universe that throw the last stone, so to speak, and say the final word." {fidelity: "compression", pinpoint: "p. 25", note: "Charles Secretan's phrase 'Perfection is eternal'; 'an affirmation which obviously cannot yet be verified scientifically at all'."}
 (4) [Religion's second affirmation]: "The second affirmation of religion is that we are better off even now if we believe her first affirmation to be true." {fidelity: "quotation", pinpoint: "p. 26"}
-(5) [Religion is live for the saving remnant]: "If for any of you religion be a hypothesis that cannot, by any living possibility be true, then you need go no farther. I speak to the 'saving remnant' alone." #conceded {fidelity: "quotation", pinpoint: "p. 26", note: "James restricts his audience: the argument presupposes a living option."}
-(6) [Religion is a momentous option]: "religion offers itself as a momentous option. We are supposed to gain, even now, by our belief, and to lose by our non-belief, a certain vital good." {fidelity: "quotation", pinpoint: "p. 26"}
-(7) [Religion is a forced option]: "religion is a forced option, so far as that good goes. We cannot escape the issue by remaining sceptical and waiting for more light, because, although we do avoid error in that way if religion be untrue, we lose the good, if it be true, just as certainly as if we positively chose to disbelieve." {fidelity: "quotation", pinpoint: "p. 26", note: "The man who hesitates indefinitely to propose marriage 'because he was not perfectly sure that she would prove an angel'."}
+(5) [Religion is live for the saving remnant]: "If for any of you religion be a hypothesis that cannot, by any living possibility be true, then you need go no farther. I speak to the 'saving remnant' alone." #conceded {fidelity: "quotation", pinpoint: "p. 26", note: "James restricts his audience: the argument presupposes a living option.", about: {option: religion, living: living}}
+(6) [Religion is a momentous option]: "religion offers itself as a momentous option. We are supposed to gain, even now, by our belief, and to lose by our non-belief, a certain vital good." {fidelity: "quotation", pinpoint: "p. 26", about: {option: religion, momentous: momentous}}
+(7) [Religion is a forced option]: "religion is a forced option, so far as that good goes. We cannot escape the issue by remaining sceptical and waiting for more light, because, although we do avoid error in that way if religion be untrue, we lose the good, if it be true, just as certainly as if we positively chose to disbelieve." {fidelity: "quotation", pinpoint: "p. 26", note: "The man who hesitates indefinitely to propose marriage 'because he was not perfectly sure that she would prove an angel'.", about: {option: religion, forced: forced}}
 (8) [The evidence for religion is insufficient]: "If religion be true and the evidence for it be still insufficient" {fidelity: "quotation", pinpoint: "p. 27", note: "James does not argue this; he supposes it throughout as the case at issue ('our merely logical intellect may not have been coerced', p. 1)."}
 -- {uses: [1, 2, 3, 4, 5, 6, 7, 8]} --
-(9) [Religion is a genuine option undecidable by intellect]: For those to whom it is live, the religious hypothesis is a forced, living and momentous option that cannot by its nature be decided on intellectual grounds. {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "pp. 26-27", note: "James states the three conditions separately and the insufficiency of evidence as a supposition; the conjunction, which is what the thesis requires, is not stated in one place."}
+(9) [Religion is a genuine option undecidable by intellect]: For those to whom it is live, the religious hypothesis is a forced, living and momentous option that cannot by its nature be decided on intellectual grounds. {fidelity: "interpretation", warrant: "enthymeme", pinpoint: "pp. 26-27", note: "James states the three conditions separately and the insufficiency of evidence as a supposition; the conjunction, which is what the thesis requires, is not stated in one place.", question: {id: q3, move: answers}, about: {option: religion, genuine: yes}}
 
 <Scepticism about religion is itself a risky option>: Preaching scepticism until sufficient evidence arrives tells us that yielding to fear of error is wiser than yielding to hope of truth, which is one passion against another. {fidelity: "compression", pinpoint: "pp. 26-27"}
 
 (1) [Scepticism is an option of risk]
 (2) [The sceptic backs the field]
 -- {uses: [1, 2]} --
-(3) [Preaching scepticism is preferring fear to hope]: "To preach scepticism to us as a duty until 'sufficient evidence' for religion be found, is tantamount therefore to telling us, when in presence of the religious hypothesis, that to yield to our fear of its being error is wiser and better than to yield to our hope that it may be true." {fidelity: "quotation", pinpoint: "pp. 26-27"}
+(3) [Preaching scepticism is preferring fear to hope]: "To preach scepticism to us as a duty until 'sufficient evidence' for religion be found, is tantamount therefore to telling us, when in presence of the religious hypothesis, that to yield to our fear of its being error is wiser and better than to yield to our hope that it may be true." {fidelity: "quotation", pinpoint: "pp. 26-27", about: [{stance: wait, yields: fear}, {stance: believe, yields: hope}]}
 (4) [No proof that dupery through hope is worse than dupery through fear]
 -- {uses: [3, 4]} --
 (5) [Forfeiting the chance of the winning side]: If religion be true and the evidence insufficient, James does not wish "by putting your extinguisher upon my nature (which feels to me as if it had after all some business in this matter), to forfeit my sole chance in life of getting upon the winning side" {fidelity: "compression", pinpoint: "p. 27"}

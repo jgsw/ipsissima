@@ -9,6 +9,9 @@
 // Uniforms, What screening is worth, Benefits beyond the user, Prevention.
 // Undercuts: Revenue at a cost (on Cost recovery), Better ways to motivate providers
 // (on Provider incentives).
+// Questions and tables (added 2 Nov 2026, profile 1.26, as an upgrade pass that leaves the
+// argument as it was): the text's own questions, Table 1's ten studies crossed with the results
+// they serve, and four sets of rival accounts the text weighs.
 
 ===
 title: "Bates et al. 2012 -- The Price is Wrong"
@@ -20,6 +23,96 @@ reconstruction:
     strength: ordinary
 defaults:
     chapter: "source/bates-2012-price-is-wrong.md"
+questions:
+    q1: {text: "\"How big a barrier to access are user fees in education and health?\"", pinpoint: "p. 30"}
+    q2: {text: "\"Does charging for health and education products encourage people to use them?\"", pinpoint: "p. 30"}
+    q3: {text: "\"Do fees screen out those who do not intend to use the product and target it to those who need it the most?\"", pinpoint: "p. 30"}
+    q4: {text: "\"Will those who receive a free long-lasting insecticidal bednet be more or less willing to pay for a bednet one year later?\"", pinpoint: "p. 35"}
+    q5: {text: "\"Why are individuals so reluctant to invest even small amounts in preventive health products?\"", pinpoint: "p. 35"}
+    q6: {text: "\"When are the disadvantages of cost-sharing likely to be so great that products should be offered for free?\"", pinpoint: "p. 36"}
+    q7: {text: "\"Does free distribution to the poor lead to reselling?\"", pinpoint: "p. 33"}
+    q8: {text: "\"are user fees the answer?\"", pinpoint: "p. 36"}
+frames:
+    study:
+        kind: case
+        label: "\"Featured evaluations\""
+        pinpoint: "p. 31"
+        note: "Table 1. The rows and their numbers are the table's; the text cites each study by its number."
+        values:
+            s1: "1 Kremer and Miguel: deworming medicine in Kenyan schools"
+            s2: "2 Cohen and Dupas: bednets at prenatal clinics, Kenya"
+            s3: "3 Dupas: bednet vouchers given to households, Kenya"
+            s4: "4 Dupas: follow-up to study 3, Kenya"
+            s5: "5 Hoffmann, Barrett and Just: free nets or cash, Uganda"
+            s6: "6 Ashraf, Berry and Shapiro: water disinfectant sold door to door, Zambia"
+            s7: "7 Kremer, Miguel, Null and Zwane: water disinfectant, Kenya"
+            s8: "8 Spears: handwashing soap, India"
+            s9: "9 Evans, Kremer and Ngatia: school uniforms for primary school children, Kenya"
+            s10: "10 Duflo, Dupas, Kremer and Sinei: school uniforms for 14-year-olds, Kenya"
+    issue:
+        kind: case
+        label: "What the bulletin asks of the studies"
+        pinpoint: "pp. 31-36"
+        note: "The five results and the two boxes that report studies, in the text's order. Crossed with the studies, each finding sits where its study meets the result it serves. Tarozzi et al. 2011, on credit, is not one of the ten and has no row."
+        values:
+            takeup: "\"Small fees cause big reductions in take-up\""
+            use: "\"Fees do not substantially promote use\""
+            resale: "\"Does free distribution to the poor lead to reselling?\""
+            targeting: "\"Cost-sharing fails to target those who most need a product\""
+            longrun: "\"Long-term effects of free distribution\""
+            why: "\"Why are people so sensitive to small user fees?\""
+            cost: "\"User fee revenue comes at a cost\""
+    product:
+        kind: dimension
+        label: "\"Product\""
+        pinpoint: "p. 31"
+        values:
+            deworming: "\"Deworming medicine\""
+            bednets: "\"Long-lasting insecticidal bednets\""
+            disinfectant: "\"water disinfectant\""
+            soap: "\"Handwashing soap\""
+            uniforms: "\"School uniforms\""
+    location:
+        kind: dimension
+        label: "\"Location\""
+        pinpoint: "p. 31"
+        values: {kenya: Kenya, uganda: Uganda, zambia: Zambia, india: India}
+    promote:
+        kind: account
+        label: "\"charging has been thought to promote use in two ways\""
+        pinpoint: "pp. 33-34"
+        question: q2
+        note: "Two of the ten studies (2 and 6) were built to tell the two apart."
+        values:
+            screening: {claim: "Fees screen out those unlikely to use"}
+            commitment: {claim: "Paying itself encourages use"}
+    target:
+        kind: account
+        label: "Whether charging targets those who need a product most"
+        pinpoint: "p. 34"
+        question: q3
+        note: "The two hypotheses are set 'in contrast'. Result 3's findings tell against the first. The text never says any of them supports the second, though the Ugandan result ('actually had a lower willingness to pay') runs its way, so no finding is drawn to it; it is drawn against the first, as the contrast it is offered as."
+        values:
+            needy: {claim: "Charging may target the neediest"}
+            worse: {claim: "Charging may worsen targeting"}
+    later:
+        kind: account
+        label: "What free distribution does to later willingness to pay"
+        pinpoint: "p. 35"
+        question: q4
+        values:
+            resent: {claim: "Free distribution breeds resentment"}
+            learn: {claim: "Free distribution can teach the benefits of a product"}
+    sensitive:
+        kind: account
+        label: "\"Why are people so sensitive to small user fees?\""
+        pinpoint: "pp. 35-36"
+        question: q5
+        note: "Convenience is left out: the text offers it for the low take-up of preventive products, a neighbouring question, and present bias is named in passing. The resale worry and the cost-recovery case are each a worry met by a finding or an argument, not rival explanations, so neither is a frame."
+        values:
+            value: {claim: "Low willingness to pay means low value"}
+            cash: {claim: "Lack of cash explains part of the drop"}
+            deliberation: {claim: "Deliberation may deter purchases"}
 mechanism:
     question: "How would charging small user fees, rather than giving products away, change who gets preventive health and education products, whether they use them, and what good they do?"
     levels: [macro, meso, micro]
@@ -77,7 +170,7 @@ mechanism:
 (1) [Small fees raise little revenue]: small fees raise little revenue
     {fidelity: "quotation", pinpoint: "pp. 34, 36", note: "Asserted rather than shown: the bulletin reports no revenue figures. Result 1 opens with the same claim, that small prices limit access 'without generating much revenue' (p. 31), and the nearest evidence is the deworming programme's cost per child treated, drawn under the answer to the cost-recovery case.", causes: {from: fee, to: revenue, sign: "+", basis: asserted}}
 (2) [Small fees cut access for the poor]: Charging small fees dramatically reduces access to important products for the poor.
-    {fidelity: "quotation", pinpoint: "p. 30", note: "The title of the bulletin's first section, restated by its closing sentence. On p. 30 the other side of the debate is reported as pointing to the surges in take-up that followed the abolition of fees for schooling and health care; the bulletin's own case rests on the ten randomized evaluations instead.", causes: {from: fee, to: takeup, sign: "-", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 30", note: "The title of the bulletin's first section, restated by its closing sentence. On p. 30 the other side of the debate is reported as pointing to the surges in take-up that followed the abolition of fees for schooling and health care; the bulletin's own case rests on the ten randomized evaluations instead.", causes: {from: fee, to: takeup, sign: "-", basis: study}, question: {id: q1, move: answers}}
 -----
 (3) [Small fees are the worst of both worlds]: Charging small fees in an attempt to balance access and “sustainability” may be the worst of both worlds #crux
     {fidelity: "quotation", pinpoint: "pp. 34, 36", note: "The target is what p. 31 calls the common policy response to the competing aims of cost-sharing and free distribution, making products 'almost, but not quite, free'. Crux: the scare-quoted 'sustainability' is read as standing for the cost-sharing side's aims as a whole, including the promise that fees prevent waste, which is why the synthesis of results 1 to 3 is drawn as a second support. The narrower reading takes it as financial sustainability alone, as the two reasons given with it (revenue, access) suggest; on that reading the use and targeting results bear on whether to charge but not on this verdict."}
@@ -92,7 +185,7 @@ mechanism:
 (3) [Fees are not a reliable way to target]
 -----
 (4) [Fees cut access without use or targeting gains]: charging even very small user fees often sharply limits access to health and education products and services without promoting use or encouraging better targeting to any useful extent
-    {fidelity: "quotation", pinpoint: "p. 36", note: "What the ten experiments together are said to suggest, offered straight after the worst-of-both-worlds lesson is restated, as the answer to 'are user fees the answer?'. It is also what the next question calls the disadvantages of cost-sharing.", causes: [{from: fee, to: takeup, sign: "-", basis: study}, {from: fee, to: use, sign: "0", basis: study}, {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}]}
+    {fidelity: "quotation", pinpoint: "p. 36", note: "What the ten experiments together are said to suggest, offered straight after the worst-of-both-worlds lesson is restated, as the answer to 'are user fees the answer?'. It is also what the next question calls the disadvantages of cost-sharing.", causes: [{from: fee, to: takeup, sign: "-", basis: study}, {from: fee, to: use, sign: "0", basis: study}, {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}], question: {id: q8, move: answers}}
 
 [Fees cut access without use or targeting gains]
     +> [Small fees are the worst of both worlds]
@@ -105,7 +198,7 @@ mechanism:
         {fidelity: "quotation", pinpoint: "p. 37", note: "A scope limit the authors set on their own findings, drawn as an attack because Argdown has no relation for scope. The ten evaluations concern 'non-acute care' (p. 30), and the closing section says how much less is known about fees for treating acute illness. The J-PAL bulletin of 2011 also stated the limit among its lead lessons; the reprint's summary box leaves it out."}
 
 [When to offer products free]: The disadvantages of cost-sharing are likely to be great enough that products should be offered for free when their benefits extend beyond the immediate user, when they are aimed mainly at preventive behavior, or when they are very cost-effective.
-    {fidelity: "compression", pinpoint: "p. 36", source: "\"When are the disadvantages of cost-sharing likely to be so great that products should be offered for free?\"", note: "The bulletin's own question, answered by the three bullets under 'when to distribute for free'. The bullets are parts of this answer, each argued for, and are drawn as supports because Argdown has no part-whole relation. A conductive case: the considerations for it are independent, the concessions against it are the author's own, and the closing sentence, introduced by 'But', weighs them and finds them outweighed."}
+    {fidelity: "compression", pinpoint: "p. 36", source: "\"When are the disadvantages of cost-sharing likely to be so great that products should be offered for free?\"", note: "The bulletin's own question, answered by the three bullets under 'when to distribute for free'. The bullets are parts of this answer, each argued for, and are drawn as supports because Argdown has no part-whole relation. A conductive case: the considerations for it are independent, the concessions against it are the author's own, and the closing sentence, introduced by 'But', weighs them and finds them outweighed.", question: {id: q6, move: answers}}
     <+ [Fees impose a very high price on the poor]: the evidence summarized in this bulletin suggests that user fees, even small ones, are imposing a very high price on the poor and dramatically curtailing the potential benefits from primary education and highly effective preventive health products
         {fidelity: "quotation", pinpoint: "p. 37", note: "The bulletin's last sentence. It restates the title of the first section, and it answers the open questions listed just before it.", causes: [{from: fee, to: health, sign: "-", basis: study}, {from: fee, to: attend, sign: "-", basis: study}]}
     <+ [Individuals may not resent paying]
@@ -139,13 +232,13 @@ mechanism:
     <+ [Small price rises cut health take-up]: Even very small increases in price led to large drops in the number of people who chose to buy health products.
         {fidelity: "quotation", pinpoint: "p. 31", note: "Result 1, called 'a consistent result' across the six studies of Figure 1.", causes: {from: fee, to: takeup, sign: "-", basis: study}}
         <+ [Deworming take-up fell from 75 to 19 percent]: The introduction of a small fee reduced deworming treatment from 75 percent in schools with free distribution to only 19 percent in schools with cost-sharing.
-            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 1, Kremer and Miguel, Kenya. The fee averaged 30 cents and was introduced to make the programme more financially sustainable.", causes: {from: fee, to: takeup, sign: "-", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 1, Kremer and Miguel, Kenya. The fee averaged 30 cents and was introduced to make the programme more financially sustainable.", causes: {from: fee, to: takeup, sign: "-", basis: study}, about: [{study: s1, issue: takeup}, {study: s1, product: deworming, location: kenya}]}
         <+ [Chlorine take-up fell over 30 points in Zambia]: Take-up fell by over 30 percentage points when prices increased from $0.09 to $0.25.
-            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 6, Ashraf, Berry and Shapiro: dilute chlorine sold door to door.", causes: {from: fee, to: takeup, sign: "-", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 6, Ashraf, Berry and Shapiro: dilute chlorine sold door to door.", causes: {from: fee, to: takeup, sign: "-", basis: study}, about: [{study: s6, issue: takeup}, {study: s6, product: disinfectant, location: zambia}]}
         <+ [Chlorine use fell 52 points in Kenya]: Compared to free distribution, the percentage of households using chlorine in their water fell by 52 percentage points when households had to purchase the disinfectant.
-            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 7, Kremer, Miguel, Null and Zwane; household water was tested for chlorine. The same study found little difference between half-price coupons and full price, so the fall comes between free and any price at all.", causes: {from: fee, to: use, sign: "-", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 7, Kremer, Miguel, Null and Zwane; household water was tested for chlorine. The same study found little difference between half-price coupons and full price, so the fall comes between free and any price at all.", causes: {from: fee, to: use, sign: "-", basis: study}, about: [{study: s7, issue: takeup}, {study: s7, product: disinfectant, location: kenya}]}
         <+ [Bednet sales fell 60 points at sixty cents]: bednet sales at prenatal clinics dropped by 60 percentage points when the price was increased from zero to $0.60
-            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 2, Cohen and Dupas, Kenya. Sixty cents is still 15 cents below what social marketing programmes typically charge pregnant women there.", causes: {from: fee, to: takeup, sign: "-", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 31", note: "Study 2, Cohen and Dupas, Kenya. Sixty cents is still 15 cents below what social marketing programmes typically charge pregnant women there.", causes: {from: fee, to: takeup, sign: "-", basis: study}, about: [{study: s2, issue: takeup}, {study: s2, product: bednets, location: kenya}]}
     <+ [Demand is insensitive to the subsidy level]
 
 <Subsidy level barely matters>: A 90 percent subsidy lost as much demand as subsidies of half or nothing, so demand does not track the exact subsidy level.
@@ -158,7 +251,7 @@ mechanism:
 (2) [Chlorine subsidies ran from half to none]: The prices charged for water disinfectant in Kenya, by contrast, ranged from a 50 percent subsidy to no subsidy at all.
     {fidelity: "quotation", pinpoint: "p. 31"}
 (3) [Bednet demand fell as steeply as chlorine demand]: the drop in demand for bednets is about as steep as the drop in demand for water disinfectant
-    {fidelity: "quotation", pinpoint: "p. 31"}
+    {fidelity: "quotation", pinpoint: "p. 31", about: [{study: s2, issue: takeup}, {study: s7, issue: takeup}]}
 -----
 (4) [Demand is insensitive to the subsidy level]: demand does not appear to be sensitive to the exact subsidy level
     {fidelity: "quotation", pinpoint: "p. 31", causes: {from: subsidy, to: takeup, sign: "0", basis: study}}
@@ -171,7 +264,7 @@ mechanism:
 (1) [A uniform is a main remaining cost of school]: In Kenya, primary school fees have been eliminated, and a $6 uniform presents one of the main remaining costs of attending school.
     {fidelity: "quotation", pinpoint: "p. 32"}
 (2) [Free uniforms raised attendance]: In both evaluations, students randomly selected to receive a free uniform were more likely to attend school
-    {fidelity: "quotation", pinpoint: "p. 32", causes: {from: fee, to: attend, sign: "-", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 32", causes: {from: fee, to: attend, sign: "-", basis: study}, about: [{study: s9, issue: takeup}, {study: s10, issue: takeup}, {study: s9, product: uniforms, location: kenya}, {study: s10, product: uniforms, location: kenya}]}
 (3) [A uniform is a small share of what schooling costs]: the cost of a uniform represents only a small fraction of the cost of schooling, considering that the Kenyan government has already invested significant funds to operate and staff schools #crux
     {fidelity: "quotation", pinpoint: "p. 32", note: "Crux. Read as the author's reply to the concession just before it: the smaller drop for education is no comfort, because the uniform is a trivial part of what schooling costs and the government has paid the rest, so each child it keeps away wastes that investment. The other reading takes the sentence as explaining why the drop is smaller (a uniform is a small price on the whole good), which would set it beside the concession rather than under the reply. The following 'Still' fits either."}
 -----
@@ -185,26 +278,36 @@ mechanism:
 # Fees do not buy use {isGroup: true}
 
 [Fees do not substantially promote use]: fees do not substantially promote use
-    {fidelity: "quotation", pinpoint: "p. 32", note: "Result 2's heading; the section's verdict is 'The balance of evidence is that it does not.' The section grants the concern behind fees ('It is a waste of resources to hand out products for free if they will not be used correctly'), and 'substantially' leaves room for the one screening effect found. Use was checked by home visits and chlorine tests, so the usage figures are lower bounds.", causes: {from: fee, to: use, sign: "0", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 32", note: "Result 2's heading; the section's verdict is 'The balance of evidence is that it does not.' The section grants the concern behind fees ('It is a waste of resources to hand out products for free if they will not be used correctly'), and 'substantially' leaves room for the one screening effect found. Use was checked by home visits and chlorine tests, so the usage figures are lower bounds.", causes: {from: fee, to: use, sign: "0", basis: study}, question: {id: q2, move: answers}}
     <+ [Usage no different in Uganda]: researchers found no difference in usage between those who received free long-lasting insecticidal bednets and those who received cash to buy bednets
-        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 5, Hoffmann, Barrett and Just.", causes: {from: fee, to: use, sign: "0", basis: study}}
+        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 5, Hoffmann, Barrett and Just.", causes: {from: fee, to: use, sign: "0", basis: study}, about: [{study: s5, issue: use}, {study: s5, product: bednets, location: uganda}]}
     <+ [Usage no different in Kenya]: usage was no different after two months and after one year between people who received vouchers for a free bednet and those who received vouchers to purchase a subsidized bednet
-        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 4, Dupas.", causes: {from: fee, to: use, sign: "0", basis: study, lag: "two months and one year"}}
+        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 4, Dupas.", causes: {from: fee, to: use, sign: "0", basis: study, lag: "two months and one year"}, about: [{study: s4, issue: use}, {study: s4, product: bednets, location: kenya}]}
     <+ [No evidence that paying itself promotes use]: There is no evidence that the act of paying for a product makes a recipient more likely to use it.
         {fidelity: "quotation", pinpoint: "pp. 30, 34", causes: {from: fee, to: use, sign: "0", basis: study}}
         <+ [Neither effect for bednets in Kenya]: there was neither a screening effect nor a psychological effect of paying for bednets
-            {fidelity: "quotation", pinpoint: "p. 34", note: "Study 2, Cohen and Dupas. To separate the effects, a random subset of those who had already chosen to buy at a price was then offered a further discount or the product free.", causes: {from: fee, to: use, sign: "0", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 34", note: "Study 2, Cohen and Dupas. To separate the effects, a random subset of those who had already chosen to buy at a price was then offered a further discount or the product free.", causes: {from: fee, to: use, sign: "0", basis: study}, about: {study: s2, issue: use}}
         <+ [No commitment effect for chlorine in Zambia]: researchers did not observe a psychological commitment effect of paying for water disinfectant
-            {fidelity: "quotation", pinpoint: "p. 34", note: "Study 6. Those willing to pay who were then given the chlorine free used it as much as those who paid.", causes: {from: fee, to: use, sign: "0", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 34", note: "Study 6. Those willing to pay who were then given the chlorine free used it as much as those who paid.", causes: {from: fee, to: use, sign: "0", basis: study}, about: {study: s6, issue: use}}
         <- [Paying itself encourages use]: the mere act of paying for something encourages people to use it more than if they had received the same product for free #reported
             {fidelity: "quotation", pinpoint: "p. 33", note: "The psychological commitment or sunk-cost effect, attributed to many NGOs and agencies. In the summary box (p. 34) it is the common claim that people are more likely to use what they have sacrificed for, and part of the social entrepreneurs' case.", causes: {from: fee, to: use, sign: "+", basis: asserted, how: {actor: household, situation: "has paid for the product", habit: "rationalize their purchases", response: "uses it more"}}}
     <+ [Screening also turned away would-be users]: Charging did screen out some people who were always unlikely to use the product, although it also screened out some who would have used it, had the chlorine been free.
-        {fidelity: "quotation", pinpoint: "p. 34", causes: [{from: fee, to: use, sign: "+", selects: true, basis: study}, {from: fee, to: use, sign: "-", basis: study, given: ["those who would have used it, had the chlorine been free"]}]}
+        {fidelity: "quotation", pinpoint: "p. 34", causes: [{from: fee, to: use, sign: "+", selects: true, basis: study}, {from: fee, to: use, sign: "-", basis: study, given: ["those who would have used it, had the chlorine been free"]}], about: {study: s6, issue: use}}
     <+ [Fees cannot raise use where taking is using]: For these products, where there is no step between take-up and use, there is no potential for user fees to increase use.
         {fidelity: "quotation", pinpoint: "p. 32", note: "Deworming pills swallowed under a teacher's eye, injections given by a health worker. Only products needing repeated, active use leave fees any room to matter.", causes: [{from: fee, to: use, sign: "0", basis: asserted, given: ["products where there is no step between take-up and use"]}, {from: takeup, to: use, sign: "+", basis: asserted, given: ["products where there is no step between take-up and use"]}]}
     <- [Fees screen out those unlikely to use]: a user fee may help to prevent waste by screening out those who are not likely to use the product #reported
         {fidelity: "quotation", pinpoint: "p. 33", note: "The screening effect, one of two ways charging 'has been thought to promote use', resting on the premise that 'individuals who value a product highly may be both more likely to pay for a product and more likely to use it once they have it'.", causes: {from: fee, to: use, sign: "+", selects: true, hedged: true, basis: asserted}}
     <- [The screening effect existed in Zambia]
+
+// The two ways charging "has been thought to promote use" (pp. 33-34), each set against the two
+// studies built to tell them apart.
+[Fees screen out those unlikely to use]
+    <- [Neither effect for bednets in Kenya]
+    <+ [The screening effect existed in Zambia]
+
+[Paying itself encourages use]
+    <- [Neither effect for bednets in Kenya]
+    <- [No commitment effect for chlorine in Zambia]
 
 <What screening is worth>: A screening effect was found, but what it is worth depends on what becomes of product taken and not used, so recipients' other uses should weigh in deciding what to prioritize for free distribution.
     {fidelity: "compression", pinpoint: "p. 34"}
@@ -212,7 +315,7 @@ mechanism:
 <What screening is worth>
 
 (1) [The screening effect existed in Zambia]: A 10 percent increase in the price of the disinfectant led to a 3 to 4 percent increase in the probability that the eventual owners of the disinfectant would be found using it #conceded
-    {fidelity: "quotation", pinpoint: "p. 34", note: "Study 6, Ashraf, Berry and Shapiro; introduced with 'The screening effect, however, did exist'.", causes: {from: fee, to: use, sign: "+", selects: true, basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 34", note: "Study 6, Ashraf, Berry and Shapiro; introduced with 'The screening effect, however, did exist'.", causes: {from: fee, to: use, sign: "+", selects: true, basis: study}, about: {study: s6, issue: use}}
 (2) [The worth of screening turns on unused bottles]: The importance of this screening effect depends heavily on what happens to the bottles of chlorine that people accept or buy, but do not ultimately use in their drinking water.
     {fidelity: "quotation", pinpoint: "p. 34"}
 (3) [Stockpilers stop taking more bottles]: If people accept chlorine bottles, intending to use them in their drinking water, but do not immediately use these bottles, they are unlikely to continue accepting more and more bottles in subsequent rounds of free or subsidized distribution.
@@ -229,39 +332,49 @@ mechanism:
 # Fees do not target need {isGroup: true}
 
 [Fees are not a reliable way to target]: charging fees is not generally a reliable way to help target health products to those who need them most
-    {fidelity: "quotation", pinpoint: "p. 35", note: "Result 3's conclusion from five studies. The bulletin also sets out the opposite possibility, that if those who need a product most are poorer and less able to pay, charging may worsen targeting; it does not conclude for it.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}}
+    {fidelity: "quotation", pinpoint: "p. 35", note: "Result 3's conclusion from five studies. The bulletin also sets out the opposite possibility, that if those who need a product most are poorer and less able to pay, charging may worsen targeting; it does not conclude for it.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}, question: {id: q3, move: answers}}
     <+ [Heavy worm loads did not raise willingness to pay]: children with high parasitic worm loads would have benefited most from deworming treatment, but their families were no more likely to pay for treatment than the families of children with low worm loads
-        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 1, Kenya.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}}
+        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 1, Kenya.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}, about: {study: s1, issue: targeting}}
     <+ [Bednet buyers were no sicker]: pregnant women who were willing to pay higher prices for bednets appeared no sicker (in terms of measured anemia) than the average prenatal client when they made their purchase
-        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 2, Kenya. Malaria in pregnancy can cause anemia.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}}
+        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 2, Kenya. Malaria in pregnancy can cause anemia.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}, about: {study: s2, issue: targeting}}
     <+ [More young children meant lower willingness to pay in Uganda]: households with more young children actually had a lower willingness to pay for bednets
-        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 5, Uganda, although families with young children have the greater need for bednets.", causes: {from: need, to: takeup, sign: "-", basis: study, given: ["when a fee is charged"]}}
+        {fidelity: "quotation", pinpoint: "p. 34", note: "Study 5, Uganda, although families with young children have the greater need for bednets.", causes: {from: need, to: takeup, sign: "-", basis: study, given: ["when a fee is charged"]}, about: {study: s5, issue: targeting}}
     <+ [Families with young children bought no more chlorine]: Families with children under five are not more likely to buy water disinfectant
-        {fidelity: "quotation", pinpoint: "p. 34", note: "The summary box's account (p. 34) of studies 6 and 7. On p. 35, families with more young children were not willing to pay more for chlorine in Zambia, and no more likely to buy it subsidized in Kenya.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}}
+        {fidelity: "quotation", pinpoint: "p. 34", note: "The summary box's account (p. 34) of studies 6 and 7. On p. 35, families with more young children were not willing to pay more for chlorine in Zambia, and no more likely to buy it subsidized in Kenya.", causes: {from: need, to: takeup, sign: "0", basis: study, given: ["when a fee is charged"]}, about: [{study: s6, issue: targeting}, {study: s7, issue: targeting}]}
     <- [Charging may target the neediest]: charging may be a convenient way to target subsidized products to the most needy #reported
         {fidelity: "quotation", pinpoint: "p. 34", note: "A hypothesis set out conditionally: if those who stand to benefit more know it and are therefore more willing to pay. On p. 30 it is the question whether fees target products to those who need them most.", causes: {from: need, to: takeup, sign: "+", basis: asserted, hedged: true, given: ["when a fee is charged", "If they are aware of this fact and thus are more willing to pay for these products"]}}
+
+[Charging may target the neediest]
+    <- [Heavy worm loads did not raise willingness to pay]
+    <- [Bednet buyers were no sicker]
+    <- [More young children meant lower willingness to pay in Uganda]
+    <- [Families with young children bought no more chlorine]
+    <- [Charging may worsen targeting]
 
 # The feared costs of giving products away {isGroup: true}
 
 [Individuals may not resent paying]: individuals may not resent having to pay after having received a product for free in the past
-    {fidelity: "quotation", pinpoint: "p. 35", note: "Hedged by the author ('these results suggest'). The policy lessons put it as free distribution not necessarily undermining future willingness to buy (p. 36).", causes: {from: fee, to: later, sign: "0", basis: study, hedged: true, lag: "one year"}}
+    {fidelity: "quotation", pinpoint: "p. 35", note: "Hedged by the author ('these results suggest'). The policy lessons put it as free distribution not necessarily undermining future willingness to buy (p. 36).", causes: {from: fee, to: later, sign: "0", basis: study, hedged: true, lag: "one year"}, question: {id: q4, move: answers}}
     <+ [Free distribution can teach the benefits of a product]: learning about the benefits of a product through free distribution may actually make people more willing to pay for a product in the future
         {fidelity: "quotation", pinpoint: "p. 35", note: "The bulletin's gloss: people did not get used to receiving something for free, they got used to the benefits of bednets.", causes: [{from: fee, to: learn, sign: "-", basis: study, hedged: true}, {from: learn, to: later, sign: "+", basis: study, hedged: true}]}
         <+ [Earlier free recipients were likelier to buy]: Those who had been offered free nets previously were 41 percent more likely to buy a net than those who had been offered nets at a subsidized price, even though the former group was more likely to already own a net.
-            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 4, Dupas, Kenya: another net offered at $2.30 a year later.", causes: {from: fee, to: later, sign: "-", basis: study, lag: "one year"}}
+            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 4, Dupas, Kenya: another net offered at $2.30 a year later.", causes: {from: fee, to: later, sign: "-", basis: study, lag: "one year"}, about: {study: s4, issue: longrun}}
         <+ [Neighbours of free recipients were likelier to buy]: The neighbors of those offered free nets were also more likely to buy a net than the neighbors of those who had to pay for a net.
-            {fidelity: "quotation", pinpoint: "p. 35", note: "Explained, tentatively, by greater exposure to the benefits of nets.", causes: {from: fee, to: nbuy, sign: "-", basis: study, lag: "one year"}}
+            {fidelity: "quotation", pinpoint: "p. 35", note: "Explained, tentatively, by greater exposure to the benefits of nets.", causes: {from: fee, to: nbuy, sign: "-", basis: study, lag: "one year"}, about: {study: s4, issue: longrun}}
     <- [Free distribution breeds resentment]: if products are distributed for free, people will resent having to pay for them in the future #reported
         {fidelity: "quotation", pinpoint: "p. 35", note: "The worry of many NGOs and governments, with its corollary that if funding for free distribution runs out, take-up will fall below where it began.", causes: {from: fee, to: later, sign: "+", basis: asserted}}
     <- [Few studies of long-term effects]: fewer studies have examined the long-term effects of free distribution #conceded
         {fidelity: "quotation", pinpoint: "p. 35"}
 
+[Free distribution breeds resentment]
+    <- [Earlier free recipients were likelier to buy]
+
 [Free recipients keep their bednets]: In the studies summarized here, the recipients of free bednets were surprisingly unwilling to sell them.
-    {fidelity: "quotation", pinpoint: "p. 33", causes: {from: fee, to: resale, sign: "0", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 33", causes: {from: fee, to: resale, sign: "0", basis: study}, question: {id: q7, move: answers}}
     <+ [Most would not sell a free net at cost]: Among those who received up to three free bednets, 73 percent were unwilling to sell even one bednet for $7.63, which was the product cost of the bednet and the maximum resale price allowed in the study.
-        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 5, Uganda, where participants would on average spend only $2.34 of their own cash on a net.", causes: {from: fee, to: resale, sign: "0", basis: study}}
+        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 5, Uganda, where participants would on average spend only $2.34 of their own cash on a net.", causes: {from: fee, to: resale, sign: "0", basis: study}, about: {study: s5, issue: resale}}
     <+ [Almost all kept a free net for a year]: 12 months after households received a free bednet, 95 percent still had the net in their house
-        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 3, Dupas, Kenya.", causes: {from: fee, to: resale, sign: "0", basis: study, lag: "12 months"}}
+        {fidelity: "quotation", pinpoint: "p. 33", note: "Study 3, Dupas, Kenya.", causes: {from: fee, to: resale, sign: "0", basis: study, lag: "12 months"}, about: [{study: s3, issue: resale}, {study: s3, product: bednets, location: kenya}]}
     <- [Free products will be resold]: those who do not intend to use a product might nevertheless accept the free gift and then sell it to others, undermining the aim of getting the product to poor households who would benefit from it #reported
         {fidelity: "quotation", pinpoint: "p. 33", note: "Described as a major concern for scaling up free delivery programmes.", causes: {from: fee, to: resale, sign: "-", basis: asserted, hedged: true}}
 
@@ -279,14 +392,14 @@ mechanism:
     {fidelity: "quotation", pinpoint: "p. 35", causes: {from: takeup, to: unitcost, sign: "-", basis: asserted}}
 (2) [Tiny fees sharply cut adoption]
 (3) [Deworming cost per child more than doubled]: the cost per child dewormed under cost-sharing was more than twice as high as under free distribution ($4.26 vs. $1.48), and far fewer children received the treatment
-    {fidelity: "quotation", pinpoint: "p. 35", note: "Study 1, Kenya.", causes: {from: fee, to: unitcost, sign: "+", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 35", note: "Study 1, Kenya.", causes: {from: fee, to: unitcost, sign: "+", basis: study}, about: {study: s1, issue: cost}}
 -----
 (4) [Fees need not raise cost-effectiveness]: collecting money through user fees will not necessarily increase the cost-effectiveness of a program when one considers the costs and benefits from a societal perspective, rather than from the perspective of the organization implementing the program
     {fidelity: "quotation", pinpoint: "p. 35", causes: {from: fee, to: costeff, sign: "0", basis: study}}
 
 [Fees need not raise cost-effectiveness]
     <+ [Cost-sharing at best marginally more cost-effective for bednets]: Cohen and Dupas find cost-sharing for bednets in Kenya at best marginally more cost-effective than free distribution, and suggest that free distribution could save many more lives.
-        {fidelity: "paraphrase", pinpoint: "p. 35", source: "\"find cost-sharing to be at best marginally more cost-effective than free distribution, but suggest that free distribution could save many more lives\"", note: "Study 2.", causes: [{from: fee, to: costeff, sign: "0", basis: study}, {from: fee, to: health, sign: "-", basis: study, hedged: true}]}
+        {fidelity: "paraphrase", pinpoint: "p. 35", source: "\"find cost-sharing to be at best marginally more cost-effective than free distribution, but suggest that free distribution could save many more lives\"", note: "Study 2.", causes: [{from: fee, to: costeff, sign: "0", basis: study}, {from: fee, to: health, sign: "-", basis: study, hedged: true}], about: {study: s2, issue: cost}}
 
 <Cost recovery>
     <_ <Revenue at a cost>
@@ -326,20 +439,30 @@ mechanism:
 [The standard view is too simple]: a number of pieces of evidence suggest that this is too simplified a story
     {fidelity: "quotation", pinpoint: "p. 35", note: "'This' is the standard economics view drawn as attacking it. What is at stake: if low willingness to pay meant low value, those whom fees deter would lose little."}
     <+ [Reluctant to pay yet unwilling to sell]: people were both reluctant to pay much for a bednet and yet were unwilling to sell it for a much higher price
-        {fidelity: "quotation", pinpoint: "p. 35"}
+        {fidelity: "quotation", pinpoint: "p. 35", about: {study: s5, issue: why}}
         <+ [Most would not sell a free net at cost]
     <+ [Lack of cash explains part of the drop]: a lack of cash on hand explains at least part of the drop in demand seen with user fees
-        {fidelity: "quotation", pinpoint: "p. 36", note: "Hedged ('This suggests'). A test of whether the effort of deliberating deters purchases (study 8, Spears, India) found a small effect that 'at best' explains a small part of the price sensitivity, and the section closes by allowing that 'there may still be debate about why we see this behavior' while holding that very small price increases deter many.", causes: {from: cash, to: takeup, sign: "+", basis: study}}
+        {fidelity: "quotation", pinpoint: "p. 36", note: "Hedged ('This suggests'). A test of whether the effort of deliberating deters purchases (study 8, Spears, India) found a small effect that 'at best' explains a small part of the price sensitivity, and the section closes by allowing that 'there may still be debate about why we see this behavior' while holding that very small price increases deter many.", causes: {from: cash, to: takeup, sign: "+", basis: study}, question: {id: q5, move: answers}}
         <+ [Cash in hand more than doubled willingness to pay]: individuals using their own cash were willing to pay on average $2.34 for a bednet. When the researchers provided people with enough cash to buy a net, the individuals were willing to pay more than twice that amount ($5.94).
-            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 5, Hoffmann, Barrett and Just, Uganda.", causes: {from: cash, to: takeup, sign: "+", basis: study}}
+            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 5, Hoffmann, Barrett and Just, Uganda.", causes: {from: cash, to: takeup, sign: "+", basis: study}, about: {study: s5, issue: why}}
         <+ [Time to raise the money flattened demand]: demand for bednets fell less steeply with price when households were given more time to raise the funds to purchase them
-            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 3, Dupas, Kenya: vouchers redeemable over three months, against purchase on the spot in study 2. The time taken to redeem rose with the price of the net.", causes: {from: fee, to: takeup, sign: "-", basis: study, given: ["households were given more time to raise the funds to purchase them"]}}
+            {fidelity: "quotation", pinpoint: "p. 35", note: "Study 3, Dupas, Kenya: vouchers redeemable over three months, against purchase on the spot in study 2. The time taken to redeem rose with the price of the net.", causes: {from: fee, to: takeup, sign: "-", basis: study, given: ["households were given more time to raise the funds to purchase them"]}, about: {study: s3, issue: why}}
         <+ [Credit flattened demand]: demand fell much less steeply with price when credit was available for the bednet
             {fidelity: "quotation", pinpoint: "p. 35", note: "Tarozzi et al. 2011, rural Orissa, India, outside the ten: 52 percent bought on credit at full price, against 96 percent take-up when nets were free. The bulletin flags that microfinance clients are a different population.", causes: {from: fee, to: takeup, sign: "-", basis: study, given: ["credit was available for the bednet"]}}
         <- [People may discount future costs]: it is also possible that people put less emphasis on costs in the future (in this case, loan repayments) #conceded
             {fidelity: "quotation", pinpoint: "p. 36", note: "A rival reading of the credit result, present bias rather than lack of cash.", causes: {from: fee, to: takeup, sign: "-", basis: asserted, hedged: true, given: ["credit was available for the bednet"], how: {actor: household, situation: "costs that fall in the future (in this case, loan repayments)", habit: "put less emphasis on costs in the future", response: "buys on credit"}}}
     <- [Low willingness to pay means low value]: if someone is not prepared to pay much for something then it cannot be of much use to them #reported
         {fidelity: "quotation", pinpoint: "p. 35", note: "Attributed to 'a standard economics view'."}
+
+[Low willingness to pay means low value]
+    <- [Reluctant to pay yet unwilling to sell]
+
+[Deliberation may deter purchases]: the effort involved in thinking about a purchasing decision may deter people
+    {fidelity: "quotation", pinpoint: "p. 36", note: "The idea study 8 tested (Spears, rural India), under the heading 'Does deliberation deter purchases?'. Not asserted by the bulletin, which grants it at best a small part of the answer."}
+    <+ [Free makes the decision simpler]
+    <+ [Asked to think about money, more bought soap at higher prices]: Relative to a comparison group asked unrelated questions, the treatment group was slightly more likely to purchase soap at higher prices.
+        {fidelity: "quotation", pinpoint: "p. 36", about: [{study: s8, issue: why}, {study: s8, product: soap, location: india}], note: "The treatment group had been asked questions 'designed to require thinking about the value of money'. Drawn as support because the text goes straight on to weigh it as a small effect of deliberation; it does not say how thinking in advance lightens the decision at the till."}
+    <- [Deliberation explains little]
 
 # When to distribute for free {isGroup: true}
 
@@ -403,7 +526,7 @@ mechanism:
 [Higher cost per person, lower cost-effectiveness]: A program whose cost per person reached rises is, other things equal, less cost-effective.
     {fidelity: "imputation", warrant: "enthymeme", pinpoint: "p. 35", note: "The inference of the box on cost recovery runs from costs amortized over far fewer users to fees not raising cost-effectiveness, and needs this step; the text does not state it.", causes: {from: unitcost, to: costeff, sign: "-", basis: asserted}}
 
-[Charging may worsen targeting]: "if those who need a product most are also poorer and less able to afford fees, charging may actually lead to worse targeting"
+[Charging may worsen targeting]: "if those who need a product most are also poorer and less able to afford fees, charging may actually lead to worse targeting" #reported
     {fidelity: "quotation", pinpoint: "p. 34", note: "Set out beside the rival hypothesis that charging targets the needy; the text concludes for neither, though the Ugandan result points this way.", causes: {from: need, to: takeup, sign: "-", basis: asserted, hedged: true, given: ["when a fee is charged", "if those who need a product most are also poorer and less able to afford fees"]}}
 
 [Neighbours saw the benefits of nets]: "Free distribution meant people had more neighbors with nets, so it is possible that they had greater exposure to the benefits of the nets and thus were more likely to purchase one."
@@ -416,7 +539,7 @@ mechanism:
     {fidelity: "quotation", pinpoint: "p. 36", note: "The idea study 8 (Spears, India) tested: that the effort of thinking about a purchase may deter people.", causes: [{from: fee, to: deliberate, sign: "+", basis: asserted}, {from: deliberate, to: takeup, sign: "-", basis: asserted, hedged: true}]}
 
 [Deliberation explains little]: "the magnitude of the effect was small, and at best it explains a small part of why people are so price sensitive to small costs"
-    {fidelity: "quotation", pinpoint: "p. 36", note: "Study 8: those asked to think about the value of money were slightly more likely to buy soap at higher prices.", causes: {from: deliberate, to: takeup, sign: "-", basis: study}}
+    {fidelity: "quotation", pinpoint: "p. 36", note: "Study 8: those asked to think about the value of money were slightly more likely to buy soap at higher prices.", causes: {from: deliberate, to: takeup, sign: "-", basis: study}, about: {study: s8, issue: why}}
 
 [Deliberation may matter only under time pressure]: "It is also possible that deliberation costs are a factor only when people face time pressure to make a decision on the spot."
     {fidelity: "quotation", pinpoint: "p. 36", causes: {from: deliberate, to: takeup, sign: "-", basis: asserted, hedged: true, given: ["when people face time pressure to make a decision on the spot"]}}

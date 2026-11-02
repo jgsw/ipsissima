@@ -441,7 +441,7 @@ if (chromium) {
       // readable; unfolding for the claim re-rendered, the framing chose that rung again, and the
       // claim went back under its fold -- nothing lit, and nothing moved.
       const src = fs.readFileSync(sample(BATES, "bates-2012-price-is-wrong.argdown"), "utf8")
-        .replace(/^title: (.*)$/m, '$&\nquestions:\n    time: {text: "Does deliberation matter?"}')
+        .replace(/^questions:$/m, '$&\n    time: {text: "Does deliberation matter?"}')
         .replace(/(\[Stockpilers stop taking more bottles\]: [^\n]*\n    \{)/,
                  '$1question: {id: time, move: answers}, ')
         // and one the argument map does not draw (it only feeds the mechanism): named, not linked

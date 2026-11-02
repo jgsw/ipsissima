@@ -4620,7 +4620,8 @@ function qFirstOffer(){
   if (!qFirstOn() || WALK || STUDY || !LIVE) return;
   var q = studyQuestion();
   if (!q) return;
-  $("qfirst").querySelector(".qtext").textContent = "\u201c" + q + "\u201d";
+  // A question in the text's own words already carries its quotation marks: the card's own replace them.
+  $("qfirst").querySelector(".qtext").textContent = "\u201c" + q.replace(/^"([\s\S]*)"$/, "$1") + "\u201d";
   $("qfirst").hidden = false;
   var b = $("qfirst").querySelector('[data-qfirst="study"]');
   if (b) b.focus();
