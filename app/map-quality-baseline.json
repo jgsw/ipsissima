@@ -71,6 +71,78 @@
   "moveMedian": 0.05,
   "quietMove": 0
  },
+ "bates-2012-price-is-wrong @ main": {
+  "edges": 20,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 23,
+  "nodeOverlaps": 0
+ },
+ "bates-2012-price-is-wrong @ reasons": {
+  "edges": 44,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 60,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 45,
+  "nodeOverlaps": 0
+ },
+ "bates-2012-price-is-wrong @ detail": {
+  "edges": 71,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 77,
+  "overshoot": 75,
+  "detourWorst": 1.2,
+  "edgeCrossings": 67,
+  "nodeOverlaps": 0
+ },
+ "bates-2012-price-is-wrong @ all": {
+  "edges": 116,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 75,
+  "overshoot": 72,
+  "detourWorst": 1.3,
+  "edgeCrossings": 113,
+  "nodeOverlaps": 0
+ },
+ "bates-2012-price-is-wrong @ folded": {
+  "edges": 12,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 69,
+  "overshoot": 43,
+  "detourWorst": 1.3,
+  "edgeCrossings": 4,
+  "nodeOverlaps": 0
+ },
+ "bates-2012-price-is-wrong @ transitions": {
+  "foldClicks": 47,
+  "anchorCross": 0.11,
+  "moveWorst": 1.02,
+  "moveMedian": 0.05,
+  "quietMove": 0.04
+ },
  "carroll-tortoise-achilles @ main": {
   "edges": 1,
   "hiddenArrowheads": 0,
@@ -215,6 +287,78 @@
   "moveMedian": 0.46,
   "quietMove": 0
  },
+ "will-to-believe-1896 @ main": {
+  "edges": 18,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 73,
+  "overshoot": 38,
+  "detourWorst": 1.2,
+  "edgeCrossings": 9,
+  "nodeOverlaps": 0
+ },
+ "will-to-believe-1896 @ reasons": {
+  "edges": 36,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 36,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 19,
+  "nodeOverlaps": 0
+ },
+ "will-to-believe-1896 @ detail": {
+  "edges": 72,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 38,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 62,
+  "nodeOverlaps": 0
+ },
+ "will-to-believe-1896 @ all": {
+  "edges": 83,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 28,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 68,
+  "nodeOverlaps": 0
+ },
+ "will-to-believe-1896 @ folded": {
+  "edges": 14,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 78,
+  "overshoot": 18,
+  "detourWorst": 1.2,
+  "edgeCrossings": 5,
+  "nodeOverlaps": 0
+ },
+ "will-to-believe-1896 @ transitions": {
+  "foldClicks": 33,
+  "anchorCross": 0.06,
+  "moveWorst": 0.44,
+  "moveMedian": 0.07,
+  "quietMove": 0
+ },
  "miller-2019-uksc-41 @ main": {
   "edges": 5,
   "hiddenArrowheads": 0,
@@ -229,7 +373,7 @@
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ reasons": {
-  "edges": 15,
+  "edges": 16,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -242,7 +386,7 @@
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ detail": {
-  "edges": 21,
+  "edges": 22,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -255,7 +399,7 @@
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ all": {
-  "edges": 66,
+  "edges": 68,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -281,10 +425,10 @@
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ transitions": {
-  "foldClicks": 35,
-  "anchorCross": 0.11,
-  "moveWorst": 1.08,
-  "moveMedian": 0.11,
+  "foldClicks": 37,
+  "anchorCross": 0.14,
+  "moveWorst": 1.13,
+  "moveMedian": 0.1,
   "quietMove": 0
  },
  "prescott-couch-reverse-engineer @ main": {
@@ -359,8 +503,80 @@
   "moveMedian": 0.03,
   "quietMove": 0
  },
+ "swift-modest-proposal @ main": {
+  "edges": 7,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 4,
+  "nodeOverlaps": 0
+ },
+ "swift-modest-proposal @ reasons": {
+  "edges": 10,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 5,
+  "nodeOverlaps": 0
+ },
+ "swift-modest-proposal @ detail": {
+  "edges": 14,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 33,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 7,
+  "nodeOverlaps": 0
+ },
+ "swift-modest-proposal @ all": {
+  "edges": 58,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 48,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 34,
+  "nodeOverlaps": 0
+ },
+ "swift-modest-proposal @ folded": {
+  "edges": 1,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 0,
+  "nodeOverlaps": 0
+ },
+ "swift-modest-proposal @ transitions": {
+  "foldClicks": 21,
+  "anchorCross": 0.29,
+  "moveWorst": 0.92,
+  "moveMedian": 0.09,
+  "quietMove": 0
+ },
  "tooming-jakapi-aphantasia @ main": {
-  "edges": 6,
+  "edges": 7,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -373,7 +589,7 @@
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ reasons": {
-  "edges": 16,
+  "edges": 17,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -386,7 +602,7 @@
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ detail": {
-  "edges": 31,
+  "edges": 32,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -399,7 +615,7 @@
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ all": {
-  "edges": 141,
+  "edges": 155,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -408,7 +624,7 @@
   "bendWorst": 107,
   "overshoot": 75,
   "detourWorst": 1.4,
-  "edgeCrossings": 101,
+  "edgeCrossings": 135,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -425,10 +641,82 @@
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ transitions": {
-  "foldClicks": 40,
-  "anchorCross": 0.05,
-  "moveWorst": 0.64,
+  "foldClicks": 35,
+  "anchorCross": 0.11,
+  "moveWorst": 0.72,
   "moveMedian": 0.05,
+  "quietMove": 0
+ },
+ "wilson-2023-health-system-good @ main": {
+  "edges": 5,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 0,
+  "nodeOverlaps": 0
+ },
+ "wilson-2023-health-system-good @ reasons": {
+  "edges": 26,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 3,
+  "nodeOverlaps": 0
+ },
+ "wilson-2023-health-system-good @ detail": {
+  "edges": 70,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 50,
+  "overshoot": 35,
+  "detourWorst": 1.1,
+  "edgeCrossings": 43,
+  "nodeOverlaps": 0
+ },
+ "wilson-2023-health-system-good @ all": {
+  "edges": 162,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 0,
+  "bendWorst": 73,
+  "overshoot": 49,
+  "detourWorst": 1.2,
+  "edgeCrossings": 104,
+  "nodeOverlaps": 0
+ },
+ "wilson-2023-health-system-good @ folded": {
+  "edges": 14,
+  "hiddenArrowheads": 0,
+  "arrivalInversions": 0,
+  "departureInversions": 0,
+  "avoidableBend": 0,
+  "bendMedian": 27.8,
+  "bendWorst": 78,
+  "overshoot": 72,
+  "detourWorst": 1.4,
+  "edgeCrossings": 5,
+  "nodeOverlaps": 0
+ },
+ "wilson-2023-health-system-good @ transitions": {
+  "foldClicks": 38,
+  "anchorCross": 0.08,
+  "moveWorst": 1.17,
+  "moveMedian": 0.03,
   "quietMove": 0
  },
  "wilson-williams-dewey @ main": {
@@ -471,7 +759,7 @@
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
-  "edges": 174,
+  "edges": 176,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -480,11 +768,11 @@
   "bendWorst": 116,
   "overshoot": 75,
   "detourWorst": 1.3,
-  "edgeCrossings": 144,
+  "edgeCrossings": 147,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {
-  "edges": 19,
+  "edges": 20,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
   "departureInversions": 0,
@@ -497,9 +785,9 @@
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ transitions": {
-  "foldClicks": 57,
-  "anchorCross": 0,
-  "moveWorst": 0.47,
+  "foldClicks": 53,
+  "anchorCross": 0.04,
+  "moveWorst": 0.56,
   "moveMedian": 0.03,
   "quietMove": 0
  }
