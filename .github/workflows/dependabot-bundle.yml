@@ -36,7 +36,7 @@ jobs:
           node-version: 22
       - run: npm --prefix app ci
       - run: node app/build_argdown_shim.mjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vendor
           path: |
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: vendor
           path: ipsissima-mcp/src/ipsissima_mcp/vendor
