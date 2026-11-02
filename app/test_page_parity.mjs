@@ -235,7 +235,13 @@ console.log("the metadata check agrees with the parser");
      `[A]: c. {fidelity: "quotation"\n     note: "x"}\n`],
     ["flow missing a comma",       `[A]: c. {chapter: "x.md" fidelity: "q"}\n`],
     ["an unterminated string",     `[A]: c. {chapter: "x.md, fidelity: "q"}\n`],
-    ["a duplicated key",           `[A]: c.\n    {\n    chapter: "a"\n    chapter: "b"\n    }\n`]
+    ["a duplicated key",           `[A]: c.\n    {\n    chapter: "a"\n    chapter: "b"\n    }\n`],
+    ["a duplicated key, nested in flow",
+     `[A]: c. {causes: {from: a, to: b, design: x, design: x}}\n`],
+    ["a duplicated key in the front matter",
+     `===\ntitle: a\ntitle: b\n===\n\n[A]: c.\n`],
+    ["a clean front matter, with a flow map inside it",
+     `===\ntitle: a\nstates:\n    x: {label: "x"}\n===\n\n[A]: c.\n`]
   ];
   for (const [name, src] of cases) {
     const reported = metadataProblems(src, yaml.load).length > 0;
@@ -246,6 +252,14 @@ console.log("the metadata check agrees with the parser");
     check(`  ${name}`, reported === dropped,
           `check ${reported ? "reports" : "accepts"} it, argdown ${dropped ? "drops" : "reads"} it`);
   }
+  // NAMED, because "duplicated mapping key" in a forty-key block is a search, not a diagnosis.
+  const [dup] = metadataProblems(`[A]: c.\n\n[B]: d. {causes: {from: a, design: x, design: x}}\n`, yaml.load);
+  check("  a duplicated key is named, with its claim and line",
+        dup && /`design`/.test(dup.message) && dup.claim === "[B]" && dup.line === 3, JSON.stringify(dup));
+  const [fm] = metadataProblems(`===\ntitle: a\nnote: n\ntitle: b\n===\n\n[A]: c.\n`, yaml.load);
+  check("  and in the front matter, at its own line",
+        fm && /`title`/.test(fm.message) && fm.claim === "the front matter" && fm.line === 4,
+        JSON.stringify(fm));
 }
 
 console.log("the file a new reconstruction starts from");

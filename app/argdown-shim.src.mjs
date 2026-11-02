@@ -36,6 +36,8 @@
 import fs from "fs";
 import path from "path";
 import { argdown } from "@argdown/node";
+import { load as yamlLoad } from "js-yaml";
+import { metadataProblems } from "./argdown-graph.mjs";
 
 const MAP_PROCESS = ["parse-input", "build-model", "build-map",
                      "transform-closed-groups", "colorize", "export-dot"];
@@ -67,6 +69,23 @@ function reportSyntaxErrors(file, res) {
   return true;
 }
 
+/** Metadata the pipeline would drop without a word, in the same layout, under its own heading so
+ *  the checker can tell it from a syntax error. See `metadataProblems` in argdown-graph.mjs: the
+ *  check the viewer and the editor already made, and this shim did not until 2 Nov 2026 -- a key
+ *  written twice in one claim's block lost the Wilson 2023 sample 54 of its 141 nodes, and the
+ *  checker printed "parses OK". */
+function reportMetadataErrors(file, input) {
+  const bad = metadataProblems(input, yamlLoad);
+  if (!bad.length) return false;
+  const lines = [`Argdown metadata errors in ${file}: ${bad.length}`, ""];
+  for (const b of bad)
+    lines.push(`At ${b.line}:${b.column}`,
+               b.message + (b.claim === "the front matter" ? " (in the front matter)"
+                            : b.claim ? ` (in the metadata of ${b.claim})` : ""), "");
+  process.stderr.write(lines.join("\n"));
+  return true;
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const command = argv[0];
@@ -85,6 +104,12 @@ async function main() {
     input,
     process: command === "map" ? MAP_PROCESS : JSON_PROCESS,
     logLevel: "error",
+    // THROWN, NOT SWALLOWED. Argdown's runner keeps only its own plugin errors in `exceptions`;
+    // anything else a plugin throws -- js-yaml's, above all -- stops that processor's walk where
+    // it stands and is dropped without a log line, and the next processor builds from what is
+    // left. The metadata check below catches the YAML case with a line number; this is the
+    // backstop for every other, so a half-read file can only ever fail here, never pass.
+    throwExceptions: true,
     // The cast is the argv boundary: the value has just been checked against MODES above, which
     // is the same list the type enumerates.
     ...(selection ? { selection: { statementSelectionMode: /** @type {any} */ (selection) } } : {})
@@ -95,6 +120,7 @@ async function main() {
   // under a JavaScript stack -- precisely the noise the Python side then has to strip back off.
   const parsed = await argdown.runAsync({ ...request, process: ["parse-input"] });
   if (reportSyntaxErrors(file, parsed)) process.exit(1);
+  if (reportMetadataErrors(file, input)) process.exit(1);
 
   const res = await argdown.runAsync(request);
   if (reportSyntaxErrors(file, res)) process.exit(1);

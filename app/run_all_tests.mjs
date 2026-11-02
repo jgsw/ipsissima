@@ -110,6 +110,9 @@ const SUITES = [
   ["exposition: what of the text's order is thin", PY, [path.join(PYTESTS, "test_exposition.py")]],
   ["pinpoints: the page the words are on", PY, [path.join(PYTESTS, "test_pinpoints.py")]],
   ["reading checks (Stern cases)", PY, [path.join(PYTESTS, "test_reading_checks.py")]],
+  // A duplicated key or a missing comma in a `{…}` block made Argdown drop the rest of the map
+  // and the checker say "parses OK"; it must be a fault at its line.
+  ["metadata Argdown would drop", PY, [path.join(PYTESTS, "test_metadata.py")]],
   ["the text's comparisons: frames and about (checker)", PY, [path.join(PYTESTS, "test_frames.py")]],
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
   ["the profile holds to the code",   PY, [path.join(PYTESTS, "test_profile.py")]],

@@ -31,7 +31,16 @@
  *  viewer says so on screen, and the editor marks the line. One rule, three consumers; a second
  *  implementation of YAML would be a second opinion that could drift.
  *
- *  Returns [{ line, column, message, text }], line 1-based.
+ *  A FOURTH CONSUMER, AND THE FRONT MATTER (2 Nov 2026). The checker's bundled parser
+ *  (argdown-shim.src.mjs) runs the same in-process pipeline and never asked: a `design:` written
+ *  twice in one claim's `causes:` cost the Wilson 2023 sample 54 of its 141 nodes, and
+ *  `check_argdown.py` still said "parses OK". A duplicated key is the quietest form of this --
+ *  every line looks right -- so the message names the key, and `claim` names whose block it is.
+ *  The front matter is YAML read the same way, and a fault there emptied the whole map; it is
+ *  now loaded whole, as Argdown loads it, rather than brace by brace.
+ *
+ *  Returns [{ line, column, message, text, claim }], line 1-based; `claim` is "[Title]",
+ *  "<Title>", "the front matter", or null where the block belongs to nothing nameable.
  */
 /** Syntax errors the parser REPORTS rather than throws.
  *
@@ -195,12 +204,63 @@ export function stripMentionMarkup(text) {
   return String(text || "").replace(/@\[([^\]]+)\]/g, "$1").replace(/@<([^>]+)>/g, "$1");
 }
 
+/** What a YAMLException says, with the key named when it is a duplicate. js-yaml (4 and 5 alike)
+ *  marks a duplicated key at the START of its second occurrence but leaves the key out of the
+ *  message, and "duplicated mapping key" in a forty-key block is a search, not a diagnosis. */
+function yamlReason(e, parsed) {
+  const reason = String(e && e.reason ? e.reason : e && e.message ? e.message : e).split("\n")[0];
+  const mark = e && e.mark;
+  if (reason !== "duplicated mapping key" || !mark || typeof mark.position !== "number") return reason;
+  const k = /^\s*("[^"\n]*"|'[^'\n]*'|[^\s:,{}[\]"']+)\s*:/.exec(String(parsed).slice(mark.position));
+  return k ? `duplicated mapping key \`${k[1].replace(/^["']|["']$/g, "")}\` -- a key may appear ` +
+             "only once in a block" : reason;
+}
+
+/** Whose metadata the block on `line` (brace at `open`) is: the claim or argument defined on that
+ *  line before the brace, or on the lines just above it, up to a blank line. */
+function blockOwner(lines, line, open) {
+  const def = /^\s*(?:\(\d+\)\s*)?(?:[+\-_<>]+\s*)?(\[[^\]\n]+\]|<[^>\n]+>)\s*:/;
+  for (let n = line; n >= 0 && n > line - 8; n--) {
+    const l = n === line ? lines[n].slice(0, open) : lines[n];
+    if (n < line && !l.trim()) break;
+    const m = def.exec(l);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/** The front matter's lines, as Argdown's lexer finds it -- `===` opening the file, `===` closing
+ *  it -- or null. Leading blank and `//` lines are allowed before it. */
+function headerSpan(lines) {
+  let i = 0;
+  while (i < lines.length && (!lines[i].trim() || /^\s*\/\//.test(lines[i]))) i++;
+  if (i >= lines.length || !/^\s*={3,}\s*$/.test(lines[i])) return null;
+  for (let n = i + 1; n < lines.length; n++)
+    if (/^\s*={3,}\s*$/.test(lines[n])) return { open: i, close: n };
+  return null;
+}
+
 export function metadataProblems(source, yamlLoad) {
   const out = [];
   if (typeof yamlLoad !== "function") return out;
   const text = String(source || "");
   const lines = text.split("\n");
   let i = 0;
+  // THE FRONT MATTER WHOLE, and its braces are then not read again on their own: the whole is
+  // what Argdown loads, and a top-level key written twice is invisible brace by brace.
+  const head = headerSpan(lines);
+  if (head) {
+    const body = lines.slice(head.open + 1, head.close).join("\n");
+    try { yamlLoad(body); }
+    catch (e) {
+      const mark = e && e.mark;
+      const line = head.open + 1 + (mark ? mark.line : 0);
+      out.push({ line: line + 1, column: (mark ? mark.column : 0) + 1,
+                 message: yamlReason(e, body), text: lines[line] || "",
+                 claim: "the front matter" });
+    }
+    i = head.close + 1;
+  }
   while (i < lines.length) {
     if (/^\s*\/\//.test(lines[i])) { i++; continue; }
     const open = lines[i].indexOf("{");
@@ -255,8 +315,9 @@ export function metadataProblems(source, yamlLoad) {
       out.push({
         line: startLine + (mark ? mark.line : 0) + 1,
         column: (mark && mark.line === 0 ? open : 0) + (mark ? mark.column : 0) + 1,
-        message: String(e && e.reason ? e.reason : e && e.message ? e.message : e).split("\n")[0],
-        text: block.length > 90 ? block.slice(0, 90) + "\u2026" : block
+        message: yamlReason(e, toParse),
+        text: block.length > 90 ? block.slice(0, 90) + "\u2026" : block,
+        claim: blockOwner(lines, startLine, open)
       });
     }
     i++;

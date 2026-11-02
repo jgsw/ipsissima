@@ -1,0 +1,22 @@
+===
+title: "A duplicated key in a claim's metadata"
+reconstruction:
+    generated: true
+frames: none
+===
+
+// PLANTED, 2 Nov 2026: `design` twice in the second claim's `causes:`. Argdown's parser drops
+// every claim from that block to the end of the file and reports success; the checker must
+// refuse the file and name the line, the key and the claim. ipsissima-mcp/tests/test_metadata.py
+// also checks the file with the second `design` removed, which must parse whole: five claims.
+
+# The office
+
+[Copier breaks down]: The office photocopier breaks down more often than it used to.
+  <+ [Copier overused]: The photocopier is run past its monthly work cycle. {causes: {from: overuse, to: breakdown, sign: "+", design: illustration, on: chance, design: illustration}}
+
+# The ward
+
+[Clinicians strained]: Ward reform makes clinicians' work harder.
+  <+ [More patients each]: Each clinician is given more patients.
+  <+ [Less continuity]: Clinicians see the same patient less often.

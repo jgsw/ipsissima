@@ -2871,6 +2871,26 @@ def _report(cli, path, a):
         # [56]"). The parser reads `[38]` as a claim reference and fails with "found --> '[38]'",
         # which names the token but not the cause. The escape keeps the quotation verifiable.
         _cite = re.search(r"At (\d+):\d+\s*\n[^\n]*found --> '(\[[0-9][0-9,\s\u2013\-]*\])' <--", _msg)
+        # A METADATA BLOCK OR FRONT MATTER THAT IS NOT YAML (2 Nov 2026). Argdown itself drops the
+        # rest of the file over one without a word -- a `design:` written twice in one claim's
+        # `causes:` cost a sample 54 of its 141 nodes and this said "parses OK" -- so the bundled
+        # parser checks first and reports each block. One finding apiece, at its line: a reader
+        # fixing a duplicated key needs the key and the claim, not the parser's prose.
+        _meta = re.findall(r"^At (\d+):(\d+)\n(.+)$", _msg.split("Argdown metadata errors", 1)[1],
+                           re.M) if "Argdown metadata errors" in _msg else []
+        for _line, _col, _what in _meta:
+            _dup = re.match(r"duplicated mapping key `([^`]+)`", _what)
+            finding("parse", "!", f"line {_line}: {_what}", line=int(_line), column=int(_col),
+                    fix=(f"keep one `{_dup.group(1)}:` in that block -- YAML keeps only one value "
+                         f"of a repeated key, and Argdown drops every claim after the fault"
+                         if _dup else
+                         "make the block valid YAML: inside `{\u2026}`, entries separated by commas, "
+                         "and a value holding `:` or `,` in quotation marks"))
+        if _meta:
+            print("\nFAILED TO PARSE: Argdown would silently drop the rest of the map from here\n")
+            print(_msg.strip())
+            SHAPE["parsed"] = False
+            return 1
         finding("parse", "!", "the file does not parse",
                 detail=parser_message(_msg),
                 **({"line": int(_cite.group(1)),

@@ -180,8 +180,11 @@ check("the author's argument may not rest on an appraisal premise",
           for f in by(premise, "appraisal")), True)
 
 broken = run(CHAIN.replace("levels: [macro, meso, micro]", "levels: [macro, meso, micro"))
+# Since 2 Nov 2026 the parse names it first, at its line: Argdown reads nothing past broken front
+# matter, so the file stops there and the mechanism check is never reached.
 check("front matter that is not valid YAML is named, not silently read as nothing",
-      any("not valid YAML" in f["message"] for f in by(broken, "mechanism")), True)
+      any("not valid YAML" in f["message"] for f in by(broken, "mechanism"))
+      or any("front matter" in f["message"] and f.get("line") for f in by(broken, "parse")), True)
 
 # --------------------------------------------------------------------------- #
 print("\nthe mechanism pass: the chain's own material, and what the text's causal talk it covers")
