@@ -127,6 +127,9 @@ const SUITES = [
   // That the server can be INSTALLED, not just run from here — every path that assumes a source
   // checkout works fine for us and for nobody else.
   ["the package carries what it serves", PY, [path.join(PYTESTS, "test_installable.py")]],
+  // Extraction may be imported by the Argdown half and never the reverse -- what keeps it
+  // shippable as a package of its own.
+  ["extraction stands alone",    PY, [path.join(PYTESTS, "test_extraction_boundary.py")]],
   ["reading Zotero safely",      PY, [path.join(PYTESTS, "test_zotero.py")]],
   ["the copies Zotero holds",    PY, [path.join(PYTESTS, "test_zotero_store.py")]],
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),
