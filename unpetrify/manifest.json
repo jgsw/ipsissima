@@ -1,0 +1,52 @@
+{
+  "manifest_version": "0.4",
+  "name": "unpetrify",
+  "display_name": "Unpetrify",
+  "version": "0.1.0",
+  "description": "Get the text out of a PDF — scans included — as Markdown that keeps paragraphs, headings, footnotes and page numbers, and says what it could not do.",
+  "long_description": "Unpetrify converts documents — PDFs above all, scanned ones included, and EPUB, .docx and HTML — into Markdown your assistant can read and quote. It joins paragraphs across line and page breaks, keeps the document's own headings, lifts footnotes out of the running text, and marks where each PDF page begins, so a quotation can be cited by page.\n\nA damaged scan is read again and the readings voted against its text layer; where they still disagree, the assistant is shown the printed line and decides. Every conversion says what it did and what it could not do, rather than handing over a well-formed file of the wrong text.\n\nUnpetrify is the conversion inside Ipsissima-MCP, offered on its own for anyone who wants the text and nothing else.",
+  "author": {
+    "name": "James Wilson",
+    "url": "https://github.com/jgsw"
+  },
+  "homepage": "https://github.com/jgsw/ipsissima/tree/main/unpetrify",
+  "documentation": "https://github.com/jgsw/ipsissima/blob/main/unpetrify/README.md",
+  "support": "https://github.com/jgsw/ipsissima/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jgsw/ipsissima"
+  },
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "pdf",
+    "ocr",
+    "markdown",
+    "scan",
+    "epub",
+    "extraction"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "src/unpetrify/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "python",
+        "src/unpetrify/server.py"
+      ]
+    }
+  },
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ],
+    "runtimes": {
+      "python": ">=3.11,<4.0"
+    }
+  }
+}

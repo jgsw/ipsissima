@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for the page-geometry detection in pdf_to_source.py.
 
-    python3 ipsissima-mcp/tests/test_pdf_to_source.py
+    python3 unpetrify/tests/test_pdf_to_source.py
 
 Both cases below were real bugs, and both were the same KIND of bug: a confident wrong answer
 with nothing to signal it. The column test read min and max across the page's midline, so two
@@ -15,7 +15,7 @@ numbers are taken from the two real papers.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "unpetrify"))
 from pdf_to_source import (detect_columns, sheet_splits, column_frames, heads_a_block, detect_bands, split_footnotes,   # noqa: E402
                             heading_gaps, note_opening, join_spans, to_blocks,
                             printed_numbers, page_offset, detect_furniture, resolve_bands,

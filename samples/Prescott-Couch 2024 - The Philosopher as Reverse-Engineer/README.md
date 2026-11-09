@@ -30,8 +30,8 @@ An article in a library usually exists twice, and each copy has exactly what the
 So the source here is made from both:
 
 ```bash
-python3 ipsissima-mcp/src/ipsissima_mcp/html_to_source.py snapshot.html --out source/prescott-couch-2024-philosopher-as-reverse-engineer.md
-python3 ipsissima-mcp/src/ipsissima_mcp/paginate.py source/prescott-couch-2024-philosopher-as-reverse-engineer.md paper.pdf --write
+python3 unpetrify/src/unpetrify/html_to_source.py snapshot.html --out source/prescott-couch-2024-philosopher-as-reverse-engineer.md
+python3 unpetrify/src/unpetrify/paginate.py source/prescott-couch-2024-philosopher-as-reverse-engineer.md paper.pdf --write
 ```
 
 Fifteen of the sixteen page boundaries are placed. The sixteenth is not: p. 384 opens with the

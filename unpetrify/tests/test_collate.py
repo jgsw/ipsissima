@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for multi-witness collation of a damaged scan (collate.py).
 
-    python3 ipsissima-mcp/tests/test_collate.py
+    python3 unpetrify/tests/test_collate.py
 
 THE FIXTURES ARE MADE HERE, NOT COMMITTED. A scan is synthesised from text written for this
 test: set in type, rendered to an image, laid on a fresh page as a scan is, and given an
@@ -19,10 +19,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "unpetrify"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 os.environ.setdefault("IPSISSIMA_CACHE", tempfile.mkdtemp(prefix="ipsissima-collate-test-"))
-from ipsissima_mcp import collate as c                                         # noqa: E402
+from unpetrify import collate as c                                         # noqa: E402
 
 fails = 0
 
@@ -287,7 +287,7 @@ else:
               [(m["after_sheet"], m["before_sheet"], m["missing"]) for m in colg.missing],
               [(2, 3, 2)])
 
-        from ipsissima_mcp import ingest
+        from unpetrify import ingest
         # An image-only scan: nothing to vote with, so its sheets are rewritten from the fresh
         # reading, and what tesseract was unsure of is what is asked about.
         bare = Path(td) / "bare.pdf"

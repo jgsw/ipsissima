@@ -9,6 +9,7 @@ __pycache__/
 # is the only check that sees what actually ships -- so these appear during an ordinary test run
 # rather than only when someone is packaging on purpose.
 ipsissima-mcp/build/
+unpetrify/build/
 ipsissima-mcp/dist/
 
 # Build output. The two HTML files ARE the product, but they are generated: build them with

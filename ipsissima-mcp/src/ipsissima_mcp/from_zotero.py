@@ -72,10 +72,9 @@ KINDS = {"text/markdown": "markdown", "text/x-markdown": "markdown",
 EXTENSIONS = {".md": "markdown", ".markdown": "markdown", ".epub": "epub", ".html": "html",
               ".htm": "html", ".docx": "docx", ".pdf": "pdf"}
 
-#: Fewer words a page than this off a PDF's own text layer is a scan with nothing under it -- the
-#: line `assess_pdf` calls "hard". ONE NUMBER, held here and read there: two opinions about what
-#: counts as image-only would sooner or later rank a PDF above the tool that then refuses it.
-IMAGE_ONLY_WORDS_PER_PAGE = 40
+#: The line `assess_pdf` calls "hard", read from the converter that owns it -- see
+#: `unpetrify.ingest.IMAGE_ONLY_WORDS_PER_PAGE`.
+from unpetrify.ingest import IMAGE_ONLY_WORDS_PER_PAGE              # noqa: E402
 
 #: The fields a record's container can be stored under. Zotero keeps the TYPE-SPECIFIC field (a
 #: chapter's `bookTitle`, a web page's `websiteTitle`), not the base `publicationTitle` they map
@@ -506,16 +505,14 @@ def best(atts):
 
 def convert(att, out=None):
     """Convert one attachment by whichever route suits it. Returns (markdown_or_None, report)."""
-    import sys
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
     if att["kind"] == "markdown":
         md = Path(att["path"]).read_text(encoding="utf-8")
         return md, {"words": len(md.split())}
     if att["kind"] == "html":
-        import html_to_source as H
+        from unpetrify import html_to_source as H
         return H.convert(att["path"])
     if att["kind"] == "epub":
-        import epub_to_source as E
+        from unpetrify import epub_to_source as E
         meta, docs, skipped = E.convert(att["path"], out)
         md = "\n\n".join(d["markdown"] for d in docs)
         return md, {"title": meta.get("title"), "words": len(md.split()),

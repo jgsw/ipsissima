@@ -259,7 +259,7 @@ def table_signal(text):
     `ingest.TABLE_LABEL`, the pattern extraction's own lost-table note uses. A label naming another
     work's table is a false alarm the user dismisses in a sentence. 15 of the corpus's 68 texts cite
     one."""
-    from ipsissima_mcp import ingest
+    from unpetrify import ingest
     out = []
     for m in ingest.TABLE_LABEL.finditer(text or ""):
         lab = "Table " + m.group(1)

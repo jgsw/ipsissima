@@ -26,7 +26,7 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-BUILD = HERE.parents[1] / "ipsissima-mcp" / "src" / "ipsissima_mcp"
+BUILD = HERE.parents[1] / "unpetrify" / "src" / "unpetrify"
 WANTED = HERE / "source" / "wilson-2023-what-makes-a-health-system-good.md"
 
 FRONT = """title: "What makes a health system good? From cost-effectiveness analysis to ethical improvement in health systems"

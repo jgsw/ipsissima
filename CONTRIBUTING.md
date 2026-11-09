@@ -42,7 +42,7 @@ remove both the day it is fixed — never weaken the test.
 ## Setting up
 
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -e ipsissima-mcp
+python3 -m venv .venv && .venv/bin/pip install -e unpetrify -e ipsissima-mcp
 cd app && npm install
 ```
 

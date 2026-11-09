@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Turn a document into a source file the reconstruction tooling can use.
 
-    python3 -m ipsissima_mcp.ingest FILE [FILE ...] --out DIR
+    python3 -m unpetrify.ingest FILE [FILE ...] --out DIR
     python3 ingest.py paper.pdf --out "Papers/My paper" [--title "..."] [--dry-run]
 
 ONE FILE IS THE COMMON CASE and needs nothing else: no project file, no configuration. Give it a
@@ -424,6 +424,13 @@ def tracked_changes(path):
 SOUP = re.compile(r"(?:\b[b-hj-np-z]\b[ \t]{1,3}){3,}")
 
 
+#: Fewer words a page than this off a PDF's own text layer is a scan with nothing under it -- the
+#: line `assess_pdf` calls "hard". ONE NUMBER, held here and read everywhere else (Ipsissima's
+#: Zotero ranking included): two opinions about what counts as image-only would sooner or later
+#: rank a PDF above the tool that then refuses it.
+IMAGE_ONLY_WORDS_PER_PAGE = 40
+
+
 def quality(text):
     """Higher is better: words recovered, less a heavy penalty for letter-soup."""
     flat = re.sub(r"\s+", " ", text)
@@ -443,7 +450,7 @@ def plain_text(path):
     import pymupdf
     # TWO WAYS IN, and this file is used both. As `python3 ingest.py` the package directory is
     # on sys.path and a bare import is the only one that works; as `python3 -m
-    # ipsissima_mcp.ingest` -- which this module's own docstring gives as the first usage -- it
+    # unpetrify.ingest` -- which this module's own docstring gives as the first usage -- it
     # is not, and the bare import raises ModuleNotFoundError from inside a PDF conversion. The
     # MCP server hid this for a while by putting the directory on sys.path itself.
     try:

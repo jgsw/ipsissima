@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tests for what ingest refuses to write at creation time.
 
-    python3 ipsissima-mcp/tests/test_ingest.py
+    python3 unpetrify/tests/test_ingest.py
 
 Three cuts, all measured on real files before they were written (see ingest.py's docstring):
 a saved transcript page that was 97.6% base64 images, and a Project Gutenberg pamphlet whose
@@ -15,7 +15,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "ipsissima_mcp"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src" / "unpetrify"))
 from ingest import (strip_data_uris, strip_gutenberg, ingest_one,            # noqa: E402
                     lift_footnote_definitions, front_matter, pandoc,
                     strip_publisher_apparatus)

@@ -52,7 +52,7 @@ Covers: **headings**, and the level-mismatch that is invisible from the inside â
 present, valid Markdown, and thirteen chapters missing.
 
 ```bash
-python3 ipsissima-mcp/src/ipsissima_mcp/epub_to_source.py \
+python3 unpetrify/src/unpetrify/epub_to_source.py \
     fixtures/ingest/russell-1912-problems-of-philosophy.epub --out /tmp/russell
 cat /tmp/russell/*.md > /tmp/russell-whole.md
 python3 ipsissima-mcp/src/ipsissima_mcp/split_manuscript.py /tmp/russell-whole.md \
@@ -80,9 +80,9 @@ sheet numbers *and* are themselves OCR-damaged, so 357 and 370 read as `35` and 
 the table above does not have â€” **a text layer whose lines are not lines**.
 
 ```bash
-python3 ipsissima-mcp/src/ipsissima_mcp/pdf_to_source.py \
+python3 unpetrify/src/unpetrify/pdf_to_source.py \
     fixtures/ingest/dewey-1896-reflex-arc.pdf /tmp/dewey.md
-python3 ipsissima-mcp/src/ipsissima_mcp/ingest.py \
+python3 unpetrify/src/unpetrify/ingest.py \
     fixtures/ingest/dewey-1896-reflex-arc.pdf --out /tmp/dewey-ingest
 ```
 

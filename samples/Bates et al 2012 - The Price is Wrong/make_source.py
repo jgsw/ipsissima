@@ -40,7 +40,7 @@ from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-BUILD = HERE.parents[1] / "ipsissima-mcp" / "src" / "ipsissima_mcp"
+BUILD = HERE.parents[1] / "unpetrify" / "src" / "unpetrify"
 WANTED = HERE / "source" / "bates-2012-price-is-wrong.md"
 
 FRONT = """---

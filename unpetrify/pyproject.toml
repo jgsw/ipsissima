@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unpetrify"
+version = "0.1.0"
+description = "Get the text out of a PDF -- scans included -- as Markdown that keeps paragraphs, headings, footnotes and page numbers, and says what it could not do."
+readme = "README.md"
+# 3.11 for the reason ipsissima-mcp gives: onnxruntime publishes wheels for cp311 upwards only.
+requires-python = ">=3.11"
+# GPL-3.0-or-later for the reason ipsissima-mcp gives: the PDF machinery is built on PyMuPDF,
+# which is AGPL-3.0-or-commercial. docs/LICENCE-AUDIT.md at the repository root has the account.
+license = { text = "GPL-3.0-or-later" }
+authors = [{ name = "James Wilson" }]
+keywords = ["pdf", "ocr", "markdown", "extraction", "scan", "epub", "mcp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Text Processing :: Markup",
+]
+
+# pymupdf and pymupdf4llm do the PDF work; rapidocr is NOT optional in practice -- without an OCR
+# backend, a scanned paper silently converts to its cover page and nothing reports it. See
+# ipsissima-mcp/eval/CONVERTER-FINDINGS.md. `mcp` is for the server, and for the image type the
+# page tools return.
+dependencies = [
+  "mcp>=2.3.0",
+  "pymupdf>=1.28.2",
+  "pymupdf4llm>=1.28.2",
+  "rapidocr>=3.10.0",
+  "onnxruntime>=1.31.0",
+  "beautifulsoup4>=4.15.0",
+  "lxml>=6.1.3",
+]
+
+[project.urls]
+Source = "https://github.com/jgsw/ipsissima/tree/main/unpetrify"
+Issues = "https://github.com/jgsw/ipsissima/issues"
+
+[project.scripts]
+unpetrify = "unpetrify.cli:main"
+unpetrify-mcp = "unpetrify.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

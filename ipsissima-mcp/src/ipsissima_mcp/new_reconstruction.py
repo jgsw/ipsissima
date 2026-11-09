@@ -35,6 +35,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from unpetrify import pdf_to_source
+
 HERE = Path(__file__).resolve().parent
 # `ipsissima-mcp/src/ipsissima_mcp` -> the repository root. The default parent folder was
 # `Argdown samples` under the workspace this grew inside; here the folder is `samples/`, and a
@@ -60,12 +62,12 @@ documents itself; this docstring is for the part that is peculiar to this paper.
 import sys
 from pathlib import Path
 
-# Find the shared build scripts by walking up, rather than counting directories. A fixed
-# `parents[2]` breaks the moment the folder is moved or copied somewhere else, and breaks with an
-# ImportError that says nothing about why.
+# Find the converter (Unpetrify, in a checkout of the Ipsissima repository) by walking up, rather
+# than counting directories. A fixed `parents[2]` breaks the moment the folder is moved or copied
+# somewhere else, and breaks with an ImportError that says nothing about why.
 _here = Path(__file__).resolve()
 for _p in _here.parents:
-    _build = _p / "src" / "ipsissima_mcp"
+    _build = _p / "unpetrify" / "src" / "unpetrify"
     if _build.is_dir():
         sys.path.insert(0, str(_build))
         break
@@ -220,7 +222,7 @@ def main():
     (folder / "source").mkdir(parents=True, exist_ok=True)
 
     fields = dict(title=a.title, slug=slug, pdf=str(pdf), today=date.today().isoformat(),
-                  build=str(HERE),
+                  build=str(Path(pdf_to_source.__file__).resolve().parent),
                   start=f'    starts_at="{a.start}",\n' if a.start else
                         '    # starts_at="1. Introduction",   # front matter is not the article\n',
                   end=f'    end_marker="{a.end}",\n' if a.end else

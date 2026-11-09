@@ -36,17 +36,13 @@ classifiers = [
   "Topic :: Scientific/Engineering",
 ]
 
-# pymupdf and pymupdf4llm do the PDF work; rapidocr is NOT optional in practice — without an OCR
-# backend, a scanned paper silently converts to its cover page and nothing reports it. See
-# eval/CONVERTER-FINDINGS.md.
+# THE CONVERSION IS UNPETRIFY'S, a package of its own since Nov 2026 (`../unpetrify`), and it
+# brings the PDF stack with it -- pymupdf4llm, the OCR chain, bs4 and lxml. pymupdf is named here
+# as well because modules on this side open PDFs themselves (the Zotero ranking reads a text layer).
 dependencies = [
   "mcp>=2.3.0",
+  "unpetrify>=0.1.0",
   "pymupdf>=1.28.2",
-  "pymupdf4llm>=1.28.2",
-  "rapidocr>=3.10.0",
-  "onnxruntime>=1.31.0",
-  "beautifulsoup4>=4.15.0",
-  "lxml>=6.1.3",
   "pyyaml>=6.0.3",
 ]
 
@@ -61,10 +57,10 @@ Issues = "https://github.com/jgsw/ipsissima/issues"
 
 [project.scripts]
 ipsissima-mcp = "ipsissima_mcp.server:main"
-ipsissima-ingest = "ipsissima_mcp.ingest:main"
+ipsissima-ingest = "unpetrify.ingest:main"
 ipsissima-check = "ipsissima_mcp.check_argdown:main"
 ipsissima-split = "ipsissima_mcp.split_manuscript:main"
-ipsissima-paginate = "ipsissima_mcp.paginate:main"
+ipsissima-paginate = "unpetrify.paginate:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -86,3 +82,10 @@ where = ["src"]
 # profile.json is the registry of the Ipsissima profile for Argdown (docs/PROFILE.md): the checker
 # reports the version it validates against, so the file must travel with it.
 ipsissima_mcp = ["vendor/*.mjs", "vendor/*.md", "docs/*.md", "profile.json"]
+
+# IN A CHECKOUT, UNPETRIFY IS THE ONE BESIDE THIS, editable, so a change to the converter is seen
+# here without a release. Only uv reads this table; the wheel says `unpetrify>=0.1.0` and gets it
+# from PyPI, and the .mcpb carries the source (build_mcpb.mjs).
+[tool.uv.sources]
+unpetrify = { path = "../unpetrify", editable = true }
+

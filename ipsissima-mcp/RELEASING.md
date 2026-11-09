@@ -19,6 +19,19 @@ stays free only until somebody takes it.
 
 ---
 
+## Unpetrify goes first
+
+Since Nov 2026 the converters are a package of their own, [Unpetrify](../unpetrify/README.md),
+and `ipsissima-mcp` requires it (`unpetrify>=…` in `pyproject.toml`). A checkout installs the copy
+beside it; an install from PyPI resolves it from PyPI. So when a release of `ipsissima-mcp` asks
+for an Unpetrify version that is not on PyPI yet, **publish Unpetrify first**, by the same steps
+below with `unpetrify` in place of `ipsissima-mcp`: the publish workflow takes the package as an
+input, and Unpetrify needs **its own trusted publisher** on PyPI (a "pending publisher" for the
+first upload, since the project does not exist yet).
+
+The `.mcpb` bundle does not wait on this: `build_mcpb.mjs` stages Unpetrify's source inside it.
+Unpetrify's own bundle is `node unpetrify/build_mcpb.mjs`.
+
 ## Before publishing anything
 
 ```bash

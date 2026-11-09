@@ -49,8 +49,32 @@ fs.cpSync(path.join(HERE, "src"), path.join(OUT, "src"), {
   recursive: true,
   filter: (src) => !/(^|[\\/])(__pycache__|\.pytest_cache)([\\/]|$)/.test(src)
 });
-for (const f of ["manifest.json", "pyproject.toml", "README.md"])
+for (const f of ["manifest.json", "README.md"])
   fs.copyFileSync(path.join(HERE, f), path.join(OUT, f));
+
+// UNPETRIFY TRAVELS INSIDE, as source beside ipsissima_mcp, rather than as a requirement. The
+// converters are its package now (Nov 2026), and a bundle that asked PyPI for it would install
+// whichever release PyPI had rather than the one this bundle was tested with -- or nothing, before
+// the first one is published. So its source is staged under src/, where setuptools finds both
+// packages, and the staged pyproject asks for its dependencies instead of for it.
+const UNP = path.join(ROOT, "unpetrify");
+fs.cpSync(path.join(UNP, "src", "unpetrify"), path.join(OUT, "src", "unpetrify"), {
+  recursive: true,
+  filter: (src) => !/(^|[\\/])(__pycache__|\.pytest_cache)([\\/]|$)/.test(src)
+});
+const deps = (text) => (text.match(/^dependencies = \[\n([\s\S]*?)^\]/m) || [])[1] || "";
+const unpDeps = deps(fs.readFileSync(path.join(UNP, "pyproject.toml"), "utf8"));
+if (!/"unpetrify[><=]/.test(pyproject) || !unpDeps.trim()) {
+  console.error("pyproject.toml no longer asks for unpetrify, or unpetrify declares nothing; " +
+                "the staging below assumes both.");
+  process.exit(1);
+}
+const own = deps(pyproject).split("\n").filter(l => l.trim() && !/"unpetrify[><=]/.test(l));
+const merged = [...new Set([...own, ...unpDeps.split("\n").filter(l => l.trim())]
+  .map(l => l.trim()))].map(l => "  " + l).join("\n") + "\n";
+fs.writeFileSync(path.join(OUT, "pyproject.toml"),
+  pyproject.replace(deps(pyproject), merged)
+           .replace(/\n# IN A CHECKOUT, UNPETRIFY[\s\S]*?\[tool\.uv\.sources\]\n[^\n]*\n/, "\n"));
 fs.copyFileSync(path.join(ROOT, "LICENSE"), path.join(OUT, "LICENSE"));
 fs.copyFileSync(path.join(ROOT, "app", "desktop", "src-tauri", "icons", "source.png"),
                 path.join(OUT, "icon.png"));

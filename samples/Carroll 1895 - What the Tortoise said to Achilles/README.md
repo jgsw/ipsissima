@@ -101,7 +101,7 @@ in its words rather than becoming the table's rule.
 ## Rebuilding
 
 ```bash
-python3 "../../ipsissima-mcp/src/ipsissima_mcp/ingest.py" \
+python3 "../../unpetrify/src/unpetrify/ingest.py" \
     "<the PDF>" --out .
 python3 ../../ipsissima-mcp/src/ipsissima_mcp/check_argdown.py \
     carroll-tortoise-achilles.argdown --source-root . --no-fix --format json

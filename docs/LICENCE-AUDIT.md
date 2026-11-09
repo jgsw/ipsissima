@@ -613,6 +613,20 @@ reads it; the licence is stated **inside the file** (`licence`, `licence_url`,
 carve-out goes wherever the file does. `tests/test_profile.py` holds both files to it. Nothing
 else changes: the application stays MIT and `ipsissima-mcp/` stays GPL-3.0-or-later.
 
+## 13. Unpetrify, split out — November 2026
+
+The converters left `ipsissima-mcp/` for a package of their own, `unpetrify/`, so that people who
+want text out of a PDF and no argument map can have them. **[verified]** Every module that reaches
+PyMuPDF in §4's list except `server.py` and `sources.py` moved with them (`pdf_to_source.py`,
+`ingest.py`, `paginate.py`), as did `collate.py`; `ipsissima-mcp` now requires `unpetrify`, and
+still imports `pymupdf` directly in `sources.py` and `from_zotero.py`.
+
+**[judgement]** Nothing in the analysis above changes. Unpetrify is declared GPL-3.0-or-later with
+its own `LICENSE` file, for exactly the reason `ipsissima-mcp` is; the §4 question about the AGPL's
+network clause applies to `unpetrify-mcp` as it does to the Ipsissima server, and is the same
+question for the same lawyer. The boundary of §11 is untouched: `app/` stays MIT, and both Python
+packages sit on the GPL side of it.
+
 ## What this document did not check
 
 Said plainly, because an audit that does not name its own gaps is worse than none:

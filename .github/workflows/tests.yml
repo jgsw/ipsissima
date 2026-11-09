@@ -44,7 +44,9 @@ jobs:
           npm --prefix app ci || npm --prefix app install
           python3 -m venv .venv
           .venv/bin/pip install --upgrade pip
-          .venv/bin/pip install -e ipsissima-mcp
+          # Unpetrify first: ipsissima-mcp asks for it, and pip should find the checkout's copy
+          # rather than go looking on PyPI.
+          .venv/bin/pip install -e unpetrify -e ipsissima-mcp
 
       # THE BROWSER THE RENDERED-DOM SUITE NEEDS. Without it that suite SKIPS rather than fails,
       # which is right for a developer's checkout and wrong here: on CI a silent skip would mean

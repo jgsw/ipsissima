@@ -88,6 +88,8 @@ import expectations                                                     # noqa: 
 MCP = HERE.parent
 REPO = MCP.parent
 PKG = MCP / "src" / "ipsissima_mcp"
+#: The converter, which has been Unpetrify's since Nov 2026 -- before that it sat in PKG.
+INGEST = REPO / "unpetrify" / "src" / "unpetrify" / "ingest.py"
 CACHE = Path(os.environ.get("IPSISSIMA_REGRESSION_CACHE",
                             Path.home() / ".cache" / "ipsissima" / "extraction-regression"))
 MARKER = re.compile(r"<!--\s*(?:[^\n]*?\s)?p\.\s*-?\d+\s+begins here\s*-->")
@@ -142,9 +144,9 @@ def expectation_dirs(args):
 
 def tesseract_version():
     """The tesseract collation would use, or None where there is none (CI)."""
-    sys.path.insert(0, str(MCP / "src"))
+    sys.path.insert(0, str(INGEST.parents[1]))
     try:
-        from ipsissima_mcp import collate
+        from unpetrify import collate
         exe = collate.tesseract()
         return collate.tesseract_version(exe) if exe else None
     except ImportError:
@@ -162,21 +164,32 @@ def pymupdf_version():
 # --------------------------------------------------------------------------- converting
 
 def package_at(ref):
-    """The converter package as it was at `ref`, unpacked once into the cache."""
+    """The converter as it was at `ref`, unpacked once into the cache; returns (sha, its ingest.py).
+
+    TWO LAYOUTS, because a base from before the split is the comparison most worth making: the
+    converter moved from `ipsissima-mcp/src/ipsissima_mcp/` to `unpetrify/src/unpetrify/` in
+    Nov 2026, and whichever of the two the ref holds is the one unpacked."""
     sha = subprocess.run(["git", "-C", str(REPO), "rev-parse", ref], capture_output=True, text=True,
                          check=True).stdout.strip()
+    for tree in ("unpetrify/src/unpetrify", "ipsissima-mcp/src/ipsissima_mcp"):
+        if subprocess.run(["git", "-C", str(REPO), "cat-file", "-e", f"{sha}:{tree}/ingest.py"],
+                          capture_output=True).returncode == 0:
+            break
+    else:
+        raise SystemExit(f"no converter at {ref}")
     dest = CACHE / sha / "pkg"
-    if not (dest / "ipsissima_mcp" / "ingest.py").exists():
+    ingest = dest / Path(tree).name / "ingest.py"
+    if not ingest.exists():
         dest.mkdir(parents=True, exist_ok=True)
-        tar = subprocess.run(["git", "-C", str(REPO), "archive", sha, "ipsissima-mcp/src/ipsissima_mcp"],
+        tar = subprocess.run(["git", "-C", str(REPO), "archive", sha, tree],
                              capture_output=True, check=True).stdout
         subprocess.run(["tar", "-x", "-C", str(dest), "--strip-components", "2"], input=tar, check=True)
-    return sha, dest
+    return sha, ingest
 
 
-def convert(pdf, pkg_dir, out_dir):
-    """Convert one PDF with the package in `pkg_dir`; returns (markdown, log). Run as a script, so
-    `ingest.py` imports the converter beside it, not whichever is installed."""
+def convert(pdf, ingest, out_dir):
+    """Convert one PDF with the converter whose ingest.py is `ingest`; returns (markdown, log).
+    Run as a script, so `ingest.py` imports the converter beside it, not whichever is installed."""
     out_dir = Path(out_dir)
     md = next(out_dir.glob("source/*.md"), None) if out_dir.exists() else None
     log = out_dir / "log.txt"
@@ -184,7 +197,7 @@ def convert(pdf, pkg_dir, out_dir):
         if out_dir.exists():
             shutil.rmtree(out_dir)
         out_dir.mkdir(parents=True)
-        ingest = Path(pkg_dir) / "ipsissima_mcp" / "ingest.py"
+        ingest = Path(ingest)
         collates = "--collate" in ingest.read_text(encoding="utf-8")
         r = subprocess.run([sys.executable, str(ingest), pdf, "--out", str(out_dir), "--no-ocr"]
                            + (["--collate"] if collates else []), capture_output=True, text=True,
@@ -447,7 +460,7 @@ def main():
             sha, pkg = package_at(args.base)
             print(f"against the converter at {sha[:10]} ({args.base})")
             return 1 if run_maps(args, lambda p: convert(p, pkg, CACHE / sha / "out" / key_of(p)),
-                                 lambda p: convert(p, PKG.parent, work / key_of(p))) else 0
+                                 lambda p: convert(p, INGEST, work / key_of(p))) else 0
         finally:
             shutil.rmtree(work, ignore_errors=True)
     pdfs = pdfs_from(args)
@@ -456,7 +469,7 @@ def main():
     try:
         # The working tree's outputs, converted afresh every run.
         with ThreadPoolExecutor(args.jobs) as ex:
-            new = list(ex.map(lambda p: convert(p, PKG.parent, work / key_of(p)), pdfs))
+            new = list(ex.map(lambda p: convert(p, INGEST, work / key_of(p)), pdfs))
         specs = expectations.load(expectation_dirs(args))
         if args.draft_expectations:
             import datetime

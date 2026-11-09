@@ -157,7 +157,9 @@ jobs:
 
             **The desktop application.** Adds what a web page cannot do: open a `.argdown` by double-clicking it, save back in place, and reload the manuscript when it changes on disk. The `.dmg` is macOS (Intel and Apple Silicon both), the `-setup.exe` is Windows, and the `.deb` and `.AppImage` are Linux. The builds are **unsigned**, so the first launch is blocked once: on macOS, after dragging Ipsissima to Applications, allow it under **System Settings → Privacy & Security → Open Anyway**; on Windows, choose "More info" then "Run anyway". [Installing Ipsissima](https://github.com/jgsw/ipsissima/blob/main/app/desktop/INSTALL.md) shows every dialog before you meet it.
 
-            **Ipsissima-MCP, for Claude Desktop.** Download the **`.mcpb`** bundle and double-click it; Claude Desktop installs it and provisions Python and the dependencies itself. You also need [Node](https://nodejs.org) on the machine — any current version.
+            **Ipsissima-MCP, for Claude Desktop.** Download the **`ipsissima-mcp` `.mcpb`** bundle and double-click it; Claude Desktop installs it and provisions Python and the dependencies itself. You also need [Node](https://nodejs.org) on the machine — any current version.
+
+            **Only want the text out of PDFs?** The **`unpetrify` `.mcpb`** bundle is the converter on its own: PDFs (scans included), EPUB, .docx and HTML to Markdown that keeps paragraphs, headings, footnotes and page numbers. No Node needed. See [Unpetrify](https://github.com/jgsw/ipsissima/tree/main/unpetrify).
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
@@ -197,7 +199,9 @@ jobs:
         if: matrix.platform == 'macos-latest'
         run: |
           node ../../ipsissima-mcp/build_mcpb.mjs
+          node ../../unpetrify/build_mcpb.mjs
           gh release upload "${{ github.ref_name }}" \
-            ../../ipsissima-mcp/build/ipsissima-mcp-*.mcpb --clobber
+            ../../ipsissima-mcp/build/ipsissima-mcp-*.mcpb \
+            ../../unpetrify/build/unpetrify-*.mcpb --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

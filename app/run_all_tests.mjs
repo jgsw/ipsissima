@@ -17,6 +17,8 @@ const BUILD = path.resolve(HERE, "src");
 const MCP = path.resolve(HERE, "..", "ipsissima-mcp");
 const PYSRC = path.join(MCP, "src", "ipsissima_mcp");
 const PYTESTS = path.join(MCP, "tests");
+// The converters' own tests, which moved with them into Unpetrify (Nov 2026).
+const UNPTESTS = path.resolve(HERE, "..", "unpetrify", "tests");
 
 /* THE PROJECT'S OWN INTERPRETER WHERE THERE IS ONE. A Homebrew or system Python refuses
  * `pip install` outright (PEP 668), so the MCP server's dependencies live in a venv — and a
@@ -101,10 +103,11 @@ const SUITES = [
   ["an external edit to the file", "node", [path.join(HERE, "test_external_edit.mjs")]],
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
   ["what holds the argument up", "node", [path.join(HERE, "test_spine.mjs")]],
-  ["page geometry (converter)",  PY, [path.join(PYTESTS, "test_pdf_to_source.py")]],
-  ["what ingest refuses to write", PY, [path.join(PYTESTS, "test_ingest.py")]],
-  ["a damaged scan, collated",   PY, [path.join(PYTESTS, "test_collate.py")]],
-  ["the publisher's own structure", PY, [path.join(PYTESTS, "test_structured_source.py")]],
+  ["page geometry (converter)",  PY, [path.join(UNPTESTS, "test_pdf_to_source.py")]],
+  ["what ingest refuses to write", PY, [path.join(UNPTESTS, "test_ingest.py")]],
+  ["a damaged scan, collated",   PY, [path.join(UNPTESTS, "test_collate.py")]],
+  ["the publisher's own structure", PY, [path.join(UNPTESTS, "test_structured_source.py")]],
+  ["a book split into its chapters", PY, [path.join(PYTESTS, "test_split_manuscript.py")]],
   ["named rules: the python half", PY, [path.join(PYTESTS, "test_validity.py")]],
   ["provenance defaults",        PY, [path.join(PYTESTS, "test_provenance_defaults.py")]],
   // An echo drawn where the text never says it points at words nobody wrote; one read as a
@@ -127,9 +130,11 @@ const SUITES = [
   // That the server can be INSTALLED, not just run from here — every path that assumes a source
   // checkout works fine for us and for nobody else.
   ["the package carries what it serves", PY, [path.join(PYTESTS, "test_installable.py")]],
-  // Extraction may be imported by the Argdown half and never the reverse -- what keeps it
-  // shippable as a package of its own.
-  ["extraction stands alone",    PY, [path.join(PYTESTS, "test_extraction_boundary.py")]],
+  // Unpetrify may be imported by Ipsissima and never the reverse -- what keeps it a package of
+  // its own -- and it has a command, a server and a wheel of its own to hold to.
+  ["unpetrify stands alone",     PY, [path.join(UNPTESTS, "test_standalone.py")]],
+  ["unpetrify: command and server", PY, [path.join(UNPTESTS, "test_server.py")]],
+  ["unpetrify: the package installs", PY, [path.join(UNPTESTS, "test_installable.py")]],
   ["reading Zotero safely",      PY, [path.join(PYTESTS, "test_zotero.py")]],
   ["the copies Zotero holds",    PY, [path.join(PYTESTS, "test_zotero_store.py")]],
   ["eval harness (gold self-test)", PY, [path.join(MCP, "eval", "eval_reconstruction.py"),

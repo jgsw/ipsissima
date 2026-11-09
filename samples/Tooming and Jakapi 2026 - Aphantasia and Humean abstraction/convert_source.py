@@ -39,12 +39,12 @@ from pathlib import Path
 # ImportError that says nothing about why.
 _here = Path(__file__).resolve()
 for _p in _here.parents:
-    _build = _p / "ipsissima-mcp" / "src" / "ipsissima_mcp"
+    _build = _p / "unpetrify" / "src" / "unpetrify"
     if _build.is_dir():
         sys.path.insert(0, str(_build))
         break
 else:
-    sys.exit("cannot find ipsissima-mcp/src/ipsissima_mcp above " + str(_here))
+    sys.exit("cannot find unpetrify/src/unpetrify above " + str(_here))
 from pdf_to_source import Config, convert, print_report          # noqa: E402
 
 HERE = Path(__file__).resolve().parent

@@ -50,9 +50,9 @@ import pymupdf
 # THE PACKAGE MOVED AND THIS DID NOT. "Build scripts" has not existed since the tooling was
 # split into `ipsissima-mcp/src/ipsissima_mcp/`, so this module did not import at all -- it
 # raised ModuleNotFoundError on the first line that mattered, and nothing ran it often enough
-# to notice.
+# to notice. It moved again in Nov 2026, to `unpetrify/src/unpetrify/`, and this moved with it.
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "..", "src", "ipsissima_mcp"))
+                                "..", "..", "unpetrify", "src", "unpetrify"))
 from pdf_to_source import detect_columns, sheet_lines            # noqa: E402
 
 

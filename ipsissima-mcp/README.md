@@ -64,8 +64,12 @@ You need **Python 3.11+**, **Node** (any current version — it reads the Argdow
 
 ```bash
 git clone <this repository> && cd ipsissima
-python3 -m venv .venv && .venv/bin/pip install -e ipsissima-mcp
+python3 -m venv .venv && .venv/bin/pip install -e unpetrify -e ipsissima-mcp
 ```
+
+**Two packages, because the converters are their own.** Getting text out of a document is
+[Unpetrify](../unpetrify/README.md), which sits beside this folder and is installed first so that
+the checkout's copy is the one used. Anyone who only wants text out of a PDF can install it alone.
 
 A virtual environment is not fussiness: a Homebrew or system Python will refuse `pip install`
 outright ([PEP 668](https://peps.python.org/pep-0668/)).
@@ -73,7 +77,7 @@ outright ([PEP 668](https://peps.python.org/pep-0668/)).
 **With [uv](https://docs.astral.sh/uv/) instead**, which is the same thing and faster:
 
 ```bash
-uv venv && uv pip install -e ipsissima-mcp
+uv venv && uv pip install -e unpetrify -e ipsissima-mcp
 ```
 
 **A uv-made `.venv` has no `pip` in it.** That is uv working as designed, not a broken
@@ -90,7 +94,7 @@ into `app/node_modules` instead, which meant the server could only run from a so
 could not run on Windows at all, npm writing no shim of that name there. If `node` is missing the
 checker says so and names the download page, rather than reporting a missing CLI.
 
-`rapidocr` installs with it and is **not optional**. Without an OCR backend, a scanned paper
+`rapidocr` installs with it (through Unpetrify) and is **not optional**. Without an OCR backend, a scanned paper
 converts silently to its cover page and nothing reports it — measured at 345 words of a
 1,220-word article, no error, a perfectly well-formed Markdown file. See
 `eval/CONVERTER-FINDINGS.md`.
@@ -567,6 +571,9 @@ The server did not replace it, and for a one-off it is often quicker:
 .venv/bin/ipsissima-split book.md --out chapters/
 ```
 
+`ipsissima-ingest` writes the layout a map wants, `<out>/source/<slug>.md`. For the text alone,
+`.venv/bin/unpetrify paper.pdf` writes `paper.md` beside the PDF.
+
 `ipsissima-check` has two modes worth knowing. Bare, it prints the full report — the apex, the
 sections, the tag census, the debt. `--only-problems` prints just what is wrong, and
 `--format json` prints the same as data. The short forms exist because a check-and-fix loop reads
@@ -577,19 +584,17 @@ the short one is 221 words and 2.4.
 
 | | |
 |---|---|
-| `server.py` | the MCP server |
+| `server.py` | the MCP server; the PDF tools in it are Unpetrify's functions, registered under descriptions that speak of maps |
 | `sources.py` | what a source is, which route it takes, and what is ambiguous about a request |
-| `ingest.py` | the front door: any supported document to a source folder |
-| `collate.py` | a damaged scan read again by tesseract and voted against its text layer (and any other OCR text of it), the disputes logged with their geometry |
-| `pdf_to_source.py` | a printed article to Markdown — ligatures, de-hyphenation, paragraphs from the printed indent, journal furniture, footnotes, page numbers |
-| `structured_source.py` | the inversion: when the publisher's own HTML or EPUB is available, take the structure rather than recovering it from ink positions |
-| `epub_to_source.py`, `html_to_source.py` | those two routes |
 | `from_zotero.py` | acquisition, by whichever route an item's attachments allow |
 | `new_reconstruction.py` | scaffold a reconstruction folder from a PDF in one command |
 | `split_manuscript.py` | a one-file manuscript into per-chapter files and a project file |
 | `check_argdown.py` | check a reconstruction: are the quotations verbatim, do the pinpoints hold, is anything misreported |
 | `argdown_provenance.py` | where in the text each claim came from — the Python half of a pair with `app/src/argdown-positions.js` |
 | `rationale_to_argdown.py` | convert a Rationale `.rtnl` map |
+
+The converters themselves (`ingest.py`, `pdf_to_source.py`, `collate.py`, the structured routes,
+`paginate.py`) are [Unpetrify's](../unpetrify/README.md#the-pieces), in `unpetrify/src/unpetrify/`.
 
 ### One rule that is not obvious
 

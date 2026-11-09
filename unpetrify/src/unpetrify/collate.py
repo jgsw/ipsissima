@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Repair a damaged scan by collating independent readings of it.
 
-    python3 -m ipsissima_mcp.collate scan.pdf [--witness "Full text of ....html"] [--out DIR]
+    python3 -m unpetrify.collate scan.pdf [--witness "Full text of ....html"] [--out DIR]
 
 WHY. A scan's text layer is one OCR engine's reading of the page images, made once, often long
 ago, and every word it got wrong is a word a quotation will fail against. Reading the page again
@@ -146,7 +146,7 @@ def cache_dir(pdf):
     KEYED BY CONTENT, NOT PATH. The same attachment opened from Zotero's storage and from a copy
     in a working folder is one scan and is read once; a re-downloaded file with different bytes
     is a different scan and is read again. And never inside Zotero's storage folder, for the
-    reason `server._page_images_dir` gives -- Ipsissima leaves that tree untouched."""
+    reason `tools._page_images_dir` gives -- that tree is left untouched."""
     pdf = Path(pdf)
     stem = re.sub(r"[^A-Za-z0-9]+", "-", pdf.stem)[:40].strip("-") or "scan"
     return cache_root() / "collation" / f"{stem}-{file_hash(pdf)[:12]}"
