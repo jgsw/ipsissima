@@ -55,6 +55,10 @@ def main(argv=None):
                          "--no-collate never")
     ap.add_argument("--witness", help="another OCR text of the same work (.txt, or an HTML "
                                       "page such as archive.org's 'Full text of'), for the vote")
+    ap.add_argument("--geometry", action="store_true",
+                    help="also write <name>.md.geometry.json, every word's box on the page -- what "
+                         "lets an app place highlights at exact rectangles (Ipsissima's does, into "
+                         "Zotero)")
     ap.add_argument("--figures", choices=["section", "omit"],
                     help="a figure's caption: gathered under '# Figures' (the default), or left "
                          "out altogether")
@@ -85,7 +89,8 @@ def main(argv=None):
                              + ingest.header(r["src"], r["notes"]) + r["md"].rstrip() + "\n")
             report(r, [])
             continue
-        written = tools.write_one(r, Path(a.out) if a.out else tools.default_out_dir(path))
+        written = tools.write_one(r, Path(a.out) if a.out else tools.default_out_dir(path),
+                                  geometry=a.geometry)
         report(r, written)
         disputes = r.get("extras", {}).get("collation", {}).get("disputes")
         if disputes:

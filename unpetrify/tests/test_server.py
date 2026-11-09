@@ -94,6 +94,7 @@ def test_command(tmp):
     r = run_cli(pdf, "--no-ocr")
     written = sorted(p.name for p in work.glob("*.md"))
     check("writes one Markdown file beside the PDF", written, ["miller-2019.md"])
+    check("  and no geometry sidecar unless asked", sorted(p.name for p in work.glob("*.json")), [])
     check("  and exits 0", r.returncode, 0)
     text = (work / "miller-2019.md").read_text(encoding="utf-8") if written else ""
     check_true("  carrying the page markers", "p.1 begins here" in text)
@@ -104,6 +105,9 @@ def test_command(tmp):
     r = run_cli(pdf, "--no-ocr", "-o", out)
     check("-o writes into the folder named", sorted(p.name for p in out.glob("*.md")),
           ["miller-2019.md"])
+    r = run_cli(pdf, "--no-ocr", "-o", out, "--geometry")
+    check("--geometry writes the sidecar too", sorted(p.name for p in out.glob("*.json")),
+          ["miller-2019.md.geometry.json"])
 
     r = run_cli(pdf, "--no-ocr", "--stdout")
     check_true("--stdout prints the same text", r.stdout.strip() and

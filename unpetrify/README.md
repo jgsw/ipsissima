@@ -69,7 +69,8 @@ unpetrify scan.pdf --witness "Full text of ....html"   # a third reading for the
 ```
 
 The report goes to stderr, so `--stdout` stays clean. Other options: `--no-ocr`,
-`--collate` / `--no-collate`, `--figures section|omit`.
+`--collate` / `--no-collate`, `--figures section|omit`, and `--geometry`, which also writes
+every word's box on the page beside the text (what Ipsissima uses to place highlights in Zotero).
 
 **A PDF inside Zotero's storage folder is never written beside.** Its text goes to a temporary
 folder named for the attachment, and the report says where.

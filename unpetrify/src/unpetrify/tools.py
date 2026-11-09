@@ -53,8 +53,11 @@ def convert_one(path, allow_ocr=True, collate=None, witness=None):
         back_matter_cut=(cut[0] if cut else None))
 
 
-def write_one(r, dest_dir):
-    """Write a `convert_one` record into `dest_dir`; returns the paths written."""
+def write_one(r, dest_dir, geometry=True):
+    """Write a `convert_one` record into `dest_dir`; returns the paths written.
+
+    `geometry=False` leaves out the word-geometry sidecar: it is for an app placing highlights
+    (Ipsissima's, into Zotero), and beside a plain conversion it is a file nobody asked for."""
     written = []
     dest_dir = Path(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -66,7 +69,7 @@ def write_one(r, dest_dir):
     hdr = ingest.header(r["src"], r["notes"])
     target.write_text(fm + hdr + r["md"].rstrip() + "\n", encoding="utf-8")
     written.append(str(target))
-    if r.get("extras", {}).get("geometry"):
+    if geometry and r.get("extras", {}).get("geometry"):
         side = dest_dir / (r["name"] + ".geometry.json")
         side.write_text(r["extras"]["geometry"], encoding="utf-8")
         written.append(str(side))
