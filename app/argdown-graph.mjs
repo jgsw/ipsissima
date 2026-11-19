@@ -1327,3 +1327,47 @@ export const RUN = {
  * esbuild follows even a dynamic import when bundling, and @argdown/node's plugins pull in
  * fs/path/util -- which fails the browser build with 60 unresolved-builtin errors. Callers that
  * have Node available import the parser themselves and pass the response to toGraph. */
+
+/* ---- THE APPRAISAL BESIDE THE MAP (profile 1.27, ruled by James 19 Nov 2026) --------------------- *
+ *
+ * A reconstructor's appraisal of a text -- criticisms, strengthenings, replies, the appraisal's own
+ * weighing of rival accounts -- lives in a SIBLING FILE, `<map stem>.appraisal.argdown`, beside the
+ * map it appraises, and not in the map. Why (APPRAISAL-PLAN.md §2): the map stays a checked record of
+ * the text, whose checks, Zotero copy and hash do not move when someone critiques it; several
+ * appraisals can sit on one map; and when the map is remade, an appraisal claim aimed at a title that
+ * is gone is caught.
+ *
+ * ONE RULE FOR JOINING THEM, here and in ipsissima_mcp/appraisal.py (`join`), tested to agree: the
+ * sibling's own front matter is set aside, and its body follows the map under a heading of its own,
+ * `# Appraisal {isGroup: true}`, unless it opens with a heading already. The heading matters:
+ * Argdown puts every statement after a heading inside that heading's section, and an appraisal
+ * appended under the map's last section would join it.
+ */
+export const APPRAISAL_SUFFIX = ".appraisal.argdown";
+
+/** Is this file an appraisal sibling rather than a map? */
+export function isAppraisalPath(p) { return /\.appraisal\.argdown$/i.test(String(p || "")); }
+
+/** The sibling's path for a map's path: `x/Name.argdown` -> `x/Name.appraisal.argdown`. */
+export function appraisalPathFor(mapPath) {
+  return String(mapPath).replace(/\.(argdown|ad)$/i, "") + APPRAISAL_SUFFIX;
+}
+
+/** Split an Argdown text into its front matter (the `===` block that opens it, or null) and body. */
+export function splitFrontMatter(text) {
+  const t = String(text == null ? "" : text).replace(/^﻿/, "");
+  const m = /^\s*===[ \t]*\r?\n([\s\S]*?)\r?\n===[ \t]*(?:\r?\n|$)/.exec(t);
+  return m ? { front: m[1], body: t.slice(m[0].length) } : { front: null, body: t };
+}
+
+/** The map and its appraisal as one Argdown text. `bodyLine` is the line in the joined text where
+ *  the sibling's body begins, so a caller can map line numbers back. */
+export function joinAppraisal(mapText, siblingText) {
+  const map = String(mapText == null ? "" : mapText).replace(/\s+$/, "");
+  const sib = splitFrontMatter(siblingText);
+  let body = sib.body.replace(/^\s+/, "").replace(/\s+$/, "");
+  const heading = /^#\s/.test(body) ? "" : "# Appraisal {isGroup: true}\n\n";
+  const head = map + "\n\n" + heading;
+  const text = head + body + "\n";
+  return { text, bodyLine: head.split("\n").length, front: sib.front };
+}

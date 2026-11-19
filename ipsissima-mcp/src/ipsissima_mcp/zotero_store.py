@@ -88,6 +88,9 @@ def plan(argdown_path, export=None, z=None):
     """What would be stored where, and what state each copy is in. Reads only."""
     z = z or ZoteroLocal()
     argdown_path = Path(argdown_path).resolve()
+    # AN APPRAISAL IS STORED WITH ITS MAP (profile 1.27): given the sibling, store the map it is beside.
+    if argdown_path.name.lower().endswith(".appraisal.argdown"):
+        argdown_path = argdown_path.with_name(argdown_path.name[: -len(".appraisal.argdown")] + ".argdown")
     if not argdown_path.exists():
         raise SystemExit(f"no such file: {argdown_path}")
     chapters = chapters_of(argdown_path)
@@ -126,11 +129,21 @@ def plan(argdown_path, export=None, z=None):
 
     carried = [(cited, c) for cited, c in chapters if c.exists()]
     missing_sources = [str(c) for _cited, c in chapters if not c.exists()]
-    bundle = bundle_of(argdown_path, carried)
+    # THE APPRAISAL TRAVELS INSIDE THE BUNDLE, as the sources do, so the copy opened from Zotero
+    # shows it; its REPORT is a reader's document, so it is an attachment of its own.
+    stem = argdown_path.name[: -len(argdown_path.suffix)]
+    sibling = argdown_path.with_name(stem + ".appraisal.argdown")
+    report = argdown_path.with_name(stem + ".appraisal.md")
+    extra = [(sibling.name, sibling)] if sibling.exists() else []
+    bundle = bundle_of(argdown_path, carried, extra)
 
     rows = [{"filename": argdown_path.name, "bytes": bundle.encode("utf-8"),
              "kind": "bundle",
-             "said": f"the map with {len(carried)} source(s) carried inside it"}]
+             "said": f"the map with {len(carried)} source(s)"
+                     f"{' and its appraisal' if extra else ''} carried inside it"}]
+    if report.exists():
+        rows.append({"filename": report.name, "bytes": report.read_bytes(), "kind": "report",
+                     "said": "the appraisal's report"})
     if export:
         export = Path(export).resolve()
         if not export.exists():
@@ -148,18 +161,18 @@ def plan(argdown_path, export=None, z=None):
             "missing_sources": missing_sources, "z": z}
 
 
-def bundle_of(argdown_path, chapters):
+def bundle_of(argdown_path, chapters, extra=()):
     """The bundle as it would be stored: the map with every cited source attached under the
     path the map cites it by, stamped with the newest input's mtime rather than the clock,
     so the same inputs make the same bytes and Zotero's md5 can answer 'is the stored copy
     current' exactly. `chapters` is [(cited path, resolved Path)]."""
     from datetime import datetime, timezone
     argdown_path = Path(argdown_path)
-    newest = max([argdown_path.stat().st_mtime] + [c.stat().st_mtime for _s, c in chapters])
+    newest = max([argdown_path.stat().st_mtime] + [c.stat().st_mtime for _s, c in list(chapters) + list(extra)])
     created = (datetime.fromtimestamp(newest, timezone.utc)
                .isoformat(timespec="milliseconds").replace("+00:00", "Z"))
     files = [(cited, c.read_text(encoding="utf-8", errors="replace"))
-             for cited, c in chapters]
+             for cited, c in list(chapters) + list(extra)]
     return argdown_bundle.attach(argdown_path.read_text(encoding="utf-8"), files,
                                  {"created": created})
 

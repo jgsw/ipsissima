@@ -276,8 +276,8 @@ a client that finds no tools will usually say nothing about why. This asks it di
 EOF
 ```
 
-One line of JSON comes back naming the server and its version. **A working install answers 14
-tools (12 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
+One line of JSON comes back naming the server and its version. **A working install answers 15
+tools (13 without a Zotero library on the machine), 2 prompts and 8 resources**; if the count
 is lower than that, the client is not the problem. (That sentence is held against the live
 server by the test suite, so it cannot quietly drift the way it did twice: it said 9 for five
 days after `check_for_updates` made it 10, and the corrected 10 then promised the Zotero tool
@@ -550,7 +550,8 @@ Both are CC BY 4.0, whatever the licence of the package the registry travels in.
 | `collation_disputes` | where a re-read scan's readings disagreed: every reading, and the printed lines as images |
 | `settle_disputes` | apply what those images say, to the text and to the scan's record |
 | `add_page_numbers` | the PDF's pagination onto text taken from the snapshot |
-| `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report |
+| `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report; also an appraisal beside a map (`<map>.appraisal.argdown`) and its report's quotations |
+| `argdown_audit` | where a map shows its argument thin by its own lights — what most rests on, unanswered concessions, asserted causal steps, rival accounts nothing tells apart: facts about the map, offered for an appraisal, never verdicts |
 | `split_manuscript` | a one-file book into chapters plus a project file |
 | `zotero_lookup` | only when a library is present |
 | `check_for_updates` | only when asked — see *Updating and removing it* above |

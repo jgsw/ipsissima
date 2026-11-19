@@ -784,6 +784,7 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #weigh table.grid td.none{color:var(--fg-dim);font-style:italic}
 #weigh table.grid td[data-weigh-cell]{cursor:pointer;text-align:center;color:var(--fg-dim)}
 #weigh table.grid td.pick{background:var(--accent-wash,rgba(58,123,213,.1))}
+#weigh ul.appr{margin:.25rem 0 0;padding-top:.2rem;border-top:1px dashed var(--fg-dim,#999);font-style:italic}
 #weigh .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #weigh .verdict button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
 #tables{position:fixed;z-index:35;left:14px;top:96px;width:max-content;min-width:26rem;max-width:min(62rem,calc(100vw - 28px));max-height:70vh;
@@ -791,6 +792,24 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
   box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
 #tables[hidden]{display:none}
+/* WHERE TO LOOK: the Tables panel's frame, on the other side of the map. */
+#look{position:fixed;z-index:35;left:14px;top:96px;width:min(30rem,calc(100vw - 28px));max-height:70vh;box-sizing:border-box;
+  overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
+  box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
+#look[hidden]{display:none}
+#look header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.2rem}
+#look header b{font-size:13px;white-space:nowrap}
+#look header .grow{flex:1}
+#look header button.plain{font-size:14px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
+#look .q{color:var(--fg-dim)}
+#look h4{margin:.55rem 0 .15rem;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-dim)}
+#look ul{margin:0;padding:0;list-style:none}
+#look li{margin:.12rem 0}
+#look li button{all:unset;display:block;cursor:pointer;padding:.25rem .4rem;border-radius:5px;border-left:3px solid transparent}
+#look li button:hover,#look li button:focus-visible{background:var(--accent-wash,rgba(58,123,213,.08));border-left-color:var(--accent,#3a7bd5)}
+#look li button.none{cursor:default}
+#look li button.on{background:var(--accent-wash,rgba(58,123,213,.12));border-left-color:var(--accent,#3a7bd5)}
+#look .foot{margin-top:.5rem;color:var(--fg-dim)}
 #tables header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
 #tables header b{font-size:13px}
 #tables header .grow{flex:1}
@@ -1545,6 +1564,7 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
   <aside id="weigh" hidden aria-label="Weigh"></aside>
   <!-- TABLES: the text's own comparisons, declared with `frames:` (20 Oct 2026). Filled by tablesRender. -->
   <aside id="tables" hidden aria-label="Tables"></aside>
+  <aside id="look" hidden aria-label="Where to look"></aside>
 
   <!-- A BRIDGE'S STEPS (10 Oct 2026; NOTES-integration.md, Proposal A). Clicking a causal scheme's
        name on an inference bar in Reasons: the steps its premises state, drawn as the Mechanism
@@ -2151,13 +2171,13 @@ function openingDepth(graph){
     onLocate: msLocate, onSelect: whatIfShow,
     onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
-    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
-  tablesSync(); weighSync();
+  tablesSync(); weighSync(); lookSync();
 
   // The chapter list, in reading order — the order the manuscript was baked in, which is the
   // order `positions` used. Rebuilt per file loaded, and the pane starts closed: it is an answer
@@ -4871,6 +4891,9 @@ function studyClosing(){
  * which claim is false. The reader's guess is set beside the answer and ranked, not scored. */
 /** The map's main claims: its contentions, and every statement that has support and supports nothing. */
 function suppMains(){
+  // ONE MEASURE (19 Nov 2026): Where to look ranks "what most rests on" with Study's own cost, so it
+  // lives in the diagnostics module and both call it.
+  if (window.ArgdownDiagnostics) return window.ArgdownDiagnostics.mains(CURRENT_GRAPH || {}, {});
   var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
   var byId = {}; nodes.forEach(function(n){ byId[n.id] = n; });
   var outSup = {}, inSup = {};
@@ -4902,6 +4925,7 @@ function costCmp(a, b){ return b.mains - a.mains || b.lost - a.lost; }
 function costRankOf(R, x){ return 1 + R.filter(function(y){ return costCmp(y, x) < 0; }).length; }
 function costLevelWith(R, x){ return R.filter(function(y){ return costCmp(y, x) === 0; }).length; }
 function studyCostRank(){
+  if (window.ArgdownDiagnostics) return window.ArgdownDiagnostics.costRank(CURRENT_GRAPH || {}, { appraisal: APPRAISAL_ON });
   var g = CURRENT_GRAPH || {}, nodes = (g.nodes || []).filter(function(n){ return (n.tags || []).indexOf("appraisal") < 0; });
   var mains = suppMains();
   var out = [];
@@ -6653,7 +6677,8 @@ function cmpPaint(){
 /** The other reading, by name and text — whichever door it came through. */
 function startCompare(name, text){
   var graph = null;
-  try { graph = window.__ARGDOWN_PARSE__(text); }
+  // THE OTHER READING ALONE: this map's appraisal is not the other file's.
+  try { graph = (window.__ARGDOWN_PARSE_ALONE__ || window.__ARGDOWN_PARSE__)(text); }
   catch (e) {
     // The parser wrapper already speaks the translated line-and-column language the
     // editor's own errors use; repeat it, do not re-word it.
@@ -7454,7 +7479,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
-    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],
@@ -7468,7 +7493,7 @@ function redrawFrom(graph){
   syncDock();
   // The reader's suppositions outlive a redraw: they are kept by label (see suppApply).
   suppApply();
-  tablesSync(); weighSync();
+  tablesSync(); weighSync(); lookSync();
   buildKeys(graph);
   statsLine(graph);
   if (PANES.notes) renderNotes();
@@ -7988,6 +8013,8 @@ function bundleFiles(){
   for (k in ALL_SOURCES)
     if (Object.prototype.hasOwnProperty.call(ALL_SOURCES, k) && !seen[k] && ALL_SOURCES[k] != null)
       out.push({ path: k, text: ALL_SOURCES[k] });
+  // THE APPRAISAL TRAVELS WITH THE MAP: a bundle opened elsewhere brings it back.
+  if (APPRAISAL_SIB) out.push({ path: APPRAISAL_SIB.name, text: APPRAISAL_SIB.text });
   return out;
 }
 
@@ -8450,6 +8477,7 @@ function pasteBegin(mode){
     "defaults:\n    chapter: \"" + PASTE_PATH + "\"\n" +
     "===\n\n# The reading {isGroup: true}\n";
   var graph;
+  appraisalSet(null);                  // a new reading has no appraisal yet
   try { graph = window.__ARGDOWN_PARSE__(starter); }
   catch (e) {
     showErr("The starter for a pasted text does not parse: " + (e && e.message || e));
@@ -9418,6 +9446,7 @@ function weighSync(){
 function weighOpen(mode, i, study){
   WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, sel: null, study: !!study };
   if (TABLES) tablesClose();
+  if (LOOK) lookClose();
   whatIfHide(); ctxHide();
   weighRender();
   weighSync();
@@ -9493,6 +9522,15 @@ function weighAccountsHTML(S, q, go){
  * marked in each cell it falls in, so the rare comparison is not lost. Guessed first: which cells will
  * the text leave empty? */
 function weighCell(S, a, side){ return S.rows.filter(function(r){ var v = r.cells[a.id]; return v === side || v === "both"; }); }
+/* THE APPRAISAL'S WEIGHING, BESIDE THE TEXT'S (ruled 19 Nov 2026). With the appraisal shown, its claims
+ * bear on the accounts too; they are listed after the text's reasons and marked as the appraisal's, and
+ * never count towards what the TEXT gives -- an empty cell is still the text's empty cell. */
+function weighIsAppraisal(id){
+  var ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
+  for (var i = 0; i < ns.length; i++) if (ns[i].id === id) return (ns[i].tags || []).indexOf("appraisal") >= 0;
+  return false;
+}
+function weighCellText(S, a, side){ return weighCell(S, a, side).filter(function(r){ return !weighIsAppraisal(r.id); }); }
 function weighList(xs){ return xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1]; }
 function weighGridHTML(S, q, go){
   var esc = ArgdownStaircase.esc, acc = S.accounts, shown = WEIGH.shown, SIDES = ["for", "against"];
@@ -9501,16 +9539,20 @@ function weighGridHTML(S, q, go){
   h += '<table class="grid"><thead><tr><th>for</th><th>against</th></tr></thead><tbody>' + acc.map(function(a){
     return '<tr class="acc"><th colspan="2"><b>' + go(a.id) + '</b>' + ' <span class="q">' + (a.own ? "the text’s own" : "a view the text reports") + '</span></th></tr><tr>' +
       SIDES.map(function(side){
-        var K = a.id + "|" + side, picked = WEIGH.picks.indexOf(K) >= 0, rs = weighCell(S, a, side);
+        var K = a.id + "|" + side, picked = WEIGH.picks.indexOf(K) >= 0, rs = weighCellText(S, a, side),
+            ap = weighCell(S, a, side).filter(function(r){ return weighIsAppraisal(r.id); });
         // Hidden until Show: every cell looks the same, so the guess is the reader's, not read off the grid.
         if (!shown) return '<td class="cell' + (picked ? ' pick' : '') + '" data-weigh-cell="' + esc(K) + '" title="Click if you think the text gives no reason ' + side + ' this account">' + (picked ? '✓ empty' : '?') + '</td>';
-        if (!rs.length) return '<td class="cell none' + (picked ? ' pick' : '') + '">' + (picked ? '✓ ' : '') + 'The text gives none.</td>';
+        var apHTML = ap.length ? '<ul class="appr">' + ap.map(function(r){
+          return '<li data-weigh-reason="' + esc(r.id) + '"' + (WEIGH.sel === r.id ? ' class="on"' : '') + '>' + q(r.id) +
+                 ' <span class="also">the appraisal, not the text</span></li>'; }).join("") + '</ul>' : '';
+        if (!rs.length) return '<td class="cell none' + (picked ? ' pick' : '') + '">' + (picked ? '✓ ' : '') + 'The text gives none.' + apHTML + '</td>';
         return '<td class="cell' + (picked ? ' pick' : '') + '"><ul>' + rs.map(function(r){
           var also = acc.filter(function(b){ return b.id !== a.id && r.cells[b.id]; })
             .map(function(b){ return (r.cells[b.id] === "both" ? "for and against" : r.cells[b.id]) + " " + q(b.id); });
           return '<li data-weigh-reason="' + esc(r.id) + '"' + (WEIGH.sel === r.id ? ' class="on"' : '') + '>' + q(r.id) +
             (also.length ? ' <span class="also">and ' + also.join(", ") + '</span>' : '') + '</li>';
-        }).join("") + '</ul></td>';
+        }).join("") + '</ul>' + apHTML + '</td>';
       }).join("") + '</tr>';
   }).join("") + '</tbody></table>';
   if (!shown) return h + '<div>Marked: ' + WEIGH.picks.length + '. <button type="button" data-weigh-show="1">Show</button></div>';
@@ -9520,7 +9562,7 @@ function weighGridHTML(S, q, go){
                '<button type="button" data-weigh-test="' + esc(sel.id) + '" title="Ask what kind of test this reason is"' + (WEIGH.test && WEIGH.test.row === sel.id ? ' class="on"' : '') + '>What kind of test?</button></div>'
            : '<div class="q">Click a reason to find it on the map, suppose it false, or ask what kind of test it is.</div>';
   var empties = [];
-  acc.forEach(function(a){ SIDES.forEach(function(side){ if (!weighCell(S, a, side).length) empties.push(a.id + "|" + side); }); });
+  acc.forEach(function(a){ SIDES.forEach(function(side){ if (!weighCellText(S, a, side).length) empties.push(a.id + "|" + side); }); });
   var both = S.rows.filter(function(r){ return r.kind !== "one"; });
   var v = "";
   if (WEIGH.picks.length) {
@@ -9532,8 +9574,8 @@ function weighGridHTML(S, q, go){
                    : esc('None of the ' + S.rows.length + ' reasons bears on more than one account: the text argues for and against each on its own, and never sets them side by side.');
   // THE QUESTION AN EMPTY CELL PUTS: against the text's own account first, the commonest silence.
   var own = acc.filter(function(a){ return a.own; })[0];
-  var bare = acc.filter(function(a){ return !a.own && !weighCell(S, a, "for").length; })[0];
-  var ask = own && !weighCell(S, own, "against").length ? 'Nothing here counts against ' + q(own.id) + ', the text’s own account. What would?' :
+  var bare = acc.filter(function(a){ return !a.own && !weighCellText(S, a, "for").length; })[0];
+  var ask = own && !weighCellText(S, own, "against").length ? 'Nothing here counts against ' + q(own.id) + ', the text’s own account. What would?' :
             bare ? 'Nothing here counts for ' + q(bare.id) + '. What would its defenders say?' : '';
   h += '<div class="verdict">' + v + (ask ? '<div style="margin-top:.25rem"><b>' + ask + '</b></div>' : '') + '</div>';
   if (WEIGH.test) h += weighTestHTML(S, q);
@@ -9679,6 +9721,90 @@ function tablesMenu(n){
   return [{ act: "tables", label: "Set out in a table", hint: "The comparison the text makes that this claim is part of, as a table",
             run: function(){ tablesOpen(I[0], n.id); } }];
 }
+/* ---- WHERE TO LOOK (19 Nov 2026) ------------------------------------------------------------- *
+ * James, on the appraisal plan: "Let's try including the computed diagnostics unasked. I can see if
+ * they seem useful and/or if they seem to overstep too far into evaluation." So the button is on the
+ * bar, with its count, whenever the map shows a thin place; the panel lists them, and a click brings
+ * the claims into view. Every line is a fact about the map (src/argdown-diagnostics.js), and the
+ * appraisal layer is never among them. The MCP server's argdown_audit computes the same list. */
+var LOOK = null, LOOK_CACHE = { graph: null, items: [] };
+var LOOK_HEADS = { argument: "The argument", mechanism: "The mechanism", comparison: "The comparisons", note: "Note" };
+function lookItems(){
+  if (!CURRENT_GRAPH || !window.ArgdownDiagnostics) return [];
+  if (!LOOK_CACHE) LOOK_CACHE = { graph: null, items: [] };   // called by a redraw before this script line ran
+  if (LOOK_CACHE.graph !== CURRENT_GRAPH) {
+    var items = [];
+    try { items = window.ArgdownDiagnostics.diagnose(CURRENT_GRAPH, {}); } catch (e) { items = []; }
+    LOOK_CACHE = { graph: CURRENT_GRAPH, items: items };
+  }
+  return LOOK_CACHE.items;
+}
+function lookSync(){
+  var b = document.querySelector('#map [data-act="look"]');
+  var n = lookItems().length;
+  if (b) {
+    b.hidden = !n;
+    b.textContent = "Where to look" + (n ? " (" + n + ")" : "");
+    b.classList.toggle("on", !!LOOK);
+    b.setAttribute("aria-pressed", LOOK ? "true" : "false");
+  }
+  if (LOOK) { if (n) lookRender(); else lookClose(); }
+}
+function lookToggle(){ if (LOOK) lookClose(); else lookOpen(); }
+function lookOpen(){
+  if (!lookItems().length) return;
+  if (TABLES) tablesClose();
+  if (WEIGH) weighClose();
+  LOOK = { pick: -1 };
+  whatIfHide(); ctxHide();
+  lookRender(); lookSync();
+}
+function lookClose(){
+  var was = !!LOOK;
+  LOOK = null;
+  var box = $("look"); if (box) { box.hidden = true; box.innerHTML = ""; }
+  if (was) {
+    if (LIVE) LIVE.markClaims([]);
+    var b = document.querySelector('#map [data-act="look"]');
+    if (b) { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }
+  }
+}
+function lookRender(){
+  var box = $("look");
+  if (!box) return;
+  if (!LOOK || !CURRENT_GRAPH) { box.hidden = true; box.innerHTML = ""; return; }
+  var esc = ArgdownStaircase.esc, items = lookItems();
+  var h = '<header><b>Where to look</b><span class="q">where the map shows the argument thin, by its own lights</span>' +
+    '<span class="grow"></span><button type="button" class="plain" data-look-close="1" title="Close" aria-label="Close">\u00d7</button></header>';
+  ["argument", "mechanism", "comparison", "note"].forEach(function(kind){
+    var mine = [];
+    items.forEach(function(x, i){ if (x.kind === kind) mine.push(i); });
+    if (!mine.length) return;
+    h += '<h4>' + LOOK_HEADS[kind] + '</h4><ul>';
+    mine.forEach(function(i){
+      var x = items[i], has = x.ids && x.ids.length;
+      h += '<li><button type="button" data-look-i="' + i + '"' + (has ? '' : ' class="none" tabindex="-1"') +
+           (LOOK.pick === i ? ' class="on"' : '') + (has ? ' title="Show on the map"' : '') + '>' + esc(x.says) + '</button></li>';
+    });
+    h += '</ul>';
+  });
+  h += '<p class="foot">These are facts about the map, not verdicts on the text: places to look, ' +
+       'where a reader or an appraiser decides what, if anything, is wrong.</p>';
+  box.innerHTML = h;
+  box.hidden = false;
+}
+document.addEventListener("click", function(e){
+  var t = e.target && e.target.closest && e.target.closest("#look [data-look-close], #look [data-look-i]");
+  if (!t) return;
+  if (t.hasAttribute("data-look-close")) { lookClose(); return; }
+  var i = +t.getAttribute("data-look-i"), x = lookItems()[i];
+  if (!x || !x.ids || !x.ids.length || !LIVE) return;
+  LOOK.pick = i;
+  LIVE.markClaims(x.ids);
+  LIVE.spotlight(x.ids, { pad: 80, reveal: true });
+  lookRender();
+});
+
 /** The bar's Tables button: offered on a map with a table to set out, lit while the panel is open. */
 function tablesSync(){
   var b = document.querySelector('#map [data-act="tables"]');
@@ -9696,10 +9822,11 @@ function tablesOpen(i, here){
   if (!L.length) return;
   var T = L[Math.max(0, Math.min(i || 0, L.length - 1))];
   if (WEIGH) weighClose();
+  if (LOOK) lookClose();
   TABLES = { key: T.key, shown: !(GUESS.on || STUDY), picks: [], here: here || null };
   whatIfHide(); ctxHide();
   tablesRender();
-  tablesSync(); weighSync();
+  tablesSync(); weighSync(); lookSync();
 }
 function tablesClose(){
   var was = !!TABLES;
@@ -10226,6 +10353,26 @@ var SOURCE_EXT = /\.(md|qmd|markdown|txt|tex|rmd|rst|org)$/i;
 var PROJECT_FILES = ["argdown-project.yml", "argdown_project.yml", "argdown-project.yaml",
                      "argdown_project.yaml", "_quarto.yml"];
 var DERIVED_IN_PAGE = false;
+/* THE APPRAISAL BESIDE THE MAP (profile 1.27, ruled 19 Nov 2026): `<map>.appraisal.argdown`, the
+ * reconstructor's own criticisms and strengthenings, kept out of the map. Opened with the map from
+ * a folder or a bundle, held here, and joined to the map at every parse (the parser bundle reads
+ * window.__ARGDOWN_APPRAISAL__). Never part of the manuscript, never written by Save. */
+var APPRAISAL_SIB = null;            // { name, text } or null
+var APPRAISAL_REPORT = /\.appraisal\.md$/i;   // its report: Markdown, but never a chapter
+function appraisalSet(sib){
+  APPRAISAL_SIB = sib || null;
+  window.__ARGDOWN_APPRAISAL__ = sib ? sib.text : null;
+  window.__ARGDOWN_APPRAISAL_ERROR__ = null;
+}
+function isAppraisalFile(p){ return /\.appraisal\.argdown$/i.test(String(p || "")); }
+// For the browser test (app/test_diagnostics.mjs), as __ZOT_MATCH__ is for the Zotero one: what
+// sibling is open, and what a saved bundle would carry. Reads only.
+window.__APPRAISAL_STATE__ = function(){
+  return { sibling: APPRAISAL_SIB ? APPRAISAL_SIB.name : null,
+           bundle: bundleFiles().map(function(f){ return f.path; }),
+           error: window.__ARGDOWN_APPRAISAL_ERROR__ || null };
+};
+function appraisalNameFor(mapName){ return String(mapName).replace(/\.(argdown|ad)$/i, "") + ".appraisal.argdown"; }
 // The border adjudication's two counters: how many claims were long enough (and factual
 // enough) to test against the manuscript, and how many drawn borders that test corrected.
 // Zero TESTED with DERIVED_IN_PAGE true means the borders really are only as declared, and
@@ -10387,7 +10534,12 @@ function warnAboutMetadata(text, name){
 }
 
 function loadDropped(items, prefer){
-  var picks = items.filter(function(it){ return /\.(argdown|ad)$/i.test(it.path); });
+  var picks = items.filter(function(it){ return /\.(argdown|ad)$/i.test(it.path) && !isAppraisalFile(it.path); });
+  if (!picks.length && items.some(function(it){ return isAppraisalFile(it.path); })) {
+    showErr("That is an appraisal, which is read with the map it appraises. Open the map " +
+            "beside it, or the folder holding both.");
+    return;
+  }
   if (!picks.length) {
     showErr("No .argdown file in what you dropped.\n\nDrop the .argdown itself, or the folder " +
             "holding it — a folder also brings the text, which Exposition needs.");
@@ -10408,8 +10560,10 @@ function loadDropped(items, prefer){
   var wanted = items.filter(function(it){
     if (it === pick || it.path.indexOf(root) !== 0) return false;
     var rel = it.path.slice(root.length);
-    return SOURCE_EXT.test(rel) || PROJECT_FILES.indexOf(rel) >= 0;
+    return (SOURCE_EXT.test(rel) && !APPRAISAL_REPORT.test(rel)) || PROJECT_FILES.indexOf(rel) >= 0;
   });
+  // THE MAP'S OWN APPRAISAL, if one sits beside it under its name.
+  var sibItem = items.filter(function(it){ return it.path === appraisalNameFor(pick.path); })[0] || null;
   var budget = 0;
   wanted = wanted.filter(function(it){
     budget += it.file.size;
@@ -10420,12 +10574,18 @@ function loadDropped(items, prefer){
   // and starts watching the manuscript once this has finished, and reading the file is async, so
   // without the promise those both ran against a page that had not loaded anything yet. The
   // watch then found no manuscript and quietly did nothing.
-  return readText(pick.file).then(function(raw){
+  return Promise.all([readText(pick.file), sibItem ? readText(sibItem.file) : null]).then(function(both){
+    var raw = both[0];
     // A BUNDLE IS A FOLDER THAT ARRIVED AS ONE FILE, and from here down it is treated as one:
     // the attached sources join whatever was dropped alongside, and everything after this point
     // — locating, rendering, the Manuscript pane — runs on the same path it always did.
     var bnd = window.ArgdownBundle ? window.ArgdownBundle.detach(raw) : null;
     var text = bnd ? bnd.argdown : raw;
+    // The appraisal: the file on disk, else the copy a bundle carries (files on disk win, as below).
+    var sibName = appraisalNameFor(pick.file.name), sibText = both[1];
+    if (sibText == null && bnd) bnd.files.forEach(function(f){ if (isAppraisalFile(f.path)) { sibText = f.text; sibName = f.path; } });
+    if (bnd) bnd.files = bnd.files.filter(function(f){ return !isAppraisalFile(f.path) && !APPRAISAL_REPORT.test(f.path); });
+    appraisalSet(sibText != null ? { name: sibName.slice(sibName.lastIndexOf("/") + 1), text: sibText } : null);
     if (warnAboutMetadata(text, pick.file.name)) return null;
     var graph;
     try { graph = window.__ARGDOWN_PARSE__(text); }
@@ -10467,6 +10627,14 @@ function loadDropped(items, prefer){
         DERIVED_IN_PAGE = placed > 0;
       }
       render(pick.file.name, text, graph);
+      if (window.__ARGDOWN_APPRAISAL_ERROR__)
+        showErr("The appraisal beside this map, \u201c" + APPRAISAL_SIB.name + "\u201d, could not be read, " +
+                "so the map is shown without it:\n\n" + window.__ARGDOWN_APPRAISAL_ERROR__ +
+                "\n\nLine numbers count the map's lines first. Run the checker on the appraisal file " +
+                "to find the fault in its own lines.");
+      else if (APPRAISAL_SIB)
+        showNote("This map has an appraisal beside it (\u201c" + APPRAISAL_SIB.name + "\u201d): the " +
+                 "reconstructor's own criticisms, hidden until you switch the appraisal on.", 9000);
       if (bnd && bnd.truncated)
         showErr("The attached text in \u201c" + pick.file.name + "\u201d has no end marker, so " +
                 "it was cut short somewhere — most likely by whatever the file travelled " +
@@ -10500,7 +10668,7 @@ var UNWATCH = null;          // stop watching the manuscript
  *  drop, applied BEFORE reading rather than after, because here reading means touching the disk
  *  and a manuscript folder may sit beside a decade of PDFs. */
 function hostWanted(rel){
-  return /\.(argdown|ad)$/i.test(rel) || SOURCE_EXT.test(rel) ||
+  return /\.(argdown|ad)$/i.test(rel) || (SOURCE_EXT.test(rel) && !APPRAISAL_REPORT.test(rel)) ||
          PROJECT_FILES.indexOf(rel.slice(rel.lastIndexOf("/") + 1)) >= 0;
 }
 
@@ -10755,6 +10923,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
       return;
     }
     var graph;
+    appraisalSet(null);                // a new reconstruction has no appraisal yet
     try { graph = window.__ARGDOWN_PARSE__(text); }
     catch (e) {
       // Cannot happen from a build that ran the tests, and worth saying plainly if it does:

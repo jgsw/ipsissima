@@ -1,7 +1,7 @@
 {
   "profile": "Ipsissima profile for Argdown",
-  "version": "1.26",
-  "date": "2026-10-22",
+  "version": "1.27",
+  "date": "2026-11-19",
   "spec": "docs/PROFILE.md",
   "copyright": "2026 James Wilson",
   "licence": "CC-BY-4.0",
@@ -50,7 +50,8 @@
     "mechanism": {"type": "a chain id, or true", "summary": "The claim states a declared chain as a whole -- the account the text gives -- and stands for it in the argument: supported as one account, attacked by a rival, a premise of a bridge, where its steps count as the premise's. `true` stands for the whole mechanism of a map with no chains (since 1.20)."},
     "constitutes": {"type": "map or list of maps", "summary": "The constitutive relation(s) the claim states: what makes a whole up, never walked as a step (since 1.11).", "keys": "constitutes"},
     "inconsistent": {"type": "string or list", "summary": "The claim is one of a set the text says cannot all hold (a trilemma, a dilemma, a trade-off): every member carries the same name. The reader is asked which they would give up, and shown what each would cost (since 18 Oct 2026)."},
-    "about": {"type": "map of frame to value, or a list of them", "summary": "The cell or cells of the text's own comparisons that the claim states: its case, and the value it gives on a dimension declared under `frames:` (since 20 Oct 2026; part of every reconstruction since 1.21). Reserved values, on a dimension or a verdict: `impossible` and `indeterminate`, what the text says of a cell instead of a value; alone on an account frame, `indeterminate` marks a reason the text says does not tell the accounts apart (since 1.23)."}
+    "about": {"type": "map of frame to value, or a list of them", "summary": "The cell or cells of the text's own comparisons that the claim states: its case, and the value it gives on a dimension declared under `frames:` (since 20 Oct 2026; part of every reconstruction since 1.21). Reserved values, on a dimension or a verdict: `impossible` and `indeterminate`, what the text says of a cell instead of a value; alone on an account frame, `indeterminate` marks a reason the text says does not tell the accounts apart (since 1.23)."},
+    "appraises": {"type": "map: {role, aim, question, literature, from_memory}", "summary": "On an #appraisal claim only: what it is and what it is aimed at. `role` is `criticism`, `strengthening` or `reply`; `aim` is `argument`, `mechanism`, `comparison` or `framing`; `question` the critical question it answers, where there is one; `literature` the references it draws on, with `from_memory: true` unless each is a Zotero key (`zotero:ABCD1234`). No strength and no rank: those belong to the report (since 1.27, 19 Nov 2026)."}
   },
 
   "pcs_data": {
@@ -154,6 +155,8 @@
     "stance": {"type": "enum", "values": ["rejected", "unjudged"], "summary": "On a #reported or #contested claim, as for a step."},
     "summary": "A constitutive relation (since 1.11): what a whole is made up of, carried by a claim as a step is. Never walked, never composed with steps, never drawn as an arrow; cycles are allowed. A pair may be related both causally and constitutively."
   },
+
+  "appraisal_file": {"suffix": ".appraisal.argdown", "summary": "The reconstructor's appraisal of a text, beside its map: `<map stem>.appraisal.argdown`. It holds only #appraisal claims and arguments, and relations from them to the map's titles, which it names but never redefines; a title in neither file is a fault (the map has changed). Its front matter may name the map (`map:`) and who made it (`by:`). Ipsissima and the checker read the two as one text, the sibling's body under its own heading. The in-map form stays legal (since 1.27, ruled by James 19 Nov 2026).", "frontmatter": {"map": "the map's file name, relative to this file; default: this file's name without `.appraisal`", "by": "who made the appraisal, and when"}},
 
   "retired": {
     "summary": "Keys profile 1.25 retired (22 Oct 2026, on James's ruling): added one trial at a time, used in almost no ordinary map, and unlikely to be plain to a reader. An old map that carries one opens as before; the key is not read, and the checker and the editor say what to write instead.",

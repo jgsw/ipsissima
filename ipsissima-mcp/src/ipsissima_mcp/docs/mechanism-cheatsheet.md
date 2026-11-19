@@ -167,7 +167,7 @@ Three different things, and the pass records only the first two.
      "imagine a manager who …" shows how a step could go, not that it did. Mark it `design:
      illustration`; it is shaded as asserted. Evidence for each period is not evidence for the change
      between them; where the text offers the one and claims the other, say which in `design`.
-3. **Whether the basis is good enough** — the appraisal. Separate request, `#appraisal` claims.
+3. **Whether the basis is good enough** — the appraisal. Separate request, `#appraisal` claims in the appraisal file beside the map (`argdown_method("appraisal")`).
 
 Know the critical questions for causal arguments — is the correlation real; is it more than
 chance; could the effect run the other way; could a third factor produce both (Govier's four

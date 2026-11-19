@@ -1,6 +1,6 @@
 # The Ipsissima profile for Argdown
 
-**Version 1.26 — 29 October 2026.** The machine-readable registry of everything below is
+**Version 1.27 — 19 November 2026.** The machine-readable registry of everything below is
 [`ipsissima-mcp/src/ipsissima_mcp/profile.json`](../ipsissima-mcp/src/ipsissima_mcp/profile.json);
 the checker reports the profile version it validates against.
 
@@ -128,6 +128,7 @@ On any claim or argument, in its `{data}` block:
 | `question` | `{id, move, into}`, or a list | What the claim does to a declared question. `move` is `answers`, `reframes`, `splits` or `dissolves`; `into` names the question(s) that take its place, and a reframing or a split needs one. The census lists each question with the moves on it, and the page lists them from a pill in the orientation strip (*added in 1.17*). |
 | `inconsistent` | string, or a list | The claim is one of a set the **text says cannot all hold** — a trilemma, a dilemma, a trade-off it names — and every member carries the same name. Only a set the text itself states, never one the reconstruction finds. The Reasons view asks which the reader would give up, and shows what giving up each would cost the rest of the argument; a contradictory pair (`><`) needs no mark (*added 18 October 2026*). |
 | `about` | map of frame to value, or a list of them | The **cell the claim states** in one of the text's comparisons: `about: {case: I, justified: yes}` puts it in Case I's row, in the column *justified*, with the value *yes*. Two `case` frames together place it where they cross (`{study: s4, issue: use}`). Values must be declared under `frames:`; an `account` frame is never named here, since its cells are the relations drawn (*added 20 October 2026*). Two reserved values say what the text says of a cell instead of a value, on a dimension or a verdict: `impossible` (the text says the combination cannot occur) and `indeterminate` (the text says it cannot be told). Alone on an account frame, `{<frame>: indeterminate}` marks a reason the text says does not tell the accounts apart. A said cell is not silence, so it is filled, and it is never compared (*since 1.23*). |
+| `appraises` | map: `{role, aim, question, literature, from_memory}` | On an `#appraisal` claim only: **what the appraisal claim is and what it is aimed at**. `role` is `criticism`, `strengthening` (a better premise, a stated principle, a reply the author could have made) or `reply` (to a criticism, the author's best or the appraiser's own); `aim` is `argument`, `mechanism`, `comparison` or `framing`; `question` names the critical question it answers, where it answers one; `literature` lists what it draws on, with `from_memory: true` unless each entry is a Zotero key (`zotero:ABCD1234`). No strength and no rank: those are a reading of the whole and go in the report (*added in 1.27*). |
 
 ### The fidelity ladder
 
@@ -179,6 +180,22 @@ map. An untagged claim is the author's own, asserted.
 `warrant:`; no argument of the author's may use it as a premise; it is excluded from every measure
 of the author's argument; and Ipsissima hides it until the reader asks for it. Any other tag is
 the reconstructor's own filing and is simply shown.
+
+**The appraisal beside the map (1.27).** An appraisal is written ON REQUEST, never by default, and
+it goes in a **sibling file**, `<map stem>.appraisal.argdown`, beside the map, rather than in it:
+the map stays a checked record of the text whose checks, copies and hash do not move when someone
+critiques it; several appraisals can sit on one map; and an appraisal claim aimed at a title the map
+no longer has is caught. The sibling holds only `#appraisal` claims and arguments, and relations
+from them to the map's titles, which it may name but never redefine. Its front matter may say
+`map:` (the map's file name; by default the sibling's own name without `.appraisal`) and `by:`.
+Ipsissima and the checker read the two as one text: the sibling's body follows the map under a
+heading of its own, `# Appraisal {isGroup: true}`, unless it opens with a heading. The checker,
+given the sibling, reports only what is the sibling's: an undefined title, a map claim given new
+words, a claim defined there but not tagged `#appraisal`, and the `appraises:` key. An appraisal
+section inside the map stays legal. The ranking, the argued verdicts and "where a critique should
+aim" belong in a separate **report** (Markdown), which the checker also takes: every span of four
+or more words in double quotation marks is looked for in the source, and its page checked where one
+is cited beside it. The method is `argdown_method("appraisal")`.
 
 ## 4. Readings, not only maps
 
@@ -869,6 +886,17 @@ each say, as a query, what to write instead. The registry lists them under `reti
 | `under` | a constitution | The claim's words |
 
 ## Versioning
+
+**1.27** (19 November 2026) put the appraisal beside the map, on James's rulings after the appraisal
+trial of 18 November. Twelve blind appraisals of three texts, half written with the checked map and
+half from the text alone, were judged blind: the map made appraisals more exact (it never put its
+own words in quotation marks) and a little better argued, but found no strong objection the text
+alone missed, and declaring a text's comparisons and mechanism did not prompt any critique of them.
+So the appraisal is a sibling file (`<map>.appraisal.argdown`) with an `appraises:` key on each claim,
+the ranked argument a separate report with its quotations checked, and the places a map shows its
+argument thin are computed and offered unasked, as a trial (`argdown_audit`, the Where to look panel).
+Every 1.26 file conforms: an in-map `#appraisal` section stays legal, and lacks only the `appraises:`
+key, which is queried, not required.
 
 **1.26** (29 October 2026) tied each account frame to the question it answers, on James's ruling
 after the rival-accounts research of 28 October. Across six maps of one text, a set of rival accounts

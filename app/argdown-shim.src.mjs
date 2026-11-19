@@ -37,7 +37,14 @@ import fs from "fs";
 import path from "path";
 import { argdown } from "@argdown/node";
 import { load as yamlLoad } from "js-yaml";
-import { metadataProblems } from "./argdown-graph.mjs";
+import { metadataProblems, toGraph, RUN } from "./argdown-graph.mjs";
+// THE DIAGNOSTICS, ONE IMPLEMENTATION (19 Nov 2026): the page's "Where to look" panel and the MCP
+// server's `argdown_audit` both run src/argdown-diagnostics.js, on the graph the page itself draws.
+import Suppose from "./src/argdown-suppose.js";
+import Accounts from "./src/argdown-accounts.js";
+import Mechanism from "./src/argdown-mechanism.js";
+import Tables from "./src/argdown-tables.js";
+import Diagnostics from "./src/argdown-diagnostics.js";
 
 const MAP_PROCESS = ["parse-input", "build-model", "build-map",
                      "transform-closed-groups", "colorize", "export-dot"];
@@ -86,15 +93,28 @@ function reportMetadataErrors(file, input) {
   return true;
 }
 
+/** `audit FILE`: the diagnostics, as JSON on stdout -- the graph built exactly as the page builds it. */
+async function audit(file) {
+  const input = fs.readFileSync(file, "utf8");
+  if (reportMetadataErrors(file, input)) process.exit(1);
+  const res = await argdown.runAsync({ input, ...RUN });
+  if (reportSyntaxErrors(file, res)) process.exit(1);
+  const graph = toGraph(res);
+  const items = Diagnostics.diagnose(graph, { deps: { suppose: Suppose, accounts: Accounts, mechanism: Mechanism, tables: Tables } });
+  process.stdout.write(JSON.stringify({ file: path.basename(file), items }, null, 1) + "\n");
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   const command = argv[0];
   const file = argv[1];
   const flag = (name) => { const i = argv.indexOf(name); return i === -1 ? null : argv[i + 1]; };
 
-  if (!command || !file || !["map", "json"].includes(command))
-    fail("usage: argdown-cli.mjs (map|json) FILE [--outputDir DIR] [--statement-selection MODE]");
+  if (!command || !file || !["map", "json", "audit"].includes(command))
+    fail("usage: argdown-cli.mjs (map|json) FILE [--outputDir DIR] [--statement-selection MODE]\n" +
+         "       argdown-cli.mjs audit FILE");
   if (!fs.existsSync(file)) fail(`no such file: ${file}`);
+  if (command === "audit") return audit(file);
 
   const input = fs.readFileSync(file, "utf8");
   const selection = flag("--statement-selection");

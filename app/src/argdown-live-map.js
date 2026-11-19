@@ -6379,6 +6379,11 @@ function createLiveMap(container, graph, options) {
         // hidden; the page shows it on a map with accounts to weigh.
         (opt.onWeigh ? '<button data-act="weigh" hidden title="The rival accounts the text sets ' +
           'against each other, with the reasons for and against each">Weigh</button>' : "") +
+        // WHERE TO LOOK (19 Nov 2026, a trial of offering it unasked): the places the map shows
+        // its argument thin by its own lights. Drawn hidden; the page shows it, with a count,
+        // when there is something to point at.
+        (opt.onLook ? '<button data-act="look" hidden title="Where to look: the places this map shows ' +
+          'its argument is thin by its own lights. Facts about the map, not verdicts on the text">Where to look</button>' : "") +
         '</span>' : "") +
       (parts.depth ? '<span class="alm-grp" data-role="depth"></span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +
@@ -6465,6 +6470,7 @@ function createLiveMap(container, graph, options) {
       if (act === "fold")     return setBarFolded(true, true);
       if (act === "study")    return opt.onStudy && opt.onStudy();
       if (act === "tables")   return opt.onTables && opt.onTables();
+      if (act === "look")     return opt.onLook && opt.onLook();
       if (act === "weigh")    return opt.onWeigh && opt.onWeigh();
       if (act === "display")  return setDisplayOpen(!displayOpen);
       if (act === "text")     return setState({ allText: b.dataset.full === "1" });

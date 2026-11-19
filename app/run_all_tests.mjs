@@ -66,6 +66,8 @@ const SUITES = [
   // them, and the retired names (app/vocabulary.json) kept retired.
   ["the teaching text says what is there", "node", [path.join(HERE, "test_teaching_text.mjs")]],
   ["the appraisal, off until asked", "node", [path.join(HERE, "test_appraisal_layer.mjs")]],
+  // 19 Nov 2026: the appraisal beside the map, and Where to look (offered unasked, as a trial).
+  ["where to look, and the appraisal beside the map", "node", [path.join(HERE, "test_diagnostics.mjs")]],
   // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
   // the four export defects were invisible in the browser that made the file.
   ["the exports, read back", "node", [path.join(HERE, "test_export_artifacts.mjs")]],
@@ -123,6 +125,7 @@ const SUITES = [
   ["the mechanism and the appraisal", PY, [path.join(PYTESTS, "test_mechanism.py")]],
   ["the profile holds to the code",   PY, [path.join(PYTESTS, "test_profile.py")]],
   ["the served method holds to the registry", PY, [path.join(PYTESTS, "test_method_docs.py")]],
+  ["the appraisal sibling, appraises: and the report (checker)", PY, [path.join(PYTESTS, "test_appraisal.py")]],
   // The same file, the same report: two hash seeds once reshuffled every tie in the census.
   ["the census, run twice",      PY, [path.join(PYTESTS, "test_census_deterministic.py")]],
   ["two readings, compared",     PY, [path.join(PYTESTS, "test_compare.py")]],

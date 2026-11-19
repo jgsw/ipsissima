@@ -518,7 +518,9 @@ PROFILE_VERSION = _profile_version()
 #: premise-conclusion lines;
 #: `isGroup` on headings.
 EXTRA_DATA_KEYS = ("reviewed", "uses", "formalization", "formalized", "isGroup", "causes", "constitutes",
-                   "question", "mechanism", "inconsistent", "about")
+                   "question", "mechanism", "inconsistent", "about",
+                   # an #appraisal claim's role and aim (profile 1.27; appraisal.py)
+                   "appraises")
 
 #: Wrong names with one obvious right one, seen in the wild -- probe files guessed `verbatim:`
 #: and `quotes:` for the quotation field and `page:` for the pinpoint. difflib catches the
@@ -2823,6 +2825,120 @@ def _parse_args():
 
     return a, cli, path
 
+def _report_check(a, path):
+    """A Markdown report's quotations against the source texts under --source-root."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import appraisal as _ap
+    if not a.source_root:
+        msg = "pass --source-root: a report's quotations are checked against the source texts there"
+        print(json.dumps({"file": os.path.basename(path), "ok": True, "verified": False,
+                          "findings": [], "note": msg}, indent=2) if a.fmt == "json" else
+              f"== {os.path.basename(path)}\n   {msg}")
+        return
+    root = os.path.abspath(os.path.expanduser(a.source_root))
+    sources = {}
+    for dp, _dn, fn in os.walk(root):
+        for f in fn:
+            fp = os.path.join(dp, f)
+            if f.lower().endswith(".md") and os.path.abspath(fp) != os.path.abspath(path):
+                txt = open(fp, encoding="utf-8", errors="replace").read()
+                if "begins here -->" in txt:          # converted sources carry page markers
+                    sources[fp] = txt
+    found, summary = _ap.report_findings(open(path, encoding="utf-8").read(), sources)
+    for sev, check, msg, line in found:
+        finding(check, sev, msg, line=line)
+    if a.fmt == "json":
+        print(json.dumps({"file": os.path.basename(path), "profile": PROFILE_VERSION,
+                          "ok": not any(f["severity"] == "!" for f in FINDINGS),
+                          "verified": bool(sources), "findings": FINDINGS, "quotations": summary},
+                         indent=2, ensure_ascii=False))
+    else:
+        print(f"== {os.path.basename(path)}")
+        print(f"   {summary['quotations']} quotation(s): {summary['found']} found in the text, "
+              f"{summary['page_right']} of {summary['page_checked']} on the page cited")
+        for f in FINDINGS:
+            print(f"   {f['severity']} [{f['check']}] line {f.get('line')}\n       {f['message']}")
+    if any(f["severity"] == "!" for f in FINDINGS):
+        sys.exit(1)
+
+
+def appraisal_report(cli, path):
+    """The appraisal layer's `appraises:` key (profile 1.27; ipsissima_mcp/appraisal.py)."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    try:
+        import appraisal as _ap
+    except ImportError:
+        return
+    doc = export_json(cli, path)
+    if not doc:
+        return
+    for sev, check, msg, title in _ap.appraises_findings(doc):
+        finding(check, sev, msg, title=title)
+    if SIBLING:
+        for sev, check, msg, title, line in _ap.sibling_findings(doc, SIBLING["body_line"]):
+            finding(check, sev, msg, title=title, line=line)
+
+
+#: Set while the file being checked is an appraisal SIBLING (`<map>.appraisal.argdown`): the map and
+#: the sibling are checked as one joined text, and only what is the sibling's is reported.
+SIBLING = {}
+
+
+def _sibling_begin(a, path):
+    """Join a sibling to its map in a temporary file, and return the path to check."""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import appraisal as _ap
+    sib_text = open(path, encoding="utf-8").read()
+    map_path = _ap.map_path_for(path, sib_text)
+    if not os.path.exists(map_path):
+        print(json.dumps({"file": os.path.basename(path), "ok": False, "verified": False,
+                          "findings": [{"check": "appraisal-sibling", "severity": "!",
+                                        "message": f"this appraisal is for {os.path.basename(map_path)}, "
+                                                   f"which is not beside it. Put the appraisal next to its "
+                                                   f"map, or name the map in its front matter: map: \"…\"."}]},
+                         indent=2, ensure_ascii=False) if a.fmt == "json" else
+              f"== {os.path.basename(path)}\n   ! the map {os.path.basename(map_path)} is not beside it")
+        sys.exit(1)
+    text, body_line, _front, sib_line = _ap.join(open(map_path, encoding="utf-8").read(), sib_text)
+    td = tempfile.mkdtemp(prefix="ipsissima-appraisal-")
+    joined = os.path.join(td, os.path.basename(map_path))
+    with open(joined, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    SIBLING.update(path=path, map=map_path, joined=joined, dir=td, body_line=body_line, sib_line=sib_line)
+    # Only the faults: the census of the joined text is the map's, which is checked on its own.
+    a.only_problems = True
+    a.quiet = True
+    a.modes = False
+    a.fix = False          # a fix would be written to the temporary join, and lost
+    return joined
+
+
+def _sibling_end():
+    """Keep the sibling's findings, with their lines put back into the sibling file."""
+    import shutil as _sh
+    _ap_titles = set()
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import argdown_provenance as _pv
+        doc = _JSON_CACHE and next((v for k, v in _JSON_CACHE.items() if k[1] == SIBLING["joined"] and v), None)
+        if doc:
+            _ap_titles = _pv.appraisal_titles(doc)
+    except Exception:
+        pass
+    kept = []
+    for f in FINDINGS:
+        line = f.get("line")
+        mine = (line is not None and line >= SIBLING["body_line"]) or f.get("title") in _ap_titles or \
+               f.get("check") in ("appraisal-sibling", "appraisal-target", "appraises")
+        if not mine or (line is not None and line < SIBLING["body_line"]):
+            continue
+        if line is not None:
+            f["line"] = line - SIBLING["body_line"] + SIBLING["sib_line"]
+        kept.append(f)
+    FINDINGS[:] = kept
+    _sh.rmtree(SIBLING["dir"], ignore_errors=True)
+
+
 def _report(cli, path, a):
     """The report itself. Returns a process exit code.
 
@@ -3174,6 +3290,10 @@ def _report(cli, path, a):
     mechanism_report(cli, path, os.path.abspath(os.path.expanduser(a.source_root))
                      if a.source_root else None)
 
+    # ---- 5d2b. the appraisal: `appraises:` on every #appraisal claim (profile 1.27) ---- #
+    # On every file, in-map appraisal and sibling alike. Silent where there is no appraisal.
+    appraisal_report(cli, path)
+
     # ---- 5d3. the questions the text works on (profile 1.17) -------------- #
     _sr = os.path.abspath(os.path.expanduser(a.source_root)) if a.source_root else None
     questions_report(cli, path, _sr)
@@ -3215,6 +3335,13 @@ def main():
     if a is None:
         return
     started = __import__("time").time()
+    # AN APPRAISAL SIBLING is checked joined to its map (profile 1.27).
+    shown = path
+    if path.lower().endswith(".appraisal.argdown"):
+        path = _sibling_begin(a, path)
+    # A REPORT (Markdown) gets the quotation check alone (profile 1.27).
+    elif path.lower().endswith((".md", ".markdown")):
+        return _report_check(a, path)
 
     # ---- the report, with its prose sent nowhere when nobody asked for prose ---- #
     sink = io.StringIO() if a.quiet else None
@@ -3231,6 +3358,9 @@ def main():
             sys.stdout.write(sink.getvalue())
         raise
 
+    if SIBLING:
+        _sibling_end()
+        path = shown
     if a.fmt == "json":
         # THE CENSUS RIDES ALONG, because without it the caller runs this command again on a file
         # it has not touched. `sink` already holds the prose the report wrote; it is passed

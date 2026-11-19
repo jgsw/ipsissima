@@ -281,7 +281,7 @@ longer tell.
 
 The reconstructor's own view of the chain — a confounder, a loop the text leaves open, how a policy
 would actually reach the people it names — is the **appraisal**, a separate request, written as
-`#appraisal` claims. Not in this pass.
+`#appraisal` claims, in the appraisal file beside the map (`argdown_method("appraisal")`). Not in this pass.
 
 ## 4. Check, and read the coverage
 

@@ -98,6 +98,17 @@ the text compares nothing, write `frames: none`. Extraction notes a table the te
 conversion lost: once the skeleton says a frame uses it, rebuild it from its page, before writing
 the claims that quote it.
 
+APPRAISAL ON REQUEST, NEVER BY DEFAULT (profile 1.27, ruled 19 Nov 2026). A map reports what a
+text says; it does not evaluate it. Appraise only when the user asks in words like "critique",
+"what's wrong with", "weaknesses", "how could it be strengthened", "assess", "evaluate", "how
+good is". Then call `argdown_plan` with `intent: "appraise"` and read `argdown_method("appraisal")`.
+If there is NO MAP and the user wants only the appraisal, OFFER THE CHOICE with its costs (the
+plan states them): a blind trial found a map makes an appraisal more exact, not more insightful,
+so a map is not worth making for the appraisal alone unless the user wants one anyway. The
+appraisal goes in a sibling file beside the map (`<map>.appraisal.argdown`), the ranked argument
+in a separate report; `argdown_check` checks both, and `argdown_audit` lists where the map shows
+its argument is thin.
+
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
 
@@ -210,7 +221,8 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
     """
     Args:
         sources: files and/or folders the user named.
-        intent: "reconstruct" for a map, "extract" for the Markdown alone.
+        intent: "reconstruct" for a map, "extract" for the Markdown alone, "appraise" when the
+            user asked for a critique (an appraisal) of the text, with or without a map.
         out: where output should go. Proposed if omitted.
         recursive: walk subfolders of any folder given.
     """
@@ -252,6 +264,9 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
         maps="1 (or one per source — unanswered)" if plan["questions"] else None,
         caveat="an estimate from word counts, not a measurement of this text")
 
+    if intent == "appraise":
+        return _appraisal_plan(plan, sources, src_tokens)
+
     if intent == "extract":
         plan["questions"] = [q for q in plan["questions"] if q["id"] != "grouping"]
         # Extraction alone is a complete request: nothing is to be mapped, so nothing is offered.
@@ -277,6 +292,76 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
     if any(a.get("kind") == "tables-cited" for a in plan.get("advice", [])):
         plan["next"] += ("; and rebuild from their pages the tables extract_text reports lost that a "
                          "frame uses, once the skeleton is written and before the claims (`advice`)")
+    return plan
+
+
+def _maps_near(sources):
+    """Maps (not appraisal siblings) the user named, or that sit beside or above what they named."""
+    from ipsissima_mcp import appraisal as ap
+    seen, out = set(), []
+    for s in sources:
+        p = Path(s).expanduser()
+        cands = [p] if p.suffix.lower() in (".argdown", ".ad") else []
+        for d in {p if p.is_dir() else p.parent, (p if p.is_dir() else p.parent).parent}:
+            if d.is_dir():
+                cands += sorted(d.glob("*.argdown"))
+        for c in cands:
+            if c.exists() and not ap.is_appraisal_path(c) and str(c) not in seen:
+                seen.add(str(c)); out.append(str(c))
+    return out
+
+
+def _appraisal_plan(plan, sources, src_tokens):
+    """The appraisal routes and what each costs.
+
+    THE COSTS ARE MEASURED, NOT GUESSED: the appraisal trial of 18 Nov 2026 (12 blind runs on three
+    texts of 10-15k words) metered whole sessions at about 90k tokens appraising from the text alone
+    (about 5.7 times the source's tokens) and about 112k from an existing map (about 7.1 times).
+    Making the map costs what a reconstruction costs. The trial's finding is why the choice is
+    OFFERED: the map arm was more exact (it never put its own words in quotation marks) and a
+    little better argued, but found no strong objection the text-only arm missed.
+    """
+    from ipsissima_mcp import appraisal as ap
+    maps = _maps_near(sources)
+    lo, hi = int(src_tokens * 5), int(src_tokens * 6.5)
+    mlo, mhi = int(src_tokens * 6.5), int(src_tokens * 8)
+    rlo, rhi = int(src_tokens * 1.4), int(src_tokens * 2.6)
+    routes = [
+        dict(id="text", what="appraise from the text alone: a ranked report, quotations checked",
+             tokens=f"{lo:,}–{hi:,}"),
+        dict(id="pooled", what="two independent appraisals from the text, pooled into one report "
+                               "(the trial found two runs together hold more objections than one)",
+             tokens=f"{2 * lo:,}–{2 * hi:,}"),
+        dict(id="map", what="make the checked map first, then appraise from it into a sibling file "
+                            "and a report: worth it when the user wants the map anyway",
+             tokens=f"{rlo + mlo:,}–{rhi + mhi:,} (the map, then the appraisal)"),
+    ]
+    plan["appraisal"] = dict(
+        maps=maps,
+        sibling=[ap.appraisal_path_for(m) for m in maps],
+        routes=routes if not maps else [dict(id="from-map", what="appraise from the existing map "
+                                             "into its sibling file and a report",
+                                             tokens=f"{mlo:,}–{mhi:,}")],
+        finding=("A blind trial (18 Nov 2026) found that a map makes an appraisal more exact and a "
+                 "little better argued, but does not find stronger objections. So a map is not worth "
+                 "making for the appraisal alone, unless the user wants the map for itself."),
+        caveat="costs are from whole metered sessions in that trial, scaled by this source's words")
+    plan.pop("offers", None)
+    plan.pop("mechanism", None)
+    if maps:
+        plan["next"] = (f"appraise the existing map: read argdown_method(\"appraisal\"), call argdown_audit "
+                        f"on {Path(maps[0]).name}, write the sibling {Path(ap.appraisal_path_for(maps[0])).name}, "
+                        f"check it with argdown_check, then write the report and check that too")
+    else:
+        plan["questions"] = list(plan.get("questions") or []) + [dict(
+            id="appraisal-route",
+            question="There is no map of this text. Which would you like: an appraisal from the text "
+                     "alone, two independent appraisals pooled, or a checked map first and an "
+                     "appraisal from it?",
+            options=[r["id"] for r in routes])]
+        plan["next"] = ("put the appraisal-route question to the user, with each route's cost from "
+                        "`appraisal.routes`; then read argdown_method(\"appraisal\") and follow the "
+                        "route chosen (the map route runs the ORDER OF WORK first)")
     return plan
 
 
@@ -512,6 +597,11 @@ METHOD_DOCS = {
     "conventions": ("ipsissima-conventions.md",
                     "what Ipsissima records on a claim: provenance, fidelity, warrants, "
                     "tags, front matter"),
+    # THE APPRAISAL (profile 1.27): served only when the user asks for one, never with "all".
+    "appraisal": ("appraisal-pass.md",
+                  "appraising a text ON REQUEST: the routes and their costs, where to look "
+                  "(argdown_audit), the sibling appraisal file and its keys, and the separate "
+                  "report and its quotation check"),
     # THE MECHANISM. `mechanism` is the METHOD IN FORCE (1.15): parallel-pass.md by default,
     # mechanism-pass.md when IPSISSIMA_MECHANISM_METHOD=series -- resolved when served, see
     # argdown_method. Under parallel it is part of every reconstruction (1.17), and the replies to the
@@ -943,6 +1033,63 @@ def argdown_check(path: str, source_root: str | None = None,
     return out
 
 
+_AUDIT_HEAD = {"argument": "THE ARGUMENT", "mechanism": "THE MECHANISM", "comparison": "THE COMPARISONS",
+               "note": "NOTE"}
+
+
+@server.tool(
+    structured_output=True,
+    title="Where to look",
+    description=(
+        "The places a checked map shows its argument is thin BY ITS OWN LIGHTS, computed from the "
+        "map: the claims the most rests on (supposed false, which costs the main claims most); "
+        "premises the reconstruction had to supply; concessions and objections the map records no "
+        "reply to; sets the text marks as not all holding; causal steps that are only asserted, or "
+        "put as possibilities; gaps in the chain; a causal move's critical questions the map records "
+        "nothing on; declared rival accounts no reason bears on differently; and comparison tables' "
+        "empty cells and pairs judged apart though alike. The same list the app's Where to look panel "
+        "shows (one implementation, run through the bundled parser).\n\n"
+        "Each item is a FACT ABOUT THE MAP, not a verdict on the text: \"the map records no reply\", "
+        "never \"the author fails\". The appraisal layer is left out: these are about the author's "
+        "argument.\n\n"
+        "USE IT as the first step of an appraisal (argdown_method(\"appraisal\")): the appraiser "
+        "decides which of these are weaknesses, and why. Also useful alone, for \"where is this "
+        "argument weakest?\". Given an appraisal sibling (`*.appraisal.argdown`), it audits the map "
+        "beside it."),
+)
+def argdown_audit(path: str) -> dict[str, Any]:
+    """
+    Args:
+        path: the .argdown map (or its `.appraisal.argdown` sibling, which audits the map).
+    """
+    sys.path.insert(0, str(HERE))
+    import check_argdown as ck
+    from ipsissima_mcp import appraisal as ap
+    p = Path(path).expanduser()
+    if ap.is_appraisal_path(p):
+        p = Path(ap.map_path_for(str(p)))
+    if not p.exists():
+        return {"ok": False, "error": f"no such map: {p}"}
+    node = ck.find_node()
+    if not node or not os.path.exists(ck.BUNDLED_CLI):
+        return {"ok": False, "error": "the audit needs Node.js on the PATH (the same as the checker)"}
+    r = subprocess.run([node, ck.BUNDLED_CLI, "audit", str(p)], capture_output=True, text=True,
+                       timeout=120)
+    if r.returncode != 0:
+        return {"ok": False, "error": (r.stderr or r.stdout).strip()[:2000]}
+    items = json.loads(r.stdout).get("items", [])
+    lines = []
+    for kind in ("argument", "mechanism", "comparison", "note"):
+        mine = [x for x in items if x.get("kind") == kind]
+        if mine:
+            lines.append(_AUDIT_HEAD[kind])
+            lines += ["  - " + x["says"] for x in mine]
+    return {"ok": True, "map": str(p), "count": len(items), "items": items,
+            "prose": "\n".join(lines) if lines else "Nothing to point at: the map shows no thin place by these measures.",
+            "next": ("These are where to look, not verdicts. For an appraisal, read argdown_method(\"appraisal\") "
+                     "and write the criticisms in the sibling file beside the map.")}
+
+
 def _census_block(census: str, name: str) -> str:
     """One block of the prose census: its heading line and what is indented beneath it."""
     out: list[str] = []
@@ -1137,7 +1284,9 @@ if _zotero_available():
             "Store a reconstruction in Zotero as ONE attachment under the same item as its "
             "source: the .argdown as a bundle, the converted source carried inside it (still "
             "a valid .argdown — it opens in Ipsissima text-and-map together from a "
-            "double-click in Zotero). Optionally the exported one-file HTML too. The working "
+            "double-click in Zotero). An appraisal beside the map (`<map>.appraisal.argdown`) "
+            "travels inside the bundle too, and its report (`<map>.appraisal.md`) is stored as an "
+            "attachment of its own. Optionally the exported one-file HTML too. The working "
             "folder stays the source of truth; Zotero knows each stored file's md5, so "
             "`check_only` reports current/stale/absent without writing anything, and a plain "
             "call refreshes.\n\n"
