@@ -9803,12 +9803,12 @@ function lookRender(){
     h += '<h4>' + LOOK_HEADS[kind] + '</h4><ul>';
     var hidden = {};
     mine.forEach(function(i){
-      var x = items[i], has = x.ids && x.ids.length;
+      var x = items[i], has = lookGoes(x);
       // A GROUP OF MORE THAN THREE: its count, its three heaviest, and the rest on request (19 Nov 2026).
       if (x.more && !LOOK.all[x.group]) { hidden[x.group] = (hidden[x.group] || 0) + 1; return; }
       if (x.check === "summary") { h += '</ul><p class="sum">' + esc(x.says) + '</p><ul>'; return; }
       h += '<li><button type="button" data-look-i="' + i + '"' + (has ? '' : ' class="none" tabindex="-1"') +
-           (LOOK.pick === i ? ' class="on"' : '') + (has ? ' title="Show on the map"' : '') + '>' + esc(x.summarised && x.short ? x.short : x.says) + '</button></li>';
+           (LOOK.pick === i ? ' class="on"' : '') + ' title="' + esc(lookTip(x)) + '">' + esc(x.summarised && x.short ? x.short : x.says) + '</button></li>';
       var nx = items[mine[mine.indexOf(i) + 1]];
       if ((!nx || nx.group !== x.group) && x.group && LOOK.all[x.group] && items.some(function(y){ return y.group === x.group && y.more; }))
         h += '<li><button type="button" class="more" data-look-fewer="' + esc(x.group) + '">Show fewer</button></li>';
@@ -9819,8 +9819,9 @@ function lookRender(){
     });
     h += '</ul>';
   });
-  h += '<p class="foot">These are facts about the map, not verdicts on the text: places to look, ' +
-       'where a reader or an appraiser decides what, if anything, is wrong.</p>';
+  h += '<p class="foot">\u2039\u2026\u203a is a claim as the map titles it; \u201c\u2026\u201d a state in the Mechanism view. ' +
+       'Hover over an item for the claim\u2019s own words. These are facts about the map, not verdicts on the text: ' +
+       'places to look, where a reader or an appraiser decides what, if anything, is wrong.</p>';
   box.innerHTML = h;
   box.hidden = false;
 }
@@ -9831,12 +9832,53 @@ document.addEventListener("click", function(e){
   if (t.hasAttribute("data-look-all")) { LOOK.all[t.getAttribute("data-look-all")] = true; lookRender(); return; }
   if (t.hasAttribute("data-look-fewer")) { LOOK.all[t.getAttribute("data-look-fewer")] = false; lookRender(); return; }
   var i = +t.getAttribute("data-look-i"), x = lookItems()[i];
-  if (!x || !x.ids || !x.ids.length || !LIVE) return;
-  LOOK.pick = i;
-  LIVE.markClaims(x.ids);
-  LIVE.spotlight(x.ids, { pad: 80, reveal: true });
-  lookRender();
+  if (!x || !lookGoes(x)) return;
+  lookGo(x, i);
 });
+
+/* WHERE A CLICK GOES (19 Nov 2026: comparisons did nothing, and in the Mechanism view nothing did).
+ *  - a comparison: its table, in the Tables panel;
+ *  - in the Mechanism view: a step, its arrow; a gap, its state; an item about the argument, the
+ *    Reasons view, where its claims are;
+ *  - elsewhere: its claims on the map; a gap, which has no claim, its state in the Mechanism view. */
+function lookGoes(x){
+  return !!(x && ((x.ids && x.ids.length) || x.table || (x.states && x.states.length) || (x.steps && x.steps.length)));
+}
+function lookGo(x, i){
+  if (x.table) {
+    var L = tablesList(), k = L.map(function(T){ return T.key; }).indexOf(x.table);
+    if (k >= 0) tablesOpen(k);
+    return;
+  }
+  LOOK.pick = i;
+  var mech = ARRANGEMENT === "mechanism";
+  if (mech || !(x.ids && x.ids.length)) {
+    if (!mech && (x.states || x.steps)) setArrangement("mechanism");
+    if (MECH && x.steps && x.steps.length && MECH.showSteps(x.steps)) { lookRender(); return; }
+    if (MECH && x.states && x.states.length && MECH.showState && MECH.showState(x.states[0])) { lookRender(); return; }
+    if (!(x.ids && x.ids.length)) { lookRender(); return; }
+    setArrangement("reasons");
+  }
+  if (LIVE) {
+    LIVE.markClaims(x.ids);
+    LIVE.spotlight(x.ids, { pad: 80, reveal: true });
+  }
+  lookRender();
+}
+/** What hovering over an item says: where a click takes the reader, and the claims' own words, since
+ *  the item names a claim by its title and a map drawn at "titles" shows nothing more. */
+function lookTip(x){
+  var where = x.table ? "Open this table" : x.steps && x.steps.length ? (ARRANGEMENT === "mechanism" ? "Show the step in the drawing" : "Show on the map")
+            : x.states && x.states.length ? "Show it in the Mechanism view" : "Show on the map";
+  var ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [], words = [];
+  (x.ids || []).forEach(function(id){
+    for (var k = 0; k < ns.length; k++) if (ns[k].id === id) {
+      var d = String(ns[k].detail || "").replace(/\s+/g, " ").trim();
+      words.push("\u2039" + ns[k].label + "\u203a" + (d ? ": " + (d.length > 240 ? d.slice(0, 239) + "\u2026" : d) : ""));
+    }
+  });
+  return where + (words.length ? ".\n\n" + words.slice(0, 4).join("\n\n") : "");
+}
 
 /** The bar's Tables button: offered on a map with a table to set out, lit while the panel is open. */
 function tablesSync(){

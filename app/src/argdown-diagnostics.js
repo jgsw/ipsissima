@@ -21,7 +21,10 @@
  * on the global object in the page.
  *
  * Pure: a graph in (argdown-graph.mjs's toGraph), a list out:
- *   [{ kind: "argument"|"mechanism"|"comparison", check, says, ids: [nodeId], titles: [title] }]
+ *   [{ kind: "argument"|"mechanism"|"comparison", check, says, ids: [nodeId], titles: [title],
+ *      steps?: [claim title], states?: [state id], table?: "case:<frame>"|"account:<frame>" }]
+ * -- what a click can go to: claims on the map, steps and states in the Mechanism view, a table.
+ * In `says`, ‹…› is a claim as the map titles it and “…” a state of the mechanism, as labelled.
  * The appraisal layer is left out unless `opts.appraisal`; diagnostics are about the author's map.
  */
 (function (global) {
@@ -31,7 +34,9 @@ function isAppraisal(n) { return (n.tags || []).indexOf("appraisal") >= 0; }
 function hasTag(n, t) { return (n.tags || []).indexOf(t) >= 0; }
 function isRival(n) { return hasTag(n, "reported") || hasTag(n, "contested"); }
 var ATTACKS = ["attack", "undercut", "contradictory", "contrary"];
-function q(s) { return "‹" + s + "›"; }
+function q(s) { return "‹" + s + "›"; }          // a claim, as the map titles it
+function sq(s) { return "“" + s + "”"; }         // a state of the mechanism, as it is labelled
+function tq(s) { return "the table “" + String(s).replace(/^["“]|["”]$/g, "") + "”"; }   // a table, by its label
 function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
 
 function depsOf(opts) {
@@ -202,13 +207,17 @@ function mechanism(graph, opts, byId) {
     var asserted = s.tier === "asserted", hedged = !!s.hedged;
     if (!asserted && !hedged) return;
     var k = s.from + "\u0000" + s.to; if (seen[k]) return; seen[k] = true;
-    var step = q(label(s.from)) + " to " + q(label(s.to));
+    // NAMED BY THE CLAIM THAT STATES IT, as the map titles it (James, 19 Nov 2026, on Tooming): the
+    // states alone ("Severe aphantasia" to "Projective imagination") are the Mechanism view's labels,
+    // and on the Reasons map the click lit a claim called "Preliminary reason to suspect failure",
+    // which nothing in the item had named.
+    var step = "the step from " + sq(label(s.from)) + " to " + sq(label(s.to));
     out.push({ kind: "mechanism", check: asserted ? (hedged ? "asserted-hedged" : "asserted") : "hedged",
-               ids: s.claim.id ? [s.claim.id] : [], titles: [s.claim.title],
-               short: step + (asserted && hedged ? ", put as a possibility" : ""),
-               says: asserted ? step + " is asserted" + (hedged ? ", and put as a possibility" : "") +
-                                ": the map records neither an argument for this step nor evidence."
-                              : "The text puts " + step + " as a possibility, not as happening." });
+               ids: s.claim.id ? [s.claim.id] : [], titles: [s.claim.title], steps: [s.claim.title],
+               short: q(s.claim.title) + ": " + sq(label(s.from)) + " to " + sq(label(s.to)) + (asserted && hedged ? ", put as a possibility" : ""),
+               says: q(s.claim.title) + ": " + (asserted ? step + " is asserted" + (hedged ? ", and put as a possibility" : "") +
+                                ". The map records neither an argument for it nor evidence."
+                              : "the text puts " + step + " as a possibility, not as happening.") });
   });
   if (opts && opts.ctx) opts.ctx.steps = text.length;
   ((M.profile && M.profile.gaps) || []).forEach(function (g) {
@@ -217,8 +226,9 @@ function mechanism(graph, opts, byId) {
     // gap in the account: kept are an outcome the chain never reaches and a start that leads nowhere.
     if (/leads nowhere/.test(msg)) return;
     // The chain's own messages name states by id, in back-ticks: the reader knows them by label.
-    msg = msg.replace(/`([^`]+)`/g, function (_, id) { return M.states[id] ? q(label(id)) : id; });
-    out.push({ kind: "mechanism", check: "gap", ids: [], titles: [], says: "In the chain: " + msg + (/[.!?]$/.test(msg) ? "" : ".") });
+    var states = [];
+    msg = msg.replace(/`([^`]+)`/g, function (_, id) { if (M.states[id]) { states.push(id); return sq(label(id)); } return id; });
+    out.push({ kind: "mechanism", check: "gap", ids: [], titles: [], states: states, says: "In the chain: " + msg + (/[.!?]$/.test(msg) ? "" : ".") });
   });
   // A BRIDGE'S QUESTIONS that the map records nothing on: the scheme's own critical questions.
   if (MV.bridgeQuestions && MV.bridgeScheme) (graph.mechanism.inferences || []).forEach(function (inf) {
@@ -230,7 +240,7 @@ function mechanism(graph, opts, byId) {
     if (!open.length) return;
     var argNode = Object.keys(byId).map(function (id) { return byId[id]; })
       .filter(function (n) { return n.kind === "argument" && n.label === inf.argument; })[0];
-    out.push({ kind: "mechanism", check: "bridge", ids: argNode ? [argNode.id] : [], titles: [inf.argument],
+    out.push({ kind: "mechanism", check: "bridge", ids: argNode ? [argNode.id] : [], titles: [inf.argument], steps: (inf.inputs || []).slice(),
                short: q(inf.argument) + " (" + sch.name + "): " + open.map(function (x) { return x.question; }).join(" "),
                says: q(inf.argument) + " is a causal move (" + sch.name + "). The map records nothing on: " +
                      open.map(function (x) { return x.question; }).join(" ") });
@@ -253,8 +263,8 @@ function comparisons(graph, opts, byId) {
     var names = accs.map(function (a) { return a.label; });
     if (names.length < 2) return;
     if (!rows.some(function (r) { return r.kind === "apart"; }))
-      out.push({ kind: "comparison", check: "not-told-apart", ids: accs.map(function (a) { return a.id; }), titles: names,
-                 says: (s.label ? q(s.label) + ": " : "") +
+      out.push({ kind: "comparison", check: "not-told-apart", ids: accs.map(function (a) { return a.id; }), titles: names, table: "account:" + s.frame,
+                 says: (s.label ? "In " + tq(s.label) + ", " : "") +
                        (rows.length ? "no reason the map records bears on more than one of " + names.map(q).join(", ") +
                                       " differently. Each is argued for or against on its own, so the map does not say how each fares on the others\u2019 reasons."
                                     : "no reason the map records bears on " + names.map(q).join(", ") + ".") });
@@ -262,13 +272,13 @@ function comparisons(graph, opts, byId) {
   if (D.tables) D.tables.caseTables(graph).forEach(function (t) {
     var total = (t.rows || []).length * (t.columns || []).length;
     if (t.empty && t.empty.length && total)
-      out.push({ kind: "comparison", check: "empty-cells", ids: [], titles: [t.label],
-                 says: q(t.label) + ": the text places nothing in " + t.empty.length + " of its " + total + " cells." });
+      out.push({ kind: "comparison", check: "empty-cells", ids: [], titles: [t.label], table: "case:" + t.frame,
+                 says: "In " + tq(t.label) + ", the text places nothing in " + t.empty.length + " of its " + total + " cells." });
     var rowLabel = function (id) { var r = (t.rows || []).filter(function (x) { return x.id === id; })[0]; return r && r.label != null ? r.label : id; };
     (t.alike || []).forEach(function (p) {
       var a = rowLabel(p.a), b = rowLabel(p.b);
-      out.push({ kind: "comparison", check: "alike-but-judged-apart", ids: [], titles: [t.label],
-                 says: q(t.label) + ": " + q(a) + " and " + q(b) + " are alike on every dimension the text states, yet given different verdicts." });
+      out.push({ kind: "comparison", check: "alike-but-judged-apart", ids: [], titles: [t.label], table: "case:" + t.frame,
+                 says: "In " + tq(t.label) + ", " + sq(a) + " and " + sq(b) + " are alike on every dimension the text states, yet given different verdicts." });
     });
   });
   return out;

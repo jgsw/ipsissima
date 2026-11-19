@@ -90,10 +90,20 @@ check(by("conceded").length === 1 && /Granted/.test(by("conceded")[0].says), "a 
 check(by("objection").length === 1 && /Raised›/.test(by("objection")[0].says), "an objection with no reply, and not the one answered");
 check(by("inconsistent").length === 1 && by("inconsistent")[0].ids.length === 3, "a set marked as not all holding");
 check(by("not-told-apart").length === 1, "declared rival accounts no reason bears on differently");
+check(by("not-told-apart")[0].table === "account:explains", "which opens their table");
 check(by("rests-on").length === 0 && by("summary").length === 0,
       "load is not itself an item: a linchpin is not a weakness (James, 19 Nov 2026)");
 check(out.every(x => typeof x.says === "string" && !/fails|weak|wrong|flaw/i.test(x.says)),
       "every line a fact about the map, none a verdict");
+
+console.log("\nsteps named by the claim that states them, as the map titles it");
+const chainG = graphOf(fs.readFileSync(path.join(REPO, "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8"));
+const co = D.diagnose(chainG, { deps });
+const stepItems = co.filter(x => /^asserted|^hedged/.test(x.check));
+check(stepItems.length > 0 && stepItems.every(x => x.says.startsWith("‹" + x.titles[0] + "›") && x.steps[0] === x.titles[0]),
+      "each step leads with its claim's title, and can be shown as a step");
+check(co.filter(x => x.check === "gap").every(x => x.states && x.states.length && /“/.test(x.says)),
+      "a gap names its state, in the state's own marks, and can be shown");
 
 console.log("\nranked by what rests on them, three shown, the rest on request");
 const MAP2 = '[Main]: The main claim.\n    <+ [Leaf]: A reason for it.\n        <+ [Root]: A reason for the reason.\n\n' +
@@ -255,6 +265,40 @@ map: "one.argdown"
     await look.click();
     await page.waitForTimeout(200);
     check(await page.locator("#look").isHidden(), "and the bar button closes it");
+
+    // A COMPARISON OPENS ITS TABLE (19 Nov 2026: comparisons did nothing on a click).
+    await look.click();
+    await page.waitForTimeout(300);
+    await page.locator("#look li button", { hasText: "What explains it" }).click();
+    await page.waitForTimeout(400);
+    check(await page.locator("#tables").isVisible(), "a comparison opens its table");
+    await page.keyboard.press("Escape");
+    if (await page.locator("#tables").isVisible()) await page.locator('#tables [data-tables-close]').click();
+
+    // IN THE MECHANISM VIEW, a step is shown as a step, a gap as its state, and an item about the
+    // argument goes back to the Reasons view (19 Nov 2026: in Mechanism nothing happened).
+    const chainText = fs.readFileSync(path.join(REPO, "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8");
+    await open([{ path: "chain.argdown", text: chainText }]);
+    await page.waitForTimeout(900);
+    // Opened in Reasons, where its button is, and kept open into the Mechanism view.
+    await look.click();
+    await page.waitForTimeout(300);
+    await page.click("#mechbtn");
+    await page.waitForTimeout(800);
+    check(await page.locator("#look").isVisible(), "Where to look stays open in the Mechanism view");
+    await page.locator("#look li button", { hasText: "Work helps reintegration" }).click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#mech path.sel").count() === 1, "a step's item selects its arrow in the drawing");
+    await page.locator("#look li button", { hasText: "More community orders" }).click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#mech .sel").count() >= 1 && await page.locator("#mech").isVisible(), "a gap's item selects its state");
+    await page.locator("#look li button", { hasText: "Orders go to the less risky" }).click();
+    await page.waitForTimeout(700);
+    check(await page.locator("#mech").isHidden(), "an item about the argument goes to the Reasons view");
+    const tip = await page.locator("#look li button", { hasText: "Orders go to the less risky" }).getAttribute("title");
+    check(/Orders go to the less risky›: \S/.test(tip || ""), "and its hover gives the claim's own words");
+    await page.locator("#look [data-look-close]").click();
+    await page.waitForTimeout(200);
 
     // A GROUP OF FOUR: three shown, the fourth on request.
     await open([{ path: "four.argdown", text: MAP2 }]);
