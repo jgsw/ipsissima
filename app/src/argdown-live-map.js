@@ -6708,7 +6708,7 @@ function createLiveMap(container, graph, options) {
     if (state.appraisal) {
       const n = appraisalCount();
       apprBanner.innerHTML = "<b>Appraisal on.</b> " + n + " addition" + (n === 1 ? "" : "s") +
-        " by the reconstructor, drawn hatched in violet \u2014 readings of the text against the " +
+        " by the reconstructor, tinted violet \u2014 readings of the text against the " +
         "world, not claims the text makes." + (opt.helpLinks
           ? ' <button type="button" class="alm-helplink" data-help="The reconstructor&#39;s ' +
             'appraisal">What is this?</button>' : "");
@@ -7156,7 +7156,9 @@ function injectStyle() {
 /* THE APPRAISAL: the reconstructor's own, drawn unlike anything the text says -- violet and
    hatched, as in Mechanism -- and only while its switch is on. Not dashed: a dash on a border is
    a fidelity rung, and this one was the compression's (ruled D7, 27 Sep 2026). */
-.alm-n.alm-appraisal .alm-box{stroke:#6d5ba3;fill:url(#alm-hatch)}
+/* TINTED, NOT HATCHED (James, 19 Nov 2026): the diagonal strips over the mauve made the words hard
+   to read. A plain pale violet, the border the same violet as before. */
+.alm-n.alm-appraisal .alm-box{stroke:#6d5ba3;fill:var(--alm-appraisal-bg,#f4f1fb)}
 .alm-hatch-bg{fill:var(--alm-appraisal-bg,#f1eefa)}
 .alm-hatch-line{stroke:#6d5ba3;stroke-width:1;opacity:.35}
 .alm-bar .alm-appr{border:1px solid #6d5ba3 !important;color:inherit}

@@ -98,16 +98,17 @@ the text compares nothing, write `frames: none`. Extraction notes a table the te
 conversion lost: once the skeleton says a frame uses it, rebuild it from its page, before writing
 the claims that quote it.
 
-APPRAISAL ON REQUEST, NEVER BY DEFAULT (profile 1.27, ruled 19 Nov 2026). A map reports what a
+APPRAISAL ON REQUEST, NEVER BY DEFAULT (profile 1.28, ruled 19 Nov 2026). A map reports what a
 text says; it does not evaluate it. Appraise only when the user asks in words like "critique",
 "what's wrong with", "weaknesses", "how could it be strengthened", "assess", "evaluate", "how
 good is". Then call `argdown_plan` with `intent: "appraise"` and read `argdown_method("appraisal")`.
 If there is NO MAP and the user wants only the appraisal, OFFER THE CHOICE with its costs (the
 plan states them): a blind trial found a map makes an appraisal more exact, not more insightful,
 so a map is not worth making for the appraisal alone unless the user wants one anyway. The
-appraisal goes in a sibling file beside the map (`<map>.appraisal.argdown`), the ranked argument
-in a separate report; `argdown_check` checks both, and `argdown_audit` lists where the map shows
-its argument is thin.
+appraisal is a ranked report beside the map, `<map>.appraisal.md`, naming the map's claims as
+‹their titles› so Ipsissima's Appraisal pane links each to the map; `argdown_check` checks its
+quotations and its links, and `argdown_audit` lists what the map records no reply, reason or
+evidence for.
 
 EXTRACTION ALONE IS A COMPLETE REQUEST. "Just get me the text" or "extract the markdown" stops
 after step 2. Do not go on to reconstruct unless asked.
@@ -296,7 +297,7 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
 
 
 def _maps_near(sources):
-    """Maps (not appraisal siblings) the user named, or that sit beside what they named.
+    """Maps the user named, or that sit beside what they named.
 
     THE FOLDER ABOVE ONLY FROM A `source/` FOLDER, which is the layout extract_text writes: the map
     beside `source/`, the text inside it. Looking above every source found whatever map happened to
@@ -313,7 +314,7 @@ def _maps_near(sources):
             if d.is_dir():
                 cands += sorted(d.glob("*.argdown"))
         for c in cands:
-            if c.exists() and not ap.is_appraisal_path(c) and str(c) not in seen:
+            if c.exists() and str(c) not in seen:
                 seen.add(str(c)); out.append(str(c))
     return out
 
@@ -339,15 +340,15 @@ def _appraisal_plan(plan, sources, src_tokens):
         dict(id="pooled", what="two independent appraisals from the text, pooled into one report "
                                "(the trial found two runs together hold more objections than one)",
              tokens=f"{2 * lo:,}–{2 * hi:,}"),
-        dict(id="map", what="make the checked map first, then appraise from it into a sibling file "
-                            "and a report: worth it when the user wants the map anyway",
+        dict(id="map", what="make the checked map first, then a report from it with links into the "
+                            "map: worth it when the user wants the map anyway",
              tokens=f"{rlo + mlo:,}–{rhi + mhi:,} (the map, then the appraisal)"),
     ]
     plan["appraisal"] = dict(
         maps=maps,
-        sibling=[ap.appraisal_path_for(m) for m in maps],
+        report=[re.sub(r"\.argdown$", ".appraisal.md", m) for m in maps],
         routes=routes if not maps else [dict(id="from-map", what="appraise from the existing map "
-                                             "into its sibling file and a report",
+                                             "into a report beside it, its claims linked",
                                              tokens=f"{mlo:,}–{mhi:,}")],
         finding=("A blind trial (18 Nov 2026) found that a map makes an appraisal more exact and a "
                  "little better argued, but does not find stronger objections. So a map is not worth "
@@ -357,7 +358,7 @@ def _appraisal_plan(plan, sources, src_tokens):
     plan.pop("mechanism", None)
     if maps:
         plan["next"] = (f"appraise the existing map: read argdown_method(\"appraisal\"), call argdown_audit "
-                        f"on {Path(maps[0]).name}, write the sibling {Path(ap.appraisal_path_for(maps[0])).name}, "
+                        f"on {Path(maps[0]).name}, write {Path(maps[0]).stem}.appraisal.md with the map's claims as ‹titles›, "
                         f"check it with argdown_check, then write the report and check that too")
     else:
         plan["questions"] = list(plan.get("questions") or []) + [dict(
@@ -607,7 +608,7 @@ METHOD_DOCS = {
     # THE APPRAISAL (profile 1.27): served only when the user asks for one, never with "all".
     "appraisal": ("appraisal-pass.md",
                   "appraising a text ON REQUEST: the routes and their costs, where to look "
-                  "(argdown_audit), the sibling appraisal file and its keys, and the separate "
+                  "(argdown_audit), and the report: its form, its links into the map, and its "
                   "report and its quotation check"),
     # THE MECHANISM. `mechanism` is the METHOD IN FORCE (1.15): parallel-pass.md by default,
     # mechanism-pass.md when IPSISSIMA_MECHANISM_METHOD=series -- resolved when served, see
@@ -1064,20 +1065,20 @@ _AUDIT_HEAD = {"argument": "THE ARGUMENT", "mechanism": "THE MECHANISM", "compar
         "argument.\n\n"
         "USE IT as the first step of an appraisal (argdown_method(\"appraisal\")): the appraiser "
         "decides which of these are weaknesses, and why. Also useful alone, for \"where is this "
-        "argument weakest?\". Given an appraisal sibling (`*.appraisal.argdown`), it audits the map "
+        "argument weakest?\". Given an appraisal report (`*.appraisal.md`), it audits the map "
         "beside it."),
 )
 def argdown_audit(path: str) -> dict[str, Any]:
     """
     Args:
-        path: the .argdown map (or its `.appraisal.argdown` sibling, which audits the map).
+        path: the .argdown map (or its `.appraisal.md` report, which audits the map beside it).
     """
     sys.path.insert(0, str(HERE))
     import check_argdown as ck
     from ipsissima_mcp import appraisal as ap
     p = Path(path).expanduser()
-    if ap.is_appraisal_path(p):
-        p = Path(ap.map_path_for(str(p)))
+    if str(p).lower().endswith(".appraisal.md"):
+        p = Path(ap.map_path_for_report(str(p)))
     if not p.exists():
         return {"ok": False, "error": f"no such map: {p}"}
     node = ck.find_node()
@@ -1102,7 +1103,7 @@ def argdown_audit(path: str) -> dict[str, Any]:
     return {"ok": True, "map": str(p), "count": len(items), "items": items,
             "prose": "\n".join(lines) if lines else "Nothing to point at: the map shows no thin place by these measures.",
             "next": ("These are where to look, not verdicts. For an appraisal, read argdown_method(\"appraisal\") "
-                     "and write the criticisms in the sibling file beside the map.")}
+                     "and write the report beside the map, its claims named as ‹titles›.")}
 
 
 def _census_block(census: str, name: str) -> str:
@@ -1299,8 +1300,8 @@ if _zotero_available():
             "Store a reconstruction in Zotero as ONE attachment under the same item as its "
             "source: the .argdown as a bundle, the converted source carried inside it (still "
             "a valid .argdown — it opens in Ipsissima text-and-map together from a "
-            "double-click in Zotero). An appraisal beside the map (`<map>.appraisal.argdown`) "
-            "travels inside the bundle too, and its report (`<map>.appraisal.md`) is stored as an "
+            "double-click in Zotero). An appraisal report beside the map (`<map>.appraisal.md`) "
+            "travels inside the bundle too, for the Appraisal pane, and is also stored as an "
             "attachment of its own. Optionally the exported one-file HTML too. The working "
             "folder stays the source of truth; Zotero knows each stored file's md5, so "
             "`check_only` reports current/stale/absent without writing anything, and a plain "

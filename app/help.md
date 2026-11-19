@@ -72,7 +72,7 @@ choose **What does this mean?** to come back here.
 <div class="srow" data-draw="rule"><b>A rule's name by a bar</b> (MP) says the step was checked and follows. <b>A red !</b> says it does not. <a data-help="Is a step valid?">Is a step valid?</a></div>
 <div class="srow" data-draw="chip"><b>A hashtag on a box</b> says whose claim it is: a view reported, a point conceded, an objection. <a data-help="Whose claim is this?">Whose claim is this?</a></div>
 <div class="srow" data-draw="corners"><b>A folded corner</b>: top left, the reconstructor's note; top right, a comment. <a data-help="Comments and notes">Comments and notes</a></div>
-<div class="srow" data-draw="hatch"><b>Hatched in violet</b>: the reconstructor's own appraisal, shown only while it is switched on. <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a></div>
+<div class="srow" data-draw="hatch"><b>Tinted violet</b>: the reconstructor's own appraisal, shown only while it is switched on. <a data-help="The reconstructor's appraisal">The reconstructor's appraisal</a></div>
 <div class="srow" data-draw="behind"><b>A line broken where it crosses a box</b> passes behind a claim it has nothing to do with. <a data-help="Reading in the text's order">Reading in the text's order</a></div>
 <div class="srow" data-draw="whatif"><b>What if…?</b> appears beside a claim you click: suppose it false, or its step broken, and what then loses the map's support fades. A banner along the top lists what you have supposed. <a data-help="Supposing, and denying a conclusion">Supposing, and denying a conclusion</a></div>
 <div class="srow" data-draw="ways"><b>Study</b>, <b>Tables</b> and <b>Weigh</b>, at the left of the controls: work an argument out before the map shows it, set out what the text compares, or weigh rival accounts. <a data-help="Studying a map">Studying a map</a></div>
@@ -1229,7 +1229,7 @@ those claims off the map; the bar says how many claims the switches are hiding.
 
 ## The reconstructor's appraisal
 
-<p class="also" hidden>appraisal, hatched, violet, reconstructor</p>
+<p class="also" hidden>appraisal, tinted, violet, reconstructor</p>
 
 The appraisal is off until you ask for it. It is the reconstructor's own reading of the text
 against the world — a confounder the author never mentions, a step the text leaves out, a loop it
@@ -1238,11 +1238,46 @@ leaves open — and never something the text says.
 Its switch is **Appraisal**, under **Display** on the map's control bar beside the hashtags, and in Mechanism's bar
 below the chain, and it is **one switch**: turned on in one arrangement, it is on in all three. It
 says how many additions it is hiding; switched on, a banner stays across the view and every
-addition is drawn hatched in violet, on the argument map and on the chain alike.
+addition is tinted violet, on the argument map and on the chain alike.
 
 While it is off the additions are nowhere on the page — not on the map, not in the margins — and
 none of them is ever counted as the author's: an appraisal claim is never crowned the main claim,
 and the spine and the depth ladder are measured towards the author's own theses alone.
+
+## The Appraisal pane
+
+<p class="also" hidden>appraisal, report, critique, criticism, strengthening, verdict, links</p>
+
+An appraisal is a report on the text: its strongest criticisms, ranked, with the author's best
+reply to each and whether it succeeds, how the position could be strengthened, and where a
+critique should aim. It sits beside the map as a Markdown file of the map's own name ending
+`.appraisal.md`, and when it is there the **Appraisal** button on the bar opens it.
+
+Its references are links into the map:
+
+- a claim, written ‹as the map titles it›, lights that claim on the map; in the **Mechanism**
+  arrangement it selects the step the claim states;
+- a state of the mechanism selects that state in the **Mechanism** arrangement;
+- a table opens it in the **Tables** panel;
+- a page, such as p. 431, opens the **Manuscript** at that page.
+
+A claim the map does not have is shown greyed: the map has changed since the report was written.
+The checker reports it too, with every quotation the report gets wrong.
+
+## Where to look
+
+<p class="also" hidden>where to look, diagnostics, weak, thin, unanswered, asserted, gaps</p>
+
+**Where to look**, on the map's control bar, lists what the map records no reply, reason or
+evidence for, or leaves open: concessions and objections with no reply, premises the
+reconstruction had to supply, causal steps that are only asserted or put as possibilities, an
+outcome the chain never reaches, a causal move's questions the map records nothing on, rival
+accounts nothing tells apart, and a table's empty cells. Within each group what most of the
+argument rests on comes first; a long group shows its three heaviest and keeps the rest behind
+**Show more**.
+
+They are facts about the map, not verdicts on the text. Click one to go to it: a claim on the
+map, a step or a state in the **Mechanism** arrangement, a table in the **Tables** panel.
 
 ## What a map says about itself
 

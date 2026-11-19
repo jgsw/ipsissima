@@ -550,7 +550,7 @@ Both are CC BY 4.0, whatever the licence of the package the registry travels in.
 | `collation_disputes` | where a re-read scan's readings disagreed: every reading, and the printed lines as images |
 | `settle_disputes` | apply what those images say, to the text and to the scan's record |
 | `add_page_numbers` | the PDF's pagination onto text taken from the snapshot |
-| `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report; also an appraisal beside a map (`<map>.appraisal.argdown`) and its report's quotations |
+| `argdown_check` | validity, provenance and fidelity — faults with fixes, not a report; also an appraisal report beside a map (`<map>.appraisal.md`): its quotations against the text, its links against the map |
 | `argdown_audit` | what a map records no reply, reason or evidence for, or leaves open — unanswered concessions, supplied premises, asserted causal steps, rival accounts nothing tells apart — with what most rests on first: facts about the map, offered for an appraisal, never verdicts |
 | `split_manuscript` | a one-file book into chapters plus a project file |
 | `zotero_lookup` | only when a library is present |

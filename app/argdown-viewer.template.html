@@ -461,6 +461,19 @@ button.plain.x{padding:.05rem .4rem;line-height:1.1;font-size:15px;border:0}
 #notefilter .seg button.on[data-count]::after{opacity:.8}
 #notefilter .seg button:disabled{opacity:.4;cursor:not-allowed}
 #notelist{flex:1 1 auto;min-height:0;overflow:auto;padding:.4rem}
+/* THE APPRAISAL PANE: a report to read, set as prose, its links quiet until wanted. */
+#appr > header b{font-weight:600}
+#apprname{font-size:11.5px;margin-left:.4rem}
+#apprbody{flex:1 1 auto;min-height:0;overflow:auto;padding:.4rem .9rem 1.2rem;font-size:13.5px;line-height:1.55;max-width:46rem}
+#apprbody h1{font-size:16px;margin:.6rem 0 .4rem}
+#apprbody h2{font-size:14.5px;margin:1.1rem 0 .35rem}
+#apprbody h3{font-size:13.5px;margin:.9rem 0 .3rem}
+#apprbody p,#apprbody li{margin:.35rem 0}
+#apprbody blockquote{margin:.5rem 0;padding-left:.7rem;border-left:3px solid var(--line);color:var(--fg-dim)}
+#apprbody a.apl{color:var(--accent,#3a7bd5);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}
+#apprbody a.apl:hover,#apprbody a.apl:focus-visible{border-bottom-style:solid}
+#apprbody a.apl.on{background:var(--accent-wash,rgba(58,123,213,.12));border-radius:3px}
+#apprbody a.apl.missing{color:var(--fg-dim);cursor:help;border-bottom-color:var(--fg-dim)}
 .notefoot{padding:.4rem 0 .2rem;text-align:right}
 .note{border:1px solid var(--line);border-left-width:3px;border-radius:5px;padding:.4rem .55rem;
   margin-bottom:.4rem;cursor:pointer;font-size:12.5px;line-height:1.5}
@@ -1278,6 +1291,9 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
     <button class="icon" data-p="notes" hidden
             title="Every note and comment written in the margins of this reconstruction">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 2.5h11v10l-4 5h-7z"/><path d="M15.5 12.5h-4v5"/><path d="M7.5 6h5M7.5 9h5"/></svg><span>Notes</span></button>
+    <button class="icon" data-p="appraisal" hidden
+            title="The appraisal: the reconstructor's ranked criticisms and strengthenings of the text, with links into the map">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 2.5h8l3 3v12h-11z"/><path d="M7 9.5l2 2 4-4.5"/><path d="M7 14.5h6"/></svg><span>Appraisal</span></button>
     <button class="icon" data-p="text" hidden
             title="Show or hide the text this map reads. Double-click or shift-click a claim to go to the passage it came from.">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 5.2C8.2 3.9 5.8 3.4 3 3.7v11.2c2.8-.3 5.2.2 7 1.5 1.8-1.3 4.2-1.8 7-1.5V3.7c-2.8-.3-5.2.2-7 1.5z"/><path d="M10 5.2v11.2"/></svg><span>Manuscript</span></button>
@@ -1724,6 +1740,18 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
         </span>
       </div>
       <div id="notelist"></div>
+    </section>
+    <div class="vsplit" id="vsplit3" hidden title="Drag to resize"></div>
+    <!-- THE APPRAISAL (profile 1.28): the reconstructor's report on the text, `<map>.appraisal.md`,
+         with its claims, steps, states, tables and pages as links into the map and the text. -->
+    <section id="appr" hidden aria-label="Appraisal">
+      <header>
+        <b>Appraisal</b>
+        <span id="apprname" class="muted"></span>
+        <span class="grow"></span>
+        <button class="plain x" data-close="appraisal" title="Close">&times;</button>
+      </header>
+      <div id="apprbody"></div>
     </section>
     <div class="vsplit" id="vsplit2" hidden title="Drag to resize"></div>
     <section id="ms" hidden aria-label="The manuscript">
@@ -2418,10 +2446,8 @@ var SCREEN_DRAW = {
   corners: function(){ return '<rect x="6" y="3" width="52" height="24" rx="4" class="sd-box"/>' +
     '<path d="M6 13V7a4 4 0 0 1 4-4h6z" fill="#8a6d1f"/>' +
     '<path d="M58 13V7a4 4 0 0 0-4-4h-6z" fill="#b5179e"/>'; },
-  hatch: function(){ return '<defs><pattern id="sd-h" width="5" height="5" patternUnits="userSpaceOnUse" ' +
-    'patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--alm-appraisal-bg,#f1eefa)"/>' +
-    '<line x1="0" y1="0" x2="0" y2="5" stroke="#6d5ba3" stroke-opacity=".45"/></pattern></defs>' +
-    '<rect x="3" y="4" width="58" height="22" rx="4" fill="url(#sd-h)" stroke="#6d5ba3" stroke-width="1.5"/>'; },
+  // The appraisal's swatch: tinted, as the map now draws it (19 Nov 2026). The name stays: help.md uses it.
+  hatch: function(){ return '<rect x="3" y="4" width="58" height="22" rx="4" fill="var(--alm-appraisal-bg,#f4f1fb)" stroke="#6d5ba3" stroke-width="1.5"/>'; },
   behind: function(){ return '<rect x="20" y="4" width="24" height="22" rx="4" class="sd-box"/>' +
     '<line x1="2" y1="15" x2="20" y2="15" stroke="#3a9d5d" stroke-width="1.8"/>' +
     '<line x1="20" y1="15" x2="44" y2="15" stroke="#3a9d5d" stroke-width="1.8" stroke-dasharray="3 3"/>' +
@@ -2732,7 +2758,7 @@ var HELP_SYNONYMS = [
   ["zotero", "highlight", "library"],
   ["mechanism", "causal", "chain", "cause"],
   ["exposition", "text order", "reading order"],
-  ["appraisal", "hatched", "violet"],
+  ["appraisal", "tinted", "violet"],
   ["valid", "validity", "rule", "formalization", "logic", "modus ponens"],
   ["staircase", "steps", "step by step"],
   ["keyboard", "shortcut", "keys", "escape"],
@@ -3051,7 +3077,7 @@ function fillAbout(){
  * They used to be one exclusive control, which meant you could look at the map or the Argdown
  * but never both — and both is exactly what you want when the Argdown is editable.
  */
-var PANES = { map: true, argdown: false, notes: false, text: false };
+var PANES = { map: true, argdown: false, notes: false, text: false, appraisal: false };
 
 /* ONE PANE AT A TIME ON A NARROW SCREEN.
  *
@@ -3075,7 +3101,7 @@ var narrowQuery = window.matchMedia("(max-width: 820px)");
 function isNarrow(){ return narrowQuery.matches; }
 var wasNarrow = narrowQuery.matches;
 
-var PANE_ORDER = ["map", "text", "argdown", "notes"];
+var PANE_ORDER = ["map", "text", "argdown", "notes", "appraisal"];
 
 /** Which single pane should be the one on screen.
  *
@@ -3087,7 +3113,7 @@ var PANE_ORDER = ["map", "text", "argdown", "notes"];
  *  Pure, so it can be tested without a window.
  */
 function soleWinner(panes, keep, textAvailable, order){
-  order = order || ["map", "text", "argdown", "notes"];
+  order = order || ["map", "text", "argdown", "notes", "appraisal"];
   var winner = keep || order.filter(function(k){ return panes[k]; })[0] || "map";
   if (winner === "text" && !textAvailable) winner = "map";
   return winner;
@@ -3197,12 +3223,13 @@ window.addEventListener("resize", fitHeader);
 fitHeader();
 
 function applyPanes(){
-  var side = PANES.argdown || PANES.text || PANES.notes;
+  var side = PANES.argdown || PANES.text || PANES.notes || PANES.appraisal;
   $("stage").hidden = !PANES.map;
   $("side").hidden = !side;
   $("split").hidden = !(PANES.map && side);
   $("adpane").hidden = !PANES.argdown;
   $("notes").hidden = !PANES.notes;
+  $("appr").hidden = !PANES.appraisal;
   $("ms").hidden = !PANES.text;
   sizeSideColumn();
   // WITH NO MAP THE TEXTS TAKE THE WHOLE WINDOW. The column is otherwise a fixed width beside
@@ -3251,6 +3278,7 @@ function sideAxis(panes, open){
 function sideLayout(panes){
   var sections = [{ id: "adpane", pane: "argdown", divider: null },
                   { id: "notes",  pane: "notes",   divider: "vsplit1" },
+                  { id: "appr",   pane: "appraisal", divider: "vsplit3" },
                   { id: "ms",     pane: "text",    divider: "vsplit2" }];
   var open = sections.filter(function(x){ return !!panes[x.pane]; });
   var axis = sideAxis(panes, open.length);
@@ -3295,6 +3323,7 @@ function sectionAbove(dividerId){
 function setPane(name, on){
   if (name === "text" && on && !msAvailable()) return;
   if (name === "notes" && on) renderNotes();
+  if (name === "appraisal" && on && !APPRAISAL_DOC) return;
   PANES[name] = !!on;
   // Narrow: turning one on turns the rest off. Turning the LAST one off would leave an empty
   // window, so it falls back to whatever else can be shown rather than to nothing.
@@ -3313,10 +3342,145 @@ function setPane(name, on){
   //
   // The pane is never empty in the way `text` can be: with no marginalia it still explains how
   // to write some, so it is always worth a window.
-  if (!PANES.map && !PANES.argdown && !PANES.text && !PANES.notes) PANES.map = true;
+  if (!PANES.map && !PANES.argdown && !PANES.text && !PANES.notes && !PANES.appraisal) PANES.map = true;
   if (name === "text" && on && !MSCHAPTER && msAvailable()) msRender(MS.chapters[0].path);
   applyPanes();
+  if (name === "appraisal" && on) apprRender();
 }
+
+/* ---- THE APPRAISAL PANE (profile 1.28) --------------------------------------------------------- *
+ * The report beside the map, drawn by the manuscript's own safe renderer (no raw HTML passes), then
+ * its references made into links:
+ *   ‹Claim title›           the claim on the map; in the Mechanism view, the step it states
+ *   [words](#state:ID)      that state in the Mechanism view
+ *   [words](#table:FRAME)   that table, in the Tables panel
+ *   p. 431, pp. 12–14       that page of the text, in the Manuscript pane
+ * A ‹title› the map does not have is drawn greyed, and says so: the checker reports it too. */
+function apprSync(){
+  var b = $("panes").querySelector('[data-p="appraisal"]');
+  if (b) b.hidden = !APPRAISAL_DOC;
+  if (!APPRAISAL_DOC && PANES.appraisal) setPane("appraisal", false);
+  else if (PANES.appraisal) apprRender();
+}
+function apprNodeByTitle(t){
+  var ns = (CURRENT_GRAPH && CURRENT_GRAPH.nodes) || [];
+  for (var i = 0; i < ns.length; i++) if (ns[i].label === t) return ns[i];
+  return null;
+}
+function apprRender(){
+  var body = $("apprbody");
+  if (!body) return;
+  if (!APPRAISAL_DOC) { body.textContent = ""; return; }
+  $("apprname").textContent = APPRAISAL_DOC.name;
+  var text = String(APPRAISAL_DOC.text).replace(/^\s*---\n[\s\S]*?\n---\n/, "");
+  body.innerHTML = window.__MARKDOWN__ ? window.__MARKDOWN__(text) : "";
+  // Explicit links to a state or a table: kept as links, with nowhere for the browser to go.
+  Array.prototype.forEach.call(body.querySelectorAll('a[href^="#state:"], a[href^="#table:"]'), function(a){
+    var h = a.getAttribute("href").slice(1), k = h.indexOf(":");
+    a.setAttribute("data-" + h.slice(0, k), decodeURIComponent(h.slice(k + 1)));
+    a.removeAttribute("href"); a.className = "apl"; a.tabIndex = 0;
+    a.title = h.slice(0, k) === "state" ? "Show this state in the Mechanism view" : "Open this table";
+  });
+  // ‹Titles› and page references, in the text itself (never inside a code span or a link already).
+  var walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null), nodes = [], n;
+  while ((n = walker.nextNode())) {
+    if (n.parentNode.closest && n.parentNode.closest("a, code, pre")) continue;
+    if (/\u2039|\bpp?\.\s*\d/.test(n.nodeValue)) nodes.push(n);
+  }
+  // A TITLE MAY RUN ACROSS A LINE of the Markdown source (Enoch's report: three did), so a line
+  // break inside ‹…› is allowed and spaces are collapsed before the title is looked up.
+  var RX = /\u2039([^\u2039\u203a]{1,240})\u203a|\b(pp?\.)\s*(\d+)(?:\s*[-\u2013]\s*(\d+))?/g;
+  nodes.forEach(function(tn){
+    var str = tn.nodeValue, frag = document.createDocumentFragment(), at = 0, m;
+    RX.lastIndex = 0;
+    while ((m = RX.exec(str))) {
+      if (m.index > at) frag.appendChild(document.createTextNode(str.slice(at, m.index)));
+      var a = document.createElement("a");
+      a.className = "apl"; a.tabIndex = 0; a.textContent = m[0];
+      if (m[1] != null) {
+        var t = m[1].replace(/\s+/g, " ").trim(), node = apprNodeByTitle(t);
+        a.setAttribute("data-claim", t);
+        if (node) {
+          var d = String(node.detail || "").replace(/\s+/g, " ").trim();
+          a.title = (d ? d.slice(0, 280) + (d.length > 280 ? "\u2026" : "") + "\n\n" : "") + "Show on the map";
+        } else { a.classList.add("missing"); a.title = "Not a claim in this map: the map may have changed since the report was written"; }
+      } else {
+        a.setAttribute("data-page", m[3]);
+        a.title = "Open the text at this page";
+      }
+      frag.appendChild(a);
+      at = m.index + m[0].length;
+    }
+    if (at < str.length) frag.appendChild(document.createTextNode(str.slice(at)));
+    tn.parentNode.replaceChild(frag, tn);
+  });
+}
+function apprGoClaim(t){
+  var node = apprNodeByTitle(t);
+  if (!node) return;
+  if (!PANES.map) setPane("map", true);
+  // In the Mechanism view, the step the claim states, where it states one.
+  if (ARRANGEMENT === "mechanism" && MECH && MECH.showSteps && MECH.showSteps([t])) return;
+  if (ARRANGEMENT === "mechanism") setArrangement("reasons");
+  if (LIVE) { LIVE.markClaims([node.id]); LIVE.spotlight([node.id], { pad: 80, reveal: true }); }
+}
+function apprGoState(id){
+  if (!PANES.map) setPane("map", true);
+  setArrangement("mechanism");
+  if (!MECH || !MECH.showState || MECH.showState(id)) return;
+  // NOT ON THE CHAIN SHOWN: the first of the map's chains that draws it, then every step.
+  var FM = window.ArgdownMechanism && CURRENT_GRAPH ? window.ArgdownMechanism.model(CURRENT_GRAPH) : null;
+  var chains = (FM && FM.chains) || [], was = MECH.getChain ? MECH.getChain() : null;
+  for (var i = 0; i < chains.length; i++) {
+    if (!chains[i] || chains[i].id == null) continue;
+    MECH.setChain(chains[i].id);
+    if (MECH.showState(id)) return;
+  }
+  if (was != null && MECH.setChain) MECH.setChain(was);
+  // A STATE NO DRAWN STEP TOUCHES is never drawn: an intervention the text links to nothing, an
+  // outcome nothing reaches. Said, rather than nothing happening.
+  var st = FM && FM.states && FM.states[id], label = st && st.label != null ? st.label : id;
+  showNote("\u201c" + label + "\u201d is not drawn in the Mechanism view: no step the text gives reaches it " +
+           "or leaves it.", 7000);
+}
+function apprGoTable(frame){
+  var L = tablesList(), k = -1;
+  L.forEach(function(T, i){ if (k < 0 && (T.key === "case:" + frame || T.key === "account:" + frame)) k = i; });
+  if (k < 0) { showNote("This map has no table called \u201c" + frame + "\u201d."); return; }
+  if (!PANES.map) setPane("map", true);
+  tablesOpen(k);
+}
+/** The text at a printed page: the chapter whose page markers hold it, at the line where it begins. */
+function apprGoPage(page){
+  if (!msAvailable()) { showNote("This map has no text open to turn to."); return; }
+  for (var i = 0; i < MS.chapters.length; i++) {
+    var marks = pageMarks(MS.chapters[i].text);
+    for (var k = 0; k < marks.length; k++) if (String(marks[k].page) === String(page)) {
+      setPane("text", true);
+      if (MSCHAPTER !== MS.chapters[i].path) msRender(MS.chapters[i].path);
+      // The line after the marker: the marker itself is an empty line, and the page begins below it.
+      msHighlight(marks[k].line + 1);
+      return;
+    }
+  }
+  showNote("The text has no page " + page + ".");
+}
+document.addEventListener("click", function(e){
+  var a = e.target && e.target.closest && e.target.closest("#apprbody a.apl");
+  if (!a) return;
+  e.preventDefault();
+  Array.prototype.forEach.call($("apprbody").querySelectorAll("a.apl.on"), function(x){ x.classList.remove("on"); });
+  a.classList.add("on");
+  if (a.hasAttribute("data-claim")) apprGoClaim(a.getAttribute("data-claim"));
+  else if (a.hasAttribute("data-state")) apprGoState(a.getAttribute("data-state"));
+  else if (a.hasAttribute("data-table")) apprGoTable(a.getAttribute("data-table"));
+  else if (a.hasAttribute("data-page")) apprGoPage(a.getAttribute("data-page"));
+});
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Enter") return;
+  var a = e.target && e.target.closest && e.target.closest("#apprbody a.apl");
+  if (a) { e.preventDefault(); a.click(); }
+});
 
 /* LAYOUTS — the whole state in one click, because the interesting combinations are few.
  *
@@ -5738,7 +5902,7 @@ function splitWidth(x, box, swapped, viewport){
 /* The divider between the two texts. Same pointer-capture shape as the vertical one, and it
    sets a percentage so the split survives the window being resized. */
 (function(){
-  ["vsplit1", "vsplit2"].forEach(function(id){
+  ["vsplit1", "vsplit2", "vsplit3"].forEach(function(id){
     draggable($(id), function(e){
       var target = sectionAbove(id);
       if (!target) return;
@@ -6696,7 +6860,7 @@ function cmpPaint(){
 function startCompare(name, text){
   var graph = null;
   // THE OTHER READING ALONE: this map's appraisal is not the other file's.
-  try { graph = (window.__ARGDOWN_PARSE_ALONE__ || window.__ARGDOWN_PARSE__)(text); }
+  try { graph = window.__ARGDOWN_PARSE__(text); }
   catch (e) {
     // The parser wrapper already speaks the translated line-and-column language the
     // editor's own errors use; repeat it, do not re-word it.
@@ -8032,7 +8196,7 @@ function bundleFiles(){
     if (Object.prototype.hasOwnProperty.call(ALL_SOURCES, k) && !seen[k] && ALL_SOURCES[k] != null)
       out.push({ path: k, text: ALL_SOURCES[k] });
   // THE APPRAISAL TRAVELS WITH THE MAP: a bundle opened elsewhere brings it back.
-  if (APPRAISAL_SIB) out.push({ path: APPRAISAL_SIB.name, text: APPRAISAL_SIB.text });
+  if (APPRAISAL_DOC) out.push({ path: APPRAISAL_DOC.name, text: APPRAISAL_DOC.text });
   return out;
 }
 
@@ -8495,7 +8659,7 @@ function pasteBegin(mode){
     "defaults:\n    chapter: \"" + PASTE_PATH + "\"\n" +
     "===\n\n# The reading {isGroup: true}\n";
   var graph;
-  appraisalSet(null);                  // a new reading has no appraisal yet
+  APPRAISAL_DOC = null;                // a new reading has no appraisal yet
   try { graph = window.__ARGDOWN_PARSE__(starter); }
   catch (e) {
     showErr("The starter for a pasted text does not parse: " + (e && e.message || e));
@@ -9855,7 +10019,7 @@ function lookGo(x, i){
   if (mech || !(x.ids && x.ids.length)) {
     if (!mech && (x.states || x.steps)) setArrangement("mechanism");
     if (MECH && x.steps && x.steps.length && MECH.showSteps(x.steps)) { lookRender(); return; }
-    if (MECH && x.states && x.states.length && MECH.showState && MECH.showState(x.states[0])) { lookRender(); return; }
+    if (x.states && x.states.length) { apprGoState(x.states[0]); lookRender(); return; }
     if (!(x.ids && x.ids.length)) { lookRender(); return; }
     setArrangement("reasons");
   }
@@ -10428,26 +10592,22 @@ var SOURCE_EXT = /\.(md|qmd|markdown|txt|tex|rmd|rst|org)$/i;
 var PROJECT_FILES = ["argdown-project.yml", "argdown_project.yml", "argdown-project.yaml",
                      "argdown_project.yaml", "_quarto.yml"];
 var DERIVED_IN_PAGE = false;
-/* THE APPRAISAL BESIDE THE MAP (profile 1.27, ruled 19 Nov 2026): `<map>.appraisal.argdown`, the
- * reconstructor's own criticisms and strengthenings, kept out of the map. Opened with the map from
- * a folder or a bundle, held here, and joined to the map at every parse (the parser bundle reads
- * window.__ARGDOWN_APPRAISAL__). Never part of the manuscript, never written by Save. */
-var APPRAISAL_SIB = null;            // { name, text } or null
-var APPRAISAL_REPORT = /\.appraisal\.md$/i;   // its report: Markdown, but never a chapter
-function appraisalSet(sib){
-  APPRAISAL_SIB = sib || null;
-  window.__ARGDOWN_APPRAISAL__ = sib ? sib.text : null;
-  window.__ARGDOWN_APPRAISAL_ERROR__ = null;
-}
-function isAppraisalFile(p){ return /\.appraisal\.argdown$/i.test(String(p || "")); }
-// For the browser test (app/test_diagnostics.mjs), as __ZOT_MATCH__ is for the Zotero one: what
-// sibling is open, and what a saved bundle would carry. Reads only.
+/* THE APPRAISAL, AS A REPORT IN ITS OWN PANE (profile 1.28, James, 19 Nov 2026). An appraisal is the
+ * reconstructor's argued reading of the text -- criticisms ranked, the author's best replies, the
+ * verdicts -- and that is prose. Kept as claims in the map (1.27's sibling file) it was hidden until
+ * asked for, then drawn far from what it appraised, behind a hatch that made it hard to read. So it is
+ * `<map>.appraisal.md`, opened with the map from a folder or a bundle, shown in the Appraisal pane,
+ * with its claims, steps, states, tables and pages as links into the map. Never a chapter of the
+ * manuscript, never written by Save. */
+var APPRAISAL_DOC = null;            // { name, text } or null
+var APPRAISAL_REPORT = /\.appraisal\.md$/i;
+function appraisalReportFor(mapName){ return String(mapName).replace(/\.(argdown|ad)$/i, "") + ".appraisal.md"; }
+// For the browser test (app/test_diagnostics.mjs), as __ZOT_MATCH__ is for the Zotero one: which
+// report is open, and what a saved bundle would carry. Reads only.
 window.__APPRAISAL_STATE__ = function(){
-  return { sibling: APPRAISAL_SIB ? APPRAISAL_SIB.name : null,
-           bundle: bundleFiles().map(function(f){ return f.path; }),
-           error: window.__ARGDOWN_APPRAISAL_ERROR__ || null };
+  return { report: APPRAISAL_DOC ? APPRAISAL_DOC.name : null,
+           bundle: bundleFiles().map(function(f){ return f.path; }) };
 };
-function appraisalNameFor(mapName){ return String(mapName).replace(/\.(argdown|ad)$/i, "") + ".appraisal.argdown"; }
 // The border adjudication's two counters: how many claims were long enough (and factual
 // enough) to test against the manuscript, and how many drawn borders that test corrected.
 // Zero TESTED with DERIVED_IN_PAGE true means the borders really are only as declared, and
@@ -10609,8 +10769,8 @@ function warnAboutMetadata(text, name){
 }
 
 function loadDropped(items, prefer){
-  var picks = items.filter(function(it){ return /\.(argdown|ad)$/i.test(it.path) && !isAppraisalFile(it.path); });
-  if (!picks.length && items.some(function(it){ return isAppraisalFile(it.path); })) {
+  var picks = items.filter(function(it){ return /\.(argdown|ad)$/i.test(it.path); });
+  if (!picks.length && items.some(function(it){ return APPRAISAL_REPORT.test(it.path); })) {
     showErr("That is an appraisal, which is read with the map it appraises. Open the map " +
             "beside it, or the folder holding both.");
     return;
@@ -10637,8 +10797,8 @@ function loadDropped(items, prefer){
     var rel = it.path.slice(root.length);
     return (SOURCE_EXT.test(rel) && !APPRAISAL_REPORT.test(rel)) || PROJECT_FILES.indexOf(rel) >= 0;
   });
-  // THE MAP'S OWN APPRAISAL, if one sits beside it under its name.
-  var sibItem = items.filter(function(it){ return it.path === appraisalNameFor(pick.path); })[0] || null;
+  // THE MAP'S OWN APPRAISAL, if its report sits beside it under its name.
+  var sibItem = items.filter(function(it){ return it.path === appraisalReportFor(pick.path); })[0] || null;
   var budget = 0;
   wanted = wanted.filter(function(it){
     budget += it.file.size;
@@ -10656,11 +10816,11 @@ function loadDropped(items, prefer){
     // — locating, rendering, the Manuscript pane — runs on the same path it always did.
     var bnd = window.ArgdownBundle ? window.ArgdownBundle.detach(raw) : null;
     var text = bnd ? bnd.argdown : raw;
-    // The appraisal: the file on disk, else the copy a bundle carries (files on disk win, as below).
-    var sibName = appraisalNameFor(pick.file.name), sibText = both[1];
-    if (sibText == null && bnd) bnd.files.forEach(function(f){ if (isAppraisalFile(f.path)) { sibText = f.text; sibName = f.path; } });
-    if (bnd) bnd.files = bnd.files.filter(function(f){ return !isAppraisalFile(f.path) && !APPRAISAL_REPORT.test(f.path); });
-    appraisalSet(sibText != null ? { name: sibName.slice(sibName.lastIndexOf("/") + 1), text: sibText } : null);
+    // The appraisal: the report on disk, else the copy a bundle carries (files on disk win, as below).
+    var sibName = appraisalReportFor(pick.file.name), sibText = both[1];
+    if (sibText == null && bnd) bnd.files.forEach(function(f){ if (APPRAISAL_REPORT.test(f.path)) { sibText = f.text; sibName = f.path; } });
+    if (bnd) bnd.files = bnd.files.filter(function(f){ return !APPRAISAL_REPORT.test(f.path); });
+    APPRAISAL_DOC = sibText != null ? { name: sibName.slice(sibName.lastIndexOf("/") + 1), text: sibText } : null;
     if (warnAboutMetadata(text, pick.file.name)) return null;
     var graph;
     try { graph = window.__ARGDOWN_PARSE__(text); }
@@ -10702,14 +10862,7 @@ function loadDropped(items, prefer){
         DERIVED_IN_PAGE = placed > 0;
       }
       render(pick.file.name, text, graph);
-      if (window.__ARGDOWN_APPRAISAL_ERROR__)
-        showErr("The appraisal beside this map, \u201c" + APPRAISAL_SIB.name + "\u201d, could not be read, " +
-                "so the map is shown without it:\n\n" + window.__ARGDOWN_APPRAISAL_ERROR__ +
-                "\n\nLine numbers count the map's lines first. Run the checker on the appraisal file " +
-                "to find the fault in its own lines.");
-      else if (APPRAISAL_SIB)
-        showNote("This map has an appraisal beside it (\u201c" + APPRAISAL_SIB.name + "\u201d): the " +
-                 "reconstructor's own criticisms, hidden until you switch the appraisal on.", 9000);
+      apprSync();
       if (bnd && bnd.truncated)
         showErr("The attached text in \u201c" + pick.file.name + "\u201d has no end marker, so " +
                 "it was cut short somewhere — most likely by whatever the file travelled " +
@@ -10743,7 +10896,7 @@ var UNWATCH = null;          // stop watching the manuscript
  *  drop, applied BEFORE reading rather than after, because here reading means touching the disk
  *  and a manuscript folder may sit beside a decade of PDFs. */
 function hostWanted(rel){
-  return /\.(argdown|ad)$/i.test(rel) || (SOURCE_EXT.test(rel) && !APPRAISAL_REPORT.test(rel)) ||
+  return /\.(argdown|ad)$/i.test(rel) || SOURCE_EXT.test(rel) ||
          PROJECT_FILES.indexOf(rel.slice(rel.lastIndexOf("/") + 1)) >= 0;
 }
 
@@ -10998,7 +11151,7 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
       return;
     }
     var graph;
-    appraisalSet(null);                // a new reconstruction has no appraisal yet
+    APPRAISAL_DOC = null;              // a new reconstruction has no appraisal yet
     try { graph = window.__ARGDOWN_PARSE__(text); }
     catch (e) {
       // Cannot happen from a build that ran the tests, and worth saying plainly if it does:

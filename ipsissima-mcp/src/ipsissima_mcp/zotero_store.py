@@ -88,9 +88,9 @@ def plan(argdown_path, export=None, z=None):
     """What would be stored where, and what state each copy is in. Reads only."""
     z = z or ZoteroLocal()
     argdown_path = Path(argdown_path).resolve()
-    # AN APPRAISAL IS STORED WITH ITS MAP (profile 1.27): given the sibling, store the map it is beside.
-    if argdown_path.name.lower().endswith(".appraisal.argdown"):
-        argdown_path = argdown_path.with_name(argdown_path.name[: -len(".appraisal.argdown")] + ".argdown")
+    # AN APPRAISAL IS STORED WITH ITS MAP (profile 1.28): given the report, store the map it is beside.
+    if argdown_path.name.lower().endswith(".appraisal.md"):
+        argdown_path = argdown_path.with_name(argdown_path.name[: -len(".appraisal.md")] + ".argdown")
     if not argdown_path.exists():
         raise SystemExit(f"no such file: {argdown_path}")
     chapters = chapters_of(argdown_path)
@@ -129,12 +129,12 @@ def plan(argdown_path, export=None, z=None):
 
     carried = [(cited, c) for cited, c in chapters if c.exists()]
     missing_sources = [str(c) for _cited, c in chapters if not c.exists()]
-    # THE APPRAISAL TRAVELS INSIDE THE BUNDLE, as the sources do, so the copy opened from Zotero
-    # shows it; its REPORT is a reader's document, so it is an attachment of its own.
+    # THE APPRAISAL (profile 1.28) TRAVELS INSIDE THE BUNDLE, as the sources do, so the copy opened
+    # from Zotero has its Appraisal pane; and it is also an attachment of its own, a report to read
+    # in Zotero without Ipsissima.
     stem = argdown_path.name[: -len(argdown_path.suffix)]
-    sibling = argdown_path.with_name(stem + ".appraisal.argdown")
     report = argdown_path.with_name(stem + ".appraisal.md")
-    extra = [(sibling.name, sibling)] if sibling.exists() else []
+    extra = [(report.name, report)] if report.exists() else []
     bundle = bundle_of(argdown_path, carried, extra)
 
     rows = [{"filename": argdown_path.name, "bytes": bundle.encode("utf-8"),

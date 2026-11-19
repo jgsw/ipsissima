@@ -2,18 +2,20 @@
  *
  *   node app/test_diagnostics.mjs
  *
- * James's rulings on the appraisal plan: the appraisal goes in a sibling file beside the map, and
- * the computed diagnostics are offered unasked, as a trial. What is held here:
+ * James's rulings on the appraisal plan: the computed diagnostics are offered unasked, as a trial; and
+ * (profile 1.28) the appraisal is a report beside the map, `<map>.appraisal.md`, shown in its own pane
+ * with links into the map. What is held here:
  *
  *  - THE DIAGNOSTICS say what they should on a small map built to have one of each, and never count
  *    the appraisal layer: adding appraisal claims changes nothing they report.
  *  - ONE COST MEASURE: the module's costRank is exactly Study's, as it stood before it moved, on
  *    every sample map -- so "what most rests on" in Where to look and the costliest claim in Study
  *    cannot disagree.
- *  - IN THE PAGE (Chromium; skipped where it is not installed): a map opened with its sibling
- *    draws the appraisal only when switched on; Save's bundle carries the sibling; Where to look is
- *    on the bar with its count, opens on a click, and marks an item's claims on a click; and a
- *    sibling that will not parse leaves the map drawn, with a message naming the appraisal.
+ *  - IN THE PAGE (Chromium; required on CI): a map opened with its report offers the Appraisal pane,
+ *    whose links light a claim, select a step or a state in the Mechanism view, open a table and turn
+ *    the text to a page, and grey a title the map lacks; Save's bundle carries the report; appraisal
+ *    claims written into a map are tinted, not hatched, and kept apart in Weigh; Where to look is on
+ *    the bar with its count, and every item goes somewhere in every view.
  */
 import { argdown } from "@argdown/core";
 import fs from "node:fs";
@@ -21,7 +23,7 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { toGraph, RUN, joinAppraisal } from "./argdown-graph.mjs";
+import { toGraph, RUN } from "./argdown-graph.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -124,26 +126,16 @@ const withAppraisal = MAP + `
 # Appraisal {isGroup: true}
 
 [Stated]
-    <- [Doubt]: The stated premise is doubtful. #appraisal {fidelity: "imputation", warrant: "x", appraises: {role: criticism, aim: argument}}
+    <- [Doubt]: The stated premise is doubtful. #appraisal {fidelity: "imputation", warrant: "x"}
 [Granted]
-    <- [Answer for them]: A reply the author could make. #appraisal {fidelity: "imputation", warrant: "x", appraises: {role: reply, aim: argument}}
+    <- [Answer for them]: A reply the author could make. #appraisal {fidelity: "imputation", warrant: "x"}
 `;
 const out2 = D.diagnose(graphOf(withAppraisal), { deps });
 check(JSON.stringify(out2.map(x => [x.check, x.says])) === JSON.stringify(out.map(x => [x.check, x.says])),
       "the same list with appraisal claims added, an appraisal reply to a concession included");
-const sibling = `===
-map: "x.argdown"
-===
-
-[Stated]
-    <- [Doubt]: The stated premise is doubtful. #appraisal {fidelity: "imputation", warrant: "x"}
-`;
-check(graphOf(joinAppraisal(MAP, sibling).text).nodes.some(n => n.label === "Doubt" && n.tags.includes("appraisal")),
-      "a joined sibling's claim reaches the graph as an appraisal claim");
-
 console.log("\non every sample: no dead ends, and every summarised group shows three");
 for (const dir of fs.readdirSync(path.join(REPO, "samples")).filter(d => fs.statSync(path.join(REPO, "samples", d)).isDirectory())) {
-  const f = fs.readdirSync(path.join(REPO, "samples", dir)).find(x => x.endsWith(".argdown") && !x.endsWith(".appraisal.argdown"));
+  const f = fs.readdirSync(path.join(REPO, "samples", dir)).find(x => x.endsWith(".argdown"));
   if (!f) continue;
   const o = D.diagnose(graphOf(fs.readFileSync(path.join(REPO, "samples", dir, f), "utf8")), { deps });
   const capped = o.filter(x => x.check === "summary").every(sm => o.filter(x => x.group === sm.group && x.check !== "summary" && !x.more).length === 3);
@@ -173,7 +165,7 @@ function legacyRank(G) {
 console.log("\nStudy's cost measure, moved into the module unchanged");
 const samples = path.join(REPO, "samples");
 for (const dir of fs.readdirSync(samples).filter(d => fs.statSync(path.join(samples, d)).isDirectory())) {
-  const f = fs.readdirSync(path.join(samples, dir)).find(x => x.endsWith(".argdown") && !x.endsWith(".appraisal.argdown"));
+  const f = fs.readdirSync(path.join(samples, dir)).find(x => x.endsWith(".argdown"));
   if (!f) continue;
   const G = graphOf(fs.readFileSync(path.join(samples, dir, f), "utf8"));
   const a = D.costRank(G, { deps }).map(x => [x.id, x.lost, x.mains]), b = legacyRank(G).map(x => [x.id, x.lost, x.mains]);
@@ -208,32 +200,52 @@ if (!chromium) {
       fs_.forEach(f => dt.items.add(new File([f.text], f.path)));
       document.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true, cancelable: true }));
     }, files);
-    const SIB = `===
-map: "one.argdown"
-===
-
-[Stated]
-    <- [Doubt]: The stated premise is doubtful. #appraisal {fidelity: "imputation", warrant: "x", appraises: {role: criticism, aim: argument}}
-
-[Account A]
-    <- [A is doubtful]: The appraiser's reason against A. #appraisal {fidelity: "imputation", warrant: "x", appraises: {role: criticism, aim: comparison}}
-`;
-    await open([{ path: "one.argdown", text: MAP }, { path: "one.appraisal.argdown", text: SIB }]);
+    // A MAP WITH ITS REPORT, AND A TEXT WITH PAGES. The map also carries two appraisal claims of its
+    // own (still legal), for the tint and for Weigh.
+    const MAPX = MAP.replace("title: One of each", "title: One of each\ndefaults:\n    chapter: \"source/t.md\"") + '\n# Appraisal {isGroup: true}\n\n' +
+      '[Stated]\n    <- [Doubt]: The stated premise is doubtful. #appraisal {fidelity: "imputation", warrant: "x"}\n\n' +
+      '[Account A]\n    <- [A is doubtful]: The appraiser\'s reason against A. #appraisal {fidelity: "imputation", warrant: "x"}\n';
+    const SRC = "<!-- p.1 begins here -->\nThe first page of the text.\n\n<!-- p.2 begins here -->\nThe second page of the text.\n";
+    const REPORT = "# Appraisal\n\nThe argument rests on \u2039Stated\u203a, which the text never defends (p. 2).\n\n" +
+      "The rival accounts are set out in [the accounts](#table:explains).\n\nAnd \u2039No such claim\u203a is named in error.\n";
+    await open([{ path: "one.argdown", text: MAPX }, { path: "one.appraisal.md", text: REPORT }, { path: "t.md", text: SRC }]);
     await page.waitForTimeout(900);
     // The walkthrough offers itself on a first map; a reader closes it.
     for (let k = 0; k < 3 && await page.locator("#walk").isVisible(); k++) { await page.keyboard.press("Escape"); await page.waitForTimeout(200); }
-    const appraisalDrawn = () => page.locator("#map .alm-n.alm-appraisal").count();
     const state = () => page.evaluate(() => /** @type {any} */ (window).__APPRAISAL_STATE__());
-    check((await state()).sibling === "one.appraisal.argdown", "the sibling is opened with the map");
-    check(await appraisalDrawn() === 0, "and not drawn until asked for");
+    check((await state()).report === "one.appraisal.md", "the report is opened with the map");
+    const apBtn = page.locator('#panes [data-p="appraisal"]');
+    check(await apBtn.isVisible(), "and the Appraisal pane is offered");
+    await apBtn.click();
+    await page.waitForTimeout(400);
+    check(await page.locator("#appr").isVisible() && /never defends/.test(await page.locator("#apprbody").innerText()), "a click opens the report");
+    await page.locator("#apprbody a.apl", { hasText: "Stated" }).first().click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#map .is-lit").count() >= 1, "a \u2039title\u203a lights its claim on the map");
+    check(await page.locator("#apprbody a.apl.missing", { hasText: "No such claim" }).count() === 1, "a title the map lacks is greyed");
+    await page.locator("#apprbody a.apl", { hasText: "p. 2" }).click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#ms").isVisible() && /second page/.test(await page.locator("#ms .hit").first().innerText().catch(() => "")),
+          "a page opens the text at that page");
+    await page.locator("#apprbody a.apl", { hasText: "the accounts" }).click();
+    await page.waitForTimeout(400);
+    check(await page.locator("#tables").isVisible(), "a table link opens the table");
+    if (await page.locator("#tables").isVisible()) await page.locator('#tables [data-tables-close]').click();
+    check((await state()).bundle.includes("one.appraisal.md"), "a saved bundle carries the report");
+    await page.locator('#appr [data-close="appraisal"]').click();
+    await page.waitForTimeout(200);
+
+    // APPRAISAL CLAIMS IN A MAP: tinted, not hatched, and kept apart in Weigh.
+    const appraisalDrawn = () => page.locator("#map .alm-n.alm-appraisal").count();
+    check(await appraisalDrawn() === 0, "appraisal claims in a map are not drawn until asked for");
     const aBtn = page.locator('#map .alm-bar [data-act="appraisal"]');
-    check(await aBtn.count() === 1, "the appraisal switch is offered");
     // The switch lives in the Display menu (as in test_appraisal_layer.mjs).
     await page.click('#map .alm-bar [data-act="display"]');
     await aBtn.click();
     await page.waitForTimeout(500);
-    check(await appraisalDrawn() > 0, "switched on, the sibling's claim is drawn as appraisal");
-    // THE APPRAISAL'S WEIGHING, BESIDE THE TEXT'S: in Weigh, marked, and never filling the text's cell.
+    check(await appraisalDrawn() > 0, "switched on, they are drawn");
+    const fill = await page.locator("#map .alm-n.alm-appraisal .alm-box").first().evaluate(e => getComputedStyle(e).fill);
+    check(!/url\(/.test(fill), "tinted, not hatched", fill);
     if (!(await page.locator('#map [data-act="weigh"]').isVisible())) await page.keyboard.press("Escape");
     await page.click('#map [data-act="weigh"]');
     await page.waitForTimeout(400);
@@ -247,7 +259,6 @@ map: "one.argdown"
     await aBtn.click();
     await page.waitForTimeout(300);
     await page.keyboard.press("Escape");
-    check((await state()).bundle.includes("one.appraisal.argdown"), "a saved bundle carries the sibling");
 
     const look = page.locator('#map [data-act="look"]');
     check(await look.isVisible(), "Where to look is on the bar, unasked");
@@ -278,7 +289,8 @@ map: "one.argdown"
     // IN THE MECHANISM VIEW, a step is shown as a step, a gap as its state, and an item about the
     // argument goes back to the Reasons view (19 Nov 2026: in Mechanism nothing happened).
     const chainText = fs.readFileSync(path.join(REPO, "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8");
-    await open([{ path: "chain.argdown", text: chainText }]);
+    const chainReport = "The step \u2039Work helps\nreintegration\u203a is only asserted, and [reintegration](#state:reint) is where it ends.\n";
+    await open([{ path: "chain.argdown", text: chainText }, { path: "chain.appraisal.md", text: chainReport }]);
     await page.waitForTimeout(900);
     // Opened in Reasons, where its button is, and kept open into the Mechanism view.
     await look.click();
@@ -289,9 +301,11 @@ map: "one.argdown"
     await page.locator("#look li button", { hasText: "Work helps reintegration" }).click();
     await page.waitForTimeout(500);
     check(await page.locator("#mech path.sel").count() === 1, "a step's item selects its arrow in the drawing");
+    // A gap's state is one no drawn step touches, so it cannot be selected: the page says so.
     await page.locator("#look li button", { hasText: "More community orders" }).click();
     await page.waitForTimeout(500);
-    check(await page.locator("#mech .sel").count() >= 1 && await page.locator("#mech").isVisible(), "a gap's item selects its state");
+    check(await page.locator("#mech").isVisible() && /More community orders\u201d is not drawn/.test(await page.locator("body").innerText()),
+          "a gap's state that is not drawn is said to be not drawn");
     await page.locator("#look li button", { hasText: "Orders go to the less risky" }).click();
     await page.waitForTimeout(700);
     check(await page.locator("#mech").isHidden(), "an item about the argument goes to the Reasons view");
@@ -299,6 +313,23 @@ map: "one.argdown"
     check(/Orders go to the less risky›: \S/.test(tip || ""), "and its hover gives the claim's own words");
     await page.locator("#look [data-look-close]").click();
     await page.waitForTimeout(200);
+    // THE REPORT IN THE MECHANISM VIEW: a claim that states a step selects the step; a state, the state.
+    await page.click("#mechbtn");
+    await page.waitForTimeout(700);
+    await page.locator('#panes [data-p="appraisal"]').click();
+    await page.waitForTimeout(400);
+    // Broken across a line of the report's source, and still one link.
+    await page.locator("#apprbody a.apl", { hasText: "Work helps" }).click();
+    await page.waitForTimeout(500);
+    check(await page.locator("#mech").isVisible() && await page.locator("#mech path.sel").count() === 1, "in Mechanism, a report's claim link selects its step");
+    await page.locator("#apprbody a.apl", { hasText: "reintegration" }).last().click();
+    await page.waitForTimeout(500);
+    // A selected state opens the drawing's side panel on it (select({state}): no arrow is marked).
+    check(await page.locator("#mech path.sel").count() === 0 && /reintegrates/i.test(await page.locator("#mech .amech-side").innerText()),
+          "and a state link selects the state");
+    await page.locator('#appr [data-close="appraisal"]').click();
+    await page.click('#views [data-v="reasons"], button:has-text("Reasons")');
+    await page.waitForTimeout(400);
 
     // A GROUP OF FOUR: three shown, the fourth on request.
     await open([{ path: "four.argdown", text: MAP2 }]);
@@ -315,17 +346,9 @@ map: "one.argdown"
     check(!/G3/.test(await page.locator("#look").innerText()), "and put back");
     await look.click();
 
-    // A missing comma: the YAML fault Argdown would otherwise swallow, dropping what follows.
-    await open([{ path: "two.argdown", text: MAP },
-                { path: "two.appraisal.argdown", text: '[Stated]\n    <- [Bad]: x. #appraisal {fidelity: "imputation" warrant: "x"}\n' }]);
-    await page.waitForTimeout(900);
-    check(!!(await state()).error, "the appraisal's fault is caught");
-    check(await page.locator("#map .alm-n").count() > 0, "a sibling that will not parse leaves the map drawn");
-    check(/appraisal beside this map/.test(await page.locator("body").innerText()), "and says the appraisal could not be read");
-
     await open([{ path: "three.argdown", text: MAP }]);
     await page.waitForTimeout(700);
-    check((await state()).sibling === null, "a map opened alone has no appraisal");
+    check((await state()).report === null && await page.locator('#panes [data-p="appraisal"]').isHidden(), "a map opened alone has no Appraisal pane");
     check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join(" | ") : ""));
   } finally { await browser.close(); }
 }

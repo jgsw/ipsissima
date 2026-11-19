@@ -1,6 +1,6 @@
 # Appraising a text, on request
 
-Profile 1.27, 19 November 2026. Read this only when the user has asked for an appraisal. A map
+Profile 1.28, 19 November 2026. Read this only when the user has asked for an appraisal. A map
 reports what a text says and never evaluates it, so Ipsissima appraises only on request: "critique
 this", "what's wrong with it", "its weaknesses", "how could it be strengthened", "assess", "evaluate",
 "how good is the argument". An appraisal assesses three things, where the text has them:
@@ -34,8 +34,8 @@ So:
 
 | route | when | what you write |
 |---|---|---|
-| **from the map** | a checked map exists | the sibling file, then the report |
-| **from the text** | no map, and the user chose it | the report only |
+| **from the map** | a checked map exists | the report, its claims linked to the map |
+| **from the text** | no map, and the user chose it | the report, with no links |
 | **pooled** | no map, the user chose it | two independent appraisals, then one report from both |
 | **map first** | no map, and the user wants one anyway | the ORDER OF WORK, then the from-map route |
 
@@ -59,131 +59,64 @@ Call `argdown_audit` on the map. It lists, from the map alone, with what most re
 These are facts about the map, not verdicts. Each is a place to look. A group of more than three is
 summarised, with its three heaviest shown and the rest marked `more`: read them all. How much rests on a
 claim only orders the list. A load-bearing claim is a linchpin, not a weakness; Study's "which would
-cost the most?" names those. Decide for each worth
-pursuing whether it is a weakness of the text, a limit of the reconstruction, or nothing.
+cost the most?" names those. Decide, for each worth pursuing, whether it is a weakness of the text, a
+limit of the reconstruction, or nothing.
 
 **Also go through the forms** the map names: each argument's scheme, and each bridge's causal
 scheme. Ask their critical questions (`argdown_method("method")` lists them). And read the text
 again where the audit points.
 
-### 2. Appraise: the sibling file
+### 2. Appraise, and 3. Report
 
-Write the appraisal in `<map stem>.appraisal.argdown`, beside the map:
+The appraisal is one document: a report in Markdown beside the map, named `<map stem>.appraisal.md`.
+Ipsissima shows it in the Appraisal pane, with its references as links into the map and the text.
+Nothing is written into the map. (Profile 1.27 put appraisal claims in a sibling `.argdown` file. In
+use they were hidden until switched on, drawn far from what they appraised, and hard to read; the
+argued verdicts, which are the value, are prose.)
 
-```
-===
-map: "Enoch 2010 - Epistemological challenge.argdown"
-by: "Claude (Opus 5.5), asked by J. Wilson, 19 Nov 2026"
-===
-
-# Appraisal {isGroup: true}
-
-## The argument
-
-[The explanation bootstraps]: The belief that survival is good is one selection would have given
-us whether or not it is true, so by sect. 3.2 it is defeated until the correlation is explained.
-The explanation needs it as a premise. #appraisal
-    {fidelity: "imputation", warrant: "appraisal: the standard objection to third-factor replies",
-     appraises: {role: criticism, aim: argument, literature: ["Street 2008"], from_memory: true}}
-    _> <Survival is good pre-establishes the harmony>
-
-[Every vindication uses its own domain]: A demand that a vindication use no truth of its domain is
-one no domain meets, so it is general skepticism. #appraisal
-    {fidelity: "imputation", warrant: "appraisal: the author's best reply",
-     appraises: {role: reply, aim: argument}}
-    -> [The explanation bootstraps]
-```
-
-**The rules** (the checker holds you to them):
-- **Every claim and argument defined here is `#appraisal`,** with `fidelity: "imputation"`, a
-  `warrant:` and `appraises:`.
-- **Name the map's claims; never redefine them.** Write `[Their title]` alone, or aim at it with
-  `->`, `+>` or `_>`. Never give it words of its own here. A title in neither file is a fault: if
-  the map has changed, find the claim's present title.
-- **No argument of the author's may use an appraisal claim as a premise.**
-
-**The relation is the content:**
-- **Criticisms:**
-  - attack a premise you think false or unsupported (`->` to it, or `<-` under it);
-  - undercut an inference whose premises do not license its conclusion (`_>` to the argument); this is
-    where a scheme's critical question is answered, so give it as `question:`.
-- **Strengthenings:** support the author's claim (`+>`). A strengthening that adds a premise is a
-  claim supporting the conclusion the premise would serve.
-- **Criticisms of a strengthening:** attack the strengthening. What the author "could have said if the
-  argument were better" is a strengthening; the most powerful criticisms of that are its attacks.
-- **Replies:** the author's best reply to a criticism attacks the criticism (`role: reply`), and a
-  rejoinder attacks the reply. Keep this skeleton in the file. The prose goes in the report.
-
-**The mechanism.** Attack or support the step's claim, with `aim: mechanism`. The kinds of
-criticism are:
-- a confounder;
-- the reverse direction;
-- a missing link;
-- an implausible size;
-- the wrong level;
-- a scope beyond the evidence.
-
-A cause or route the text omits is a state with `appraisal: true` in the map's `mechanism:` block. That
-is the one appraisal entry the map itself carries, and it is drawn only when the appraisal is shown.
-The text's own steps never run through it.
-
-**The comparisons** (`aim: comparison`):
-- **Rival accounts:** to weigh them yourself, draw relations from your claims, or the text's
-  findings, to each account. Weigh the accounts shows them beside the text's own, while the appraisal
-  is shown.
-- **Recoding:** for a case you would place differently, attack the claim that places it, and say where
-  it belongs and why.
-- **Do not put `about:` on an appraisal claim.** The Tables panel does not yet keep the appraisal apart.
-- **Leave a cell the text leaves empty empty in the map.** You may answer it in your own claim, under
-  your own name.
-
-**Literature** you draw on goes in `literature:`, with `from_memory: true` unless every entry is a
-Zotero key (`zotero:ABCD1234`).
-
-Check the sibling with `argdown_check` (giving `source_root`) until it reports ok. Your claims may
-quote the text, and quotations are verified like any other.
-
-### 3. Report
-
-The report is the reader's: Markdown, beside the map, named `<map stem>.appraisal.md`. Ipsissima
-does not read a `.appraisal.md` as part of the manuscript. Aim for about 1,500 to 2,000 words:
+**What it says.** Aim for about 1,500 to 2,000 words:
 - **The argument in brief:** at most 200 words.
 - **The criticisms, ranked, most powerful first.** For the leading three to five:
   - what the author says, quoted, with the page;
   - the objection;
   - the author's best reply;
   - whether it succeeds, and why.
+
+  Cover the mechanism and the comparisons where the text has them: the audit says where to look.
 - **Strengthenings:** how the position could be made stronger, and the most powerful criticisms of that
-  stronger version.
+  stronger version, which is what the author "could have said if the argument were better".
 - **Where a critique should aim:** a paragraph. Objections to the whole strategy, which attach to no
   single claim, go here.
+
+**Links.** Name what you appraise so the reader can go to it:
+- **A claim or argument of the map:** its title, exactly, between ‹ and ›: "‹The explanation bootstraps›".
+  Use the map's titles, never your own wording of a claim; the checker refuses a title the map does not
+  have. In the Mechanism view the same link selects the step the claim states, so a causal step is
+  named by the claim that states it.
+- **A state of the mechanism:** `[its label](#state:ID)`, with the state's id from the map's
+  `mechanism:` block.
+- **A table:** `[its label](#table:FRAME)`, with the frame's id from `frames:`.
+- **A page of the text:** write it as "(p. 431)" or "pp. 12–14"; the pane opens the Manuscript there.
+
+Link where it helps the reader find the thing, not every mention. A paragraph with one or two links is
+easier to read than one where every phrase is underlined.
 
 **Quote exactly, and only the text.** Put the page in brackets straight after the quotation:
 "words" (p. 431). Never put your own wording in quotation marks, however natural it is to voice the
 author. A paraphrase gets a page and no quotation marks. Mark recalled literature "(from memory)".
 
-Check the report with `argdown_check` on the `.md` file, with `source_root`:
+**Check it** with `argdown_check` on the `.md` file, with `source_root`:
 - **a quotation not in the text** is queried;
-- **a quotation on another page than cited** is a fault.
+- **a quotation on another page than cited** is a fault;
+- **a link to a title, state or table the map does not have** is a fault, with the nearest title.
 
-## What goes where
-
-| piece | where |
-|---|---|
-| each criticism, strengthening and reply, attached to its target | the sibling file |
-| role, aim, critical question, literature | the sibling file, `appraises:` |
-| the appraisal's weighing of rival accounts | the sibling file, as relations; shown in Weigh the accounts |
-| omitted causes and rival routes | `appraisal: true` states in the map's `mechanism:` block |
-| where to look (the computed diagnostics) | nowhere: `argdown_audit` computes it fresh each time |
-| ranking, strength, the argued verdicts, where to aim | the report |
-| whole-strategy objections | the report |
+Repeat until it reports ok.
 
 ## Handing it over
 
-The deliverable is the map, its `source/`, the sibling file and the report, beside one another. Tell
-the user:
+The deliverable is the map, its `source/`, and the report beside them. Tell the user:
 - what the audit pointed at;
 - the three criticisms you rank highest;
-- that the appraisal is shown in Ipsissima only when they switch it on.
+- that the report opens in Ipsissima's Appraisal pane, where its links go to the map.
 
-`zotero_store` carries the sibling and the report with the map.
+`zotero_store` carries the report inside the map's bundle, and stores it as its own attachment.

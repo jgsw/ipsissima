@@ -1,24 +1,20 @@
-"""The appraisal: the reconstructor's own reading of a text, kept beside the map (profile 1.27).
+"""The appraisal: the reconstructor's own reading of a text, as a report beside its map (profile 1.28).
 
-Ruled by James, 19 Nov 2026, on the appraisal plan ("Appraisal on request/APPRAISAL-PLAN.md" in the
-OneDrive work folder) and the blind trial behind it (4 Trials/appraisal-trial/RESULTS.md):
+James's rulings of 19 Nov 2026. After a blind trial (4 Trials/appraisal-trial/RESULTS.md) the appraisal
+was first kept as #appraisal claims in a sibling file (1.27). In use that did not work: the layer was
+hidden until asked for, drawn far from the claims it appraised, and hard to read. So an appraisal is now
+what the trial found valuable -- an argued, ranked REPORT -- in Markdown beside the map,
+`<map stem>.appraisal.md`, shown in Ipsissima's Appraisal pane with its references as links into the map:
 
-- **A sibling file.** `<map stem>.appraisal.argdown` sits beside the map and holds only `#appraisal`
-  claims and arguments, and relations from them to the map's titles. The map stays a checked record
-  of the text; several appraisals can sit on one map; an appraisal claim aimed at a title the map no
-  longer has is caught. The in-map form (an `#appraisal` section inside the map) stays legal.
-- **The division.** Each criticism, strengthening and reply is a claim in the file, attached to what
-  it targets, with `appraises: {role, aim, question, literature, from_memory}`. The ranking, the
-  argued verdicts and "where a critique should aim" go in a separate report, which is checked here
-  for its quotations (`report_findings`), because the trial's integrated route let the report drift
-  from the text.
+    ‹Claim title›            a claim or argument of the map, by its title (in the Mechanism view, the
+                             step it states)
+    [words](#state:ID)       a state of the map's mechanism, by its id
+    [words](#table:FRAME)    one of the map's frames, by its id
+    (p. 431), pp. 12-14      a page of the text, opened in the Manuscript pane
 
-Three things live here:
-    join()              the map and its sibling as one Argdown text (twin of argdown-graph.mjs's
-                        joinAppraisal; tests hold them to the same output)
-    sibling_findings()  the sibling's own rules, read off the joined document's export
-    appraises_findings()  the `appraises:` key on every #appraisal claim, sibling or in-map
-    report_findings()   a report's quotations, found in the source and on the page cited
+Checked here, as a map's quotations are:
+    report_findings()   its quotations, found in the source and on the page cited
+    report_links()      every ‹title›, state and table it links to, found in the map
 """
 from __future__ import annotations
 
@@ -30,160 +26,12 @@ try:
 except ImportError:                      # run as a script beside check_argdown.py
     import argdown_provenance as prov
 
-SUFFIX = ".appraisal.argdown"
-ROLES = ("criticism", "strengthening", "reply")
-AIMS = ("argument", "mechanism", "comparison", "framing")
-APPRAISES_KEYS = ("role", "aim", "question", "literature", "from_memory")
+REPORT_SUFFIX = ".appraisal.md"
 
 
-# ---------------------------------------------------------------- the sibling file ---- #
-
-def is_appraisal_path(path) -> bool:
-    return str(path or "").lower().endswith(SUFFIX)
-
-
-def appraisal_path_for(map_path) -> str:
-    """`x/Name.argdown` -> `x/Name.appraisal.argdown`."""
-    return re.sub(r"\.(argdown|ad)$", "", str(map_path), flags=re.I) + SUFFIX
-
-
-_FRONT = re.compile(r"^\s*===[ \t]*\r?\n([\s\S]*?)\r?\n===[ \t]*(?:\r?\n|$)")
-
-
-def split_front_matter(text):
-    """(front matter text or None, body)."""
-    t = (text or "").lstrip("﻿")
-    m = _FRONT.match(t)
-    return (m.group(1), t[m.end():]) if m else (None, t)
-
-
-def map_path_for(sibling_path, sibling_text=None) -> str:
-    """The map a sibling appraises: its front matter's `map:` if it names one (relative to the
-    sibling's folder), else the sibling's own name without `.appraisal`."""
-    front, _ = split_front_matter(sibling_text if sibling_text is not None else
-                                  open(sibling_path, encoding="utf-8").read())
-    if front:
-        m = re.search(r"^map:\s*['\"]?(.+?)['\"]?\s*$", front, re.M)
-        if m:
-            return os.path.join(os.path.dirname(os.path.abspath(sibling_path)), m.group(1))
-    return re.sub(r"\.appraisal\.argdown$", ".argdown", str(sibling_path), flags=re.I)
-
-
-def join(map_text, sibling_text):
-    """The map and its appraisal as one text: (text, body_line, front, sibling_body_line).
-
-    `body_line` is the 1-based line in the joined text where the sibling's body begins, and
-    `sibling_body_line` the line in the sibling file where that body begins, so a finding on the
-    joined text maps back by `line - body_line + sibling_body_line`. The twin of
-    joinAppraisal() in app/argdown-graph.mjs.
-    """
-    mp = re.sub(r"\s+$", "", map_text or "")
-    front, body_raw = split_front_matter(sibling_text)
-    lead = len(body_raw) - len(body_raw.lstrip())
-    consumed = (sibling_text or "").lstrip("﻿")
-    consumed = consumed[: len(consumed) - len(body_raw) + lead]
-    sibling_body_line = consumed.count("\n") + 1
-    body = body_raw.strip()
-    heading = "" if re.match(r"#\s", body) else "# Appraisal {isGroup: true}\n\n"
-    head = mp + "\n\n" + heading
-    text = head + body + "\n"
-    body_line = head.count("\n") + 1
-    return text, body_line, front, sibling_body_line
-
-
-def _merged_data(node):
-    data = {}
-    for m in (node.get("members") or []) + [node]:
-        for k, v in (m.get("data") or {}).items():
-            data.setdefault(k, v)
-    return data
-
-
-def _members(node):
-    return node.get("members") or []
-
-
-def sibling_findings(doc, body_line):
-    """The sibling's rules, on the export of the JOINED text. Returns [(severity, check, message,
-    title, joined_line)]; the caller maps lines back to the sibling.
-
-      - a claim or argument DEFINED in the sibling (given words there) must be #appraisal;
-      - the sibling must not give new words to a claim the map defines;
-      - every title the sibling names must be defined somewhere: a title in neither the map nor the
-        appraisal is one the map no longer has (or never had), so the appraisal is aimed at nothing.
-    """
-    out = []
-    appraisal = prov.appraisal_titles(doc)
-    for kind in ("statements", "arguments"):
-        for title, node in (doc.get(kind) or {}).items():
-            mem = _members(node)
-            in_sib = [m for m in mem if (m.get("startLine") or 0) >= body_line]
-            if not in_sib:
-                continue
-            defined_here = [m for m in in_sib if (m.get("text") or "").strip() and not m.get("isReference")]
-            defined_map = [m for m in mem if (m.get("startLine") or 0) < body_line
-                           and (m.get("text") or "").strip() and not m.get("isReference")]
-            if kind == "arguments":
-                defined_here = [m for m in in_sib if not m.get("isReference")]
-                defined_map = [m for m in mem if (m.get("startLine") or 0) < body_line and not m.get("isReference")]
-            line = in_sib[0].get("startLine")
-            if defined_here and defined_map:
-                out.append(("!", "appraisal-sibling",
-                            f"the appraisal gives new words to the map's {'argument' if kind == 'arguments' else 'claim'} "
-                            f"‹{title}›. An appraisal file may name the map's titles, never redefine them: aim "
-                            f"a claim of your own at it instead.", title, defined_here[0].get("startLine") or line))
-            elif defined_here and title not in appraisal:
-                out.append(("!", "appraisal-sibling",
-                            f"‹{title}› is defined in the appraisal file but not tagged #appraisal. Everything "
-                            f"an appraisal file defines is the reconstructor's own: tag it #appraisal.",
-                            title, defined_here[0].get("startLine") or line))
-            elif not defined_here and not defined_map and kind == "statements" and not any(
-                    (m.get("text") or "").strip() for m in mem):
-                out.append(("!", "appraisal-target",
-                            f"‹{title}› is named in the appraisal but defined nowhere: not in the map, not in "
-                            f"the appraisal. If the map has been remade, the claim this was aimed at has been "
-                            f"renamed or dropped; find it and use its present title.", title, line))
-    return out
-
-
-def appraises_findings(doc):
-    """`appraises:` on every #appraisal claim, in the map or its sibling. [(sev, check, msg, title)]."""
-    out = []
-    for kind in ("statements", "arguments"):
-        for title, node in (doc.get(kind) or {}).items():
-            if prov.APPRAISAL_TAG not in prov.node_tags(node):
-                continue
-            ap = _merged_data(node).get("appraises")
-            if ap is None:
-                out.append(("?", "appraises",
-                            f"‹{title}› is an appraisal claim with no `appraises:`. Say what it is and what it "
-                            f"is aimed at: appraises: {{role: criticism|strengthening|reply, "
-                            f"aim: argument|mechanism|comparison|framing}}.", title))
-                continue
-            if not isinstance(ap, dict):
-                out.append(("!", "appraises", f"‹{title}›: `appraises:` must be a map of keys, "
-                                              f"not {type(ap).__name__}.", title))
-                continue
-            for k in ap:
-                if k not in APPRAISES_KEYS:
-                    out.append(("!", "appraises", f"‹{title}›: `appraises:` has no key `{k}`; it takes "
-                                                  f"{', '.join(APPRAISES_KEYS)}.", title))
-            if ap.get("role") not in ROLES:
-                out.append(("!", "appraises", f"‹{title}›: `role` must be one of {', '.join(ROLES)}, "
-                                              f"not {ap.get('role')!r}.", title))
-            if ap.get("aim") is not None and ap.get("aim") not in AIMS:
-                out.append(("!", "appraises", f"‹{title}›: `aim` must be one of {', '.join(AIMS)}, "
-                                              f"not {ap.get('aim')!r}.", title))
-            lit = ap.get("literature")
-            if lit is not None and not isinstance(lit, list):
-                out.append(("!", "appraises", f"‹{title}›: `literature` is a list of references.", title))
-            elif lit and ap.get("from_memory") is not True and not all(
-                    re.match(r"^zotero:[A-Z0-9]{8}$", str(x)) for x in lit):
-                out.append(("?", "appraises",
-                            f"‹{title}› cites literature without `from_memory: true` or a Zotero key "
-                            f"(`zotero:ABCD1234`). A reference recalled rather than looked up must say so.",
-                            title))
-    return out
+def map_path_for_report(report_path) -> str:
+    """`x/Name.appraisal.md` -> `x/Name.argdown`."""
+    return re.sub(r"\.appraisal\.md$", ".argdown", str(report_path), flags=re.I)
 
 
 # ---------------------------------------------------------------- the report ---- #
@@ -305,3 +153,48 @@ def report_findings(report_text, sources):
                                  f"“{q[:90]}” is cited to p. {lo}{'' if hi == lo else '-' + str(hi)} but is on "
                                  f"p. {', '.join(map(str, on))}.", line))
     return findings, dict(quotations=n, found=found, page_checked=checked, page_right=right)
+
+
+# ---------------------------------------------------------------- the report's links ---- #
+
+# A title may run across a line of the Markdown source; spaces are collapsed before it is looked up.
+CLAIM_LINK = re.compile(r"\u2039([^\u2039\u203a]{1,240})\u203a")
+FRAG_LINK = re.compile(r"\]\(#(state|table):([^)\s]+)\)")
+
+
+def report_links(report_text, doc, frontmatter):
+    """Every link in a report, against the map it appraises. [(sev, check, message, line)].
+
+    A ‹title› the map does not have is a fault: the report was written against another version of
+    the map, or names a claim by its words rather than its title. So is a state or a table the map
+    does not declare."""
+    titles = set((doc or {}).get("statements") or {}) | set((doc or {}).get("arguments") or {})
+    mech = (frontmatter or {}).get("mechanism") or {}
+    states = set(((mech.get("states") or {}) if isinstance(mech, dict) else {}) or {})
+    frames = (frontmatter or {}).get("frames") or {}
+    frame_ids = set(frames) if isinstance(frames, dict) else set()
+    out = []
+    for m in CLAIM_LINK.finditer(report_text):
+        t = re.sub(r"\s+", " ", m.group(1)).strip()
+        if t not in titles:
+            near = sorted(titles, key=lambda x: _distance(x.lower(), t.lower()))[:1]
+            out.append(("!", "report-link",
+                        f"‹{t}› is not a title in the map. A report names a claim by its title, exactly"
+                        + (f"; the nearest is ‹{near[0]}›" if near else "") + ".",
+                        report_text.count("\n", 0, m.start()) + 1))
+    for m in FRAG_LINK.finditer(report_text):
+        kind, ident = m.group(1), m.group(2)
+        ok = ident in (states if kind == "state" else frame_ids)
+        if not ok:
+            have = sorted(states if kind == "state" else frame_ids)
+            out.append(("!", "report-link",
+                        f"#{kind}:{ident} names no {'state of the mechanism' if kind == 'state' else 'frame'} "
+                        f"in the map" + (f" (it has: {', '.join(have[:12])})" if have else "") + ".",
+                        report_text.count("\n", 0, m.start()) + 1))
+    return out
+
+
+def _distance(a, b):
+    """A cheap edit distance, for the nearest title."""
+    import difflib
+    return 1 - difflib.SequenceMatcher(None, a, b).ratio()

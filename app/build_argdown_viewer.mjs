@@ -238,14 +238,7 @@ function parserBundle() {
   const out = path.join(HERE, ".viewer-bundle.js");
   fs.writeFileSync(entry, `
 import { argdown } from "@argdown/core";
-import { toGraph, RUN, metadataProblems, parseProblems, withComment, joinAppraisal, isAppraisalPath } from "./argdown-graph.mjs";
-// THE APPRAISAL BESIDE THE MAP (profile 1.27): the page sets window.__ARGDOWN_APPRAISAL__ to the
-// sibling's text when it opened one, and every parse reads the two as one -- the map, then the
-// sibling's body under its own heading. A sibling that will not parse never costs the reader the
-// map: the map is drawn alone and the fault is left in __ARGDOWN_APPRAISAL_ERROR__ for the page.
-window.__ARGDOWN_APPRAISAL__ = null;
-window.__ARGDOWN_APPRAISAL_ERROR__ = null;
-window.__ARGDOWN_IS_APPRAISAL_PATH__ = isAppraisalPath;
+import { toGraph, RUN, metadataProblems, parseProblems, withComment } from "./argdown-graph.mjs";
 // The text surgery for adding and removing comments, so the page can edit a file without
 // anyone having to know that a metadata block is YAML.
 window.__ARGDOWN_COMMENT__ = { withComment: withComment };
@@ -257,7 +250,7 @@ import { load as yamlLoad } from "js-yaml";
 window.__ARGDOWN_METADATA_CHECK__ = function (source) {
   return metadataProblems(source, yamlLoad);
 };
-function parseOne(source) {
+window.__ARGDOWN_PARSE__ = function (source) {
   const bad = metadataProblems(source, yamlLoad);
   if (bad.length) {
     const first = bad[0];
@@ -281,22 +274,6 @@ function parseOne(source) {
   }
   if (!res.map) throw new Error("Argdown produced no map for this input");
   return toGraph(res);
-}
-window.__ARGDOWN_PARSE_ALONE__ = parseOne;
-window.__ARGDOWN_PARSE__ = function (source) {
-  const sib = window.__ARGDOWN_APPRAISAL__;
-  if (!sib) return parseOne(source);
-  try {
-    const g = parseOne(joinAppraisal(source, sib).text);
-    window.__ARGDOWN_APPRAISAL_ERROR__ = null;
-    return g;
-  } catch (e) {
-    // WHOSE FAULT? The map alone decides: if it fails too, the fault is the map's and is thrown as
-    // ever; if it parses, the fault is the appraisal's, and the map is drawn without it.
-    const g0 = parseOne(source);
-    window.__ARGDOWN_APPRAISAL_ERROR__ = String((e && e.message) || e);
-    return g0;
-  }
 };
 `);
   try {

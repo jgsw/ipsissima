@@ -4521,7 +4521,7 @@ function injectStyle() {
     "  padding:3px 7px;margin:0 0 4px;cursor:pointer;color:var(--fg,#1a1a1a);width:100%}",
     ".amech-loop:hover{border-color:var(--mv-text)}",
     // Hatched and violet, never dashed: a dash is a fidelity rung (ruled D7, 27 Sep 2026).
-    ".amech .st.appraisal rect.box{fill:url(#amech-hatch);stroke:var(--mv-appraisal)}",
+    ".amech .st.appraisal rect.box{fill:var(--mv-appraisal-bg,#f4f1fb);stroke:var(--mv-appraisal)}",
     ".amech .st{cursor:pointer}.amech .st text{font-size:12px}",
     ".amech .ed{fill:none;cursor:pointer}.amech .junction{fill:none;stroke-linecap:butt}.amech .ring{fill:var(--panel,#fff)}.amech .gate{fill:var(--panel,#fff);stroke-linejoin:round}.amech .hit{fill:none;stroke:transparent;stroke-width:14;cursor:pointer}",
     ".amech .chip rect{fill:var(--panel,#fff);stroke:currentColor}.amech .chip text{font-size:11px;fill:currentColor;font-weight:600}",
@@ -5277,7 +5277,7 @@ function create(container, graph, opts) {
   // THE SAME SENTENCE AS THE ARGUMENT MAP'S BANNER, word for word: one switch, one state, one
   // announcement (sweep D, 27 Sep 2026: the two had drifted into different wordings).
   banner.innerHTML = '<b>Appraisal on.</b> ' + M.appraisalClaims + ' addition' +
-    (M.appraisalClaims === 1 ? '' : 's') + ' by the reconstructor, drawn hatched in violet \u2014 ' +
+    (M.appraisalClaims === 1 ? '' : 's') + ' by the reconstructor, tinted violet \u2014 ' +
     'readings of the text against the world, not claims the text makes.' + (opts.helpLinks
       ? ' <button type="button" class="amech-helplink" data-help="The reconstructor&#39;s ' +
         'appraisal">What is this?</button>' : '');
