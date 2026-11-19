@@ -37,6 +37,8 @@
   },
   "overrides": {
     "lodash-es": "^4.18.1",
-    "tmp": "^0.2.6"
+    "tmp": "^0.2.6",
+    "minimatch": "11.0.4",
+    "fast-xml-parser": "5.12.0"
   }
 }
