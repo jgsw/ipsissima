@@ -90,9 +90,24 @@ check(by("conceded").length === 1 && /Granted/.test(by("conceded")[0].says), "a 
 check(by("objection").length === 1 && /Raised›/.test(by("objection")[0].says), "an objection with no reply, and not the one answered");
 check(by("inconsistent").length === 1 && by("inconsistent")[0].ids.length === 3, "a set marked as not all holding");
 check(by("not-told-apart").length === 1, "declared rival accounts no reason bears on differently");
-check(by("rests-on").length >= 1, "what most rests on");
+check(by("rests-on").length === 0 && by("summary").length === 0,
+      "load is not itself an item: a linchpin is not a weakness (James, 19 Nov 2026)");
 check(out.every(x => typeof x.says === "string" && !/fails|weak|wrong|flaw/i.test(x.says)),
       "every line a fact about the map, none a verdict");
+
+console.log("\nranked by what rests on them, three shown, the rest on request");
+const MAP2 = '[Main]: The main claim.\n    <+ [Leaf]: A reason for it.\n        <+ [Root]: A reason for the reason.\n\n' +
+  '[Root]\n    <- [G1]: First grant, against the root. #conceded\n    <- [G2]: Second grant, against the root. #conceded\n\n' +
+  '[Leaf]\n    <- [G3]: Third grant, against the leaf. #conceded\n\n' +
+  '[Main]\n    <- [G4]: Fourth grant, against the main claim. #conceded\n';
+const o2 = D.diagnose(graphOf(MAP2), { deps }), g2 = o2.filter(x => x.group === "unanswered");
+check(g2[0].check === "summary" && /^4 concessions/.test(g2[0].says), "a group of four opens with its count");
+check(/G4/.test(g2[1].says), "what is aimed at the main claim comes first");
+// Supposing [Root] false takes [Leaf] and [Main] with it; supposing [Leaf] false, only [Main].
+check(/G1/.test(g2[2].says) && /G2/.test(g2[3].says) && /G3/.test(g2[4].says),
+      "then what is aimed at the claim more rests on, ties in the text's order");
+check(g2.filter(x => x.check !== "summary" && !x.more).length === 3 && g2.filter(x => x.more).length === 1,
+      "three shown, one held back");
 
 console.log("\nthe appraisal is never counted");
 const withAppraisal = MAP + `
@@ -115,6 +130,15 @@ map: "x.argdown"
 `;
 check(graphOf(joinAppraisal(MAP, sibling).text).nodes.some(n => n.label === "Doubt" && n.tags.includes("appraisal")),
       "a joined sibling's claim reaches the graph as an appraisal claim");
+
+console.log("\non every sample: no dead ends, and every summarised group shows three");
+for (const dir of fs.readdirSync(path.join(REPO, "samples")).filter(d => fs.statSync(path.join(REPO, "samples", d)).isDirectory())) {
+  const f = fs.readdirSync(path.join(REPO, "samples", dir)).find(x => x.endsWith(".argdown") && !x.endsWith(".appraisal.argdown"));
+  if (!f) continue;
+  const o = D.diagnose(graphOf(fs.readFileSync(path.join(REPO, "samples", dir, f), "utf8")), { deps });
+  const capped = o.filter(x => x.check === "summary").every(sm => o.filter(x => x.group === sm.group && x.check !== "summary" && !x.more).length === 3);
+  check(!o.some(x => /leads nowhere/.test(x.says)) && capped, dir + ": " + o.filter(x => !x.more).length + " shown of " + o.length);
+}
 
 /* ---- 2. one cost measure -------------------------------------------------------------------- */
 // Study's cost, exactly as it stood in the page before it moved into the module (18 Nov 2026).
@@ -149,9 +173,17 @@ for (const dir of fs.readdirSync(samples).filter(d => fs.statSync(path.join(samp
 /* ---- 3. in the page ------------------------------------------------------------------------- */
 let chromium = null;
 try { ({ chromium } = await import("playwright")); await chromium.executablePath(); } catch { chromium = null; }
-const PAGE = path.join(REPO, "Ipsissima.html");
-if (!chromium || !fs.existsSync(PAGE)) {
-  console.log("\nin the page: skipped (" + (!chromium ? "no Chromium" : "no built Ipsissima.html; run npm run build") + ")");
+// BUILT HERE, FROM THE CURRENT SOURCE, as test_appraisal_layer.mjs builds its viewer: a page built
+// beforehand may be stale, and on CI there is none (the page half was skipped there, 19 Nov 2026).
+let PAGE = null;
+if (chromium) {
+  PAGE = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "diagnostics-")), "Ipsissima.html");
+  const { execFileSync } = await import("node:child_process");
+  execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), "--standalone", "--editor", "-o", PAGE], { stdio: "pipe" });
+}
+if (!chromium) {
+  if (process.env.IPS_REQUIRE_BROWSER) { console.log("\nFAIL: Playwright's Chromium is required here and is not installed."); process.exit(1); }
+  console.log("\nin the page: skipped (no Chromium)");
 } else {
   console.log("\nin the page");
   const browser = await chromium.launch();
@@ -223,6 +255,21 @@ map: "one.argdown"
     await look.click();
     await page.waitForTimeout(200);
     check(await page.locator("#look").isHidden(), "and the bar button closes it");
+
+    // A GROUP OF FOUR: three shown, the fourth on request.
+    await open([{ path: "four.argdown", text: MAP2 }]);
+    await page.waitForTimeout(800);
+    check(/Where to look \(3\)/.test(await look.textContent()), "the count is what is shown before \u2018show more\u2019");
+    await look.click();
+    await page.waitForTimeout(300);
+    check(!/G3/.test(await page.locator("#look").innerText()), "the lightest of four is held back");
+    await page.locator("#look button.more", { hasText: "Show 1 more" }).click();
+    await page.waitForTimeout(200);
+    check(/G3/.test(await page.locator("#look").innerText()), "and shown on request");
+    await page.locator("#look button.more", { hasText: "Show fewer" }).click();
+    await page.waitForTimeout(200);
+    check(!/G3/.test(await page.locator("#look").innerText()), "and put back");
+    await look.click();
 
     // A missing comma: the YAML fault Argdown would otherwise swallow, dropping what follows.
     await open([{ path: "two.argdown", text: MAP },

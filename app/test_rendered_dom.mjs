@@ -1226,6 +1226,26 @@ async function genTextChecks(browser) {
   }));
   check(silent.prov === true && silent.crux === true,
         "a map declaring neither says nothing", JSON.stringify(silent));
+
+  /* THE CORNER IN THE MECHANISM VIEW (19 Nov 2026, Wilson 2023): the provenance chip (and the question
+   * chip and Abstract) are pinned over the pane's top-left corner, and covered the drawing's top line,
+   * "in sequence, left to right" and what the levels are. The drawing must start below them. */
+  const chainText = fs.readFileSync(path.join(HERE, "..", "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8")
+    .replace(/^===\n/, "===\nreconstruction:\n    generated: true\n");
+  await drop(chainText, "chainmw.argdown");
+  await page.waitForFunction(() =>
+    document.getElementById("fname").dataset.file === "chainmw.argdown", { timeout: 20000 });
+  await page.click("#mechbtn");
+  await page.waitForTimeout(800);
+  const corner = await page.evaluate(() => {
+    const o = document.getElementById("abs");
+    const tops = [...document.querySelectorAll("#mech svg text")].map(t => t.getBoundingClientRect())
+      .filter(r => r.width > 0 && r.left < (o.hidden ? 0 : o.getBoundingClientRect().right));
+    return { shown: !o.hidden, bottom: o.hidden ? 0 : o.getBoundingClientRect().bottom,
+             first: tops.length ? Math.min(...tops.map(r => r.top)) : null };
+  });
+  check(corner.shown && corner.first != null && corner.first >= corner.bottom,
+        "mechanism view: the drawing's top line starts below the corner's chips", JSON.stringify(corner));
   await ctx.close();
 }
 

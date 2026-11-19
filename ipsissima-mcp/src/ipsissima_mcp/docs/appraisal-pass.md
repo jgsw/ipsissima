@@ -46,18 +46,20 @@ them: keep every distinct criticism, and rank the merged set.
 
 ### 1. Diagnose: where to look
 
-Call `argdown_audit` on the map. It lists, from the map alone:
-- the claims the most rests on;
+Call `argdown_audit` on the map. It lists, from the map alone, with what most rests on first:
 - the premises the reconstruction had to supply;
 - the concessions and objections the map records no reply to;
 - the sets the text says cannot all hold;
 - the causal steps that are only asserted, or put as possibilities;
-- the gaps in the chain;
+- an outcome the chain never reaches, or a start that leads nowhere;
 - each causal move's critical questions the map records nothing on;
 - declared rival accounts no reason bears on differently;
 - comparison tables' empty cells, and pairs alike but judged apart.
 
-These are facts about the map, not verdicts. Each is a place to look. Decide for each worth
+These are facts about the map, not verdicts. Each is a place to look. A group of more than three is
+summarised, with its three heaviest shown and the rest marked `more`: read them all. How much rests on a
+claim only orders the list. A load-bearing claim is a linchpin, not a weakness; Study's "which would
+cost the most?" names those. Decide for each worth
 pursuing whether it is a weakness of the text, a limit of the reconstruction, or nothing.
 
 **Also go through the forms** the map names: each argument's scheme, and each bridge's causal

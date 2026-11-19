@@ -894,7 +894,8 @@ own words in quotation marks) and a little better argued, but found no strong ob
 alone missed, and declaring a text's comparisons and mechanism did not prompt any critique of them.
 So the appraisal is a sibling file (`<map>.appraisal.argdown`) with an `appraises:` key on each claim,
 the ranked argument a separate report with its quotations checked, and the places a map shows its
-argument thin are computed and offered unasked, as a trial (`argdown_audit`, the Where to look panel).
+argument without reply, reason or evidence are computed and offered unasked, as a trial (`argdown_audit`,
+the Where to look panel), ordered by how much rests on them.
 Every 1.26 file conforms: an in-map `#appraisal` section stays legal, and lacks only the `appraises:`
 key, which is queried, not required.
 

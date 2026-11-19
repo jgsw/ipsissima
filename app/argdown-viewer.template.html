@@ -189,6 +189,11 @@ main.swapped{flex-direction:row-reverse}
 /* The Mechanism arrangement draws into its own container in the same stage: it is a different
    graph (states as boxes, claims on the arrows), so it is not a layout of the live map. */
 #mech{position:absolute;inset:0;background:var(--bg);overflow:hidden}
+/* THE CORNER IS TAKEN (19 Nov 2026, Wilson 2023): the question chip, Abstract and the provenance chip
+ * are pinned over the pane's top-left corner, and covered the drawing's top line ("in sequence, left
+ * to right", what the levels are). The Reasons view is told their height (topInset); the Mechanism
+ * view's header row is now at least that tall, so the drawing starts below them. */
+#mech .amech-head{min-height:var(--orient-h,0px);box-sizing:border-box}
 #mech[hidden],#map[hidden]{display:none}
 
 /* THE ARTICLE'S OWN ABSTRACT, on a fold at the map's top-left.
@@ -810,6 +815,8 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #look li button.none{cursor:default}
 #look li button.on{background:var(--accent-wash,rgba(58,123,213,.12));border-left-color:var(--accent,#3a7bd5)}
 #look .foot{margin-top:.5rem;color:var(--fg-dim)}
+#look p.sum{margin:.35rem 0 .1rem;font-weight:600}
+#look li button.more{color:var(--accent,#3a7bd5);font-size:12px;padding:.1rem .4rem}
 #tables header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.35rem}
 #tables header b{font-size:13px}
 #tables header .grow{flex:1}
@@ -3484,6 +3491,7 @@ function mechEnsure(){
   var layers = MECH ? MECH.getLayers() : null;
   if (MECH) MECH.destroy();
   MECH_GRAPH = CURRENT_GRAPH;
+  mechInsetSync();
   MECH = window.ArgdownMechanism.create($("mech"), CURRENT_GRAPH,
     { onClaim: mechShowClaim, appraisal: APPRAISAL_ON, helpLinks: true,
       onLayers: function(l){ setAppraisalOn(l.appraisal); },
@@ -6360,6 +6368,16 @@ window.addEventListener("resize", syncOrient);
 /** How far the strip reaches down over the map, for the map's framing to keep clear of. */
 function orientInset(){
   return $("abs").hidden ? 0 : $("orient").getBoundingClientRect().height + 8;
+}
+/** The same allowance for the Mechanism view, as a CSS variable its header row takes as its height.
+ *  Kept current as the corner's contents change (a question chip arrives, a map with no abstract). */
+function mechInsetSync(){
+  var m = $("mech"); if (!m) return;
+  var h = orientInset();
+  m.style.setProperty("--orient-h", h ? (h + 4) + "px" : "0px");
+}
+if (typeof ResizeObserver !== "undefined") {
+  try { new ResizeObserver(mechInsetSync).observe($("orient")); new ResizeObserver(mechInsetSync).observe($("abs")); } catch (e) { void e; }
 }
 /** How far the open cards in the map's corner reach in from its right edge, the same way. A
  *  card folded to its header is small enough to pan past, and on a narrow pane giving up that
@@ -9739,9 +9757,11 @@ function lookItems(){
   }
   return LOOK_CACHE.items;
 }
+/** What the count on the button counts: the items shown before "show all", summary lines aside. */
+function lookShownCount(){ return lookItems().filter(function(x){ return !x.more && x.check !== "summary"; }).length; }
 function lookSync(){
   var b = document.querySelector('#map [data-act="look"]');
-  var n = lookItems().length;
+  var n = lookShownCount();
   if (b) {
     b.hidden = !n;
     b.textContent = "Where to look" + (n ? " (" + n + ")" : "");
@@ -9752,10 +9772,10 @@ function lookSync(){
 }
 function lookToggle(){ if (LOOK) lookClose(); else lookOpen(); }
 function lookOpen(){
-  if (!lookItems().length) return;
+  if (!lookShownCount()) return;
   if (TABLES) tablesClose();
   if (WEIGH) weighClose();
-  LOOK = { pick: -1 };
+  LOOK = { pick: -1, all: {} };
   whatIfHide(); ctxHide();
   lookRender(); lookSync();
 }
@@ -9774,17 +9794,28 @@ function lookRender(){
   if (!box) return;
   if (!LOOK || !CURRENT_GRAPH) { box.hidden = true; box.innerHTML = ""; return; }
   var esc = ArgdownStaircase.esc, items = lookItems();
-  var h = '<header><b>Where to look</b><span class="q">where the map shows the argument thin, by its own lights</span>' +
+  var h = '<header><b>Where to look</b><span class="q">what the map records no reply, reason or evidence for, or leaves open; what most rests on first</span>' +
     '<span class="grow"></span><button type="button" class="plain" data-look-close="1" title="Close" aria-label="Close">\u00d7</button></header>';
   ["argument", "mechanism", "comparison", "note"].forEach(function(kind){
     var mine = [];
     items.forEach(function(x, i){ if (x.kind === kind) mine.push(i); });
     if (!mine.length) return;
     h += '<h4>' + LOOK_HEADS[kind] + '</h4><ul>';
+    var hidden = {};
     mine.forEach(function(i){
       var x = items[i], has = x.ids && x.ids.length;
+      // A GROUP OF MORE THAN THREE: its count, its three heaviest, and the rest on request (19 Nov 2026).
+      if (x.more && !LOOK.all[x.group]) { hidden[x.group] = (hidden[x.group] || 0) + 1; return; }
+      if (x.check === "summary") { h += '</ul><p class="sum">' + esc(x.says) + '</p><ul>'; return; }
       h += '<li><button type="button" data-look-i="' + i + '"' + (has ? '' : ' class="none" tabindex="-1"') +
-           (LOOK.pick === i ? ' class="on"' : '') + (has ? ' title="Show on the map"' : '') + '>' + esc(x.says) + '</button></li>';
+           (LOOK.pick === i ? ' class="on"' : '') + (has ? ' title="Show on the map"' : '') + '>' + esc(x.summarised && x.short ? x.short : x.says) + '</button></li>';
+      var nx = items[mine[mine.indexOf(i) + 1]];
+      if ((!nx || nx.group !== x.group) && x.group && LOOK.all[x.group] && items.some(function(y){ return y.group === x.group && y.more; }))
+        h += '<li><button type="button" class="more" data-look-fewer="' + esc(x.group) + '">Show fewer</button></li>';
+      if (nx && nx.more && !LOOK.all[nx.group] && nx.group === x.group) {
+        var left = items.filter(function(y){ return y.group === x.group && y.more; }).length;
+        h += '<li><button type="button" class="more" data-look-all="' + esc(x.group) + '">Show ' + left + ' more</button></li>';
+      }
     });
     h += '</ul>';
   });
@@ -9794,9 +9825,11 @@ function lookRender(){
   box.hidden = false;
 }
 document.addEventListener("click", function(e){
-  var t = e.target && e.target.closest && e.target.closest("#look [data-look-close], #look [data-look-i]");
+  var t = e.target && e.target.closest && e.target.closest("#look [data-look-close], #look [data-look-i], #look [data-look-all], #look [data-look-fewer]");
   if (!t) return;
   if (t.hasAttribute("data-look-close")) { lookClose(); return; }
+  if (t.hasAttribute("data-look-all")) { LOOK.all[t.getAttribute("data-look-all")] = true; lookRender(); return; }
+  if (t.hasAttribute("data-look-fewer")) { LOOK.all[t.getAttribute("data-look-fewer")] = false; lookRender(); return; }
   var i = +t.getAttribute("data-look-i"), x = lookItems()[i];
   if (!x || !x.ids || !x.ids.length || !LIVE) return;
   LOOK.pick = i;

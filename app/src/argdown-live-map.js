@@ -6382,8 +6382,8 @@ function createLiveMap(container, graph, options) {
         // WHERE TO LOOK (19 Nov 2026, a trial of offering it unasked): the places the map shows
         // its argument thin by its own lights. Drawn hidden; the page shows it, with a count,
         // when there is something to point at.
-        (opt.onLook ? '<button data-act="look" hidden title="Where to look: the places this map shows ' +
-          'its argument is thin by its own lights. Facts about the map, not verdicts on the text">Where to look</button>' : "") +
+        (opt.onLook ? '<button data-act="look" hidden title="What the map records no reply, reason or evidence for, ' +
+          'most load-bearing first: facts about the map, not verdicts">Where to look</button>' : "") +
         '</span>' : "") +
       (parts.depth ? '<span class="alm-grp" data-role="depth"></span>' : "") +
       '<span class="alm-grp alm-seg" data-role="sections"></span>' +

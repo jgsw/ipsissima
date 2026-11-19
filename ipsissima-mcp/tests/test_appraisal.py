@@ -192,6 +192,19 @@ if server:
         check("a map: its sibling is named", p["appraisal"]["sibling"], [str(td / "paper.appraisal.argdown")])
         a = server.argdown_audit(str(td / "paper.argdown"))
         check("the audit runs on a map", a["ok"], True)
+    # THE FOLDER ABOVE COUNTS ONLY FROM `source/` (CI, 19 Nov 2026: a stray map in /tmp was offered).
+    with tempfile.TemporaryDirectory() as td:
+        td = Path(td)
+        (td / "stray.argdown").write_text(MAP, encoding="utf-8")
+        (td / "work").mkdir()
+        (td / "work" / "paper.md").write_text("# A paper\n\n" + "Words. " * 500, encoding="utf-8")
+        p = server.argdown_plan([str(td / "work" / "paper.md")], intent="appraise")
+        check("a map in the folder above a plain folder is not this text's", p["appraisal"]["maps"], [])
+        (td / "made" / "source").mkdir(parents=True)
+        (td / "made" / "source" / "paper.md").write_text("# A paper\n\n" + "Words. " * 500, encoding="utf-8")
+        (td / "made" / "paper.argdown").write_text(MAP, encoding="utf-8")
+        p = server.argdown_plan([str(td / "made" / "source" / "paper.md")], intent="appraise")
+        check("the map beside source/ is", p["appraisal"]["maps"], [str(td / "made" / "paper.argdown")])
 
 print()
 if FAILED:

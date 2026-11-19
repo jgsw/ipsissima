@@ -30,8 +30,15 @@ def check(name, got, want):
           ("" if ok else f"\n          got  {got!r}\n          want {want!r}"))
 
 
+# A PRIVATE FOLDER, REMOVED AT EXIT. This wrote a fixed /tmp/_fm_test.argdown and left it there, where
+# a later test looking for maps near a temporary folder found it (CI, 19 Nov 2026).
+import atexit, shutil, tempfile                                               # noqa: E402
+_TMP = Path(tempfile.mkdtemp(prefix="fm-test-"))
+atexit.register(shutil.rmtree, _TMP, True)
+
+
 def write(text):
-    p = Path("/tmp/_fm_test.argdown")
+    p = _TMP / "_fm_test.argdown"
     p.write_text(text, encoding="utf-8")
     return str(p)
 

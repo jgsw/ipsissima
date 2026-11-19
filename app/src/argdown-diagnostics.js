@@ -1,4 +1,4 @@
-/* argdown-diagnostics.js — where to look: the places a map shows its argument is thin by its own lights.
+/* argdown-diagnostics.js — where to look: what a map records no reply, reason or evidence for, or leaves open.
  *
  * James, 19 Nov 2026, on the appraisal plan (OneDrive "Appraisal on request/APPRAISAL-PLAN.md", and
  * the appraisal trial it rests on): "Let's try including the computed diagnostics unasked. I can see
@@ -10,7 +10,8 @@
  * that declaring a text's comparisons and mechanism did not prompt any critique of them (comparisons
  * were assessed slightly WORSE with the map). What a map can do that a reading cannot is compute the
  * questions -- which claim the most rests on, which concession is never answered, which causal step
- * is only asserted, which rival accounts no reason tells apart -- and put them in front of the reader
+ * is only asserted, which rival accounts no reason tells apart -- and put them in front of the reader,
+ * the most load-bearing first
  * or the appraiser. That is this module.
  *
  * ONE IMPLEMENTATION, TWO HOSTS. The page's "Where to look" panel calls it, and so does the MCP
@@ -96,16 +97,16 @@ function costRank(graph, opts) {
 
 /* ---- the argument ------------------------------------------------------------------------------ */
 
-function restsOn(graph, opts, byId) {
-  var R = costRank(graph, opts).filter(function (x) { return x.mains > 0 || x.lost >= 2; });
-  if (!R.length) return [];
-  var top = R[0], level = R.filter(function (x) { return x.mains === top.mains && x.lost === top.lost; });
-  var pick = (level.length > 3 ? level : R).slice(0, 3);
-  return pick.map(function (x) {
-    return { kind: "argument", check: "rests-on", ids: [x.id], titles: [x.label],
-             says: "If " + q(x.label) + " were false, " + plural(x.lost, "claim") + " would lose the map’s support" +
-                   (x.mains ? ", " + (x.mains === 1 ? "a main claim" : x.mains + " main claims") + " among them." : ".") };
-  });
+/* WHAT RESTS ON A CLAIM RANKS THE LIST; IT IS NOT ITSELF ON IT (James, 19 Nov 2026). The first version
+ * listed "what most rests on" as a thin place. It is Study's "which would cost the most?" again, and it
+ * measures load, not weakness: Darwin's "a severe struggle for life" topped it because the argument
+ * collapses without it, which shows it is the linchpin, not that it is undefended. So load only ORDERS
+ * the items -- a linchpin left without reply, reason or evidence comes first -- and is never an item. */
+function loadIndex(graph, opts) {
+  var R = costRank(graph, opts), mainSet = mains(graph, opts), out = {};
+  R.forEach(function (x) { out[x.id] = [x.mains, x.lost]; });
+  Object.keys(mainSet).forEach(function (id) { out[id] = [1e6, 0]; });   // a main claim outranks all
+  return out;
 }
 
 /** Premises the reconstruction had to supply, on which something the author asserts depends. */
@@ -119,7 +120,7 @@ function unstated(graph, opts, byId) {
     return n.kind === "statement" && n.fidelity === "imputation" && !isRival(n) && feeds[id];
   }).map(function (id) {
     var n = byId[id];
-    return { kind: "argument", check: "unstated", ids: [id], titles: [n.label],
+    return { kind: "argument", check: "unstated", ids: [id], titles: [n.label], short: q(n.label) + (n.warrant ? " (" + n.warrant + ")" : ""),
              says: "The text does not state " + q(n.label) + "; the reconstruction supplied it because the argument needs it" +
                    (n.warrant ? " (" + n.warrant + ")." : ".") };
   });
@@ -163,10 +164,10 @@ function unanswered(graph, opts, byId) {
   Object.keys(byId).forEach(function (id) {
     var n = byId[id];
     if (hasTag(n, "conceded") && !answered(graph, byId, id))
-      out.push({ kind: "argument", check: "conceded", ids: [id], titles: [n.label],
+      out.push({ kind: "argument", check: "conceded", ids: [id], titles: [n.label], short: q(n.label) + ", a concession",
                  says: "The author grants " + q(n.label) + " against their own case, and the map records no reply to it." });
     else if (hasTag(n, "contested") && !answered(graph, byId, id))
-      out.push({ kind: "argument", check: "objection", ids: [id], titles: [n.label],
+      out.push({ kind: "argument", check: "objection", ids: [id], titles: [n.label], short: q(n.label) + ", an objection",
                  says: "The text voices the objection " + q(n.label) + ", and the map records no reply to it." });
   });
   return out;
@@ -204,12 +205,17 @@ function mechanism(graph, opts, byId) {
     var step = q(label(s.from)) + " to " + q(label(s.to));
     out.push({ kind: "mechanism", check: asserted ? (hedged ? "asserted-hedged" : "asserted") : "hedged",
                ids: s.claim.id ? [s.claim.id] : [], titles: [s.claim.title],
+               short: step + (asserted && hedged ? ", put as a possibility" : ""),
                says: asserted ? step + " is asserted" + (hedged ? ", and put as a possibility" : "") +
                                 ": the map records neither an argument for this step nor evidence."
                               : "The text puts " + step + " as a possibility, not as happening." });
   });
+  if (opts && opts.ctx) opts.ctx.steps = text.length;
   ((M.profile && M.profile.gaps) || []).forEach(function (g) {
     var msg = String(g && g.message != null ? g.message : g);
+    // A DEAD END IS USUALLY A SIDE EFFECT the text does not follow up (8 of Sewell's 8 "gaps"), not a
+    // gap in the account: kept are an outcome the chain never reaches and a start that leads nowhere.
+    if (/leads nowhere/.test(msg)) return;
     // The chain's own messages name states by id, in back-ticks: the reader knows them by label.
     msg = msg.replace(/`([^`]+)`/g, function (_, id) { return M.states[id] ? q(label(id)) : id; });
     out.push({ kind: "mechanism", check: "gap", ids: [], titles: [], says: "In the chain: " + msg + (/[.!?]$/.test(msg) ? "" : ".") });
@@ -225,6 +231,7 @@ function mechanism(graph, opts, byId) {
     var argNode = Object.keys(byId).map(function (id) { return byId[id]; })
       .filter(function (n) { return n.kind === "argument" && n.label === inf.argument; })[0];
     out.push({ kind: "mechanism", check: "bridge", ids: argNode ? [argNode.id] : [], titles: [inf.argument],
+               short: q(inf.argument) + " (" + sch.name + "): " + open.map(function (x) { return x.question; }).join(" "),
                says: q(inf.argument) + " is a causal move (" + sch.name + "). The map records nothing on: " +
                      open.map(function (x) { return x.question; }).join(" ") });
   });
@@ -267,17 +274,80 @@ function comparisons(graph, opts, byId) {
   return out;
 }
 
+/* GROUPED, RANKED, AND CAPPED (James, 19 Nov 2026: 26 mechanism items on Merton and nearly 50 on
+ * Sewell were "so many considerations that it's not particularly helpful"). Within each group the items
+ * are ordered by how much rests on what they point at; a group of more than three opens with one line
+ * saying how many there are, shows the three the argument leans on most, and marks the rest `more`,
+ * which the panel shows only when asked. Nothing is dropped from the list itself: an appraiser asking
+ * argdown_audit gets every item. Under a summary an item reads in its `short` form, since the summary
+ * has already said what kind of thing it is. */
+var GROUP_OF = { unstated: "unstated", conceded: "unanswered", objection: "unanswered", inconsistent: "inconsistent",
+                 asserted: "asserted", "asserted-hedged": "asserted", hedged: "hedged", gap: "gap", bridge: "bridge" };
+var GROUP_ORDER = ["unanswered", "unstated", "inconsistent", "asserted", "hedged", "bridge", "gap"];
+var TOP = 3;
+function summaryOf(group, n, ctx) {
+  switch (group) {
+    case "unanswered": return n + " concessions and objections have no reply in the map. Those aimed at what most rests on:";
+    case "unstated": return n + " premises the argument needs are not stated in the text; the reconstruction supplied them. The ones most rests on:";
+    case "asserted": return n + (ctx.steps ? " of " + ctx.steps : "") + " causal steps are asserted: the map records neither an argument for them nor evidence. The ones the argument leans on most:";
+    case "hedged": return n + " causal steps are put as possibilities, not as happening. The ones the argument leans on most:";
+    case "bridge": return n + " causal moves have critical questions the map records nothing on. The ones the argument leans on most:";
+    default: return n + " of this kind. The first " + TOP + ":";
+  }
+}
+
 /** Everything, in reading order: the argument, then the mechanism, then the comparisons. */
 function diagnose(graph, opts) {
   opts = opts || {};
+  var ctx = {}, o2 = Object.assign({}, opts, { ctx: ctx });
   var byId = authorNodes(graph, opts);
-  var parts = [restsOn, unstated, unanswered, inconsistent, mechanism, comparisons];
-  var out = [];
-  parts.forEach(function (f) {
-    try { out = out.concat(f(graph, opts, byId)); }
-    catch (e) { out.push({ kind: "note", check: "error", ids: [], titles: [], says: "One kind of diagnostic could not be computed: " + (e && e.message || e) }); }
+  var raw = [];
+  [unstated, unanswered, inconsistent, mechanism, comparisons].forEach(function (f) {
+    try { raw = raw.concat(f(graph, o2, byId)); }
+    catch (e) { raw.push({ kind: "note", check: "error", ids: [], titles: [], says: "One kind of diagnostic could not be computed: " + (e && e.message || e) }); }
   });
-  return out;
+  var load = {};
+  try { load = loadIndex(graph, opts); } catch (e) { load = {}; }
+  var edges = (graph && graph.edges) || [];
+  var nodeW = function (id) { return load[id] || [0, 0]; };
+  var max = function (ws) { return ws.reduce(function (a, b) { return b[0] > a[0] || (b[0] === a[0] && b[1] > a[1]) ? b : a; }, [0, 0]); };
+  // How much rests on what an item points at: an objection, on what it attacks; a causal move, on its
+  // conclusion; anything else, on its own claims.
+  var weight = function (x) {
+    if (x.check === "conceded" || x.check === "objection")
+      return max(edges.filter(function (e) { return x.ids.indexOf(e.from) >= 0 && ATTACKS.indexOf(e.type) >= 0; })
+                      .map(function (e) { return nodeW(e.to); }));
+    if (x.check === "bridge")
+      return max(edges.filter(function (e) { return x.ids.indexOf(e.from) >= 0 && e.type === "support"; })
+                      .map(function (e) { return nodeW(e.to); }));
+    return max(x.ids.map(nodeW));
+  };
+  var groups = {}, rest = [];
+  raw.forEach(function (x, i) {
+    var g = GROUP_OF[x.check];
+    if (!g) { rest.push(x); return; }
+    x.group = g; x.order = i; x.weight = weight(x);
+    (groups[g] = groups[g] || []).push(x);
+  });
+  var out = [];
+  GROUP_ORDER.forEach(function (g) {
+    var xs = groups[g];
+    if (!xs) return;
+    xs.sort(function (a, b) { return b.weight[0] - a.weight[0] || b.weight[1] - a.weight[1] || a.order - b.order; });
+    if (xs.length > TOP)
+      out.push({ kind: xs[0].kind, check: "summary", group: g, ids: [], titles: [], says: summaryOf(g, xs.length, ctx) });
+    xs.forEach(function (x, k) {
+      x.more = xs.length > TOP && k >= TOP;
+      x.summarised = xs.length > TOP;
+      delete x.order; delete x.weight;
+      out.push(x);
+    });
+  });
+  // The argument first, then the mechanism, then the comparisons, as before.
+  var KIND = { argument: 0, mechanism: 1, comparison: 2, note: 3 };
+  return out.concat(rest).map(function (x, i) { return [x, i]; })
+    .sort(function (a, b) { return (KIND[a[0].kind] - KIND[b[0].kind]) || a[1] - b[1]; })
+    .map(function (p) { return p[0]; });
 }
 
 var API = { diagnose: diagnose, costRank: costRank, mains: mains, claimCost: claimCost };

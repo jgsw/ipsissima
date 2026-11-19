@@ -296,13 +296,20 @@ def argdown_plan(sources: list[str], intent: str = "reconstruct",
 
 
 def _maps_near(sources):
-    """Maps (not appraisal siblings) the user named, or that sit beside or above what they named."""
+    """Maps (not appraisal siblings) the user named, or that sit beside what they named.
+
+    THE FOLDER ABOVE ONLY FROM A `source/` FOLDER, which is the layout extract_text writes: the map
+    beside `source/`, the text inside it. Looking above every source found whatever map happened to
+    sit in the parent -- in CI, another test's scratch map in /tmp, offered as this text's map
+    (19 Nov 2026)."""
     from ipsissima_mcp import appraisal as ap
     seen, out = set(), []
     for s in sources:
         p = Path(s).expanduser()
         cands = [p] if p.suffix.lower() in (".argdown", ".ad") else []
-        for d in {p if p.is_dir() else p.parent, (p if p.is_dir() else p.parent).parent}:
+        here = p if p.is_dir() else p.parent
+        dirs = [here] + ([here.parent] if here.name.lower() == "source" else [])
+        for d in dirs:
             if d.is_dir():
                 cands += sorted(d.glob("*.argdown"))
         for c in cands:
@@ -1041,14 +1048,17 @@ _AUDIT_HEAD = {"argument": "THE ARGUMENT", "mechanism": "THE MECHANISM", "compar
     structured_output=True,
     title="Where to look",
     description=(
-        "The places a checked map shows its argument is thin BY ITS OWN LIGHTS, computed from the "
-        "map: the claims the most rests on (supposed false, which costs the main claims most); "
-        "premises the reconstruction had to supply; concessions and objections the map records no "
-        "reply to; sets the text marks as not all holding; causal steps that are only asserted, or "
-        "put as possibilities; gaps in the chain; a causal move's critical questions the map records "
-        "nothing on; declared rival accounts no reason bears on differently; and comparison tables' "
-        "empty cells and pairs judged apart though alike. The same list the app's Where to look panel "
-        "shows (one implementation, run through the bundled parser).\n\n"
+        "What a checked map records no reply, reason or evidence for, or leaves open, computed from "
+        "the map: concessions and objections with no reply; premises the reconstruction had to "
+        "supply; sets the text marks as not all holding; causal steps that are only asserted, or put "
+        "as possibilities; an outcome the chain never reaches; a causal move's critical questions the "
+        "map records nothing on; declared rival accounts no reason bears on differently; and "
+        "comparison tables' empty cells and pairs judged apart though alike. Within each group the "
+        "items come in order of how much of the argument rests on what they point at; a group of more "
+        "than three opens with a `summary` line and marks all but its three heaviest `more`. How much "
+        "rests on a claim only ORDERS the list: a load-bearing claim is a linchpin, not a weakness, and "
+        "Study's 'which would cost the most?' already answers it. The same list the app's Where to look "
+        "panel shows (one implementation, run through the bundled parser).\n\n"
         "Each item is a FACT ABOUT THE MAP, not a verdict on the text: \"the map records no reply\", "
         "never \"the author fails\". The appraisal layer is left out: these are about the author's "
         "argument.\n\n"
@@ -1083,7 +1093,12 @@ def argdown_audit(path: str) -> dict[str, Any]:
         mine = [x for x in items if x.get("kind") == kind]
         if mine:
             lines.append(_AUDIT_HEAD[kind])
-            lines += ["  - " + x["says"] for x in mine]
+            lines += [("  " if x.get("check") == "summary" else "  - ") +
+                      (x.get("short") if x.get("summarised") and x.get("short") else x["says"])
+                      for x in mine if not x.get("more")]
+            more = len([x for x in mine if x.get("more")])
+            if more:
+                lines.append(f"  (and {more} more, ranked lower: see `items`)")
     return {"ok": True, "map": str(p), "count": len(items), "items": items,
             "prose": "\n".join(lines) if lines else "Nothing to point at: the map shows no thin place by these measures.",
             "next": ("These are where to look, not verdicts. For an appraisal, read argdown_method(\"appraisal\") "
