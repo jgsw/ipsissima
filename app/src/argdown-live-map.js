@@ -3772,6 +3772,9 @@ const DEFAULTS = {
   // The same on the right: the width of whatever the host keeps open over the map's right edge
   // -- the page's key and study cards. A function returning pixels; null for none.
   rightInset: null,
+  // And on the left: the width of a panel the host has open over the map's left edge -- Where to
+  // look, Tables, Weigh (19 Nov 2026: they covered the start of the drawing). Pixels; null for none.
+  leftInset: null,
   // The smallest zoom at which a claim's words can be read. Given it, a map still as it opened
   // -- nothing folded, moved or switched by the reader yet -- that would fit only below it comes
   // down a rung of "how much" instead, until it fits or reaches the main claims alone. See
@@ -5985,8 +5988,8 @@ function createLiveMap(container, graph, options) {
   }
   /** ⌘= and ⌘− and the menu's Zoom In and Zoom Out: about the middle of the clear pane. */
   function zoomBy(f) {
-    const { cw, ch, top } = clearBand();
-    zoomAt(f, cw / 2, top + ch / 2);
+    const { cw, ch, top, left } = clearBand();
+    zoomAt(f, left + cw / 2, top + ch / 2);
   }
   /** Cut the reading column's pages again for the zoom the reader has settled on (see
    *  `pageScale`). Only the column in Exposition is cut into pages; nothing else re-lays out on
@@ -6000,8 +6003,8 @@ function createLiveMap(container, graph, options) {
       const had = pageScale || (lastFit && lastFit.paged) || 0.8;
       if (Math.abs(want - had) / had < 0.08) return;
       // The claim nearest the middle of the pane is held still across the new cut.
-      const r = container.getBoundingClientRect(), { cw, ch, top } = clearBand();
-      const cx = r.left + cw / 2, cy = r.top + top + ch / 2;
+      const r = container.getBoundingClientRect(), { cw, ch, top, left } = clearBand();
+      const cx = r.left + left + cw / 2, cy = r.top + top + ch / 2;
       let best = null, bd = Infinity;
       for (const n of lastVis.nodes) {
         const at = controlPoint(n.id, "top");
@@ -6089,8 +6092,9 @@ function createLiveMap(container, graph, options) {
     const bar = toolbar ? toolbar.offsetHeight + 14 : 0;
     const top = typeof opt.topInset === "function" ? Math.max(0, +opt.topInset() || 0) : 0;
     const right = typeof opt.rightInset === "function" ? Math.max(0, +opt.rightInset() || 0) : 0;
-    return { top, ch: Math.max(80, (container.clientHeight || 500) - bar - top),
-             cw: Math.max(200, (container.clientWidth || 800) - right) };
+    const left = typeof opt.leftInset === "function" ? Math.max(0, +opt.leftInset() || 0) : 0;
+    return { top, left, ch: Math.max(80, (container.clientHeight || 500) - bar - top),
+             cw: Math.max(200, (container.clientWidth || 800) - right - left) };
   }
 
   /** WOULD THIS FIT ONLY BELOW THE READABLE ZOOM, on a map still as it opened? Then it comes
@@ -6124,7 +6128,7 @@ function createLiveMap(container, graph, options) {
     // The toolbar floats over the bottom of the map, so fit into what is left above it or the
     // lowest row of nodes ends up hidden behind the buttons -- and the host's strip floats over
     // the top and its cards over the right, so the same goes there (see clearBand).
-    const { ch, top, cw } = clearBand();
+    const { ch, top, cw, left } = clearBand();
     // Was that a real measurement, or the fallback? The distinction is what lets the observer
     // below know whether this framing is worth keeping.
     if (container.clientWidth > 40 && container.clientHeight > 120) framedForReal = true;
@@ -6142,7 +6146,7 @@ function createLiveMap(container, graph, options) {
       ? { k: Math.max(opt.minScale, Math.min(cw / (w + 32), 1)), x: 0, y: 16 }
       : frameFor(w, h, cw, ch, opt.minScale, apex);
     if (reading && !paged) f.x = Math.max(16, (cw - w * f.k) / 2);
-    view.k = f.k; view.x = f.x; view.y = f.y + top;
+    view.k = f.k; view.x = f.x + left; view.y = f.y + top;
     glide();                      // rather than cutting to the new frame
     userMoved = false;
     applyView();
@@ -6200,10 +6204,10 @@ function createLiveMap(container, graph, options) {
     if (opts.topOnly) y1 = Math.min(y1, y0 + opts.topOnly);
     const pad = opts.pad == null ? 40 : opts.pad;
     x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
-    const { ch, top, cw } = clearBand();
+    const { ch, top, cw, left } = clearBand();
     const f = frameFor(x1 - x0, y1 - y0, cw, ch, opt.minScale);
     view.k = f.k;
-    view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
+    view.x = left + cw / 2 - ((x0 + x1) / 2) * view.k;
     view.y = top + ch / 2 - ((y0 + y1) / 2) * view.k;
     // The walkthrough asked for this camera; a fold performed as part of the tour must not
     // re-frame it away underneath. Same reasoning as `centreOn`.
@@ -7002,14 +7006,14 @@ function createLiveMap(container, graph, options) {
       y0 = Math.min(y0, p.y - p.height / 2); y1 = Math.max(y1, p.y + p.height / 2);
     }
     if (!found) return false;
-    const { ch, top, cw } = clearBand();
+    const { ch, top, cw, left } = clearBand();
     // WOULD THEY ALL FIT? That, not how many there are, is what decides whether moving the
     // camera helps. Two claims side by side are worth framing; six scattered across a book have
     // a midpoint that is nowhere near any of them, and centring on it moves the reader away
     // from everything they asked about. Counting was the first rule and got both wrong.
     if (onlyIfTheyFit &&
         ((x1 - x0) * view.k > cw * 0.9 || (y1 - y0) * view.k > ch * 0.9)) return false;
-    view.x = cw / 2 - ((x0 + x1) / 2) * view.k;
+    view.x = left + cw / 2 - ((x0 + x1) / 2) * view.k;
     view.y = top + ch / 2 - ((y0 + y1) / 2) * view.k;
     userMoved = true;             // the reader asked for this camera; a fold must not undo it
     glide();
@@ -7089,6 +7093,18 @@ function createLiveMap(container, graph, options) {
     zoomBy,
     // A card has come over the map. Frame again for the room now left -- unless the reader has
     // taken the camera, whose choice outranks the card.
+    // A panel has opened or closed over the map's left edge, by `dx` pixels: a map still as framed is
+    // framed again for the room left; one the reader has moved slides by the difference, keeping
+    // their zoom, so what they were looking at stays in view.
+    leftInsetChanged: (dx) => {
+      if (!dx) return;
+      if (lastFit && !userMoved) {
+        if (lowerRungToRead(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading)) render(true);
+        else fitTo(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading, lastFit.paged);
+        return;
+      }
+      view.x += dx; glide(); applyView();
+    },
     reframe: () => {
       if (!lastFit || userMoved) return;
       if (lowerRungToRead(lastFit.w, lastFit.h, lastFit.apex, lastFit.reading)) render(true);

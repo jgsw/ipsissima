@@ -194,6 +194,10 @@ main.swapped{flex-direction:row-reverse}
  * to right", what the levels are). The Reasons view is told their height (topInset); the Mechanism
  * view's header row is now at least that tall, so the drawing starts below them. */
 #mech .amech-head{min-height:var(--orient-h,0px);box-sizing:border-box}
+/* ROOM FOR AN OPEN PANEL (James, 20 Nov 2026): Where to look, Tables and Weigh float over the left of
+ * the stage, where a chain's first states are drawn. While one is open the drawing is laid out to its
+ * right; the stage re-fits itself when its size changes. */
+#mech .amech-stage{margin-left:var(--panel-w,0px)}
 #mech[hidden],#map[hidden]{display:none}
 
 /* THE ARTICLE'S OWN ABSTRACT, on a fold at the map's top-left.
@@ -2206,7 +2210,7 @@ function openingDepth(graph){
     onLocate: msLocate, onSelect: whatIfShow,
     onMenu: ctxShow, onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
     onMargin: openMargin,
-    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset, leftInset: panelInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true
   });
   syncDock();
@@ -6543,6 +6547,40 @@ function mechInsetSync(){
 if (typeof ResizeObserver !== "undefined") {
   try { new ResizeObserver(mechInsetSync).observe($("orient")); new ResizeObserver(mechInsetSync).observe($("abs")); } catch (e) { void e; }
 }
+/** How far an open panel -- Where to look, Tables, Weigh -- reaches in from the stage's left edge,
+ *  so both views can lay the drawing out to its right (James, 20 Nov 2026: "Make room"). Nothing
+ *  where what would be left is too narrow to be worth it: there the panel covers, as before. */
+function panelInset(){
+  var stage = $("stage");
+  if (!stage || stage.hidden) return 0;
+  var sr = stage.getBoundingClientRect(), right = 0;
+  ["look", "tables", "weigh"].forEach(function(id){
+    var el = $(id);
+    // NOT offsetParent: these panels are position:fixed, whose offsetParent is always null.
+    if (!el || el.hidden || getComputedStyle(el).display === "none") return;
+    var r = el.getBoundingClientRect();
+    if (r.width > 0 && r.left < sr.left + sr.width / 2) right = Math.max(right, r.right - sr.left + 10);
+  });
+  return sr.width - right >= 360 ? Math.max(0, Math.round(right)) : 0;
+}
+var PANEL_W = 0;
+/** Give both views the room an open panel takes, whenever it opens, closes or changes size. */
+function panelsSync(){
+  var w = panelInset();
+  if (w === PANEL_W) return;
+  var dx = w - PANEL_W;
+  PANEL_W = w;
+  var m = $("mech"); if (m) m.style.setProperty("--panel-w", w + "px");
+  if (LIVE && LIVE.leftInsetChanged && ARRANGEMENT !== "mechanism") LIVE.leftInsetChanged(dx);
+}
+if (typeof ResizeObserver !== "undefined") {
+  try {
+    var PANEL_RO = new ResizeObserver(function(){ panelsSync(); });
+    ["look", "tables", "weigh"].forEach(function(id){ var el = document.getElementById(id); if (el) PANEL_RO.observe(el); });
+  } catch (e) { void e; }
+}
+window.addEventListener("resize", function(){ panelsSync(); });
+
 /** How far the open cards in the map's corner reach in from its right edge, the same way. A
  *  card folded to its header is small enough to pan past, and on a narrow pane giving up that
  *  width would cost more of the map than the card hides, so both of those answer 0. */
@@ -7661,7 +7699,7 @@ function redrawFrom(graph){
   LIVE = window.ArgdownLiveMap.createLiveMap($("map"), graph, {
     controls: true, onLocate: msLocate, onMenu: ctxShow, onMargin: openMargin,
     onExplode: explodeShow, onBridge: bridgeShow, onCardSteps: cardStepsShow, onChainClaim: chainClaimShow,
-    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset,
+    onStudy: toggleStudy, onTables: tablesToggle, onWeigh: weighToggle, onLook: lookToggle, onStateChange: onMapState, topInset: orientInset, rightInset: dockInset, leftInset: panelInset,
     barFolded: barFoldedNow(), onBarFold: rememberBarFold, helpLinks: true,
     collapsedGroups: keep ? keep.collapsedGroups : [],
     collapsedLanes: keep ? keep.collapsedLanes : [],

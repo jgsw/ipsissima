@@ -6719,6 +6719,14 @@ function create(container, graph, opts) {
       if (!hit) return false;
       select({ edge: hit.e, path: hit.p });
       if (hit.g && hit.g.scrollIntoView) try { hit.g.scrollIntoView({ block: "center", inline: "center" }); } catch (e) { /* older engines */ }
+      // A STEP WIDER THAN THE STAGE shows its start (20 Nov 2026, Tooming): centred, a long arrow
+      // put the state it leaves out of view, and that state is half of what the step says.
+      try {
+        var sr = stage.getBoundingClientRect(), pr = (hit.p || hit.g).getBoundingClientRect();
+        // The arrow leaves from its state's right side, so the box (BW wide, at the drawing's scale)
+        // is brought in too.
+        if (pr.width > sr.width - 40) stage.scrollLeft += pr.left - sr.left - 24 - BW * scaleNow();
+      } catch (e) { /* not drawn yet */ }
       return true;
     },
     zoomBy: function (f) { zoomBy(f); },

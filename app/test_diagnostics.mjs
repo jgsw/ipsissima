@@ -271,8 +271,11 @@ if (!chromium) {
     const txt = await page.locator("#look").innerText();
     check(/Supplied/.test(txt) && /Granted/.test(txt) && !/Doubt/.test(txt), "the map's thin places, never the appraisal's");
     await page.locator("#look li button", { hasText: "Granted" }).click();
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(700);
     check(await page.locator("#look li button.on").count() === 1, "a click on an item marks it");
+    const pr = await page.locator("#look").evaluate(e => e.getBoundingClientRect().right);
+    const lit = await page.locator("#map .is-lit").first().evaluate(e => e.getBoundingClientRect().left);
+    check(lit >= pr, "in Reasons, the claim it lights is shown right of the open panel", JSON.stringify({ pr, lit }));
     await look.click();
     await page.waitForTimeout(200);
     check(await page.locator("#look").isHidden(), "and the bar button closes it");
@@ -301,6 +304,13 @@ if (!chromium) {
     await page.locator("#look li button", { hasText: "Work helps reintegration" }).click();
     await page.waitForTimeout(500);
     check(await page.locator("#mech path.sel").count() === 1, "a step's item selects its arrow in the drawing");
+    // ROOM FOR THE PANEL (20 Nov 2026): the drawing is laid out to its right, so what is selected is
+    // not under it.
+    const lookRight = await page.locator("#look").evaluate(e => e.getBoundingClientRect().right);
+    const stageLeft = await page.locator("#mech .amech-stage").evaluate(e => e.getBoundingClientRect().left);
+    const selLeft = await page.locator("#mech path.sel").evaluate(e => e.getBoundingClientRect().left);
+    check(stageLeft >= lookRight && selLeft >= lookRight, "in Mechanism, the drawing starts right of the open panel",
+          JSON.stringify({ lookRight, stageLeft, selLeft }));
     // A gap's state is one no drawn step touches, so it cannot be selected: the page says so.
     await page.locator("#look li button", { hasText: "More community orders" }).click();
     await page.waitForTimeout(500);
