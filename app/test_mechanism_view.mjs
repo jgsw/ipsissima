@@ -2330,7 +2330,9 @@ mechanism:
     await page.evaluate(() => { const q = document.getElementById("qchip"); q.hidden = false;
       q.textContent = "? Why do ethnic boundaries vary in political salience, social closure, cultural differentiation " +
                       "and stability, and how are they made, kept and unmade over time?"; });
-    await page.setViewportSize({ width: 900, height: 650 });
+    // 760, not 900, since the tablet audit (20 Nov 2026) bounded the strip by the Abstract fold's 32rem:
+    // at 900 a long chip now leaves 388px beside it, which is room by the rule; at 760 it does not.
+    await page.setViewportSize({ width: 760, height: 650 });
     await page.waitForTimeout(400);
     const narrow = await page.evaluate(() => ({ q: document.querySelector("#mech .amech-q").getBoundingClientRect().width,
       head: document.querySelector("#mech .amech-head").getBoundingClientRect().height,

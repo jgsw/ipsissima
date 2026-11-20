@@ -6239,7 +6239,49 @@ function createLiveMap(container, graph, options) {
       const mx = ev.clientX - r.left, my = ev.clientY - r.top;
       zoomAt(ev.deltaY < 0 ? 1.12 : 1 / 1.12, mx, my);
     }, { passive: false });
+    /* A FINGER ON A CLAIM STILL PANS (tablet audit, 20 Nov 2026). A press on a box used to return
+     * before the pan began, and with `touch-action:none` the browser did nothing either -- so on a
+     * phone, where one box can fill the screen, the map could be dragged only from the gaps. For a
+     * touch the press is held undecided: a move of more than a few pixels makes it a pan, and the
+     * click that may follow is swallowed; no move, and it is the tap it always was. No pointer
+     * capture is taken until it is a pan, because a captured pointer's click lands on the SVG and
+     * the box never hears its tap. Holding still for half a second is the long-press, which asks
+     * for the claim's menu: iOS never fires `contextmenu`, so without it a claim's menu -- the
+     * passage, Study from here, Suppose false -- was out of reach on an iPad. */
+    let boxPress = null;          // {id, x, y, box, timer}: a touch held on a box, not yet decided
+    let swallowClick = 0;         // until this time, a click on the map is the end of a gesture
+    let lastMenuAt = 0;           // the long-press and Android's own contextmenu must not both open it
+    const swallowNext = () => { swallowClick = Date.now() + 500; };
+    const clearPress = () => { if (boxPress && boxPress.timer) clearTimeout(boxPress.timer); boxPress = null; };
+    svg.addEventListener("click", ev => {
+      if (swallowClick && Date.now() < swallowClick) { swallowClick = 0; ev.stopPropagation(); ev.preventDefault(); }
+    }, true);
+    svg.addEventListener("contextmenu", ev => {
+      // Android's long-press arrives as a contextmenu too; one menu per press. Only a menu the
+      // long-press opened stands in for it -- a mouse's right-clicks, however quick, each open one.
+      if (Date.now() - lastMenuAt < 900) { ev.preventDefault(); ev.stopPropagation(); return; }
+      if (boxPress) clearPress();   // the browser's came first: ours stands down
+    }, true);
     svg.addEventListener("pointerdown", ev => {
+      if (ev.pointerType === "touch" && ev.isPrimary && ev.button === 0) {
+        const box = ev.target.closest && ev.target.closest(".alm-n");
+        if (box) {
+          clearPress();
+          boxPress = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, box, timer: 0 };
+          const n = boxNode.get(box);
+          if (n && opt.onMenu) boxPress.timer = setTimeout(() => {
+            if (!boxPress || boxPress.box !== box) return;
+            const at = { x: boxPress.x, y: boxPress.y };
+            boxPress = null;
+            if (Date.now() - lastMenuAt < 900) return;
+            lastMenuAt = Date.now();
+            swallowNext();
+            setLit(marksFor(n));
+            opt.onMenu(n, { clientX: at.x, clientY: at.y, preventDefault() {}, stopPropagation() {} });
+          }, 520);
+          return;
+        }
+      }
       // A SECTION'S BACKGROUND IS CANVAS. `.alm-g` was in this list, so a pointerdown anywhere
       // inside a section refused to pan -- which on a fully unfolded map left almost nowhere to
       // drag from. Only the things that DO something on a press are excluded now: the boxes,
@@ -6265,6 +6307,15 @@ function createLiveMap(container, graph, options) {
       svg.setPointerCapture(ev.pointerId); svg.classList.add("is-panning");
     });
     svg.addEventListener("pointermove", ev => {
+      if (boxPress && ev.pointerId === boxPress.id && !dragging) {
+        if (Math.hypot(ev.clientX - boxPress.x, ev.clientY - boxPress.y) < 8) return;
+        // It is a pan: from where the finger first landed, so the map does not jump by the slop.
+        dragging = true; sx = boxPress.x - view.x; sy = boxPress.y - view.y;
+        down = null;              // a pan off a box never clears the selection when it ends
+        clearPress(); swallowNext();
+        userMoved = true; readerActed(); viewport.style.transition = "";
+        svg.classList.add("is-panning");
+      }
       if (!dragging) return;
       view.x = ev.clientX - sx; view.y = ev.clientY - sy; applyView();
     });
@@ -6273,6 +6324,7 @@ function createLiveMap(container, graph, options) {
     // more was a drag. Measured on the pointer rather than read off `dragging`, which is true
     // for both.
     const stop = ev => {
+      if (boxPress && ev && ev.pointerId === boxPress.id) clearPress();
       if (dragging && down && ev &&
           Math.hypot(ev.clientX - down.x, ev.clientY - down.y) < 4) setLit([]);
       dragging = false; down = null; svg.classList.remove("is-panning");
@@ -6304,6 +6356,7 @@ function createLiveMap(container, graph, options) {
         // started ends here, and `stop`'s click-that-clears never fires because `dragging` is
         // already false by the time either finger lifts.
         dragging = false; down = null; svg.classList.remove("is-panning");
+        clearPress(); swallowNext();
         const m = midAndDist();
         pinch = { d: Math.max(m.d, 1), mx: m.mx, my: m.my, x: view.x, y: view.y, k: view.k };
         userMoved = true; readerActed(); viewport.style.transition = "";
@@ -7547,7 +7600,23 @@ function injectStyle() {
 @media (max-width:560px){
   .alm-bar{padding-right:.5rem}
   .alm-bar .alm-barfold{position:sticky;right:0;top:auto;flex:0 0 auto;margin-left:.15rem;
-    padding:.15rem .45rem}
+    padding:.15rem .45rem;
+    /* MORE THIS WAY. The strip scrolls with no scrollbar, and nothing said so: How much,
+       Sections and Display sat off the right edge looking absent (tablet audit, 20 Nov 2026).
+       The content now passes under a fade at the fold's left, the usual sign of a strip that
+       goes on. */
+    box-shadow:-18px 0 12px -6px var(--alm-bar-bg,rgba(255,255,255,.92))}
+}
+/* FINGER-SIZED CONTROLS on a touch screen: about 20px tall was a mouse's target (tablet audit,
+   20 Nov 2026). 36px rather than 44 because the bar is one row over the map and every pixel of
+   it is map lost; with the gaps between them each target is wider than that. */
+@media (pointer:coarse){
+  .alm-bar button,.alm-barchip{min-height:36px;padding-left:.6rem;padding-right:.6rem}
+  .alm-bar select{min-height:36px}
+  .alm-bar input.alm-range{height:28px}
+  /* A held finger asks for the claim's menu (see the long-press in the pan code); without these
+     iOS would select the claim's words and offer to copy them instead. */
+  .alm-svg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 }
 /* What a folded bar leaves behind: the same corner, the same family, one word. */
 .alm-barchip{position:absolute;left:8px;bottom:8px;font:11px system-ui,sans-serif;

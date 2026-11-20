@@ -219,8 +219,8 @@ page.
   open, shows its passage
 
 Selecting a claim shows it in whatever panes are already open, and opens none: which panes you
-work with is your business. Going to its passage — double-click, shift-click, or **Go to source**
-— is the one request that opens a pane, because the Manuscript is the very thing it asks for. On a
+work with is your business. Going to its passage — double-click, shift-click, **Go to source**, or
+on a touch screen **Passage** above the claim you tapped — is the one request that opens a pane, because the Manuscript is the very thing it asks for. On a
 map that reads no text there are no passages, and the gesture says so.
 
 The note above the passage says how precisely the claim was placed. *Found by its quotation* is
@@ -1137,7 +1137,7 @@ names its question also asks it as it opens, in a card over the map: **Study it*
   reason false or ask what kind of test it is, and ends by asking whether your first leaning
   survived. The map never says which account is better.
 
-**Study from here**, in a claim's right-click menu, works through only the arguments beneath that
+**Study from here**, in a claim's right-click menu (on a touch screen, **⋯** above the claim), works through only the arguments beneath that
 claim, on your own: the way to take one part of a long map at a sitting.
 
 The card never asks you to type, never scores you, and never records your answer: whether your
@@ -1960,6 +1960,29 @@ anything drops off the screen; resting on one says what it is.
 | <kbd>Cmd/Ctrl-E</kbd> | export |
 | <kbd>Cmd/Ctrl-F</kbd> | find in the Argdown |
 | <kbd>Cmd/Ctrl-/</kbd> | How to use |
+
+## On a tablet or phone
+
+<p class="also" hidden>tablet, phone, ipad, touch, finger, tap, long press, pinch, mobile</p>
+
+Everything a mouse does has a finger's route:
+
+- **Tap** a claim to select it. Above it, beside **What if…?**, come **Passage** (its place in the
+  text) and **⋯**, the menu a right-click opens: Study from here, Weigh, folding, and the rest.
+- **Hold a finger** on a claim, or on a state or an arrow in the Mechanism view, for that same
+  menu.
+- **Drag** with one finger to move the map — from a claim as well as from the space between them.
+  **Pinch** to zoom, in every view.
+- What a mouse shows by resting on a control is in this guide instead; search it for the
+  control's name.
+
+Below 900 pixels wide — a phone, or an iPad held upright — one pane is on screen at a time, and the
+pane buttons at the top switch between them. The panels (Where to look, Tables, Weigh) open over
+the map, and on a phone take the width of the screen.
+
+A browser on a phone or tablet cannot open a folder, so a lone `.argdown` opens as the map without
+its text. To read a map beside its text there, open the map's own page, or a **bundle**: an
+`.argdown` that carries its text inside it.
 
 ## Map details
 

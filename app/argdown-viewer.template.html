@@ -105,7 +105,7 @@ body > header h1{font-size:13px;font-weight:600;margin:0;white-space:nowrap;over
    sets `.tight`; the bar is one row and stays one row, the title gives up its width first, then
    the labels go, and the icons carry the meaning.
 
-   At 820px the two COLUMNS stop making sense: neither can hold a paragraph at a readable measure,
+   At 900px (820 until the tablet audit) the two COLUMNS stop making sense: neither can hold a paragraph at a readable measure,
    and two cramped panes are worse than one good one. Below it the panes become mutually exclusive
    (see isNarrow in the script), so the window shows the map, or the Argdown, or the text -- whole --
    and the toolbar switches between them in one tap. That one IS a width, because it is about how
@@ -129,7 +129,7 @@ header.crowded #undobtn,header.crowded #redobtn{display:none}
 header.crowded #morebtn{display:inline-flex}
 header.tight{gap:.4rem;padding:.35rem .5rem}
 header.tight .seg button{padding:.2rem .45rem}
-@media (max-width:820px){
+@media (max-width:900px){
   /* One pane at a time: whichever is up takes the whole area. */
   #side{width:auto;max-width:none;min-width:0;flex:1 1 auto;border-left:0}
   #split{display:none !important}
@@ -152,6 +152,14 @@ header.tight .seg button{padding:.2rem .45rem}
   #split{width:14px}
   .vsplit{height:14px}
   #ctx button{padding:.5rem .6rem}
+  /* FINGER-SIZED TARGETS (tablet audit, 20 Nov 2026): the toolbar, the panels' buttons and their
+     closing crosses were about 20px tall -- a mouse's target. 36px keeps the bar one row. */
+  body > header button,body > header .seg button{min-height:36px;min-width:36px}
+  #weigh button,#tables button,#look button,#appr button,#supp button,#qfirst button,
+  #studycard button,#keycard button,#side header button,#whatif,#stage .tapx{min-height:34px}
+  #weigh header button.plain,#tables header button.plain,#look header button.plain,
+  #supp header button.plain,#appr header button.plain,#qfirst header button.plain{min-width:34px;font-size:18px}
+  #orient .decl,#absbtn{min-height:32px}
 }
 body > header h1 span{font-weight:400;color:var(--fg-dim)}
 #dirtymark{font-size:var(--fs-small);color:var(--fg-dim);white-space:nowrap}
@@ -183,7 +191,7 @@ main{flex:1;min-height:0;display:flex;position:relative}
    divider stays between the two whichever way round they are. */
 main.swapped{flex-direction:row-reverse}
 #side.solo{flex:1 1 auto;width:auto;max-width:none}
-#stage{flex:1;min-width:0;position:relative}
+#stage{flex:1;min-width:0;position:relative;overflow:clip}
 #map{position:absolute;inset:0}
 #map.empty .alm-bar,#map.empty .alm-barchip{display:none}
 /* The Mechanism arrangement draws into its own container in the same stage: it is a different
@@ -193,7 +201,10 @@ main.swapped{flex-direction:row-reverse}
  * are pinned over the pane's top-left corner, and covered the drawing's top line ("in sequence, left
  * to right", what the levels are). The Reasons view is told their height (topInset); the Mechanism
  * view's header row is now at least that tall, so the drawing starts below them. */
-#mech .amech-head{min-height:var(--orient-h,0px);box-sizing:border-box}
+/* flex-shrink:0 BECAUSE THE MIN-HEIGHT IS EXPLICIT: a stated min-height replaces a flex item's automatic
+ * minimum, so on a short screen the column squeezed the row below its own text and the question ran
+ * over the drawing's top line (tablet audit, 20 Nov 2026, at 375px). */
+#mech .amech-head{min-height:var(--orient-h,0px);box-sizing:border-box;flex-shrink:0}
 /* ROOM FOR AN OPEN PANEL (James, 20 Nov 2026): Where to look, Tables and Weigh float over the left of
  * the stage, where a chain's first states are drawn. While one is open the drawing is laid out to its
  * right; the stage re-fits itself when its size changes. */
@@ -229,7 +240,11 @@ main.swapped{flex-direction:row-reverse}
 /* The orientation strip: the abstract's fold, and beside it the map's declarations about
    itself. Quiet pills in the panel's colours -- they are statements about the map, not
    controls on it -- and each opens the help topic that explains it. */
-#orient{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem}
+/* BOUNDED BY THE FOLD IT SITS IN. #abs is a column that sizes each row to its content, so without
+   this the question chip -- one unbreakable line -- made the strip 433px wide on a 375px phone,
+   and the browser widened the whole page to hold it: toolbar and all could be dragged sideways
+   (tablet audit, 20 Nov 2026). The chip's own ellipsis only works once its parent has a width. */
+#orient{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;max-width:100%;min-width:0}
 #orient > [hidden]{display:none}
 #orient .decl{background:var(--panel);font-size:11px;line-height:1.3;padding:.15rem .55rem;
   border-radius:999px;color:var(--fg-dim)}
@@ -700,7 +715,9 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #walkcard .wrail{display:flex;gap:3px;margin-top:.5rem}
 #walkcard .wrail i{flex:1;height:3px;border-radius:2px;background:var(--line)}
 #walkcard .wrail i.on{background:var(--accent)}
-#ctx{position:fixed;z-index:60;min-width:12rem;max-width:20rem;background:var(--bg);
+/* Never wider or taller than the screen: on a phone the Layout menu ran off the right edge. */
+#ctx{position:fixed;z-index:60;min-width:min(12rem,calc(100vw - 16px));max-width:min(20rem,calc(100vw - 16px));
+  max-height:calc(100dvh - 16px);overflow:auto;background:var(--bg);
   border:1px solid var(--line);border-radius:7px;box-shadow:0 6px 22px rgba(0,0,0,.16);
   padding:.25rem;font-size:12.5px}
 #ctx .ctxhead{padding:.3rem .5rem .35rem;color:var(--fg-dim);font-size:11px;
@@ -741,6 +758,16 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
   box-shadow:0 2px 6px rgba(0,0,0,.1)}
 #whatif[hidden]{display:none}
 #whatif:hover{background:var(--accent-fill);color:var(--on-accent)}
+#stage .tapx{position:absolute;z-index:31;font:inherit;font-size:11.5px;padding:.1rem .6rem;border-radius:999px;
+  border:1px solid var(--accent,#3a7bd5);background:var(--panel,var(--bg));color:var(--accent,#3a7bd5);cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.1)}
+#stage .tapx[hidden]{display:none}
+#tapmore{font-weight:700;letter-spacing:.05em}
+/* WHAT A MOUSE READS BY RESTING, a finger reads by holding: a control's title, shown under it. */
+#holdtip{position:fixed;z-index:90;max-width:min(22rem,calc(100vw - 16px));padding:.45rem .6rem;
+  background:var(--fg);color:var(--bg);border-radius:7px;font-size:12.5px;line-height:1.4;
+  box-shadow:0 6px 22px rgba(0,0,0,.2);pointer-events:none}
+#holdtip[hidden]{display:none}
 #supp header button.plain{font-size:12px;padding:0 5px;border:0;background:none;color:var(--fg-dim);cursor:pointer}
 #supp{position:fixed;z-index:35;right:14px;top:96px;width:21rem;max-width:calc(100vw - 28px);max-height:62vh;
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
@@ -803,13 +830,16 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
 #weigh table.grid td.cell li{margin:.1rem 0;cursor:pointer}
 #weigh table.grid td.cell li.on{background:var(--accent-wash,rgba(58,123,213,.1))}
 #weigh table.grid td.cell .also{color:var(--fg-dim);font-size:11px;white-space:nowrap}
+/* On a phone the cell is narrower than one such line, and an unbroken one pushed the AGAINST column past
+   the sheet's edge (tablet audit, 20 Nov 2026). */
+@media (max-width:560px){ #weigh table.grid td.cell .also{white-space:normal} }
 #weigh table.grid td.none{color:var(--fg-dim);font-style:italic}
 #weigh table.grid td[data-weigh-cell]{cursor:pointer;text-align:center;color:var(--fg-dim)}
 #weigh table.grid td.pick{background:var(--accent-wash,rgba(58,123,213,.1))}
 #weigh ul.appr{margin:.25rem 0 0;padding-top:.2rem;border-top:1px dashed var(--fg-dim,#999);font-style:italic}
 #weigh .verdict{margin:.35rem 0 .1rem;padding:.3rem .45rem;border-left:3px solid var(--accent,#3a7bd5);background:var(--accent-wash,rgba(58,123,213,.07))}
 #weigh .verdict button.on{background:var(--accent-fill);color:var(--on-accent);border-color:transparent}
-#tables{position:fixed;z-index:35;left:14px;top:96px;width:max-content;min-width:26rem;max-width:min(62rem,calc(100vw - 28px));max-height:70vh;
+#tables{position:fixed;z-index:35;left:14px;top:96px;width:max-content;min-width:min(26rem,calc(100vw - 28px));max-width:min(62rem,calc(100vw - 28px));max-height:70vh;
   box-sizing:border-box;
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
   box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
@@ -819,6 +849,14 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
   overflow:auto;background:var(--panel,var(--bg));border:1px solid var(--accent,#3a7bd5);border-radius:9px;
   box-shadow:0 6px 22px rgba(0,0,0,.14);padding:.55rem .7rem .7rem;font-size:12.5px;line-height:1.45}
 #look[hidden]{display:none}
+/* ON A PHONE THE PANELS ARE SHEETS: the full width of the screen less a margin, so nothing in
+   them runs off the right-hand edge and every column of a table can be reached by scrolling
+   inside the sheet (tablet audit, 20 Nov 2026). */
+@media (max-width:560px){
+  #weigh,#tables,#look,#supp,#qfirst{left:8px;right:8px;width:auto;min-width:0;max-width:none;
+    transform:none;max-height:calc(100dvh - 190px)}
+  #studycard{max-width:calc(100vw - 36px)}
+}
 #look header{display:flex;align-items:baseline;gap:.4rem;margin-bottom:.2rem}
 #look header b{font-size:13px;white-space:nowrap}
 #look header .grow{flex:1}
@@ -920,6 +958,10 @@ button.plain:disabled{opacity:.45;cursor:not-allowed}
   font:12.5px/1.6 var(--argdown-font);
   font-feature-settings:"liga" 1,"calt" 1;font-variant-ligatures:common-ligatures contextual;
   white-space:pre;tab-size:4;color:var(--fg)}
+/* WRAPPED WHERE THE PANE IS THE SCREEN (tablet audit, 20 Nov 2026): on a phone the front matter's
+   long lines ran off the edge and every line had to be scrolled sideways to be read. The editor
+   build wraps already. */
+@media (max-width:900px){ #src{white-space:pre-wrap;overflow-wrap:anywhere} }
 #src .h{color:var(--accent);font-weight:600}
 /* A claim reference in the Argdown IS a handle. Underlined rather than coloured, because the
    pane already spends colour on headings, comments and tags. */
@@ -1350,6 +1392,11 @@ mark.helphit{background:var(--hit);color:inherit;border-radius:2px}
   <div id="suppbar" hidden role="status" aria-label="Your suppositions"></div>
   <!-- "WHAT IF...?" beside the claim in hand (18 Oct 2026; see whatIfShow). -->
   <button type="button" id="whatif" hidden title="Suppose this is false, or that its step fails, and see what follows">What if&hellip;?</button>
+  <!-- THE TAP STRIP (tablet audit, 20 Nov 2026): on a touch screen, beside What if…?, the two things
+       a mouse reaches by shift-click and right-click -- the passage, and the claim's whole menu. -->
+  <button type="button" id="tapgo" class="tapx" hidden title="Go to the passage this claim reads">Passage</button>
+  <button type="button" id="tapmore" class="tapx" hidden aria-label="Everything you can do with this claim"
+          title="Everything you can do with this claim">&#8943;</button>
   <div id="map"></div>
   <div id="mech" hidden></div>
   <!-- THE KEY. Offered once, in the workbench only, on a map that uses several encodings at
@@ -3086,14 +3133,17 @@ var PANES = { map: true, argdown: false, notes: false, text: false, appraisal: f
 /* ONE PANE AT A TIME ON A NARROW SCREEN.
  *
  * The panes are independent switches because the whole point of the tool is seeing a claim and
- * its source at once. Below 820px that stops being possible: neither column can hold a paragraph
+ * its source at once. Below 900px that stops being possible: neither column can hold a paragraph
  * at a readable measure, and two cramped panes are worse than one whole one. So the switches
  * become exclusive, the window shows one thing, and the toolbar changes which in a single tap.
  *
  * The breakpoint is watched rather than read once, because a tablet turned on its side crosses it
  * without reloading -- and because a desktop window dragged narrow should behave the same way.
  */
-var narrowQuery = window.matchMedia("(max-width: 820px)");
+/* 900, NOT 820 (tablet audit, 20 Nov 2026). iPads stand upright at 744 to 834px, either side of
+ * 820: the 11-inch Pro got two panes of about 410px each, which is the cramped pair this rule
+ * exists to prevent. At 900 every iPad held upright gets one whole pane. */
+var narrowQuery = window.matchMedia("(max-width: 900px)");
 
 /* READ, NEVER CACHED. This began as a `NARROW` variable kept up to date by the query's `change`
  * event, and the event is not reliable enough to be the only source of truth: a viewport driven
@@ -3584,7 +3634,7 @@ function setSwapped(on){
 
 function openLayoutMenu(anchorEl){
   var items = [];
-  // THE ARRANGEMENTS, WHERE THE HEADER HAS NO ROOM FOR THEM. Below 820px the Reasons /
+  // THE ARRANGEMENTS, WHERE THE HEADER HAS NO ROOM FOR THEM. Below 900px the Reasons /
   // Exposition / Mechanism buttons are hidden on the grounds that this menu offers them by
   // another route -- and it offered two of the three, as side effects of the presets, and never
   // Mechanism (sweep A, 27 Sep 2026). On a narrow window they head the menu in their own right.
@@ -3602,16 +3652,22 @@ function openLayoutMenu(anchorEl){
     var ok = layoutAvailable(L);
     // A DISABLED ITEM SAYS WHY, in the place its description would be: "map + the essay",
     // greyed, told the reader nothing about what was missing.
-    return { label: L.label, hint: ok ? L.hint : "needs the text this map reads, which is not open",
+    // ON A NARROW SCREEN A PAIR IS ONE PANE, and the hint says so rather than promising two.
+    var pair = Object.keys(L.panes).filter(function(k){ return L.panes[k]; }).length > 1;
+    return { label: L.label,
+             hint: !ok ? "needs the text this map reads, which is not open"
+                 : isNarrow() && pair ? L.hint + " (one at a time on this screen)" : L.hint,
              icon: L.icon, on: layoutIsCurrent(L), disabled: !ok,
              run: function(){ applyLayout(L); } };
   }));
-  items.push(null);
+  // Which side the texts sit on means nothing where only one pane is up.
+  if (!isNarrow()) items.push(null);
   // A FIXED LABEL AND A TICK THAT SAYS WHETHER IT IS TRUE. The label used to flip to name the
   // action while the tick showed the state, so a ticked "Texts on the right" appeared exactly
   // when the texts were on the left (sweep A, 27 Sep 2026).
-  items.push({ label: "Texts on the left", hint: "the map on the right, the texts beside it",
-               on: SWAPPED, run: function(){ setSwapped(!SWAPPED); } });
+  if (!isNarrow())
+    items.push({ label: "Texts on the left", hint: "the map on the right, the texts beside it",
+                 on: SWAPPED, run: function(){ setSwapped(!SWAPPED); } });
   ctxMenu("Layout", items, anchorEl);
 }
 
@@ -4856,7 +4912,7 @@ function studyOpening(){
   // A LONG MAP, A SMALLER PIECE: Lang's small steps; the whole of a long paper is a long sitting. Ten
   // at a time, and the ten that matter most (studyRoundOf); one part, by Study from here.
   var n = studyUnits(CURRENT_GRAPH || {}, null).length;
-  if (n > STUDY_ROUND) c.p("On my own takes ten at a time, from what the argument rests on most, with ten more when you want them. To take one part instead, right-click a claim and choose Study from here.", "crux");
+  if (n > STUDY_ROUND) c.p("On my own takes ten at a time, from what the argument rests on most, with ten more when you want them. To take one part instead, right-click a claim (or hold a finger on it) and choose Study from here.", "crux");
   if (LIVE) LIVE.markClaims([]);
 }
 
@@ -6544,8 +6600,20 @@ function mechInsetSync(){
   var h = orientInset();
   m.style.setProperty("--orient-h", h ? (h + 4) + "px" : "0px");
 }
+/** AND THE REASONS VIEW IS FRAMED AGAIN when the corner's height changes, if the reader has not taken the
+ *  camera. The map is framed at its first render, before the question chip and the declarations have
+ *  arrived, so a map fitted by its apex opened with its first section under them (tablet audit,
+ *  20 Nov 2026: Wilson 2023 at 1024x768, "The thesis" under the Abstract fold). */
+var ORIENT_H = -1;
+function orientSync(){
+  mechInsetSync();
+  var h = Math.round(orientInset());
+  if (h === ORIENT_H) return;
+  ORIENT_H = h;
+  if (LIVE && LIVE.reframe && ARRANGEMENT !== "mechanism") LIVE.reframe();
+}
 if (typeof ResizeObserver !== "undefined") {
-  try { new ResizeObserver(mechInsetSync).observe($("orient")); new ResizeObserver(mechInsetSync).observe($("abs")); } catch (e) { void e; }
+  try { new ResizeObserver(orientSync).observe($("orient")); new ResizeObserver(orientSync).observe($("abs")); } catch (e) { void e; }
 }
 /** How far an open panel -- Where to look, Tables, Weigh -- reaches in from the stage's left edge,
  *  so both views can lay the drawing out to its right (James, 20 Nov 2026: "Make room"). Nothing
@@ -6561,6 +6629,10 @@ function panelInset(){
     var r = el.getBoundingClientRect();
     if (r.width > 0 && r.left < sr.left + sr.width / 2) right = Math.max(right, r.right - sr.left + 10);
   });
+  // ONLY WHEN THE MAP KEEPS A USABLE WIDTH; below it a panel lies over the map. An iPad turned
+  // upright with a panel open kept the room taken in landscape -- a 260px strip -- because nothing
+  // asked again when the stage, not the panel, changed size: the stage is watched now too (tablet
+  // audit, 20 Nov 2026).
   return sr.width - right >= 360 ? Math.max(0, Math.round(right)) : 0;
 }
 var PANEL_W = 0;
@@ -6576,7 +6648,7 @@ function panelsSync(){
 if (typeof ResizeObserver !== "undefined") {
   try {
     var PANEL_RO = new ResizeObserver(function(){ panelsSync(); });
-    ["look", "tables", "weigh"].forEach(function(id){ var el = document.getElementById(id); if (el) PANEL_RO.observe(el); });
+    ["look", "tables", "weigh", "stage"].forEach(function(id){ var el = document.getElementById(id); if (el) PANEL_RO.observe(el); });
   } catch (e) { void e; }
 }
 window.addEventListener("resize", function(){ panelsSync(); });
@@ -9579,7 +9651,54 @@ $("suppbar").addEventListener("click", suppClick);
  * ordinary "this one" -- now offers the question beside it, and the menu it opens is right-click's
  * own suppositions. Not standing chrome (F4): it comes with the reader's own click and goes at the next. */
 var WHATIF_N = null;
-function whatIfHide(){ WHATIF_N = null; var b = $("whatif"); if (b) b.hidden = true; }
+function whatIfHide(){
+  WHATIF_N = null;
+  ["whatif", "tapgo", "tapmore"].forEach(function(id){ var b = $(id); if (b) b.hidden = true; });
+}
+/** What the last press was made with. A tablet with a keyboard and trackpad is a mouse for this. */
+var LAST_PTR = "mouse";
+document.addEventListener("pointerdown", function(e){ LAST_PTR = e.pointerType || "mouse"; }, true);
+/* HOLD A CONTROL TO READ WHAT IT DOES (tablet audit, 20 Nov 2026). Every control explains itself in its
+ * `title`, which a mouse shows on resting and a touch screen never shows at all. Half a second's hold
+ * shows it under the control for a few seconds, and the tap the lift would make is swallowed, so
+ * reading a button never presses it. Not on the drawings: there a hold is the claim's menu. */
+(function(){
+  var tip = document.createElement("div");
+  tip.id = "holdtip"; tip.hidden = true; tip.setAttribute("role", "tooltip");
+  document.body.appendChild(tip);
+  var hold = null, hideT = 0, eatUntil = 0;
+  var cancel = function(){ if (hold) { clearTimeout(hold.t); hold = null; } };
+  document.addEventListener("pointerdown", function(e){
+    if (e.pointerType !== "touch" || !e.isPrimary) return;
+    tip.hidden = true;
+    var el = e.target.closest && e.target.closest("[title]");
+    if (!el || el.closest("svg") || !el.getAttribute("title")) return;
+    cancel();
+    hold = { x: e.clientX, y: e.clientY, t: setTimeout(function(){
+      hold = null;
+      tip.textContent = el.getAttribute("title");
+      tip.hidden = false;
+      var r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+      var top = r.bottom + 6 + h > innerHeight - 8 ? r.top - h - 6 : r.bottom + 6;
+      tip.style.left = Math.max(8, Math.min(r.left, innerWidth - w - 8)) + "px";
+      tip.style.top = Math.max(8, top) + "px";
+      eatUntil = Date.now() + 800;
+      clearTimeout(hideT); hideT = setTimeout(function(){ tip.hidden = true; }, 4000);
+    }, 500) };
+  }, true);
+  document.addEventListener("pointermove", function(e){
+    if (hold && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) > 8) cancel();
+  }, true);
+  document.addEventListener("pointerup", cancel, true);
+  document.addEventListener("pointercancel", cancel, true);
+  document.addEventListener("click", function(e){
+    if (Date.now() < eatUntil) { eatUntil = 0; e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  // A held finger on a link or a button would otherwise also raise the system's own callout.
+  document.addEventListener("contextmenu", function(e){
+    if (Date.now() < eatUntil && !(e.target.closest && e.target.closest("svg"))) e.preventDefault();
+  }, true);
+})();
 function whatIfShow(n){
   if (n && guessPick(n.id)) { whatIfHide(); return; }
   if (n && studyCostPick(n)) { whatIfHide(); return; }
@@ -9591,9 +9710,24 @@ function whatIfShow(n){
   var r = box.getBoundingClientRect(), st = $("stage").getBoundingClientRect();
   WHATIF_N = n;
   b.hidden = false;
-  b.style.left = Math.max(4, Math.min(r.right - st.left - b.offsetWidth, st.width - b.offsetWidth - 8)) + "px";
-  b.style.top = Math.max(4, r.top - st.top - b.offsetHeight - 4) + "px";
+  // A FINGER GETS THE STRIP: the passage, and the menu a right-click would open. A row, right-aligned
+  // to the claim like the pill alone, and kept inside the stage.
+  var touch = LAST_PTR === "touch", go = $("tapgo"), more = $("tapmore");
+  go.hidden = !(touch && msAvailable() && n.pos && n.pos.chapter);
+  more.hidden = !touch;
+  var row = [go, b, more].filter(function(x){ return !x.hidden; }), gap = 6;
+  var tw = row.reduce(function(a, x){ return a + x.offsetWidth; }, 0) + gap * (row.length - 1);
+  var left = Math.max(4, Math.min(r.right - st.left - tw, st.width - tw - 8));
+  var top = Math.max(4, r.top - st.top - b.offsetHeight - 4);
+  row.forEach(function(x){ x.style.left = left + "px"; x.style.top = top + "px"; left += x.offsetWidth + gap; });
 }
+$("tapgo").onclick = function(){ var n = WHATIF_N; whatIfHide(); if (n) msLocate(n); };
+$("tapmore").onclick = function(){
+  var n = WHATIF_N;
+  if (!n) return;
+  var r = $("tapmore").getBoundingClientRect();
+  ctxShow(n, { clientX: r.left, clientY: r.bottom + 4, preventDefault: function(){}, stopPropagation: function(){} });
+};
 $("whatif").onclick = function(){
   var n = WHATIF_N;
   if (!n) return;
@@ -9601,7 +9735,7 @@ $("whatif").onclick = function(){
   ctxMenu(n.label || "What if\u2026?", suppMenu(n).concat(wm.length ? [null].concat(wm) : [], [null, guessMenuItem()]), $("whatif"));
 };
 document.addEventListener("pointerdown", function(e){
-  if (WHATIF_N && !(e.target.closest && e.target.closest("#whatif, #ctx"))) whatIfHide();
+  if (WHATIF_N && !(e.target.closest && e.target.closest("#whatif, #ctx, .tapx"))) whatIfHide();
 }, true);
 document.addEventListener("wheel", function(){ if (WHATIF_N) whatIfHide(); }, { capture: true, passive: true });
 
@@ -9663,11 +9797,19 @@ function weighSync(){
   b.classList.toggle("on", on);
   b.setAttribute("aria-pressed", on ? "true" : "false");
 }
+/** ON A PHONE, ONE THING OVER THE MAP AT A TIME. Opening a panel folds the study card (and the
+ *  key) to their headers, so the sheet is not laid over a card the reader cannot then see past;
+ *  either opens again from its header (tablet audit, 20 Nov 2026). */
+function narrowFoldDock(){
+  if (!window.matchMedia || !matchMedia("(max-width:560px)").matches) return;
+  ["studycard", "keycard"].forEach(function(id){ var c = $(id); if (c && !c.hidden) c.classList.add("min"); });
+  if (typeof dockChanged === "function") dockChanged();
+}
 function weighOpen(mode, i, study){
   WEIGH = { mode: mode, i: i || 0, picks: [], shown: !(GUESS.on || STUDY), test: null, sel: null, study: !!study };
   if (TABLES) tablesClose();
   if (LOOK) lookClose();
-  whatIfHide(); ctxHide();
+  whatIfHide(); ctxHide(); narrowFoldDock();
   weighRender();
   weighSync();
 }
@@ -9978,7 +10120,7 @@ function lookOpen(){
   if (TABLES) tablesClose();
   if (WEIGH) weighClose();
   LOOK = { pick: -1, all: {} };
-  whatIfHide(); ctxHide();
+  whatIfHide(); ctxHide(); narrowFoldDock();
   lookRender(); lookSync();
 }
 function lookClose(){
@@ -10101,7 +10243,7 @@ function tablesOpen(i, here){
   if (WEIGH) weighClose();
   if (LOOK) lookClose();
   TABLES = { key: T.key, shown: !(GUESS.on || STUDY), picks: [], here: here || null };
-  whatIfHide(); ctxHide();
+  whatIfHide(); ctxHide(); narrowFoldDock();
   tablesRender();
   tablesSync(); weighSync(); lookSync();
 }
@@ -11248,9 +11390,16 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
   } : null;
   $("picknewtext").hidden = !newFromText;
   if (newFromText) $("picknewtext").onclick = newFromText;
+  /* A PHONE OR TABLET'S OWN BROWSER (tablet audit, 20 Nov 2026). iPadOS reports itself as a Mac, so the
+   * touch points are what tell. Two things differ there: iOS knows no file type for `.argdown`, so an
+   * `accept` list naming it greys every map out in the Files picker; and neither iOS nor Android lets a
+   * web page choose a folder. */
+  var MOBILE_OS = /iPad|iPhone|iPod|Android/.test(navigator.userAgent) ||
+                  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   var pickFile = function(){
     var i = document.createElement("input");
-    i.type = "file"; i.accept = ".argdown,.ad,text/plain";
+    i.type = "file";
+    if (!MOBILE_OS) i.accept = ".argdown,.ad,text/plain";
     i.onchange = function(){ loadFile(i.files[0]); };
     i.click();
   };
@@ -11359,6 +11508,13 @@ if (typeof window.__ARGDOWN_PARSE__ === "function"){
     if (typeof window.showDirectoryPicker !== "function")
       $("pickdir").title = "This browser can read a folder but not write back to it — Save will " +
                            "offer a download instead.";
+    // A door that cannot open is not offered; the note says what does work here instead.
+    if (MOBILE_OS && typeof window.showDirectoryPicker !== "function") {
+      $("pickdir").hidden = true;
+      $("dropnote").textContent = "A browser on a phone or tablet cannot open a folder, so a lone " +
+        ".argdown opens as the map alone. To read a map beside its text here, open the map's own " +
+        "page (the .html made from it), or a bundle: an .argdown that carries its text inside it.";
+    }
   }
   document.addEventListener("dragover", function(e){
     e.preventDefault(); $("drop").classList.add("show","over"); });

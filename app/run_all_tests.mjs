@@ -68,6 +68,8 @@ const SUITES = [
   ["the appraisal, off until asked", "node", [path.join(HERE, "test_appraisal_layer.mjs")]],
   // 19 Nov 2026: the appraisal beside the map, and Where to look (offered unasked, as a trial).
   ["where to look, and the appraisal beside the map", "node", [path.join(HERE, "test_diagnostics.mjs")]],
+  // 20 Nov 2026, the tablet audit: what a mouse does, a finger can do -- by real touch input.
+  ["on a phone and an upright iPad", "node", [path.join(HERE, "test_touch.mjs")]],
   // AND WHAT IT WRITES OUT, read back by a parser and a renderer that did not write it. Three of
   // the four export defects were invisible in the browser that made the file.
   ["the exports, read back", "node", [path.join(HERE, "test_export_artifacts.mjs")]],

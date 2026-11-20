@@ -4472,6 +4472,12 @@ function injectStyle() {
     ".amech-nestbanner[hidden]{display:none}",
     ".amech-body{flex:1 1 auto;display:flex;min-height:0}",
     ".amech-stage{flex:1 1 auto;overflow:auto;min-width:0}",
+    // A PINCH ZOOMS THE CHART, not the page (tablet audit, 20 Nov 2026): the browser keeps one-finger
+    // scrolling and leaves two fingers to the handler on the stage.
+    ".amech-stage{touch-action:pan-x pan-y}",
+    // Finger-sized controls, and a held finger is the menu, not a text selection (see menuOn).
+    "@media (pointer:coarse){.amech-bar button,.amech-bar select,.amech-find button,.amech-side button{min-height:36px}" +
+    ".amech-stage svg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}}",
     // A FIGURE inside another arrangement: the chart alone, at most its actual size, one control.
     ".amech.amech-figure{height:auto;cursor:pointer;border-radius:6px}",
     ".amech-figure .amech-head,.amech-figure .amech-bar,.amech-figure .amech-side,.amech-figure .amech-banner,.amech-figure .amech-nestbanner,.amech-figure .amech-expbanner{display:none!important}",
@@ -4480,6 +4486,11 @@ function injectStyle() {
     ".amech-figure:focus-visible{outline:2px solid var(--accent,#2d6cc0);outline-offset:2px}",
     ".amech-side{flex:0 0 320px;overflow:auto;border-left:1px solid var(--line,#ddd);padding:10px 14px;font-size:13px}",
     "@media (max-width:760px){.amech-body{flex-direction:column}.amech-side{flex:0 0 auto;max-height:45%;border-left:0;border-top:1px solid var(--line,#ddd)}}",
+    // ON A PHONE THE DRAWING COMES FIRST (tablet audit, 20 Nov 2026): the panel took nearly half of a
+    // 375px-wide screen's height and left the chart a third. It scrolls in less, and the chain's
+    // picker, whose longest names are wider than the screen, stays inside it.
+    "@media (max-width:560px){.amech-side{max-height:30%}.amech-tog.chain{max-width:100%;min-width:0}" +
+    ".amech-tog.chain select{max-width:calc(100vw - 90px);text-overflow:ellipsis}}",
     ".amech-side h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--fg-dim,#666);margin:10px 0 6px;font-weight:600}",
     ".amech-side h3:first-child{margin-top:0}",
     ".amech-row{display:grid;grid-template-columns:78px 1fr;gap:6px;padding:2px 0}",
@@ -5312,7 +5323,7 @@ function create(container, graph, opts) {
       LINE.map(function (s) { return '<li>' + nmW(s.from) + ' ' + verbW(s) + ' ' + nmW(s.to) +
         (s.claim && s.claim.title ? ' <button type="button" class="amech-claimlink" data-claim="' + esc(s.claim.title) + '" title="Show the claim that states it">\u2039' + esc(s.claim.title) + '\u203a</button>' : '') + '</li>'; }).join('') +
       '</ol>' +
-      '<div class="amech-state-act"><button type="button" data-draw-line="1">Draw it</button> <span class="amech-q">to suppose something of it, draw it, then right-click a state or an arrow</span></div>';
+      '<div class="amech-state-act"><button type="button" data-draw-line="1">Draw it</button> <span class="amech-q">to suppose something of it, draw it, then right-click (or hold a finger on) a state or an arrow</span></div>';
     words.addEventListener("click", function (ev) {
       var t = /** @type {Element} */ (ev.target);
       if (t.getAttribute && t.getAttribute("data-draw-line")) { keep.drawn[lineKey] = true; remount(); return; }
@@ -5941,7 +5952,7 @@ function create(container, graph, opts) {
     var F = FOLLOWS.items;
     var head = '<h3>Questions to try</h3>';
     if (!F.length) return head + '<div class="amech-q">The text\u2019s steps add up to nothing they do not say one by one: no loop, no route that ' +
-      'no one step states, no route running both ways. Try supposing instead: right-click a state or an arrow.</div>';
+      'no one step states, no route running both ways. Try supposing instead: right-click (or hold a finger on) a state or an arrow.</div>';
     var one = function (it, i) {
       return '<div class="amech-try"><span>' + esc(it.question || it.title) + '</span> <button type="button" class="amech-find" data-find="' + i +
         '" title="Show the answer, and the steps it rests on">Show</button></div>'; };
@@ -5949,7 +5960,7 @@ function create(container, graph, opts) {
       F.slice(0, FOLLOWS_SHOWN).map(one).join("") +
       (F.length > FOLLOWS_SHOWN ? '<details class="amech-more-finds"><summary>' + (F.length - FOLLOWS_SHOWN) + ' more</summary>' +
         F.slice(FOLLOWS_SHOWN).map(function (it, j) { return one(it, j + FOLLOWS_SHOWN); }).join("") + '</details>' : '') +
-      '<div class="amech-q amech-trysupp">Or suppose something: right-click a state or an arrow, and before you look, guess which outcomes the text\u2019s steps would still bring about.</div>';
+      '<div class="amech-q amech-trysupp">Or suppose something: right-click (or hold a finger on) a state or an arrow, and before you look, guess which outcomes the text\u2019s steps would still bring about.</div>';
   }
   /** THE READER'S EXPERIMENT, what it changes, in words. */
   function expWords() {
@@ -6402,9 +6413,43 @@ function create(container, graph, opts) {
   /** THE MENU ON A STATE AND ON AN ARROW (18 Oct 2026): the suppositions first, in the words their
    *  panel buttons use, then the ordinary ways in. Handed to the host, which draws it as it draws
    *  Reasons' menu; with no host, nothing is offered and the browser's own menu stands. */
+  var lpAt = 0;   // when a long-press last opened a menu, so Android's own contextmenu does not open it twice
   function menuOn(x, build) {
     if (FIG || !opts.onMenu) return;
-    x.addEventListener("contextmenu", function (ev) { ev.preventDefault(); ev.stopPropagation(); opts.onMenu(build(), ev); });
+    x.addEventListener("contextmenu", function (ev) {
+      ev.preventDefault(); ev.stopPropagation();
+      // Only a menu the long-press opened stands in for this one; a mouse's right-clicks each open one.
+      if (Date.now() - lpAt < 900) return;
+      if (lp) { clearTimeout(lp.t); lp = null; }   // the browser's came first: ours stands down
+      opts.onMenu(build(), ev);
+    });
+    // A HELD FINGER IS THE RIGHT-CLICK (tablet audit, 20 Nov 2026). iOS never fires contextmenu, so on
+    // an iPad the menu on a state or an arrow -- suppose it, the passage -- had no way in. Half a
+    // second without moving opens it; a move is a scroll and cancels; the tap that the lift would
+    // otherwise make is swallowed, so the menu is not shut by the selection it would cause.
+    var lp = null;
+    var cancel = function () { if (lp) { clearTimeout(lp.t); lp = null; } };
+    x.addEventListener("pointerdown", function (/** @type {PointerEvent} */ ev) {
+      if (ev.pointerType !== "touch" || !ev.isPrimary) return;
+      cancel();
+      var px = ev.clientX, py = ev.clientY;
+      lp = { x: px, y: py, t: setTimeout(function () {
+        lp = null;
+        if (Date.now() - lpAt < 900) return;
+        lpAt = Date.now();
+        var until = Date.now() + 700;
+        x.addEventListener("click", function eat(/** @type {Event} */ e) {
+          x.removeEventListener("click", eat, true);
+          if (Date.now() < until) { e.stopPropagation(); e.preventDefault(); }
+        }, true);
+        opts.onMenu(build(), { clientX: px, clientY: py, preventDefault: function () {}, stopPropagation: function () {} });
+      }, 520) };
+    });
+    x.addEventListener("pointermove", function (/** @type {PointerEvent} */ ev) {
+      if (lp && Math.hypot(ev.clientX - lp.x, ev.clientY - lp.y) > 8) cancel();
+    });
+    x.addEventListener("pointerup", cancel);
+    x.addEventListener("pointercancel", cancel);
     x.addEventListener("keydown", function (/** @type {KeyboardEvent} */ ev) {
       if (!(ev.key === "ContextMenu" || (ev.key === "F10" && ev.shiftKey))) return;
       ev.preventDefault(); ev.stopPropagation();
@@ -6690,6 +6735,28 @@ function create(container, graph, opts) {
     var r = stage.getBoundingClientRect();
     zoomBy(Math.pow(ZOOM_STEP, -ev.deltaY / (ev.deltaMode ? 3 : 100)), ev.clientX - r.left, ev.clientY - r.top);
   }, { passive: false });
+  // TWO FINGERS ZOOM THE CHART (tablet audit, 20 Nov 2026). The stage scrolls natively, so a pinch
+  // used to fall through to the browser and enlarge the whole page, bars and all. Touch events rather
+  // than pointer events because only a non-passive touchmove can stop the browser's own zoom, on iOS
+  // as elsewhere; the anchor is the fingers' midpoint, held under them as the wheel holds the pointer.
+  var pz = null;
+  var two = function (/** @type {TouchList} */ t) {
+    var a = t[0], b = t[1];
+    return { d: Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY)), mx: (a.clientX + b.clientX) / 2, my: (a.clientY + b.clientY) / 2 };
+  };
+  stage.addEventListener("touchstart", function (/** @type {TouchEvent} */ ev) {
+    if (ev.touches.length === 2) { pz = { d: two(ev.touches).d, k: scaleNow() }; }
+  }, { passive: true });
+  stage.addEventListener("touchmove", function (/** @type {TouchEvent} */ ev) {
+    if (!pz || ev.touches.length !== 2) return;
+    ev.preventDefault();
+    var m = two(ev.touches), r = stage.getBoundingClientRect();
+    setZoom(pz.k * m.d / pz.d, m.mx - r.left, m.my - r.top);
+  }, { passive: false });
+  stage.addEventListener("touchend", function (/** @type {TouchEvent} */ ev) { if (ev.touches.length < 2) pz = null; });
+  stage.addEventListener("touchcancel", function () { pz = null; });
+  // Safari's own pinch arrives as gesture events as well; the chart has its own.
+  stage.addEventListener("gesturestart", function (ev) { ev.preventDefault(); });
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(function () { if (fit) sizeSvg(); }).observe(stage);
   apply();
   if (keep.zoom) { if (keep.zoom === "fit") setFit(true); else setZoom(keep.zoom); }
