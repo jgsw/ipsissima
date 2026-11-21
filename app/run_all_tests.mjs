@@ -98,6 +98,9 @@ const SUITES = [
   // THE SEATS: one order per map, chosen once to cross less -- the same in every view, premises
   // in their order, and no level of the depth ladder crossing more than written order did.
   ["the seats cross less, and only once", "node", [path.join(HERE, "test_seats.mjs")]],
+  // WHERE A LINE MEETS ITS BOX: off the rounded corners, never flat along its own border (21 Nov
+  // 2026, a hook reported on Prescott-Couch). The painted half is in the rendered-map suite.
+  ["a line meets its box on a face, not a corner", "node", [path.join(HERE, "test_line_ends.mjs")]],
   ["provenance: py vs js",       "node", [path.join(HERE, "test_argdown_positions.mjs")]],
   // The SECOND py/js pair. One decision procedure written twice will drift, so both halves run
   // the same hand-written vectors and any divergence fails here. See docs/VALIDITY-PLAN.md.

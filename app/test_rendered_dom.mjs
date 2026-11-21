@@ -207,6 +207,36 @@ const INVARIANTS = function () {
     }
   }
 
+  /* NO LINE ENDS ON A BOX'S ROUNDED CORNER (21 Nov 2026). The layout clips a line to the box's
+   * rectangle and the box is drawn with corners rounded at 7, so a line clipped at a corner stops
+   * in the empty quarter-circle: 123 of 2,350 drawn ends on the samples did, and one was reported
+   * from use as a hook ending short of its box. `offCorner` moves them along a face. Checked on
+   * the PAINTED path, after every relay, against every box near its end. Mutation: draw a line's
+   * first point at a box's top-left corner. */
+  {
+    const near = [...document.querySelectorAll(".alm-n:not(.mutant) rect.alm-box")].map(r => {
+      const m = r.getScreenCTM(), b = r.getBBox();
+      return { l: m.a * b.x + m.e, t: m.d * b.y + m.f, r: m.a * (b.x + b.width) + m.e,
+               b: m.d * (b.y + b.height) + m.f, k: m.a };
+    });
+    let reported = 0;
+    for (const p of document.querySelectorAll("#map path.alm-e")) {
+      let L = 0; try { L = p.getTotalLength(); } catch (e) { continue; }
+      const m = p.getScreenCTM(); if (!(L > 0) || !m) continue;
+      for (const t of [0, L]) {
+        const q = p.getPointAtLength(t), x = m.a * q.x + m.c * q.y + m.e, y = m.b * q.x + m.d * q.y + m.f;
+        for (const B of near) {
+          const tol = 3 * B.k;
+          if (x < B.l - tol || x > B.r + tol || y < B.t - tol || y > B.b + tol) continue;
+          const dx = Math.min(Math.abs(x - B.l), Math.abs(x - B.r)), dy = Math.min(Math.abs(y - B.t), Math.abs(y - B.b));
+          if (dx < 8 * B.k && dy < 8 * B.k && reported++ < 3)
+            say("no line ends on a box's rounded corner", `a line ends at (${Math.round(x)}, ${Math.round(y)}), ` +
+                `${(dx / B.k).toFixed(1)} and ${(dy / B.k).toFixed(1)} from a corner`);
+        }
+      }
+    }
+  }
+
   /* THE MAIN CLAIM IS ON SCREEN. Already an invariant of the fold suite, but in LAYOUT
    * coordinates; a correct layout framed from the wrong place puts it off the pane anyway, which
    * is what the camera defects did. Mutation: add 2000 to the y of `frameFor`'s translation. */
@@ -300,6 +330,21 @@ const PANEL_INVARIANTS = function () {
  * else.
  */
 const MUTATIONS = [
+  /* A LINE ADDED, NOT ONE BENT: the self-test's page (the first map, sections open) has two
+   * blocks and no line at all, so bending the first line found nothing to bend and left this rule
+   * unproved, silently. A short line drawn from a box's own top-left corner, in the box's own
+   * coordinates, is the fault in its plainest form. */
+  { rule: "no line ends on a box's rounded corner", where: "map", how: () => {
+      const r = document.querySelector(".alm-n rect.alm-box");
+      if (!r) return false;
+      const b = r.getBBox();
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("class", "alm-e mutant");
+      p.setAttribute("d", `M${b.x},${b.y}L${b.x - 60},${b.y - 60}`);
+      r.parentNode.appendChild(p);
+      window.__undo.push(() => p.remove());
+      return true; } },
+
   /* A CLONE IN THE SAME PLACE, rather than moving a box on top of another: appending a second
    * translate to an `.alm-n` changes the style string and moves nothing, so the first version of
    * this mutation reported the invariant as broken when the MUTATION was. Measured with a probe

@@ -94,7 +94,7 @@
   "bendWorst": 60,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 45,
+  "edgeCrossings": 43,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ detail": {
@@ -120,7 +120,7 @@
   "bendWorst": 94,
   "overshoot": 72,
   "detourWorst": 1.3,
-  "edgeCrossings": 90,
+  "edgeCrossings": 89,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ folded": {
@@ -179,14 +179,14 @@
   "bendWorst": 61,
   "overshoot": 59,
   "detourWorst": 1.1,
-  "edgeCrossings": 3,
+  "edgeCrossings": 5,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ all": {
   "edges": 42,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 0,
+  "departureInversions": 1,
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 79,
@@ -304,10 +304,10 @@
   "edges": 36,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 0,
+  "departureInversions": 1,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 36,
+  "bendWorst": 31,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 18,
@@ -526,7 +526,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 5,
+  "edgeCrossings": 4,
   "nodeOverlaps": 0
  },
  "swift-modest-proposal @ detail": {
@@ -624,7 +624,7 @@
   "bendWorst": 107,
   "overshoot": 75,
   "detourWorst": 1.4,
-  "edgeCrossings": 127,
+  "edgeCrossings": 128,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -696,7 +696,7 @@
   "bendWorst": 61,
   "overshoot": 49,
   "detourWorst": 1.2,
-  "edgeCrossings": 50,
+  "edgeCrossings": 52,
   "nodeOverlaps": 0
  },
  "wilson-2023-health-system-good @ folded": {
@@ -742,7 +742,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 19,
+  "edgeCrossings": 17,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
@@ -755,20 +755,20 @@
   "bendWorst": 77,
   "overshoot": 72,
   "detourWorst": 1.1,
-  "edgeCrossings": 30,
+  "edgeCrossings": 29,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
   "edges": 176,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 0,
+  "departureInversions": 1,
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 107,
   "overshoot": 75,
   "detourWorst": 1.3,
-  "edgeCrossings": 105,
+  "edgeCrossings": 104,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {

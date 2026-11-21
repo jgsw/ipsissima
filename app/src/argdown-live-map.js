@@ -2729,15 +2729,137 @@ function edgeGeometry(g, vis, sizes) {
 
   // Pass 3: build the final path. Straighten LAST, once both ends are settled -- straightening
   // before an endpoint is final cannot see the bulge that moving it introduces.
+  const fin = new Map();
   for (const [key, d] of draft) {
     let pts = d.pts;
     if (d.leave && seatThese.has(key)) {
       pts = pts.map(q => ({ x: q.x, y: q.y }));
       pts[0] = d.leave;
     }
-    out.set(key, settle(pts, d.e.v, d.e.w));
+    fin.set(key, settle(pts, d.e.v, d.e.w));
+  }
+  // OFF THE ROUNDED CORNERS, last of all, once nothing else here will move an end (see
+  // offCorner). Each node's other ends go with it, so an end slid along a face stops short of its
+  // neighbour there rather than passing it: passing reversed the order departures were seated in
+  // on four samples. drawEdges asks again after it relays junction members and slaloms.
+  const endsAt = new Map();                      // node id -> every end of every line at it
+  for (const [key, pts] of fin) {
+    if (pts.length < 2) continue;
+    const { e } = draft.get(key);
+    for (const [id, p] of [[e.v, pts[0]], [e.w, pts[pts.length - 1]]]) {
+      if (!endsAt.has(id)) endsAt.set(id, []);
+      endsAt.get(id).push(p);
+    }
+  }
+  for (const [key, pts] of fin) {
+    const { e } = draft.get(key);
+    const moved = endsOffCorners(pts, g, sizes, e.v, e.w, endsAt);
+    // A MOVED END IS STRAIGHTENED AGAIN: the bend dagre needed for the corner may be one the new
+    // end does not, and leaving it was three "avoidable bends" on the samples.
+    out.set(key, moved === pts ? pts : settle(moved, e.v, e.w));
   }
   return out;
+}
+
+/** Both ends of a route off their boxes' rounded corners: a new array, or the same one if
+ *  neither end was on a corner. */
+function endsOffCorners(pts, g, sizes, from, to, endsAt) {
+  if (!pts || pts.length < 2 || !sizes || !g) return pts;
+  const sv = sizes.get(from), sw = sizes.get(to), bv = g.node(from), bw = g.node(to);
+  const n = pts.length;
+  const othersAt = (id, me) => endsAt && endsAt.has(id) ? endsAt.get(id).filter(q => q !== me) : null;
+  const a = sv && bv ? offCorner(pts[0], pts[1], bv, sv, othersAt(from, pts[0])) : null;
+  const z = sw && bw ? offCorner(pts[n - 1], pts[n - 2], bw, sw, othersAt(to, pts[n - 1])) : null;
+  if (!a && !z) return pts;
+  const out = pts.map(q => ({ x: q.x, y: q.y }));
+  // A two-point route has one point between its ends to move: the far end, never.
+  if (a) { out[0] = a.end; if (a.next && n > 2) out[1] = a.next; }
+  if (z) { out[n - 1] = z.end; if (z.next && n > 2) out[n - 2] = z.next; }
+  return out;
+}
+
+
+/** PURE: an end that sits on a box's rounded corner, moved along the face the line comes from.
+ *
+ *  The layout clips an edge to the box's RECTANGLE, but the box is drawn with rounded corners
+ *  (`rx` 7), so a line clipped at or next to a corner stops in the empty quarter-circle the
+ *  rounding cuts away: on the Prescott-Couch map, the line out of "The commitments interconnect"
+ *  ended a few pixels short of the box, in a hook (reported from use, 21 Nov 2026). Drawn in a
+ *  browser, 123 of the 2,350 line ends on the eleven samples (opening, sections open, everything
+ *  shown) sat on a corner like that.
+ *
+ *  Moved to CORNER_CLEAR (20) from the corner, not onto the curve: a line meeting a box at its corner
+ *  reads as touching two faces at once, and an arrowhead there overhangs the rounding. WHICH FACE
+ *  was tried both ways on the samples:
+ *   - ALONG THE TOP OR BOTTOM wherever the line heads on past that face -- most of them, since the
+ *     map runs bottom to top. Moving such an end DOWN THE SIDE instead was tried first, and on
+ *     Bates it turned a straight line into an elbow: started lower, the line now clipped the
+ *     taller box beside it, and the route was rebuilt to go round.
+ *   - DOWN THE SIDE where the line leaves sideways -- the reported case, a route already built to
+ *     go round a taller neighbour, whose first leg is a short horizontal stub. The stub moves down
+ *     with the end (`next`), so the elbow stays square instead of becoming a kink.
+ *  Only ends ON the curve are moved (closer than BOX_RX + 1 on both axes): an arrival seated 8 from
+ *  the corner by `arrivalPorts` is already clear of it and keeps its place.
+ *
+ *  `others`, where given, are the box's other line ends: an end slid along a face stops 6 short of
+ *  the nearest one in its way, so lines leave a box in the order they were seated in; where that
+ *  would leave it on the curve still, it takes the side instead, if the line heads that way.
+ *
+ *  Returns { end, next } -- `next` set only when a square stub moves with it -- or null where the
+ *  end is not on a corner or the line runs back into the box.
+ */
+const BOX_RX = 7;                   // the rx of rect.alm-box: see render
+// Past the rounding AND past a margin note's folded corner, which reaches 18 along both edges
+// (see MARGINALIA in render): at 12 the moved end met the fold on Prescott-Couch.
+const CORNER_CLEAR = 20;
+function offCorner(end, next, box, size, others) {
+  if (!end || !next || !box || !size) return null;
+  const l = box.x - size.width / 2, r = box.x + size.width / 2;
+  const t = box.y - size.height / 2, b = box.y + size.height / 2;
+  if (end.x < l - 2 || end.x > r + 2 || end.y < t - 2 || end.y > b + 2) return null;
+  const nearL = Math.abs(end.x - l) <= Math.abs(end.x - r);
+  const nearT = Math.abs(end.y - t) <= Math.abs(end.y - b);
+  const dx = nearL ? Math.abs(end.x - l) : Math.abs(end.x - r);
+  const dy = nearT ? Math.abs(end.y - t) : Math.abs(end.y - b);
+  // A FIRST LEG ALONG THE BOX'S OWN BORDER, anywhere on it. A route rebuilt to go round a taller
+  // neighbour (retargetTail) leaves its start square, so from a point on the top its first leg
+  // runs flat along the top and over the corner: on Prescott-Couch as it opens, "Foreclosing an
+  // available..." -- the hook again, from a start that was no longer on the corner. Such a line
+  // leaves from the side it heads for, its stub moved with it.
+  const sideY = size.height > 2 * CORNER_CLEAR ? (nearT ? t + CORNER_CLEAR : b - CORNER_CLEAR) : box.y;
+  const faceX = size.width > 2 * CORNER_CLEAR ? (nearL ? l + CORNER_CLEAR : r - CORNER_CLEAR) : box.x;
+  if (dy < 1 && Math.abs(next.y - end.y) < 1 && (next.x < l - 1 || next.x > r + 1)) {
+    const x = next.x < l ? l : r;
+    return { end: { x, y: sideY }, next: { x: next.x, y: sideY } };
+  }
+  if (dx < 1 && Math.abs(next.x - end.x) < 1 && (next.y < t - 1 || next.y > b + 1)) {
+    const y = next.y < t ? t : b;
+    return { end: { x: faceX, y }, next: { x: faceX, y: next.y } };
+  }
+  if (dx >= BOX_RX + 1 || dy >= BOX_RX + 1) return null;
+  const pastFace = nearT ? next.y < t - 1 : next.y > b + 1;        // heads on past top/bottom
+  const pastSide = nearL ? next.x < l - 1 : next.x > r + 1;        // heads off sideways
+  if (pastFace) {
+    const y = nearT ? t : b;
+    let x = faceX;
+    // NOT PAST A NEIGHBOUR on the same face: stop short of the nearest end between here and there.
+    for (const q of others || []) {
+      if (Math.abs(q.y - y) > 3) continue;                         // dagre's own sit up to 2 off
+      if (nearL ? q.x > end.x && q.x - 6 < x : q.x < end.x && q.x + 6 > x) x = nearL ? q.x - 6 : q.x + 6;
+    }
+    const clear = nearL ? x >= l + BOX_RX + 1 : x <= r - BOX_RX - 1;
+    if (clear) {
+      const stub = Math.abs(next.x - end.x) < 1;                   // a square leg straight out
+      return { end: { x, y }, next: stub ? { x, y: next.y } : null };
+    }
+    if (!pastSide) return null;                                    // nowhere clear to go: as was
+  }
+  if (pastSide) {
+    const y = sideY, x = nearL ? l : r;
+    const stub = Math.abs(next.y - end.y) < 1;
+    return { end: { x, y }, next: stub ? { x: next.x, y } : null };
+  }
+  return null;                                                     // it runs back into the box
 }
 
 
@@ -4948,6 +5070,16 @@ function createLiveMap(container, graph, options) {
           if (r) pts.splice(0, pts.length, ...r);
         }
       }
+      // OFF THE CORNERS AGAIN, now the relays above and planJoins have had their turn: the hook
+      // reported on Prescott-Couch was a junction member's route, rebuilt round a taller neighbour,
+      // whose first leg left from the corner (see offCorner).
+      if (!joins.member.has(key)) {
+        const fixed = endsOffCorners(pts, g, sizes, e.v, e.w);
+        if (fixed !== pts) pts.splice(0, pts.length, ...fixed);
+      } else {
+        const fixed = endsOffCorners(pts, g, sizes, e.v, "");
+        if (fixed !== pts) pts.splice(0, pts.length, ...fixed);
+      }
       path.setAttribute("d", smooth(pts));
       path.setAttribute("stroke", rel.color);
       if (rel.dash) path.setAttribute("stroke-dasharray", rel.dash);
@@ -4973,7 +5105,7 @@ function createLiveMap(container, graph, options) {
       path.classList.toggle("is-prepared", info.debt === false);
       path.classList.toggle("is-far", info.far === true);
       drawDirectionMarks(key, path, rel, info);
-      drawLineNo(key, pts, rel, info, joins.member.has(key));
+      drawLineNo(key, pts, rel, info, joins.member.has(key), g.node(info && info.step != null ? e.w : e.v));
       drawUnder(key, pts, rel, e.v, e.w, allBoxes);
       // Paths cannot be CSS-interpolated, so instead of tweening the line we re-path at once
       // and fade it back in while the nodes are still gliding. Reads as a redraw, not a jump.
@@ -5638,7 +5770,7 @@ function createLiveMap(container, graph, options) {
    *  bar (see drawJoins), where the arrival actually happens; and a through-edge never carries
    *  a number at all, because it is not the relation it looks like.
    */
-  function drawLineNo(key, pts, rel, info, isMember) {
+  function drawLineNo(key, pts, rel, info, isMember, box) {
     const want = info && info.line != null && !isMember && info.through !== true &&
                  pts && pts.length >= 2;
     let t = drawnLineNo.get(key);
@@ -5655,8 +5787,17 @@ function createLiveMap(container, graph, options) {
     const q = arriving ? pts[pts.length - 2] : pts[1];
     const dx = q.x - p.x, dy = q.y - p.y, len = Math.hypot(dx, dy) || 1;
     const ux = dx / len, uy = dy / len;         // along the edge, away from the box
-    t.setAttribute("x", p.x + ux * 14 - uy * 6);
-    t.setAttribute("y", p.y + uy * 14 + ux * 6 + 2.5);
+    // ON WHICHEVER SIDE OF THE LINE IS AWAY FROM THE BOX. Always one side, it sat on the box's
+    // border wherever a line leaves a box's flank climbing past its corner -- which since
+    // `offCorner` is every line that used to end ON the corner (21 Nov 2026). A line leaving
+    // square to a face is symmetrical about the box, and keeps the usual side.
+    let side = 1;
+    if (box && box.x != null) {
+      const at = s => Math.hypot(p.x + ux * 14 - s * uy * 6 - box.x, p.y + uy * 14 + s * ux * 6 - box.y);
+      if (at(-1) > at(1) + 0.5) side = -1;
+    }
+    t.setAttribute("x", p.x + ux * 14 - side * uy * 6);
+    t.setAttribute("y", p.y + uy * 14 + side * ux * 6 + 2.5);
     t.setAttribute("fill", rel.color);
     t.textContent = "(" + info.line + ")";
   }
@@ -7973,7 +8114,7 @@ const API = { createLiveMap, filterGraph, frameFor, maxDepth, index, loadOf,
               junctionFeet, retargetTail, slalomFlips, pcsRows, premiseHull,
               layoutByArgument, seatsOf, pathsCross, clearOfBadge, offsetPastBadge,
               arrivalPorts, departurePorts, slotOffsets, straightenIfSafe, bowOf,
-              edgeGeometry,
+              edgeGeometry, offCorner, CORNER_CLEAR,
               directionFractions,
               circleCrossing,
               BADGE_R, BADGE_CLEAR, BADGE_SIDE };
