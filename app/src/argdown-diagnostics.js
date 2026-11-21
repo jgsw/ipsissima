@@ -197,6 +197,13 @@ function mechanism(graph, opts, byId) {
   if (!MV || !graph || !graph.mechanism) return [];
   var M = MV.model(graph);
   if (!M) return [];
+  // NO MECHANISM, NOTHING TO SAY ABOUT ONE (James, 21 Nov 2026, on Moore 1939). A map that says
+  // `depth: none` -- considered, and not mapped -- has no chain, and asking where it starts or what it
+  // is for asks after something the map has said is not there. The checker already drops those
+  // messages for `depth: none` and reports only the decision; this keeps the page to the same. A
+  // block that declares no state and marks no step is the same case without the word for it.
+  if (M.profile && M.profile.depth === "none") return [];
+  if (!(M.ids || []).length && !(M.steps || []).length) return [];
   var out = [];
   var label = function (v) { var s = M.states[v]; return (s && s.label != null) ? String(s.label) : String(v); };
   var text = M.steps.filter(function (s) { return s.layer === "text" && !s.isNull && !s.selects && !s.assoc; });

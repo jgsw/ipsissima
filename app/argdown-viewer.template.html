@@ -10163,7 +10163,11 @@ function lookRender(){
     });
     h += '</ul>';
   });
-  h += '<p class="foot">\u2039\u2026\u203a is a claim as the map titles it; \u201c\u2026\u201d a state in the Mechanism view. ' +
+  // The Mechanism view's half of the key only where a mechanism item is listed: a map with no chain
+  // should not be told how its states are written (21 Nov 2026).
+  var anyMech = items.some(function(x){ return x.kind === "mechanism"; });
+  h += '<p class="foot">\u2039\u2026\u203a is a claim as the map titles it' +
+       (anyMech ? '; \u201c\u2026\u201d a state in the Mechanism view' : '') + '. ' +
        'Hover over an item for the claim\u2019s own words. These are facts about the map, not verdicts on the text: ' +
        'places to look, where a reader or an appraiser decides what, if anything, is wrong.</p>';
   box.innerHTML = h;

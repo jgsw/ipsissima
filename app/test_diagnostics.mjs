@@ -143,6 +143,31 @@ for (const dir of fs.readdirSync(path.join(REPO, "samples")).filter(d => fs.stat
   check(!o.some(x => /leads nowhere/.test(x.says)) && capped, dir + ": " + o.filter(x => !x.more).length + " shown of " + o.length);
 }
 
+/* ---- 1b. no mechanism, no mechanism items ---------------------------------------------------- */
+// Reported on Moore 1939 (21 Nov 2026): a map that says `depth: none` was told its chain had "no
+// stated cause to run from" and "nothing says what the chain is for". The checker already says
+// only "considered, not mapped" there; Where to look now says nothing about a mechanism at all.
+// The control is a chain with states and no roles, where those two lines are the right report.
+console.log("\nno mechanism, nothing about one");
+const ARG = `
+[Main]: A conclusion.
+    <+ <Why>
+
+<Why>
+
+(1) [P]: A premise.
+-----
+(2) [Main]
+`;
+const mechOf = fm => D.diagnose(graphOf(`===\ntitle: T\n${fm}===\n${ARG}`), { deps }).filter(x => x.kind === "mechanism");
+const none = mechOf(`mechanism:\n    depth: none\n    depth_reason: "No causal chain."\n`);
+check(none.length === 0, "`depth: none`: no mechanism item" + (none.length ? " -- got: " + none.map(x => x.says).join(" | ") : ""));
+const empty = mechOf(`mechanism:\n    question: "How?"\n`);
+check(empty.length === 0, "a block with no state and no step: no mechanism item" + (empty.length ? " -- got: " + empty.map(x => x.says).join(" | ") : ""));
+const unroled = mechOf(`mechanism:\n    states:\n        a: {label: "A"}\n        b: {label: "B"}\n`);
+check(unroled.some(x => /no stated cause/.test(x.says)) && unroled.some(x => /what the chain is for/.test(x.says)),
+      "and a chain with states but no roles still hears both");
+
 /* ---- 2. one cost measure -------------------------------------------------------------------- */
 // Study's cost, exactly as it stood in the page before it moved into the module (18 Nov 2026).
 function legacyRank(G) {
