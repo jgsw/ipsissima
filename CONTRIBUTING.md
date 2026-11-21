@@ -28,8 +28,14 @@ node app/run_all_tests.mjs
 
 Over sixty suites: the renderer's fold logic and layout geometry, the exposition arrangement,
 the mechanism view, supposing and study, the text's tables, the one-file bundle, the desktop
-host adapter, the converters, the provenance rules in both languages, and a typecheck. It takes
-about a quarter of an hour.
+host adapter, the converters, the provenance rules in both languages, and a typecheck. They run
+side by side, one per core by default (`--jobs N` to choose; `--jobs 1` for the old serial run
+when two suites are suspected of interfering), and the whole run takes a few minutes.
+
+**A suite writes only into a temporary folder of its own.** That is what makes running them side
+by side safe; a new suite that writes into the checkout breaks it for everyone else. In the
+browser suites, wait with `settle(page, ms)` from `app/browser_settle.mjs` rather than a bare
+`waitForTimeout`: it waits for everything the sleep would have let happen, then stops.
 
 **Everything is expected to pass**, locally and on CI, and CI allows no failures through. It
 was not always so: for a while `fold invariants (state space)` reported a real defect and was

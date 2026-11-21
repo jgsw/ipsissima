@@ -14,6 +14,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -211,7 +212,7 @@ if (chromium) {
     const lit = () => page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit")]
       .map(g => [...g.querySelectorAll(".alm-title")].map(t => t.textContent.trim()).join(" ")).sort());
     const tablesBtn = page.locator('#map [data-act="tables"]');
-    const open = async file => { await page.goto("file://" + file); await page.waitForTimeout(900); };
+    const open = async file => { await page.goto("file://" + file); await settle(page, 900); };
 
     // A MAP WITH NO FRAMES has no Tables button. Mutation: never hide it in tablesSync -> it shows.
     await open(build("suppose/accounts.argdown", "accounts.html"));
@@ -245,11 +246,11 @@ if (chromium) {
           "the panel ends on one question, from the strongest move it shows: what the table leaves out", JSON.stringify(refl));
     // CLICKING A VALUE goes to the claim that states it. Mutation: drop the data-tables-go handler -> nothing lit.
     await page.locator('#tables tr[data-tables-row="B"] td').nth(2).locator(".go").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(JSON.stringify(await lit()) === JSON.stringify(["The coin guess was not good"]), "clicking a value lights the claim that states it", JSON.stringify(await lit()));
     // A CASE clicked lights every claim about it. Mutation: light the first cell's claim only -> one.
     await page.locator('#tables tr[data-tables-row="B"] th').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(JSON.stringify(await lit()) === JSON.stringify(["The coin guess was informed", "The coin guess was not good", "The coin guess was right"]),
           "clicking a case lights every claim the text makes about it", JSON.stringify(await lit()));
     // The button is a switch. Mutation: tablesToggle always opens -> still visible.
@@ -386,7 +387,7 @@ if (chromium) {
           "the account set's findings are grouped by study: the west, one for and one against, tells the accounts apart", a0.slice(0, 600));
     // Clicking a study lights its findings. Mutation: light the group's first row only -> one.
     await page.locator('#tables tr[data-tables-row="g1"] th').click({ position: { x: 10, y: 8 } });
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(JSON.stringify(await lit()) === JSON.stringify(["West attention made no difference", "West practice counted"]), "clicking a study lights every finding of it", JSON.stringify(await lit()));
     await page.locator("#tables [data-tables-close]").click();
     // THE DERIVED SETS BESIDE THE DECLARED ONE (James's ruling, 20 Oct 2026). The weigh panel offers a
@@ -432,7 +433,7 @@ if (chromium) {
     // Mutation: leave weighSync's `hidden` unset -> the button never shows.
     check(await weighBtn.isVisible(), "Weigh is offered on a map with accounts to weigh");
     await weighBtn.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const weighText = await page.locator("#weigh").innerText().catch(() => "");
     check(await page.locator("#weigh").isVisible() && !/gives no reason/.test(weighText) &&
           await weighBtn.evaluate(b => b.classList.contains("on")),
@@ -466,13 +467,13 @@ if (chromium) {
     check(await qcard.isHidden(), "Don't ask first is remembered: the next map opens straight onto the map");
     await page.locator("#helpbtn").click();
     await page.locator("#qfirsttoc").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await qcard.isVisible() && /Stop asking/.test(await page.locator("#qfirsttoc").innerText()),
           "How to use turns it back on, and asks at once");
     await qcard.locator('.qbtns [data-qfirst="map"]').click();
     check(await qcard.isHidden(), "Show me the map puts the card away");
     await weighBtn.click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const batesWeigh = await page.locator("#weigh").innerText().catch(() => "");
     check(/Weigh the accounts/.test(batesWeigh) && !/gives no reason/.test(batesWeigh),
           "on Bates too, Weigh opens on a set a reason bears on, past the first set, which has none",

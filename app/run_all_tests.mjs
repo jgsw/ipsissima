@@ -1,14 +1,26 @@
 #!/usr/bin/env node
 /* run_all_tests.mjs — every check, one command.
  *
- *   node app/run_all_tests.mjs
+ *   node app/run_all_tests.mjs [--jobs N]
  *
  * Run this before sharing the tooling, and after any change to the renderer, the fold logic or
  * the provenance rules. Each suite is independent and each prints its own detail; this reports
  * which passed and exits non-zero if any did not.
+ *
+ * SIDE BY SIDE, NOT ONE AFTER ANOTHER (21 Nov 2026). Run in series the suites took 22 minutes on
+ * CI and 18 here, most of it one process waiting while the machine's other cores did nothing
+ * (docs/TEST-SPEED-AUDIT.md). They now run `--jobs` at a time, by default one per core, the
+ * slowest started first. Nothing about what is checked changed. Each suite's output is held until
+ * it finishes, and the blocks are printed in this file's order, so the log reads as it always
+ * did. `--jobs 1` is the old serial run, for when two suites are suspected of interfering.
+ *
+ * WHAT MAKES THAT SAFE is that every suite writes only into a temporary folder of its own. The
+ * one that did not (the shim test rebuilt the committed parser in place) was changed to build
+ * aside. A new suite that writes into the checkout breaks this, so: write into os.tmpdir().
  */
-import { spawnSync } from "child_process";
+import { spawn } from "child_process";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -47,7 +59,12 @@ const SUITES = [
   // DOM, and a fortnight of defects lived on the far side of it -- see docs/QA-PLAN.md. Skipped
   // with a word rather than a failure where Playwright is not installed, so a checkout that has
   // not run `npx playwright install chromium` still runs everything else.
-  ["the rendered map (browser)", "node", [path.join(HERE, "test_rendered_dom.mjs")]],
+  // FOUR PROCESSES, one suite: on its own it was longer than everything else together once the
+  // suites ran side by side. See `--part` in the file.
+  ["the rendered map (browser): light, and the self-test", "node", [path.join(HERE, "test_rendered_dom.mjs"), "--part", "light"]],
+  ["the rendered map (browser): dark", "node", [path.join(HERE, "test_rendered_dom.mjs"), "--part", "dark"]],
+  ["the rendered map (browser): feature checks, 1 of 2", "node", [path.join(HERE, "test_rendered_dom.mjs"), "--part", "checks1"]],
+  ["the rendered map (browser): feature checks, 2 of 2", "node", [path.join(HERE, "test_rendered_dom.mjs"), "--part", "checks2"]],
   ["the mechanism arrangement", "node", [path.join(HERE, "test_mechanism_view.mjs")]],
   ["suppositions and contraposition", "node", [path.join(HERE, "test_suppose.mjs")]],
   ["the text's comparisons as tables", "node", [path.join(HERE, "test_tables.mjs")]],
@@ -154,17 +171,87 @@ const SUITES = [
   ["map quality vs baseline",    "node", [path.join(HERE, "map_quality.mjs")]]
 ];
 
-let failed = 0;
-const results = [];
-for (const [name, cmd, args] of SUITES) {
-  process.stdout.write(`\n${"=".repeat(72)}\n${name}\n${"=".repeat(72)}\n`);
-  const r = spawnSync(cmd, args, { stdio: "inherit" });
-  const ok = r.status === 0;
-  if (!ok) failed++;
-  results.push([name, ok]);
+const argv = process.argv.slice(2);
+const jobsAt = argv.indexOf("--jobs");
+const JOBS = Math.max(1, Number(jobsAt >= 0 ? argv[jobsAt + 1] : process.env.IPS_TEST_JOBS) ||
+                         (os.availableParallelism ? os.availableParallelism() : os.cpus().length));
+
+/* THE SLOW ONES START FIRST. Started last, the five-minute browser suite would begin after
+ * everything else had finished and the run would take as long as it always did. The order is a
+ * hint and nothing else: a stale list costs minutes, never a check. Seconds as measured on CI. */
+const SLOW_FIRST = [
+  "the rendered map (browser): light, and the self-test",   // the four parts were 322 together
+  "the rendered map (browser): dark",
+  "fold invariants (state space)",              // 247 before 21 Nov; about 100 since
+  "suppositions and contraposition",            //  91
+  "the mechanism and the appraisal",            // 161 before 21 Nov; about 90 since
+  "the mechanism arrangement",                  //  87
+  "designed against the misreading",            //  74
+  "the rendered map (browser): feature checks, 1 of 2",
+  "the rendered map (browser): feature checks, 2 of 2",
+];
+const rank = name => { const i = SLOW_FIRST.indexOf(name); return i < 0 ? SLOW_FIRST.length : i; };
+
+/* NOTHING A TEST RUN DOES BELONGS IN THE CHECKER'S LEDGER. ~/.ipsissima/check-log.jsonl exists to
+ * show which mistakes a reconstruction makes in a real fix loop; on 21 Nov 2026 21,859 of its
+ * 54,343 lines were one test fixture. Forced off, not defaulted: a path set for real work in
+ * the shell would otherwise collect the tests too. */
+const ENV = { ...process.env, IPSISSIMA_CHECK_LOG: "off" };
+
+/** Run one suite to completion, holding its output.
+ *  @returns {Promise<{ok: boolean, out: string, secs: number}>} */
+function runSuite(cmd, args) {
+  return new Promise(resolve => {
+    const t0 = Date.now();
+    const chunks = [];
+    let child;
+    try {
+      child = spawn(cmd, args, { env: ENV, stdio: ["ignore", "pipe", "pipe"] });
+    } catch (e) {
+      resolve({ ok: false, out: `could not start: ${e.message}\n`, secs: 0 });
+      return;
+    }
+    child.stdout.on("data", c => chunks.push(c));
+    child.stderr.on("data", c => chunks.push(c));
+    child.on("error", e => chunks.push(Buffer.from(`could not start: ${e.message}\n`)));
+    child.on("close", (code, signal) => resolve({
+      ok: code === 0,
+      out: Buffer.concat(chunks).toString("utf8") + (signal ? `\nkilled by ${signal}\n` : ""),
+      secs: (Date.now() - t0) / 1000
+    }));
+  });
 }
 
+/** @type {({ok: boolean, out: string, secs: number}|undefined)[]} */
+const done = new Array(SUITES.length);
+let printed = 0;
+/** Print every finished block that has no unfinished block before it. */
+function flush() {
+  while (printed < SUITES.length && done[printed]) {
+    const [name] = SUITES[printed];
+    const r = done[printed];
+    process.stdout.write(`\n${"=".repeat(72)}\n${name}\n${"=".repeat(72)}\n${r.out}`);
+    printed++;
+  }
+}
+
+const t0 = Date.now();
+const queue = SUITES.map((s, i) => i).sort((a, b) => rank(SUITES[a][0]) - rank(SUITES[b][0]) || a - b);
+console.log(`${SUITES.length} suites, ${JOBS} at a time`);
+await Promise.all(Array.from({ length: Math.min(JOBS, queue.length) }, async () => {
+  while (queue.length) {
+    const i = queue.shift();
+    const [, cmd, args] = SUITES[i];
+    done[i] = await runSuite(cmd, args);
+    flush();
+  }
+}));
+flush();
+
+const failed = done.filter(r => !r.ok).length;
 console.log(`\n${"=".repeat(72)}`);
-for (const [name, ok] of results) console.log(`  ${ok ? "PASS" : "FAIL"}  ${name}`);
-console.log(failed ? `\n${failed} suite(s) failed\n` : "\neverything passed\n");
+SUITES.forEach(([name], i) =>
+  console.log(`  ${done[i].ok ? "PASS" : "FAIL"}  ${name}  (${done[i].secs.toFixed(1)}s)`));
+console.log(`\n${failed ? `${failed} suite(s) failed` : "everything passed"} ` +
+            `in ${((Date.now() - t0) / 60000).toFixed(1)} min, ${JOBS} at a time\n`);
 process.exit(failed ? 1 : 0);

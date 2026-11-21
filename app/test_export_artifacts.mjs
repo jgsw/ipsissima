@@ -41,6 +41,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -181,12 +182,12 @@ await page.evaluate(() => {
   const b = document.querySelector('.alm-bar [data-act="sections"][data-open="1"]');
   if (b) b.click();
 });
-await page.waitForTimeout(800);
+await settle(page, 800);
 await page.evaluate(() => {
   const r = document.querySelector(".alm-bar input.alm-range");
   if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); }
 });
-await page.waitForTimeout(1200);
+await settle(page, 1200);
 /* BY THE COUNT ON THE PILL. Sorting on `textContent` picked the longest string, which stopped
  * being the longest argument the moment a one-step control arrived: its tooltip is longer than a
  * four-step one's, so this quietly began testing the smallest panel on the map. */
@@ -205,7 +206,7 @@ for (const mode of ["stair", "compact"]) {
     document.getElementById(m === "compact" ? "xmcompact" : "xmstair").click();
     window.__cap.length = 0;
   }, mode);
-  await page.waitForTimeout(400);
+  await settle(page, 400);
 
   const panelText = await page.evaluate(() => {
     // WHAT THE PANEL DRAWS, including the uppercase CSS applies and the arrow it puts in with
@@ -226,7 +227,7 @@ for (const mode of ["stair", "compact"]) {
   });
 
   await page.evaluate(() => document.getElementById("xsvg").click());
-  await page.waitForTimeout(700);
+  await settle(page, 700);
   const svg = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
   captured[mode] = { svg, panelText };
 
@@ -274,7 +275,7 @@ if (!RSVG) console.log("  --    librsvg not installed; the independent render wa
 /* The PNG path, which is where the malformed XML was first noticed: it loads the same bytes
  * through an image decoder, so a file the browser will not parse cannot be encoded either. */
 await page.evaluate(() => { window.__cap.length = 0; document.getElementById("xpng").click(); });
-await page.waitForTimeout(2500);
+await settle(page, 2500);
 const png = await page.evaluate(async () => {
   if (!window.__cap.length) return null;
   const b = window.__cap[0];
@@ -316,7 +317,7 @@ check(png && sameSize && png.w === sameSize.w && png.h === sameSize.h,
 await page.addStyleTag({ content:
   '#explbody:has(.xwrap[style*="height"]){padding-right:calc(1rem + 15px)}' });
 await page.evaluate(() => { window.__cap.length = 0; document.getElementById("xmstair").click(); });
-await page.waitForTimeout(500);
+await settle(page, 500);
 
 const overhang = await page.evaluate(() => {
   const wrap = document.querySelector("#explbody .xwrap");
@@ -335,7 +336,7 @@ check(overhang && overhang.over <= 1,
                : "the panel drew no wrap");
 
 await page.evaluate(() => { window.__cap.length = 0; document.getElementById("xsvg").click(); });
-await page.waitForTimeout(600);
+await settle(page, 600);
 const narrowed = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
 const narrowEdge = await margin(narrowed);
 check(!narrowEdge, "the export survives the column narrowing under the layout", narrowEdge);
@@ -353,7 +354,7 @@ await page.evaluate(() => {
   const r = document.querySelector(".alm-range");
   if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); }
 });
-await page.waitForTimeout(1500);
+await settle(page, 1500);
 const lone = await page.evaluate(() => {
   const n = c => Number(((c.querySelector("text") || {}).textContent || "").replace(/\D+/g, "")) || 0;
   const c = [...document.querySelectorAll(".alm-explode")].filter(x => n(x) === 1)[0];
@@ -364,7 +365,7 @@ const lone = await page.evaluate(() => {
 check(!!lone, "a one-step argument opens a panel", "no ⊞ 1 control was drawn on this map");
 
 if (lone) {
-  await page.waitForTimeout(500);
+  await settle(page, 500);
   const shape = await page.evaluate(() => {
     const wrap = document.querySelector("#explbody .xwrap");
     const b = [...wrap.querySelectorAll(".xstep,.xconcl")];
@@ -383,9 +384,9 @@ if (lone) {
       document.getElementById(m === "compact" ? "xmcompact" : "xmstair").click();
       window.__cap.length = 0;
     }, mode);
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     await page.evaluate(() => document.getElementById("xsvg").click());
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     const one = await page.evaluate(async () => window.__cap.length ? await window.__cap[0].text() : "");
     check(one.length > 300, `one step, ${mode}: the export produces an SVG`, `${one.length} bytes`);
     const oneEdge = await margin(one);

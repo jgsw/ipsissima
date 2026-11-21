@@ -25,6 +25,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { toGraph, RUN } from "./argdown-graph.mjs";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -87,7 +88,7 @@ if (chromium) {
     const page = await browser.newPage({ viewport: { width: 1500, height: 950 } });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     await page.goto("file://" + out);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     // Open everything, so that a hidden appraisal claim is hidden by the switch and not by a fold.
     const openAll = async () => {
       await page.evaluate(() => { /** @type {any} */ const L = window; });
@@ -132,7 +133,7 @@ if (chromium) {
       return document.getElementById("help").classList.contains("show") && pg ? pg.dataset.title : null;
     });
     await page.locator("#map .alm-appr-banner .alm-helplink").click({ timeout: 4000 }).catch(() => {});
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await topic() === "The reconstructor's appraisal",
           "the banner's link opens the page that explains the appraisal", String(await topic()));
     await page.keyboard.press("Escape");
@@ -143,14 +144,14 @@ if (chromium) {
     await page.waitForTimeout(300);
     check(await page.locator(".amech-banner").isVisible(), "Mechanism opens with the appraisal still on");
     await page.locator(".amech-banner .amech-helplink").click({ timeout: 4000 }).catch(() => {});
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await topic() === "The reconstructor's appraisal", "and Mechanism's banner links there too",
           String(await topic()));
     await page.keyboard.press("Escape");
     await page.locator(".amech-tog.appr").click();
     await page.waitForTimeout(200);
     await page.locator('#view [data-v="reasons"]').click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     // Mutation: drop `appraisal: APPRAISAL_ON` from setArrangement's setState -> still drawn.
     check(await drawn() === 0, "switched off in Mechanism, it is off back in Reasons");
     check(!/APPRAISAL-NOTE/.test(await page.locator("body").innerText()) && await notesBtn.isHidden(),

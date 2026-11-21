@@ -1650,13 +1650,13 @@ def provenance_report(cli, path, source_root, fix=None, echo_candidates=False):
         print(f"\n   PROVENANCE: unavailable ({e})")
         return
 
-    with tempfile.TemporaryDirectory() as td:
-        r = run(cli, "json", path, "--outputDir", td)
-        files = [f for f in os.listdir(td) if f.endswith(".json")] if r.returncode == 0 else []
-        if not files:
-            print("\n   PROVENANCE: could not export JSON, skipping")
-            return
-        doc = json.load(open(os.path.join(td, files[0]), encoding="utf-8"))
+    # Through the memo, like every other section: a fresh export here was a second Node process
+    # for an answer the run already had. `export_json` hands out a copy, so `apply_defaults`
+    # below writes on this section's document and no one else's.
+    doc = export_json(cli, path)
+    if doc is None:
+        print("\n   PROVENANCE: could not export JSON, skipping")
+        return
     prov.apply_defaults(doc, prov.read_frontmatter(path))
 
     quotes = prov.check_quotations(doc, source_root)
@@ -2780,13 +2780,10 @@ def _parse_args():
     if a.stamp:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
         import argdown_provenance as prov
-        with tempfile.TemporaryDirectory() as td:
-            r = run(cli, "json", path, "--outputDir", td)
-            files = [f for f in os.listdir(td) if f.endswith(".json")] if r.returncode == 0 else []
-            if not files:
-                print("could not export JSON; nothing stamped")
-                return None, None, None
-            doc = json.load(open(os.path.join(td, files[0]), encoding="utf-8"))
+        doc = export_json(cli, path)
+        if doc is None:
+            print("could not export JSON; nothing stamped")
+            return None, None, None
         want = prov.stamp_rewrites(doc)
         done = prov.apply_stamp_rewrites(path, want)
         print(f"{len(done)} of {len(want)} formalized claim(s) stamped"
@@ -3264,16 +3261,13 @@ def _report(cli, path, a):
     statement_undercut_report(path)
 
     # ---- 6. JSON cross-check --------------------------------------------- #
-    with tempfile.TemporaryDirectory() as td:
-        rr = run(cli, "json", path, "--outputDir", td)
-        files = [f for f in os.listdir(td) if f.endswith(".json")] if rr.returncode == 0 else []
-        if files:
-            d = json.load(open(os.path.join(td, files[0])))
-            print(f"\n   JSON: {len(d['statements'])} statements, "
-                  f"{len(d['arguments'])} arguments, {len(d['relations'])} relations "
-                  f"{dict(Counter(r['relationType'] for r in d['relations']))}")
-            print("      (fewer relations than the map has edges is EXPECTED: the JSON")
-            print("       omits edges implied by a premise-conclusion structure.)")
+    d = export_json(cli, path)
+    if d is not None:
+        print(f"\n   JSON: {len(d['statements'])} statements, "
+              f"{len(d['arguments'])} arguments, {len(d['relations'])} relations "
+              f"{dict(Counter(r['relationType'] for r in d['relations']))}")
+        print("      (fewer relations than the map has edges is EXPECTED: the JSON")
+        print("       omits edges implied by a premise-conclusion structure.)")
 
 
 def main():

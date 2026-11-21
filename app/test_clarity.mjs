@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { argdown } from "@argdown/core";
 import { toGraph, RUN } from "./argdown-graph.mjs";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -137,7 +138,7 @@ if (chromium) {
     const page = await ctx.newPage();
     page.on("dialog", d => d.accept());
     await page.goto("file://" + file);
-    await page.waitForTimeout(900);
+    await settle(page, 900);
     return page;
   };
   const drop = (page, name, text) => page.evaluate(({ t, n }) => {
@@ -179,7 +180,7 @@ if (chromium) {
     await page.click("#laybtn");
     await page.waitForTimeout(200);
     await page.locator("#ctx button").filter({ hasText: hint }).first().click();
-    await page.waitForTimeout(700);
+    await settle(page, 700);
   };
 
   try {
@@ -189,7 +190,7 @@ if (chromium) {
       await layoutItem(page, "no map");
       check(await page.locator("#map").isHidden(), "Layout ▸ Check puts the map away");
       await page.click("#helpbtn");
-      await page.waitForTimeout(400);
+      await settle(page, 400);
       const r = await page.evaluate(() => {
         const h = document.getElementById("help").getBoundingClientRect();
         const top = document.elementFromPoint(h.left + h.width / 2, h.top + 80);
@@ -225,7 +226,7 @@ if (chromium) {
       check(where.inStrip && !where.inHeader && where.shown,
             "'machine-written map' is in the orientation strip, not the title bar", JSON.stringify(where));
       await page.click("#mapprov");
-      await page.waitForTimeout(400);
+      await settle(page, 400);
       const topic = await page.evaluate(() => {
         const pg = document.querySelector("#help .helppage.show");
         return { open: document.getElementById("help").classList.contains("show"),
@@ -293,10 +294,10 @@ if (chromium) {
       found.push(...await audit(page));
       await page.click('#panes [data-p="text"]');
       await page.click("#textbtn");
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       found.push(...await audit(page));
       await page.click("#mechbtn");
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       found.push(...await audit(page));
       await page.context().close();
       const cold = await open(editor);
@@ -316,9 +317,9 @@ if (chromium) {
       const page = await open(miller);
       const btn = page.locator('#map [data-act="study"]');
       await btn.click();
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       await page.locator('#studybody button[data-study="others"]').click();
-      await page.waitForTimeout(500);
+      await settle(page, 500);
       const s = await page.evaluate(() => {
         const el = document.querySelector("#map .alm-toggle.is-closed text");
         return { body: document.getElementById("studybody").innerText,
@@ -332,7 +333,7 @@ if (chromium) {
       // Mutation: drop syncStudyButton from startStudy and onMapState -> never lit.
       check(s.on, "the study button shows as on while studying");
       await btn.click();
-      await page.waitForTimeout(500);
+      await settle(page, 500);
       const after = await page.evaluate(() => ({
         card: document.getElementById("studycard").hidden,
         on: document.querySelector('#map [data-act="study"]').classList.contains("on") }));
@@ -350,10 +351,10 @@ if (chromium) {
         "    + [Air]: Cars are the main source of urban air pollution.",
         "    - [Trade]: Shops depend on customers who drive.", ""].join("\n"));
       await page.waitForSelector("#map .alm-n", { timeout: 20000 });
-      await page.waitForTimeout(1200);
+      await settle(page, 1200);
       const box = await page.locator("#map .alm-n").first().boundingBox();
       await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: "right" });
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const menu = await page.evaluate(() => document.getElementById("ctx").innerText);
       // Mutation: restore the old `.why` line -> "Drop the folder" on a map that reads no text.
       check(/reads no text/.test(menu) && !/folder/i.test(menu),
@@ -366,7 +367,7 @@ if (chromium) {
       const plain = page.locator("#map .alm-n").nth(1);
       const pb = await plain.boundingBox();
       await page.mouse.click(pb.x + pb.width / 2, pb.y + 12);
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const lit = await plain.evaluate(n => ({ lit: n.classList.contains("is-lit"),
                                                 w: getComputedStyle(n.querySelector(".alm-box")).strokeWidth }));
       check(lit.lit && lit.w === "1.5px", "a claim marked current keeps its own border weight", JSON.stringify(lit));
@@ -398,9 +399,9 @@ if (chromium) {
     {
       const page = await open(bates);
       await page.click("#mechbtn");
-      await page.waitForTimeout(800);
+      await settle(page, 800);
       await page.click("#fitbtn");
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       // Mutation: wire #fitbtn back to LIVE.fit -> the chart is untouched.
       check(await page.locator('#mech [data-fit]').textContent() === "Actual size",
             "in Mechanism, the header's Fit fits the chart");
@@ -430,7 +431,7 @@ if (chromium) {
             "the sections switch lights neither half over a map that is partly folded, and says how much",
             JSON.stringify(sw));
       await page.click('#map [data-act="sections"][data-open="0"]');
-      await page.waitForTimeout(700);
+      await settle(page, 700);
       check(await page.locator('#map [data-act="sections"][data-open="0"]').evaluate(b => b.classList.contains("on")),
             "and lights Folded once every section is");
       await page.context().close();
@@ -456,7 +457,7 @@ if (chromium) {
       const before = await page.evaluate(() =>
         document.querySelectorAll("#map .alm-n").length);
       await page.click("#qchip");
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const link = page.locator("#absbody button", { hasText: "Stockpilers stop taking more bottles" });
       check(await link.count() === 1, "the questions pill lists the question and the claim that answers it");
       // Mutation: link every move -> a button that goes nowhere.
@@ -467,7 +468,7 @@ if (chromium) {
       const wasDrawn = await page.evaluate(id => !!document.querySelector(
         `#map .alm-n[data-id="${CSS.escape(id)}"]`), sid);
       await link.click();
-      await page.waitForTimeout(1500);
+      await settle(page, 1500);
       const r = await page.evaluate(id => {
         const m = document.getElementById("map").getBoundingClientRect();
         const e = document.querySelector(`#map .alm-n[data-id="${CSS.escape(id)}"]`);
@@ -487,7 +488,7 @@ if (chromium) {
       // Mutation: drop readerActed() from reveal -> opening a pane re-draws the map, the framing
       // takes the rung again, and the claim goes back under its fold.
       await page.click('#panes [data-p="text"]');
-      await page.waitForTimeout(1200);
+      await settle(page, 1200);
       check(await page.evaluate(id => !!document.querySelector(`#map .alm-n[data-id="${CSS.escape(id)}"]`), sid),
             "and it stays unfolded when a pane opens beside the map");
       await page.context().close();
@@ -501,9 +502,9 @@ if (chromium) {
       const page = await open(reader, { keyNew: true });
       await drop(page, path.basename(file), fs.readFileSync(file, "utf8"));
       await page.waitForSelector("#map .alm-n", { timeout: 30000 });
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const early = await opening(page, mainsOf(file));
-      await page.waitForTimeout(1800);
+      await settle(page, 1800);
       const late = await opening(page, mainsOf(file));
       check(late.key, "the key offered itself", JSON.stringify(late));
       // Mutation: drop the right inset from the framing -> sections sit under the key.
@@ -532,7 +533,7 @@ if (chromium) {
       // A SWITCH THAT HIDES CLAIMS SAYS HOW MANY (MESSAGES.md rule 12).
       await page.click('#map .alm-bar [data-act="display"]');   // the switches live under Display
       await page.click("#map .alm-bar [data-untagged]");
-      await page.waitForTimeout(800);
+      await settle(page, 800);
       const hid = await page.evaluate(() => { const e = document.querySelector("#map .alm-hid");
                                               return e && !e.hidden ? e.textContent : ""; });
       // Mutation: keep .alm-hid hidden -> the bar says nothing of what the switch took away.
@@ -547,7 +548,7 @@ if (chromium) {
     {
       const page = await open(bates);
       await page.click("#mechbtn");
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       const m = await page.evaluate(() => {
         const mech = document.getElementById("mech").getBoundingClientRect();
         const bar = document.querySelector("#mech .amech-bar"), r = bar && bar.getBoundingClientRect();
@@ -561,11 +562,11 @@ if (chromium) {
       // Mutation: rename the heading back to Key -> two things called "the key".
       check(m.legend && !m.key, "and its panel's legend is called Legend", JSON.stringify(m));
       await page.click("#helpbtn");
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       await page.locator("#helptoc button", { hasText: /^The key$/ }).click();
       await page.waitForTimeout(200);
       await page.click("#keyfloat");
-      await page.waitForTimeout(400);
+      await settle(page, 400);
       const k = await page.evaluate(() => ({ card: !document.getElementById("keycard").hidden,
                                               note: document.getElementById("err").textContent }));
       // Mutation: drop openKeyCard's Mechanism branch -> the argument map's key floats over
@@ -656,7 +657,7 @@ if (chromium) {
       // DEEP LINKS: the questions asked by pointing.
       await page.click("#map .alm-n:not(.alm-k-group) .alm-box", { button: "right" });
       await page.locator("#ctx button", { hasText: "What does this mean?" }).click();
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const rows = await page.evaluate(() => [document.querySelectorAll("#help .helppage.show .srow").length,
                                               document.querySelectorAll("#help .helppage.show .srow svg").length]);
       // Mutation: stop drawing the rows -> the page is words with nothing to point at.
@@ -688,9 +689,9 @@ if (chromium) {
       const f = sample(MILLER, "miller-2019-uksc-41.argdown");
       await drop(page, path.basename(f), fs.readFileSync(f, "utf8"));
       await page.waitForSelector("#map .alm-n", { timeout: 30000 });
-      await page.waitForTimeout(600);
+      await settle(page, 600);
       await page.locator("#map .alm-n:not(.alm-k-group) .alm-box").first().dblclick();
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       const link = page.locator("#err .helplink");
       const has = await link.count();
       if (has) { await link.click(); await page.waitForTimeout(250); }
@@ -721,7 +722,7 @@ if (chromium) {
       // D12: THE SITE'S SAMPLES OFFER THE TOUR; a map built to be sent stays quiet.
       const tourOn = async file => {
         const page = await open(file, { tour: true });
-        await page.waitForTimeout(1200);
+        await settle(page, 1200);
         const on = await page.locator("#walk").isVisible();
         await page.context().close();
         return on;
@@ -736,7 +737,7 @@ if (chromium) {
     {
       const page = await open(miller);
       await page.click('#map [data-act="sections"][data-open="1"]');
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       // A PARAPHRASE, whose weight is the plain 1.5: a hover that wrote the quotation's 2.5 onto
       // every box -- the fault as found -- shows here and would not on a quotation.
       const q = page.locator("#map .alm-n.alm-f-paraphrase").first();
@@ -773,7 +774,7 @@ if (chromium) {
       const page = await open(editor, { scheme: "dark" });
       await page.click("#picknew");
       await page.waitForSelector(".cm-gutters", { timeout: 20000 });
-      await page.waitForTimeout(600);
+      await settle(page, 600);
       const g = await page.evaluate(() => ({ gutter: getComputedStyle(document.querySelector(".cm-gutters")).backgroundColor,
                                               page: getComputedStyle(document.body).backgroundColor }));
       // Mutation: drop the editor's chrome theme and darkTheme compartment -> a light gutter strip.

@@ -24,6 +24,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { toGraph, RUN } from "./argdown-graph.mjs";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -193,7 +194,7 @@ if (!chromium) {
     const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
     const errors = []; page.on("pageerror", e => errors.push(e.message));
     await page.goto("file://" + PAGE);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     // DROPPED, as a reader drops files: a drop event carrying them, through the page's own handler.
     const open = (files) => page.evaluate((fs_) => {
       const dt = new DataTransfer();
@@ -209,7 +210,7 @@ if (!chromium) {
     const REPORT = "# Appraisal\n\nThe argument rests on \u2039Stated\u203a, which the text never defends (p. 2).\n\n" +
       "The rival accounts are set out in [the accounts](#table:explains).\n\nAnd \u2039No such claim\u203a is named in error.\n";
     await open([{ path: "one.argdown", text: MAPX }, { path: "one.appraisal.md", text: REPORT }, { path: "t.md", text: SRC }]);
-    await page.waitForTimeout(900);
+    await settle(page, 900);
     // The walkthrough offers itself on a first map; a reader closes it.
     for (let k = 0; k < 3 && await page.locator("#walk").isVisible(); k++) { await page.keyboard.press("Escape"); await page.waitForTimeout(200); }
     const state = () => page.evaluate(() => /** @type {any} */ (window).__APPRAISAL_STATE__());
@@ -217,18 +218,18 @@ if (!chromium) {
     const apBtn = page.locator('#panes [data-p="appraisal"]');
     check(await apBtn.isVisible(), "and the Appraisal pane is offered");
     await apBtn.click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator("#appr").isVisible() && /never defends/.test(await page.locator("#apprbody").innerText()), "a click opens the report");
     await page.locator("#apprbody a.apl", { hasText: "Stated" }).first().click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await page.locator("#map .is-lit").count() >= 1, "a \u2039title\u203a lights its claim on the map");
     check(await page.locator("#apprbody a.apl.missing", { hasText: "No such claim" }).count() === 1, "a title the map lacks is greyed");
     await page.locator("#apprbody a.apl", { hasText: "p. 2" }).click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await page.locator("#ms").isVisible() && /second page/.test(await page.locator("#ms .hit").first().innerText().catch(() => "")),
           "a page opens the text at that page");
     await page.locator("#apprbody a.apl", { hasText: "the accounts" }).click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator("#tables").isVisible(), "a table link opens the table");
     if (await page.locator("#tables").isVisible()) await page.locator('#tables [data-tables-close]').click();
     check((await state()).bundle.includes("one.appraisal.md"), "a saved bundle carries the report");
@@ -242,7 +243,7 @@ if (!chromium) {
     // The switch lives in the Display menu (as in test_appraisal_layer.mjs).
     await page.click('#map .alm-bar [data-act="display"]');
     await aBtn.click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await appraisalDrawn() > 0, "switched on, they are drawn");
     const fill = await page.locator("#map .alm-n.alm-appraisal .alm-box").first().evaluate(e => getComputedStyle(e).fill);
     check(!/url\(/.test(fill), "tinted, not hatched", fill);
@@ -257,21 +258,21 @@ if (!chromium) {
     await page.waitForTimeout(200);
     if (!(await aBtn.isVisible())) await page.click('#map .alm-bar [data-act="display"]');
     await aBtn.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.keyboard.press("Escape");
 
     const look = page.locator('#map [data-act="look"]');
     check(await look.isVisible(), "Where to look is on the bar, unasked");
     check(/Where to look \(\d+\)/.test(await look.textContent()), "with its count");
     await look.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#look").isVisible(), "a click opens the panel");
     const items = page.locator("#look li button:not(.none)");
     check(await items.count() > 0, "listing items with claims to show");
     const txt = await page.locator("#look").innerText();
     check(/Supplied/.test(txt) && /Granted/.test(txt) && !/Doubt/.test(txt), "the map's thin places, never the appraisal's");
     await page.locator("#look li button", { hasText: "Granted" }).click();
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     check(await page.locator("#look li button.on").count() === 1, "a click on an item marks it");
     const pr = await page.locator("#look").evaluate(e => e.getBoundingClientRect().right);
     const lit = await page.locator("#map .is-lit").first().evaluate(e => e.getBoundingClientRect().left);
@@ -282,9 +283,9 @@ if (!chromium) {
 
     // A COMPARISON OPENS ITS TABLE (19 Nov 2026: comparisons did nothing on a click).
     await look.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator("#look li button", { hasText: "What explains it" }).click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator("#tables").isVisible(), "a comparison opens its table");
     await page.keyboard.press("Escape");
     if (await page.locator("#tables").isVisible()) await page.locator('#tables [data-tables-close]').click();
@@ -294,15 +295,15 @@ if (!chromium) {
     const chainText = fs.readFileSync(path.join(REPO, "ipsissima-mcp", "tests", "mechanism", "chain.argdown"), "utf8");
     const chainReport = "The step \u2039Work helps\nreintegration\u203a is only asserted, and [reintegration](#state:reint) is where it ends.\n";
     await open([{ path: "chain.argdown", text: chainText }, { path: "chain.appraisal.md", text: chainReport }]);
-    await page.waitForTimeout(900);
+    await settle(page, 900);
     // Opened in Reasons, where its button is, and kept open into the Mechanism view.
     await look.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.click("#mechbtn");
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     check(await page.locator("#look").isVisible(), "Where to look stays open in the Mechanism view");
     await page.locator("#look li button", { hasText: "Work helps reintegration" }).click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await page.locator("#mech path.sel").count() === 1, "a step's item selects its arrow in the drawing");
     // ROOM FOR THE PANEL (20 Nov 2026): the drawing is laid out to its right, so what is selected is
     // not under it.
@@ -313,11 +314,11 @@ if (!chromium) {
           JSON.stringify({ lookRight, stageLeft, selLeft }));
     // A gap's state is one no drawn step touches, so it cannot be selected: the page says so.
     await page.locator("#look li button", { hasText: "More community orders" }).click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await page.locator("#mech").isVisible() && /More community orders\u201d is not drawn/.test(await page.locator("body").innerText()),
           "a gap's state that is not drawn is said to be not drawn");
     await page.locator("#look li button", { hasText: "Orders go to the less risky" }).click();
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     check(await page.locator("#mech").isHidden(), "an item about the argument goes to the Reasons view");
     const tip = await page.locator("#look li button", { hasText: "Orders go to the less risky" }).getAttribute("title");
     check(/Orders go to the less risky›: \S/.test(tip || ""), "and its hover gives the claim's own words");
@@ -325,28 +326,28 @@ if (!chromium) {
     await page.waitForTimeout(200);
     // THE REPORT IN THE MECHANISM VIEW: a claim that states a step selects the step; a state, the state.
     await page.click("#mechbtn");
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     await page.locator('#panes [data-p="appraisal"]').click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     // Broken across a line of the report's source, and still one link.
     await page.locator("#apprbody a.apl", { hasText: "Work helps" }).click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     check(await page.locator("#mech").isVisible() && await page.locator("#mech path.sel").count() === 1, "in Mechanism, a report's claim link selects its step");
     await page.locator("#apprbody a.apl", { hasText: "reintegration" }).last().click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     // A selected state opens the drawing's side panel on it (select({state}): no arrow is marked).
     check(await page.locator("#mech path.sel").count() === 0 && /reintegrates/i.test(await page.locator("#mech .amech-side").innerText()),
           "and a state link selects the state");
     await page.locator('#appr [data-close="appraisal"]').click();
     await page.click('#views [data-v="reasons"], button:has-text("Reasons")');
-    await page.waitForTimeout(400);
+    await settle(page, 400);
 
     // A GROUP OF FOUR: three shown, the fourth on request.
     await open([{ path: "four.argdown", text: MAP2 }]);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     check(/Where to look \(3\)/.test(await look.textContent()), "the count is what is shown before \u2018show more\u2019");
     await look.click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(!/G3/.test(await page.locator("#look").innerText()), "the lightest of four is held back");
     await page.locator("#look button.more", { hasText: "Show 1 more" }).click();
     await page.waitForTimeout(200);
@@ -357,7 +358,7 @@ if (!chromium) {
     await look.click();
 
     await open([{ path: "three.argdown", text: MAP }]);
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     check((await state()).report === null && await page.locator('#panes [data-p="appraisal"]').isHidden(), "a map opened alone has no Appraisal pane");
     check(errors.length === 0, "no page errors" + (errors.length ? ": " + errors.join(" | ") : ""));
   } finally { await browser.close(); }

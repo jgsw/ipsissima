@@ -432,8 +432,11 @@ function rng(seed) {
 
 /* --------------------------------------------------------------- the walk */
 
-function step(graph, state, action, apex, byText) {
-  const before = filterGraph(graph, state);
+/* `known` is the picture of `state` when the caller already has it -- the walk always does, since
+ * the previous step's `after` IS this step's `before`. Recomputing it was a third of the suite's
+ * time. Nothing below writes to `before`, which is what makes sharing it safe. */
+function step(graph, state, action, apex, byText, known) {
+  const before = known || filterGraph(graph, state);
   const ctx = {
     apex,
     opening: action.type === "toggleGroup" && (isLane(action.id)
@@ -500,7 +503,7 @@ function run(name, graph, byText) {
   for (const s of starts) {
     const vis0 = filterGraph(graph, s.state);
     for (const a of actionsFor(graph, vis0, byText)) {
-      const r = step(graph, s.state, a, apex, byText);
+      const r = step(graph, s.state, a, apex, byText, vis0);
       checks++;
       note(r.fails, [s.label, describe(a)], s.state, a);
     }
@@ -512,7 +515,7 @@ function run(name, graph, byText) {
   for (let i = 0; i < STEPS; i++) {
     const acts = actionsFor(graph, vis, byText);
     const a = acts[Math.floor(rand() * acts.length)];
-    const r = step(graph, state, a, apex, byText);
+    const r = step(graph, state, a, apex, byText, vis);
     checks++;
     note(r.fails, trail.concat(describe(a)), state, a);
     state = r.next; vis = r.after;
@@ -533,7 +536,7 @@ function run(name, graph, byText) {
       for (const n of vis.nodes) {
         if (n.kind === "group" || !n.expandable) continue;
         const act = { type: "toggleNode", id: n.id };
-        const deep = step(graph, state, act, apex, byText);
+        const deep = step(graph, state, act, apex, byText, vis);
         checks++;
         note(deep.fails, trail.concat("[every-badge] " + describe(act)), state, act);
       }

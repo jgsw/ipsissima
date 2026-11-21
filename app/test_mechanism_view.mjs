@@ -26,6 +26,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import { toGraph, RUN } from "./argdown-graph.mjs";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -1846,16 +1847,16 @@ if (chromium) {
     const errors = []; page.on("pageerror", e => errors.push(e.message));
 
     await page.goto("file://" + without);
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     // Mutation: drop the `mechOffer` call from render -> the button is never offered here either,
     // and the next check (on the chain) fails instead. Drop the `!has` test -> this one fails.
     check(await page.locator("#mechbtn").isHidden(), "a map with no chain is not offered the arrangement");
 
     await page.goto("file://" + withChain);
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     check(await page.locator("#mechbtn").isVisible(), "a map with a chain is offered it");
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#mech").isVisible() && await page.locator("#map").isHidden(),
           "choosing it shows the chain in place of the map");
 
@@ -1930,7 +1931,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
           "the text's chip opens the text's arrow, not the rival beside it", side.slice(0, 200));
 
     await page.locator(".amech-side button[data-claim]").first().click();
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     const marked = await page.evaluate(() => {
       const m = document.querySelector("#mstext mark, #mstext .hl, #mstext [class*=hit]");
       return m ? m.textContent : "";
@@ -2005,7 +2006,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     await page.waitForTimeout(250);
 
     await page.locator('#view [data-v="reasons"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#map").isVisible() && await page.locator("#mech").isHidden(),
           "Reasons brings the map back");
 
@@ -2015,9 +2016,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const loopHtml = path.join(tmp, "loop.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(FIXTURE, "loop.argdown"), "-o", loopHtml], { stdio: "pipe" });
     await page.goto("file://" + loopHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     // Mutation: drop the centre marks in drawNodes -> no mark; put the badges back on the states ->
     // marks inside boxes.
     const loopMarks = await page.evaluate(() => [...document.querySelectorAll("#mech .loopmark")].map(m => ({
@@ -2050,9 +2051,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const sysHtml = path.join(tmp, "system.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), SYSF, "-o", sysHtml], { stdio: "pipe" });
     await page.goto("file://" + sysHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     // THE TEXT'S OWN BOXES ARE COMPARTMENTS (James's decision, 9 Oct 2026): the parts are drawn inside
     // their whole's frame. Mutation: open with keep.boxes false -> no frame; drop the frame drawing -> no
     // frame; leave the parts' columns alone -> a part outside the frame.
@@ -2065,7 +2066,7 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     check(comp.frame && comp.part && comp.inside,
           "a map that declares wholes opens at the text's own boxes: each part drawn inside its whole's frame", JSON.stringify(comp));
     await openDisplay(page); await page.locator("#mech [data-boxes]").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator('#mech .st[data-state="expand"]').count() === 1 && await page.locator("#mech rect.comp").count() === 0 &&
           await page.locator("#mech [data-boxes]").innerText() === "The text’s own boxes",
           "and Show every state draws each part apart, with no frames, offering the boxes back");
@@ -2092,9 +2093,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), path.join(JS, "bates-2012-price-is-wrong.argdown"),
                           "--source-root", JS, "-o", jpal], { stdio: "pipe" });
     await page.goto("file://" + jpal);
-    await page.waitForTimeout(700);
+    await settle(page, 700);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const gap = await page.evaluate(() => {
       // The whole strip, not just the Abstract button: the strip also carries the map's
       // declarations about itself now (27 Sep 2026), and the question must clear all of it.
@@ -2107,9 +2108,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const jointHtml = path.join(tmp, "joint.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), JOINTF, "-o", jointHtml], { stdio: "pipe" });
     await page.goto("file://" + jointHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator('#mech .st[data-state="desire"] .gapmark').count() === 0,
           "a co-cause is not marked as linked to nothing");
     check(await page.locator('#mech [data-stem="desire"]').count() === 1 && await page.locator('#mech .gate[data-gate="and"]').count() === 1,
@@ -2130,9 +2131,9 @@ check(/3 hidden/.test(await page.locator(".amech-tog.appr").innerText()),
     const storiesHtml = path.join(tmp, "stories.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), STORIESF, "-o", storiesHtml], { stdio: "pipe" });
     await page.goto("file://" + storiesHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     await page.locator('#mech .amech-bar [data-guide-go="0"]').click();
     await page.waitForTimeout(200);
     check(/Boxes and bands/i.test(await page.locator(".amech-side").innerText()), "Read this drawing opens on the boxes and bands");
@@ -2180,15 +2181,15 @@ mechanism:
 `);
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), twoSrc, "-o", twoHtml], { stdio: "pipe" });
     await page.goto("file://" + twoHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const arrowsOf = () => page.locator('#mech svg g[data-edge="theory>exper"]:not(.chip)').count();
     const before2 = await arrowsOf();
     await page.locator('#mech g.chip[data-edge="theory>exper"]').first().click({ force: true });
     await page.waitForTimeout(200);
     await page.locator('.amech-side [data-expand]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(before2 === 1 && await arrowsOf() === 2 && await page.locator('#mech circle.ring[data-moderator]').count() === 2,
           "clicking Draw each step apart opens the arrow into two, each with its ring", String(before2));
 
@@ -2197,20 +2198,20 @@ mechanism:
     const chainsHtml = path.join(tmp, "chains.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), CHAINSF, "-o", chainsHtml], { stdio: "pipe" });
     await page.goto("file://" + chainsHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const drawnStates = () => page.evaluate(() => [...document.querySelectorAll("#mech .st")].map(g => g.getAttribute("data-state")).sort());
     check(same(await drawnStates(), ["drought", "forest", "migration"]) &&
           /Why does drought clear the forest/.test(await page.locator("#mech .amech-q").first().innerText()),
           "it opens at the first chain, asking that chain's question", JSON.stringify(await drawnStates()));
     await page.locator('#mech .st[data-state="forest"] .shared').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(same(await drawnStates(), ["forest", "water", "wells"]) &&
           await page.locator('#mech .st[data-state="forest"]').evaluate(g => g.classList.contains("condition")),
           "⇄ on the shared state opens the other chain, where it is the condition", JSON.stringify(await drawnStates()));
     await page.locator("#mech select[data-chain]").selectOption("");
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check((await drawnStates()).length === 5 && await page.locator("#mech .shared").count() === 0,
           "and every chain together draws the whole, with no ⇄ to follow");
 
@@ -2219,13 +2220,13 @@ mechanism:
     const kindsHtml = path.join(tmp, "kinds.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), KINDSF, "-o", kindsHtml], { stdio: "pipe" });
     await page.goto("file://" + kindsHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     // ≈ is a mark of "marks: All" since 17 Oct 2026; under the plain marks the state's panel names its kind.
     check(await page.locator("#mech .kin").count() === 0, "under the plain marks no state carries ≈");
     await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const kinMarked = await page.evaluate(() => [...document.querySelectorAll("#mech .kin")].map(m => m.closest(".st").getAttribute("data-state")).sort());
     check(same(kinMarked, ["forest", "migr"]), "≈ marks each state whose kind another state shares, in whatever chain", JSON.stringify(kinMarked));
     await page.locator('#mech .st[data-state="migr"] .kin').click();
@@ -2234,7 +2235,7 @@ mechanism:
     check(/2 states of one kind/.test(kindSide) && /Herders' migration/.test(kindSide) && /The same step in two cases/i.test(kindSide),
           "clicking it shows the kind: its states, where each is, and the step the cases share", kindSide.slice(0, 200));
     await page.locator(".amech-side button[data-open-chain]").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator("#mech select[data-chain]").inputValue() === "north" &&
           /Herders' migration/i.test(await page.locator(".amech-side h3").first().innerText()),
           "and opens the other case's chain at its state of that kind");
@@ -2244,11 +2245,11 @@ mechanism:
     const genHtml = path.join(tmp, "generals.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), GENERALSF, "-o", genHtml], { stdio: "pipe" });
     await page.goto("file://" + genHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     await openDisplay(page); await page.locator('#mech [data-marks="all"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator('#mech .st[data-state="migr"] .kin').click();
     await page.waitForTimeout(200);
     const genSide = await page.locator(".amech-side").innerText();
@@ -2263,9 +2264,9 @@ mechanism:
     fs.writeFileSync(longSrc, LONG_SRC);
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), longSrc, "-o", longHtml], { stdio: "pipe" });
     await page.goto("file://" + longHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const boxOf = v => page.evaluate(v => { const r = document.querySelector(`#mech .st[data-state="${v}"] rect.box`).getBoundingClientRect();
                                             return { y: r.top, h: r.height }; }, v);
     const b0 = await boxOf("b"), low0 = await boxOf(b0.y < (await boxOf("c")).y ? "c" : "d");
@@ -2273,7 +2274,7 @@ mechanism:
           await page.locator('#mech .st[data-state="c"] .more').count() === 0,
           "a box whose label is cut carries a ▼ more pill, and no other does");
     await page.locator('#mech .st[data-state="b"] .more').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const b1 = await boxOf("b");
     const texts = await page.evaluate(() => [...document.querySelectorAll('#mech .st[data-state="b"] > text')].map(t => t.textContent));
     check(b1.h > b0.h + 10 && texts.join(" ").includes("over a decade") &&
@@ -2306,7 +2307,7 @@ mechanism:
     check(/\bview=mech\b/.test(line) && /\bmmore=b\b/.test(line) && /\bzoom=1\.2\b/.test(line) && /\bmmarks=all\b/.test(line),
           "the fold state names the Mechanism chart, the opened box, the zoom and the marks", line);
     await page.goto("file://" + longHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#helpbtn").click();
     await page.locator("#help button", { hasText: "About Ipsissima" }).click();
     await page.locator("#about button", { hasText: /^Debug$/ }).click();
@@ -2324,16 +2325,16 @@ mechanism:
     // question left it a 32px column, one word to a line, and the chart a sliver below. Mutation: drop
     // the `data-orient-above` rule -> the question is a column and the head takes the view.
     await page.goto("file://" + withChain);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     await page.evaluate(() => { const q = document.getElementById("qchip"); q.hidden = false;
       q.textContent = "? Why do ethnic boundaries vary in political salience, social closure, cultural differentiation " +
                       "and stability, and how are they made, kept and unmade over time?"; });
     // 760, not 900, since the tablet audit (20 Nov 2026) bounded the strip by the Abstract fold's 32rem:
     // at 900 a long chip now leaves 388px beside it, which is room by the rule; at 760 it does not.
     await page.setViewportSize({ width: 760, height: 650 });
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const narrow = await page.evaluate(() => ({ q: document.querySelector("#mech .amech-q").getBoundingClientRect().width,
       head: document.querySelector("#mech .amech-head").getBoundingClientRect().height,
       mech: document.getElementById("mech").getBoundingClientRect().height }));
@@ -2351,24 +2352,24 @@ mechanism:
       fs.writeFileSync(src, chainText.replace(LVL, LVL + "\n" + extra));
       execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), src, "--source-root", FIXTURE, "-o", out], { stdio: "pipe" });
       await page.goto("file://" + out);
-      await page.waitForTimeout(600);
+      await settle(page, 600);
       await page.locator("#mechbtn").click();
-      await page.waitForTimeout(400);
+      await settle(page, 400);
     };
     await page.goto("file://" + withChain);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const capOf = () => page.locator("#mech svg text.caption").textContent();
     check(/does not say what ordering/.test(await capOf()), "a map that does not say what its levels are is said not to, on the drawing");
     await openDisplay(page); await page.locator("#mech [data-nest]").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#mech .amech-nestbanner").isVisible() && await page.locator("#mech rect.frame").count() === 3,
           "nesting it draws frames, under a banner saying they are an assumption");
     await levelsPage("    ordering: composition\n    within: {meso: macro, micro: macro}", "tree");
     check(/parts within wholes, as the reconstructor reads them/.test(await capOf()), "a declared ordering is said in words");
     await openDisplay(page); await page.locator("#mech [data-nest]").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const fr = await page.evaluate(() => [...document.querySelectorAll("#mech rect.frame")].map(r => [r.getAttribute("data-level"), +r.getAttribute("x")]));
     const xOf = lv => (fr.find(f => f[0] === lv) || [])[1];
     check(fr.length === 3 && xOf("meso") === xOf("micro") && xOf("meso") > xOf("macro") &&
@@ -2382,9 +2383,9 @@ mechanism:
     // layout's geometry; these say that geometry is what is on screen. Mutations: draw a badge at
     // a fixed offset again -> the first fails; shrink the chip width estimate -> the second.
     await page.goto("file://" + withChain);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const fit = await page.evaluate(() => {
       const svg = document.querySelector("#mech svg");
       const bad = [];
@@ -2409,7 +2410,7 @@ mechanism:
     // pills stay.
     const pills0 = await page.locator("#mech g.more").count();
     await openDisplay(page); await page.locator('#mech [data-labels="full"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const afterFull = await page.evaluate(() => ({
       pills: document.querySelectorAll("#mech g.more").length,
       cut: [...document.querySelectorAll("#mech g.chip text")].filter(t => /…/.test(t.textContent)).length,
@@ -2417,7 +2418,7 @@ mechanism:
     check(afterFull.pills === 0 && afterFull.cut === 0 && afterFull.on,
           "\u201clabels: Full\u201d shows every label whole, with no \u201cmore\u201d left to press", JSON.stringify({ pills0, ...afterFull }));
     await openDisplay(page); await page.locator('#mech [data-labels="short"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#mech g.more").count() === pills0, "and Short puts the first lines back");
     const est = MV.layout(MV.model(G), { marks: MV.markSpec(MV.model(G), MV.model(G)).marks }).lanes.filter(l => !l.hidden).map(l => l.head.w - 8);
     check(fit.heads.every((w, i) => w <= est[i] + 2), "every heading fits the width the layout reserved for it",
@@ -2428,20 +2429,20 @@ mechanism:
     const meetHtml = path.join(tmp, "meet.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), MEETF, "--source-root", FIXTURE, "-o", meetHtml], { stdio: "pipe" });
     await page.goto("file://" + meetHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const opts = await page.evaluate(() => [...document.querySelectorAll("#mech select[data-chain] option")].map(o => [o.value, o.textContent]));
     check(opts.some(o => o[0] === "together:a" && o[1] === "Together: A · B") && !opts.some(o => /Every chain together/.test(o[1])) &&
           !opts.some(o => /together:c|together:d/.test(o[0])),
           "the menu offers Together for the chains that meet, and no island in it", JSON.stringify(opts));
     await page.locator("#mech select[data-chain]").selectOption("together:a");
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const drawnIds = await page.evaluate(() => [...document.querySelectorAll("#mech svg .st")].map(g => g.getAttribute("data-state")).sort());
     check(same(drawnIds, ["x", "y", "z"]) && /drawn together because they meet/.test(await page.locator("#mech .amech-side").innerText()),
           "choosing it draws those chains' states, and says why they are together", JSON.stringify(drawnIds));
     await page.locator("#mech select[data-chain]").selectOption("c");
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator("#mech svg line.piece-rule").count() === 1, "a chain in two pieces is drawn with a rule between them");
 
     // WHAT FOLLOWS, AND THE READER'S EXPERIMENT, ON SCREEN (17 Oct 2026). Mutations: drop the data-find
@@ -2450,9 +2451,9 @@ mechanism:
     const blkHtml = path.join(tmp, "blockers.html");
     execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), BLOCKF, "-o", blkHtml], { stdio: "pipe" });
     await page.goto("file://" + blkHtml);
-    await page.waitForTimeout(600);
+    await settle(page, 600);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     const side0 = await page.locator(".amech-side").innerText();
     // QUESTIONS TO TRY (James, 18 Oct 2026): the panel opens on the findings as questions, each answered
     // only on Show, and the chain's details folded under "About this chain". Mutations: print it.lines in
@@ -2484,11 +2485,11 @@ mechanism:
     // A SUPPOSITION OUTLIVES A REDRAW (18 Oct 2026: switching Marks dropped it without a word). Mutation:
     // put `exp` back inside the mount -> the fade is gone after the switch.
     await openDisplay(page); await page.locator('#mech button[data-marks="all"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await page.locator("#mech svg .cut").count() > 0 && await page.locator("#suppbar").isVisible(),
           "switching Marks keeps the supposition: the chart redraws with the blocked arrow still faded");
     await openDisplay(page); await page.locator('#mech button[data-marks="plain"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);
     check(await page.locator("#suppbar").isHidden() && await page.locator("#mech svg .cut").count() === 0,
@@ -2510,7 +2511,7 @@ mechanism:
           await page.locator('#mech svg g[data-edge="audit>defence"].cut').count() > 0,
           "a right-click on an arrow supposes the step does not run, and the banner says Reasons will show its claim false", carried);
     await page.locator('#view button[data-v="reasons"]').click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     const fadedR = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-supposed-out .alm-title")].map(t => t.textContent));
     check(fadedR.includes("Audits strengthen defences") && await page.locator("#suppbar").isVisible(),
           "and in Reasons that claim is supposed false, under the same banner", JSON.stringify(fadedR));
@@ -2523,7 +2524,7 @@ mechanism:
     await page.waitForTimeout(250);
     check(/in Mechanism, its step does not run/.test(await page.locator("#suppbar").innerText()), "a claim supposed false in Reasons says where it shows in Mechanism");
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(400);
+    await settle(page, 400);
     check(await page.locator('#mech svg g[data-edge="audit>defence"].cut').count() > 0, "and the Mechanism view stops the step it states");
     await page.locator('#suppbar button[data-supp-clear]').click();
     await page.waitForTimeout(200);

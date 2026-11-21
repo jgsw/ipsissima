@@ -2,7 +2,9 @@
 #
 # ONE COMMAND, because that is the promise `run_all_tests.mjs` makes: every suite, each
 # printing its own detail, and a non-zero exit if any fails. Running them separately here would
-# be a second definition of "the tests" that drifts from the first.
+# be a second definition of "the tests" that drifts from the first. The command runs the suites
+# side by side, one per core of the runner (four), slowest first: 22 minutes in series, measured
+# 21 Nov 2026 (docs/TEST-SPEED-AUDIT.md).
 #
 # EVERYTHING IS EXPECTED TO PASS, and no failure is allowed through. This file used to carry an
 # allowance for one documented fold defect; the defect was fixed on 29 Aug 2026 and the

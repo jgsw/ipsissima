@@ -483,7 +483,15 @@ function filterOnce(graph, state, force) {
   // nothing on screen said a filter was on. The appraisal is not counted: it answers to its own
   // switch and its own banner.
   const filteredOut = ix.nodes.filter(n => !isAppraisal(n) && !passes.has(n.id)).length;
-  const kids    = id => (ix.childrenOf.get(id) || []).filter(c => passes.has(c));
+  // MEMOISED, because the walk below runs once more for every claim that might carry a minus
+  // (3b), and each run asked again for the same filtered children: 11% of a fold's time on a
+  // 191-claim map. `passes` is fixed for the whole call, and no caller mutates the array.
+  const kidsOf  = new Map();
+  const kids    = id => {
+    let k = kidsOf.get(id);
+    if (!k) { k = (ix.childrenOf.get(id) || []).filter(c => passes.has(c)); kidsOf.set(id, k); }
+    return k;
+  };
 
   // Which sections enclose each node, so "is this reason inside the section I folded" is a
   // set lookup rather than a walk up the tree per edge.
@@ -738,9 +746,17 @@ function filterOnce(graph, state, force) {
   // "is this claim attached" has to be asked of the picture that will actually be drawn: two
   // claims inside one collapsed section are joined by an edge that becomes a self-edge and is
   // dropped, so having each other as neighbours attaches neither.
+  // Memoised for the same reason as `kids`: asked of every drawn claim on every extra walk, and
+  // `S.collapsedGroups` does not change once the call has begun.
+  const reprOf = new Map();
   const collapsedRepr = id => {
-    const chain = groupChain(ix, id).filter(g => S.collapsedGroups.has(g));
-    return chain.length ? "group:" + chain[chain.length - 1] : id;
+    let r = reprOf.get(id);
+    if (r === undefined) {
+      const chain = groupChain(ix, id).filter(g => S.collapsedGroups.has(g));
+      r = chain.length ? "group:" + chain[chain.length - 1] : id;
+      reprOf.set(id, r);
+    }
+    return r;
   };
   // A claim the previous pass could not reconnect any other way. Added here, after the walk and
   // before groups are collapsed, so it is drawn by the ordinary machinery rather than bolted on.

@@ -21,8 +21,14 @@ import { fileURLToPath } from "url";
 import { packagesFromMetafile, noticesText } from "./notices.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp",
-                      "vendor", "argdown-cli.mjs");
+// `--out-dir DIR` writes the pair somewhere else. test_argdown_shim.mjs builds into a temporary
+// folder and compares, rather than rebuilding the committed files in place and putting them
+// back: with the suites running side by side, the Python checker could read the bundle in the
+// middle of that, and the NOTICE was never put back at all.
+const outDirAt = process.argv.indexOf("--out-dir");
+const OUT = outDirAt > 0
+  ? path.join(path.resolve(process.argv[outDirAt + 1]), "argdown-cli.mjs")
+  : path.join(HERE, "..", "ipsissima-mcp", "src", "ipsissima_mcp", "vendor", "argdown-cli.mjs");
 const NOTICE = path.join(path.dirname(OUT), "argdown-cli.NOTICE.md");
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });

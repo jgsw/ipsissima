@@ -32,13 +32,21 @@ check("the bundle is committed", fs.existsSync(SHIM),
       `${SHIM} is missing — run: node app/build_argdown_shim.mjs`);
 
 if (fs.existsSync(SHIM) && fs.existsSync(path.join(HERE, "node_modules", "esbuild"))) {
-  const before = fs.readFileSync(SHIM);
-  execFileSync(process.execPath, [path.join(HERE, "build_argdown_shim.mjs")], { stdio: "ignore" });
-  const after = fs.readFileSync(SHIM);
-  const same = before.equals(after);
-  if (!same) fs.writeFileSync(SHIM, before);   // leave the tree as we found it
+  // BUILT ASIDE, NEVER IN PLACE. Rebuilding the committed file and writing it back afterwards
+  // left a window in which another suite could read a bundle that was not the one committed --
+  // and the suites now run side by side -- and it rewrote the NOTICE without restoring it.
+  const fresh = fs.mkdtempSync(path.join(os.tmpdir(), "shim-"));
+  execFileSync(process.execPath, [path.join(HERE, "build_argdown_shim.mjs"), "--out-dir", fresh],
+               { stdio: "ignore" });
+  const same = fs.readFileSync(SHIM).equals(fs.readFileSync(path.join(fresh, "argdown-cli.mjs")));
   check("the bundle is up to date with its source", same,
         "rebuilding changed it — run: node app/build_argdown_shim.mjs, and commit the result");
+  const NOTICE = path.join(path.dirname(SHIM), "argdown-cli.NOTICE.md");
+  const sameNotice = fs.existsSync(NOTICE) &&
+    fs.readFileSync(NOTICE).equals(fs.readFileSync(path.join(fresh, "argdown-cli.NOTICE.md")));
+  check("its NOTICE is up to date with it", sameNotice,
+        "rebuilding changed the NOTICE — run: node app/build_argdown_shim.mjs, and commit the result");
+  fs.rmSync(fresh, { recursive: true, force: true });
 }
 
 /* ---- 2. it answers exactly what the real CLI answers ---- */

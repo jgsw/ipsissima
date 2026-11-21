@@ -48,6 +48,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+// `settleFor`, because `settle` here is already the wait for a page's first draw.
+import { settle as settleFor } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -59,6 +61,21 @@ const KEEP = argv.includes("--keep");
 const CORPUS = argv.includes("--corpus") ? argv[argv.indexOf("--corpus") + 1] : null;
 const SELFTEST = !argv.includes("--no-selftest");
 let didSelftest = false, proved = 0;
+/* `--part`: ONE SUITE, RUN AS FOUR PROCESSES SIDE BY SIDE (21 Nov 2026). In one process this was
+ * the longest suite by far -- 270 s, on its own longer than everything else together once the
+ * suites ran in parallel -- and its pieces share nothing but the browser binary. So run_all_tests
+ * runs it as four parts; with no `--part` it runs everything, as before.
+ *   light   the per-map pass in the light scheme, with the invariant self-test, and the card steps
+ *   dark    the per-map pass in the dark scheme
+ *   checks1, checks2   the feature checks after it, split roughly evenly by time
+ * Every part builds the viewers (some 17 s), since the feature checks drive particular samples. */
+const PART = argv.includes("--part") ? argv[argv.indexOf("--part") + 1] : "all";
+const PARTS = ["all", "light", "dark", "checks1", "checks2"];
+if (!PARTS.includes(PART)) {
+  console.log(`--part must be one of ${PARTS.join(", ")}; got ${PART}`);
+  process.exit(2);
+}
+const SCHEMES = PART === "all" ? ["light", "dark"] : PART === "light" || PART === "dark" ? [PART] : [];
 
 let fails = 0, checks = 0;
 const failures = [];
@@ -396,7 +413,7 @@ async function selftest(page, where, evaluator) {
 
 async function settle(page) {
   await page.waitForSelector(".alm-n", { timeout: 20000 });
-  await page.waitForTimeout(400);
+  await settleFor(page, 400);
 }
 
 /** The walkthrough offers itself on a first visit and would sit over everything — and the key
@@ -515,7 +532,7 @@ async function facetFilter(page, map, scheme) {
   await settle(page);
   await dismissWalkthrough(page);
   if (!(await clickBarButton(page, "Open"))) return;
-  await page.waitForTimeout(1200);
+  await settleFor(page, 1200);
   /* FULL DEPTH, DELIBERATELY, before the invariant is measured. "open" expands the sections and
    * — by its own design — leaves the "how much" depth limit alone. Under a depth limit the
    * invariant below is not exact: removing the untagged claims re-routes distances, and a
@@ -532,7 +549,7 @@ async function facetFilter(page, map, scheme) {
       r.dispatchEvent(new Event("change", { bubbles: true }));
     }
   });
-  await page.waitForTimeout(800);
+  await settleFor(page, 800);
 
   const drawn = () => page.evaluate(() => {
     const kinds = b => (b.getAttribute("class") || "").match(/alm-k-[a-z-]+/g) || [];
@@ -542,7 +559,7 @@ async function facetFilter(page, map, scheme) {
 
   const before = await drawn();
   if (!(await clickUntagged(page))) return;      // this map uses no hashtags at all
-  await page.waitForTimeout(1000);
+  await settleFor(page, 1000);
   const after = await drawn();
 
   const wasThere = new Set(before.map(x => x.id));
@@ -588,7 +605,7 @@ async function facetFilter(page, map, scheme) {
         "nothing is drawn with untagged off, so the contention did not survive");
 
   await clickUntagged(page);
-  await page.waitForTimeout(800);
+  await settleFor(page, 800);
 }
 
 /* ------------------------------------------------------------------ one real gesture
@@ -618,7 +635,7 @@ async function foldByHeader(page, map, scheme) {
   });
   if (!strip) return;
   await page.mouse.click(strip.x, strip.y);          // a real press and release
-  await page.waitForTimeout(900);
+  await settleFor(page, 900);
   const after = await drawn();
   check(after !== before,
         `a real click on a section header folds it — ${map} [${scheme}]`,
@@ -749,7 +766,7 @@ async function keyChecks(browser) {
     await page.reload();
     await drop();
     await page.waitForSelector(".alm-n", { timeout: 20000 });
-    await page.waitForTimeout(1400);
+    await settleFor(page, 1400);
     const again = await page.evaluate(() => document.getElementById("keycard").hidden);
     check(again === true, "and it never offers itself again");
     const inHelp = await page.evaluate(() => {
@@ -965,7 +982,7 @@ async function mobileChecks(browser) {
   });
   await page.reload();
   await page.waitForSelector(".alm-n", { timeout: 20000 });
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
 
   check(await page.evaluate(() =>
           getComputedStyle(document.getElementById("stats").closest("footer")).display === "none"),
@@ -986,11 +1003,11 @@ async function mobileChecks(browser) {
   // exactly what its first mutation run proved, by passing with the pinch handler stubbed.
   await cdp.send("Input.synthesizePinchGesture",
     { x: 187, y: 380, scaleFactor: 2.0, relativeSpeed: 300, gestureSourceType: "touch" });
-  await page.waitForTimeout(300);
+  await settleFor(page, 300);
   const k1 = await scaleOf();
   await cdp.send("Input.synthesizePinchGesture",
     { x: 187, y: 380, scaleFactor: 0.5, relativeSpeed: 300, gestureSourceType: "touch" });
-  await page.waitForTimeout(300);
+  await settleFor(page, 300);
   const k2 = await scaleOf();
   check(k0 != null && k1 != null && k1 > k0 * 1.15, "a pinch spread zooms the map in",
         `k ${k0} -> ${k1}`);
@@ -1009,7 +1026,7 @@ async function mobileChecks(browser) {
         "the bar folds to a chip and the choice is recorded", JSON.stringify(folded));
   await page.reload();
   await page.waitForSelector(".alm-n", { timeout: 20000 });
-  await page.waitForTimeout(400);
+  await settleFor(page, 400);
   const kept = await barState();
   check(!kept.bar && kept.chip, "a folded bar stays folded on the next load",
         JSON.stringify(kept));
@@ -1024,6 +1041,7 @@ async function mobileChecks(browser) {
 
 /* ------------------------------------------------------------------ main */
 
+// Built in every part: the feature checks look for particular samples among them (Miller, Tooming).
 const maps = corpus();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "ips-qa-"));
 const t0 = Date.now();
@@ -1043,7 +1061,7 @@ const tBuild = Date.now() - t0;
 
 const browser = await chromium.launch();
 let panels = 0;
-for (const scheme of ["light", "dark"]) {
+for (const scheme of SCHEMES) {
   const ctx = await browser.newContext({ colorScheme: scheme, viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   const errors = [];
@@ -1070,12 +1088,13 @@ for (const scheme of ["light", "dark"]) {
     await runState(page, m.name, "opening", scheme);
 
     if (await clickBarButton(page, "Open")) {
-      await page.waitForTimeout(900);
+      await settleFor(page, 900);
       await runState(page, m.name, "sections open", scheme);
       panels += await runPanel(page, m.name, scheme);
 
       // ONCE, on the first map that can host it: prove every invariant can fail.
-      if (SELFTEST && !didSelftest) {
+      // Once per run: in the light part when the suite is split, never again in the dark one.
+      if (SELFTEST && !didSelftest && PART !== "dark") {
         didSelftest = true;
         await selftest(page, "map", INVARIANTS);
         if (await openPanel(page)) await selftest(page, "panel", PANEL_INVARIANTS);
@@ -1090,7 +1109,7 @@ for (const scheme of ["light", "dark"]) {
     await facetFilter(page, m.name, scheme);
 
     if (await clickBarButton(page, "Full")) {
-      await page.waitForTimeout(900);
+      await settleFor(page, 900);
       await runState(page, m.name, "claims full", scheme);
     }
 
@@ -1236,7 +1255,7 @@ async function genTextChecks(browser) {
   await page.waitForFunction(() =>
     document.getElementById("fname").dataset.file === "chainmw.argdown", { timeout: 20000 });
   await page.click("#mechbtn");
-  await page.waitForTimeout(800);
+  await settleFor(page, 800);
   const corner = await page.evaluate(() => {
     const o = document.getElementById("abs");
     const tops = [...document.querySelectorAll("#mech svg text")].map(t => t.getBoundingClientRect())
@@ -1446,7 +1465,7 @@ async function mechanismEditorChecks(browser) {
   await btn.click();
   const off = await page.evaluate(() => window.__ARGDOWN_EDITOR__.readbackCount());
   await btn.click();
-  await page.waitForTimeout(300);
+  await settleFor(page, 300);
   const on = await page.evaluate(() => window.__ARGDOWN_EDITOR__.readbackCount());
   check(off === 0 && on > 0, "mechanism editor: the button takes the readback away and brings it back", JSON.stringify({ off, on }));
   await ctx.close();
@@ -1472,7 +1491,7 @@ async function bridgePanelChecks(browser) {
   await page.waitForFunction(() => document.querySelectorAll("#map .alm-bridge-hit").length >= 3, null, { timeout: 10000 }).catch(() => {});
   // The map alone, as a reader would look at it: beside the Argdown pane the bridge sat under it.
   await page.click('button[data-close="argdown"]');
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
   const hit = page.locator("#map .alm-bridge-hit", { hasText: "cause → effect" }).first();
   let opened = false;
   try { await hit.scrollIntoViewIfNeeded(); await hit.click({ timeout: 5000 }); opened = await page.locator("#brf").isVisible(); } catch { /* asserted below */ }
@@ -1489,7 +1508,7 @@ async function bridgePanelChecks(browser) {
   check(JSON.stringify(got.qs) === JSON.stringify(["recorded", "none"]),
         "bridge panel: what the map records on each question, and where it records nothing", JSON.stringify(got.qs));
   await page.click("#brffoot button");
-  await page.waitForTimeout(400);
+  await settleFor(page, 400);
   const there = await page.evaluate(() => ({ mech: !document.getElementById("mech").hidden, brf: document.getElementById("brf").hidden,
     side: (document.querySelector("#mech .amech-side") || {}).textContent || "" }));
   check(there.mech && there.brf && /The curfew breeds resentment/.test(there.side),
@@ -1520,7 +1539,7 @@ async function cardStepsChecks(browser, built) {
   await page.waitForSelector("#map svg", { timeout: 15000 });
   await page.click('#view button[data-v="exposition"]');
   await page.evaluate(() => { const r = document.querySelector("#map .alm-range"); if (r) { r.value = r.max; r.dispatchEvent(new Event("input", { bubbles: true })); r.dispatchEvent(new Event("change", { bubbles: true })); } });
-  await page.waitForTimeout(1500);
+  await settleFor(page, 1500);
   const marks = await page.evaluate(() => [...document.querySelectorAll("#map .alm-card-steps")].map(e => e.textContent));
   check(marks.length >= 10 && marks.every(x => /^↝ \d+ steps?/.test(x)),
         "card steps: a card whose claims state steps says how many", marks.length + " marks: " + marks.slice(0, 3).join(" | "));
@@ -1553,7 +1572,7 @@ async function cardStepsChecks(browser, built) {
           "card steps: the figure writes every state whole, at 80% or more, and scrolls", JSON.stringify(size));
     // A panel narrower than the drawing at 80%: fitting would shrink it below; it scrolls instead.
     await page.setViewportSize({ width: 560, height: 900 });
-    await page.waitForTimeout(500);
+    await settleFor(page, 500);
     const narrow = await page.evaluate(() => {
       const f = document.getElementById("brffig"), sv = f.querySelector("svg"), w = sv.viewBox.baseVal.width;
       return { k: parseFloat(sv.style.width) / w, fitWould: (f.clientWidth - 4) / w, scrolls: f.scrollWidth > f.clientWidth };
@@ -1561,9 +1580,9 @@ async function cardStepsChecks(browser, built) {
     check(narrow.fitWould < 0.8 && narrow.k >= 0.799 && narrow.scrolls,
           "card steps: in a narrow panel the figure keeps 80% and scrolls, not shrinks", JSON.stringify(narrow));
     await page.setViewportSize({ width: 1400, height: 900 });
-    await page.waitForTimeout(300);
+    await settleFor(page, 300);
     await page.click("#brffoot button");
-    await page.waitForTimeout(400);
+    await settleFor(page, 400);
     check(await page.evaluate(() => !document.getElementById("mech").hidden && document.getElementById("brf").hidden),
           "card steps: Open in the Mechanism view goes there");
   }
@@ -1589,7 +1608,7 @@ async function chainNodeChecks(browser) {
   await page.evaluate(t => window.__ARGDOWN_EDITOR__.loadText(t), fx("chain-node.argdown"));
   await page.waitForFunction(() => document.querySelectorAll("#map .alm-chainpill").length >= 2, null, { timeout: 10000 }).catch(() => {});
   await page.click('button[data-close="argdown"]');
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
   const pills = await page.evaluate(() => [...document.querySelectorAll("#map .alm-chainpill text")].map(e => e.textContent));
   check(JSON.stringify(pills.sort()) === JSON.stringify(["↝ 1", "↝ 2"]), "chain node: each account is marked with its chain's steps", JSON.stringify(pills));
   let opened = false;
@@ -1601,7 +1620,7 @@ async function chainNodeChecks(browser) {
     check(/stands for “The price route”/.test(got.head) && /1 tested, 1 asserted/.test(got.move) && got.arrows === 2 && got.lines === 2,
           "chain node: the chain drawn, how it is backed, each step in words", JSON.stringify(got));
     await page.click("#brffoot button");
-    await page.waitForTimeout(500);
+    await settleFor(page, 500);
     const there = await page.evaluate(() => ({ mech: !document.getElementById("mech").hidden,
       chain: (document.querySelector("#mech select[data-chain]") || {}).value, account: (document.querySelector("#mech .amech-account") || {}).textContent || "" }));
     check(there.mech && there.chain === "price" && /The levy works by price/.test(there.account),
@@ -1616,7 +1635,7 @@ async function chainNodeChecks(browser) {
     fx("bridges.argdown").replace(/^title: (.*)$/m, "title: $1\nreconstruction:\n    draft: true"));
   await p2.waitForFunction(() => document.querySelectorAll("#map .alm-bridge-hit").length >= 3, null, { timeout: 10000 }).catch(() => {});
   await p2.click('button[data-close="argdown"]');
-  await p2.waitForTimeout(600);
+  await settleFor(p2, 600);
   let verdicts = [];
   try {
     await p2.locator("#map .alm-bridge-hit", { hasText: "cause → effect" }).first().click({ timeout: 5000 });
@@ -1651,9 +1670,9 @@ async function hiddenFirstLayoutChecks(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
   await page.goto("file://" + hidden);
-  await page.waitForTimeout(800);
+  await settleFor(page, 800);
   await page.evaluate(() => document.getElementById("hideMap").remove());
-  await page.waitForTimeout(1200);
+  await settleFor(page, 1200);
   const g = await page.evaluate(() => {
     const box = [...document.querySelectorAll("#map g.alm-n")].find(n => n.querySelector(".alm-pcs-bar"));
     if (!box) return null;
@@ -1707,7 +1726,7 @@ async function refClickChecks(browser) {
   if (!target) { await ctx.close(); return; }
   const litBefore = await page.evaluate(() => document.querySelectorAll(".is-lit").length);
   await page.mouse.click(target.x, target.y);
-  await page.waitForTimeout(400);
+  await settleFor(page, 400);
   const lit = await page.evaluate(() =>
     [...document.querySelectorAll(".is-lit")].map(e => e.textContent.replace(/\s+/g, " ").trim()));
   check(litBefore === 0 && lit.length > 0 && lit.some(t => /main-claim|finally arguing/.test(t)),
@@ -2042,7 +2061,7 @@ async function studyChecks(browser) {
   // A beat for the editor's debounced preview to settle: a drop renders once, and the editor
   // path re-draws a moment later. A reader cannot reach the bar inside that window, and a
   // check that does races the rebuild and reads a half-torn-down map.
-  await page.waitForTimeout(1200);
+  await settleFor(page, 1200);
 
   const before = await page.evaluate(() =>
     document.querySelectorAll("#map .alm-n").length);
@@ -2053,7 +2072,7 @@ async function studyChecks(browser) {
   await page.waitForSelector("#studycard:not([hidden])", { timeout: 10000 });
   // The card opens by asking what the reader already thinks, and how they will study (18 Oct 2026).
   await page.click('#studybody button[data-study="others"]');
-  await page.waitForTimeout(400);
+  await settleFor(page, 400);
   const entered = await page.evaluate(() => ({
     drawn: document.querySelectorAll("#map .alm-n").length,
     body: document.getElementById("studybody").textContent
@@ -2104,7 +2123,7 @@ async function studyChecks(browser) {
     });
     if (!box) break;
     await page.mouse.click(box.x, box.y);
-    await page.waitForTimeout(700);
+    await settleFor(page, 700);
     if (await page.evaluate(() =>
         /one among live alternatives/.test(
           document.getElementById("studybody").textContent))) sawCrux = true;
@@ -2230,7 +2249,7 @@ async function compareChecks(browser) {
   });
   const passage = page.locator("#mstext .mline", { hasText: "merely causal" }).first();
   await passage.click({ modifiers: ["Shift"] });
-  await page.waitForTimeout(900);
+  await settleFor(page, 900);
   const reframed = await page.evaluate(() => {
     const v = document.querySelector("#map .alm-viewport");
     return { transform: v ? v.style.transform : "",
@@ -2920,7 +2939,7 @@ async function expositionChecks(browser) {
         "exposition: follow is not offered in Reasons", "");
 
   await page.click('#view [data-v="exposition"]');
-  await page.waitForTimeout(700);
+  await settleFor(page, 700);
   const first = await page.evaluate(() => ({
     boxes: document.querySelectorAll("#map .alm-n").length,
     shapeClass: document.querySelector("#map svg").classList.contains("alm-shape"),
@@ -2935,16 +2954,16 @@ async function expositionChecks(browser) {
   // Left at the précis, Reasons gets its own depth back; and the précis is a first visit's
   // opening, so coming back to Exposition leaves the depth where the reader has it.
   await page.click('#view [data-v="reasons"]');
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
   check(await rung() === reasonsDepth, "  and going back to Reasons gives Reasons its depth back",
         JSON.stringify({ reasonsDepth, now: await rung() }));
   await page.click('#view [data-v="exposition"]');
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
   check(await rung() === reasonsDepth, "  and a second visit does not impose the précis again",
         String(await rung()));
 
   await clickBarButton(page, "Shape");
-  await page.waitForTimeout(500);
+  await settleFor(page, 500);
   const on = await page.evaluate(() => ({
     shapeClass: document.querySelector("#map svg").classList.contains("alm-shape"),
     sparks: document.querySelectorAll("#map .alm-spark *").length,
@@ -2954,7 +2973,7 @@ async function expositionChecks(browser) {
   check(on.shapeClass && on.sparks > 0 && !on.footer && on.pressed === "true",
         "  and switching shape on draws the sparklines and the footer line", JSON.stringify(on));
   await clickBarButton(page, "Shape");
-  await page.waitForTimeout(300);
+  await settleFor(page, 300);
   const off = await page.evaluate(() => document.querySelectorAll("#map .alm-spark *").length);
   check(off === 0, "  and off again takes them away", String(off));
 
@@ -2965,7 +2984,7 @@ async function expositionChecks(browser) {
     r.value = r.max;
     r.dispatchEvent(new Event("input", { bubbles: true }));
   });
-  await page.waitForTimeout(500);
+  await settleFor(page, 500);
   check(await page.isVisible("#msfollow"), "exposition: follow is offered beside the text", "");
   await page.click("#msfollow");
   /* SCROLLED WITH THE WHEEL, a stop at a time, and every distinct set of lit claims counted.
@@ -3031,7 +3050,7 @@ async function expositionChecks(browser) {
         JSON.stringify({ tried, nested, missed: missed.slice(0, 8) }));
 
   await page.click('#view [data-v="reasons"]');
-  await page.waitForTimeout(600);
+  await settleFor(page, 600);
   check(!(await page.isVisible("#msfollow")), "exposition: follow leaves with Exposition", "");
   await ctx.close();
 }
@@ -3059,13 +3078,13 @@ async function pagesChecks(browser) {
       await page.waitForSelector("#mstext [data-l]", { timeout: 10000 });
     }
     await page.click('#view [data-v="exposition"]');
-    await page.waitForTimeout(800);
+    await settleFor(page, 800);
     await page.evaluate(() => {
       const r = /** @type {HTMLInputElement} */ (document.querySelector("#map input.alm-range"));
       r.value = r.max;
       r.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await page.waitForTimeout(900);
+    await settleFor(page, 900);
     return { ctx, page };
   };
   const { ctx, page } = await open(1600);
@@ -3077,7 +3096,7 @@ async function pagesChecks(browser) {
 
   await page.click('#map [data-act="display"]');   // flow lives under Display (20 Oct 2026)
   await page.click('#map [data-act="layout"][data-col="1"]');
-  await page.waitForTimeout(1500);
+  await settleFor(page, 1500);
   const laid = await page.evaluate(() => ({
     cards: document.querySelectorAll("#map .alm-card").length,
     cont: document.querySelectorAll('#map .alm-g[data-id^="cont:"]').length,
@@ -3124,7 +3143,7 @@ async function pagesChecks(browser) {
     }, target);
     if (stub) {
       await page.mouse.click(stub.x, stub.y);
-      await page.waitForTimeout(900);
+      await settleFor(page, 900);
       const there = await page.evaluate(to => {
         const box = document.querySelector(`#map .alm-n[data-id="${to}"]`);
         if (!box) return null;
@@ -3175,10 +3194,10 @@ async function pagesChecks(browser) {
   await narrow.page.evaluate(() => {
     document.getElementById("side").style.setProperty("--ms-w", "760px");
   });
-  await narrow.page.waitForTimeout(300);
+  await settleFor(narrow.page, 300);
   await narrow.page.click('#map [data-act="display"]');
   await narrow.page.click('#map [data-act="layout"][data-col="1"]');
-  await narrow.page.waitForTimeout(1500);
+  await settleFor(narrow.page, 1500);
   const one = await narrow.page.evaluate(() => ({
     cont: document.querySelectorAll('#map .alm-g[data-id^="cont:"]').length,
     conns: document.querySelectorAll("#map .alm-conn").length }));
@@ -3188,33 +3207,27 @@ async function pagesChecks(browser) {
   await narrow.ctx.close();
 }
 
-await barChecks(browser);
-await pagesChecks(browser);
-await expositionChecks(browser);
-await keyChecks(browser);
-await genTextChecks(browser);
-await studyChecks(browser);
-await compareChecks(browser);
-await zoteroChecks(browser);
-await voiceChecks(browser);
-await tocChecks(browser);
-await navChecks(browser);
-await editorChecks(browser);
-await mechanismEditorChecks(browser);
-await bridgePanelChecks(browser);
-await cardStepsChecks(browser, built);
-await chainNodeChecks(browser);
-await refClickChecks(browser);
-await hiddenFirstLayoutChecks(browser);
-await quoteChecks(browser);
-await guidedChecks(browser);
-await exportChecks(browser);
-await mobileChecks(browser);
+/* The feature checks, each with its own context. The part each belongs to balances the two
+ * halves by time as measured on 21 Nov 2026 (seconds beside each); the card steps need the
+ * viewers the per-map pass built, so they run in the light part. */
+/** @type {[string, (b: any) => Promise<void>, number][]} */
+const GROUPS = [
+  ["checks1", barChecks, 1], ["checks1", pagesChecks, 12], ["checks1", expositionChecks, 21],
+  ["checks1", keyChecks, 11], ["checks1", genTextChecks, 3], ["checks2", studyChecks, 6],
+  ["checks2", compareChecks, 5], ["checks1", zoteroChecks, 15], ["checks2", voiceChecks, 1],
+  ["checks2", tocChecks, 3], ["checks2", navChecks, 2], ["checks2", editorChecks, 3],
+  ["checks2", mechanismEditorChecks, 2], ["checks2", bridgePanelChecks, 2],
+  ["light", b => cardStepsChecks(b, built), 5],
+  ["checks2", chainNodeChecks, 3], ["checks2", refClickChecks, 1], ["checks2", hiddenFirstLayoutChecks, 3],
+  ["checks2", quoteChecks, 4], ["checks2", guidedChecks, 4], ["checks2", exportChecks, 3],
+  ["checks2", mobileChecks, 3]
+];
+for (const [part, run] of GROUPS) if (PART === "all" || PART === part) await run(browser);
 await browser.close();
 if (!KEEP) fs.rmSync(tmp, { recursive: true, force: true });
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-console.log(`\n${built.length} maps, ${panels} panels, both colour schemes, ` +
+console.log(`\n[${PART}] ${built.length} maps, ${panels} panels, ${SCHEMES.length ? SCHEMES.join(" and ") + " scheme" + (SCHEMES.length > 1 ? "s" : "") : "no per-map pass"}, ` +
             `${proved} invariants proved able to fail — ${checks} checks in ${secs}s ` +
             `(${(tBuild / 1000).toFixed(1)}s of it building)`);
 if (fails) {

@@ -78,6 +78,10 @@ function bundle(opts) {
 /** Every npm package that reached any bundle of THIS build — the measured basis for NOTICES. */
 const BUNDLED_PACKAGES = new Set();
 const BUILD = path.resolve(HERE, "src");
+// THE BUILD'S SCRATCH FILES CARRY ITS PROCESS ID. Each bundle is written beside this file -- the
+// entries must resolve `./argdown-graph.mjs` and node_modules from here -- read back and deleted.
+// Under fixed names, two builds at once (the test suites now run side by side, and several build
+// viewers) read and deleted each other's: "ENOENT .md-bundle.js", 21 Nov 2026.
 const TEMPLATE = path.join(HERE, "argdown-viewer.template.html");
 const require = createRequire(import.meta.url);
 // `require`, not an ESM default import: js-yaml ships CommonJS, and `import yaml from "js-yaml"`
@@ -145,8 +149,8 @@ function readScript(file) {
  *  feature the pane exists for.
  */
 function markdownBundle() {
-  const entry = path.join(HERE, ".md-entry.mjs");
-  const out = path.join(HERE, ".md-bundle.js");
+  const entry = path.join(HERE, `.md-entry-${process.pid}.mjs`);
+  const out = path.join(HERE, `.md-bundle-${process.pid}.js`);
   fs.writeFileSync(entry, `
 import MarkdownIt from "markdown-it";
 import footnote from "markdown-it-footnote";
@@ -234,8 +238,8 @@ function liveMapDeps() {
 
 /** Bundle @argdown/core + the shared adapter into one IIFE exposing __ARGDOWN_PARSE__. */
 function parserBundle() {
-  const entry = path.join(HERE, ".viewer-entry.mjs");
-  const out = path.join(HERE, ".viewer-bundle.js");
+  const entry = path.join(HERE, `.viewer-entry-${process.pid}.mjs`);
+  const out = path.join(HERE, `.viewer-bundle-${process.pid}.js`);
   fs.writeFileSync(entry, `
 import { argdown } from "@argdown/core";
 import { toGraph, RUN, metadataProblems, parseProblems, withComment } from "./argdown-graph.mjs";
@@ -295,7 +299,7 @@ window.__ARGDOWN_PARSE__ = function (source) {
  *  workbench, and neither is a fork of the other.
  */
 function editorBundle() {
-  const out = path.join(HERE, ".editor-bundle.js");
+  const out = path.join(HERE, `.editor-bundle-${process.pid}.js`);
   bundle({ entryPoints: ["argdown-editor.src.mjs"], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(out, { force: true });
@@ -315,7 +319,7 @@ function editorBundle() {
  *  and passes `false` for a map with nothing to say.
  */
 function exportBundle() {
-  const out = path.join(HERE, ".export-bundle.js");
+  const out = path.join(HERE, `.export-bundle-${process.pid}.js`);
   bundle({ entryPoints: ["argdown-export.src.mjs"], outfile: out });
   const js = fs.readFileSync(out, "utf8");
   fs.rmSync(out, { force: true });

@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { settle } from "./browser_settle.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..");
@@ -222,7 +223,7 @@ if (chromium) {
     };
     const faded = () => page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-supposed-out")].map(g => g.getAttribute("data-id")));
     await page.goto("file://" + html);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     check(await page.locator("#supp").isHidden(), "the panel is not shown until the reader supposes something");
 
     // Mutation: drop the menu items -> the click times out; drop setSupposition -> nothing fades.
@@ -286,7 +287,7 @@ if (chromium) {
           !(await page.locator("#supp .reflect").count()),
           "the banner asks about the one place the reader and the map parted, and the card's own line steps aside", sumT);
     await page.locator("#suppbar button[data-guess-held]").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const heldLit = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit")]
       .map(g => [...g.querySelectorAll(".alm-title")].map(t => t.textContent.trim()).join(" ")).sort());
     check(heldLit.includes("Main") && heldLit.includes("Alone") && !heldLit.includes("Linked"),
@@ -311,7 +312,7 @@ if (chromium) {
     await page.locator('#map [data-act="study"]').click();
     await page.waitForTimeout(250);
     await page.locator('#studybody button[data-study="cost"]').click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     await box("P1").click();
     await page.waitForTimeout(150);
     check(/Your guess: ‹P1›/.test(await page.locator("#studybody").innerText()), "the challenge takes a click on a claim as the guess");
@@ -349,9 +350,9 @@ if (chromium) {
     // it holds, with a guess first. Mutations: show the conclusion before Show -> the first check
     // fails; drop the hint ladder -> no hint; drop the fork -> no supposition is offered.
     await page.goto("file://" + mhtml);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await page.locator('#map [data-act="study"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const open0 = await page.locator("#studybody").innerText();
     check(/What do you already think about it/.test(open0) && await page.locator('#studybody button[data-study="own"]').count() === 1 &&
           await page.locator('#studybody button[data-study="others"]').count() === 1,
@@ -369,7 +370,7 @@ if (chromium) {
     check((u1h.match(/Hint:/g) || []).length === 2 && /the map calls it ‹/.test(u1h) && await page.locator('#studybody button[data-study="hint"]').count() === 0,
           "hints come one at a time, as asked for, the second naming the conclusion", u1h.slice(-300));
     await page.locator('#studybody button[data-study="show"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     const u1s = await page.locator("#studybody").innerText();
     const litNow = await page.evaluate(() => [...document.querySelectorAll("#map g.alm-n.is-lit .alm-title")].map(t => t.textContent));
     check(/^The map: ‹/m.test(u1s) && litNow.length > 0, "Show gives the map's conclusion and lights it", JSON.stringify(litNow));
@@ -445,7 +446,7 @@ if (chromium) {
         return out;
       };
       await page.goto("file://" + whtml);
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       await page.locator('#map [data-act="study"]').click();
       check(/ten at a time/.test(await page.locator("#studybody").innerText()), "a long map's Study says On my own takes ten at a time");
       await page.locator('#studybody button[data-study="own"]').click();
@@ -479,7 +480,7 @@ if (chromium) {
         paused = /predictions\. Ten more/.test(await page.locator("#studybody").innerText());
         if (paused) break;
         const b = await frontier(); if (!b) break;
-        await page.mouse.click(b.x, b.y); await page.waitForTimeout(350);
+        await page.mouse.click(b.x, b.y); await settle(page, 350);
       }
       check(paused && await page.locator('#studybody button[data-study="others-more"]').count() === 1 && /^10 so far$/.test(await page.locator("#studyhint").innerText()),
             "With others pauses after ten predictions and offers ten more", `after ${presses} unfolds`);
@@ -509,10 +510,10 @@ if (chromium) {
     {
       const guessCost = async (file, label) => {
         await page.goto("file://" + file);
-        await page.waitForTimeout(900);
+        await settle(page, 900);
         await page.locator('#map [data-act="study"]').click();
         await page.locator('#studybody button[data-study="cost"]').click();
-        await page.waitForTimeout(600);
+        await settle(page, 600);
         const ask = await page.locator("#studybody").innerText();
         // The guessed box may lie outside the view: chosen from the keyboard, as a reader may.
         await page.locator(`#map g.alm-n[aria-label="${label}"]`).first().focus();
@@ -542,11 +543,11 @@ if (chromium) {
     {
       const before = errors.length;
       await page.goto("file://" + mlhtml);
-      await page.waitForTimeout(900);
+      await settle(page, 900);
       await page.locator('#map [data-act="study"]').click();
       await page.locator('#studybody button[data-study="others"]').click();
-      await page.waitForTimeout(400);
-      for (let k = 0; k < 3; k++) { const b = await frontier(); if (!b) break; await page.mouse.click(b.x, b.y); await page.waitForTimeout(350); }
+      await settle(page, 400);
+      for (let k = 0; k < 3; k++) { const b = await frontier(); if (!b) break; await page.mouse.click(b.x, b.y); await settle(page, 350); }
       const fresh = errors.slice(before);
       errors.length = before;   // counted here, not again in "no page errors"
       check(!fresh.length && /folded/.test(await page.locator("#studybody").innerText()),
@@ -558,18 +559,18 @@ if (chromium) {
     // Mechanism panel asks which (18 Oct 2026). Mutations: push every step of the claim -> both arrows
     // fade and no question is asked; drop the choice handler -> nothing fades.
     await page.goto("file://" + shtml);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await menu("Two effects", "false");
     check(/in Mechanism, one of its 2 steps does not run/.test(await page.locator("#suppbar").innerText()),
           "the banner says one of the claim's two steps stops, not which", await page.locator("#suppbar").innerText());
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(500);
+    await settle(page, 500);
     const cutOf = k => page.locator(`#mech svg g[data-edge="${k}"]:not(.chip).cut`).count();
     check(/Which do you suppose\?/.test(await page.locator("#mech .amech-side").innerText()) &&
           await page.locator("#mech .amech-side button[data-exp-choose]").count() === 2 && await cutOf("gap>queue") === 0 && await cutOf("gap>private") === 0,
           "the Mechanism panel asks which of the two steps does not run, and fades neither until told");
     await page.locator('#mech .amech-side button[data-exp-choose][data-to="queue"]').click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     check(await cutOf("gap>queue") > 0 && await cutOf("gap>private") === 0 && /the step you chose does not run/.test(await page.locator("#suppbar").innerText()),
           "the chosen step fades, the other runs, and the banner says it is the one chosen");
     await page.locator('#suppbar button[data-supp-clear]').click();
@@ -577,7 +578,7 @@ if (chromium) {
 
     // DENY THE CONCLUSION from the staircase, and keep a premise. Mutation: drop the keep handler -> nothing is forced.
     await page.goto("file://" + mhtml);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await box("The sceptic's argument").click({ button: "right" });
     await page.locator('#ctx button[data-supp-menu="deny"]').click();
     await page.waitForTimeout(250);
@@ -595,9 +596,9 @@ if (chromium) {
     const opener = box("Moore's proof").locator(".alm-explode").first();
     if (await opener.count()) {
       await opener.click();
-      await page.waitForTimeout(400);
+      await settle(page, 400);
       await page.locator("#xdeny").click();
-      await page.waitForTimeout(300);
+      await settle(page, 300);
       check(await page.locator("#expl").isHidden() && /For ‹External things exist› to be false/i.test(await page.locator("#supp").innerText()),
             "the staircase's Deny the conclusion closes it and opens what must give");
     } else check(false, "the staircase opener is found on Moore's proof");
@@ -613,12 +614,12 @@ if (chromium) {
         document.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: dt }));
       }, [fs.readFileSync(file, "utf8"), path.basename(file)]);
       await page.waitForFunction(n => document.getElementById("fname").dataset.file === n, path.basename(file), { timeout: 20000 });
-      await page.waitForTimeout(1200);
+      await settle(page, 1200);
     };
     // The Reader offers its tour to a first-time reader: marked seen, as for a returning one.
     await page.addInitScript(() => { try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) {} });
     await page.goto("file://" + reader);
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await dropFile(PLANTED);
     await box("Main").click({ button: "right" });
     await page.locator('#ctx button[data-supp-menu="guessfirst"]').click();
@@ -635,7 +636,7 @@ if (chromium) {
     // WEIGH THE ACCOUNTS, A PANEL AND A FOURTH WAY INTO STUDY (James, 18 Oct 2026).
     const build = (src, name) => { const out = path.join(tmp, name); execFileSync("node", [path.join(HERE, "build_argdown_viewer.mjs"), src, "-o", out], { stdio: "pipe" }); return out; };
     await page.goto("file://" + build(ACCOUNTS, "accounts.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     // Mutation: drop weighMenu from ctxShow -> the item is not offered.
     await box("Price explains the fall").click({ button: "right" });
     check(await page.locator('#ctx [data-weigh-menu="weigh"]').count() === 1, "right-click on an account offers Weigh the accounts");
@@ -698,7 +699,7 @@ if (chromium) {
 
     // A DENIAL IS SAID, AND THE TABLE FOLDED (19 Oct 2026).
     await page.goto("file://" + build(DENIAL, "denial.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await box("Fees do not raise use").click({ button: "right" });
     await page.locator('#ctx [data-weigh-menu="weigh"]').click();
     await page.waitForTimeout(200);
@@ -718,7 +719,7 @@ if (chromium) {
 
     // WHICH WOULD YOU GIVE UP?
     await page.goto("file://" + build(TRILEMMA, "trilemma.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await box("The levy is high").click();
     await page.waitForTimeout(150);
     await page.locator("#whatif").click();
@@ -734,15 +735,15 @@ if (chromium) {
     await page.goto("file://" + build(TEACHING, "teaching.html"));
     await page.waitForTimeout(800);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator("#mech select[data-chain]").selectOption("mediation");
     await page.waitForTimeout(250);
     check(await page.locator(".amech-words").count() === 0 && await page.locator("#mech .amech-stage").isVisible(),
           "smoking, tar, cancer is drawn from the start: its middle is where one intervenes");
     await page.goto("file://" + build(ONE_STEP, "one-step.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     // Mutation: drop `stage.hidden = true` -> the chart is drawn as well.
     check(await page.locator(".amech-words").isVisible() && await page.locator("#mech .amech-stage").isHidden() &&
           /“It rains” raises “The street is wet”/.test(await page.locator(".amech-words").innerText()), "a chain of one step opens in words");
@@ -750,9 +751,9 @@ if (chromium) {
     await page.waitForTimeout(250);
     check(await page.locator(".amech-words").count() === 0 && await page.locator("#mech .amech-stage").isVisible(), "Draw it draws it");
     await page.goto("file://" + build(TEACHING, "teaching.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator("#mech select[data-chain]").selectOption("joint");
     await page.waitForTimeout(250);
     await page.locator("[data-cond-show]").click();
@@ -763,9 +764,9 @@ if (chromium) {
     check(/Oxygen is present” does not happen/.test(await page.locator("#suppbar").innerText()), "switching a start off is a supposition, in the one banner");
     await page.locator("#suppbar [data-supp-clear]").click();
     await page.goto("file://" + build(ACTORS, "actors.html"));
-    await page.waitForTimeout(800);
+    await settle(page, 800);
     await page.locator("#mechbtn").click();
-    await page.waitForTimeout(300);
+    await settle(page, 300);
     await page.locator('#mech .st[data-state="hire"]').click({ button: "right" });
     await page.locator('#ctx [data-supp-menu="actor"]').click();
     await page.waitForTimeout(250);
