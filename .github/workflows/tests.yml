@@ -6,6 +6,18 @@
 # side by side, one per core of the runner (four), slowest first: 22 minutes in series, measured
 # 21 Nov 2026 (docs/TEST-SPEED-AUDIT.md).
 #
+# THREE MACHINES, STILL ONE LIST. One runner was saturated at four at a time (8.5 min), so the
+# same command runs on three, each taking `--shard K/N` of the list. The division is computed by
+# run_all_tests.mjs from its own list, so this file names no suite and none can fall between
+# shards. Three things here keep it that way, and each guards a way splitting goes quietly wrong:
+#   - N is `strategy.job-total`, not a number written twice: drop a matrix entry and the rest
+#     re-divide to cover everything. A part numbered past the total is refused, loudly.
+#   - `fail-fast: false`: one shard failing does not cancel the others, so a red run shows every
+#     failure, not the first.
+#   - the job called `suite` is what branch protection requires, and it passes only if EVERY
+#     shard did. It must run `if: always()`: without it a failed shard SKIPS `suite`, and GitHub
+#     counts a skipped required check as passed -- the build would merge red.
+#
 # EVERYTHING IS EXPECTED TO PASS, and no failure is allowed through. This file used to carry an
 # allowance for one documented fold defect; the defect was fixed on 29 Aug 2026 and the
 # allowance outlived it — which made it a hole, since any new failure of that suite would have
@@ -22,8 +34,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  suite:
+  shard:
+    name: tests ${{ matrix.part }} of ${{ strategy.job-total }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3]
     steps:
       - uses: actions/checkout@v7
 
@@ -58,11 +75,23 @@ jobs:
 
 
 
-      - name: Everything
+      - name: This machine's share of everything
         id: suite
         # A MISSING BROWSER MUST BE A FAILURE HERE, not the skip a developer's checkout gets. The
         # skip exists so that `npm test` is useful before `playwright install`; on CI it would
         # mean the one instrument watching the painted map had quietly stopped running.
         env:
           IPS_REQUIRE_BROWSER: "1"
-        run: node app/run_all_tests.mjs
+        run: node app/run_all_tests.mjs --shard ${{ matrix.part }}/${{ strategy.job-total }}
+
+  # THE REQUIRED CHECK. Named `suite` because that is what branch protection asks for (and what
+  # dependabot-bundle.yml waits on); see the header for why it is `always()`.
+  suite:
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every shard passed
+        run: |
+          echo "shards: ${{ needs.shard.result }}"
+          test "${{ needs.shard.result }}" = "success"

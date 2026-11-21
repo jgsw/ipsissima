@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* run_all_tests.mjs — every check, one command.
  *
- *   node app/run_all_tests.mjs [--jobs N]
+ *   node app/run_all_tests.mjs [--jobs N] [--shard K/N | --list-shards N]
  *
  * Run this before sharing the tooling, and after any change to the renderer, the fold logic or
  * the provenance rules. Each suite is independent and each prints its own detail; this reports
@@ -176,21 +176,78 @@ const jobsAt = argv.indexOf("--jobs");
 const JOBS = Math.max(1, Number(jobsAt >= 0 ? argv[jobsAt + 1] : process.env.IPS_TEST_JOBS) ||
                          (os.availableParallelism ? os.availableParallelism() : os.cpus().length));
 
-/* THE SLOW ONES START FIRST. Started last, the five-minute browser suite would begin after
- * everything else had finished and the run would take as long as it always did. The order is a
- * hint and nothing else: a stale list costs minutes, never a check. Seconds as measured on CI. */
-const SLOW_FIRST = [
-  "the rendered map (browser): light, and the self-test",   // the four parts were 322 together
-  "the rendered map (browser): dark",
-  "fold invariants (state space)",              // 247 before 21 Nov; about 100 since
-  "suppositions and contraposition",            //  91
-  "the mechanism and the appraisal",            // 161 before 21 Nov; about 90 since
-  "the mechanism arrangement",                  //  87
-  "designed against the misreading",            //  74
-  "the rendered map (browser): feature checks, 1 of 2",
-  "the rendered map (browser): feature checks, 2 of 2",
-];
-const rank = name => { const i = SLOW_FIRST.indexOf(name); return i < 0 ? SLOW_FIRST.length : i; };
+/* HOW LONG EACH SUITE TAKES, in seconds, as measured on CI four at a time (run 44915561735, 21
+ * Nov 2026); anything not named counts as 5. It decides two things, and only those: the slowest
+ * start first -- started last, a long suite would begin after everything else had finished -- and
+ * how `--shard` divides the list. A stale number costs minutes, never a check: whatever the
+ * weights say, every suite lands in exactly one shard. */
+const WEIGHT = new Map([
+  ["fold invariants (state space)", 252],
+  ["the mechanism and the appraisal", 195],
+  ["the rendered map (browser): light, and the self-test", 177],
+  ["the rendered map (browser): dark", 159],
+  ["the rendered map (browser): feature checks, 1 of 2", 137],
+  ["the rendered map (browser): feature checks, 2 of 2", 126],
+  ["suppositions and contraposition", 118],
+  ["the mechanism arrangement", 118],
+  ["provenance: py vs js", 101],
+  ["designed against the misreading", 96],
+  ["the bundled Argdown parser", 67],
+  ["the census, run twice", 50],
+  ["fold state identifier (round-trip)", 47],
+  ["the text's comparisons as tables", 44],
+  ["the text's comparisons: frames and about (checker)", 41],
+  ["extraction regression (public fixtures)", 29],
+  ["reading checks (Stern cases)", 27],
+  ["where to look, and the appraisal beside the map", 27],
+  ["the MCP server's contract", 26],
+  ["the served method holds to the registry", 25],
+  ["on a phone and an upright iPad", 25],
+  ["the editor checks a mechanism as the checker does", 19],
+  ["map quality vs baseline", 14],
+  ["the exports, read back", 12],
+]);
+const weight = name => WEIGHT.get(name) ?? 5;
+/** Suite indices, heaviest first; ties keep this file's order. */
+const BY_WEIGHT = SUITES.map((s, i) => i).sort((a, b) => weight(SUITES[b][0]) - weight(SUITES[a][0]) || a - b);
+
+/* `--shard K/N`: RUN ONLY THE K-TH OF N PARTS, so CI can give each part a machine of its own
+ * (.github/workflows/tests.yml). The parts are computed here, from this one list -- heaviest
+ * first, each to whichever part has least so far -- so the N parts always cover every suite
+ * exactly once, whatever N is and whatever is added. Nothing outside this file names a suite.
+ * `--list-shards N` prints the division without running anything. */
+function shardOf(n) {
+  const load = new Array(n).fill(0), of = new Array(SUITES.length);
+  for (const i of BY_WEIGHT) {
+    let k = 0;
+    for (let j = 1; j < n; j++) if (load[j] < load[k]) k = j;
+    of[i] = k; load[k] += weight(SUITES[i][0]);
+  }
+  return { of, load };
+}
+const listAt = argv.indexOf("--list-shards");
+if (listAt >= 0) {
+  const n = Number(argv[listAt + 1]);
+  const { of, load } = shardOf(n);
+  for (let k = 0; k < n; k++) {
+    console.log(`shard ${k + 1}/${n}, about ${load[k]}s:`);
+    SUITES.forEach(([name], i) => { if (of[i] === k) console.log(`  ${name}`); });
+  }
+  process.exit(0);
+}
+const shardAt = argv.indexOf("--shard");
+let SHARD = null;
+if (shardAt >= 0) {
+  const m = /^(\d+)\/(\d+)$/.exec(argv[shardAt + 1] || "");
+  const k = m ? Number(m[1]) : 0, n = m ? Number(m[2]) : 0;
+  if (!m || n < 1 || k < 1 || k > n) {
+    console.log(`--shard wants K/N with 1 <= K <= N, e.g. --shard 2/3; got ${argv[shardAt + 1]}`);
+    process.exit(2);
+  }
+  SHARD = { k, n, of: shardOf(n).of };
+}
+/** The suites this run is to run, as indices into SUITES. */
+const MINE = SUITES.map((s, i) => i).filter(i => !SHARD || SHARD.of[i] === SHARD.k - 1);
 
 /* NOTHING A TEST RUN DOES BELONGS IN THE CHECKER'S LEDGER. ~/.ipsissima/check-log.jsonl exists to
  * show which mistakes a reconstruction makes in a real fix loop; on 21 Nov 2026 21,859 of its
@@ -227,17 +284,17 @@ const done = new Array(SUITES.length);
 let printed = 0;
 /** Print every finished block that has no unfinished block before it. */
 function flush() {
-  while (printed < SUITES.length && done[printed]) {
-    const [name] = SUITES[printed];
-    const r = done[printed];
-    process.stdout.write(`\n${"=".repeat(72)}\n${name}\n${"=".repeat(72)}\n${r.out}`);
+  while (printed < MINE.length && done[MINE[printed]]) {
+    const i = MINE[printed];
+    process.stdout.write(`\n${"=".repeat(72)}\n${SUITES[i][0]}\n${"=".repeat(72)}\n${done[i].out}`);
     printed++;
   }
 }
 
 const t0 = Date.now();
-const queue = SUITES.map((s, i) => i).sort((a, b) => rank(SUITES[a][0]) - rank(SUITES[b][0]) || a - b);
-console.log(`${SUITES.length} suites, ${JOBS} at a time`);
+const queue = BY_WEIGHT.filter(i => MINE.includes(i));
+const which = SHARD ? `shard ${SHARD.k} of ${SHARD.n}: ${MINE.length} of ${SUITES.length} suites` : `${SUITES.length} suites`;
+console.log(`${which}, ${JOBS} at a time`);
 await Promise.all(Array.from({ length: Math.min(JOBS, queue.length) }, async () => {
   while (queue.length) {
     const i = queue.shift();
@@ -248,10 +305,10 @@ await Promise.all(Array.from({ length: Math.min(JOBS, queue.length) }, async () 
 }));
 flush();
 
-const failed = done.filter(r => !r.ok).length;
+const failed = MINE.filter(i => !done[i].ok).length;
 console.log(`\n${"=".repeat(72)}`);
-SUITES.forEach(([name], i) =>
-  console.log(`  ${done[i].ok ? "PASS" : "FAIL"}  ${name}  (${done[i].secs.toFixed(1)}s)`));
+for (const i of MINE)
+  console.log(`  ${done[i].ok ? "PASS" : "FAIL"}  ${SUITES[i][0]}  (${done[i].secs.toFixed(1)}s)`);
 console.log(`\n${failed ? `${failed} suite(s) failed` : "everything passed"} ` +
-            `in ${((Date.now() - t0) / 60000).toFixed(1)} min, ${JOBS} at a time\n`);
+            `in ${((Date.now() - t0) / 60000).toFixed(1)} min, ${which}, ${JOBS} at a time\n`);
 process.exit(failed ? 1 : 0);

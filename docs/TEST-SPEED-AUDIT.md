@@ -37,6 +37,27 @@ What else changed, and why:
   about 870 ms (a glide runs up to 700 ms), so the 900 ms sleeps were not padded much. The larger gain
   came from splitting the browser suite.
 
+### On CI, and then three machines
+
+The first CI run after this (44915561735) passed in 9.6 min overall, with the suite step at 8.5. The
+runner was saturated: running four at a time, the suites took 33.5 min of suite time inside 8.5 min
+of wall clock. So CI now runs the same command on three machines, each taking `--shard K/N` of the
+list. Every way that splitting could go wrong quietly is designed out, and the reasons are in the
+header of `.github/workflows/tests.yml`:
+
+- **No suite falls between shards.** `run_all_tests.mjs` computes the division from its own list:
+  heaviest first, each to the least-loaded shard. Checked for N = 1–5, every suite lands in exactly
+  one shard. The workflow names no suite.
+- **N is never written twice.** It is `strategy.job-total`. Dropping a matrix entry makes the rest
+  re-divide to cover everything, and a part numbered past the total is refused.
+- **A failure cannot merge.** Branch protection requires a check called `suite`, which is now a job
+  that passes only if every shard did. It runs `if: always()`, because GitHub counts a *skipped*
+  required check as passed. Without it, a failed shard would skip `suite` and the PR could merge.
+- **Every failure is shown.** `fail-fast: false`, so one red shard does not cancel the others.
+
+The price: setup (apt, pip, Chromium, about a minute) runs three times, and a stale weight in
+`WEIGHT` leaves the shards uneven. That costs minutes, never coverage.
+
 The analysis as it was written before any of this follows.
 
 ## Where the time goes
