@@ -69,7 +69,11 @@ baseline, which a change may not make materially worse.
   crosses a lane's heading strip, the heading starts past it, in the first stretch wide enough for
   the level's name, and the actors after the name are cut to the room left (in full on hover).
 - **An AND gate's inputs** enter its flat back at their own points, the co-cause further from the
-  arrow at the outer point, each led in along the arrow's direction (M5).
+  arrow at the outer point, each led in along the arrow's direction (M5). The gate stands where
+  every co-cause is behind it along the arrow, where such a place is clear (21 Nov 2026): a gate
+  abreast of a co-cause's box could take that stem in only on a hook, past the gate's line and
+  back, across the arrow or the other input. The router and the audit count crossings all the way
+  into the gate; both had left out the last stretch, which is where the hook lay.
 
 - **What the diagram comparison changed** (James's decisions, 9 Oct 2026; the study is in the
   private research folder, `diagram-comparison/`):
@@ -158,6 +162,11 @@ On the 280 pictures of the fixtures, the public samples and the private research
 
 The fixtures and public samples have none, and the test suite holds them there. The eighteen left
 are stems in the densest research charts (Marti and Gond, Reason, the Coleman boat, Badger culling).
+
+**21 Nov 2026, the gates.** With M5 counted all the way in, the old drawing had 156 gate crossings
+and 42 stems through boxes over the whole corpus; with the gates placed behind their co-causes, 80
+and 22. The fixtures and public samples are clear. What is left is in the densest research charts
+(Wimmer, Marti and Gond, Meadows), where a co-cause stands on the far side of its arrow.
 
 **The cost:** arrows that ran behind boxes now go round them, in the open, and cross more lines
 (M7). The baseline records today's numbers; bringing them down is the next piece of work, and it is

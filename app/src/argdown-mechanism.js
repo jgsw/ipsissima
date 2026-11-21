@@ -3255,6 +3255,16 @@ function layoutOnce(M, opts) {
   // each arrow sat on each other near the head (Badger culling's TB). Each takes the first place
   // along its arrow clear of the gates already placed.
   var gatesAt = [];
+  // AND WITH ITS CO-CAUSES BEHIND IT (21 Nov 2026): a gate abreast of a co-cause's box can take that
+  // stem in only on a hook -- past the gate's line and back -- across the arrow or the other inputs
+  // (Darwin's offspring; Wilson 2023's norms). Of the places clear of everything, one where every
+  // co-cause's middle stands back from the gate along the arrow is taken first.
+  var behind = function (e, tt) {
+    var q = pathAt(e, tt), q1 = pathAt(e, tt - 0.02), q2 = pathAt(e, Math.min(1, tt + 0.02));
+    var ux = q2[0] - q1[0], uy = q2[1] - q1[1], ul = Math.hypot(ux, uy) || 1;
+    return e.jointly.every(function (j) { var n = shown[j]; if (!n) return true;
+      return ((n.x + n.w / 2 - q[0]) * ux + (n.y + n.h / 2 - q[1]) * uy) / ul < -40; });
+  };
   edges.forEach(function (e) {
     if (!e.jointly.length || e.back) return;
     var pick = null, near = null;
@@ -3265,7 +3275,10 @@ function layoutOnce(M, opts) {
         return overlap(gbox, { x: n.x - 4, y: n.y - 16, w: n.w + 8, h: n.h + 32 }) > 0; }) ||
         lanes.some(function (ln) { return overlap(gbox, ln.head) > 0; });
       if (!hitsBox && near == null) near = tt;
-      if (!hitsBox && gatesAt.every(function (q) { return Math.hypot(q[0] - gxp, q[1] - gyp) > 34; })) { pick = tt; break; }
+      if (!hitsBox && gatesAt.every(function (q) { return Math.hypot(q[0] - gxp, q[1] - gyp) > 34; })) {
+        if (pick == null) pick = tt;
+        if (behind(e, tt)) { pick = tt; break; }
+      }
     }
     // With no place clear of everything, the first clear of the boxes and the headings: near another
     // gate is better than on a level's name (Marti and Gond's theory into the experiment, 17 Oct 2026).
@@ -4014,6 +4027,11 @@ function stemsOf(e, shown, taken, router, lanes) {
     var lead = function (c) { if (joins) c[2] = [T[0] - ux * 26, T[1] - uy * 26]; return c; };
     if (sx + 20 < T[0]) cands.push(lead([[sx, sy], [sx + Math.max(30, (T[0] - sx) / 2), sy], [T[0], T[1] + (sy < T[1] ? -12 : 12)]]));
     var low = Math.max(n.y + n.h, T[1]) + 28, high = Math.min(n.y, T[1]) - 28;
+    // STRAIGHT IN FROM THE FACE THAT LOOKS AT THE GATE (21 Nov 2026): out of the box's top or foot,
+    // its bend no further out than halfway. The ways over and under turn 28px beyond the gate's own
+    // line, and a co-cause close below the gate came in on a hook (Darwin's offspring).
+    if (joins) { var fy = n.y + n.h / 2 > T[1] ? n.y : n.y + n.h;
+      cands.push(lead([[n.x + n.w / 2, fy], [n.x + n.w / 2, (fy + T[1]) / 2], [T[0], T[1]]])); }
     cands.push(lead([[n.x + n.w / 2, n.y + n.h], [n.x + n.w / 2, low], [T[0], low]]));
     cands.push(lead([[n.x + n.w / 2, n.y], [n.x + n.w / 2, high], [T[0], high]]));
     // And under or over everything between the two, where the near ways all cross a box.
@@ -4060,9 +4078,14 @@ function stemsOf(e, shown, taken, router, lanes) {
       // A gate's input that crosses the arrow's own line, or another input, on its way in breaks M5,
       // and costs more than a box: where no way is clear of both, a stem through a box was the old
       // choice and stays it (the private research maps: 2 crossings at 20 a box's 10; 1 now).
+      // COUNTED ALL THE WAY IN (21 Nov 2026): the last stretch was left out, and that is where a
+      // co-cause abreast of the gate crosses -- its stem runs past the gate's line and hooks back to
+      // come in along the arrow (Darwin's offspring over the struggle's stem; Wilson 2023's norms
+      // across the arrow into distress). The two inputs end apart on the gate's back, so nothing
+      // honest is lost by counting the ends.
       if (joins) {
-        hits += 2000 * crossCount(pts.slice(0, -2), mainPts.slice(0, -2));
-        e.stems.forEach(function (o) { if (o.joins) hits += 2000 * crossCount(pts.slice(0, -2), o.pts.slice(0, -2)); });
+        hits += 2000 * crossCount(pts, mainPts);
+        e.stems.forEach(function (o) { if (o.joins) hits += 2000 * crossCount(pts, o.pts); });
       }
       if (hits < bestHits) { best = c; bestHits = hits; }
     });
@@ -4338,10 +4361,12 @@ function audit(G, opts) {
       for (var q = 0; q <= 24; q++) main.push(pathAt(e, t * q / 24));
       var ins = e.stems.filter(function (sm) { return sm.joins; });
       ins.forEach(function (sm, a) {
-        var pa = (sm.pts || curvePts(sm.curve, 20)).slice(0, -2);
-        if (crossCount(pa, main.slice(0, -2))) hard.push({ rule: "M5", what: "the input from " + name(sm.state) + " crosses the arrow " + id + " on its way into the gate" });
+        // All the way in (21 Nov 2026): the hook a co-cause abreast of its gate made lay in the last
+        // stretch, which this left out, so the rule passed drawings that broke it.
+        var pa = sm.pts || curvePts(sm.curve, 20);
+        if (crossCount(pa, main)) hard.push({ rule: "M5", what: "the input from " + name(sm.state) + " crosses the arrow " + id + " on its way into the gate" });
         ins.slice(a + 1).forEach(function (o) {
-          if (crossCount(pa, (o.pts || curvePts(o.curve, 20)).slice(0, -2))) hard.push({ rule: "M5", what: "the inputs from " + name(sm.state) + " and " + name(o.state) + " cross on their way into the gate of " + id });
+          if (crossCount(pa, o.pts || curvePts(o.curve, 20))) hard.push({ rule: "M5", what: "the inputs from " + name(sm.state) + " and " + name(o.state) + " cross on their way into the gate of " + id });
           if (Math.hypot(sm.end[0] - o.end[0], sm.end[1] - o.end[1]) < 3) hard.push({ rule: "M5", what: "two inputs enter the gate of " + id + " at one point" });
         });
       });
