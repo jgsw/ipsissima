@@ -148,21 +148,38 @@ App (borders may not flatter).
 suppositions never recorded as assertions; punctuation tolerance widened but *rewording* never
 ("Punctuation is not rewording", 27 Aug).
 
-### A7. The tool reports the argument; it does not grade the author
+### A7. The map reports the argument; assessment comes only when asked for, and always apart
 
-**It says.** Ipsissima measures how a text arranges its reasons and does not score the
-arrangement. Neither anticipated nor prepared support is a fault; a text is compared against
-its own practice, not an absolute convention; and the tool does not editorialise — what is
-assessment and what is report must never blur.
+**It says.** A map measures how a text arranges its reasons, and does not score the arrangement.
+Neither anticipated nor prepared support is a fault, and a text is compared against its own
+practice, not against an absolute convention. That is the default, and nothing in a map
+evaluates. A user may ask for an assessment: what is wrong with an argument, how it could be
+strengthened, whether its mechanisms are plausible, whether its comparisons are cogent. Then the
+model assesses, and the assessment stays apart:
+- in a document of its own, under its own name;
+- never written into the author's argument;
+- never counted in a measure of it;
+- with every checkable claim in it checked (A11).
+
+What is assessment and what is report must never blur. That half is absolute; "does not grade" is
+the default. (Until 21 Nov the title read "The tool reports the argument; it does not grade the
+author", with no exception; respecified at the Appraisal checkpoint, `APPRAISAL.md`.)
 
 **Seen in.** `order-views.md` ("Neither direction is a fault, and the view must not imply one
 is"); reach, not direction, carrying the visual emphasis; the Pryor/Williams pair as the
-standing example that a careful writer can refuse the announce-then-argue convention.
+standing example that a careful writer can refuse the announce-then-argue convention. On the
+assessment side:
+- the appraisal report and its pane (profile 1.28);
+- `#appraisal` claims, written only on request, off until switched on, left out of every measure of
+  the author's argument (26 Sep);
+- Where to look's "facts about the map, not verdicts".
 
 **Provenance.** **paraphrase** — origin: author. The Williams reading (17 Aug, 19:52), the
 Pryor clarification (30 Aug), and the editorialising worry: "make crystal clear what is
 assessment of the quality of the argument, and what is merely reporting what the argument is"
-(18 Aug, 19:35).
+(18 Aug, 19:35). The assessment-on-request half is a **compression** of the author's rulings of
+1 Oct (a map reports, and does not evaluate) and 18–20 Nov (the appraisal pass, its pane, and Where
+to look), admitted as drafted at the Appraisal checkpoint (21 Nov).
 
 **Generality.** The whole project, most visible in the App's exposition views.
 
@@ -184,6 +201,15 @@ attack, the fault marks) never borrowed. Reader-facing surfaces were reworded ac
 record — settled, not merely open: the author ruled the same day that the internal
 documentation keeps it. The boundary is the reader: the metaphor may organise the code and the
 records, and what a reader is shown stays temporal and neutral.
+
+**Case law added at the Appraisal checkpoint (21 Nov).**
+- **The sibling layer withdrawn (19 Nov).** An appraisal written into a second Argdown file was
+  hard to read and sat far from what it appraised (the author: the appraisal claims "are gathered
+  together a long way from the individual claims that they are appraising"). It was replaced by a
+  report in its own pane, linked into the map: separation won over co-location.
+- **Load ranks; it does not grade (19 Nov).** On the author's objection that Where to look showed
+  "which premisses are load bearing, not that the argument is thin at this point", load now only
+  orders the list. A linchpin is not a weakness.
 
 ### A8. Exegetical adequacy is this project's half of the bargain
 
@@ -260,7 +286,10 @@ verdict on the author, and the display must keep that difference legible.
 
 **Seen in.** Quotation verification (the principle's first instance); fidelity derivation at
 build time (second); the validity check, triggered only by a named rule (third); the
-`formalized:` stamp (fourth). The version-agreement test and the build-derived About lists are
+`formalized:` stamp (fourth); the appraisal report's quotations, checked against the text, and its
+links, checked against the map (fifth, 19 Nov). The report's claims about the text are self-claims
+with a fact of the matter; its claims about the argument's quality are the assessment, and are
+reported, not checked (A7). The version-agreement test and the build-derived About lists are
 the same principle applied to the *software's* claims about itself (D6).
 
 **Provenance.** **interpretation**, ratified — origin: assistant. Surfaced at Step Two
@@ -585,7 +614,10 @@ Four clauses join the statement above:
    answer. The picture is where an inquiry is tested, not where it begins.
 2. **The reader builds; the App supplies material and fast feedback** (the constructivist clause).
    Making a map is inquiry too, so the guided mode and the editor are inquiry tools. The App never
-   supplies the conclusion of the reader's inquiry, only the map's answer to a framed question.
+   supplies, unasked, the conclusion of the reader's inquiry, only the map's answer to a framed
+   question. An appraisal the user commissioned is a document the App displays, as it displays the
+   Manuscript, under its own name; it is not the App's answer (scoped at the Appraisal checkpoint,
+   21 Nov).
 3. **Every way in closes on reflection** (Lang; Dewey's testing in imagined action). An inquiry tool
    ends by asking what changed. Study and the weigh panel already do; supposing and the tables did
    not at the time of ruling.
@@ -898,6 +930,14 @@ precise words, and then use AI to do so!"
 
 **Seen in.** `about.md`'s runtime-filled lists; the branding session (28 Aug); the blog
 reversal (30 Aug); release-notes standards (29 Aug).
+
+What the map does for the model (added 21 Nov). The appraisal trial (18 Nov) measured what a map
+does for the model that reads it. The model's appraisals were more exact but no more insightful:
+every objection rated strongest was found by both arms. The author's conclusion is that a map aids
+human comprehension, and that for the model its gain is exact quotation. Self-descriptions therefore
+never claim that a map makes the model's reading or critique better. None did when the trial
+reported, and the method says so of itself (`appraisal-pass.md`, "A map is not worth making for the
+appraisal alone").
 
 **Provenance.** **compression** — origin: author rulings on assistant drafts, repeatedly.
 
@@ -1268,7 +1308,9 @@ immediately visible on the map" — a tooltip that repeats its box is noise, and
 full with no provenance gets no tooltip at all.
 
 **Seen in.** The 1 Sep census and rework (`viewer.md`); the rendered-DOM invariant "no tooltip
-repeats what its own box already draws."
+repeats what its own box already draws." On a touch screen, a held finger shows a control's title,
+so what a mouse reads by resting a finger can read by holding (20 Nov). The principle is unchanged;
+the hover layer has two ways in.
 
 **Provenance.** **quotation** — origin: author (1 Sep).
 
@@ -1357,7 +1399,7 @@ deciding whether to adopt the tool. Candidate case law, to be ruled when the bui
 
 ---
 
-## G. The MCP's ingest ethic
+## G. The ingest ethic (Ipsissima-MCP and Unpetrify)
 
 ### G1. The extraction is what is in the source
 

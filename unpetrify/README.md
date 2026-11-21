@@ -48,13 +48,16 @@ structure is stated rather than inferred.
 
 You need **Python 3.11 or later**.
 
-**From a checkout of this repository** (Unpetrify is not on PyPI yet):
+**From PyPI:**
 
 ```bash
-uv tool install ./unpetrify       # puts `unpetrify` and `unpetrify-mcp` on your PATH
+uv tool install unpetrify         # puts `unpetrify` and `unpetrify-mcp` on your PATH
 ```
 
-Or in a virtual environment: `python3 -m venv .venv && .venv/bin/pip install -e unpetrify`.
+or `pipx install unpetrify`, or `pip install unpetrify` in a virtual environment.
+
+**From a checkout of this repository**, to work on it: `uv tool install ./unpetrify`, or
+`python3 -m venv .venv && .venv/bin/pip install -e unpetrify`.
 
 **OCR is not optional.** `rapidocr` installs with the package. Without an OCR backend, a scanned
 paper converts silently to its cover page and nothing reports it.

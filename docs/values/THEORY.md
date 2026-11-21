@@ -160,7 +160,8 @@ is sovereign, and the tool protects the road to the text, never prescribes the j
 **P3 — Three sovereignties.** The tool serves three parties and may usurp none of them:
 
 - *the author of the text*: their words unmodified (G1), their hedges and scope intact (A6),
-  their argument reported rather than graded (A7), their manuscript never written to (C4);
+  their argument reported rather than graded unless a user asks, and an assessment then kept
+  apart from the report (A7; respecified 21 Nov), their manuscript never written to (C4);
 - *the reconstructor*: the reading is their judgement, prepared and checked but never made for
   them (G3), their file never rewritten unasked (C4), only facts — never judgements —
   adjudicated by the machine (A10, E7, A1);
@@ -232,7 +233,7 @@ new sovereign party needed.
    C2 one self-contained file
 ```
 
-Three things about the division are worth saying out loud:
+Four things about the division are worth saying out loud:
 
 - **The hard boundaries are shared, not App- or MCP-local.** The official parser as sole
   arbiter, no invented syntax, no lock-in (A9, E2, C6): both halves obey them, and they are the
@@ -246,6 +247,14 @@ Three things about the division are worth saying out loud:
 - **The MCP's local principles are mostly P1-text and P3-author**; its heaviest local
   constraint (G1, byte-fidelity) is A2 applied at the point where the words enter the system —
   corrupt the words at ingest and every downstream check verifies against a fiction.
+- **The ingest ethic has a home of its own** (added 21 Nov). Since 9 Nov the converters are
+  Unpetrify, a package Ipsissima-MCP uses and that anyone may use on their own, for text that will
+  never become a map.
+  - **What binds it:** the G cluster (it is the extraction); the E cluster; C1 (nothing leaves the
+    machine: the OCR runs locally and caches locally); C6; D2 (GPL, as the MCP is).
+  - **What does not:** P2's mission and the B and F clusters, which are about maps and their
+    readers.
+  Its README and reports are self-descriptions, so D6 binds them too.
 
 Below these sit the **local principles** — narrow in scope, often near-absolute within it:
 hover text (F6), the badge promise (F2's fold case), the ⊞ glyph, the debt-ink neutrality
@@ -338,6 +347,9 @@ precedent a future decision can cite or distinguish.
 | a text whose value is not its argument | declared once, whole, where the reader orients — `voice:` on the panel, ahead of the abstract; the tags keep carrying it claim by claim | FORMATION §6 item 8, ruled 14 Sep |
 | more layers vs cost per map (B11 vs B4) | measurement — a layer stays on request until a trial shows readers use it and its cost is measured; the plan offers it rather than running it unasked | PURPOSE §3.6, ruled 20 Oct |
 | inquiry controls vs display controls on the visible bar (B10 vs P6) | inquiry visible, display gathered behind one **Display** button, as in the Mechanism view | PURPOSE §3.6, ruled 20 Oct |
+| making a map to help the model appraise vs its cost (B4) | measurement: the map made appraisals more exact, not more insightful, so none is made for an appraisal alone, and the user is offered the choice with its cost | appraisal trial, 18 Nov; ruled 19 Nov |
+| an assessment drawn into the picture vs a report linked into it (P6, A7) | the report: readable, never mistaken for the text's argument, and one click from what it appraises. It replaced a second Argdown layer | profile 1.28, 19 Nov; APPRAISAL §3.8 |
+| computed diagnostics shown unasked vs the map that reports and the reader's attention (B10 cl. 4, B11 vs A7, P6) | **open: a trial.** Where to look is on the bar unasked, its items facts about the map, ranked by load and three at a time. The author will judge whether it helps or "overstep[s] too far into evaluation" | ruled a trial 19 Nov; APPRAISAL §3.8 |
 
 Two meta-principles govern the table itself, and they are the project's native mode of doing
 values-improvement:

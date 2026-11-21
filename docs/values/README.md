@@ -77,6 +77,14 @@ different routes, deliberately.
   An audit of both halves found 25 places out of line, and a plan in six waves brings them into line.
   `PURPOSE.md` is the record.
 
+- **The Appraisal episode — opened and ruled 21 Nov.** Prompted by the
+  appraisal pass (profiles 1.27–1.28): Ipsissima now assesses an argument when a user asks, and A7
+  and P3 still said it never grades. A7 was respecified: reporting is the default, and an assessment
+  comes only on request, always apart. B10's second clause was scoped to what is supplied unasked,
+  Unpetrify was placed in the division, and two case-law rows were added, with Where to look recorded
+  as an open trial. All nine proposals were ruled as drafted the same day and carried into the
+  inventory and the theory. `APPRAISAL.md` is the record.
+
 ## Whose values are these
 
 A question the checkpoints answered about the framework itself, in both directions:

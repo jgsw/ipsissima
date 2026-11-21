@@ -26,8 +26,13 @@ and `ipsissima-mcp` requires it (`unpetrify>=…` in `pyproject.toml`). A checko
 beside it; an install from PyPI resolves it from PyPI. So when a release of `ipsissima-mcp` asks
 for an Unpetrify version that is not on PyPI yet, **publish Unpetrify first**, by the same steps
 below with `unpetrify` in place of `ipsissima-mcp`: the publish workflow takes the package as an
-input, and Unpetrify needs **its own trusted publisher** on PyPI (a "pending publisher" for the
-first upload, since the project does not exist yet).
+input, and Unpetrify has **its own trusted publisher** on PyPI. Its first upload was Unpetrify 0.1.0,
+on 20 Nov 2026, just before `ipsissima-mcp` 0.5.0.
+
+**A trusted publisher names the workflow file exactly: `publish-pypi.yml`.** The first try named
+`pypi.yml`. PyPI then authenticated the upload through `ipsissima-mcp`'s publisher, which names the
+right file, and refused it with "Non-user identities cannot create new projects", which reads like a
+problem with the project's name.
 
 The `.mcpb` bundle does not wait on this: `build_mcpb.mjs` stages Unpetrify's source inside it.
 Unpetrify's own bundle is `node unpetrify/build_mcpb.mjs`.
