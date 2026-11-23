@@ -72,8 +72,26 @@ unpetrify scan.pdf --witness "Full text of ....html"   # a third reading for the
 ```
 
 The report goes to stderr, so `--stdout` stays clean. Other options: `--no-ocr`,
-`--collate` / `--no-collate`, `--figures section|omit`, and `--geometry`, which also writes
-every word's box on the page beside the text (what Ipsissima uses to place highlights in Zotero).
+`--collate` / `--no-collate`, `--figures section|omit`, `--tracked refuse|accept|reject`, and
+`--geometry`, which also writes every word's box on the page beside the text (what Ipsissima uses
+to place highlights in Zotero).
+
+**A .docx with tracked changes is refused** unless `--tracked accept` or `--tracked reject` says
+which side of every edit to take; the report then says that it was taken. From Python, a refused
+file raises `unpetrify.Refused`, a `ValueError` (and a `SystemExit`, as refusals were before):
+
+```python
+from unpetrify import tools, Refused
+try:
+    r = tools.convert_one("draft.docx", tracked="accept")
+except Refused as why:
+    ...
+```
+
+**Review copies and proofs.** A submission system's cover sheet, margin line numbers and the "For
+Review Only" watermark are taken out of a review copy, and a typeset proof's query tags and
+pilcrows out of its margin; the report counts each. Formulae are not counted as damage, so a
+born-digital paper with maths is never sent to OCR for them.
 
 **A PDF inside Zotero's storage folder is never written beside.** Its text goes to a temporary
 folder named for the attachment, and the report says where.

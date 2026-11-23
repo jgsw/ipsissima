@@ -128,6 +128,8 @@ const SUITES = [
   ["the shape of the text",      "node", [path.join(HERE, "test_exposition.mjs")]],
   ["what holds the argument up", "node", [path.join(HERE, "test_spine.mjs")]],
   ["page geometry (converter)",  PY, [path.join(UNPTESTS, "test_pdf_to_source.py")]],
+  // A line-numbered review copy, a typeset proof, a page of maths: text lost or welded silently.
+  ["review copies and proofs",   PY, [path.join(UNPTESTS, "test_review_copies.py")]],
   ["what ingest refuses to write", PY, [path.join(UNPTESTS, "test_ingest.py")]],
   ["a damaged scan, collated",   PY, [path.join(UNPTESTS, "test_collate.py")]],
   ["the publisher's own structure", PY, [path.join(UNPTESTS, "test_structured_source.py")]],

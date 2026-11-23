@@ -76,7 +76,7 @@ server = MCPServer(
 )
 def extract_text(sources: list[str], out: str | None = None, allow_ocr: bool = True,
                  dry_run: bool = False, collate: bool | None = None,
-                 witness: str | None = None) -> dict[str, Any]:
+                 witness: str | None = None, tracked: str = "refuse") -> dict[str, Any]:
     """
     Args:
         sources: the files to convert.
@@ -85,6 +85,7 @@ def extract_text(sources: list[str], out: str | None = None, allow_ocr: bool = T
         dry_run: report what would happen and write nothing.
         collate: read a scan's page images again and vote the reading against its text layer. Left unset (or true), this happens for every scan where tesseract is installed; false never.
         witness: another OCR text of the same work -- a .txt, or a saved HTML page such as archive.org's "Full text of" -- to vote with. One PDF source only.
+        tracked: a .docx carrying tracked changes is refused ("refuse", the default); "accept" or "reject" takes that side of every change, and the notes say so.
     """
     files = [str(Path(s).expanduser()) for s in sources]
     missing = [f for f in files if not Path(f).is_file()]
@@ -100,8 +101,9 @@ def extract_text(sources: list[str], out: str | None = None, allow_ocr: bool = T
     results, failures, written = [], [], []
     for f in files:
         try:
-            r = tools.convert_one(f, allow_ocr=allow_ocr, collate=collate, witness=witness)
-        except SystemExit as e:                    # ingest refuses tracked changes this way
+            r = tools.convert_one(f, allow_ocr=allow_ocr, collate=collate, witness=witness,
+                                  tracked=tracked)
+        except SystemExit as e:                    # Refused: a .docx with tracked changes, and the like
             failures.append(dict(path=f, refused=str(e)))
             continue
         results.append(r)

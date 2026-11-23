@@ -47,6 +47,11 @@ from pathlib import Path
 
 import pymupdf
 
+try:
+    from .errors import Refused
+except ImportError:                     # run as a bare script, the package directory on sys.path
+    from errors import Refused
+
 # A numbered section heading: "3", "3.1" or "3.1.2", then a capitalised phrase with no sentence
 # punctuation in it. Specific enough that ordinary prose does not match -- a body line would have
 # to open with a number and contain no full stop -- and it is what makes a modern paper's own
@@ -106,6 +111,41 @@ FIGURES = []
 #: A page that is mostly figure and caption has no body of its own to measure: Rena et al.'s Fig. 2
 #: page is 2,800 characters of 8.5pt caption and labels against 18 of text.
 DOC_BODY = [None]
+
+#: What the line reader dropped before any line reached the page walk (watermarks), by kind.
+#: Module-level for the reason FOOTNOTE_MARKS is; convert clears it and reports it.
+EARLY_DROPS = Counter()
+
+
+def _pale_colour(c):
+    """A span colour (pymupdf's 0xRRGGBB int) light enough to be a tint, not ink."""
+    c = int(c or 0)
+    return min((c >> 16) & 255, (c >> 8) & 255, c & 255) >= 200
+
+
+def is_watermark(l, spans):
+    """Is this line a watermark rather than the document's text?
+
+    SCHOLARONE'S "For Review Only" is set diagonally across every sheet of a review copy, 48pt
+    and pale blue, and the line reader kept it as turned text in mid-page: the band reader then
+    welded it into whichever body line shared its height, and the converted text read
+    "13 12 11 10 For Review Only This solution has..." (a MIND review copy, 23 Nov 2026). Turned
+    text and pale text both have honest uses -- an axis title, a grey caption -- so either alone
+    is not enough: TURNED AND PALE, or TURNED AND HUGE. Huge is against the document's body size.
+    UPRIGHT TEXT IS NEVER A WATERMARK HERE, however pale and large: a book's cover sets its title
+    that way (Robeyns 2017, "Wellbeing, Freedom and Social Justice").
+    """
+    turned = abs(l.get("dir", (1, 0))[1]) > 0.2
+    inked = [s for s in spans if s.get("text", "").strip()]
+    if not inked:
+        return False
+    # BY COLOUR, NEVER BY ALPHA. pymupdf reports INVISIBLE text -- render mode 3, which is how
+    # every OCR layer is laid under its page image -- as alpha 0, and an alpha test dropped real
+    # lines of a scan's text as "watermark" (Wurtzel 1977, Wolff 2010; 23 Nov 2026).
+    pale = all(_pale_colour(s.get("color")) for s in inked)
+    body = DOC_BODY[0] or 10
+    huge = max(s.get("size", 0) for s in inked) >= 2.5 * body
+    return turned and (pale or huge)
 
 #: A figure's caption: "Fig. 14.5", "Figure 15.", "FIGURE 2". Not a table's: a table's words are
 #: text, and a table's rules are not a drawing to lift words out of.
@@ -375,6 +415,16 @@ def sheet_lines(page, mark_footnotes=True):
     Block order is what interleaves the following article into the middle of this one when the
     two share a sheet: the extractor can return the neighbour's block first.
     """
+    return weld_sheet_lines(page, raw_sheet_lines(page, mark_footnotes), mark_footnotes)
+
+
+def raw_sheet_lines(page, mark_footnotes=True):
+    """The sheet's lines as the text layer gives them, before any is welded to another.
+
+    TWO HALVES SO THAT THE MARGIN CAN GO BETWEEN THEM. A margin line number is one or two digits
+    standing alone, which is exactly what `join_note_numbers` takes for a footnote's own number:
+    it welded ScholarOne's "21" onto the heading beside it, "# 21 1. Internality vs.
+    externality". `convert` clears the margin (drop_margin_marks) and then welds."""
     out = []
     blocks = page.get_text("dict").get("blocks", [])
     if any(LIG_SPACE.search(s.get("text", "")) for b in blocks for l in b.get("lines", []) for s in l.get("spans", [])):
@@ -394,6 +444,9 @@ def sheet_lines(page, mark_footnotes=True):
             W = page.rect.width
             if abs(l.get("dir", (1, 0))[1]) > 0.2 and (l["bbox"][2] < W * 0.08 or l["bbox"][0] > W * 0.92):
                 continue
+            if is_watermark(l, spans):
+                EARLY_DROPS["watermark"] += 1
+                continue
             out.append(dict(x0=l["bbox"][0], y0=l["bbox"][1], x1=l["bbox"][2],
                             width=l["bbox"][2] - l["bbox"][0],
                             size=max(s.get("size", 0) for s in spans), text=text,
@@ -401,6 +454,12 @@ def sheet_lines(page, mark_footnotes=True):
                             # figure's, never the body's (split_figures).
                             turned=abs(l.get("dir", (1, 0))[1]) > 0.2,
                             **face_of(spans)))
+    return out
+
+
+def weld_sheet_lines(page, out, mark_footnotes=True):
+    """The second half of `sheet_lines`: footnote numbers and drop capitals welded on, figures
+    lifted out, sorted by y."""
     if mark_footnotes:
         out = join_note_numbers(out)
     out = join_drop_caps(out)
@@ -522,6 +581,137 @@ def join_drop_caps(lines):
 
 
 # --------------------------------------------------------------------------- detection
+
+#: A margin line number: digits and nothing else.
+LINE_NUMBER = re.compile(r"^\d{1,4}$")
+
+#: A typesetter's mark in the margin of a proof: an author query's tag (OUP's "AQ3"; "Q3", "AU3"
+#: elsewhere) or a pilcrow beside the line it queries. NO FULL STOP: the query LIST on a proof's
+#: first sheet labels its entries "AQ1." inside its own column, and that list is the publisher's
+#: page, not a margin.
+MARGIN_TAG = re.compile(r"^(?:A?Q\d{1,3}|AU\d{1,3}|¶)$")
+
+
+def _text_column(lines):
+    """(left, right) of the text block a sheet's long lines fill, or None with too few to say.
+
+    THE OUTERMOST SHARED EDGE, NOT THE MODE: on a two-column sheet the commonest left edge can be
+    the RIGHT column's, and everything in the left column would then sit "in the margin". The
+    leftmost edge that a tenth of the long lines (two at least) start at is the leftmost
+    column's; a hanging note that pokes out further only narrows the margin, which is the safe
+    way to be wrong."""
+    longs = [l for l in lines if len(l["text"]) >= 30 and not l.get("turned")]
+    if len(longs) < 5:
+        return None
+    # AN EDGE SEVERAL LINES SHARE. A sheet with few long lines has no 5th percentile worth the
+    # name, and one stray line from x 0 put a LaTeX proof's whole margin inside its column.
+    need = max(2, len(longs) // 10)
+
+    def edge(xs):
+        for x in xs:
+            if sum(1 for y in xs if abs(y - x) <= 3) >= need:
+                return x
+        return xs[len(xs) // 20]
+    return (edge(sorted(l["x0"] for l in longs)),
+            -edge(sorted(-l["x1"] for l in longs)))
+
+
+def drop_margin_marks(sheets):
+    """Take margin line numbers, query tags and pilcrows out of every sheet, before any line is
+    banded with another. Returns (sheets, Counter of what went).
+
+    A REVIEW COPY IS LINE-NUMBERED, and that is a common way to receive a draft. ScholarOne sets
+    a number beside every line, outside the text column, as fragments of their own; the band
+    reader joined each to the line at its height, so a heading came out as
+    "# 21 1. Internality vs. externality" and empty lines as "2 3", "4 5" (a MIND review copy,
+    23 Nov 2026). OUP's typeset proofs do the same with query tags and pilcrows ("This AQ3 ¶
+    book defends"), which also broke the rejoining of a word hyphenated across them.
+
+    MEASURED BEFORE ANYTHING IS MERGED, so that a number beside a line cannot widen the column
+    it is measured against. A digit outside the column is not yet a line number -- a footnote's
+    number can hang in the margin, a section number can be outdented -- so the numbers must form
+    a COLUMN: five or more on one side, rising down the page and spread over a third of its
+    height, on half the document's sheets. Once a document has one, every digit-only fragment at that column's
+    edge is a line number on every sheet, the short last page included. Tags and pilcrows need
+    no such proof: nothing else in a margin reads "AQ3"."""
+    gone = Counter()
+    cols = []
+    for lines, height, _w in sheets:
+        cols.append(_text_column(lines))
+    known = [c for c in cols if c]
+    if not known:
+        return sheets, gone
+    fallback = (statistics.median(c[0] for c in known), statistics.median(c[1] for c in known))
+    cols = [c or fallback for c in cols]
+
+    def side(l, col):
+        if l.get("turned"):
+            return None
+        if l["x1"] < col[0] - 1:
+            return "left"
+        if l["x0"] > col[1] + 1:
+            return "right"
+        return None
+
+    edges, runs = {"left": [], "right": []}, Counter()
+    for (lines, height, _w), col in zip(sheets, cols):
+        for s in ("left", "right"):
+            run = sorted((l for l in lines if LINE_NUMBER.match(l["text"]) and side(l, col) == s),
+                         key=lambda l: l["y0"])
+            if len(run) < 5 or run[-1]["y0"] - run[0]["y0"] < height / 3:
+                continue
+            vals = [int(l["text"]) for l in run]
+            rising = sum(1 for a, b in zip(vals, vals[1:]) if b > a)
+            if rising >= 0.8 * (len(vals) - 1):
+                edges[s] += [l["x1"] if s == "left" else l["x0"] for l in run]
+                runs[s] += 1
+    # A COLUMN ON HALF THE SHEETS, and on two at least (one, for a document of two). A review copy
+    # numbers every sheet. A reference list numbered in the margin -- the Lancet's "33 Ilango SD,
+    # Chen ...", rising down two sheets of fifteen -- is a run too, and its numbers are the
+    # references' own (Rogowski et al. 2025).
+    texted = sum(1 for c in known)
+    enough = 1 if len(sheets) <= 2 else max(2, (texted + 1) // 2)
+    at = {s: statistics.median(xs) for s, xs in edges.items() if runs[s] >= enough}
+    out = []
+    for (lines, height, w), col in zip(sheets, cols):
+        keep = []
+        for l in lines:
+            s = side(l, col)
+            if s and MARGIN_TAG.match(l["text"]):
+                gone["margin query tag or pilcrow"] += 1
+                continue
+            if s in at and LINE_NUMBER.match(l["text"]) \
+                    and abs((l["x1"] if s == "left" else l["x0"]) - at[s]) <= 6:
+                gone["margin line number"] += 1
+                continue
+            keep.append(l)
+        out.append((keep, height, w))
+    return out, gone
+
+
+def side_by_side(sheets):
+    """The share of long lines that have another long line beside them at the same height,
+    starting well across the page: a second column. 0 for a single-column text.
+
+    WHERE NO GUTTER IS FOUND THE TEXT IS READ AS ONE COLUMN, and that is only right if it is
+    one. Lorant and Bhopal's collated layer sets its words in a substitute font wider than the
+    print, so each left-column line reaches 19pt into the right column and no gutter exists to
+    find (JECH 2011, via JSTOR). The page walk then read across both columns at once -- "the
+    theory leads to four ethnicity and socio-economic status" -- and only a word-count floor,
+    tripped by a wrong front cut, had kept that text out. Asked directly, the layer says it:
+    nearly half its long lines have a partner beside them. A single column has almost none --
+    a run-in heading, a table row -- and those lines are short."""
+    longs = beside = 0
+    for lines, _h, w in sheets:
+        rows = [l for l in lines if len(l["text"]) >= 25 and not l.get("turned")]
+        for l in rows:
+            longs += 1
+            size = l.get("size") or 10
+            if any(o is not l and abs(o["y0"] - l["y0"]) <= 0.6 * size and o["x0"] > l["x0"] + 0.3 * w
+                   for o in rows):
+                beside += 1
+    return 2 * beside / longs if longs else 0.0
+
 
 def gutter_on_page(spans, page_width):
     """The widest band no line on ONE page reaches, or None. See detect_columns for why."""
@@ -1887,7 +2077,7 @@ def outline_heading_map(entries, rows, printed_of_sheet):
     return heads, tails, matched, len(entries)
 
 
-def find_boundaries(rows, margin, body_size, sizes):
+def find_boundaries(rows, margin, body_size, sizes, why=None):
     """(first, last) row indices of the ARTICLE, front and back matter excluded.
 
     `rows` are (printed, x0, y0, height, text, col, small) in reading order.
@@ -1937,6 +2127,16 @@ def find_boundaries(rows, margin, body_size, sizes):
         break
     # ---- front matter: only where the paper announced some
     seen_front = in_abstract = False
+    # THE PROSE A CUT WOULD TAKE. Rows of body-size running text passed over on the way to the
+    # cut: the body's own type, full lines, outside an abstract. A title page has none -- titles,
+    # names, affiliations and keywords are short or set apart -- so where a paragraph's worth
+    # lies before the cut, the cut is in the wrong place and the article starts earlier than it
+    # thinks. A MIND review copy lost its title, abstract and two pages of introduction this way:
+    # its cover's "Keywords:" opened the front matter, the opening paragraphs were all shorter
+    # than the 120-character fallback, and the cut ran to "1. Internality" (23 Nov 2026).
+    plain = sorted(len(r[4].strip()) for r in rows if not r[6])
+    full = 0.75 * plain[len(plain) // 2] if plain else 60
+    prose = 0
     for i, (printed, x0, y0, height, text, _col, small) in enumerate(rows[:160]):
         t = text.strip()
         # INSIDE THE ABSTRACT, ONLY A HEADING OPENS THE ARTICLE. A full-width abstract's lines are
@@ -1970,6 +2170,14 @@ def find_boundaries(rows, margin, body_size, sizes):
                 or NUMBERED.match(t) or (len(t) > 120 and not in_abstract)):
             first = i
             break
+        if not in_abstract and len(t) >= full and abs(float(sizes[i]) - body_size) < 0.6:
+            prose += 1
+    if first and prose >= 6:
+        # NOT CUT. Keeping a title page in the text costs a few lines a reader can see; cutting
+        # an introduction costs words nobody will know are missing.
+        if why is not None:
+            why["front_kept"] = prose
+        first = 0
     # A CUT THAT LEAVES (ALMOST) NOTHING IS NOT A CUT. Both ends are guesses from a vocabulary,
     # and on a paper that opens with a long structured abstract or repeats "References" as a
     # running head they can cross, or meet, and take the article with them. Detected boundaries
@@ -2682,10 +2890,27 @@ def is_cover_sheet(text):
     return len(marks) >= 3 and len((text or "").split()) < 400
 
 
+#: A submission system's cover sheet: ScholarOne's "Journal: / Manuscript ID / Manuscript Type".
+SUBMISSION_COVER = re.compile(r"Manuscript ID\b.{0,300}?Manuscript Type\b|Journal:.{0,200}?Manuscript ID\b",
+                              re.S | re.I)
+
+
+def is_submission_cover(text):
+    """Is this sheet a submission system's cover rather than the manuscript's first page?
+
+    SCHOLARONE PUTS ONE ON EVERY REVIEW COPY: title, journal, manuscript ID and type, subject
+    area, keywords. Its "Keywords:" matched the front-matter vocabulary, and the front cut then
+    ran from the cover to the paper's first numbered heading -- title, abstract and two pages of
+    introduction gone (a MIND review copy, 23 Nov 2026). Short, and the labels together."""
+    return bool(SUBMISSION_COVER.search(text or "")) and len((text or "").split()) < 250
+
+
 def convert(cfg):
     cfg.raw = cfg.raw or cfg.out.parent / ".raw-extraction.txt"
     doc = pymupdf.open(cfg.pdf)
-    cover = cfg.first_sheet == 0 and doc.page_count > 2 and is_cover_sheet(doc[0].get_text())
+    cover = cfg.first_sheet == 0 and doc.page_count > 2 and (
+        "repository cover sheet" if is_cover_sheet(doc[0].get_text()) else
+        "submission system's cover sheet" if is_submission_cover(doc[0].get_text()) else None)
     if cover:
         cfg.first_sheet = 1
     cfg.out.parent.mkdir(parents=True, exist_ok=True)
@@ -2701,11 +2926,18 @@ def convert(cfg):
                 for sp in l.get("spans", []):
                     tally[round(sp.get("size", 0), 1)] += len(sp.get("text", "").strip())
     DOC_BODY[0] = tally.most_common(1)[0][0] if tally else None
-    sheets = [(sheet_lines(doc[i], cfg.markdown_footnotes), doc[i].rect.height, doc[i].rect.width)
+    EARLY_DROPS.clear()
+    sheets = [(raw_sheet_lines(doc[i], cfg.markdown_footnotes), doc[i].rect.height, doc[i].rect.width)
               for i in range(cfg.first_sheet, doc.page_count)]
+    # THE MARGIN BEFORE ANY WELDING, AND BEFORE THE COLUMNS: a line number is a lone footnote
+    # number to `join_note_numbers`, and a column of them is a column to the gutter finder.
+    sheets, margin_drops = drop_margin_marks(sheets)
+    margin_drops.update(EARLY_DROPS)
+    sheets = [(weld_sheet_lines(doc[cfg.first_sheet + n], lines, cfg.markdown_footnotes), h, w)
+              for n, (lines, h, w) in enumerate(sheets)]
     every = [l for lines, _, _ in sheets for l in lines]
     if not every:
-        raise SystemExit(f"no text layer in {cfg.pdf}")
+        raise Refused(f"no text layer in {cfg.pdf}")
     # A SCAN WITH A RIGHTS STAMP ON IT IS NOT A TEXT LAYER. One paper in the sample corpus -- a
     # 1992 article scanned by its publisher -- yielded ONE line across fifty-four pages, the
     # copyright notice, and the converter dutifully wrote a nine-word "article". Nine words is
@@ -2714,7 +2946,7 @@ def convert(cfg):
     words = sum(len(l["text"].split()) for l in every)
     per_page = words / max(len(sheets), 1)
     if per_page < 30 and len(sheets) > 2:
-        raise SystemExit(
+        raise Refused(
             f"this PDF has almost no text layer: {words} word(s) across {len(sheets)} pages "
             f"({per_page:.0f} per page).\n"
             "  It is a scan of the page images, so there is nothing here to reflow. Run OCR over\n"
@@ -2725,6 +2957,8 @@ def convert(cfg):
     # EACH PAGE ITS OWN GUTTER where the layout is mirrored (sheet_splits), and the column offset
     # measured over the pages that share each gutter.
     splits = sheet_splits([l for l, _, _ in sheets], sheets[0][2], split) if cfg.columns is None else [split] * len(sheets)
+    # Measured here, refused once the abstract is read: see `side_by_side`.
+    side = side_by_side(sheets) if cfg.columns is None and all(sp is None for sp in splits) else 0.0
     offsets, shifts = column_frames([l for l, _, _ in sheets], splits)
     sheets = [(order_columns(l, sp, offsets.get(sp, 0), shifts.get(sp, 0)), h, w)
               for (l, h, w), sp in zip(sheets, splits)]
@@ -2742,8 +2976,9 @@ def convert(cfg):
     first_page = declared if offset is None else offset
     page_numbers_from = "the config" if offset is None else "the pages themselves"
     applied, suspicious, dropped, body = Counter(), [], Counter(), []
+    dropped.update(margin_drops)
     if cover:
-        dropped["repository cover sheet"] = 1
+        dropped[cover] = 1
     body_sizes = []                     # the size of each row, parallel to `body`
     # Where a line beside a drop capital is PRINTED, for the bands alone: see `join_drop_caps`.
     printed_at = {}
@@ -2827,8 +3062,9 @@ def convert(cfg):
     # none given the paper is asked instead of the author. Across the samples these two values
     # were most of the hand-written config and neither is a judgement about the argument.
     auto_front = auto_back = None
+    front_why = {}
     if not cfg.starts_at or not cfg.end_marker:
-        af, ab = find_boundaries(body, bands["margin"], doc_size, body_sizes)
+        af, ab = find_boundaries(body, bands["margin"], doc_size, body_sizes, why=(front_why := {}))
         # BEFORE THE CUT, because after it the abstract is gone. See `find_abstract`.
         abstract = find_abstract(body, af, body_sizes, doc_size)
         # THE HYPHEN EVIDENCE IS GATHERED BEFORE THE CUT TOO. A compound the abstract breaks
@@ -2865,6 +3101,16 @@ def convert(cfg):
         back_rows = body[auto_back:]
         body, body_sizes = body[:auto_back], body_sizes[:auto_back]
 
+    if side >= 0.3:
+        # REFUSED AFTER THE ABSTRACT, which sits above both columns and reads true: the plain
+        # route the caller falls back to has no way to find it, and Lorant and Bhopal's would go.
+        why = Refused(
+            f"two columns the text layer does not separate: {side:.0%} of the long lines have "
+            f"another beside them, and no gutter could be found between them. Read line by line, "
+            f"the columns would interleave; the plain route keeps them apart.")
+        why.abstract = re.sub(r"\s+", " ", abstract).strip() if abstract else None
+        raise why
+
     # NOW the bands, on the article alone. The margin is kept from the provisional pass, where it
     # was measured over the whole document: a cut that went wrong should not be able to move it.
     bands = detect_bands(edges(body))
@@ -2875,7 +3121,7 @@ def convert(cfg):
     if bands.get("ambiguous") and not cfg.bands:
         bands, band_guess = resolve_bands(bands)
     if bands.get("ambiguous") and not cfg.bands:
-        raise SystemExit(
+        raise Refused(
             "the page uses more than two indent levels and this cannot be resolved by counting.\n"
             f"  margin {bands['margin']}, levels found (x0, lines): {bands['levels']}\n"
             "  Name them in the paper's Config, e.g. bands={'display': 77, 'paragraph': 88},\n"
@@ -2953,7 +3199,17 @@ def convert(cfg):
 
     out, used, seen = [], [], set()
     prev_caps = None
-    for b in blocks:
+    for bi, b in enumerate(blocks):
+        # A NUMBERED LINE BETWEEN TWO PIECES OF ONE QUOTATION IS THE QUOTATION'S. Dewey's theses,
+        # quoted as a numbered list, came out "> 1. The artistic act ..." / "# 2 Aesthetic
+        # experience is the fulfillment and “redeeming” of" / "> human activity; ..." -- the second
+        # item a section heading because it has a heading's shape (Eldridge, Cambridge Companion
+        # to Dewey, 2010). No section of a paper opens inside a displayed quotation.
+        if (numbered and not b.get("numbered_para") and not b.get("outline")
+                and b["kind"] != "quote" and 0 < bi < len(blocks) - 1
+                and blocks[bi - 1]["kind"] == "quote" and blocks[bi + 1]["kind"] == "quote"
+                and NUMBERED.match(b["text"]) and b["text"] not in headings_now):
+            b = dict(b, kind="quote")
         if b["kind"] == "quote":
             for pg, part in split_at_pages(b):
                 if pg not in seen:
@@ -3096,6 +3352,8 @@ def convert(cfg):
         band_guess=band_guess,
         caps_detected=auto_caps,
         boundaries_detected=dict(front=auto_front, back=auto_back),
+        # Rows of body-size prose that a front cut would have taken, where it was refused for them.
+        front_kept=front_why.get("front_kept"),
         first_page=first_page, declared_first_page=declared,
         page_numbers_from=page_numbers_from, page_outliers=page_outliers,
         last_page=first_page + len(sheets) - 1,

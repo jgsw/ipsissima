@@ -20,15 +20,16 @@ from . import ingest
 
 # ------------------------------------------------------- converting one file ---- #
 
-def convert_one(path, allow_ocr=True, collate=None, witness=None):
+def convert_one(path, allow_ocr=True, collate=None, witness=None, tracked="refuse"):
     """Convert one source; returns the record both servers report and write from.
 
-    Raises SystemExit where ingest refuses a file (a .docx carrying tracked changes) -- the
+    Raises `Refused` (a ValueError, and a SystemExit for older callers) where ingest refuses a
+    file -- a .docx carrying tracked changes, unless `tracked` is "accept" or "reject" -- and the
     caller decides whether that ends the run or is one failure among several.
     """
     extras = {}
     is_pdf = Path(path).suffix.lower() == ".pdf"
-    md, notes = ingest.ingest_one(path, allow_ocr=allow_ocr, extras=extras,
+    md, notes = ingest.ingest_one(path, allow_ocr=allow_ocr, extras=extras, tracked=tracked,
                                   collate=collate if is_pdf else None,
                                   witness=str(Path(witness).expanduser())
                                   if witness and is_pdf else None)
@@ -143,13 +144,13 @@ def assess_pdf(path: str, check_open_access: bool = True) -> dict[str, Any]:
 
     layer = ingest.plain_text(str(p))
     words = len(layer.split())
-    soup = len(ingest.SOUP.findall(re.sub(r"\s+", " ", layer)))
+    soup = ingest.garbled_passages(str(p), layer)
     per_page = words / max(pages, 1)
 
     # THE THRESHOLDS ARE THE ONES ingest ALREADY USES, not new ones. A second opinion about what
     # counts as a damaged text layer is a second implementation of the same rule, and this
     # project has paid for that before.
-    if ingest.quality(layer) >= words and words > 200:
+    if soup == 0 and words > 200:
         difficulty, note = "easy", "the text layer is clean; no OCR will be attempted"
     elif per_page < ingest.IMAGE_ONLY_WORDS_PER_PAGE:
         difficulty, note = ("hard",

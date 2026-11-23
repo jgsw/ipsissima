@@ -55,6 +55,9 @@ def main(argv=None):
                          "--no-collate never")
     ap.add_argument("--witness", help="another OCR text of the same work (.txt, or an HTML "
                                       "page such as archive.org's 'Full text of'), for the vote")
+    ap.add_argument("--tracked", choices=["refuse", "accept", "reject"], default="refuse",
+                    help="a .docx with tracked changes: refuse it (the default), or accept or "
+                         "reject every change")
     ap.add_argument("--geometry", action="store_true",
                     help="also write <name>.md.geometry.json, every word's box on the page -- what "
                          "lets an app place highlights at exact rectangles (Ipsissima's does, into "
@@ -78,8 +81,8 @@ def main(argv=None):
             continue
         try:
             r = tools.convert_one(path, allow_ocr=not a.no_ocr, collate=a.collate,
-                                  witness=a.witness)
-        except SystemExit as e:                    # ingest refuses tracked changes this way
+                                  witness=a.witness, tracked=a.tracked)
+        except SystemExit as e:                    # Refused: a .docx with tracked changes, and the like
             print(f"\n   {os.path.basename(path)}: refused -- {e}", file=sys.stderr)
             refused += 1
             continue

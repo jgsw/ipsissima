@@ -6,3 +6,5 @@ that keeps its paragraphs, headings, footnotes and page numbers, and says what i
 
 Split out of Ipsissima-MCP, which reads its sources through this package.
 """
+
+from .errors import Refused  # noqa: E402,F401 -- `except unpetrify.Refused`

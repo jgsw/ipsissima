@@ -69,6 +69,12 @@ import subprocess
 import sys
 import textwrap
 import zipfile
+from collections import Counter
+
+try:
+    from .errors import Refused
+except ImportError:                     # run as a bare script, the package directory on sys.path
+    from errors import Refused
 
 PANDOC_CANDIDATES = (
     os.environ.get("PYPANDOC_PANDOC") or "",
@@ -437,6 +443,65 @@ def quality(text):
     return len(flat.split()) - 60 * len(SOUP.findall(flat))
 
 
+#: A maths font: TeX's (CMMI, CMSY, CMEX, MSAM, MSBM, the Euler and RSFS faces), MathJax's,
+#: STIX's and the system ones (Symbol, MT Extra, Cambria Math, Latin Modern Math).
+MATH_FONT = re.compile(r"MathJax|STIX|XITS|\bCM(?:MI|SY|EX|BSY|MIB)\d|MSAM|MSBM|EUF[MB]|EUS[MB]|EUR[MB]|"
+                       r"RSFS|wasy|TeX_|Math|Symbol|MT\s?Extra|AdvP|Asana", re.I)
+_PRIVATE_USE = re.compile(r"[\ue000-\uf8ff]")
+
+
+def garble_text(path):
+    """The PDF's text layer as the damage test reads it: maths and variables blanked out.
+
+    A BORN-DIGITAL PAPER WITH MATHS WAS TAKEN FOR A DAMAGED SCAN. Letter-soup is three or more
+    lone letters in a row, and a formula is exactly that -- MathJax's `x x x A(x) B(x)` in a
+    nEdit snapshot, a truth table's `p q r` in an OUP proof. One such passage was enough: the
+    layer was called damaged and OCR replaced exact text with "Fine tti" and "nonconditional"
+    (MINDproofer's tests, 23 Nov 2026). So what a formula is made of is left out of the count:
+    spans in a maths font, a letter standing alone in an italic span (how a variable is set in
+    running text), and the private-use glyphs that symbol fonts map their characters to.
+
+    A MATHS FONT THAT CARRIES THE TEXT IS THE TEXT. STIX is a maths font and a text face, and a
+    nEdit snapshot sets its whole body in it; blanking it would blank the paper and call any
+    layer clean. A font holding a third of the document's characters is not blanked.
+    """
+    import pymupdf
+    lines = []
+    with pymupdf.open(path) as doc:
+        spans = [[[s for s in l.get("spans", [])] for l in b.get("lines", [])]
+                 for page in doc for b in page.get_text("dict").get("blocks", [])]
+    weight = Counter()
+    for block in spans:
+        for line in block:
+            for s in line:
+                weight[s.get("font", "")] += len(s.get("text", "").strip())
+    total = sum(weight.values()) or 1
+    for block in spans:
+        parts = []
+        for line in block:
+            for s in line:
+                t, font = s.get("text", ""), s.get("font", "")
+                italic = bool(s.get("flags", 0) & 2) or bool(re.search(r"ital|oblique|-It\b", font, re.I))
+                if MATH_FONT.search(font) and weight[font] < total / 3:
+                    t = " § "
+                elif italic and re.fullmatch(r"\s*[A-Za-z]\s*", t):
+                    t = " § "
+                parts.append(_PRIVATE_USE.sub("§", t))
+            parts.append(" ")
+        lines.append("".join(parts))
+    return re.sub(r"\s+", " ", " ".join(lines))
+
+
+def garbled_passages(path, text=None):
+    """How many letter-soup passages the PDF's text layer holds, maths left out (garble_text).
+    `text`, where the layer cannot be re-read (it is not a PDF), is counted as it stands."""
+    try:
+        flat = garble_text(path)
+    except Exception:                                        # noqa: BLE001 -- count what we have
+        flat = re.sub(r"\s+", " ", text or "")
+    return len(SOUP.findall(flat))
+
+
 def plain_text(path):
     """The PDF's own text layer, reflowed into paragraphs, with the page-marker convention.
 
@@ -558,6 +623,10 @@ def from_pdf_structured(path, extras=None):
             if extras is not None:
                 extras["figure_words"] = rep.get("figure_words", 0)
         except SystemExit as e:
+            # A refusal can still carry what was read soundly before it (the abstract above two
+            # columns the converter would not read): see pdf_to_source's `side_by_side`.
+            if extras is not None and getattr(e, "abstract", None):
+                extras["abstract"] = e.abstract
             return None, str(e).split("\n")[0][:160]
         except Exception as e:                                  # noqa: BLE001 -- the fallback
             return None, f"{e.__class__.__name__}: {str(e)[:140]}"
@@ -581,6 +650,10 @@ def from_pdf_structured(path, extras=None):
                      "paper has one, it neither followed the word 'Abstract' nor opened "
                      "with a structured abstract's labels (OBJECTIVE ... RESULTS ... "
                      "CONCLUSION); read the first page before trusting the cut")
+    if rep.get("front_kept"):
+        notes.append(f"front matter NOT cut: {rep['front_kept']} line(s) of body-size prose lay "
+                     f"before the first heading, so the article may begin on its first page -- a "
+                     f"title page, if there is one, is still in the text")
     if rep["heading_gaps"]:
         notes.append(f"! heading numbering skips {rep['heading_gaps']} -- read the flow "
                      f"there before trusting the sections")
@@ -703,7 +776,9 @@ def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
             return body, c_notes
         if "page image" not in c_notes:            # a born-digital PDF: nothing to say
             notes.append(f"  collation not used: {c_notes}")
-    if quality(best) >= len(best.split()) and len(best.split()) > 200:
+    # CLEAN MEANS NO LETTER-SOUP OUTSIDE THE MATHS: see `garble_text`.
+    garbled = garbled_passages(path, best)
+    if garbled == 0 and len(best.split()) > 200:
         # A CLEAN LAYER GOES TO THE STRUCTURED CONVERTER FIRST -- its geometry machinery
         # assumes trustworthy sizes and edges, which is exactly what a clean layer has and a
         # scan has not. The floor is the honesty check: structured output holding many fewer
@@ -729,7 +804,7 @@ def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
         return best, notes
 
     notes.append(f"! text layer looks damaged "
-                 f"({len(SOUP.findall(best))} garbled passage(s), {len(best.split())} words)")
+                 f"({garbled} garbled passage(s), {len(best.split())} words)")
     if not allow_ocr:
         notes.append("  --no-ocr given, keeping the text layer as it is")
         return best, notes
@@ -770,25 +845,45 @@ def from_pdf(path, allow_ocr=True, extras=None, collate=None, witness=None):
     return best, notes
 
 
-def from_pandoc(path, ext):
+#: What may be done with a .docx's tracked changes: refuse the file (the default), or take every
+#: change as accepted or every change as rejected.
+TRACKED = ("refuse", "accept", "reject")
+
+
+def from_pandoc(path, ext, tracked="refuse"):
+    """A document pandoc reads. A .docx carrying tracked changes is refused unless `tracked`
+    says, for the whole file, which side of every edit to take: "accept" or "reject"."""
+    if tracked not in TRACKED:
+        raise Refused(f"tracked must be one of {', '.join(TRACKED)}, not {tracked!r}")
     p = pandoc()
     if not p:
-        raise SystemExit("pandoc not found. Set PYPANDOC_PANDOC, or install it.")
+        raise Refused("pandoc not found. Set PYPANDOC_PANDOC, or install it.")
     notes = []
+    mode = "all"
     if ext == ".docx":
         ins, dele = tracked_changes(path)
-        if ins or dele:
-            raise SystemExit(
+        # TAKEN, WHEN THE CALLER SAYS SO. The refusal is right for a reconstruction, where a
+        # tracked deletion is the author's decision and pandoc's silent acceptance would make it
+        # for them. A caller that only wants the words of one side -- a proofreader comparing
+        # the accepted copy against a proof -- can name that side, and the report says it did.
+        if (ins or dele) and tracked != "refuse":
+            mode = tracked
+            notes.append(f"! {ins} tracked insertion(s) and {dele} deletion(s) "
+                         f"{'ACCEPTED' if tracked == 'accept' else 'REJECTED'}, every one, as "
+                         f"asked (tracked={tracked!r}) -- the text is one side of every edit")
+        elif ins or dele:
+            raise Refused(
                 f"REFUSED: {os.path.basename(path)} carries {ins} tracked insertion(s) and "
                 f"{dele} deletion(s).\n"
                 "pandoc would silently ACCEPT them, committing to one side of every edit. "
                 "Resolve them in Word\nfirst, or take a copy and accept/reject deliberately. "
                 "This is refused rather than flagged because\nthe author-round protocol treats "
-                "a tracked deletion as a decision, not as noise.")
-    r = subprocess.run([p, "--to=markdown", "--wrap=none", "--track-changes=all",
+                "a tracked deletion as a decision, not as noise. (A caller that wants\none "
+                "side of every edit can ask for it: tracked='accept' or tracked='reject'.)")
+    r = subprocess.run([p, "--to=markdown", "--wrap=none", f"--track-changes={mode}",
                         path, "-o", "-"], capture_output=True, text=True)
     if r.returncode != 0:
-        raise SystemExit(f"pandoc failed on {os.path.basename(path)}: "
+        raise Refused(f"pandoc failed on {os.path.basename(path)}: "
                          f"{(r.stderr or '').strip()[:200]}")
     notes.append(f"pandoc {ext[1:]} --wrap=none")
     return r.stdout, notes
@@ -871,12 +966,12 @@ def from_tei(path):
         parts.append(text)
         total += n
     if not parts:
-        raise SystemExit(f"no TEI body found in {os.path.basename(path)}")
+        raise Refused(f"no TEI body found in {os.path.basename(path)}")
     notes.append(f"TEI: {len(parts)} document(s), {total} footnote(s), publisher's own structure")
     return "\n\n".join(parts), notes
 
 
-def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
+def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None, tracked="refuse"):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".pdf":
         md, notes = from_pdf(path, allow_ocr=allow_ocr, extras=extras,
@@ -890,11 +985,11 @@ def ingest_one(path, allow_ocr=True, extras=None, collate=None, witness=None):
     elif ext in (".html", ".htm"):
         md, notes = from_html(path)
     elif ext in PANDOC_FORMATS:
-        md, notes = from_pandoc(path, ext)
+        md, notes = from_pandoc(path, ext, tracked=tracked)
     elif ext in PASSTHROUGH:
         md, notes = open(path, encoding="utf-8", errors="replace").read(), ["copied verbatim"]
     else:
-        raise SystemExit(f"no route for {ext or 'a file with no extension'}: {path}")
+        raise Refused(f"no route for {ext or 'a file with no extension'}: {path}")
     # THE CREATION-TIME CUTS, before anything indexes a line: see the module docstring. PG
     # first, because its header carries headings tidy_headings would otherwise be reported
     # as having repaired.
@@ -1085,6 +1180,9 @@ def main():
     ap.add_argument("--figures", choices=["section", "omit"],
                     help="a figure's caption: gathered under '# Figures' (the default), or left out "
                          "altogether, for a reconstruction made without the figures")
+    ap.add_argument("--tracked", choices=TRACKED, default="refuse",
+                    help="a .docx with tracked changes: refuse it (the default), or accept or "
+                         "reject every change")
     a = ap.parse_args()
     if a.figures:
         os.environ["IPSISSIMA_FIGURES"] = a.figures
@@ -1092,10 +1190,10 @@ def main():
     results = []
     for path in a.inputs:
         if not os.path.exists(path):
-            raise SystemExit(f"no such file: {path}")
+            raise Refused(f"no such file: {path}")
         extras = {}
         md, notes = ingest_one(path, allow_ocr=not a.no_ocr, extras=extras, collate=a.collate,
-                               witness=a.witness)
+                               witness=a.witness, tracked=a.tracked)
         name = slug(os.path.splitext(os.path.basename(path))[0]) + ".md"
         trimmed, cut = extract_for_prompt(md)
         results.append(dict(src=path, name=name, md=md, notes=notes, extras=extras,
