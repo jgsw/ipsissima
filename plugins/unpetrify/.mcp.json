@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "unpetrify": {
+      "command": "uvx",
+      "args": ["--from", "unpetrify==0.1.0", "unpetrify-mcp"]
+    }
+  }
+}

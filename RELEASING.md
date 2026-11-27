@@ -10,7 +10,7 @@ separate decision and not part of this.
 
 ## Cutting a release
 
-**1. One version, in six files.** Nothing keeps them in step, so `app/test_versions.mjs` checks
+**1. One version, in eight places.** Nothing keeps them in step, so `app/test_versions.mjs` checks
 they agree and fails the suite when they do not:
 
 - `app/VERSION` — what the build stamps into the page and the About box reports
@@ -19,6 +19,14 @@ they agree and fails the suite when they do not:
 - `app/desktop/src-tauri/Cargo.toml`
 - `ipsissima-mcp/manifest.json`
 - `ipsissima-mcp/pyproject.toml`
+- `plugins/ipsissima/.claude-plugin/plugin.json`, and the `ipsissima-mcp==` pin in
+  `plugins/ipsissima/.mcp.json` — the Claude plugin, which runs that exact release from PyPI
+
+An Unpetrify release bumps `plugins/unpetrify/.claude-plugin/plugin.json` and the
+`unpetrify==` pin in `plugins/unpetrify/.mcp.json` with `unpetrify/pyproject.toml`; the same test
+checks those three agree. The plugin directory scans every push to `main`, so a pin naming a
+version not yet on PyPI fails that scan until it is published: publish promptly after pushing the
+bump.
 
 `server.py` used to state it again, hardcoded; it now reads the installed package's metadata,
 which is why that one is not on the list and cannot drift.

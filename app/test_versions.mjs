@@ -27,7 +27,11 @@ const found = {
   "app/desktop/src-tauri/tauri.conf.json": JSON.parse(read("app/desktop/src-tauri/tauri.conf.json")).version,
   "app/desktop/src-tauri/Cargo.toml":      (read("app/desktop/src-tauri/Cargo.toml").match(/^version\s*=\s*"([^"]+)"/m) || [])[1],
   "ipsissima-mcp/manifest.json":           JSON.parse(read("ipsissima-mcp/manifest.json")).version,
-  "ipsissima-mcp/pyproject.toml":          (read("ipsissima-mcp/pyproject.toml").match(/^version\s*=\s*"([^"]+)"/m) || [])[1]
+  "ipsissima-mcp/pyproject.toml":          (read("ipsissima-mcp/pyproject.toml").match(/^version\s*=\s*"([^"]+)"/m) || [])[1],
+  // THE DIRECTORY PLUGIN (27 Nov 2026). It runs `uvx ipsissima-mcp==<version>` from PyPI, so a
+  // plugin left behind installs the previous release while saying nothing about it.
+  "plugins/ipsissima/.claude-plugin/plugin.json": JSON.parse(read("plugins/ipsissima/.claude-plugin/plugin.json")).version,
+  "plugins/ipsissima/.mcp.json (pin)":     (JSON.parse(read("plugins/ipsissima/.mcp.json")).mcpServers.ipsissima.args.join(" ").match(/ipsissima-mcp==(\S+)/) || [])[1]
 };
 
 let fails = 0;
@@ -41,6 +45,22 @@ for (const [f, v] of Object.entries(found)) {
 if (versions.length !== 1)
   console.log(`\n  ${versions.length} different versions in play: ${versions.join(", ")}` +
               "\n  A release is one version. Bump them all, or none.");
+
+// UNPETRIFY IS VERSIONED ON ITS OWN, but its directory plugin pins it the same way, so the plugin
+// must name the version unpetrify/pyproject.toml is at.
+{
+  const u = {
+    "unpetrify/pyproject.toml":            (read("unpetrify/pyproject.toml").match(/^version\s*=\s*"([^"]+)"/m) || [])[1],
+    "plugins/unpetrify/.claude-plugin/plugin.json": JSON.parse(read("plugins/unpetrify/.claude-plugin/plugin.json")).version,
+    "plugins/unpetrify/.mcp.json (pin)":   (JSON.parse(read("plugins/unpetrify/.mcp.json")).mcpServers.unpetrify.args.join(" ").match(/unpetrify==(\S+)/) || [])[1]
+  };
+  const uv = [...new Set(Object.values(u))];
+  for (const [f, v] of Object.entries(u)) {
+    const ok = v && uv.length === 1;
+    console.log(`  ${ok ? "ok  " : "FAIL"}  ${f.padEnd(40)} ${v || "(not found)"}`);
+    if (!ok) fails++;
+  }
+}
 
 // Semver, because the updater story and the .mcpb manifest both assume it.
 const bad = Object.entries(found).filter(([, v]) => v && !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v));

@@ -1,0 +1,29 @@
+{
+  "name": "unpetrify",
+  "displayName": "Unpetrify",
+  "version": "0.1.0",
+  "description": "Get the text out of a PDF, scanned ones included, as Markdown that keeps its paragraphs, headings, footnotes and page numbers, and says what it could not do.",
+  "author": {
+    "name": "James Wilson",
+    "url": "https://github.com/jgsw"
+  },
+  "homepage": "https://github.com/jgsw/ipsissima/tree/main/unpetrify",
+  "repository": "https://github.com/jgsw/ipsissima",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "pdf",
+    "ocr",
+    "markdown",
+    "text-extraction",
+    "epub",
+    "docx",
+    "scans"
+  ],
+  "network": {
+    "hosts": [
+      "pypi.org",
+      "files.pythonhosted.org",
+      "www.ebi.ac.uk"
+    ]
+  }
+}

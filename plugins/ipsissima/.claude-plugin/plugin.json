@@ -1,0 +1,32 @@
+{
+  "name": "ipsissima",
+  "displayName": "Ipsissima",
+  "version": "0.5.0",
+  "description": "Turn a document into an Argdown map that cites it (its argument, the causal chain it sets out, the comparisons it draws) and check the map against the text word for word.",
+  "author": {
+    "name": "James Wilson",
+    "url": "https://github.com/jgsw"
+  },
+  "homepage": "https://jgsw.github.io/ipsissima/",
+  "repository": "https://github.com/jgsw/ipsissima",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "argdown",
+    "argument",
+    "argument-map",
+    "reconstruction",
+    "philosophy",
+    "pdf",
+    "citation",
+    "zotero"
+  ],
+  "network": {
+    "hosts": [
+      "pypi.org",
+      "files.pythonhosted.org",
+      "www.ebi.ac.uk",
+      "api.github.com",
+      "127.0.0.1"
+    ]
+  }
+}

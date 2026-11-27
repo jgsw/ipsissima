@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "ipsissima": {
+      "command": "uvx",
+      "args": ["ipsissima-mcp==0.5.0"]
+    }
+  }
+}

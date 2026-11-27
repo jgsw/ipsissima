@@ -1,0 +1,20 @@
+{
+  "name": "ipsissima",
+  "owner": {
+    "name": "James Wilson",
+    "url": "https://github.com/jgsw"
+  },
+  "description": "Ipsissima's tools for Claude: argument maps that cite their text, and the PDF converter beneath them.",
+  "plugins": [
+    {
+      "name": "ipsissima",
+      "source": "./plugins/ipsissima",
+      "description": "Turn a document into an Argdown map that cites it, and check the map against the text word for word."
+    },
+    {
+      "name": "unpetrify",
+      "source": "./plugins/unpetrify",
+      "description": "Get the text out of a PDF, scanned ones included, as Markdown that keeps its paragraphs, footnotes and page numbers."
+    }
+  ]
+}
