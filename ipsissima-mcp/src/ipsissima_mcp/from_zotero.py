@@ -54,7 +54,15 @@ from pathlib import Path
 #: subfolder down to its bare filename; that is the form `_library` already resolves, and no
 #: path in this library has a separator left. Moore's "Proof of an External World" (3DP5TXCS)
 #: still comes back with its one PDF, FD2DQA8X, found by record key, attachment key and title.
-SCHEMA_MAX = 130
+#:
+#: 131 CHECKED 27 Nov 2026, on Zotero 10.0.9. The same consolidation again, renumbered: step
+#: 131 "Replaces steps 122-130", re-running 122-129 with a test before each change, and 130 is
+#: gone from `schema.js` (read from the app's omni.ja). Nothing new: the only drops and rebuilds
+#: (127's full-text word tables and `savedSearchConditions`) are tables no query here reads.
+#: Every column queried below is still present in the live library, no `storage:` path has a
+#: separator left, and Dewey's "Experience and nature" (C4UXPZEL) comes back with its EPUB,
+#: C398Q642, by record key, attachment key and title.
+SCHEMA_MAX = 131
 
 #: Best first: the order of the list is what decides. Markdown is gold, what pandoc reads is
 #: silver, a PDF is bronze (G2) -- a heading in the first two is a heading because the document
