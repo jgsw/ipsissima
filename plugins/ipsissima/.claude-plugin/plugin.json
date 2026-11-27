@@ -19,14 +19,5 @@
     "pdf",
     "citation",
     "zotero"
-  ],
-  "network": {
-    "hosts": [
-      "pypi.org",
-      "files.pythonhosted.org",
-      "www.ebi.ac.uk",
-      "api.github.com",
-      "127.0.0.1"
-    ]
-  }
+  ]
 }

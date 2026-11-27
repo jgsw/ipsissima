@@ -41,6 +41,19 @@ If the checker later reports that it cannot find Node, install it and restart Cl
 It looks in the usual places as well as on the `PATH`, because an application launched from the
 Dock does not get the `PATH` your terminal has.
 
+### In Claude Code: the plugin
+
+With [uv](https://docs.astral.sh/uv/) on the machine, type this in Claude Code:
+
+```
+/plugin install ipsissima --marketplace jgsw/ipsissima
+```
+
+The plugin, in [`plugins/ipsissima/`](../plugins/ipsissima/), runs the released server from PyPI
+at the version it names, so an update to the plugin is an update to the server. Its
+[README](../plugins/ipsissima/README.md) says everything it runs, reads, writes and sends. Node
+still has to be on the machine, as above.
+
 ### The terminal's way: from PyPI
 
 Already in a terminal, with [uv](https://docs.astral.sh/uv/) on the machine? The whole install

@@ -98,7 +98,16 @@ folder named for the attachment, and the report says where.
 
 ## The MCP server
 
-`unpetrify-mcp` serves the same conversion to an assistant. To add it to Claude Code:
+`unpetrify-mcp` serves the same conversion to an assistant. The quickest way into Claude Code is
+the plugin, which runs the released server from PyPI with [uv](https://docs.astral.sh/uv/);
+type this in Claude Code:
+
+```
+/plugin install unpetrify --marketplace jgsw/ipsissima
+```
+
+Its [README](../plugins/unpetrify/README.md) says everything it runs, reads, writes and sends.
+With Unpetrify already installed, this does the same from a terminal:
 
 ```bash
 claude mcp add unpetrify -- unpetrify-mcp

@@ -18,12 +18,5 @@
     "epub",
     "docx",
     "scans"
-  ],
-  "network": {
-    "hosts": [
-      "pypi.org",
-      "files.pythonhosted.org",
-      "www.ebi.ac.uk"
-    ]
-  }
+  ]
 }
