@@ -3252,6 +3252,99 @@ async function pagesChecks(browser) {
   await narrow.ctx.close();
 }
 
+/* ------------------------------------------------------------------ edge hints */
+/* WHERE A LINE LEAVES THE SCREEN, THE CLAIM AT ITS FAR END IS NAMED (27 Nov 2026). Driven as a
+ * reader drives it: zoom with the wheel and drag the canvas, then ask the page which lines run
+ * from a claim in view to one out of it -- read off the drawn lines, not the renderer's own list
+ * -- and require a name at the edge for each. Then click a name and require the camera to go. */
+async function edgeHintChecks(browser, maps) {
+  const m = maps.find(x => /wilson-2023/i.test(x.name));
+  if (!m) { check(false, "edge hints: the Wilson sample is built"); return; }
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const page = await ctx.newPage();
+  await page.goto("file://" + m.html);
+  await page.evaluate(() => {
+    try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
+  });
+  await page.reload();
+  await page.waitForSelector(".alm-n", { timeout: 20000 });
+  await page.waitForTimeout(900);
+  const count = () => page.evaluate(() => document.querySelectorAll(".alm-ehint").length);
+  check(await count() === 0, "edge hints: none while the whole map is in view");
+
+  const svg = await page.locator(".alm-svg").boundingBox();
+  await page.mouse.move(svg.x + svg.width * 0.25, svg.y + svg.height * 0.3);
+  for (let i = 0; i < 5; i++) { await page.mouse.wheel(0, -120); await page.waitForTimeout(40); }
+  await page.waitForTimeout(400);
+  // Drag from bare canvas: a point no box, line or control is under.
+  const start = await page.evaluate(() => {
+    const r = document.querySelector(".alm-svg").getBoundingClientRect();
+    for (let y = r.top + r.height * 0.75; y > r.top + 60; y -= 17)
+      for (let x = r.left + r.width * 0.5; x < r.right - 30; x += 23) {
+        const t = document.elementFromPoint(x, y);
+        if (t && (t.classList.contains("alm-svg") || t.closest(".alm-layer-groups"))) return { x, y };
+      }
+    return null;
+  });
+  if (!start) { check(false, "edge hints: bare canvas to drag from"); await ctx.close(); return; }
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 8; i++) await page.mouse.move(start.x + i * 22, start.y + i * 2);
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  const seen = await page.evaluate(() => {
+    const r = document.querySelector(".alm-svg").getBoundingClientRect();
+    const bar = document.querySelector(".alm-bar");
+    const bottom = bar && !bar.hidden ? Math.min(r.bottom, bar.getBoundingClientRect().top) : r.bottom;
+    // CLEARLY in and clearly out: a margin either side of the edge, so this does not argue with
+    // the renderer about a line ending on the boundary itself.
+    const deepIn = p => p.x > r.left + 60 && p.x < r.right - 60 && p.y > r.top + 90 && p.y < bottom - 30;
+    const out = p => p.x < r.left || p.x > r.right || p.y < r.top || p.y > r.bottom;
+    const scr = (path, len) => {
+      const p = path.getPointAtLength(len), m = path.getScreenCTM();
+      return { x: m.a * p.x + m.c * p.y + m.e, y: m.b * p.x + m.d * p.y + m.f };
+    };
+    const want = new Set();
+    for (const path of document.querySelectorAll("path.alm-e[data-from]")) {
+      if (!path.getAttribute("d")) continue;
+      const L = path.getTotalLength();
+      const a = scr(path, 0), b = scr(path, L);
+      if (deepIn(a) && out(b)) want.add(path.dataset.to);
+      if (deepIn(b) && out(a)) want.add(path.dataset.from);
+    }
+    const hints = [...document.querySelectorAll(".alm-ehint")].map(g => ({
+      far: g.dataset.far, text: g.querySelector("text").textContent,
+      box: (() => { const b = g.querySelector("text").getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; })() }));
+    return { want: [...want], hints };
+  });
+  const named = new Set(seen.hints.map(h => h.far));
+  check(seen.want.length > 0, "edge hints: the zoomed, panned map has lines running off the screen",
+        JSON.stringify(seen));
+  check(seen.want.every(id => named.has(id)),
+        "edge hints: every line from a claim in view to one out of it names the far claim at the edge",
+        JSON.stringify({ want: seen.want, named: [...named] }));
+  check(seen.hints.every(h => h.text && h.box.w > 0),
+        "edge hints: each one is drawn with a name");
+
+  if (seen.hints.length) {
+    const h = seen.hints[0];
+    await page.mouse.click(h.box.x + h.box.w / 2, h.box.y + h.box.h / 2);
+    await page.waitForTimeout(1100);
+    const there = await page.evaluate((far) => {
+      const r = document.querySelector(".alm-svg").getBoundingClientRect();
+      const n = document.querySelector(`.alm-n[data-id="${CSS.escape(far)}"]`);
+      if (!n) return null;
+      const b = n.getBoundingClientRect();
+      return { inView: b.x + b.width / 2 > r.left && b.x + b.width / 2 < r.right &&
+                       b.y + b.height / 2 > r.top && b.y + b.height / 2 < r.bottom };
+    }, h.far);
+    check(there && there.inView, "edge hints: clicking one brings the claim it names into view",
+          JSON.stringify({ hint: h, there }));
+  }
+  await ctx.close();
+}
+
 /* The feature checks, each with its own context. The part each belongs to balances the two
  * halves by time as measured on 21 Nov 2026 (seconds beside each); the card steps need the
  * viewers the per-map pass built, so they run in the light part. */
@@ -3263,6 +3356,7 @@ const GROUPS = [
   ["checks2", tocChecks, 3], ["checks2", navChecks, 2], ["checks2", editorChecks, 3],
   ["checks2", mechanismEditorChecks, 2], ["checks2", bridgePanelChecks, 2],
   ["light", b => cardStepsChecks(b, built), 5],
+  ["light", b => edgeHintChecks(b, built), 3],
   ["checks2", chainNodeChecks, 3], ["checks2", refClickChecks, 1], ["checks2", hiddenFirstLayoutChecks, 3],
   ["checks2", quoteChecks, 4], ["checks2", guidedChecks, 4], ["checks2", exportChecks, 3],
   ["checks2", mobileChecks, 3]

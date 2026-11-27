@@ -4066,7 +4066,11 @@ function createLiveMap(container, graph, options) {
   hatch.append(el("rect", { class: "alm-hatch-bg", width: 6, height: 6 }),
                el("line", { class: "alm-hatch-line", x1: 0, y1: 0, x2: 0, y2: 6 }));
   defs.appendChild(hatch);
-  svg.append(defs, viewport, gMeasure);
+  // THE EDGE HINTS (27 Nov 2026): where a relation runs off the visible map, the claim at its
+  // far end is named at the edge. In SCREEN coordinates, outside the viewport, because what they
+  // mark is the edge of the screen and not anything in the drawing; see `placeHints`.
+  const gHints = el("g", { class: "alm-layer-hints" });
+  svg.append(defs, viewport, gHints, gMeasure);
   container.appendChild(svg);
 
   const parts = opt.controls === true ? { depth: true, facets: true, actions: true }
@@ -5048,6 +5052,8 @@ function createLiveMap(container, graph, options) {
 
   function drawEdges(g, vis, sizes) {
     const keep = new Set();
+    hintLines = [];
+    const labelOfDrawn = new Map(vis.nodes.map(n => [n.id, n.label || n.id]));
     const geometry = edgeGeometry(g, vis, sizes);
     // Every drawn box, once, so the hidden-span test does not rebuild them per edge.
     const allBoxes = boxesOf(g, vis);
@@ -5074,6 +5080,10 @@ function createLiveMap(container, graph, options) {
         gEdges.appendChild(path);
         drawnEdge.set(key, path);
       }
+      // Which claims the line joins, on the line itself: what a check driving the page reads to
+      // say which edge hints there ought to be, without asking the renderer's own bookkeeping.
+      path.setAttribute("data-from", e.v);
+      path.setAttribute("data-to", e.w);
       const rel = REL[e.name] || REL.support;
       // A SLALOM IS RELAID BEFORE IT IS DRAWN. Members are exempt -- planJoins already relays
       // the ones whose feet moved -- and so is travel that is mostly sideways, where the flank
@@ -5099,6 +5109,8 @@ function createLiveMap(container, graph, options) {
       path.setAttribute("d", smooth(pts));
       path.setAttribute("stroke", rel.color);
       if (rel.dash) path.setAttribute("stroke-dasharray", rel.dash);
+      hintLines.push({ key, pts, v: e.v, w: e.w, color: rel.color, path,
+                       vLabel: labelOfDrawn.get(e.v) || e.v, wLabel: labelOfDrawn.get(e.w) || e.w });
       // A member of a junction stops at the bar and loses its arrowhead: the single arrow that
       // leaves the bar is the one that reaches the conclusion, and that is the whole claim being
       // made — these premises arrive together or not at all.
@@ -5156,6 +5168,7 @@ function createLiveMap(container, graph, options) {
     }
     drawJoins(joins);
     applyConnectors();
+    scheduleHints();
   }
 
   /** A CONNECTOR, drawn: a stub at each end facing the other page, labelled with the claim at
@@ -5229,6 +5242,174 @@ function createLiveMap(container, graph, options) {
       holder.classList.toggle("is-open", connHover === key || connHover === f || connHover === t ||
                                          lit.has(f) || lit.has(t));
     }
+  }
+
+  /* ------------------------------------------------------------ the edge hints
+   *
+   * WHERE A LINE LEAVES THE SCREEN, SAY WHERE IT GOES. Zoomed in on one argument, a relation to a
+   * claim out of view is a line that runs to the edge and stops meaning anything: the reader
+   * can see that something is related, and not what. Exposition already answers this for
+   * relations between pages that are not side by side, with a stub at each end naming the claim
+   * at the other (see `drawConnector`); that is fixed by the layout, because there the text's
+   * order puts the claims where they are. In Reasons the layout puts related claims near each
+   * other and the line IS the argument, so the line stays, and the name is added where the line
+   * crosses the edge of the screen -- worked out from the camera, so it moves with every pan and
+   * zoom and goes away once both ends are in view. Clicking one goes to the claim, as a stub's
+   * click does. Asked for by James on the Dewey map, 27 Nov 2026, where a premise's line ran off
+   * the left of the pane to a claim the screen gave no name for.
+   *
+   * ONLY A LINE WITH ONE END ON SCREEN gets a name. A line crossing the screen with both ends off
+   * it belongs to nothing the reader is looking at, and naming both ends of every such line on
+   * a large map filled the edges with names of things unrelated to the view.
+   *
+   * ONE NAME PER CLAIM PER EDGE: several lines leaving the same side for the same claim (an
+   * argument's premises, say) are one name. Where a side cannot hold them all, the last place
+   * says how many more, and its tooltip lists them.
+   */
+  let hintLines = [];
+  const drawnHint = new Map();
+  let hintControls = [];
+  const HINT_UNDER = ".alm-toggle, .alm-explode, .alm-verdict, .alm-more, .alm-gfold";
+  let hintTimer = null, hintFrame = 0;
+  /** Recompute on the next frame -- or, while the camera glides, once it lands: the hints are in
+   *  screen space and cannot ride the viewport's transition, so placed early they would show
+   *  where the lines are going to be while the map is still moving there. */
+  function scheduleHints() {
+    clearTimeout(hintTimer);
+    if (viewport.style.transition) {
+      gHints.style.opacity = "0";
+      hintTimer = setTimeout(() => { gHints.style.opacity = ""; placeHints(); }, glideDur + 60);
+      return;
+    }
+    if (hintFrame) return;
+    hintFrame = requestAnimationFrame(() => { hintFrame = 0; gHints.style.opacity = ""; placeHints(); });
+  }
+  const HINT_GAP = 15, HINT_SIZE = 10, HINT_WIDTH = 160;
+  function placeHints() {
+    const { top, left, cw, ch } = clearBand();
+    // The visible map, inset a little: a line ending exactly at the pane's edge is still a line
+    // the reader cannot follow.
+    const R = { x0: left + 4, y0: top + 4, x1: left + cw - 4, y1: top + ch - 4 };
+    const inside = p => p.x > R.x0 && p.x < R.x1 && p.y > R.y0 && p.y < R.y1;
+    const scr = p => ({ x: view.x + p.x * view.k, y: view.y + p.y * view.k });
+    /** Where the segment a->b (a inside) first leaves R, and by which side. */
+    const exit = (a, b) => {
+      let best = null;
+      const tryT = (t, side) => {
+        if (!(t >= 0 && t <= 1) || (best && t >= best.t)) return;
+        const x = a.x + (b.x - a.x) * t, y = a.y + (b.y - a.y) * t;
+        if (side === "left" || side === "right" ? (y < R.y0 - 0.5 || y > R.y1 + 0.5)
+                                                : (x < R.x0 - 0.5 || x > R.x1 + 0.5)) return;
+        best = { t, x, y, side };
+      };
+      if (b.x !== a.x) { tryT((R.x0 - a.x) / (b.x - a.x), "left"); tryT((R.x1 - a.x) / (b.x - a.x), "right"); }
+      if (b.y !== a.y) { tryT((R.y0 - a.y) / (b.y - a.y), "top"); tryT((R.y1 - a.y) / (b.y - a.y), "bottom"); }
+      return best;
+    };
+    const bySide = { left: new Map(), right: new Map(), top: new Map(), bottom: new Map() };
+    for (const L of hintLines) {
+      if (!L.pts || L.pts.length < 2 || !L.path.isConnected) continue;
+      const S = L.pts.map(scr);
+      const inV = inside(S[0]), inW = inside(S[S.length - 1]);
+      if (inV === inW) continue;
+      const walk = inV ? S : S.slice().reverse();
+      let hit = null;
+      for (let i = 0; i + 1 < walk.length && !hit; i++)
+        if (inside(walk[i]) && !inside(walk[i + 1])) hit = exit(walk[i], walk[i + 1]);
+      if (!hit) continue;
+      const far = inV ? L.w : L.v;
+      const m = bySide[hit.side];
+      if (!m.has(far)) m.set(far, { far, label: inV ? L.wLabel : L.vLabel, x: hit.x, y: hit.y,
+                                    side: hit.side, color: L.color, out: inV, n: 1 });
+      else m.get(far).n++;
+    }
+    const keep = new Set();
+    // THE MAP'S OWN CONTROLS STAY PRESSABLE. A name at the edge is drawn over whatever the edge
+    // cuts through, and a fold badge there would be under it: visible and dead, which the
+    // rendered-DOM check "a drawn control is the thing under its own centre" caught on the first
+    // run. So a name that lies over a control is drawn faint and lets the press through.
+    const host = svg.getBoundingClientRect();
+    hintControls = [...svg.querySelectorAll(HINT_UNDER)].map(c => {
+      const b = c.getBoundingClientRect();
+      return { x0: b.left - host.left - 2, y0: b.top - host.top - 2,
+               x1: b.right - host.left + 2, y1: b.bottom - host.top + 2 };
+    }).filter(b => b.x1 > b.x0 && b.y1 > b.y0);
+    for (const side of ["left", "right", "top", "bottom"]) {
+      const vertical = side === "left" || side === "right";
+      const list = [...bySide[side].values()].sort((a, b) => vertical ? a.y - b.y : a.x - b.x);
+      // Spread along the side, in order, so that two names never sit on each other; what the
+      // side cannot hold is counted on its last place.
+      const lo = vertical ? R.y0 + 8 : R.x0, hi = vertical ? R.y1 - 4 : R.x1;
+      let at = -Infinity, shown = [];
+      for (const h of list) {
+        h.text = fitLabel(h.label, HINT_WIDTH, HINT_SIZE, "400");
+        const w = vertical ? HINT_GAP : textWidth(h.text, HINT_SIZE, "400") + 14;
+        let pos = Math.max(vertical ? h.y : h.x - w / 2, at);
+        if (pos + (vertical ? 0 : w) > hi) { h.over = true; continue; }
+        pos = Math.max(pos, lo);
+        h.pos = pos; at = pos + (vertical ? HINT_GAP : w);
+        shown.push(h);
+      }
+      const over = list.filter(h => h.over);
+      if (over.length && shown.length) {
+        const last = shown[shown.length - 1];
+        last.more = over;
+      }
+      for (const h of shown) {
+        const id = side + " " + h.far;
+        keep.add(id);
+        drawHint(id, h, vertical);
+      }
+    }
+    for (const [id, node] of drawnHint) if (!keep.has(id)) { node.remove(); drawnHint.delete(id); }
+  }
+  function drawHint(id, h, vertical) {
+    let g = drawnHint.get(id);
+    if (!g) {
+      g = el("g", { class: "alm-ehint" });
+      g.append(el("path", { class: "alm-ehint-lead", fill: "none" }),
+               el("circle", { class: "alm-ehint-dot", r: 2.6 }),
+               el("text", { class: "alm-ehint-label", "font-size": HINT_SIZE }), el("title"));
+      g.addEventListener("pointerdown", ev => ev.stopPropagation());
+      g.addEventListener("click", ev => {
+        ev.stopPropagation();
+        const there = g.dataset.far;
+        if (!there) return;
+        setLit([there]);
+        centreOn([there]);
+      });
+      gHints.appendChild(g);
+      drawnHint.set(id, g);
+    }
+    g.dataset.far = h.far;
+    // The name sits just inside the edge, beside where the line crosses it; where spreading the
+    // names moved it off that point, a short lead runs back to the dot on the line.
+    let lx, ly, anchor;
+    if (vertical) {
+      lx = h.side === "left" ? h.x + 7 : h.x - 7; ly = h.pos + 3.4; anchor = h.side === "left" ? "start" : "end";
+    }
+    else {
+      const w = textWidth(h.text, HINT_SIZE, "400") + 14;
+      lx = h.pos + w / 2; ly = h.side === "top" ? h.y + 13 : h.y - 6; anchor = "middle";
+    }
+    const dot = g.querySelector(".alm-ehint-dot");
+    dot.setAttribute("cx", h.x); dot.setAttribute("cy", h.y); dot.setAttribute("fill", h.color);
+    const lead = g.querySelector(".alm-ehint-lead");
+    const ty = vertical ? ly - 3.4 : (h.side === "top" ? ly - 9 : ly + 2);
+    const far = vertical ? Math.abs(ty - h.y) > 4 : Math.abs(lx - h.x) > 4;
+    lead.setAttribute("d", far ? `M${h.x},${h.y}L${vertical ? lx - (h.side === "left" ? 2 : -2) : lx},${ty}` : "");
+    lead.setAttribute("stroke", h.color);
+    const t = g.querySelector(".alm-ehint-label");
+    t.setAttribute("x", lx); t.setAttribute("y", ly); t.setAttribute("text-anchor", anchor);
+    t.textContent = h.text + (h.more ? "  +" + h.more.length + " more" : "");
+    const lb = t.getBBox();
+    const over = hintControls.some(c => lb.x < c.x1 && lb.x + lb.width > c.x0 &&
+                                        lb.y < c.y1 && lb.y + lb.height > c.y0);
+    g.classList.toggle("is-over", over);
+    g.querySelector("title").textContent =
+      (h.out ? "Bears on “" : "From “") + h.label + "”" +
+      (h.n > 1 ? " (" + h.n + " lines)" : "") + ", off the screen. Click to go there." +
+      (h.more ? "\nAlso off this edge: " + h.more.map(m => "“" + m.label + "”").join(", ") : "");
   }
 
   /** The boxes drawn behind the nodes: in the ordinary map the reconstruction's own sections, in
@@ -6070,6 +6251,7 @@ function createLiveMap(container, graph, options) {
     // WKWebView: same x, y, width and height to the pixel.
     viewport.style.transform =
       `translate(${view.x}px,${view.y}px) scale(${view.k})`;
+    scheduleHints();
   }
   /** Is there still anything on screen? A fold removes nodes without moving the camera, so
    *  collapsing the root of a wide map AFTER panning leaves the one surviving node outside
@@ -6462,7 +6644,7 @@ function createLiveMap(container, graph, options) {
       // An echo is a press target too: it goes to the claim it echoes. Left out of this list, a
       // press on one started a pan and captured the pointer, and the click never arrived (found
       // by clicking one, 26 Sep 2026).
-      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold, .alm-echo, .alm-conn-stub")) return;
+      if (ev.target.closest(".alm-n, .alm-toggle, .alm-gfold, .alm-echo, .alm-conn-stub, .alm-ehint")) return;
       // THE LEFT BUTTON ONLY. Without this a right-click started a pan -- and, worse, the
       // preventDefault below suppressed the contextmenu event that was supposed to follow it,
       // so "Fold section" could never appear. A dispatched contextmenu event still worked,
@@ -7566,6 +7748,13 @@ function injectStyle() {
 .alm-conn-label{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;paint-order:stroke;
   stroke:var(--alm-node-bg,#fff);stroke-width:3px;stroke-linejoin:round}
 .alm-conn-stub:hover .alm-conn-label,.alm-conn.is-open .alm-conn-label{fill:var(--alm-fg,#1a1a1a)}
+.alm-layer-hints{transition:opacity .15s}
+.alm-ehint{cursor:pointer}
+.alm-ehint.is-over{pointer-events:none;opacity:.45}
+.alm-ehint-lead{stroke-width:1;stroke-opacity:.6}
+.alm-ehint-label{fill:var(--alm-fg-dim,#6b6b6b);font-style:italic;paint-order:stroke;
+  stroke:var(--alm-node-bg,#fff);stroke-width:3px;stroke-linejoin:round}
+.alm-ehint:hover .alm-ehint-label{fill:var(--alm-fg,#1a1a1a)}
 .alm-card-box{fill:var(--alm-fg,#1f1f1f);fill-opacity:.035;stroke:var(--alm-fg,#1f1f1f);
   stroke-opacity:.14;stroke-width:1}
 .alm-card-no{fill:var(--alm-fg-dim,#6b6b6b);font-variant-numeric:tabular-nums}
