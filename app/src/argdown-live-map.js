@@ -2190,6 +2190,7 @@ function layoutByArgument(vis, sizes, opt) {
   };
 
   assignHomeColumns(g, vis);
+  if (o.centre !== false) centreBlocks(g, vis, rank, groupRows, visGroups, NODESEP);
 
   // Box verticals, inner sections first so a parent hulls its children's finished boxes.
   // assignHomeColumns has already set each box's x and width from the same hull.
@@ -2622,6 +2623,165 @@ function assignHomeColumns(g, vis, stats) {
     }
   };
   place("", 16);
+}
+
+/* EVERY BLOCK SITS OVER WHAT IT IS CONNECTED TO, AT EVERY LEVEL (27 Nov 2026).
+ *
+ * `assignHomeColumns` packs every row from the left, so a contention alone in its row sat at the
+ * far left whatever it supported, and its lines swept right across the whole map. James found it
+ * on the Dewey map, where the contention's lines to a dozen sections all left from the corner,
+ * and asked for claims to be centred at every level, as tree-drawing argument mappers do.
+ *
+ * So, top level first and then inside each section, every block -- a claim, or a whole
+ * subsection -- slides sideways toward the MEDIAN x of the claims its lines meet outside it,
+ * within the room its row-mates leave on every row it spans and within its container's walls.
+ * Seating (left-to-right order) is untouched, so no crossing that depends on order alone can
+ * change, and the map gets no wider.
+ *
+ * Measured on 233 states of 33 maps (every sample and private map, every depth, sections open),
+ * against packing from the left: lines through boxes -35.4% (better in 173 states, worse in 4),
+ * line length -22.1%, crossings -5.7% (better in 81, worse in 41). On the Dewey fold state that
+ * prompted it, line length roughly halves and lines through boxes go 20 -> 12. The median, not
+ * the mean: the mean dragged Williams--Dewey's thesis toward its heavier side and sent its lines
+ * to the other side diagonally through the middle (crossings 104 -> 121).
+ *
+ * THE GUARD. Lines that skip rows run straight past the rows between, and a block slid into their
+ * path makes them swing round it: the folded Tooming map went from a clean column to a zigzag.
+ * So every move is tried and kept only if the lines it touches need no more swinging than
+ * before (`blockHits`); half the move is tried before giving up.
+ *
+ * WHAT IT COSTS. Placing blocks by their lines makes the layout depend on the lines, which
+ * packing never did: a fold that removes a line and no claim can now move a block (Carroll's worst
+ * such click moves one by 0.63 of the map's width). Seats are chosen on the layout as finally
+ * drawn, this pass included: choosing them on the packed rows left crossings at -2.6%, and on
+ * Miller let the seats cross more than the file's own order (21 -> 22), which `test_seats` forbids.
+ */
+function centreBlocks(g, vis, rank, groupRows, visGroups, gap) {
+  const PAD = 16;                          // a section's inner margin, as `assignHomeColumns` packs it
+  const nodeIds = new Set(vis.nodes.map(n => n.id));
+  // Each container's direct contents, "" standing for the map itself.
+  const kidsOf = new Map([["", []]]);
+  for (const gr of vis.groups) kidsOf.set(gr.id, []);
+  const parentOf = new Map();
+  for (const n of vis.nodes) {
+    const c = n.group && visGroups.has(n.group) ? n.group : "";
+    kidsOf.get(c).push(n.id); parentOf.set(n.id, c);
+  }
+  for (const gr of vis.groups) {
+    const c = gr.parent && visGroups.has(gr.parent) ? gr.parent : "";
+    kidsOf.get(c).push(gr.id); parentOf.set(gr.id, c);
+  }
+  // Everything a block carries with it when it moves.
+  const carried = new Map();
+  const carry = id => {
+    if (carried.has(id)) return carried.get(id);
+    const out = { nodes: [], groups: [] };
+    if (nodeIds.has(id)) out.nodes.push(id);
+    else {
+      out.groups.push(id);
+      for (const k of kidsOf.get(id) || []) { const c = carry(k); out.nodes.push(...c.nodes); out.groups.push(...c.groups); }
+    }
+    carried.set(id, out);
+    return out;
+  };
+  const box = id => { const p = g.node(id); return { l: p.x - p.width / 2, r: p.x + p.width / 2 }; };
+  // How far the lines touching a block must swing round boxes if it is shifted by d: its own
+  // lines against every claim between their ends, and every other line against its claims. Lines
+  // drawn straight from centre to centre, which is what the router starts from before it detours.
+  const blockHits = (own, d) => {
+    const at = id => { const p = g.node(id); return { x: p.x + (own.has(id) ? d : 0), y: p.y, w: p.width, h: p.height }; };
+    let n = 0;
+    for (const e of vis.edges) {
+      if (!nodeIds.has(e.from) || !nodeIds.has(e.to)) continue;
+      const inA = own.has(e.from), inB = own.has(e.to);
+      const pa = at(e.from), pb = at(e.to);
+      const y0 = Math.min(pa.y, pb.y), y1 = Math.max(pa.y, pb.y);
+      for (const nn of vis.nodes) {
+        if (nn.id === e.from || nn.id === e.to) continue;
+        // Only pairs that involve this block can change: its own lines, or its own boxes.
+        if (!(inA || inB) && !own.has(nn.id)) continue;
+        const q = at(nn.id);
+        if (q.y <= y0 || q.y >= y1) continue;
+        const bx = { x0: q.x - q.w / 2, x1: q.x + q.w / 2, y0: q.y - q.h / 2, y1: q.y + q.h / 2 };
+        if (!segmentHitsBox(pa, pb, bx, 4)) continue;
+        // Scored by how far the line must step aside to clear the box, as the router will make
+        // it: a hit that needs a long swing is worse than one that grazes a corner.
+        const t = (q.y - pa.y) / ((pb.y - pa.y) || 1);
+        const ideal = pa.x + (pb.x - pa.x) * t;
+        n += 40 + Math.min(Math.abs(ideal - (bx.x0 - 10)), Math.abs(ideal - (bx.x1 + 10)));
+      }
+    }
+    return n;
+  };
+  /** One container's contents, slid within its own walls. */
+  const settle = (container, wallL, wallR) => {
+    const items = [];
+    for (const id of kidsOf.get(container) || []) {
+      const rows = nodeIds.has(id) ? [rank.get(id)] : [...(groupRows.get(id) || [])];
+      if (!rows.length || rows.some(r => r == null)) continue;
+      const c = carry(id);
+      items.push({ id, lo: Math.min(...rows), hi: Math.max(...rows), nodes: c.nodes, groups: c.groups,
+                   own: new Set(c.nodes) });
+    }
+    if (!items.length) return;
+    // Every row's blocks, left to right, fixed for the whole pass: the order is never changed.
+    const rowLists = new Map();
+    for (const it of items) for (let r = it.lo; r <= it.hi; r++) {
+      if (!rowLists.has(r)) rowLists.set(r, []);
+      rowLists.get(r).push(it);
+    }
+    for (const list of rowLists.values()) list.sort((a, b) => box(a.id).l - box(b.id).l);
+    // A block's lines to anything outside it -- inside this container or beyond it.
+    const ext = new Map(items.map(it => [it.id, []]));
+    for (const it of items) for (const e of vis.edges) {
+      const a = it.own.has(e.from), b = it.own.has(e.to);
+      if (a === b || !nodeIds.has(e.from) || !nodeIds.has(e.to)) continue;
+      ext.get(it.id).push(a ? { own: e.from, other: e.to } : { own: e.to, other: e.from });
+    }
+    const move = (it, d) => {
+      for (const id of it.nodes) g.node(id).x += d;
+      for (const id of it.groups) g.node(id).x += d;
+    };
+    const order = items.slice().sort((a, b) => a.lo - b.lo || box(a.id).l - box(b.id).l);
+    for (let sweep = 0; sweep < 8; sweep++) {
+      const seq = sweep % 2 ? order.slice().reverse() : order;
+      for (const it of seq) {
+        const links = ext.get(it.id);
+        if (!links.length) continue;
+        const ds = links.map(k => g.node(k.other).x - g.node(k.own).x).sort((u, v) => u - v);
+        const mid = ds.length >> 1;
+        const want = ds.length % 2 ? ds[mid] : (ds[mid - 1] + ds[mid]) / 2;
+        const b = box(it.id);
+        let lo = wallL - b.l, hi = wallR - b.r;
+        for (let r = it.lo; r <= it.hi; r++) {
+          const list = rowLists.get(r) || [];
+          const i = list.indexOf(it);
+          if (i > 0) lo = Math.max(lo, box(list[i - 1].id).r + gap - b.l);
+          if (i >= 0 && i < list.length - 1) hi = Math.min(hi, box(list[i + 1].id).l - gap - b.r);
+        }
+        if (lo > hi) continue;
+        let d = Math.max(lo, Math.min(hi, want));
+        if (Math.abs(d) <= 0.5) continue;
+        // THE GUARD (see above): kept only if the lines it touches swing no further than before.
+        const base = blockHits(it.own, 0);
+        if (blockHits(it.own, d) > base) { d /= 2; if (Math.abs(d) <= 0.5 || blockHits(it.own, d) > base) continue; }
+        move(it, d);
+      }
+    }
+  };
+  // The map first, then each section inside it once it has stopped moving: a section's contents
+  // slide within the section's own walls, so a contention inside a section sits over what it
+  // supports there as well (Akhlaghi's "The conditional answer" is the case).
+  let W = 0;
+  for (const id of kidsOf.get("")) if (g.node(id)) W = Math.max(W, box(id).r);
+  settle("", 16, W);
+  const queue = (kidsOf.get("") || []).filter(id => !nodeIds.has(id));
+  while (queue.length) {
+    const gid = queue.shift();
+    const p = g.node(gid);
+    if (p && p.width) settle(gid, p.x - p.width / 2 + PAD, p.x + p.width / 2 - PAD);
+    for (const k of kidsOf.get(gid) || []) if (!nodeIds.has(k)) queue.push(k);
+  }
 }
 
 /** Where each fold badge is drawn, in graph coordinates.

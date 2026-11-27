@@ -9,7 +9,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 13,
+  "edgeCrossings": 14,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ reasons": {
@@ -33,8 +33,8 @@
   "avoidableBend": 0,
   "bendMedian": 0,
   "bendWorst": 60,
-  "overshoot": 38,
-  "detourWorst": 1.1,
+  "overshoot": 13,
+  "detourWorst": 1,
   "edgeCrossings": 81,
   "nodeOverlaps": 0
  },
@@ -45,10 +45,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 75,
+  "bendWorst": 81,
   "overshoot": 75,
   "detourWorst": 1.1,
-  "edgeCrossings": 107,
+  "edgeCrossings": 97,
   "nodeOverlaps": 0
  },
  "akhlaghi-revelatory-autonomy @ folded": {
@@ -66,8 +66,8 @@
  },
  "akhlaghi-revelatory-autonomy @ transitions": {
   "foldClicks": 45,
-  "anchorCross": 0.09,
-  "moveWorst": 1.99,
+  "anchorCross": 0.07,
+  "moveWorst": 0.5,
   "moveMedian": 0.05,
   "quietMove": 0
  },
@@ -91,10 +91,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 60,
+  "bendWorst": 54,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 43,
+  "edgeCrossings": 39,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ detail": {
@@ -107,7 +107,7 @@
   "bendWorst": 77,
   "overshoot": 75,
   "detourWorst": 1.2,
-  "edgeCrossings": 65,
+  "edgeCrossings": 51,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ all": {
@@ -117,10 +117,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 94,
+  "bendWorst": 75,
   "overshoot": 72,
   "detourWorst": 1.3,
-  "edgeCrossings": 89,
+  "edgeCrossings": 87,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ folded": {
@@ -130,18 +130,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 69,
-  "overshoot": 43,
-  "detourWorst": 1.3,
+  "bendWorst": 25,
+  "overshoot": 0,
+  "detourWorst": 1,
   "edgeCrossings": 4,
   "nodeOverlaps": 0
  },
  "bates-2012-price-is-wrong @ transitions": {
   "foldClicks": 47,
   "anchorCross": 0.11,
-  "moveWorst": 1.02,
+  "moveWorst": 0.61,
   "moveMedian": 0.05,
-  "quietMove": 0.04
+  "quietMove": 0.05
  },
  "carroll-tortoise-achilles @ main": {
   "edges": 1,
@@ -176,23 +176,23 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 61,
-  "overshoot": 59,
-  "detourWorst": 1.1,
-  "edgeCrossings": 5,
+  "bendWorst": 42,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 8,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ all": {
   "edges": 42,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 1,
+  "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 79,
-  "overshoot": 64,
+  "bendWorst": 61,
+  "overshoot": 58,
   "detourWorst": 1.2,
-  "edgeCrossings": 29,
+  "edgeCrossings": 24,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ folded": {
@@ -202,18 +202,18 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 31,
+  "bendWorst": 23,
   "overshoot": 23,
   "detourWorst": 1.1,
-  "edgeCrossings": 2,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
  },
  "carroll-tortoise-achilles @ transitions": {
   "foldClicks": 30,
-  "anchorCross": 0.13,
-  "moveWorst": 0.6,
-  "moveMedian": 0.18,
-  "quietMove": 0.17
+  "anchorCross": 0.07,
+  "moveWorst": 0.63,
+  "moveMedian": 0.14,
+  "quietMove": 0.63
  },
  "darwin-natural-selection @ main": {
   "edges": 3,
@@ -222,7 +222,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 0,
+  "bendWorst": 4,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 0,
@@ -235,10 +235,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 86,
-  "overshoot": 62,
+  "bendWorst": 60,
+  "overshoot": 50,
   "detourWorst": 1.2,
-  "edgeCrossings": 1,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ detail": {
@@ -248,10 +248,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 86,
-  "overshoot": 62,
-  "detourWorst": 1.2,
-  "edgeCrossings": 1,
+  "bendWorst": 59,
+  "overshoot": 50,
+  "detourWorst": 1.1,
+  "edgeCrossings": 0,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ all": {
@@ -261,10 +261,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 109,
-  "overshoot": 97,
-  "detourWorst": 1.3,
-  "edgeCrossings": 12,
+  "bendWorst": 111,
+  "overshoot": 22,
+  "detourWorst": 1.1,
+  "edgeCrossings": 9,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ folded": {
@@ -274,17 +274,17 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 109,
-  "overshoot": 97,
-  "detourWorst": 1.3,
-  "edgeCrossings": 12,
+  "bendWorst": 111,
+  "overshoot": 22,
+  "detourWorst": 1.1,
+  "edgeCrossings": 9,
   "nodeOverlaps": 0
  },
  "darwin-natural-selection @ transitions": {
   "foldClicks": 43,
-  "anchorCross": 0.58,
-  "moveWorst": 1.42,
-  "moveMedian": 0.46,
+  "anchorCross": 0.7,
+  "moveWorst": 0.94,
+  "moveMedian": 0.56,
   "quietMove": 0
  },
  "will-to-believe-1896 @ main": {
@@ -294,23 +294,23 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 73,
-  "overshoot": 38,
-  "detourWorst": 1.2,
-  "edgeCrossings": 5,
+  "bendWorst": 38,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 6,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ reasons": {
   "edges": 36,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 1,
+  "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 31,
+  "bendWorst": 20,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 18,
+  "edgeCrossings": 9,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ detail": {
@@ -320,10 +320,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 38,
+  "bendWorst": 25,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 50,
+  "edgeCrossings": 47,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ all": {
@@ -333,10 +333,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 28,
+  "bendWorst": 25,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 56,
+  "edgeCrossings": 51,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ folded": {
@@ -346,17 +346,17 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 78,
-  "overshoot": 18,
-  "detourWorst": 1.2,
+  "bendWorst": 72,
+  "overshoot": 61,
+  "detourWorst": 1.3,
   "edgeCrossings": 5,
   "nodeOverlaps": 0
  },
  "will-to-believe-1896 @ transitions": {
   "foldClicks": 33,
-  "anchorCross": 0.06,
-  "moveWorst": 0.44,
-  "moveMedian": 0.07,
+  "anchorCross": 0.09,
+  "moveWorst": 0.38,
+  "moveMedian": 0.08,
   "quietMove": 0
  },
  "miller-2019-uksc-41 @ main": {
@@ -379,9 +379,9 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 61,
-  "overshoot": 55,
-  "detourWorst": 1.2,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
   "edgeCrossings": 2,
   "nodeOverlaps": 0
  },
@@ -392,10 +392,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 60,
-  "overshoot": 55,
-  "detourWorst": 1.2,
-  "edgeCrossings": 4,
+  "bendWorst": 0,
+  "overshoot": 0,
+  "detourWorst": 1,
+  "edgeCrossings": 3,
   "nodeOverlaps": 0
  },
  "miller-2019-uksc-41 @ all": {
@@ -405,8 +405,8 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 74,
-  "overshoot": 72,
+  "bendWorst": 107,
+  "overshoot": 65,
   "detourWorst": 1.2,
   "edgeCrossings": 21,
   "nodeOverlaps": 0
@@ -426,9 +426,9 @@
  },
  "miller-2019-uksc-41 @ transitions": {
   "foldClicks": 37,
-  "anchorCross": 0.16,
+  "anchorCross": 0.08,
   "moveWorst": 1.13,
-  "moveMedian": 0.1,
+  "moveMedian": 0.14,
   "quietMove": 0
  },
  "prescott-couch-reverse-engineer @ main": {
@@ -474,13 +474,13 @@
   "edges": 201,
   "hiddenArrowheads": 0,
   "arrivalInversions": 0,
-  "departureInversions": 0,
+  "departureInversions": 1,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 84,
+  "bendWorst": 87,
   "overshoot": 78,
   "detourWorst": 1.2,
-  "edgeCrossings": 87,
+  "edgeCrossings": 83,
   "nodeOverlaps": 0
  },
  "prescott-couch-reverse-engineer @ folded": {
@@ -490,7 +490,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 101,
+  "bendWorst": 104,
   "overshoot": 72,
   "detourWorst": 1.4,
   "edgeCrossings": 6,
@@ -500,7 +500,7 @@
   "foldClicks": 32,
   "anchorCross": 0.03,
   "moveWorst": 0.28,
-  "moveMedian": 0.02,
+  "moveMedian": 0.05,
   "quietMove": 0
  },
  "swift-modest-proposal @ main": {
@@ -536,7 +536,7 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 33,
+  "bendWorst": 19,
   "overshoot": 0,
   "detourWorst": 1,
   "edgeCrossings": 7,
@@ -549,10 +549,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 48,
+  "bendWorst": 45,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 34,
+  "edgeCrossings": 30,
   "nodeOverlaps": 0
  },
  "swift-modest-proposal @ folded": {
@@ -571,8 +571,8 @@
  "swift-modest-proposal @ transitions": {
   "foldClicks": 21,
   "anchorCross": 0.29,
-  "moveWorst": 0.92,
-  "moveMedian": 0.09,
+  "moveWorst": 1.29,
+  "moveMedian": 0.14,
   "quietMove": 0
  },
  "tooming-jakapi-aphantasia @ main": {
@@ -598,7 +598,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 10,
+  "edgeCrossings": 9,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ detail": {
@@ -611,7 +611,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 21,
+  "edgeCrossings": 22,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ all": {
@@ -621,10 +621,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 107,
-  "overshoot": 75,
-  "detourWorst": 1.4,
-  "edgeCrossings": 128,
+  "bendWorst": 76,
+  "overshoot": 60,
+  "detourWorst": 1.3,
+  "edgeCrossings": 111,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ folded": {
@@ -637,14 +637,14 @@
   "bendWorst": 82,
   "overshoot": 76,
   "detourWorst": 1.3,
-  "edgeCrossings": 5,
+  "edgeCrossings": 4,
   "nodeOverlaps": 0
  },
  "tooming-jakapi-aphantasia @ transitions": {
   "foldClicks": 35,
-  "anchorCross": 0.11,
+  "anchorCross": 0.14,
   "moveWorst": 0.72,
-  "moveMedian": 0.05,
+  "moveMedian": 0.03,
   "quietMove": 0
  },
  "wilson-2023-health-system-good @ main": {
@@ -680,10 +680,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 50,
-  "overshoot": 35,
+  "bendWorst": 37,
+  "overshoot": 27,
   "detourWorst": 1.1,
-  "edgeCrossings": 19,
+  "edgeCrossings": 17,
   "nodeOverlaps": 0
  },
  "wilson-2023-health-system-good @ all": {
@@ -696,7 +696,7 @@
   "bendWorst": 61,
   "overshoot": 49,
   "detourWorst": 1.2,
-  "edgeCrossings": 52,
+  "edgeCrossings": 47,
   "nodeOverlaps": 0
  },
  "wilson-2023-health-system-good @ folded": {
@@ -715,7 +715,7 @@
  "wilson-2023-health-system-good @ transitions": {
   "foldClicks": 38,
   "anchorCross": 0.08,
-  "moveWorst": 1.17,
+  "moveWorst": 0.72,
   "moveMedian": 0.03,
   "quietMove": 0
  },
@@ -742,7 +742,7 @@
   "bendWorst": 0,
   "overshoot": 0,
   "detourWorst": 1,
-  "edgeCrossings": 17,
+  "edgeCrossings": 15,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ detail": {
@@ -752,10 +752,10 @@
   "departureInversions": 0,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 77,
-  "overshoot": 72,
-  "detourWorst": 1.1,
-  "edgeCrossings": 29,
+  "bendWorst": 31,
+  "overshoot": 19,
+  "detourWorst": 1,
+  "edgeCrossings": 25,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ all": {
@@ -765,10 +765,10 @@
   "departureInversions": 1,
   "avoidableBend": 0,
   "bendMedian": 0,
-  "bendWorst": 107,
-  "overshoot": 75,
+  "bendWorst": 123,
+  "overshoot": 105,
   "detourWorst": 1.3,
-  "edgeCrossings": 104,
+  "edgeCrossings": 101,
   "nodeOverlaps": 0
  },
  "wilson-williams-dewey @ folded": {
@@ -786,9 +786,9 @@
  },
  "wilson-williams-dewey @ transitions": {
   "foldClicks": 53,
-  "anchorCross": 0.04,
-  "moveWorst": 0.56,
-  "moveMedian": 0.06,
+  "anchorCross": 0.06,
+  "moveWorst": 0.5,
+  "moveMedian": 0.07,
   "quietMove": 0
  }
 }
