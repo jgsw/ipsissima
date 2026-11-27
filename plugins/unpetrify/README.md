@@ -23,6 +23,12 @@ In Claude Code:
 /plugin install unpetrify --marketplace jgsw/ipsissima
 ```
 
+In Claude, for Cowork: open **Plugins**, choose **Add → Add marketplace**, enter
+`jgsw/ipsissima`, then **Add** Unpetrify. Claude asks you to confirm that the plugin runs a
+local server; it does, on your own computer, through the Claude desktop app. The desktop app
+picks up a newly added plugin on its next sync, which can take up to about 20 minutes, so a
+Cowork session started straight away may not see it yet.
+
 ## Try it
 
 - "Get the text out of ~/Papers/scan-of-chapter-3.pdf"

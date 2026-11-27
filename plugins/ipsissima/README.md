@@ -22,6 +22,12 @@ In Claude Code:
 /plugin install ipsissima --marketplace jgsw/ipsissima
 ```
 
+In Claude, for Cowork: open **Plugins**, choose **Add → Add marketplace**, enter
+`jgsw/ipsissima`, then **Add** Ipsissima. Claude asks you to confirm that the plugin runs a
+local server; it does, on your own computer, through the Claude desktop app. The desktop app
+picks up a newly added plugin on its next sync, which can take up to about 20 minutes, so a
+Cowork session started straight away may not see it yet.
+
 ## Try it
 
 - "Make an argument map of ~/Papers/gettier-1963.pdf"

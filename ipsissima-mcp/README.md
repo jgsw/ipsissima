@@ -41,13 +41,17 @@ If the checker later reports that it cannot find Node, install it and restart Cl
 It looks in the usual places as well as on the `PATH`, because an application launched from the
 Dock does not get the `PATH` your terminal has.
 
-### In Claude Code: the plugin
+### In Claude Code or Cowork: the plugin
 
 With [uv](https://docs.astral.sh/uv/) on the machine, type this in Claude Code:
 
 ```
 /plugin install ipsissima --marketplace jgsw/ipsissima
 ```
+
+For Cowork, add the marketplace `jgsw/ipsissima` under **Plugins → Add → Add marketplace** in
+Claude, then add Ipsissima; the server runs on your computer through the Claude desktop app,
+which can take up to about 20 minutes to pick up a newly added plugin.
 
 The plugin, in [`plugins/ipsissima/`](../plugins/ipsissima/), runs the released server from PyPI
 at the version it names, so an update to the plugin is an update to the server. Its

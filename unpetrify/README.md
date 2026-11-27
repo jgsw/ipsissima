@@ -106,6 +106,10 @@ type this in Claude Code:
 /plugin install unpetrify --marketplace jgsw/ipsissima
 ```
 
+For Cowork, add the marketplace `jgsw/ipsissima` under **Plugins → Add → Add marketplace** in
+Claude, then add Unpetrify; the server runs on your computer through the Claude desktop app,
+which can take up to about 20 minutes to pick up a newly added plugin.
+
 Its [README](../plugins/unpetrify/README.md) says everything it runs, reads, writes and sends.
 With Unpetrify already installed, this does the same from a terminal:
 
