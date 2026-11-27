@@ -1139,7 +1139,13 @@ export function toGraph(res) {
     });
   }
   const byId = new Map(nodes.map(n => [n.id, n]));
-  for (const n of nodes) if (stepCount.has(n.label)) n.steps = stepCount.get(n.label);
+  // AN ARGUMENT'S RECORDS ARE KEYED BY ITS TITLE, AND ONLY AN ARGUMENT MAY READ THEM. Argdown keeps
+  // `[statement]` and `<argument>` titles apart, so a premise or a conclusion may share its
+  // argument's name -- and matching on the title alone handed the statement the argument's whole
+  // structure, drawing a premise as a second copy of the argument it supports (the Dewey map,
+  // 27 Nov 2026: `[Experience is saturated with past reflection]` under the argument of that name).
+  const isArg = n => n && n.kind === "argument";
+  for (const n of nodes) if (isArg(n) && stepCount.has(n.label)) n.steps = stepCount.get(n.label);
   /* WHICH LINES OF THE STRUCTURE ALREADY HAVE A BOX OF THEIR OWN.
    *
    * A titled premise is selected into the map and arrives at its argument as an arrow. An
@@ -1159,13 +1165,13 @@ export function toGraph(res) {
   const drawnTitles = new Set(nodes.filter(n => n.kind === "statement").map(n => n.label));
   for (const [, rec] of pcsOf)
     for (const l of rec.pcs) l.drawn = l.title != null && drawnTitles.has(l.title);
-  for (const n of nodes) if (pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
+  for (const n of nodes) if (isArg(n) && pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
 
   for (const e of res.map.edges || []) {
     if (!e.from || !e.to) continue;
     const edge = { from: e.from.id, to: e.to.id, type: e.relationType || "support" };
     const target = byId.get(e.to.id), source = byId.get(e.from.id);
-    if (edge.type === "support" && target && source && stepOfPremise.has(target.label)) {
+    if (edge.type === "support" && isArg(target) && source && stepOfPremise.has(target.label)) {
       const k = stepOfPremise.get(target.label).get(source.label);
       if (k != null) {
         edge.step = k;

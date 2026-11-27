@@ -93,6 +93,9 @@ const SUITES = [
   // A FIELD READ BY THE RENDERER AND WRITTEN BY NOTHING. `n.full` was one for eleven months and
   // cost seven claims their hover text the day something depended on it alone.
   ["the two sides agree about names", "node", [path.join(HERE, "test_dead_fields.mjs")]],
+  // A STATEMENT MAY SHARE ITS NAME WITH AN ARGUMENT, and is drawn as itself, not as a second copy
+  // of the argument's structure.
+  ["a statement named like an argument", "node", [path.join(HERE, "test_shared_titles.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
   // EVERY STATE A READER CAN REACH, WITH SECTIONS, starting shut as well as open: the only run
   // that opens a section, and so the only one that met a claim kept on screen by the rescue and
