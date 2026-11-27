@@ -627,7 +627,12 @@ function filterOnce(graph, state, force) {
   //  does; asking "would folding this claim change anything?" any other way means a second
   //  description of the same rules, and this file already records what that costs. So the walk
   //  became a function, and the question is answered by running it.
-  const runWalk = (alsoCollapsed) => {
+  // `alsoOpened` asks the other question of the same walk: what would the reader see if this
+  // claim were opened? It applies exactly what `reduceFold`'s toggleNode does on expansion --
+  // the claim leaves `collapsedNodes`, its own section marks are deleted, and it joins
+  // `expandedNodes` -- so the badge below is measured by the click it promises.
+  const runWalk = (alsoCollapsed, alsoOpened) => {
+  const opened = id => S.expandedNodes.has(id) || id === alsoOpened;
   const visible = new Set();
   const dist    = new Map(seeds.map(id => [id, 0]));
   const walked  = new Set();   // id|fold keys already processed
@@ -654,7 +659,7 @@ function filterOnce(graph, state, force) {
     // several" went from silent to 12 violations over five seeds, e.g. a section showing four
     // claims from below its entry level of the seven it has. Only the OPENED mark is exempt --
     // which is the one that invariant already carves out for.
-    if (!fold || S.expandedNodes.has(id)) {
+    if (!fold || opened(id)) {
       if (visible.has(id)) continue;
       visible.add(id);
     }
@@ -681,12 +686,12 @@ function filterOnce(graph, state, force) {
     // 10 -> 0 on the published corpus and 15 -> 0 with a private one added. It bites only where
     // the reader has folded something by hand -- with `collapsedNodes` empty it is a no-op --
     // which is why no fixture and no quality metric moves.
-    if (S.collapsedNodes.has(id) || id === alsoCollapsed) continue;
+    if ((S.collapsedNodes.has(id) && id !== alsoOpened) || id === alsoCollapsed) continue;
     // The depth limit applies whether or not this node is drawn. Exempting the passed-through
     // ones let a folded section reach PAST the limit and show material the reader had asked to
     // hide -- and then unfolding it correctly took that material away, which read as expanding
     // something making the map smaller.
-    if (S.depth != null && dist.get(id) >= S.depth && !S.expandedNodes.has(id)) continue;
+    if (S.depth != null && dist.get(id) >= S.depth && !opened(id)) continue;
     // Which folded sections we are inside: the ones we arrived under, plus any this node
     // itself carries. A node can sit in several at once -- a subsection inside a Part -- so
     // this is a set, not one id. Keeping only the innermost lost the outer mark when the
@@ -705,8 +710,8 @@ function filterOnce(graph, state, force) {
     // Expanding is the reader saying "proceed from here", so the walk now does: the claim's own
     // marks still apply (reduceFold deletes them on expansion, so there are none to carry), and
     // only the chain it was carried in under is dropped.
-    const active = new Set(fold && !S.expandedNodes.has(id) ? fold.split("\u0000") : []);
-    for (const g of S.groupFolded.get(id) || EMPTY) active.add(g);
+    const active = new Set(fold && !opened(id) ? fold.split("\u0000") : []);
+    if (id !== alsoOpened) for (const g of S.groupFolded.get(id) || EMPTY) active.add(g);
     for (const c of kids(id)) {
       const chain = chainOf.get(c) || EMPTY;
       const still = [...active].filter(g => chain.has(g));
@@ -764,7 +769,7 @@ function filterOnce(graph, state, force) {
 
   // 3. What did we hide? Drives the "+3" affordance on a node with a folded subtree.
   //
-  // A RESCUED CLAIM PROMISES NOTHING, and must not be given a badge. The line above puts `force`
+  // A RESCUED CLAIM PROMISES NOTHING BY BEING RESCUED, and is not badged for it. The line above puts `force`
   // claims into `visible` so that nothing is drawn floating -- they are there to keep a
   // connection honest, not because the reader has opened a path to them. The walk never reached
   // them and still does not proceed FROM them, so expanding one reveals nothing at all.
@@ -777,6 +782,16 @@ function filterOnce(graph, state, force) {
   //
   // Found by sweeping 4,230 fold states of that map and asking of every badge whether expanding
   // it revealed anything: 6 did not, and all 6 were rescued claims.
+  //
+  // BUT "RESCUED" IS NOT "PROMISES NOTHING" ANY LONGER, AND SKIPPING THEM HID A REAL ONE. Two later
+  // fixes changed what opening does: an opened claim is drawn whatever its section says, and it
+  // forwards no inherited suppression. So opening a rescued claim now proceeds from it. Reported
+  // from use on the Dewey map (27 Nov 2026): open the last section, and its contention, alone
+  // inside it, is kept attached by rescuing the argument below it -- whose three premises
+  // opening would show, and which was drawn with no badge. So a rescued claim is now ASKED, the
+  // way a minus is in 3b: the walk is run once more with it opened, and the badge counts only the
+  // children that run would put on screen. The Akhlaghi case still gets nothing, because there
+  // that run reveals nothing.
   // WHAT IS DRAWN, which is not what the walk reached. A claim inside a collapsed section is on
   // screen as that section's block, so revealing it changes nothing a reader can see. Both
   // halves of the badge are measured against this, and both were wrong before they were.
@@ -790,14 +805,15 @@ function filterOnce(graph, state, force) {
   const forced = force ? new Set(force) : null;
   const hiddenBelow = new Map();
   for (const id of visible) {
-    if (forced && forced.has(id)) continue;
+    const opened = forced && forced.has(id) ? runWalk(null, id).visible : null;
     // A CHILD ALREADY STANDING BEHIND A BLOCK IS NOT HIDDEN. It used to be enough that a child
     // was outside `visible`; but if revealing it would only put it inside a section block that
     // is already on screen, the picture does not change and the badge promised nothing it can
     // give. Found by exhausting every four-claim map WITH SECTIONS -- 5,940 cases, the smallest
     // being `n1->n0, n2->n1, n3->n0` with n0 and n2 in a shut section: n1 offered "+1" for a
     // claim that would have appeared inside the block beside it.
-    const n = kids(id).filter(c => !visible.has(c) && !drawnNow.has(collapsedRepr(c))).length;
+    const n = kids(id).filter(c => !visible.has(c) && !drawnNow.has(collapsedRepr(c)) &&
+                                   (!opened || opened.has(c))).length;
     if (n) hiddenBelow.set(id, n);
   }
 

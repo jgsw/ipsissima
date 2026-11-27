@@ -94,6 +94,10 @@ const SUITES = [
   // cost seven claims their hover text the day something depended on it alone.
   ["the two sides agree about names", "node", [path.join(HERE, "test_dead_fields.mjs")]],
   ["fold, every small map",      "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4"]],
+  // EVERY STATE A READER CAN REACH, WITH SECTIONS, starting shut as well as open: the only run
+  // that opens a section, and so the only one that met a claim kept on screen by the rescue and
+  // drawn with no "+" though opening it showed its reasons (the Dewey map, 27 Nov 2026).
+  ["fold, every reachable small map", "node", [path.join(HERE, "test_fold_exhaustive.mjs"), "4", "--groups", "--reachable", "6"]],
   ["layout geometry (adversarial)", "node", [path.join(HERE, "test_layout_geometry.mjs"), "--cases", "80"]],
   // THE SEATS: one order per map, chosen once to cross less -- the same in every view, premises
   // in their order, and no level of the depth ladder crossing more than written order did.

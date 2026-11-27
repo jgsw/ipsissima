@@ -78,6 +78,27 @@ const blank = () => ({ collapsedGroups: new Set(), collapsedNodes: new Set(),
                        expandedNodes: new Set(), groupFolded: new Map(),
                        collapsedLanes: new Set(), depth: null, facets: null, byText: false });
 
+/** THE OTHER HALF OF THE PROMISE: A CLAIM THAT OPENING WOULD CHANGE MUST SAY SO. Every check
+ *  below asks whether a badge that IS drawn keeps its word; none asked whether a claim drawn
+ *  WITHOUT a "+" has anything to open, and that is how a missing badge reached a reader (the
+ *  Dewey map, 27 Nov 2026: an argument kept on screen by the nothing-floats rescue, whose
+ *  three premises opening would show, was drawn with no badge at all). `reduceFold` opens a
+ *  claim only when the picture says it has something hidden, so the picture is shown a "+1"
+ *  on that one claim and the reducer does the rest -- the click as written, not a model of it. */
+function missingPlus(g, st, vis) {
+  const out = [];
+  for (const n of vis.nodes) {
+    if (n.kind === "group" || n.hidden > 0) continue;
+    const shown = Object.assign({}, vis, { nodes: vis.nodes.map(x => x.id === n.id
+                                                    ? Object.assign({}, x, { hidden: 1 }) : x) });
+    let after; try { after = filterGraph(g, reduceFold(g, st, { type: "toggleNode", id: n.id }, shown, {})); }
+    catch { continue; }
+    const b = new Set(vis.nodes.map(x => x.id));
+    if (after.nodes.some(x => !b.has(x.id))) out.push(n.id);
+  }
+  return out;
+}
+
 const REACH = (() => {
   const i = process.argv.indexOf("--reachable");
   return i < 0 ? 0 : Number(process.argv[i + 1] || 4);
@@ -114,7 +135,7 @@ function runs(n) {
   }
   return out;
 }
-let shapeCount = 0, states = 0, checks = 0, plus = 0, minus = 0;
+let shapeCount = 0, states = 0, checks = 0, plus = 0, minus = 0, missing = 0;
 const worst = [];
 
 for (const bare of shapes(N)) {
@@ -151,6 +172,11 @@ for (const bare of shapes(N)) {
     const G = laned;
     try { before = filterGraph(G, state); } catch { continue; }
     states++;
+    for (const id of missingPlus(G, state, before)) {
+      missing++;
+      if (worst.length < 3) worst.push(`  no "+" on ${id}, and opening it shows more  edges ${g.edges.map(e => e.from + "->" + e.to).join(" ")}  ` +
+        `collapsed {${[...state.collapsedNodes].join(",")}} shut {${[...state.collapsedGroups].join(",")}} depth=${depth}  drawn ${before.nodes.map(x => x.id).join(",")}`);
+    }
     for (const n of before.nodes) {
       if (!n.expandable) continue;                         // no badge, nothing promised
       // A BLOCK CARRIES A BADGE TOO, and it was being skipped. A folded section and a folded
@@ -199,7 +225,7 @@ if (REACH) {
   const key = s => JSON.stringify([[...s.collapsedNodes].sort(), [...s.expandedNodes].sort(),
                                    [...s.collapsedGroups].sort(), [...s.collapsedLanes].sort(),
                                    [...(s.groupFolded || new Map())].map(String).sort(), s.depth]);
-  let reached = 0, rchecks = 0, rplus = 0, rminus = 0;
+  let reached = 0, rchecks = 0, rplus = 0, rminus = 0, rmissing = 0;
   const rworst = [];
   for (const bare of shapes(N)) {
     for (const grouping of (WITH_GROUPS ? GROUPINGS : [null])) {
@@ -209,13 +235,25 @@ if (REACH) {
             edges: bare.edges }
         : bare;
       const seen = new Set();
+      // TWO STARTING POINTS: the map as it opens, and the map with every section shut. Opening a
+      // section is what lays down the marks (`groupFolded`) that hold a section's reasons back,
+      // and a walk that starts with every section open never opens one -- so it never met the
+      // state where a section's contention is kept attached by rescuing the claim below it.
       let frontier = [blank()];
-      seen.add(key(frontier[0]));
+      if (grouping) frontier.push(Object.assign(blank(), { collapsedGroups: new Set(["gA", "gB"]) }));
+      for (const st of frontier) seen.add(key(st));
       for (let d = 0; d < REACH; d++) {
         const next = [];
         for (const st of frontier) {
           let vis; try { vis = filterGraph(g, st); } catch { continue; }
           reached++;
+          for (const id of missingPlus(g, st, vis)) {
+            rmissing++;
+            if (rworst.length < 4) rworst.push(`  no "+" on ${id}, and opening it shows more  edges ${g.edges.map(e => e.from + "->" + e.to).join(" ")}  ` +
+              `collapsed {${[...st.collapsedNodes].join(",")}} expanded {${[...st.expandedNodes].join(",")}} shut {${[...st.collapsedGroups].join(",")}}  ` +
+              `marks {${[...(st.groupFolded || new Map())].map(([k, v]) => k + ":" + [...v].join("+")).join(" ")}}  ` +
+              (grouping ? `groups ${grouping.map((v, i) => "n" + i + ":" + (v || "-")).join(" ")}  ` : "") + `drawn ${vis.nodes.map(x => x.id).join(",")}`);
+          }
           const acts = [];
           for (const n of vis.nodes) {
             if (!n.expandable) continue;
@@ -253,15 +291,17 @@ if (REACH) {
   console.log(`  ${reached.toLocaleString()} states, ${rchecks.toLocaleString()} node-checks`);
   console.log(`  "+" / block badges that reveal nothing: ${rplus}`);
   console.log(`  "−" badges that hide nothing:           ${rminus}`);
+  console.log(`  claims with no "+" that opening changes: ${rmissing}`);
   if (rworst.length) { console.log("\n  smallest cases:"); rworst.forEach(w => console.log(w)); }
   console.log();
-  process.exit(rplus + rminus ? 1 : 0);
+  process.exit(rplus + rminus + rmissing ? 1 : 0);
 }
 
 console.log(`\n== every map of ${N} claims\n`);
 console.log(`  ${shapeCount} shapes, ${states.toLocaleString()} states, ${checks.toLocaleString()} node-checks`);
 console.log(`  "+" badges that reveal nothing: ${plus}`);
 console.log(`  "−" badges that hide nothing:   ${minus}`);
+console.log(`  claims with no "+" that opening changes: ${missing}`);
 if (worst.length) { console.log("\n  smallest cases:"); worst.forEach(w => console.log(w)); }
 console.log();
-process.exit(plus + minus ? 1 : 0);
+process.exit(plus + minus + missing ? 1 : 0);
