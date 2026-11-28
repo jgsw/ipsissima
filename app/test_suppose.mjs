@@ -474,13 +474,18 @@ if (chromium) {
       // pause -> no "Ten more" after ten unfolds; slice eight -> five pair buttons.
       await page.locator('#map [data-act="study"]').click();
       await page.locator('#studybody button[data-study="others"]').click();
-      await page.waitForTimeout(250);
+      // SETTLED, NOT SLEPT. Study folds the map to its main claim, and a box travelling more than
+      // 500px glides for up to twice the usual 350ms. Once the centred layout put Wilson's main
+      // claim mid-map (27 Nov 2026) the fold moved it about 1500px, and a fixed 250ms read it
+      // mid-glide, off the right of the screen: the check found no control and failed, while a
+      // reader saw the claim arrive centred half a second later.
+      await settle(page, 1600);
       let paused = false, presses = 0;
       for (; presses < 16 && !paused; presses++) {
         paused = /predictions\. Ten more/.test(await page.locator("#studybody").innerText());
         if (paused) break;
         const b = await frontier(); if (!b) break;
-        await page.mouse.click(b.x, b.y); await settle(page, 350);
+        await page.mouse.click(b.x, b.y); await settle(page, 900);
       }
       check(paused && await page.locator('#studybody button[data-study="others-more"]').count() === 1 && /^10 so far$/.test(await page.locator("#studyhint").innerText()),
             "With others pauses after ten predictions and offers ten more", `after ${presses} unfolds`);

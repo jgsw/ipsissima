@@ -1084,6 +1084,109 @@ async function mobileChecks(browser) {
   await ctx.close();
 }
 
+/* AN ARGUMENT'S STEPS ON A PHONE (27 Nov 2026). Three faults, all found at 375px on every sample:
+ * the card was bounded at 95vw inside a scrim padded 2rem a side, so it ran off the right edge
+ * with "Deny the conclusion" and the close button; the header set the title a word to a line
+ * beside buttons that did not fit; and the compact view divided its two columns out of whatever
+ * width there was -- 139px boxes for one step, 79px for Miller's route to the order -- so names
+ * spilled out of their boxes and the panel scrolled sideways. Every argument drawn on the opening
+ * map is opened, in both views. Mutations: put back the 95vw bounds, the auto grid track and the
+ * 2rem phone margin together (the card and the close button leave the screen -- any one of the
+ * three alone is enough to hold the card on a phone); drop the EXPL_COLMIN fallback in `explCompact` (text
+ * leaves its box, the panel scrolls sideways); drop the phone header rules (the title is squeezed).
+ * A phone opens a map a rung lower to keep it readable, and draws few arguments; so each sample
+ * is opened at desktop width with its sections open, each argument's steps are put up there, and
+ * the window is then narrowed to a phone's before the views are drawn and measured -- the reader
+ * who turns a tablet or narrows a window, and the same panel a phone gets. */
+async function phonePanelChecks(browser) {
+  const ctx = await browser.newContext({
+    viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  const bad = [];
+  let seen = 0;
+  for (const m of built) {
+    await page.goto("file://" + m.html);
+    await page.evaluate(() => {
+      try { localStorage.setItem("ipsissima.walkthrough.v1", "seen"); localStorage.setItem("ipsissima.questionfirst.v1", "off"); } catch (e) { void e; }
+      try { localStorage.setItem("ipsissima.key.v1", JSON.stringify({ state: "seen" })); } catch (e) { void e; }
+    });
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.reload();
+    await page.waitForSelector(".alm-n", { timeout: 20000 });
+    await settleFor(page, 300);
+    if (await clickBarButton(page, "Open")) await settleFor(page, 900);
+    seen += await phonePanelsOf(page, bad);
+  }
+  check(seen >= 10 && bad.length === 0,
+        `phone: every argument's steps fit the screen, in both views`,
+        `${seen} panels; ` + bad.slice(0, 6).join(" | "));
+  console.log(`  phone panels: ${seen} opened`);
+  await ctx.close();
+}
+
+async function phonePanelsOf(page, bad) {
+  const n = Math.min(12, await page.evaluate(() => document.querySelectorAll(".alm-explode").length));
+  let seen = 0;
+  for (let i = 0; i < n; i++) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await settleFor(page, 150);
+    const up = await page.evaluate(i => {
+      const c = document.querySelectorAll(".alm-explode")[i];
+      if (!c) return false;
+      c.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      return !document.getElementById("expl").hidden;
+    }, i);
+    if (!up) continue;
+    await page.setViewportSize({ width: 375, height: 812 });
+    for (const mode of ["stair", "compact"]) {
+      const found = await page.evaluate(async ([i, mode]) => {
+        const out = [];
+        document.getElementById(mode === "compact" ? "xmcompact" : "xmstair").click();
+        await new Promise(r => setTimeout(r, 120));
+        const W = innerWidth;
+        const card = document.querySelector("#expl .card").getBoundingClientRect();
+        if (card.left < 0 || card.right > W + 0.5)
+          out.push(`the card lies off the screen (${Math.round(card.left)}–${Math.round(card.right)})`);
+        for (const id of ["explclose", "xdeny"]) {
+          const r = document.getElementById(id).getBoundingClientRect();
+          if (r.left < 0 || r.right > W + 0.5) out.push(`#${id} is off the screen`);
+        }
+        const hdr = document.querySelector("#expl header");
+        if (hdr.scrollWidth > hdr.clientWidth + 1) out.push("the header overflows");
+        // The title keeps a line of its own: squeezed beside the buttons it was set a word a line.
+        const tw = document.getElementById("explhead").getBoundingClientRect().width;
+        if (tw < hdr.clientWidth * 0.6) out.push(`the title is squeezed to ${Math.round(tw)}px`);
+        const body = document.getElementById("explbody");
+        if (body.scrollWidth > body.clientWidth + 1) out.push("the panel scrolls sideways");
+        const boxes = [...body.querySelectorAll(".xstep,.xconcl")];
+        const rs = boxes.map(b => b.getBoundingClientRect());
+        boxes.forEach((b, k) => {
+          for (const t of b.querySelectorAll("h4, .xline > span, .xrule")) {
+            const r = t.getBoundingClientRect();
+            if (r.right > rs[k].right + 1 || r.left < rs[k].left - 1) {
+              out.push(`text leaves its box: "${t.textContent.slice(0, 40)}"`); break;
+            }
+          }
+          for (let j = k + 1; j < rs.length; j++) {
+            const a = rs[k], c = rs[j];
+            if (Math.min(a.right, c.right) - Math.max(a.left, c.left) > 1 &&
+                Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 1)
+              out.push("two boxes overlap");
+          }
+        });
+        return { head: document.getElementById("explhead").textContent, out };
+      }, [i, mode]);
+      if (!found) continue;
+      seen++;
+      const inv = await page.evaluate(PANEL_INVARIANTS);
+      for (const f of found.out) bad.push(`${found.head} [${mode}]: ${f}`);
+      for (const f of inv) bad.push(`${found.head} [${mode}]: ${f.rule} (${f.detail})`);
+    }
+    await page.evaluate(() => document.getElementById("explclose").click());
+  }
+  return seen;
+}
+
 /* ------------------------------------------------------------------ main */
 
 // Built in every part: the feature checks look for particular samples among them (Miller, Tooming).
@@ -1384,6 +1487,20 @@ async function navChecks(browser) {
     check(before === true && after === false,
           "on a reading it opens the Manuscript, which is the thing asked for",
           `before=${before} after=${after}`);
+
+    /* OPENING ANOTHER FILE PUTS AWAY WHAT WAS UP OVER THE OLD ONE (27 Nov 2026): an argument's
+     * steps were left on screen over the new file's map. Mutation: drop the explHide() line
+     * from render(). */
+    const up = await openPanel(page);
+    const shown = await page.evaluate(() => !document.getElementById("expl").hidden);
+    await drop([{ t: sourceless, n: "debate.argdown" }]);
+    await page.waitForFunction(() =>
+      document.getElementById("fname").dataset.file === "debate.argdown", { timeout: 20000 });
+    await page.waitForSelector(".alm-n", { timeout: 20000 });
+    const still = await page.evaluate(() => !document.getElementById("expl").hidden);
+    check(up && shown && !still,
+          "opening another file puts away the argument's steps that were up over the last one",
+          `opened=${up} shown=${shown} still up after=${still}`);
   } else {
     check(false, "nav: a qualifying reading exists", "no Miller sample built");
   }
@@ -3359,7 +3476,7 @@ const GROUPS = [
   ["light", b => edgeHintChecks(b, built), 3],
   ["checks2", chainNodeChecks, 3], ["checks2", refClickChecks, 1], ["checks2", hiddenFirstLayoutChecks, 3],
   ["checks2", quoteChecks, 4], ["checks2", guidedChecks, 4], ["checks2", exportChecks, 3],
-  ["checks2", mobileChecks, 3]
+  ["checks2", mobileChecks, 3], ["checks2", phonePanelChecks, 3]
 ];
 for (const [part, run] of GROUPS) if (PART === "all" || PART === part) await run(browser);
 await browser.close();

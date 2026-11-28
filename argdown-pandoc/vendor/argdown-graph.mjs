@@ -32,7 +32,16 @@
  *  viewer says so on screen, and the editor marks the line. One rule, three consumers; a second
  *  implementation of YAML would be a second opinion that could drift.
  *
- *  Returns [{ line, column, message, text }], line 1-based.
+ *  A FOURTH CONSUMER, AND THE FRONT MATTER (2 Nov 2026). The checker's bundled parser
+ *  (argdown-shim.src.mjs) runs the same in-process pipeline and never asked: a `design:` written
+ *  twice in one claim's `causes:` cost the Wilson 2023 sample 54 of its 141 nodes, and
+ *  `check_argdown.py` still said "parses OK". A duplicated key is the quietest form of this --
+ *  every line looks right -- so the message names the key, and `claim` names whose block it is.
+ *  The front matter is YAML read the same way, and a fault there emptied the whole map; it is
+ *  now loaded whole, as Argdown loads it, rather than brace by brace.
+ *
+ *  Returns [{ line, column, message, text, claim }], line 1-based; `claim` is "[Title]",
+ *  "<Title>", "the front matter", or null where the block belongs to nothing nameable.
  */
 /** Syntax errors the parser REPORTS rather than throws.
  *
@@ -196,12 +205,63 @@ export function stripMentionMarkup(text) {
   return String(text || "").replace(/@\[([^\]]+)\]/g, "$1").replace(/@<([^>]+)>/g, "$1");
 }
 
+/** What a YAMLException says, with the key named when it is a duplicate. js-yaml (4 and 5 alike)
+ *  marks a duplicated key at the START of its second occurrence but leaves the key out of the
+ *  message, and "duplicated mapping key" in a forty-key block is a search, not a diagnosis. */
+function yamlReason(e, parsed) {
+  const reason = String(e && e.reason ? e.reason : e && e.message ? e.message : e).split("\n")[0];
+  const mark = e && e.mark;
+  if (reason !== "duplicated mapping key" || !mark || typeof mark.position !== "number") return reason;
+  const k = /^\s*("[^"\n]*"|'[^'\n]*'|[^\s:,{}[\]"']+)\s*:/.exec(String(parsed).slice(mark.position));
+  return k ? `duplicated mapping key \`${k[1].replace(/^["']|["']$/g, "")}\` -- a key may appear ` +
+             "only once in a block" : reason;
+}
+
+/** Whose metadata the block on `line` (brace at `open`) is: the claim or argument defined on that
+ *  line before the brace, or on the lines just above it, up to a blank line. */
+function blockOwner(lines, line, open) {
+  const def = /^\s*(?:\(\d+\)\s*)?(?:[+\-_<>]+\s*)?(\[[^\]\n]+\]|<[^>\n]+>)\s*:/;
+  for (let n = line; n >= 0 && n > line - 8; n--) {
+    const l = n === line ? lines[n].slice(0, open) : lines[n];
+    if (n < line && !l.trim()) break;
+    const m = def.exec(l);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/** The front matter's lines, as Argdown's lexer finds it -- `===` opening the file, `===` closing
+ *  it -- or null. Leading blank and `//` lines are allowed before it. */
+function headerSpan(lines) {
+  let i = 0;
+  while (i < lines.length && (!lines[i].trim() || /^\s*\/\//.test(lines[i]))) i++;
+  if (i >= lines.length || !/^\s*={3,}\s*$/.test(lines[i])) return null;
+  for (let n = i + 1; n < lines.length; n++)
+    if (/^\s*={3,}\s*$/.test(lines[n])) return { open: i, close: n };
+  return null;
+}
+
 export function metadataProblems(source, yamlLoad) {
   const out = [];
   if (typeof yamlLoad !== "function") return out;
   const text = String(source || "");
   const lines = text.split("\n");
   let i = 0;
+  // THE FRONT MATTER WHOLE, and its braces are then not read again on their own: the whole is
+  // what Argdown loads, and a top-level key written twice is invisible brace by brace.
+  const head = headerSpan(lines);
+  if (head) {
+    const body = lines.slice(head.open + 1, head.close).join("\n");
+    try { yamlLoad(body); }
+    catch (e) {
+      const mark = e && e.mark;
+      const line = head.open + 1 + (mark ? mark.line : 0);
+      out.push({ line: line + 1, column: (mark ? mark.column : 0) + 1,
+                 message: yamlReason(e, body), text: lines[line] || "",
+                 claim: "the front matter" });
+    }
+    i = head.close + 1;
+  }
   while (i < lines.length) {
     if (/^\s*\/\//.test(lines[i])) { i++; continue; }
     const open = lines[i].indexOf("{");
@@ -256,8 +316,9 @@ export function metadataProblems(source, yamlLoad) {
       out.push({
         line: startLine + (mark ? mark.line : 0) + 1,
         column: (mark && mark.line === 0 ? open : 0) + (mark ? mark.column : 0) + 1,
-        message: String(e && e.reason ? e.reason : e && e.message ? e.message : e).split("\n")[0],
-        text: block.length > 90 ? block.slice(0, 90) + "\u2026" : block
+        message: yamlReason(e, toParse),
+        text: block.length > 90 ? block.slice(0, 90) + "\u2026" : block,
+        claim: blockOwner(lines, startLine, open)
       });
     }
     i++;
@@ -358,8 +419,255 @@ export function withComment(text, label, value){
 /** Argdown's IMap nests groups and carries no tags on its nodes; the live map wants a flat node
  *  list plus a `facet` to filter on. Tags are joined back on by title, which is the key
  *  `response.statements` / `response.arguments` are indexed under. */
+/** The `mechanism:` block and every claim or argument that asserts a step, or null.
+ *
+ *  Each claim comes with what the mechanism arrangement needs to draw and explain it: all its
+ *  tags (the layer is decided by #appraisal and #reported), its fidelity and warrant, its words,
+ *  its steps (`causes:`, one map or a list), and the id of its node on the map where it has one
+ *  -- the click-through from an arrow to the claim, and from the claim to its passage. */
+/** THE QUESTIONS A TEXT WORKS ON (profile 1.17), and what its claims do to them.
+ *
+ *  A REFRAMING IS NOT A REASON (the parallel-pass trial, lesson 2): Wilson 2026 dissolves "does
+ *  philosophy belong with the humanities or the sciences?" into "which method suits which
+ *  problem?", and support and attack could draw that only as propositions arguing with each other.
+ *  The front matter's `questions:` names the questions; a claim's `question:` says what it does to
+ *  one -- answers, reframes, splits or dissolves it, `into` the questions that take its place.
+ *  Null when the file declares none. The checker is the judge of well-formedness; this reads.
+ */
+export function questionsOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const decl = (fm.questions && typeof fm.questions === "object" && !Array.isArray(fm.questions))
+    ? fm.questions : null;
+  if (!decl) return null;
+  const qs = Object.keys(decl).map(id => {
+    const q = decl[id];
+    const o = (q && typeof q === "object") ? q : { text: q };
+    return { id, text: o.text == null ? "" : String(o.text),
+             pinpoint: o.pinpoint == null ? null : String(o.pinpoint), moves: [] };
+  });
+  const byId = new Map(qs.map(q => [q.id, q]));
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.question == null) continue;
+      for (const mv of (Array.isArray(data.question) ? data.question : [data.question])) {
+        if (!mv || typeof mv !== "object") continue;
+        const q = byId.get(String(mv.id));
+        if (!q) continue;
+        const into = mv.into == null ? [] : (Array.isArray(mv.into) ? mv.into : [mv.into]).map(String);
+        q.moves.push({ title, id: titleToId.get(title) == null ? null : titleToId.get(title),
+                       kind: kind === "arguments" ? "argument" : "claim",
+                       move: String(mv.move || "answers"), into });
+      }
+    }
+  }
+  return qs;
+}
+
+/** THE COMPARISONS A TEXT MAKES (a trial, 20 Oct 2026; ipsissima-mcp docs/tabulation-pass.md).
+ *
+ *  The front matter's `frames:` declares the text's cases, the dimensions and verdict it gives them
+ *  (each with the text's values), and the rival accounts it sets against each other; a claim's
+ *  `about:` names the cell or cells it states. Read here so a page can set them out as tables (see
+ *  src/argdown-tables.js). Null when the file declares no frames. The checker judges well-formedness;
+ *  this reads, and drops what does not resolve rather than guessing.
+ */
+export function framesOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const decl = (fm.frames && typeof fm.frames === "object" && !Array.isArray(fm.frames)) ? fm.frames : null;
+  if (!decl) return null;
+  const KINDS = ["case", "dimension", "verdict", "account"];
+  const frames = [];
+  for (const id of Object.keys(decl)) {
+    const f = decl[id];
+    if (!f || typeof f !== "object" || !KINDS.includes(f.kind)) continue;
+    const raw = f.values;
+    const values = Array.isArray(raw) ? raw.map(v => ({ id: String(v), label: String(v) }))
+      : (raw && typeof raw === "object") ? Object.keys(raw).map(k => {
+          const v = raw[k];
+          const o = (v && typeof v === "object") ? v : { label: v };
+          const claim = o.claim == null ? null : String(o.claim);
+          return { id: k, label: o.label == null ? (claim || k) : String(o.label), claim,
+                   claimId: claim != null && titleToId.has(claim) ? titleToId.get(claim) : null };
+        }) : [];
+    if (!values.length) continue;
+    frames.push({ id, kind: f.kind, label: f.label == null ? id : String(f.label),
+                  pinpoint: f.pinpoint == null ? null : String(f.pinpoint),
+                  ordered: f.ordered === true, comparable: f.comparable !== false, note: f.note == null ? null : String(f.note), values,
+                  rule: (f.rule && typeof f.rule === "object") ? f.rule : null,
+                  // THE QUESTION AN ACCOUNT FRAME ANSWERS (profile 1.26): its id under `questions:`.
+                  question: f.question == null ? null : String(f.question) });
+  }
+  const byId = new Map(frames.map(f => [f.id, f]));
+  const cells = [], undecided = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.about == null) continue;
+      let text = "";
+      for (const m of (rec && rec.members) || []) if (!text && m.text) text = String(m.text);
+      for (const a of (Array.isArray(data.about) ? data.about : [data.about])) {
+        if (!a || typeof a !== "object") continue;
+        const coords = {};
+        let ok = true;
+        // WHAT THE TEXT SAYS OF A CELL OTHER THAN A VALUE (profile 1.23, ruled 22 Oct 2026): that it
+        // cannot occur, or that it cannot be told. A statement, not silence, so it fills the cell.
+        // On an account frame only `indeterminate` is read: the claim, says the text, does not tell
+        // the accounts apart.
+        const keys = Object.keys(a);
+        if (keys.length === 1 && byId.get(keys[0]) && byId.get(keys[0]).kind === "account") {
+          if (String(a[keys[0]]) === "indeterminate")
+            undecided.push({ title, id: titleToId.has(title) ? titleToId.get(title) : null, frame: keys[0] });
+          continue;
+        }
+        for (const k of keys) {
+          const f = byId.get(k), v = String(a[k]);
+          const said = RESERVED_VALUES.includes(v) && f && (f.kind === "dimension" || f.kind === "verdict");
+          if (!f || f.kind === "account" || !(said || f.values.some(x => x.id === v))) { ok = false; break; }
+          coords[k] = v;
+        }
+        if (!ok || !Object.keys(coords).some(k => byId.get(k).kind === "case")) continue;
+        cells.push({ title, id: titleToId.has(title) ? titleToId.get(title) : null, text,
+                     kind: kind === "arguments" ? "argument" : "claim", coords });
+      }
+    }
+  }
+  return { frames, cells, undecided };
+}
+
+/** The values a cell may take besides the frame's own (profile 1.23): what the text says of a cell
+ *  when it gives no value -- that the combination cannot occur, or that it cannot be told. Twin of
+ *  check_argdown.py's RESERVED_VALUES; test_method_docs holds the two together. */
+export const RESERVED_VALUES = ["impossible", "indeterminate"];
+
+export function mechanismOf(res, titleToId) {
+  const fm = res.frontMatter || {};
+  const block = (fm.mechanism && typeof fm.mechanism === "object") ? fm.mechanism : null;
+  const claims = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const members = (rec && rec.members) || [];
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of members) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      // A claim that asserts a step, or (profile 1.11) a constitutive relation.
+      if (data.causes == null && data.constitutes == null) continue;
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of members) for (const t of (m.tags || [])) tags.add(t);
+      let text = "";
+      for (const m of members) {
+        const t = m.text == null ? "" : stripMentionMarkup(String(m.text).trim());
+        if (t.length > text.length) text = t;
+      }
+      claims.push({
+        title, kind: kind === "arguments" ? "argument" : "statement",
+        id: titleToId && titleToId.has(title) ? titleToId.get(title) : null,
+        tags: [...tags], text,
+        // EVERY MEMBER'S WORDS, joined as the checker joins them (mechanism.steps): its wording
+        // queries -- "associated with", "by itself" -- read all of a claim's statements, not one.
+        joined: members.map(m => m.text == null ? "" : String(m.text)).join(" "),
+        fidelity: data.fidelity == null ? null : String(data.fidelity),
+        warrant: data.warrant == null ? null : String(data.warrant),
+        pinpoint: data.pinpoint == null ? null : String(data.pinpoint),
+        causes: (data.causes == null ? [] : Array.isArray(data.causes) ? data.causes : [data.causes])
+                  .filter(c => c && typeof c === "object"),
+        constitutes: (data.constitutes == null ? [] : Array.isArray(data.constitutes) ? data.constitutes : [data.constitutes])
+                  .filter(c => c && typeof c === "object")
+      });
+    }
+  }
+  // CLAIMS THAT STAND FOR A CHAIN (profile 1.20): `mechanism: <chain id>` (or `true`, the whole
+  // mechanism) on a claim -- the account the text gives, as one node in the argument.
+  const chainClaims = [];
+  for (const kind of ["statements", "arguments"]) {
+    for (const [title, rec] of Object.entries(res[kind] || {})) {
+      const data = Object.assign({}, rec && rec.data);
+      for (const m of (rec && rec.members) || []) for (const k in (m.data || {})) if (!(k in data)) data[k] = m.data[k];
+      if (data.mechanism == null) continue;
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const t of (m.tags || [])) tags.add(t);
+      chainClaims.push({ title, kind: kind === "arguments" ? "argument" : "statement",
+                         id: titleToId && titleToId.has(title) ? titleToId.get(title) : null,
+                         tags: [...tags], chain: data.mechanism });
+    }
+  }
+  // How many claims the appraisal holds in all -- including those that assert no step, which the
+  // chain never draws but the census counts. The toggle shows how many IT hides; this is the total.
+  let appraisal = 0;
+  for (const kind of ["statements", "arguments"]) {
+    for (const rec of Object.values(res[kind] || {})) {
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const t of (m.tags || [])) tags.add(t);
+      if (tags.has("appraisal")) appraisal++;
+    }
+  }
+  // REASONS AND INFERENCES (profile 1.15), read off the parser's own records as the checker
+  // reads them: `reasons` mirrors argdown_provenance.title_edges on the map without its appraisal
+  // (every claim that is a premise, a carried conclusion, or the source of a relation), and
+  // `inferences` every step with the rule names its line gives and the lines it draws on, as
+  // mechanism.bridges_of reads them. The Mechanism view uses the first to say where the chain
+  // stops and the argument takes it on, the second to find the bridges.
+  const gone = new Set();
+  for (const kind of ["statements", "arguments"]) {
+    for (const [t, rec] of Object.entries(res[kind] || {})) {
+      const tags = new Set((rec && rec.tags) || []);
+      for (const m of (rec && rec.members) || []) for (const x of (m.tags || [])) tags.add(x);
+      if (tags.has("appraisal")) gone.add(t);
+    }
+  }
+  const mainOf = {};
+  for (const [name, arg] of Object.entries(res.arguments || {}))
+    for (const s of (arg && arg.pcs) || []) if (s.role === "main-conclusion" && s.title) mainOf[name] = s.title;
+  const reasons = new Set(), attacked = new Set();
+  const endOf = e => !e ? null : e.type === "argument" ? (mainOf[e.title] || e.title) : e.title;
+  for (const r of res.relations || []) {
+    if (!r || !r.from || !r.to || gone.has(r.from.title) || gone.has(r.to.title)) continue;
+    const a = endOf(r.from), b = endOf(r.to);
+    if (a && b && a !== b) {
+      reasons.add(a);
+      // WHAT THE ARGUMENT ANSWERS (10 Oct 2026): a claim one of its claims attacks, contradicts or
+      // undercuts -- mechanism.py's ATTACK_KINDS -- for a draft's verdicts on a bridge's questions.
+      if (["attack", "undercut", "contradictory", "contrary"].includes(String(r.relationType || "support"))) attacked.add(b);
+    }
+  }
+  const inferences = [];
+  for (const [name, arg] of Object.entries(res.arguments || {})) {
+    const pcs = (arg && arg.pcs) || [];
+    // title_edges: everything since the last conclusion, and the conclusion carried, support the next.
+    if (!gone.has(name)) {
+      let pending = [], carried = null;
+      for (const s of pcs) {
+        if (!s.title) continue;
+        if (String(s.role || "").indexOf("conclusion") >= 0) {
+          for (const p of (carried ? [carried] : []).concat(pending)) if (p !== s.title) reasons.add(p);
+          carried = s.title; pending = [];
+        } else pending.push(s.title);
+      }
+    }
+    // bridges_of: the declared `uses`, else the run since the last conclusion and the one before.
+    let run = [], prev = null, step = 1;
+    pcs.forEach((s, i) => {
+      const n = i + 1;
+      if (s.role === "premise") { run.push(n); return; }
+      const inf = s.inference || {};
+      const declared = inf.data && Array.isArray(inf.data.uses) ? inf.data.uses.map(Number) : null;
+      const inputs = declared || run.concat(prev ? [prev] : []);
+      inferences.push({ argument: name, step, rules: (inf.inferenceRules || []).map(String),
+                        inputs: inputs.filter(k => k >= 1 && k <= pcs.length).map(k => pcs[k - 1].title).filter(Boolean) });
+      prev = n; run = []; step++;
+    });
+  }
+  // A DRAFT (the reading policy's `draft:`, or the front matter's own, as mechanism.is_draft reads it).
+  const pol = (fm.reconstruction && typeof fm.reconstruction === "object") ? fm.reconstruction : {};
+  const draft = [fm.draft, pol.draft].some(x => x != null && ["true", "1"].includes(String(x).toLowerCase()));
+  return (block || claims.length || chainClaims.length)
+    ? { block, claims, appraisal, reasons: [...reasons], attacked: [...attacked], inferences, draft, chainClaims } : null;
+}
+
 export function toGraph(res) {
   const nodes = [], groups = [], edges = [];
+  const titleToId = new Map();
   const tagOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -437,6 +745,22 @@ export function toGraph(res) {
     return d && typeof d.warrant === "string" && d.warrant.trim() ? d.warrant.trim() : null;
   };
 
+  /* A JOINTLY INCONSISTENT SET (18 Oct 2026): `inconsistent: <name>` (or a list of names) on each claim
+   * of a set the text says cannot all hold -- a trilemma, an aporia, a trade-off. Carried only where
+   * set, so no other node changes shape; read by the page's "which would you give up?". */
+  const inconsistentOf = title => {
+    const rec = (res.statements && res.statements[title]);
+    const names = [];
+    const take = d => {
+      const v = d && d.inconsistent;
+      (Array.isArray(v) ? v : v == null ? [] : [v]).forEach(x => {
+        const t = String(x).trim(); if (t && !names.includes(t)) names.push(t); });
+    };
+    for (const m of (rec && rec.members) || []) take(m.data);
+    take(rec && rec.data);
+    return names.length ? { inconsistent: names } : {};
+  };
+
   const fidelityOf = title => {
     const rec = (res.statements && res.statements[title]) ||
                 (res.arguments  && res.arguments[title]);
@@ -482,7 +806,11 @@ export function toGraph(res) {
     return out;
   };
 
-  const PROV = ["chapter", "section", "line", "lineSource", "source"];
+  // `echoes`: the other places the text states the claim, as the author's words -- drawn as a
+  // faint echo in the exposition view, never a node of its own (argdown-positions `placeEchoes`).
+  // `pinpoint`: the page or paragraph the reconstructor cites, which decides between two places
+  // the claim's words stand (argdown-positions `chooseOccurrence`).
+  const PROV = ["chapter", "section", "line", "lineSource", "source", "echoes", "pinpoint"];
   // FRONT-MATTER DEFAULTS. `chapter` is the same on every claim of a single-source
   // reconstruction and `reviewed` is the date of the pass -- together about 15% of the bytes of
   // a finished map, retyped per claim and stale the moment a file is renamed. Declared once:
@@ -545,9 +873,16 @@ export function toGraph(res) {
         visit(n.children, n.id);
       } else {
         const tag = tagOf(n.title);
+        // ALL of a claim's tags, not only the drawn facet. `facet` is tags[0] and the map's
+        // colour spends it; a claim tagged `#reported #crux` would otherwise reach the page
+        // with its crux invisible, and study mode's crux moment reads the full list.
+        const recFor = (res.statements && res.statements[n.title]) ||
+                       (res.arguments && res.arguments[n.title]);
+        if (n.title != null && !titleToId.has(n.title)) titleToId.set(n.title, n.id);
         nodes.push({
           id: n.id,
           label: n.labelTitle || n.title || n.id,
+          tags: (recFor && recFor.tags) || [],
           // MENTIONS RESOLVED, EMPHASIS CARRIED. `labelText` arrives with `@[…]` and `@<…>`
           // still in it -- see resolveMentions -- and its `ranges` were dropped here, which is
           // the single cause behind bold, italic, links and both mention forms all being lost.
@@ -588,6 +923,7 @@ export function toGraph(res) {
           color: n.color || null,
           fidelity: fidelityOf(n.title),
           warrant: warrantOf(n.title),
+          ...inconsistentOf(n.title),
           ...marginOf(n.title),
           docLine: lineOf(n.title),
           ...provenanceOf(n.title),
@@ -804,7 +1140,13 @@ export function toGraph(res) {
     });
   }
   const byId = new Map(nodes.map(n => [n.id, n]));
-  for (const n of nodes) if (stepCount.has(n.label)) n.steps = stepCount.get(n.label);
+  // AN ARGUMENT'S RECORDS ARE KEYED BY ITS TITLE, AND ONLY AN ARGUMENT MAY READ THEM. Argdown keeps
+  // `[statement]` and `<argument>` titles apart, so a premise or a conclusion may share its
+  // argument's name -- and matching on the title alone handed the statement the argument's whole
+  // structure, drawing a premise as a second copy of the argument it supports (the Dewey map,
+  // 27 Nov 2026: `[Experience is saturated with past reflection]` under the argument of that name).
+  const isArg = n => n && n.kind === "argument";
+  for (const n of nodes) if (isArg(n) && stepCount.has(n.label)) n.steps = stepCount.get(n.label);
   /* WHICH LINES OF THE STRUCTURE ALREADY HAVE A BOX OF THEIR OWN.
    *
    * A titled premise is selected into the map and arrives at its argument as an arrow. An
@@ -824,13 +1166,13 @@ export function toGraph(res) {
   const drawnTitles = new Set(nodes.filter(n => n.kind === "statement").map(n => n.label));
   for (const [, rec] of pcsOf)
     for (const l of rec.pcs) l.drawn = l.title != null && drawnTitles.has(l.title);
-  for (const n of nodes) if (pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
+  for (const n of nodes) if (isArg(n) && pcsOf.has(n.label)) Object.assign(n, pcsOf.get(n.label));
 
   for (const e of res.map.edges || []) {
     if (!e.from || !e.to) continue;
     const edge = { from: e.from.id, to: e.to.id, type: e.relationType || "support" };
     const target = byId.get(e.to.id), source = byId.get(e.from.id);
-    if (edge.type === "support" && target && source && stepOfPremise.has(target.label)) {
+    if (edge.type === "support" && isArg(target) && source && stepOfPremise.has(target.label)) {
       const k = stepOfPremise.get(target.label).get(source.label);
       if (k != null) {
         edge.step = k;
@@ -898,12 +1240,59 @@ export function toGraph(res) {
     }
   }
   return { nodes, groups, edges,
+           // THE CHAIN THE TEXT ASSERTS (ruled 26 Sep 2026; see ipsissima-mcp's mechanism.py).
+           // Read from the parser's own records, NOT from `nodes`: Argdown's map selection
+           // drops a claim with no relations, and an appraisal claim may carry nothing but a
+           // `causes:` step, so a chain read off the drawn nodes silently lost it (found on the
+           // notation spike). Null for the great majority of maps, which declare no chain.
+           mechanism: mechanismOf(res, titleToId),
+           questions: questionsOf(res, titleToId),
+           // THE TEXT'S COMPARISONS (a trial, 20 Oct 2026): null unless the file declares `frames:`.
+           frames: framesOf(res, titleToId),
+           // THE MAP'S OWN NAME, from its front matter, for the page's title bar. The header
+           // showed the file name and nothing anywhere showed the title the reconstructor wrote
+           // (clarity audit, 27 Sep 2026; ruled D2). Null when the file declares none.
+           mapTitle: (res.frontMatter && typeof res.frontMatter.title === "string" &&
+                      res.frontMatter.title.trim()) || null,
            // The map's own declaration about the TEXT it reads (front matter
            // `text-provenance:`), carried to the page so the reader meets it beside the
            // title. `generated` is the documented value; any other declared value travels
            // verbatim, because dropping a declaration silently is exactly what this field
            // exists to prevent.
            textProvenance: (res.frontMatter && res.frontMatter["text-provenance"]) || null,
+           // The MAP's own provenance, the text's counterpart (Formation T3, ruled 14 Sep
+           // 2026): the reading policy block whole (its `generated:` is what the page
+           // reads), and the front matter's `reviewed:` -- the record of a PERSON's pass
+           // over the map. The page draws these as a declaration, never a certification:
+           // the ruling's own words are that even a human pass gives limited reassurance.
+           reconstruction: (res.frontMatter &&
+                            typeof res.frontMatter.reconstruction === "object")
+                           ? res.frontMatter.reconstruction : null,
+           reviewed: defaults.reviewed || null,
+           // How many claims declare a crux -- a choice among live readings (`#crux`,
+           // Formation wave 1). Counted over the equivalence classes, not the nodes' single
+           // `facet`, because a claim tagged `#reported #crux` reaches the map with only
+           // tags[0] and the count must not lose it.
+           cruxCount: (() => {
+             let n = 0;
+             for (const dict of [res.statements, res.arguments]) {
+               for (const t in (dict || {})) {
+                 const rec = dict[t];
+                 if (rec && rec.tags && rec.tags.indexOf("crux") >= 0) n++;
+               }
+             }
+             return n;
+           })(),
+           // Declared contentions (front matter `contentions:`, ruled 10 Sep 2026): titles the
+           // reconstructor names as the paper's theses -- the serial-genre case, where the
+           // stated thesis is used further down and so never sits at the computed apex. They
+           // are resolved to node ids here and ADDED to the computed apex wherever contentions
+           // are measured (spine, load, the depth ladder), never replacing it. A title that
+           // matches no node is dropped silently here; the checker names it as a fault.
+           contentions: (Array.isArray(res.frontMatter && res.frontMatter.contentions)
+                         ? res.frontMatter.contentions.map(t => titleToId.get(String(t)))
+                             .filter(id => id != null)
+                         : []),
            // The front matter's own default chapter, so a claim the page writes (the
            // Quote-this-passage gesture) can obey "declare it once": it cites a chapter
            // explicitly only where the default does not already say it.

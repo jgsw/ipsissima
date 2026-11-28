@@ -1080,19 +1080,35 @@ body.fs #fsexit{display:inline-flex}
 /* ---- the contents list, and the topic pages it leads to ---- */
 /* ---- the About window ---- */
 #expl{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);
-  display:grid;place-items:center;padding:2rem}
+  display:grid;place-items:center;padding:2rem;grid-template-columns:minmax(0,1fr)}
 #expl[hidden]{display:none}
 /* The width is SET PER ARGUMENT, in `explSizeCard` -- see the note there. These two are the
    bounds it works between: never wider than the window, never so narrow that the header's four
    buttons crowd the title. */
 #expl .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  width:min(58rem,95vw);max-width:min(58rem,95vw);min-width:min(34rem,95vw);
+  width:min(58rem,100%);max-width:min(58rem,100%);min-width:min(34rem,100%);
   max-height:min(44rem,90vh);display:flex;flex-direction:column;
   box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
 #expl header{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;
   border-bottom:1px solid var(--line)}
 #explbody{overflow:auto;padding:.9rem 1rem}
 #explfoot{padding:.45rem .8rem;border-top:1px solid var(--line);font-size:.82em;opacity:.75}
+/* THE BOUNDS ARE THE SCRIM'S INSIDE, NOT THE WINDOW (27 Nov 2026). They were 95vw, inside a scrim
+   padded 2rem a side, so below about 1280px a card at its bound was wider than the room it sat
+   in and ran off the right edge -- on a phone taking "Deny the conclusion" and the close button
+   with it. The single grid track is pinned to the scrim's width so that 100% means that room.
+   On a phone the scrim's margin shrinks, and the header wraps: the title and its close button
+   on one line, the view and save buttons under them, rather than the title set a word a line
+   beside buttons that did not fit. */
+@media (max-width:560px){
+  #expl{padding:.5rem}
+  #expl .card{max-height:calc(100vh - 1rem)}
+  #expl header{flex-wrap:wrap;row-gap:.4rem}
+  #expl header .grow{display:none}
+  #explhead{flex:1 1 calc(100% - 3rem);min-width:0;overflow-wrap:break-word}
+  #explclose{order:1}
+  #expl header .xmode,#xdeny{order:2;margin-left:0}
+}
 /* The .xstep/.xline/.xconcl panel styles and the .stair/.compact positional rules moved
    to src/argdown-staircase.js (injected at draw time, scoped to the .xbody class the module
    puts on #explbody), so the export filter's panel is styled by the same lines. */
@@ -1106,10 +1122,11 @@ body.fs #fsexit{display:inline-flex}
 .xmode button:last-child{border-radius:0 6px 6px 0;border-left:0}
 .xmode button.on{background:var(--accent-fill);color:var(--on-accent);border-color:var(--accent-fill)}
 /* ---- a bridge's steps, and its questions ---- */
-#brf{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);display:grid;place-items:center;padding:2rem}
+#brf{position:fixed;inset:0;z-index:41;background:rgba(20,24,34,.38);display:grid;place-items:center;padding:2rem;grid-template-columns:minmax(0,1fr)}
 #brf[hidden]{display:none}
+@media (max-width:560px){ #brf{padding:.5rem} }
 #brf .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
-  width:min(52rem,95vw);max-height:min(46rem,90vh);display:flex;flex-direction:column;
+  width:min(52rem,100%);max-height:min(46rem,90vh);display:flex;flex-direction:column;
   box-shadow:0 18px 50px rgba(0,0,0,.28);overflow:hidden}
 #brf header{display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;border-bottom:1px solid var(--line)}
 #brfbody{overflow:auto;padding:.8rem 1rem}
@@ -2067,6 +2084,15 @@ function render(name, source, graph){
   endCompare();
   // And the highlights, whose chapter went with the file.
   if (ZOT) endZotero();
+  // And anything put up over the map about one of its claims: the explode panel (an argument's
+  // steps), a bridge's steps, the right-click menu, a comment being written. Each names a claim
+  // of the file that was open; left up, the old file's argument sat over the new file's map
+  // (James, 27 Nov 2026: double-clicking a file while an argument's steps were open), and a
+  // comment saved from it would have been written into the new file's text.
+  explHide(); EXPL_NODE = null;
+  bridgeHide();
+  ctxHide();
+  closeCommentDialog();
   // And so is a standing quote-this-passage offer: its words belong to the file that was open.
   QUOTE_SEL = null;
   $("msquote").hidden = true;

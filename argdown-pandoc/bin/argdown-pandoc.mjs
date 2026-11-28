@@ -175,13 +175,14 @@ function runtime() {
 (function(){
   /* The explode panel: the same staircase the App opens, in a minimal dialog this page
    * owns. ArgdownStaircase draws the content; this builds the chrome around it. */
+  function narrow(){ return window.innerWidth <= 560; }
   function explodeOpen(graph, node, map){
     ArgdownStaircase.injectStyle();
     var onMap = {};
     (graph.nodes || []).forEach(function(x){ if (x.label) onMap[x.label] = x.id; });
     var ov = document.createElement("div");
     ov.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(20,24,34,.38);" +
-      "display:grid;place-items:center;padding:2rem";
+      "display:grid;place-items:center;padding:" + (narrow() ? ".5rem" : "2rem");
     var card = document.createElement("div");
     card.style.cssText = "background:#fff;color:#1a222e;border:1px solid #c9ced8;" +
       "border-radius:12px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;" +
@@ -190,7 +191,9 @@ function runtime() {
     var head = document.createElement("header");
     // margin:0 and explicit display, because this dialog lives inside someone else's page:
     // a pandoc template is free to style header/footer, and one did (a 56px margin).
-    head.style.cssText = "display:flex;align-items:center;gap:.5rem;padding:.5rem .7rem;" +
+    // flex-wrap: on a phone the five buttons do not fit beside the title, and unwrapped they ran
+    // off the card with the close button among them.
+    head.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;padding:.5rem .7rem;" +
       "border-bottom:1px solid #c9ced8;margin:0;width:auto";
     var ttl = document.createElement("b"); ttl.textContent = node.label || "";
     var grow = document.createElement("span"); grow.style.flex = "1";
@@ -232,7 +235,7 @@ function runtime() {
     function draw(){
       var steps = ArgdownStaircase.steps(node.pcs || []);
       card.style.width = Math.min(ArgdownStaircase.cardWidth(steps),
-                                  window.innerWidth - 64) + "px";
+                                  window.innerWidth - (narrow() ? 16 : 64)) + "px";
       ArgdownStaircase.draw(node.pcs || [], body, {
         mode: mode,
         onMap: function(t){ return !!onMap[t]; },

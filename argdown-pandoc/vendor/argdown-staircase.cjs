@@ -40,6 +40,9 @@ function injectStyle(){
   s.id = "alm-stair-style";
   s.textContent = "\n" +
 ".xbody .xstep{border:1px solid var(--line,#c9ced8);border-radius:9px;padding:.5rem .65rem;margin:0 0 .1rem}\n" +
+"/* A word longer than its box breaks rather than spilling over the next one: a phone-width\n" +
+"   compact box is narrow, and an uppercased rule name is the longest thing in it. */\n" +
+".xbody .xstep,.xbody .xconcl{overflow-wrap:break-word}\n" +
 ".xbody .xstep h4{margin:0 0 .35rem;font-size:.85em;font-weight:600;opacity:.72;text-transform:uppercase;letter-spacing:.04em}\n" +
 ".xbody .xline{display:flex;gap:.5rem;align-items:baseline;padding:.18rem .3rem;border-radius:5px}\n" +
 ".xbody .xline .num{opacity:.55;font-variant-numeric:tabular-nums;flex:none}\n" +
@@ -202,6 +205,7 @@ var EXPL_COL     = 300;   // a compact box, which holds a short name rather than
 var EXPL_GAPX    = 44;    // between the compact view's two columns
 var EXPL_ROWIN   = 40;    // its own, longer, tread
 var EXPL_CHROME  = 34;    // what the panel takes around the diagram: body padding and border
+var EXPL_COLMIN  = 180;   // the narrowest a compact column may be before it stacks instead
 
 /* HOW WIDE THE WINDOW ASKS TO BE.
  *
@@ -283,13 +287,13 @@ function explElbow(svg, x1, y1, x2, y2, label, via){
  *
  * Absolutely positioned HTML rather than SVG text, so every line still wraps for free; the
  * edges are an SVG overlay measured after layout rather than a guess at where the boxes went. */
-function explStair(steps, body, width, opts){
-  body.className = "xbody stair";
+function explStair(steps, body, width, opts, titlesOnly){
+  body.className = "xbody stair" + (titlesOnly ? " compact stacked" : "");
   var wrap = document.createElement("div");
   wrap.className = "xwrap";
   body.appendChild(wrap);
 
-  var stages = explStages(steps, false, opts);
+  var stages = explStages(steps, !!titlesOnly, opts);
 
   // Indent enough to read as a stair, but never so much that the last box is a sliver.
   // MEASURED off the wrap rather than computed from the body: the body is padded, and guessing
@@ -354,6 +358,17 @@ function explCompact(steps, body, width, opts){
   var rowIn = EXPL_ROWIN, gapX = EXPL_GAPX;
   var maxIn = rowIn * (rows.length - 1);
   var colW = Math.min(EXPL_COL, Math.floor((avail - maxIn - gapX) / 2));
+  /* TOO NARROW FOR TWO COLUMNS, AND THEN IT STACKS (27 Nov 2026). The columns were simply divided
+   * out of whatever width there was, so on a phone a one-step argument got two 139px boxes and
+   * Miller's nine-line route to the order two 79px ones: a name a word to a line, an uppercased
+   * rule name running out of its box, and the panel scrolling sideways. Below EXPL_COLMIN the
+   * side-by-side shape costs more than it shows, so the short names are drawn as the full-text
+   * view draws its sentences -- one column, each conclusion under the step that reaches it. */
+  if (colW < EXPL_COLMIN) {
+    body.textContent = "";
+    explStair(steps, body, width, opts, true);
+    return;
+  }
   /* CENTRED IN WHATEVER IT WAS GIVEN. The card is sized to the wider of the two layouts, so that
    * pressing one mode button does not move the other out from under the cursor; the cost is that
    * the compact view, which is the narrower, has room left over. Spent as a margin on both sides
